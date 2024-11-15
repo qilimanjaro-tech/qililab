@@ -168,7 +168,7 @@ class ExperimentResultsWriter(ExperimentResults):
                     # Attach the extra dimension (usually for I/Q) to the results dataset
                     results_ds.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
-    def _create_resuts_access(self):
+    def _create_results_access(self):
         """Sets up internal data structures to allow for real-time data writing to the HDF5 file."""
         if "qprograms" in self._metadata:
             for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
@@ -185,7 +185,7 @@ class ExperimentResultsWriter(ExperimentResults):
         """
         self._file = h5py.File(self.path, mode="w")
         self._create_results_file()
-        self._create_resuts_access()
+        self._create_results_access()
 
         return self
 

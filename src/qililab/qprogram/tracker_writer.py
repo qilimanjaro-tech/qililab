@@ -12,19 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # mypy: disable-error-code="attr-defined"
+import os
 from datetime import datetime
 from typing import TypedDict
 
-import os
 import h5py
 import numpy as np
 
 from qililab.result.experiment_results import ExperimentResults
-from qililab.result.experiment_results_writer import (
-    ExperimentMetadata,
-    MeasurementMetadata,
-    VariableMetadata,
-)
+from qililab.result.experiment_results_writer import ExperimentMetadata, MeasurementMetadata, VariableMetadata
+
 
 class BlockMetadata(TypedDict):
     """Metadata for a measurement in the experiment.
@@ -43,6 +40,7 @@ class BlockMetadata(TypedDict):
     total_data: dict[str, list]
     experiment_dims: dict[str, list]
 
+
 class TrackerMetadata(TypedDict):
     """Metadata for an experiment.
 
@@ -54,10 +52,10 @@ class TrackerMetadata(TypedDict):
     executed_at: datetime
     execution_time: float
     values: VariableMetadata
-    experiments: dict[str, BlockMetadata]
+    experiments: BlockMetadata
 
 
-class TrackerWriter(TrackerResults):
+class TrackerWriter:
     """
     Allows for real-time saving of results from an experiment using the provided metadata information.
 
@@ -82,13 +80,15 @@ class TrackerWriter(TrackerResults):
         Returns:
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
+        self.path = self._create_results_path(self._metadata["executed_at"])
         self._create_experiment_path()
         self._tracker_file = h5py.File(f"{self.path}/tracker_data.h5", mode="w")
+        self._create_results_access()
         self._create_file()
 
         return self
 
-    def __setitem__(self, alias: tuple, window: float, guess_path, data, real_path):
+    def __setitem__(self, alias, window, guess_path, data, real_path):
         """Sets an item in the results dataset.
 
         Args:
@@ -100,6 +100,25 @@ class TrackerWriter(TrackerResults):
         self.guess[alias] = guess_path
         self.data[alias] = data
         self.real[alias] = real_path
+
+    def _create_results_path(self, executed_at: datetime):
+        # Format date and time for directory names
+        date = executed_at.strftime("%Y%m%d")
+        timestamp = executed_at.strftime("%H%M%S")
+
+        # Format the path based on the path's format
+        time_path = f"/{date}/{timestamp}"
+
+        # Construct the full path
+        path_file = os.path.join(self.path, time_path)
+
+        # Ensure it is an absolute path
+        path_file = os.path.abspath(path_file)
+
+        # Create the directories if they don't exist
+        os.makedirs(os.path.dirname(path_file), exist_ok=True)
+
+        return path_file
 
     # pylint: disable=too-many-locals
     def _create_file(self):
@@ -145,12 +164,10 @@ class TrackerWriter(TrackerResults):
     def _create_experiment_path(self):
         for alias in self._metadata["experiments"]["alias"]:
             self.experiment_path[alias] = {}
-            if not os.path.exists(f"{self.path}/{alias}"):
-                os.makedirs(f"{self.path}/{alias}")
+            os.makedirs(f"{self.path}/{alias}", exist_ok=True)
             for value in self._metadata["experiments"]["values"]:
-                if not os.path.exists(f"{self.path}/{alias}/{value["label"]}_{value["values"]}"):
-                    os.makedirs(f"{self.path}/{alias}/{value["label"]}_{value["values"]}")
-                self.experiment_path[alias][value["values"]]=f"{self.path}/{alias}/{value["label"]}_{value["values"]}"
+                os.makedirs(f"{self.path}/{alias}/{value['label']}_{value['values']}", exist_ok=True)
+                self.experiment_path[alias][value["values"]] = f"{self.path}/{alias}/{value['label']}_{value['values']}"
 
     def _create_results_access(self):
         """Sets up internal data structures to allow for real-time data writing to the HDF5 file."""

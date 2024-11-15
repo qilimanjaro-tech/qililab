@@ -47,13 +47,15 @@ Other QProgram related Classes
 from .calibration import Calibration
 from .crosstalk_matrix import CrosstalkMatrix, FluxVector
 from .experiment import Experiment
-from .tracker import Tracker
 from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
 from .qprogram import QProgram
 from .quantum_machines_compiler import QuantumMachinesCompilationOutput, QuantumMachinesCompiler
+from .tracker import Tracker
+from .tracker_writer import BlockMetadata, TrackerMetadata, TrackerWriter
 from .variable import Domain
 
 __all__ = [
+    "BlockMetadata",
     "Calibration",
     "CrosstalkMatrix",
     "Domain",
@@ -65,4 +67,6 @@ __all__ = [
     "QuantumMachinesCompilationOutput",
     "QuantumMachinesCompiler",
     "Tracker",
+    "TrackerMetadata",
+    "TrackerWriter",
 ]
