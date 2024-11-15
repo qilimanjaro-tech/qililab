@@ -655,6 +655,7 @@ class Platform:
             - Transpiled waveforms are adjusted for crosstalk when a crosstalk matrix is available in the calibration.
             - Execution includes optional `preparation_block` and synchronizes waveforms before the final
             `measurement_block`.
+
         """
         if self.analog_compilation_settings is None:
             raise ValueError("Flux to bus topology not given in the runcard")
