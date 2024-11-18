@@ -17,6 +17,8 @@ from datetime import datetime
 from time import perf_counter
 from typing import TYPE_CHECKING, Callable
 
+import numpy as np
+
 from qililab.qprogram.tracker_writer import BlockMetadata, TrackerMetadata, TrackerWriter
 from qililab.result.experiment_results_writer import ExperimentResults, VariableMetadata
 from qililab.yaml import yaml
@@ -101,7 +103,7 @@ class Tracker:
         platform: "Platform",
         parameter_alias: str,
         set_parameter: Callable,
-        values: list,
+        values: np.ndarray,
         initial_guess: float,
         tracker_path: str,
         # live_plot: bool = False, #TODO: add live plotting
@@ -160,7 +162,7 @@ class Tracker:
                     experiment = self.measure_dict[operation](window, predicted_guess)
                     with platform.session():
                         results_path = platform.execute_experiment(
-                            experiment, tracker_writer.experiment_path[operation][value]
+                            experiment,# tracker_writer.experiment_path[operation][value]
                         )
                     with ExperimentResults(results_path) as results:
                         data, dims = results.get()
