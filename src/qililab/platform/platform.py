@@ -58,6 +58,7 @@ from qililab.qprogram import (
     QProgram,
     QuantumMachinesCompilationOutput,
     QuantumMachinesCompiler,
+    Tracker,
 )
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.qblox_results.qblox_result import QbloxResult
@@ -544,14 +545,14 @@ class Platform:
         instrument_controllers_dict = {RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
         digital_dict = {
-            RUNCARD.DIGITAL: self.digital_compilation_settings.to_dict()
-            if self.digital_compilation_settings is not None
-            else None
+            RUNCARD.DIGITAL: (
+                self.digital_compilation_settings.to_dict() if self.digital_compilation_settings is not None else None
+            )
         }
         analog_dict = {
-            RUNCARD.ANALOG: self.analog_compilation_settings.to_dict()
-            if self.analog_compilation_settings is not None
-            else None
+            RUNCARD.ANALOG: (
+                self.analog_compilation_settings.to_dict() if self.analog_compilation_settings is not None else None
+            )
         }
 
         return name_dict | instrument_dict | instrument_controllers_dict | buses_dict | digital_dict | analog_dict
@@ -700,6 +701,49 @@ class Platform:
         """
         executor = ExperimentExecutor(platform=self, experiment=experiment)
         return executor.execute()
+
+    def execute_tracker(
+        self,
+        tracker: Tracker,
+        parameter_alias: str,
+        set_parameter: Callable,
+        values: list,
+        initial_guess: float,
+        tracker_path: str,
+    ) -> str:
+        """Executes a tracked experiment on the platform.
+
+        This method manages the execution of a given `Tracker` on the platform by utilizing the `Tracker`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `tracker_path`.
+
+        Args:
+            tracker (Tracker): The tracker object defining the sequence of experiments.
+            parameter_alias (str): Name of the iterated parameter.
+            values (list): Parameter to iterate the tracker.
+            set_parameter (Callable): Set parameter function.
+            initial_guess (float): Initial window parameter guess.
+            tracker_path (str): Saving data path.
+
+        Returns:
+            str: The path to the file where the results are stored.
+
+        Example:
+            .. code-block:: python
+
+                from qililab import Tracker
+
+                # Initialize your experiment
+                tracker = ql.qprogram.Tracker()
+                # Add variables, loops, and functions to the experiment block
+                tracker.build_tracker_experiment(alias, measure, find_relevant_point, update_window)
+                # ...
+
+                # Execute the tracker on the platform
+                platform.execute_tracker(tracker, parameter_alias, set_parameter, values, initial_guess, data_path=data_path)
+                print(f"Results saved to {results_path}")
+
+        Note:
+        """
+        return tracker.run_tracker(self, parameter_alias, set_parameter, values, initial_guess, tracker_path)
 
     def compile_qprogram(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None

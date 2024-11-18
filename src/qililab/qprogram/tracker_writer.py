@@ -17,10 +17,9 @@ from datetime import datetime
 from typing import TypedDict
 
 import h5py
-import numpy as np
 
 from qililab.result.experiment_results import ExperimentResults
-from qililab.result.experiment_results_writer import ExperimentMetadata, MeasurementMetadata, VariableMetadata
+from qililab.result.experiment_results_writer import VariableMetadata
 
 
 class BlockMetadata(TypedDict):
@@ -69,10 +68,13 @@ class TrackerWriter:
             path (str): The file path to save the HDF5 results file.
             metadata (ExperimentMetadata): The metadata describing the experiment structure.
         """
-        super().__init__(path)
+        self.path: str = path
         self._metadata = metadata
-        self.experiment_path = {}
-        self._results_file = {}
+        self.experiment_path: dict[str, dict] = {}
+        self.windows: dict[str, h5py.Group] = {}
+        self.guess: dict[str, h5py.Group] = {}
+        self.data: dict[str, h5py.Group] = {}
+        self.real: dict[str, h5py.Group] = {}
 
     def __enter__(self):
         """Opens the HDF5 file and creates the structure for streaming.
@@ -88,7 +90,7 @@ class TrackerWriter:
 
         return self
 
-    def __setitem__(self, alias, window, guess_path, data, real_path):
+    def set(self, alias, window, guess_path, data, real_path):
         """Sets an item in the results dataset.
 
         Args:

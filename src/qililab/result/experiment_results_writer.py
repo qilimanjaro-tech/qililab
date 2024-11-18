@@ -32,7 +32,6 @@ class VariableMetadata(TypedDict):
 
     label: str
     values: np.ndarray
-    units: str = None
 
 
 class MeasurementMetadata(TypedDict):

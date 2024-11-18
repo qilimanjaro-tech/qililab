@@ -14,13 +14,15 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Callable
+from time import perf_counter
+from typing import TYPE_CHECKING, Callable
 
-from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.tracker_writer import BlockMetadata, TrackerMetadata, TrackerWriter
-from qililab.result.experiment_results import ExperimentResults
-from qililab.result.experiment_results_writer import VariableMetadata
+from qililab.result.experiment_results_writer import ExperimentResults, VariableMetadata
 from qililab.yaml import yaml
+
+if TYPE_CHECKING:
+    from qililab.platform.platform import Platform
 
 
 @yaml.register_class
@@ -30,8 +32,7 @@ class Tracker:
     def __init__(
         self,
     ) -> None:
-        """_summary_
-
+        """
         Args:
             find_relevant_point (function): takes the data from measure as input and finds the relevant point
             predict_next_point (function): takes all the previously found points of interest and predicts the next
@@ -39,7 +40,7 @@ class Tracker:
         """
 
         self.alias_list: list[str] = []
-        self.measure_dict: dict[str, Experiment] = {}
+        self.measure_dict: dict[str, Callable] = {}
         self.find_relevant_point_dict: dict[str, Callable] = {}
         self.update_window_dict: dict[str, Callable] = {}
 
@@ -63,13 +64,27 @@ class Tracker:
         # Return the execution time
         return end_time - start_time
 
-    def build_measure_block(
+    def build_tracker_experiment(
         self,
         alias: str,
         measure: Callable,
         find_relevant_point: Callable,
         update_window: Callable,
     ):
+        """Measurement experiment builder. it defines all the functions for the development of an individual experiment
+        such as measure function containing the experiment, relevant point finder function and the function to update
+        the window. Each tracker can contain more than one block combining two different experiments in every value
+        iteration (eg. resonator spectroscopy + 2 tones spectroscopy while iterating over flux).
+
+        Args:
+            alias (str): Experiment name.
+            measure (Callable): Measure experiment function. It must have 3 inputs such as window predicted guess and
+                data path and 2 outputs such as data and dimensions.
+            find_relevant_point (Callable): Function to find the next guess after measurement. It must have 2 inputs
+                such as data and window and output the guess
+            update_window (Callable): Function to update the measurement window. It must have the previous guess as an
+                input and return the window and predicted guess
+        """
         self.alias_list.append(alias)
         self.measure_dict[alias] = measure
         self.find_relevant_point_dict[alias] = find_relevant_point
@@ -83,19 +98,25 @@ class Tracker:
 
     def run_tracker(
         self,
+        platform: "Platform",
         parameter_alias: str,
         set_parameter: Callable,
         values: list,
         initial_guess: float,
         tracker_path: str,
         # live_plot: bool = False, #TODO: add live plotting
-    ) -> None:
-        """Runs the
+    ) -> str:
+        """Execute the experiment blocks in written order.
 
         Args:
-            parameter (Parameter): parameter to be changed
-            values (list): values for the parameter
-            guess (float): first starting point for the window
+            parameter_alias (str): Name of the iterated parameter.
+            values (list): Parameter to iterate the tracker.
+            set_parameter (Callable): Set parameter function.
+            initial_guess (float): Initial window parameter guess.
+            tracker_path (str): Saving data path.
+
+        Returns:
+            str: Final data path for the tracker.
         """
         # if self.alias_list empty:
         #     raise Error
@@ -103,7 +124,7 @@ class Tracker:
         executed_at = datetime.now()
 
         experiments = BlockMetadata(
-            alias=self.alias,
+            alias=self.alias_list,
             real_path=self.real_path,
             guessed_path=self.guessed_path,
             windows=self.windows,
@@ -136,9 +157,13 @@ class Tracker:
                     self.guessed_path[operation].append(predicted_guess)
 
                     # Do the experiment
-                    data, dims = self.measure_dict[operation](
-                        window, predicted_guess, tracker_writer.experiment_path[operation][value]
-                    )
+                    experiment = self.measure_dict[operation](window, predicted_guess)
+                    with platform.session():
+                        results_path = platform.execute_experiment(
+                            experiment, tracker_writer.experiment_path[operation][value]
+                        )
+                    with ExperimentResults(results_path) as results:
+                        data, dims = results.get()
                     self.total_data[operation].append(data)
                     self.experiment_dims[operation].append(dims)
 
@@ -159,8 +184,7 @@ class Tracker:
             # Retrieve the execution time from the Future
             execution_time = execution_time_future.result()
             # Now write the execution time to the results writer
-            with tracker_writer:
-                tracker_writer.execution_time = execution_time
+            tracker_writer.execution_time = execution_time
 
         return tracker_writer.path
 
