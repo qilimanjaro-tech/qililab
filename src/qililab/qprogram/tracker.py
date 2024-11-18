@@ -162,7 +162,7 @@ class Tracker:
                     experiment = self.measure_dict[operation](window, predicted_guess)
                     with platform.session():
                         results_path = platform.execute_experiment(
-                            experiment,# tracker_writer.experiment_path[operation][value]
+                            experiment,  # tracker_writer.experiment_path[operation][value]
                         )
                     with ExperimentResults(results_path) as results:
                         data, dims = results.get()
