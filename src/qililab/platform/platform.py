@@ -707,7 +707,7 @@ class Platform:
         tracker: Tracker,
         parameter_alias: str,
         set_parameter: Callable,
-        values: list,
+        values: np.ndarray,
         initial_guess: float,
         tracker_path: str,
     ) -> str:
