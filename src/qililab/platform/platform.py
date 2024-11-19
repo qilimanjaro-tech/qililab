@@ -935,9 +935,12 @@ class Platform:
                     )
                     measurement_result.set_classification_threshold(measurement.threshold)
                     results.append_result(bus=measurement.bus, result=measurement_result)
+
+                return results
+
             except TimeoutError as timeout:
                 warnings.warn(
-                    f"Warning: {timeout} raised, retrying experiment ({iteration+1}/{timeout_tries} available tries)"
+                    f"Warning: {timeout} raised, retrying experiment ({iteration + 1}/{timeout_tries} available tries)"
                 )
                 warnings.warn(traceback.format_exc())
                 if iteration + 1 != timeout_tries:
@@ -949,7 +952,7 @@ class Platform:
                 cluster.turn_off()
                 raise e
 
-            return results
+        return results
 
     def execute_qprogram(
         self,
