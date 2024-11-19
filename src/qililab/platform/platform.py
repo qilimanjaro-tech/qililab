@@ -650,11 +650,9 @@ class Platform:
             ValueError: If the specified `measurement_block` is not available in the calibration.
 
         Notes:
-            - The method checks for essential compilation settings and calibrated blocks, ensuring the program
-            can be executed successfully.
+            - The method checks for essential compilation settings and calibrated blocks, ensuring the program can be executed successfully.
             - Transpiled waveforms are adjusted for crosstalk when a crosstalk matrix is available in the calibration.
-            - Execution includes optional `preparation_block` and synchronizes waveforms before the final
-            `measurement_block`.
+            - Execution includes optional `preparation_block` and synchronizes waveforms before the final `measurement_block`.
 
         """
         if self.analog_compilation_settings is None:
