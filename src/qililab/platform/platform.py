@@ -21,6 +21,9 @@ import ast
 import io
 import re
 import tempfile
+import time
+import traceback
+import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -544,14 +547,14 @@ class Platform:
         instrument_controllers_dict = {RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
         digital_dict = {
-            RUNCARD.DIGITAL: self.digital_compilation_settings.to_dict()
-            if self.digital_compilation_settings is not None
-            else None
+            RUNCARD.DIGITAL: (
+                self.digital_compilation_settings.to_dict() if self.digital_compilation_settings is not None else None
+            )
         }
         analog_dict = {
-            RUNCARD.ANALOG: self.analog_compilation_settings.to_dict()
-            if self.analog_compilation_settings is not None
-            else None
+            RUNCARD.ANALOG: (
+                self.analog_compilation_settings.to_dict() if self.analog_compilation_settings is not None else None
+            )
         }
 
         return name_dict | instrument_dict | instrument_controllers_dict | buses_dict | digital_dict | analog_dict
@@ -839,7 +842,10 @@ class Platform:
         raise NotImplementedError("Compiling QProgram for a mixture of instruments is not supported.")
 
     def execute_compilation_output(
-        self, output: QbloxCompilationOutput | QuantumMachinesCompilationOutput, debug: bool = False
+        self,
+        output: QbloxCompilationOutput | QuantumMachinesCompilationOutput,
+        timeout_tries: int = 3,
+        debug: bool = False,
     ):
         if isinstance(output, QbloxCompilationOutput):
             return self._execute_qblox_compilation_output(output=output, debug=debug)
@@ -849,7 +855,9 @@ class Platform:
         if len(instruments) != 1:
             raise NotImplementedError("Executing QProgram in more than one Quantum Machines Cluster is not supported.")
         cluster: QuantumMachinesCluster = cast(QuantumMachinesCluster, next(iter(instruments)))
-        return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
+        return self._execute_quantum_machines_compilation_output(
+            output=output, cluster=cluster, timeout_tries=timeout_tries, debug=debug
+        )
 
     def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
         sequences, acquisitions = output.sequences, output.acquisitions
@@ -898,29 +906,51 @@ class Platform:
         return results
 
     def _execute_quantum_machines_compilation_output(
-        self, output: QuantumMachinesCompilationOutput, cluster: QuantumMachinesCluster, debug: bool = False
+        self,
+        output: QuantumMachinesCompilationOutput,
+        cluster: QuantumMachinesCluster,
+        timeout_tries: int = 3,
+        debug: bool = False,
     ):
         qua, configuration, measurements = output.qua, output.configuration, output.measurements
-        cluster.append_configuration(configuration=configuration)
+        for iteration in np.arange(timeout_tries):  # TODO: This is a temporal fix as QM fixes the timeout error
+            try:
+                cluster.append_configuration(configuration=configuration)
 
-        if debug:
-            with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                print(generate_qua_script(qua, cluster.config), file=sourceFile)
+                if debug:
+                    with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
+                        print(generate_qua_script(qua, cluster.config), file=sourceFile)
 
-        compiled_program_id = cluster.compile(program=qua)
-        job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+                compiled_program_id = cluster.compile(program=qua)
+                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
-        acquisitions = cluster.get_acquisitions(job=job)
+                acquisitions = cluster.get_acquisitions(job=job)
 
-        results = QProgramResults()
-        # Doing manual classification of results as QM does not return thresholded values like Qblox
-        for measurement in measurements:
-            measurement_result = QuantumMachinesMeasurementResult(
-                measurement.bus,
-                *[acquisitions[handle] for handle in measurement.result_handles],
-            )
-            measurement_result.set_classification_threshold(measurement.threshold)
-            results.append_result(bus=measurement.bus, result=measurement_result)
+                results = QProgramResults()
+                # Doing manual classification of results as QM does not return thresholded values like Qblox
+                for measurement in measurements:
+                    measurement_result = QuantumMachinesMeasurementResult(
+                        measurement.bus,
+                        *[acquisitions[handle] for handle in measurement.result_handles],
+                    )
+                    measurement_result.set_classification_threshold(measurement.threshold)
+                    results.append_result(bus=measurement.bus, result=measurement_result)
+
+                return results
+
+            except TimeoutError as timeout:
+                warnings.warn(
+                    f"Warning: {timeout} raised, retrying experiment ({iteration + 1}/{timeout_tries} available tries)"
+                )
+                warnings.warn(traceback.format_exc())
+                if iteration + 1 != timeout_tries:
+                    time.sleep(1 * timeout_tries)
+                    continue
+                cluster.turn_off()
+                raise timeout
+            except Exception as e:
+                cluster.turn_off()
+                raise e
 
         return results
 
@@ -929,6 +959,7 @@ class Platform:
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
+        timeout_tries: int = 3,
         debug: bool = False,
     ) -> QProgramResults:
         """Execute a :class:`.QProgram` using the platform instruments.
@@ -961,7 +992,7 @@ class Platform:
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
-        return self.execute_compilation_output(output=output, debug=debug)
+        return self.execute_compilation_output(output=output, timeout_tries=timeout_tries, debug=debug)
 
     def execute(
         self,

@@ -237,6 +237,10 @@
 
 - Split execution of annealing programs into two steps: compilation and execution. [#825](https://github.com/qilimanjaro-tech/qililab/pull/825)
 
+- Added a try and except similar to the dataloss error to restart the measurement in case of random timeout issue for quantum machines. This is a temporary fix and will be deleted once the Quantum Machines team fix their issue.
+
+[#832](https://github.com/qilimanjaro-tech/qililab/pull/832)
+
 ### Breaking changes
 
 - Renamed the platform's `execute_anneal_program()` method to `execute_annealing_program()` and updated its parameters. The method now expects `preparation_block` and `measurement_block`, which are strings used to retrieve blocks from the `Calibration`. These blocks are inserted before and after the annealing schedule, respectively.
