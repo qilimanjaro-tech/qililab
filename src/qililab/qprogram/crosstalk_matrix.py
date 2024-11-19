@@ -17,6 +17,7 @@ import numpy as np
 from qililab.yaml import yaml
 
 
+@yaml.register_class
 class FluxVector:
     """Class to represent a flux vector. This is a dictionary of bus[flux] values"""
 
@@ -175,7 +176,7 @@ class CrosstalkMatrix:
             for j, bus2 in enumerate(buses):
                 if bus1 not in instance.matrix:
                     instance.matrix[bus1] = {}
-                instance.matrix[bus1][bus2] = matrix_array[i, j]
+                instance.matrix[bus1][bus2] = float(matrix_array[i, j])
         return instance
 
     @classmethod

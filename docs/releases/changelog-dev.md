@@ -233,9 +233,9 @@
 
 - Added a `save_plot=True` parameter to the `plotS21()` method of `ExperimentResults`. When enabled (default: True), the plot is automatically saved in the same directory as the experiment results. [#819](https://github.com/qilimanjaro-tech/qililab/pull/819)
 
-- Improved the transpiler, by making it more modular, and adding a `gate_cancellation()` stage before the transpilation to natives, this stage can be skipped, together with the old `optimize_transpilation()`, if the flag `optimize=False` is passed.
+- Improved the transpiler, by making it more modular, and adding a `gate_cancellation()` stage before the transpilation to natives, this stage can be skipped, together with the old `optimize_transpilation()`, if the flag `optimize=False` is passed. [#823](https://github.com/qilimanjaro-tech/qililab/pull/823)
 
-[#823](https://github.com/qilimanjaro-tech/qililab/pull/823)
+- Split execution of annealing programs into two steps: compilation and execution. [#825](https://github.com/qilimanjaro-tech/qililab/pull/825)
 
 ### Breaking changes
 
@@ -264,6 +264,8 @@
 ### Documentation
 
 ### Bug fixes
+
+- Fixed minor type bug in `CrosstalkMatrix`. [#825](https://github.com/qilimanjaro-tech/qililab/pull/825)
 
 - Fixed typo in ExceptionGroup import statement for python 3.11+ [#808](https://github.com/qilimanjaro-tech/qililab/pull/808)
 
