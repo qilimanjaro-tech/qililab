@@ -913,7 +913,7 @@ class Platform:
         debug: bool = False,
     ):
         qua, configuration, measurements = output.qua, output.configuration, output.measurements
-        for iteration in np.arange(timeout_tries):  # TODO: This is a temporal fix as QM fixes the dataloss error
+        for iteration in np.arange(timeout_tries):  # TODO: This is a temporal fix as QM fixes the timeout error
             try:
                 cluster.append_configuration(configuration=configuration)
 
