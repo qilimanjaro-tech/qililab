@@ -113,7 +113,8 @@ class QDevilQDac2(VoltageSource):
         return self.device.channel(channel_id)
 
     def upload_waveform(self, waveform: Waveform, channel_id: ChannelID):
-        """Uploads a waveform to the instrument and saves it to _cache
+        """Uploads a waveform to the instrument and saves it to _cache.
+        IMPORTANT: note that the waveform resolution is not to the ns, it is acutally around 1_micro_second.
 
         Args:
             waveform (Waveform): Waveform to upload
@@ -139,6 +140,8 @@ class QDevilQDac2(VoltageSource):
             clear_after (bool): If True, clears cache. Defaults to True.
         """
         if channel_id is None:
+            for dac in self.dacs:
+                awg_context = self.get_dac(dac).arbitrary_wave(dac)
             self.device.start_all()
         else:
             awg_context = self.get_dac(channel_id).arbitrary_wave(channel_id)
