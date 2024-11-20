@@ -944,6 +944,7 @@ class Platform:
                 )
                 warnings.warn(traceback.format_exc())
                 if iteration + 1 != timeout_tries:
+                    cluster._compiled_program_cache = {}
                     time.sleep(1 * timeout_tries)
                     continue
                 cluster.turn_off()
