@@ -15,5 +15,12 @@
 from .channel_settings import ChannelSettings
 from .instrument_settings import InstrumentSettings
 from .qdevil_qdac2_settings import QDevilQDAC2ChannelSettings, QDevilQDAC2Settings
+from .rohde_schwarz_sg100_settings import RohdeSchwarzSG100Settings
 
-__all__ = ["ChannelSettings", "InstrumentSettings", "QDevilQDAC2ChannelSettings", "QDevilQDAC2Settings"]
+__all__ = [
+    "ChannelSettings",
+    "InstrumentSettings",
+    "QDevilQDAC2ChannelSettings",
+    "QDevilQDAC2Settings",
+    "RohdeSchwarzSG100Settings",
+]

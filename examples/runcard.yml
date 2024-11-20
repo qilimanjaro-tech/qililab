@@ -296,3 +296,9 @@ instruments:
       ramping_enabled: true
       ramping_rate: 1.0
       low_pass_filter: dc
+- type: sg100
+  settings:
+    alias: sg100
+    power: 0.0
+    frequency: 1000000000.0
+    rf_on: false

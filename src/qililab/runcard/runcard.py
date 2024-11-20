@@ -20,7 +20,7 @@ from ruamel.yaml import YAML
 
 from qililab.instruments.instrument2 import Instrument2
 from qililab.instruments.instrument_type import InstrumentType
-from qililab.settings.instruments import QDevilQDAC2Settings
+from qililab.settings.instruments import QDevilQDAC2Settings, RohdeSchwarzSG100Settings
 
 yaml = YAML()
 yaml.width = 120
@@ -31,8 +31,15 @@ class RuncardQDevilQDAC2Instrument(BaseModel):
     settings: QDevilQDAC2Settings
 
 
+class RuncardRohdeSchwarzSG100Instrument(BaseModel):
+    type: Literal[InstrumentType.ROHDE_SCHWARZ_SG100] = InstrumentType.ROHDE_SCHWARZ_SG100
+    settings: RohdeSchwarzSG100Settings
+
+
 # Discriminated Union for instruments
-RuncardInstrument = Annotated[RuncardQDevilQDAC2Instrument, Field(discriminator="type")]
+RuncardInstrument = Annotated[
+    RuncardQDevilQDAC2Instrument | RuncardRohdeSchwarzSG100Instrument, Field(discriminator="type")
+]
 
 
 class Runcard(BaseModel):

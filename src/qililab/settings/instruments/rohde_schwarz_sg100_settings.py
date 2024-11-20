@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
+from pydantic import Field
+
+from qililab.settings.instruments.instrument_settings import InstrumentSettings
 
 
-class InstrumentType(str, Enum):
-    QDEVIL_QDAC2 = "qdac2"
-    ROHDE_SCHWARZ_SG100 = "sg100"
+class RohdeSchwarzSG100Settings(InstrumentSettings):
+    power: float = Field(..., gt=-30.0, lt=20.0, description="Power in dBm.")
+    frequency: float = Field(..., gt=1e6, lt=20e9, description="Frequency in Hz.")
+    rf_on: bool = Field(default=False)
