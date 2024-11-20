@@ -20,6 +20,7 @@ from qililab.instruments import InstrumentFactory, ParameterNotFound, check_devi
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
+from qililab.waveforms import Waveform
 
 
 @InstrumentFactory.register
@@ -39,9 +40,11 @@ class QDevilQDac2(VoltageSource):
         """Contains the settings of a specific signal generator."""
 
         low_pass_filter: list[str]
+        mode: str = "offset"
 
     settings: QDevilQDac2Settings
     device: QDevilQDac2Driver
+    _cache: dict[int | str, bool] = {}  # noqa: RUF012
 
     @property
     def low_pass_filter(self):
@@ -100,7 +103,55 @@ class QDevilQDac2(VoltageSource):
             if self.is_device_active():
                 channel.output_filter(low_pass_filter)
             return
-        raise ParameterNotFound(self, parameter)
+
+    def get_dac(self, channel_id: ChannelID):
+        """Get specific DAC from QDAC.
+
+        Args:
+            channel_id (ChannelID): channel id of the dac
+        """
+        return self.device.channel(channel_id)
+
+    def upload_waveform(self, waveform: Waveform, channel_id: ChannelID):
+        """Uploads a waveform to the instrument and saves it to _cache
+
+        Args:
+            waveform (Waveform): Waveform to upload
+            channel_id (ChannelID): channel id of the qdac
+
+        Raises:
+            ValueError: if a waveform is already allocated
+        """
+        values = list(waveform.envelope())  # TODO: does np array work?
+        if channel_id in self._cache:
+            raise ValueError(
+                f"Device {self.name} already has a waveform allocated to channel {channel_id}. Clear the cache before allocating a new waveform"
+            )
+        trace = self.device.allocate_trace(channel_id, len(values))
+        trace.waveform(values)
+        self._cache[channel_id] = True
+
+    def play(self, channel_id: ChannelID | None = None, clear_after: bool = True):
+        """Plays a waveform for a given channel id. If no channel id is given, plays all waveforms stored in the cache.
+
+        Args:
+            channel_id (ChannelID | None, optional): Channel id to play a waveform through. Defaults to None.
+            clear_after (bool): If True, clears cache. Defaults to True.
+        """
+        if channel_id is None:
+            self.device.start_all()
+        else:
+            awg_context = self.get_dac(channel_id).arbitrary_wave(channel_id)
+            awg_context.start()
+        if clear_after:
+            self.clear_cache()
+
+        # TODO: catch errors raised at self.device.errors()
+
+    def clear_cache(self):
+        """Clears the cache of the instrument"""
+        self.device.remove_traces()  # TODO: this method should be run at initial setup if instrument is in awg mode
+        self._cache = {}
 
     def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
         """Get parameter's value for an instrument's channel.
