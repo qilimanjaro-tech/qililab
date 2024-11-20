@@ -1,0 +1,298 @@
+name: saruman
+instruments:
+- type: qdac2
+  settings:
+    alias: qdac2
+    dacs:
+    - id: 0
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 1
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 2
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 3
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 4
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 5
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 6
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 7
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 8
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 9
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 10
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 11
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 12
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 13
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 14
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 15
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 16
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 17
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 18
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 19
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 20
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 21
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 22
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 23
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+- type: qdac2
+  settings:
+    alias: second_qdac2
+    dacs:
+    - id: 0
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 1
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 2
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 3
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 4
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 5
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 6
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 7
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 8
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 9
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 10
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 11
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 12
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 13
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 14
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 15
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 16
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 17
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 18
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 19
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 20
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 21
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 22
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 23
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
