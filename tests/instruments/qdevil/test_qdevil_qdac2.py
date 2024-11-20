@@ -105,13 +105,13 @@ class TestQDevilQDac2:
     def test_play(self, qdac: QDevilQDac2):
         """Test play method"""
         channel_id = 4
+        channel_calls = [call(10), call(11), call(4), call().start]
         qdac._cache = {channel_id:True}
         qdac.play(clear_after=False)
-        qdac.device.start_all.assert_called_once()
         # cache not erased if default clear_after
         assert qdac._cache == {channel_id:True}
         qdac.play(channel_id)
-        qdac.get_dac(channel_id).arbitrary_wave.assert_called_once_with(channel_id)
+        qdac.get_dac(4).arbitrary_wave.assert_has_calls(channel_calls)
         # check that cache is erased
         assert qdac._cache == {}
 

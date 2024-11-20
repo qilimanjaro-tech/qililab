@@ -103,6 +103,7 @@ class QDevilQDac2(VoltageSource):
             if self.is_device_active():
                 channel.output_filter(low_pass_filter)
             return
+        raise ParameterNotFound(self, parameter)
 
     def get_dac(self, channel_id: ChannelID):
         """Get specific DAC from QDAC.
