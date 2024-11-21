@@ -302,3 +302,14 @@ instruments:
     power: 0.0
     frequency: 1000000000.0
     rf_on: false
+instrument_controllers:
+- type: qdac2_controller
+  settings:
+    alias: qdac2_controller
+    connection:
+      type: tcp_ip
+      address: 168.0.0.1
+    modules:
+    - alias: qdac2
+      slot: 0
+    reset: true

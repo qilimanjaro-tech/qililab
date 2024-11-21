@@ -12,42 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated, Literal
+
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
 from pydantic_yaml import parse_yaml_file_as, to_yaml_file
 from ruamel.yaml import YAML
 
-from qililab.instruments.instrument2 import Instrument2
-from qililab.instruments.instrument_type import InstrumentType
-from qililab.settings.instruments import QDevilQDAC2Settings, RohdeSchwarzSG100Settings
+from qililab.runcard.runcard_instrument_controllers import RuncardInstrumentController
+from qililab.runcard.runcard_instruments import RuncardInstrument
+
+if TYPE_CHECKING:
+    from qililab.instrument_controllers.instrument_controller2 import InstrumentController2
+    from qililab.instruments.instrument2 import Instrument2
 
 yaml = YAML()
 yaml.width = 120
 
 
-class RuncardQDevilQDAC2Instrument(BaseModel):
-    type: Literal[InstrumentType.QDEVIL_QDAC2] = InstrumentType.QDEVIL_QDAC2
-    settings: QDevilQDAC2Settings
-
-
-class RuncardRohdeSchwarzSG100Instrument(BaseModel):
-    type: Literal[InstrumentType.ROHDE_SCHWARZ_SG100] = InstrumentType.ROHDE_SCHWARZ_SG100
-    settings: RohdeSchwarzSG100Settings
-
-
-# Discriminated Union for instruments
-RuncardInstrument = Annotated[
-    RuncardQDevilQDAC2Instrument | RuncardRohdeSchwarzSG100Instrument, Field(discriminator="type")
-]
-
-
 class Runcard(BaseModel):
     name: str
     instruments: list[RuncardInstrument] = Field(default=[])
+    instrument_controllers: list[RuncardInstrumentController] = Field(default=[])
 
     @model_validator(mode="after")
-    def validate_aliases(self):
+    def validate_instrument_aliases(self):
         alias_set = set()
         for instrument in self.instruments:
             alias = instrument.settings.alias
@@ -56,7 +45,30 @@ class Runcard(BaseModel):
             alias_set.add(alias)
         return self
 
-    def add_instrument(self, instrument: Instrument2):
+    @model_validator(mode="after")
+    def validate_instrument_controller_aliases(self):
+        alias_set = set()
+        for instrument_controller in self.instrument_controllers:
+            alias = instrument_controller.settings.alias
+            if alias in alias_set:
+                raise ValueError(f"Duplicate alias '{alias}' found in instrument controllers.")
+            alias_set.add(alias)
+        return self
+
+    @model_validator(mode="after")
+    def validate_instrument_controller_instrument_aliases(self):
+        runcard_instrument_aliases = {instrument.settings.alias for instrument in self.instruments}
+        for instrument_controller in self.instrument_controllers:
+            controller_instrument_aliases = {
+                instrument_module.alias for instrument_module in instrument_controller.settings.modules
+            }
+            if difference := controller_instrument_aliases - runcard_instrument_aliases:
+                raise ValueError(
+                    f"Instrument '{next(iter(difference))}' of controller '{instrument_controller.settings.alias}' not found in runcard instruments."
+                )
+        return self
+
+    def add_instrument(self, instrument: "Instrument2"):
         try:
             self.instruments.append(instrument.to_runcard())
             Runcard.model_validate(self)
@@ -68,6 +80,20 @@ class Runcard(BaseModel):
         for i, instrument in enumerate(self.instruments):
             if instrument.settings.alias == alias:
                 self.instruments.pop(i)
+                break
+
+    def add_instrument_controller(self, instrument_controller: "InstrumentController2"):
+        try:
+            self.instrument_controllers.append(instrument_controller.to_runcard())
+            Runcard.model_validate(self)
+        except ValidationError as e:
+            self.remove_instrument_controller(instrument_controller.settings.alias)
+            raise e
+
+    def remove_instrument_controller(self, alias: str):
+        for i, instrument_controller in enumerate(self.instrument_controllers):
+            if instrument_controller.settings.alias == alias:
+                self.instrument_controllers.pop(i)
                 break
 
     def save_to(self, file: str):

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Rohde & Schwarz SGS100A Instrument Controller """
+"""Rohde & Schwarz SGS100A Instrument Controller"""
+
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -20,7 +21,7 @@ from qililab.instrument_controllers.instrument_controller import InstrumentContr
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.rohde_schwarz.sgs100a import SGS100A
-from qililab.typings import RohdeSchwarzSGS100A
+from qililab.typings import RohdeSchwarzSGS100ADevice
 from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName, Parameter
 
 
@@ -35,7 +36,7 @@ class SGS100AController(SingleInstrumentController):
     """
 
     name = InstrumentControllerName.ROHDE_SCHWARZ
-    device: RohdeSchwarzSGS100A
+    device: RohdeSchwarzSGS100ADevice
     modules: Sequence[SGS100A]
 
     @dataclass
@@ -58,7 +59,9 @@ class SGS100AController(SingleInstrumentController):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = RohdeSchwarzSGS100A(f"{self.name.value}_{self.alias}", f"TCPIP0::{self.address}::inst0::INSTR")
+        self.device = RohdeSchwarzSGS100ADevice(
+            f"{self.name.value}_{self.alias}", f"TCPIP0::{self.address}::inst0::INSTR"
+        )
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""

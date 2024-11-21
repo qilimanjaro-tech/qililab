@@ -18,14 +18,16 @@ from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument2 import Instrument2
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
-from qililab.runcard.runcard import RuncardInstrument
+from qililab.runcard.runcard_instruments import QDevilQDAC2RuncardInstrument
 from qililab.settings.instruments import QDevilQDAC2ChannelSettings, QDevilQDAC2Settings
-from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
+from qililab.typings import QDevilQDAC2Device as QDevilQDac2Driver
 from qililab.typings.enums import Parameter
 
 
-@InstrumentFactory.register_instrument(InstrumentType.QDEVIL_QDAC2)
-class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2ChannelSettings, int]):
+@InstrumentFactory.register(InstrumentType.QDEVIL_QDAC2)
+class QDevilQDAC2(
+    Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2RuncardInstrument, QDevilQDAC2ChannelSettings, int]
+):
     @check_device_initialized
     def turn_on(self):
         raise NotImplementedError
@@ -96,7 +98,5 @@ class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC
     def _on_low_pas_filter_changed(self, value: str, channel: int):
         self.device.channel(channel).output_filter(value)
 
-    def to_runcard(self) -> RuncardInstrument:
-        from qililab.runcard.runcard import RuncardQDevilQDAC2Instrument
-
-        return RuncardQDevilQDAC2Instrument(settings=self.settings)
+    def to_runcard(self) -> QDevilQDAC2RuncardInstrument:
+        return QDevilQDAC2RuncardInstrument(settings=self.settings)

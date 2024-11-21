@@ -13,25 +13,24 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, Generic, TypeVar
+from typing import Callable, Generic, TypeVar
 
 from qililab.instruments.decorators import check_device_initialized
+from qililab.runcard.runcard import RuncardInstrument
 from qililab.settings.instruments.channel_settings import ChannelSettings
 from qililab.settings.instruments.instrument_settings import InstrumentSettings
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments.device import Device
 from qililab.typings.type_aliases import ParameterValue
 
-if TYPE_CHECKING:
-    from qililab.runcard.runcard import RuncardInstrument
-
 TDevice = TypeVar("TDevice", bound=Device)
 TSettings = TypeVar("TSettings", bound=InstrumentSettings)
+TRuncardInstrument = TypeVar("TRuncardInstrument", bound=RuncardInstrument)
 TChannelSettings = TypeVar("TChannelSettings", bound=ChannelSettings | None)
 TChannelID = TypeVar("TChannelID", bound=int | str | None)
 
 
-class Instrument2(ABC, Generic[TDevice, TSettings, TChannelSettings, TChannelID]):
+class Instrument2(ABC, Generic[TDevice, TSettings, TRuncardInstrument, TChannelSettings, TChannelID]):
     settings: TSettings
     device: TDevice
 
@@ -157,7 +156,7 @@ class Instrument2(ABC, Generic[TDevice, TSettings, TChannelSettings, TChannelID]
         )
 
     @abstractmethod
-    def to_runcard(self) -> "RuncardInstrument":
+    def to_runcard(self) -> TRuncardInstrument:
         pass
 
     def __repr__(self):

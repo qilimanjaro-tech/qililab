@@ -16,8 +16,10 @@
 
 from dataclasses import dataclass
 
-from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.current_source import CurrentSource
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
+from qililab.instruments.instrument import ParameterNotFound
+from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings import YokogawaGS200 as YokogawaGS200Driver

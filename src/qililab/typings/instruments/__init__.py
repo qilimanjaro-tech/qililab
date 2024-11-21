@@ -21,9 +21,9 @@ from .mini_circuits import MiniCircuitsDriver
 from .qblox_d5a import QbloxD5a
 from .qblox_s4g import QbloxS4g
 from .qcm_qrm import QcmQrm
-from .qdevil_qdac2 import QDevilQDac2
+from .qdevil_qdac2 import QDevilQDAC2Device
 from .qmm_driver import QMMDriver
-from .rohde_schwarz import RohdeSchwarzSGS100A
+from .rohde_schwarz import RohdeSchwarzSGS100ADevice
 from .yokogawa_gs200 import YokogawaGS200
 
 __all__ = [
@@ -31,11 +31,11 @@ __all__ = [
     "Device",
     "Keithley2600Driver",
     "MiniCircuitsDriver",
-    "QDevilQDac2",
+    "QDevilQDAC2Device",
     "QMMDriver",
     "QbloxD5a",
     "QbloxS4g",
     "QcmQrm",
-    "RohdeSchwarzSGS100A",
+    "RohdeSchwarzSGS100ADevice",
     "YokogawaGS200",
 ]

@@ -38,9 +38,9 @@ from .instruments import (
     QbloxD5a,
     QbloxS4g,
     QcmQrm,
-    QDevilQDac2,
+    QDevilQDAC2Device,
     QMMDriver,
-    RohdeSchwarzSGS100A,
+    RohdeSchwarzSGS100ADevice,
     YokogawaGS200,
 )
 from .type_aliases import ChannelID, ParameterValue
@@ -64,13 +64,13 @@ __all__ = [
     "ParameterValue",
     "PulseDistortionName",
     "PulseShapeName",
-    "QDevilQDac2",
+    "QDevilQDAC2Device",
     "QMMDriver",
     "QbloxD5a",
     "QbloxS4g",
     "QcmQrm",
     "ReferenceClock",
     "ResultName",
-    "RohdeSchwarzSGS100A",
+    "RohdeSchwarzSGS100ADevice",
     "YokogawaGS200",
 ]

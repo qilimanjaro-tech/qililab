@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Driver for QDevil QDAC-II"""
-
-from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import QDac2 as Driver_QDac2
-
-from qililab.typings.instruments.device import Device
+from enum import Enum
 
 
-class QDevilQDAC2Device(Driver_QDac2, Device):
-    """Typing class of the QDevil QDAC-II."""
+class InstrumentControllerType(str, Enum):
+    QDEVIL_QDAC2_CONTROLLER = "qdac2_controller"
+    ROHDE_SCHWARZ_SG100_CONTROLLER = "sg100_controller"

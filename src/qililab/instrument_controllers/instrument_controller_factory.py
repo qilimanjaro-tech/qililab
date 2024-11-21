@@ -14,29 +14,29 @@
 
 from typing import TYPE_CHECKING, ClassVar, Dict, Type
 
-from qililab.instruments.instrument_type import InstrumentType
+from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
 
 if TYPE_CHECKING:
-    from qililab.instruments.instrument2 import Instrument2
-    from qililab.runcard.runcard import RuncardInstrument
+    from qililab.instrument_controllers.instrument_controller2 import InstrumentController2
+    from qililab.runcard.runcard import RuncardInstrumentController
 
 
 # InstrumentFactory singleton class with class methods
-class InstrumentFactory:
-    _registry: ClassVar[Dict[InstrumentType, Type["Instrument2"]]] = {}
+class InstrumentControllerFactory:
+    _registry: ClassVar[Dict[InstrumentControllerType, Type["InstrumentController2"]]] = {}
 
     @classmethod
-    def register(cls, instrument_type: InstrumentType):
+    def register(cls, type: InstrumentControllerType):
         def decorator(instrument_cls):
-            cls._registry[instrument_type] = instrument_cls
+            cls._registry[type] = instrument_cls
             return instrument_cls
 
         return decorator
 
     @classmethod
-    def create(cls, runcard_instrument: "RuncardInstrument") -> "Instrument2":
-        instrument_type = runcard_instrument.type
+    def create(cls, runcard_instrument_controller: "RuncardInstrumentController") -> "InstrumentController2":
+        instrument_type = runcard_instrument_controller.type
         instrument_class = cls._registry.get(instrument_type)
         if instrument_class is None:
             raise ValueError(f"Unknown instrument type: {instrument_type}")
-        return instrument_class(settings=runcard_instrument.settings)
+        return instrument_class(settings=runcard_instrument_controller.settings)

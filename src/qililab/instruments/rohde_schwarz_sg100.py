@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Callable, Dict
+from typing import Any, Callable, Dict
 
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument2 import Instrument2
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
+from qililab.runcard.runcard_instruments import RohdeSchwarzSG100RuncardInstrument
 from qililab.settings.instruments.rohde_schwarz_sg100_settings import RohdeSchwarzSG100Settings
 from qililab.typings.enums import Parameter
-from qililab.typings.instruments.rohde_schwarz import RohdeSchwarzSGS100A
-
-if TYPE_CHECKING:
-    from qililab.runcard import RuncardInstrument
+from qililab.typings.instruments.rohde_schwarz import RohdeSchwarzSGS100ADevice
 
 
-@InstrumentFactory.register_instrument(InstrumentType.ROHDE_SCHWARZ_SG100)
-class RohdeSchwarzSG100(Instrument2[RohdeSchwarzSGS100A, RohdeSchwarzSG100Settings, None, None]):
+@InstrumentFactory.register(InstrumentType.ROHDE_SCHWARZ_SG100)
+class RohdeSchwarzSG100(
+    Instrument2[RohdeSchwarzSGS100ADevice, RohdeSchwarzSG100Settings, RohdeSchwarzSG100RuncardInstrument, None, None]
+):
     @classmethod
     def get_default_settings(cls) -> RohdeSchwarzSG100Settings:
         return RohdeSchwarzSG100Settings(alias="sg100", power=0.0, frequency=1e9, rf_on=False)
@@ -66,10 +66,8 @@ class RohdeSchwarzSG100(Instrument2[RohdeSchwarzSGS100A, RohdeSchwarzSG100Settin
         else:
             self.device.off()
 
-    def to_runcard(self) -> "RuncardInstrument":
-        from qililab.runcard.runcard import RuncardRohdeSchwarzSG100Instrument
-
-        return RuncardRohdeSchwarzSG100Instrument(settings=self.settings)
+    def to_runcard(self) -> RohdeSchwarzSG100RuncardInstrument:
+        return RohdeSchwarzSG100RuncardInstrument(settings=self.settings)
 
     @check_device_initialized
     def turn_on(self):

@@ -16,10 +16,12 @@
 
 from dataclasses import dataclass
 
-from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
+from qililab.instruments.instrument import ParameterNotFound
+from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
-from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
+from qililab.typings import QDevilQDAC2Device as QDevilQDac2Driver
 
 
 @InstrumentFactory.register

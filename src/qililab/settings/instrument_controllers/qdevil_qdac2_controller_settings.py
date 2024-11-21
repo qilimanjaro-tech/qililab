@@ -12,12 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Driver for QDevil QDAC-II"""
-
-from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import QDac2 as Driver_QDac2
-
-from qililab.typings.instruments.device import Device
+from qililab.settings.instrument_controllers.instrument_controller_settings import InstrumentControllerSettings
 
 
-class QDevilQDAC2Device(Driver_QDac2, Device):
-    """Typing class of the QDevil QDAC-II."""
+class QDevilQDAC2ControllerSettings(InstrumentControllerSettings): ...

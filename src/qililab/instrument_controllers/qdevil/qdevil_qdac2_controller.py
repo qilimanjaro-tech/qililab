@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """QDevil QDAC-II Controller"""
+
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -20,7 +21,7 @@ from qililab.instrument_controllers.instrument_controller import InstrumentContr
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
-from qililab.typings import QDevilQDac2 as QDevilQDac2Device
+from qililab.typings import QDevilQDAC2Device
 from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName
 
 
@@ -40,15 +41,15 @@ class QDevilQDac2Controller(SingleInstrumentController):
         """Contains the settings of a specific GS200 Controller."""
 
     settings: QDevilQDac2ControllerSettings
-    device: QDevilQDac2Device
+    device: QDevilQDAC2Device
     modules: Sequence[QDevilQDac2]
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         if self.settings.connection.name == ConnectionName.TCP_IP:
-            self.device = QDevilQDac2Device(f"{self.name.value}", f"TCPIP::{self.address}::5025::SOCKET")
+            self.device = QDevilQDAC2Device(f"{self.name.value}", f"TCPIP::{self.address}::5025::SOCKET")
         else:
-            self.device = QDevilQDac2Device(f"{self.name.value}", f"ASRL/dev/{self.address}::INSTR")
+            self.device = QDevilQDAC2Device(f"{self.name.value}", f"ASRL/dev/{self.address}::INSTR")
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""

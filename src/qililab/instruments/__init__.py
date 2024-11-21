@@ -18,6 +18,7 @@ from .decorators import check_device_initialized, log_set_parameter
 from .instrument import Instrument, ParameterNotFound
 from .instruments import Instruments
 from .mini_circuits import Attenuator
+from .qdevil_qdac2 import QDevilQDAC2
 from .quantum_machines import QuantumMachinesCluster
 from .rohde_schwarz import SGS100A
 from .signal_generator import SignalGenerator
@@ -30,6 +31,7 @@ __all__ = [
     "InstrumentFactory",
     "Instruments",
     "ParameterNotFound",
+    "QDevilQDAC2",
     "QuantumMachinesCluster",
     "SignalGenerator",
     "check_device_initialized",

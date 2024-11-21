@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .runcard import Runcard, RuncardInstrument
+from .runcard import Runcard, RuncardInstrument, RuncardInstrumentController
 
-__all__ = ["Runcard", "RuncardInstrument"]
+__all__ = ["Runcard", "RuncardInstrument", "RuncardInstrumentController"]

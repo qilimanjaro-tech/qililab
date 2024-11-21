@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, RohdeSchwarzSGS100A
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, RohdeSchwarzSGS100ADevice
 
 
 @InstrumentFactory.register
@@ -50,7 +50,7 @@ class SGS100A(Instrument):
         rf_on: bool
 
     settings: SGS100ASettings
-    device: RohdeSchwarzSGS100A
+    device: RohdeSchwarzSGS100ADevice
 
     @property
     def power(self):

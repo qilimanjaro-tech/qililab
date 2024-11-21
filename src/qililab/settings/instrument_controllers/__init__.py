@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Driver for QDevil QDAC-II"""
+from .instrument_controller_settings import ConnectionSettings, ConnectionType, InstrumentControllerSettings
+from .qdevil_qdac2_controller_settings import QDevilQDAC2ControllerSettings
+from .rohde_schwarz_sg100_controller_settings import RohdeSchwarzSG100ControllerSettings
 
-from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import QDac2 as Driver_QDac2
-
-from qililab.typings.instruments.device import Device
-
-
-class QDevilQDAC2Device(Driver_QDac2, Device):
-    """Typing class of the QDevil QDAC-II."""
+__all__ = [
+    "ConnectionSettings",
+    "ConnectionType",
+    "InstrumentControllerSettings",
+    "QDevilQDAC2ControllerSettings",
+    "RohdeSchwarzSG100ControllerSettings",
+]
