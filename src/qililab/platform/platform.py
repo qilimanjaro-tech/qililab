@@ -894,7 +894,7 @@ class Platform:
         for bus_alias, bus in buses.items():
             if bus.has_adc():
                 for channel in buses[bus.alias].channels:
-                    bus_results = bus.acquire_qprogram_results(acquisitions=acquisitions[bus_alias],channel_id = channel)
+                    bus_results = bus.acquire_qprogram_results(acquisitions=acquisitions[bus_alias], channel_id=channel)
                     for bus_result in bus_results:
                         results.append_result(bus=bus_alias, result=bus_result)
 
