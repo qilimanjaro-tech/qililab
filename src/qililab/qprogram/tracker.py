@@ -104,7 +104,7 @@ class Tracker:
         parameter_alias: str,
         set_parameter: Callable,
         values: np.ndarray,
-        initial_guess: float,
+        initial_guess: dict[str, float],
         tracker_path: str,
         # live_plot: bool = False, #TODO: add live plotting
     ) -> str:
@@ -154,15 +154,16 @@ class Tracker:
 
                 for operation in self.alias_list:
                     # Update the window
-                    window, predicted_guess = self.update_window_dict[operation](guess)
+                    window, predicted_guess = self.update_window_dict[operation](guess[operation])
                     self.windows[operation].append(window)
                     self.guessed_path[operation].append(predicted_guess)
 
                     # Do the experiment
-                    experiment = self.measure_dict[operation](window, predicted_guess)
+                    experiment = self.measure_dict[operation](window)
+                    platform.experiment_results_base_path = tracker_writer.experiment_path[operation][value]
                     with platform.session():
                         results_path = platform.execute_experiment(
-                            experiment,  # tracker_writer.experiment_path[operation][value]
+                            experiment,
                         )
                     with ExperimentResults(results_path) as results:
                         data, dims = results.get()
@@ -170,8 +171,8 @@ class Tracker:
                     self.experiment_dims[operation].append(dims)
 
                     # Measure the point of interest
-                    guess = self.find_relevant_point_dict[operation](data, window)
-                    self.real_path[operation].append(guess)
+                    guess[operation] = self.find_relevant_point_dict[operation](data, window)
+                    self.real_path[operation].append(guess[operation])
 
                     tracker_writer.set(
                         alias=operation,
@@ -189,6 +190,3 @@ class Tracker:
             tracker_writer.execution_time = execution_time
 
         return tracker_writer.path
-
-
-# ADD MODIFIABLE VARIABLES INSIDE EXPERIMENTS TO SAVE THEM LATER IN THE SAME PLACE, VARIABLES THAT CHANGE INSIDE THE LOOP
