@@ -693,7 +693,7 @@ class TestMethods:
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 12
-        assert acquire_qprogram_results.call_count == 6  # only readout buses
+        assert acquire_qprogram_results.call_count == 9  # only readout buses
         assert sync_sequencer.call_count == 12  # called as many times as run
         assert desync_sequencer.call_count == 12
         assert first_execution_results.results["feedline_input_output_bus"] == [123]

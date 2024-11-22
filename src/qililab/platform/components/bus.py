@@ -243,6 +243,7 @@ class Bus:
 
         Returns:
             list[Result]: Acquired results in chronological order
+            channel_id (int | None, optional): instrument channel of QRM. Defaults to None.
         """
         # TODO: Support acquisition from multiple instruments
         total_results: list[list[MeasurementResult]] = []
