@@ -76,87 +76,6 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
-- type: qcm-rf
-  settings:
-    alias: qcm-rf
-    timeout: 1
-    sequencers:
-    - id: 0
-      outputs:
-      - 0
-      hardware_modulation: true
-      intermediate_frequency: 500000000.0
-      gain_imbalance: 0.0
-      phase_imbalance: 0.0
-      gain_i: 1.0
-      gain_q: 1.0
-      offset_i: 0.0
-      offset_q: 0.0
-    - id: 1
-      outputs:
-      - 0
-      hardware_modulation: true
-      intermediate_frequency: 500000000.0
-      gain_imbalance: 0.0
-      phase_imbalance: 0.0
-      gain_i: 1.0
-      gain_q: 1.0
-      offset_i: 0.0
-      offset_q: 0.0
-    - id: 2
-      outputs:
-      - 0
-      hardware_modulation: true
-      intermediate_frequency: 500000000.0
-      gain_imbalance: 0.0
-      phase_imbalance: 0.0
-      gain_i: 1.0
-      gain_q: 1.0
-      offset_i: 0.0
-      offset_q: 0.0
-    - id: 3
-      outputs:
-      - 0
-      hardware_modulation: true
-      intermediate_frequency: 500000000.0
-      gain_imbalance: 0.0
-      phase_imbalance: 0.0
-      gain_i: 1.0
-      gain_q: 1.0
-      offset_i: 0.0
-      offset_q: 0.0
-    - id: 4
-      outputs:
-      - 0
-      hardware_modulation: true
-      intermediate_frequency: 500000000.0
-      gain_imbalance: 0.0
-      phase_imbalance: 0.0
-      gain_i: 1.0
-      gain_q: 1.0
-      offset_i: 0.0
-      offset_q: 0.0
-    - id: 5
-      outputs:
-      - 0
-      hardware_modulation: true
-      intermediate_frequency: 500000000.0
-      gain_imbalance: 0.0
-      phase_imbalance: 0.0
-      gain_i: 1.0
-      gain_q: 1.0
-      offset_i: 0.0
-      offset_q: 0.0
-    out0_lo_frequency: 2000000000.0
-    out0_lo_enabled: true
-    out0_attenuation: 0
-    out0_offset_path0: 0.0
-    out0_offset_path1: 0.0
-    out1_lo_frequency: 2000000000.0
-    out1_lo_enabled: true
-    out1_attenuation: 0
-    out1_offset_path0: 0.0
-    out1_offset_path1: 0.0
 - type: qrm
   settings:
     alias: qrm
@@ -264,6 +183,87 @@ instruments:
       threshold_rotation: 0.0
       time_of_flight: 0
     scope_hardware_averaging: true
+- type: qcm-rf
+  settings:
+    alias: qcm-rf
+    timeout: 1
+    sequencers:
+    - id: 0
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 2
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 3
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 4
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 5
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_frequency: 2000000000.0
+    out0_lo_enabled: true
+    out0_attenuation: 0
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_frequency: 2000000000.0
+    out1_lo_enabled: true
+    out1_attenuation: 0
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
 - type: qrm-rf
   settings:
     alias: qrm-rf
@@ -685,3 +685,20 @@ instrument_controllers:
     - alias: qdac2
       slot: 0
     reset: true
+- type: qblox_cluster_controller
+  settings:
+    alias: qblox_cluster
+    connection:
+      type: tcp_ip
+      address: 168.0.0.1
+    modules:
+    - alias: qcm
+      slot: 0
+    - alias: qrm
+      slot: 5
+    - alias: qcm-rf
+      slot: 10
+    - alias: qrm-rf
+      slot: 15
+    reset: true
+    reference_clock: internal

@@ -23,11 +23,10 @@ from qililab.typings.instruments.device import Device
 
 TDevice = TypeVar("TDevice", bound=Device)
 TSettings = TypeVar("TSettings", bound=InstrumentControllerSettings)
-TRuncardInstrumentController = TypeVar("TRuncardInstrumentController", bound=RuncardInstrumentController)
 TInstrument = TypeVar("TInstrument", bound=Instrument2)
 
 
-class InstrumentController2(ABC, Generic[TDevice, TSettings, TRuncardInstrumentController, TInstrument]):
+class InstrumentController2(ABC, Generic[TDevice, TSettings, TInstrument]):
     settings: TSettings
     device: TDevice
     modules: list[TInstrument]
@@ -114,7 +113,7 @@ class InstrumentController2(ABC, Generic[TDevice, TSettings, TRuncardInstrumentC
             module.initial_setup()
 
     @abstractmethod
-    def to_runcard(self) -> TRuncardInstrumentController:
+    def to_runcard(self) -> RuncardInstrumentController:
         pass
 
     def __repr__(self):

@@ -16,20 +16,19 @@ from qililab.instrument_controllers.instrument_controller2 import InstrumentCont
 from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
 from qililab.instruments import QDevilQDAC2
-from qililab.runcard.runcard_instrument_controllers import QDevilQDAC2RuncardInstrumentController
-from qililab.settings.instrument_controllers import ConnectionSettings, ConnectionType, QDevilQDAC2ControllerSettings
+from qililab.runcard.runcard_instrument_controllers import (
+    QDevilQDAC2RuncardInstrumentController,
+    RuncardInstrumentController,
+)
+from qililab.settings.instrument_controllers import ConnectionType, QDevilQDAC2ControllerSettings
 from qililab.typings.instruments import QDevilQDAC2Device
 
 
 @InstrumentControllerFactory.register(InstrumentControllerType.QDEVIL_QDAC2_CONTROLLER)
-class QDevilQDAC2Controller(
-    InstrumentController2[
-        QDevilQDAC2Device, QDevilQDAC2ControllerSettings, QDevilQDAC2RuncardInstrumentController, QDevilQDAC2
-    ]
-):
+class QDevilQDAC2Controller(InstrumentController2[QDevilQDAC2Device, QDevilQDAC2ControllerSettings, QDevilQDAC2]):
     @classmethod
     def get_default_settings(cls) -> QDevilQDAC2ControllerSettings:
-        return QDevilQDAC2ControllerSettings(alias="qdac2_controller", connection=ConnectionSettings())
+        return QDevilQDAC2ControllerSettings(alias="qdac2_controller")
 
     def _initialize_device(self):
         if self.settings.connection.type == ConnectionType.TCP_IP:
@@ -40,5 +39,5 @@ class QDevilQDAC2Controller(
     def _set_device_to_all_modules(self):
         self.modules[0].device = self.device
 
-    def to_runcard(self) -> QDevilQDAC2RuncardInstrumentController:
+    def to_runcard(self) -> RuncardInstrumentController:
         return QDevilQDAC2RuncardInstrumentController(settings=self.settings)

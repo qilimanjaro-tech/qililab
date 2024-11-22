@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
+from pydantic import Field
+
+from qililab.settings.instrument_controllers.instrument_controller_settings import (
+    InstrumentControllerSettings,
+    ReferenceClock,
+)
 
 
-class InstrumentControllerType(str, Enum):
-    QBLOX_CLUSTER_CONTROLLER = "qblox_cluster_controller"
-    QDEVIL_QDAC2_CONTROLLER = "qdac2_controller"
-    ROHDE_SCHWARZ_SG100_CONTROLLER = "sg100_controller"
+class QbloxClusterControllerSettings(InstrumentControllerSettings):
+    reference_clock: ReferenceClock = Field(default=ReferenceClock.INTERNAL)

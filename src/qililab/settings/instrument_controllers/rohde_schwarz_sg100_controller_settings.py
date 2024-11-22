@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pydantic import Field
 
-from qililab.settings.instrument_controllers.instrument_controller_settings import InstrumentControllerSettings
+from qililab.settings.instrument_controllers.instrument_controller_settings import (
+    InstrumentControllerSettings,
+    ReferenceClock,
+)
 
 
 class RohdeSchwarzSG100ControllerSettings(InstrumentControllerSettings):
-    reference_clock: str
+    reference_clock: ReferenceClock = Field(default=ReferenceClock.INTERNAL)

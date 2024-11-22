@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from .instrument_controller_settings import ConnectionSettings, ConnectionType, InstrumentControllerSettings
+from .qblox_cluster_controller_settings import QbloxClusterControllerSettings
 from .qdevil_qdac2_controller_settings import QDevilQDAC2ControllerSettings
 from .rohde_schwarz_sg100_controller_settings import RohdeSchwarzSG100ControllerSettings
 
@@ -21,5 +22,6 @@ __all__ = [
     "ConnectionType",
     "InstrumentControllerSettings",
     "QDevilQDAC2ControllerSettings",
+    "QbloxClusterControllerSettings",
     "RohdeSchwarzSG100ControllerSettings",
 ]

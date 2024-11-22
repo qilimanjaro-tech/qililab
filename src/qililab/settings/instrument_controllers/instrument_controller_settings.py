@@ -19,6 +19,11 @@ from pydantic import Field
 from qililab.settings.settings2 import Settings2
 
 
+class ReferenceClock(str, Enum):
+    INTERNAL = "internal"
+    EXTERNAL = "external"
+
+
 class ConnectionType(str, Enum):
     TCP_IP = "tcp_ip"
     USB = "usb"

@@ -16,8 +16,11 @@ from qililab.instrument_controllers.instrument_controller2 import InstrumentCont
 from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
 from qililab.instruments.rohde_schwarz_sg100 import RohdeSchwarzSG100
-from qililab.runcard.runcard_instrument_controllers import RohdeSchwarzSG100RuncardInstrumentController
-from qililab.settings.instrument_controllers import ConnectionSettings, RohdeSchwarzSG100ControllerSettings
+from qililab.runcard.runcard_instrument_controllers import (
+    RohdeSchwarzSG100RuncardInstrumentController,
+    RuncardInstrumentController,
+)
+from qililab.settings.instrument_controllers import RohdeSchwarzSG100ControllerSettings
 from qililab.typings.instruments import RohdeSchwarzSGS100ADevice
 
 
@@ -26,15 +29,12 @@ class RohdeSchwarzSGS100AController(
     InstrumentController2[
         RohdeSchwarzSGS100ADevice,
         RohdeSchwarzSG100ControllerSettings,
-        RohdeSchwarzSG100RuncardInstrumentController,
         RohdeSchwarzSG100,
     ]
 ):
     @classmethod
     def get_default_settings(cls) -> RohdeSchwarzSG100ControllerSettings:
-        return RohdeSchwarzSG100ControllerSettings(
-            alias="qdac2_controller", connection=ConnectionSettings(), reference_clock="internal"
-        )
+        return RohdeSchwarzSG100ControllerSettings(alias="sg100_controller")
 
     def _initialize_device(self):
         self.device = RohdeSchwarzSGS100ADevice(
@@ -44,5 +44,5 @@ class RohdeSchwarzSGS100AController(
     def _set_device_to_all_modules(self):
         self.modules[0].device = self.device
 
-    def to_runcard(self) -> RohdeSchwarzSG100RuncardInstrumentController:
+    def to_runcard(self) -> RuncardInstrumentController:
         return RohdeSchwarzSG100RuncardInstrumentController(settings=self.settings)
