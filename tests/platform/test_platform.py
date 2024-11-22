@@ -14,6 +14,8 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
+from tests.data import Galadriel, SauronQuantumMachines
+from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -29,13 +31,11 @@ from qililab.qprogram import Calibration, Domain, Experiment, QProgram
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
-from qililab.settings import Runcard, DigitalCompilationSettings, AnalogCompilationSettings
-from qililab.settings.digital.gate_event_settings import GateEventSettings
+from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
+from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
-from tests.data import Galadriel, SauronQuantumMachines
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
@@ -693,7 +693,7 @@ class TestMethods:
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 12
-        assert acquire_qprogram_results.call_count == 9  # only readout buses
+        assert acquire_qprogram_results.call_count == 6  # only readout buses
         assert sync_sequencer.call_count == 12  # called as many times as run
         assert desync_sequencer.call_count == 12
         assert first_execution_results.results["feedline_input_output_bus"] == [123]
@@ -879,7 +879,11 @@ class TestMethods:
             order_measurement_qubit = [(result["measurement"], result["qubit"]) for result in result.qblox_raw_results]  # type: ignore
 
             # Change the qubit mappings, given the final_layout:
-            assert order_measurement_qubit == [(0, 1), (0, 0), (1, 0), (1, 1)] if idx == 0 else [(0, 0), (0, 1), (1, 1), (1, 0)]
+            assert (
+                order_measurement_qubit == [(0, 1), (0, 0), (1, 0), (1, 1)]
+                if idx == 0
+                else [(0, 0), (0, 1), (1, 1), (1, 0)]
+            )
 
     def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):
         """Test that executing with some circuit returns acquisitions with multiple measurements in same order
@@ -1062,4 +1066,8 @@ class TestMethods:
         """Get the bus from a flux using get_element"""
         for flux in ["phiz_q0", "phix_c0_1"]:
             bus = platform.get_element(flux)
-            assert bus.alias == next(flux_bus.bus for flux_bus in platform.analog_compilation_settings.flux_control_topology if flux_bus.flux == flux)
+            assert bus.alias == next(
+                flux_bus.bus
+                for flux_bus in platform.analog_compilation_settings.flux_control_topology
+                if flux_bus.flux == flux
+            )

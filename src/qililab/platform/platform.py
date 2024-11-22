@@ -893,8 +893,11 @@ class Platform:
         results = QProgramResults()
         for bus_alias, bus in buses.items():
             if bus.has_adc():
-                for channel in buses[bus.alias].channels:
-                    bus_results = bus.acquire_qprogram_results(acquisitions=acquisitions[bus_alias], channel_id=channel)
+                for instrument, channel in zip(buses[bus_alias].instruments, buses[bus.alias].channels):
+                    if isinstance(instrument, QbloxModule):
+                        bus_results = bus.acquire_qprogram_results(
+                            acquisitions=acquisitions[bus_alias], channel_id=int(channel)
+                        )
                     for bus_result in bus_results:
                         results.append_result(bus=bus_alias, result=bus_result)
 
