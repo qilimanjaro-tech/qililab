@@ -16,6 +16,8 @@
 
 from dataclasses import dataclass
 
+import numpy as np
+
 from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
@@ -124,11 +126,17 @@ class QDevilQDac2(VoltageSource):
         Raises:
             ValueError: if a waveform is already allocated
         """
-        values = list(waveform.envelope())  # TODO: does np array work?
+        envelope = waveform.envelope()
+        values = list(envelope)  # TODO: does np array work?
         if channel_id in self._cache:
             raise ValueError(
                 f"Device {self.name} already has a waveform allocated to channel {channel_id}. Clear the cache before allocating a new waveform"
             )
+        # check that waveform entries are multiple of 2, check that amplitudes are within [-1,1] range
+        if len(envelope) % 2 != 0:
+            raise ValueError("Waveform entries must be even.")
+        if np.max(np.abs(envelope)) >= 1:
+            raise ValueError("Waveform amplitudes must be within [-1,1] range.")
         trace = self.device.allocate_trace(channel_id, len(values))
         trace.waveform(values)
         self._cache[channel_id] = True

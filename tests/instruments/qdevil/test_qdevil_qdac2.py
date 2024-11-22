@@ -99,7 +99,28 @@ class TestQDevilQDac2:
         channel_id = 2
         qdac._cache = {channel_id:True}
         error_string = re.escape(f"Device {qdac.name} already has a waveform allocated to channel {channel_id}. Clear the cache before allocating a new waveform")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=error_string):
+            qdac.upload_waveform(waveform,channel_id)
+
+    def test_upload_waveform_fails_odd_value(self, qdac: QDevilQDac2, waveform: Square):
+        """Test that upload waveform raises an error when uploading a waveform with odd number of entries"""
+        channel_id = 2
+        waveform = Square(0.1,3)
+        error_string = "Waveform entries must be even."
+        with pytest.raises(ValueError, match=error_string):
+            qdac.upload_waveform(waveform,channel_id)
+
+    def test_upload_waveform_fails_amp_range(self, qdac: QDevilQDac2, waveform: Square):
+        """Test that upload waveform raises an error when uploading a waveform with outside the allowed amplitude range"""
+        channel_id = 2
+        waveform = Square(1,4)
+        error_string = re.escape("Waveform amplitudes must be within [-1,1] range.")
+        with pytest.raises(ValueError, match=error_string):
+            qdac.upload_waveform(waveform,channel_id)
+        qdac.clear_cache()
+        channel_id = 2
+        waveform = Square(-1.1,4)
+        with pytest.raises(ValueError, match=error_string):
             qdac.upload_waveform(waveform,channel_id)
 
     def test_play(self, qdac: QDevilQDac2):
