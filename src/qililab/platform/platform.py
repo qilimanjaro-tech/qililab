@@ -898,8 +898,8 @@ class Platform:
                         bus_results = bus.acquire_qprogram_results(
                             acquisitions=acquisitions[bus_alias], channel_id=int(channel)
                         )
-                    for bus_result in bus_results:
-                        results.append_result(bus=bus_alias, result=bus_result)
+                        for bus_result in bus_results:
+                            results.append_result(bus=bus_alias, result=bus_result)
 
         # Reset instrument settings
         for bus_alias in sequences:
