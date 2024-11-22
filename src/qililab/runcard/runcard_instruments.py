@@ -17,7 +17,14 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 from qililab.instruments.instrument_type import InstrumentType
-from qililab.settings.instruments import QDevilQDAC2Settings, RohdeSchwarzSG100Settings
+from qililab.settings.instruments import (
+    QbloxQCMRFSettings,
+    QbloxQCMSettings,
+    QbloxQRMRFSettings,
+    QbloxQRMSettings,
+    QDevilQDAC2Settings,
+    RohdeSchwarzSG100Settings,
+)
 
 
 class QDevilQDAC2RuncardInstrument(BaseModel):
@@ -30,7 +37,33 @@ class RohdeSchwarzSG100RuncardInstrument(BaseModel):
     settings: RohdeSchwarzSG100Settings
 
 
+class QbloxQCMRuncardInstrument(BaseModel):
+    type: Literal[InstrumentType.QBLOX_QCM] = InstrumentType.QBLOX_QCM
+    settings: QbloxQCMSettings
+
+
+class QbloxQCMRFRuncardInstrument(BaseModel):
+    type: Literal[InstrumentType.QBLOX_QCM_RF] = InstrumentType.QBLOX_QCM_RF
+    settings: QbloxQCMRFSettings
+
+
+class QbloxQRMRuncardInstrument(BaseModel):
+    type: Literal[InstrumentType.QBLOX_QRM] = InstrumentType.QBLOX_QRM
+    settings: QbloxQRMSettings
+
+
+class QbloxQRMRFRuncardInstrument(BaseModel):
+    type: Literal[InstrumentType.QBLOX_QRM_RF] = InstrumentType.QBLOX_QRM_RF
+    settings: QbloxQRMRFSettings
+
+
 # Discriminated Union for instruments
 RuncardInstrument = Annotated[
-    QDevilQDAC2RuncardInstrument | RohdeSchwarzSG100RuncardInstrument, Field(discriminator="type")
+    QDevilQDAC2RuncardInstrument
+    | RohdeSchwarzSG100RuncardInstrument
+    | QbloxQCMRuncardInstrument
+    | QbloxQCMRFRuncardInstrument
+    | QbloxQRMRuncardInstrument
+    | QbloxQRMRFRuncardInstrument,
+    Field(discriminator="type"),
 ]

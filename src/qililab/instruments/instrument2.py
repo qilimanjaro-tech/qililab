@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 from abc import ABC, abstractmethod
 from typing import Callable, Generic, TypeVar
 
@@ -25,14 +26,15 @@ from qililab.typings.type_aliases import ParameterValue
 
 TDevice = TypeVar("TDevice", bound=Device)
 TSettings = TypeVar("TSettings", bound=InstrumentSettings)
-TRuncardInstrument = TypeVar("TRuncardInstrument", bound=RuncardInstrument)
 TChannelSettings = TypeVar("TChannelSettings", bound=ChannelSettings | None)
 TChannelID = TypeVar("TChannelID", bound=int | str | None)
 
 
-class Instrument2(ABC, Generic[TDevice, TSettings, TRuncardInstrument, TChannelSettings, TChannelID]):
+class Instrument2(ABC, Generic[TDevice, TSettings, TChannelSettings, TChannelID]):
     settings: TSettings
     device: TDevice
+
+    _FIELD_AS_LIST_REGEX = re.compile(r"^([a-zA-Z_][a-zA-Z0-9_]*)\[(\d+)]$")
 
     def __init__(self, settings: TSettings | None = None):
         if settings is None:
@@ -83,12 +85,12 @@ class Instrument2(ABC, Generic[TDevice, TSettings, TRuncardInstrument, TChannelS
 
     @classmethod
     @abstractmethod
-    def instrument_parameter_to_settings_mapping(cls) -> dict[Parameter, str]:
+    def parameter_to_instrument_settings(cls) -> dict[Parameter, str]:
         pass
 
     @classmethod
     @abstractmethod
-    def channel_parameter_to_settings_mapping(cls) -> dict[Parameter, str]:
+    def parameter_to_channel_settings(cls) -> dict[Parameter, str]:
         pass
 
     @abstractmethod
@@ -96,67 +98,106 @@ class Instrument2(ABC, Generic[TDevice, TSettings, TRuncardInstrument, TChannelS
         pass
 
     @abstractmethod
-    def parameter_to_set_device_mapping(self) -> dict[Parameter, Callable]:
+    def parameter_to_device_operation(self) -> dict[Parameter, Callable]:
         pass
 
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel: TChannelID):
-        if parameter in self.channel_parameter_to_settings_mapping():
+        if parameter in self.parameter_to_channel_settings():
             if channel is None:
                 raise ValueError(f"Channel must be specified for parameter '{parameter.name}'.")
             channel_settings = self.get_channel_settings(channel)
-            field_name = self.channel_parameter_to_settings_mapping()[parameter]
-            if hasattr(channel_settings, field_name):
-                setattr(channel_settings, field_name, value)
-                if self.is_device_active():
-                    operations = self.parameter_to_set_device_mapping()
-                    if parameter in operations:
-                        operations[parameter](value, channel)
-            else:
-                raise ValueError(
-                    f"Field '{field_name}' linked with parameter {parameter.name} not found in channel settings."
-                )
-        elif parameter in self.instrument_parameter_to_settings_mapping():
+            field_names = self.parameter_to_channel_settings()[parameter]
+            for field_name in field_names.split(","):
+                match = self._FIELD_AS_LIST_REGEX.match(field_name)
+                if match:
+                    field_name = match.group(1)
+                    index = int(match.group(2))
+                    if hasattr(channel_settings, field_name):
+                        attr_value = getattr(channel_settings, field_name)
+                        if isinstance(attr_value, list) and 0 <= index < len(attr_value):
+                            attr_value[index] = value
+                            self._execute_set_device_parameter(parameter, value, channel)
+                        else:
+                            raise ValueError(
+                                f"Field '{field_name}' linked with parameter '{parameter.name}' is not a list or index {index} is out of range."
+                            )
+                    else:
+                        raise ValueError(
+                            f"Field '{field_name}' linked with parameter {parameter.name} not found in instrument settings."
+                        )
+                elif hasattr(channel_settings, field_name):
+                    setattr(channel_settings, field_name, value)
+                    self._execute_set_device_parameter(parameter, value, channel)
+                else:
+                    raise ValueError(
+                        f"Field '{field_name}' linked with parameter {parameter.name} not found in channel settings."
+                    )
+        elif parameter in self.parameter_to_instrument_settings():
             if channel is not None:
                 raise ValueError(f"Channel should not be specified for instrument-wide parameter '{parameter.name}'.")
-            field_name = self.instrument_parameter_to_settings_mapping()[parameter]
-            if hasattr(self.settings, field_name):
-                setattr(self.settings, field_name, value)
-                if self.is_device_active():
-                    operations = self.parameter_to_set_device_mapping()
-                    if parameter in operations:
-                        operations[parameter](value)
-            else:
-                raise ValueError(
-                    f"Field '{field_name}' linked with parameter {parameter.name} not found in instrument settings."
-                )
+            field_names = self.parameter_to_instrument_settings()[parameter]
+            for field_name in field_names.split(","):
+                match = self._FIELD_AS_LIST_REGEX.match(field_name)
+                if match:
+                    field_name = match.group(1)
+                    index = int(match.group(2))
+                    if hasattr(self.settings, field_name):
+                        attr_value = getattr(self.settings, field_name)
+                        if isinstance(attr_value, list) and 0 <= index < len(attr_value):
+                            attr_value[index] = value
+                            self._execute_set_device_parameter(parameter, value)
+                        else:
+                            raise ValueError(
+                                f"Field '{field_name}' linked with parameter '{parameter.name}' is not a list or index {index} is out of range."
+                            )
+                    else:
+                        raise ValueError(
+                            f"Field '{field_name}' linked with parameter {parameter.name} not found in instrument settings."
+                        )
+                elif hasattr(self.settings, field_name):
+                    setattr(self.settings, field_name, value)
+                    self._execute_set_device_parameter(parameter, value)
+                else:
+                    raise ValueError(
+                        f"Field '{field_name}' linked with parameter {parameter.name} not found in instrument settings."
+                    )
         else:
             raise ValueError(f"Parameter '{parameter.name}' not valid for {self.__class__.__name__}.")
 
+    def _execute_set_device_parameter(
+        self, parameter: Parameter, value: ParameterValue, channel: TChannelID | None = None
+    ):
+        if self.is_device_active():
+            operations = self.parameter_to_device_operation()
+            if parameter in operations:
+                if channel is None:
+                    operations[parameter](value)
+                else:
+                    operations[parameter](value, channel)
+
     def get_parameter(self, parameter: Parameter, channel: TChannelID):
-        if parameter in self.channel_parameter_to_settings_mapping():
+        if parameter in self.parameter_to_channel_settings():
             if channel is None:
                 raise ValueError(f"Channel must be specified for parameter '{parameter.name}'.")
             channel_settings = self.get_channel_settings(channel)
-            field_name = self.channel_parameter_to_settings_mapping()[parameter]
+            field_name = self.parameter_to_channel_settings()[parameter]
             if hasattr(channel_settings, field_name):
                 return getattr(channel_settings, field_name)
             raise ValueError(f"Field '{field_name}' not found in channel settings.")
-        if parameter in self.instrument_parameter_to_settings_mapping():
+        if parameter in self.parameter_to_instrument_settings():
             if channel is not None:
                 raise ValueError(f"Channel should not be specified for instrument-wide parameter '{parameter.name}'.")
-            field_name = self.instrument_parameter_to_settings_mapping()[parameter]
+            field_name = self.parameter_to_instrument_settings()[parameter]
             if hasattr(self.settings, field_name):
                 return getattr(self.settings, field_name)
             raise ValueError(f"Field '{field_name}' not found in instrument settings.")
         raise ValueError(f"Parameter '{parameter.name}' not valid for {self.__class__.__name__}.")
 
     def get_settable_parameters(self) -> list[Parameter]:
-        return list(self.instrument_parameter_to_settings_mapping().keys()) + list(
-            self.channel_parameter_to_settings_mapping().keys()
-        )
+        return list(self.parameter_to_instrument_settings().keys()) + list(self.parameter_to_channel_settings().keys())
 
     @abstractmethod
-    def to_runcard(self) -> TRuncardInstrument:
+    def to_runcard(self) -> RuncardInstrument:
         pass
 
     def __repr__(self):

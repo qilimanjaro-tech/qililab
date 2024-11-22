@@ -18,3 +18,7 @@ from enum import Enum
 class InstrumentType(str, Enum):
     QDEVIL_QDAC2 = "qdac2"
     ROHDE_SCHWARZ_SG100 = "sg100"
+    QBLOX_QCM = "qcm"
+    QBLOX_QRM = "qrm"
+    QBLOX_QCM_RF = "qcm-rf"
+    QBLOX_QRM_RF = "qrm-rf"

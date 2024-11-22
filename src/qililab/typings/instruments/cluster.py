@@ -14,10 +14,10 @@
 
 """Class Cluster"""
 
-import qblox_instruments
+from qblox_instruments.qcodes_drivers.cluster import Cluster
 
 from qililab.typings.instruments.device import Device
 
 
-class Cluster(qblox_instruments.Cluster, Device):
+class QbloxClusterDevice(Cluster, Device):
     """Typing class of the Cluster class defined by Qblox."""

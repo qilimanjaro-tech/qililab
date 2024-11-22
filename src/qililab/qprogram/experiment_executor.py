@@ -430,6 +430,7 @@ class ExperimentExecutor:
             for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
                 indices = (qprogram_index, measurement_index, *tuple(index for _, index in loop_indices.items()))
                 self._results_writer[indices] = measurement_result.array.T  # type: ignore
+                self._results_writer._file[indices].flush()
 
         if isinstance(block, (Loop, ForLoop, Parallel)):
             # Handle loops

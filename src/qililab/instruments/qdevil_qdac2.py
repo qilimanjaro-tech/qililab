@@ -18,16 +18,14 @@ from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument2 import Instrument2
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
-from qililab.runcard.runcard_instruments import QDevilQDAC2RuncardInstrument
+from qililab.runcard.runcard_instruments import QDevilQDAC2RuncardInstrument, RuncardInstrument
 from qililab.settings.instruments import QDevilQDAC2ChannelSettings, QDevilQDAC2Settings
 from qililab.typings import QDevilQDAC2Device as QDevilQDac2Driver
 from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QDEVIL_QDAC2)
-class QDevilQDAC2(
-    Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2RuncardInstrument, QDevilQDAC2ChannelSettings, int]
-):
+class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2ChannelSettings, int]):
     @check_device_initialized
     def turn_on(self):
         raise NotImplementedError
@@ -49,11 +47,11 @@ class QDevilQDAC2(
         return QDevilQDAC2Settings(alias="qdac2", dacs=[QDevilQDAC2ChannelSettings(id=index) for index in range(24)])
 
     @classmethod
-    def instrument_parameter_to_settings_mapping(cls) -> dict[Parameter, str]:
+    def parameter_to_instrument_settings(cls) -> dict[Parameter, str]:
         return {}
 
     @classmethod
-    def channel_parameter_to_settings_mapping(cls) -> dict[Parameter, str]:
+    def parameter_to_channel_settings(cls) -> dict[Parameter, str]:
         return {
             Parameter.VOLTAGE: "voltage",
             Parameter.SPAN: "span",
@@ -68,7 +66,7 @@ class QDevilQDAC2(
                 return channel_settings
         raise ValueError(f"Channel {channel} not found.")
 
-    def parameter_to_set_device_mapping(self) -> dict[Parameter, Callable]:
+    def parameter_to_device_operation(self) -> dict[Parameter, Callable]:
         return {
             Parameter.VOLTAGE: self._on_voltage_changed,
             Parameter.SPAN: self._on_span_changed,
@@ -98,5 +96,5 @@ class QDevilQDAC2(
     def _on_low_pas_filter_changed(self, value: str, channel: int):
         self.device.channel(channel).output_filter(value)
 
-    def to_runcard(self) -> QDevilQDAC2RuncardInstrument:
+    def to_runcard(self) -> RuncardInstrument:
         return QDevilQDAC2RuncardInstrument(settings=self.settings)

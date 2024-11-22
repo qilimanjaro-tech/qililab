@@ -28,7 +28,7 @@ from qililab.typings.enums import (
     Parameter,
     ReferenceClock,
 )
-from qililab.typings.instruments.cluster import Cluster
+from qililab.typings.instruments.cluster import QbloxClusterDevice
 
 
 @InstrumentControllerFactory.register
@@ -43,7 +43,7 @@ class QbloxClusterController(InstrumentController):
 
     name = InstrumentControllerName.QBLOX_CLUSTER
     number_available_modules = 20
-    device: Cluster
+    device: QbloxClusterDevice
     modules: Sequence[QbloxQCM | QbloxQRM]
 
     @dataclass
@@ -92,7 +92,7 @@ class QbloxClusterController(InstrumentController):
 
     def _initialize_device(self):
         """Initialize the cluster device."""
-        self.device = Cluster(name=f"{self.name.value}_{self.alias}", identifier=self.address)
+        self.device = QbloxClusterDevice(name=f"{self.name.value}_{self.alias}", identifier=self.address)
 
     def _set_device_to_all_modules(self):
         """Set the initialized device to all attached modules."""

@@ -78,6 +78,7 @@ class ExperimentMetadata(TypedDict, total=False):
     experiment: str
     executed_at: datetime
     execution_time: float
+    finished: bool
     qprograms: dict[str, QProgramMetadata]
 
 
@@ -184,7 +185,7 @@ class ExperimentResultsWriter(ExperimentResults):
         self._file = h5py.File(self.path, mode="w")
         self._create_results_file()
         self._create_resuts_access()
-
+        self._file.swmr_mode = True
         return self
 
     def __setitem__(self, key: tuple, value: float):
