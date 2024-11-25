@@ -12,18 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any, Callable
+
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
-from qililab.instruments.qblox_module import QbloxModule
+from qililab.instruments.qblox_module import QbloxControlModule
 from qililab.runcard.runcard_instruments import QbloxQCMRuncardInstrument, RuncardInstrument
-from qililab.settings.instruments import QbloxQCMSettings, QbloxSequencerSettings
+from qililab.settings.instruments import QbloxLFOutputSettings, QbloxQCMSettings, QbloxSequencerSettings
+from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_QCM)
-class QbloxQCM(QbloxModule[QbloxQCMSettings, QbloxSequencerSettings]):
+class QbloxQCM(QbloxControlModule[QbloxQCMSettings, QbloxLFOutputSettings]):
     @classmethod
     def get_default_settings(cls) -> QbloxQCMSettings:
         return QbloxQCMSettings(alias="qcm", sequencers=[QbloxSequencerSettings(id=index) for index in range(6)])
+
+    def initial_setup(self):
+        super().initial_setup()
+
+        for output in self.settings.outputs:
+            self._on_output_offset_changed(value=output.offset, output=output.port)
+
+    @classmethod
+    def output_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super().output_parameter_to_settings() | {
+            Parameter.OFFSET: "offset",
+        }
+
+    def output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super().output_parameter_to_device_operation() | {Parameter.OFFSET: self._on_output_offset_changed}
+
+    def _on_output_offset_changed(self, value: float, output: int):
+        operations = {
+            0: self.device.out0_offset,
+            1: self.device.out1_offset,
+            2: self.device.out2_offset,
+            3: self.device.out3_offset,
+        }
+        operations[output](value)
 
     def to_runcard(self) -> RuncardInstrument:
         return QbloxQCMRuncardInstrument(settings=self.settings)

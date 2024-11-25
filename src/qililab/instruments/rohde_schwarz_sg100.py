@@ -25,27 +25,36 @@ from qililab.typings.instruments.rohde_schwarz import RohdeSchwarzSGS100ADevice
 
 
 @InstrumentFactory.register(InstrumentType.ROHDE_SCHWARZ_SG100)
-class RohdeSchwarzSG100(Instrument2[RohdeSchwarzSGS100ADevice, RohdeSchwarzSG100Settings, None, None]):
+class RohdeSchwarzSG100(Instrument2[RohdeSchwarzSGS100ADevice, RohdeSchwarzSG100Settings, None, None, None, None]):
     @classmethod
     def get_default_settings(cls) -> RohdeSchwarzSG100Settings:
         return RohdeSchwarzSG100Settings(alias="sg100", power=0.0, frequency=1e9, rf_on=False)
 
+    @check_device_initialized
+    def turn_on(self):
+        raise NotImplementedError
+
+    @check_device_initialized
+    def turn_off(self):
+        raise NotImplementedError
+
+    @check_device_initialized
+    def reset(self):
+        raise NotImplementedError
+
+    @check_device_initialized
+    def initial_setup(self):
+        raise NotImplementedError
+
     @classmethod
-    def parameter_to_instrument_settings(cls) -> Dict[Parameter, str]:
+    def instrument_parameter_to_settings(cls) -> Dict[Parameter, str]:
         return {
             Parameter.POWER: "power",
             Parameter.LO_FREQUENCY: "frequency",
             Parameter.RF_ON: "rf_on",
         }
 
-    @classmethod
-    def parameter_to_channel_settings(cls) -> Dict[Parameter, str]:
-        return {}
-
-    def get_channel_settings(self, channel: None):
-        raise NotImplementedError("SG100 does not support channels.")
-
-    def parameter_to_device_operation(self) -> Dict[Parameter, Callable[[Any], None]]:
+    def instrument_parameter_to_device_operation(self) -> Dict[Parameter, Callable[[Any], None]]:
         return {
             Parameter.POWER: self._on_power_changed,
             Parameter.LO_FREQUENCY: self._on_frequency_changed,
@@ -66,19 +75,3 @@ class RohdeSchwarzSG100(Instrument2[RohdeSchwarzSGS100ADevice, RohdeSchwarzSG100
 
     def to_runcard(self) -> RuncardInstrument:
         return RohdeSchwarzSG100RuncardInstrument(settings=self.settings)
-
-    @check_device_initialized
-    def turn_on(self):
-        raise NotImplementedError
-
-    @check_device_initialized
-    def turn_off(self):
-        raise NotImplementedError
-
-    @check_device_initialized
-    def reset(self):
-        raise NotImplementedError
-
-    @check_device_initialized
-    def initial_setup(self):
-        raise NotImplementedError

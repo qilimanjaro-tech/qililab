@@ -4,11 +4,15 @@ instruments:
   settings:
     alias: qcm
     timeout: 1
-    output_offsets:
-    - 0.0
-    - 0.0
-    - 0.0
-    - 0.0
+    outputs:
+    - port: 0
+      offset: 0.0
+    - port: 1
+      offset: 0.0
+    - port: 2
+      offset: 0.0
+    - port: 3
+      offset: 0.0
     sequencers:
     - id: 0
       outputs:
@@ -80,11 +84,11 @@ instruments:
   settings:
     alias: qrm
     timeout: 1
-    output_offsets:
-    - 0.0
-    - 0.0
-    - 0.0
-    - 0.0
+    outputs:
+    - port: 0
+      offset: 0.0
+    - port: 1
+      offset: 0.0
     sequencers:
     - id: 0
       outputs:
@@ -97,6 +101,8 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
@@ -113,6 +119,8 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
@@ -129,6 +137,8 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
@@ -145,6 +155,8 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
@@ -161,6 +173,8 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
@@ -177,16 +191,38 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
       threshold_rotation: 0.0
       time_of_flight: 0
+    inputs:
+    - port: 0
+      gain: 0
+      offset: 0.0
+    - port: 1
+      gain: 0
+      offset: 0.0
     scope_hardware_averaging: true
 - type: qcm-rf
   settings:
     alias: qcm-rf
     timeout: 1
+    outputs:
+    - port: 0
+      lo_enabled: true
+      lo_frequency: 10000000000.0
+      attenuation: 0.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - port: 1
+      lo_enabled: true
+      lo_frequency: 10000000000.0
+      attenuation: 0.0
+      offset_i: 0.0
+      offset_q: 0.0
     sequencers:
     - id: 0
       outputs:
@@ -254,20 +290,17 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
-    out0_lo_frequency: 2000000000.0
-    out0_lo_enabled: true
-    out0_attenuation: 0
-    out0_offset_path0: 0.0
-    out0_offset_path1: 0.0
-    out1_lo_frequency: 2000000000.0
-    out1_lo_enabled: true
-    out1_attenuation: 0
-    out1_offset_path0: 0.0
-    out1_offset_path1: 0.0
 - type: qrm-rf
   settings:
     alias: qrm-rf
     timeout: 1
+    outputs:
+    - port: 0
+      lo_enabled: true
+      lo_frequency: 10000000000.0
+      attenuation: 0.0
+      offset_i: 0.0
+      offset_q: 0.0
     sequencers:
     - id: 0
       outputs:
@@ -280,6 +313,8 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
@@ -296,6 +331,8 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
@@ -312,6 +349,8 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
@@ -328,6 +367,8 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
@@ -344,6 +385,8 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
@@ -360,18 +403,18 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
+      inputs:
+      - 0
       hardware_demodulation: true
       integration_length: 1000
       threshold: 0.0
       threshold_rotation: 0.0
       time_of_flight: 0
-    scope_hardware_averaging: true
-    out0_in0_lo_frequency: 2000000000.0
-    out0_in0_lo_enabled: true
-    out0_attenuation: 0
-    in0_attenuation: 0
-    out0_offset_path0: 0.0
-    out0_offset_path1: 0.0
+    inputs:
+    - port: 0
+      attenuation: 0
+      offset_i: 0.0
+      offset_q: 0.0
 - type: qdac2
   settings:
     alias: qdac2

@@ -25,7 +25,7 @@ from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QDEVIL_QDAC2)
-class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2ChannelSettings, int]):
+class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2ChannelSettings, int, None, None]):
     @check_device_initialized
     def turn_on(self):
         raise NotImplementedError
@@ -47,11 +47,7 @@ class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC
         return QDevilQDAC2Settings(alias="qdac2", dacs=[QDevilQDAC2ChannelSettings(id=index) for index in range(24)])
 
     @classmethod
-    def parameter_to_instrument_settings(cls) -> dict[Parameter, str]:
-        return {}
-
-    @classmethod
-    def parameter_to_channel_settings(cls) -> dict[Parameter, str]:
+    def channel_parameter_to_settings(cls) -> dict[Parameter, str]:
         return {
             Parameter.VOLTAGE: "voltage",
             Parameter.SPAN: "span",
@@ -66,7 +62,7 @@ class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC
                 return channel_settings
         raise ValueError(f"Channel {channel} not found.")
 
-    def parameter_to_device_operation(self) -> dict[Parameter, Callable]:
+    def channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
         return {
             Parameter.VOLTAGE: self._on_voltage_changed,
             Parameter.SPAN: self._on_span_changed,

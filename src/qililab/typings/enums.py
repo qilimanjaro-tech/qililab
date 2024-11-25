@@ -215,6 +215,7 @@ class Parameter(str, Enum):
     """Parameter names."""
 
     BUS_FREQUENCY = "bus_frequency"
+    LO_ENABLED = "lo_enabled"
     LO_FREQUENCY = "frequency"
     GAIN = "gain"
     DURATION = "duration"
@@ -273,6 +274,7 @@ class Parameter(str, Enum):
     SMEARING = "smearing"
     GAIN_I = "gain_i"
     GAIN_Q = "gain_q"
+    OFFSET = "offset"
     OFFSET_I = "offset_i"
     OFFSET_Q = "offset_q"
     DC_OFFSET = "dc_offset"

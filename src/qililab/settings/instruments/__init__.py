@@ -14,8 +14,9 @@
 
 from .channel_settings import ChannelSettings
 from .instrument_settings import InstrumentSettings
-from .qblox_qcm_settings import QbloxModuleSettings, QbloxQCMRFSettings, QbloxQCMSettings, QbloxSequencerSettings
-from .qblox_qrm_settings import QbloxADCSequencerSettings, QbloxQRMRFSettings, QbloxQRMSettings
+from .qblox_base_settings import QbloxADCSequencerSettings, QbloxModuleSettings, QbloxSequencerSettings
+from .qblox_qcm_settings import QbloxLFOutputSettings, QbloxQCMRFSettings, QbloxQCMSettings, QbloxRFOutputSettings
+from .qblox_qrm_settings import QbloxLFInputSettings, QbloxQRMRFSettings, QbloxQRMSettings, QbloxRFInputSettings
 from .qdevil_qdac2_settings import QDevilQDAC2ChannelSettings, QDevilQDAC2Settings
 from .rohde_schwarz_sg100_settings import RohdeSchwarzSG100Settings
 
@@ -25,11 +26,15 @@ __all__ = [
     "QDevilQDAC2ChannelSettings",
     "QDevilQDAC2Settings",
     "QbloxADCSequencerSettings",
+    "QbloxLFInputSettings",
+    "QbloxLFOutputSettings",
     "QbloxModuleSettings",
     "QbloxQCMRFSettings",
     "QbloxQCMSettings",
     "QbloxQRMRFSettings",
     "QbloxQRMSettings",
+    "QbloxRFInputSettings",
+    "QbloxRFOutputSettings",
     "QbloxSequencerSettings",
     "RohdeSchwarzSG100Settings",
 ]

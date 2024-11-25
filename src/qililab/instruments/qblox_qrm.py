@@ -12,23 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable
+from typing import Any, Callable
 
-from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
-from qililab.instruments.qblox_module import QbloxModule
-from qililab.qprogram.qblox_compiler import AcquisitionData
-from qililab.result.qblox_results import QbloxResult
-from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
+from qililab.instruments.qblox_module import QbloxReadoutModule
 from qililab.runcard.runcard_instruments import QbloxQRMRuncardInstrument, RuncardInstrument
-from qililab.settings.instruments import QbloxADCSequencerSettings, QbloxQRMSettings
+from qililab.settings.instruments import (
+    QbloxADCSequencerSettings,
+    QbloxLFInputSettings,
+    QbloxLFOutputSettings,
+    QbloxQRMSettings,
+)
 from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_QRM)
-class QbloxQRM(QbloxModule[QbloxQRMSettings, QbloxADCSequencerSettings]):
+class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings, QbloxLFOutputSettings, QbloxLFInputSettings]):
     @classmethod
     def get_default_settings(cls) -> QbloxQRMSettings:
         return QbloxQRMSettings(alias="qrm", sequencers=[QbloxADCSequencerSettings(id=index) for index in range(6)])
@@ -36,6 +37,7 @@ class QbloxQRM(QbloxModule[QbloxQRMSettings, QbloxADCSequencerSettings]):
     @check_device_initialized
     def initial_setup(self):
         super().initial_setup()
+
         self._map_input_connections()
         self._on_scope_hardware_averaging_changed(self.settings.scope_hardware_averaging)
         for sequencer in self.settings.sequencers:
@@ -57,14 +59,14 @@ class QbloxQRM(QbloxModule[QbloxQRMSettings, QbloxADCSequencerSettings]):
         return QbloxQRMRuncardInstrument(settings=self.settings)
 
     @classmethod
-    def parameter_to_instrument_settings(cls) -> dict[Parameter, str]:
-        return super().parameter_to_instrument_settings() | {
+    def instrument_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super().instrument_parameter_to_settings() | {
             Parameter.SCOPE_HARDWARE_AVERAGING: "scope_hardware_averaging"
         }
 
     @classmethod
-    def parameter_to_channel_settings(cls) -> dict[Parameter, str]:
-        return super().parameter_to_channel_settings() | {
+    def channel_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super().channel_parameter_to_settings() | {
             Parameter.HARDWARE_DEMODULATION: "hardware_demodulation",
             Parameter.INTEGRATION_LENGTH: "integration_length",
             Parameter.THRESHOLD: "threshold",
@@ -72,18 +74,32 @@ class QbloxQRM(QbloxModule[QbloxQRMSettings, QbloxADCSequencerSettings]):
             Parameter.TIME_OF_FLIGHT: "time_of_flight",
         }
 
-    def parameter_to_device_operation(self) -> dict[Parameter, Callable]:
-        return super().parameter_to_device_operation() | {
+    @classmethod
+    def output_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super().output_parameter_to_settings() | {
+            Parameter.OFFSET: "offset",
+        }
+
+    @classmethod
+    def input_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super().input_parameter_to_settings() | {Parameter.GAIN: "gain", Parameter.OFFSET: "offset"}
+
+    def instrument_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super().instrument_parameter_to_device_operation() | {
             Parameter.SCOPE_HARDWARE_AVERAGING: self._on_scope_hardware_averaging_changed,
-            Parameter.HARDWARE_DEMODULATION: self._on_hardware_demodulation_changed,
-            Parameter.INTEGRATION_LENGTH: self._on_integration_length_changed,
-            Parameter.THRESHOLD: self._on_threshold_changed,
-            Parameter.THRESHOLD_ROTATION: self._on_threshold_rotation_changed,
         }
 
     def _on_scope_hardware_averaging_changed(self, value: float):
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
+
+    def channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
+        return super().channel_parameter_to_device_operation() | {
+            Parameter.HARDWARE_DEMODULATION: self._on_hardware_demodulation_changed,
+            Parameter.INTEGRATION_LENGTH: self._on_integration_length_changed,
+            Parameter.THRESHOLD: self._on_threshold_changed,
+            Parameter.THRESHOLD_ROTATION: self._on_threshold_rotation_changed,
+        }
 
     def _on_hardware_demodulation_changed(self, value: float, channel: int):
         self.device.sequencers[channel].demod_en_acq(value)
@@ -98,66 +114,28 @@ class QbloxQRM(QbloxModule[QbloxQRMSettings, QbloxADCSequencerSettings]):
     def _on_threshold_rotation_changed(self, value: float, channel: int):
         self.device.sequencers[channel].thresholded_acq_rotation(value)
 
-    @check_device_initialized
-    def acquire_result(self) -> QbloxResult:
-        """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
-        If any of the timeouts is reached, a TimeoutError is raised.
+    def output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super().output_parameter_to_device_operation() | {Parameter.OFFSET: self._on_output_offset_changed}
 
-        Returns:
-            QbloxResult: Class containing the acquisition results.
+    def _on_output_offset_changed(self, value: float, output: int):
+        operations = {
+            0: self.device.out0_offset,
+            1: self.device.out1_offset,
+            2: self.device.out2_offset,
+            3: self.device.out3_offset,
+        }
+        operations[output](value)
 
-        """
-        results = []
-        integration_lengths = []
-        for sequencer in self.settings.sequencers:
-            if sequencer.id in self.sequences:
-                flags = self.device.get_sequencer_state(sequencer=sequencer.id, timeout=self.settings.timeout)
-                logger.info("Sequencer[%d] flags: \n%s", sequencer.id, flags)
-                self.device.get_acquisition_state(sequencer=sequencer.id, timeout=self.settings.timeout)
+    def input_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super().input_parameter_to_device_operation() | {
+            Parameter.GAIN: self._on_input_gain_changed,
+            Parameter.OFFSET: self._on_input_offset_changed,
+        }
 
-                # if sequencer.scope_store_enabled:
-                #     self.device.store_scope_acquisition(sequencer=sequencer.id, name="default")
+    def _on_input_gain_changed(self, value: float, input: int):
+        operations = {0: self.device.in0_gain, 1: self.device.in1_gain}
+        operations[input](value)
 
-                for key, data in self.device.get_acquisitions(sequencer=sequencer.id).items():
-                    acquisitions = data["acquisition"]
-                    # parse acquisition index
-                    _, qubit, measure = key.split("_")
-                    qubit = int(qubit[1:])
-                    measurement = int(measure)
-                    acquisitions["qubit"] = qubit
-                    acquisitions["measurement"] = measurement
-                    results.append(acquisitions)
-                    integration_lengths.append(sequencer.integration_length)
-                self.device.sequencers[sequencer.id].sync_en(False)
-                integration_lengths.append(sequencer.integration_length)
-                self.device.delete_acquisition_data(sequencer=sequencer.id, all=True)
-
-        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
-
-    @check_device_initialized
-    def acquire_qprogram_results(
-        self, acquisitions: dict[str, AcquisitionData], sequencer_id: int
-    ) -> list[QbloxMeasurementResult]:
-        """Read the result from the AWG instrument
-
-        Args:
-            acquisitions (list[str]): A list of acquisitions names.
-
-        Returns:
-            list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
-        """
-        results = []
-        for acquisition, acquistion_data in acquisitions.items():
-            if self._is_sequencer_valid(sequencer_id) and sequencer_id in self.sequences:
-                self.device.get_acquisition_state(sequencer=sequencer_id, timeout=self.settings.timeout)
-                if acquistion_data.save_adc:
-                    self.device.store_scope_acquisition(sequencer=sequencer_id, name=acquisition)
-                raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer_id)[acquisition]["acquisition"]
-                measurement_result = QbloxMeasurementResult(
-                    bus=acquisitions[acquisition].bus, raw_measurement_data=raw_measurement_data
-                )
-                results.append(measurement_result)
-
-                # always deleting acquisitions without checking save_adc flag
-                self.device.delete_acquisition_data(sequencer=sequencer_id, name=acquisition)
-        return results
+    def _on_input_offset_changed(self, value: float, input: int):
+        operations = {0: self.device.in0_offset, 1: self.device.in1_offset}
+        operations[input](value)

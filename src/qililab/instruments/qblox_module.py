@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from abc import ABC
-from typing import Callable, ClassVar, TypeVar
+from typing import Any, Callable, ClassVar, TypeVar
 
 from qpysequence import Sequence as QpySequence
 
@@ -21,15 +21,31 @@ from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument2 import Instrument2
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
-from qililab.settings.instruments.qblox_qcm_settings import QbloxModuleSettings, QbloxSequencerSettings
+from qililab.qprogram.qblox_compiler import AcquisitionData
+from qililab.result.qblox_results import QbloxResult
+from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
+from qililab.settings.instruments.input_settings import InputSettings
+from qililab.settings.instruments.qblox_base_settings import (
+    QbloxADCSequencerSettings,
+    QbloxControlModuleSettings,
+    QbloxInputSettings,
+    QbloxModuleSettings,
+    QbloxOutputSettings,
+    QbloxReadoutModuleSettings,
+    QbloxSequencerSettings,
+)
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import QbloxModuleDevice
 
 TSettings = TypeVar("TSettings", bound=QbloxModuleSettings)
 TSequencerSettings = TypeVar("TSequencerSettings", bound=QbloxSequencerSettings)
+TOutputSettings = TypeVar("TOutputSettings", bound=QbloxOutputSettings)
+TInputSettings = TypeVar("TInputSettings", bound=QbloxInputSettings | None)
 
 
-class QbloxModule(Instrument2[QbloxModuleDevice, TSettings, TSequencerSettings, int], ABC):
+class QbloxModule(
+    Instrument2[QbloxModuleDevice, TSettings, TSequencerSettings, int, TOutputSettings, TInputSettings], ABC
+):
     cache: ClassVar[dict[int, PulseBusSchedule]] = {}
 
     def __init__(self, settings: TSettings | None = None):
@@ -65,29 +81,15 @@ class QbloxModule(Instrument2[QbloxModuleDevice, TSettings, TSequencerSettings, 
             self._on_gain_imbalance_changed(value=sequencer.gain_imbalance, channel=sequencer.id)
             self._on_phase_imbalance_changed(value=sequencer.phase_imbalance, channel=sequencer.id)
 
-        for idx, offset in enumerate(self.settings.output_offsets):
-            operations = {
-                0: self._on_offset_out0_changed,
-                1: self._on_offset_out1_changed,
-                2: self._on_offset_out2_changed,
-                3: self._on_offset_out3_changed,
-            }
-            operations[idx](offset)
-
     @classmethod
-    def parameter_to_instrument_settings(cls) -> dict[Parameter, str]:
+    def instrument_parameter_to_settings(cls) -> dict[Parameter, str]:
         return {
             Parameter.TIMEOUT: "timeout",
-            Parameter.OFFSET_OUT0: "output_offsets[0]",
-            Parameter.OFFSET_OUT1: "output_offsets[1]",
-            Parameter.OFFSET_OUT2: "output_offsets[2]",
-            Parameter.OFFSET_OUT3: "output_offsets[3]",
         }
 
     @classmethod
-    def parameter_to_channel_settings(cls) -> dict[Parameter, str]:
+    def channel_parameter_to_settings(cls) -> dict[Parameter, str]:
         return {
-            Parameter.GAIN: "gain_i,gain_q",
             Parameter.GAIN_I: "gain_i",
             Parameter.GAIN_Q: "gain_q",
             Parameter.OFFSET_I: "offset_i",
@@ -104,12 +106,14 @@ class QbloxModule(Instrument2[QbloxModuleDevice, TSettings, TSequencerSettings, 
                 return channel_settings
         raise ValueError(f"Channel {channel} not found.")
 
-    def parameter_to_device_operation(self) -> dict[Parameter, Callable]:
-        return {
-            Parameter.OFFSET_OUT0: self._on_offset_out0_changed,
-            Parameter.OFFSET_OUT1: self._on_offset_out1_changed,
-            Parameter.OFFSET_OUT2: self._on_offset_out2_changed,
-            Parameter.OFFSET_OUT3: self._on_offset_out3_changed,
+    def get_output_settings(self, output: int) -> TOutputSettings:
+        for output_settings in self.settings.outputs:
+            if output_settings.port == output:
+                return output_settings
+        raise ValueError(f"Output {output} not found.")
+
+    def channel_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super().channel_parameter_to_device_operation() | {
             Parameter.GAIN_I: self._on_gain_i_changed,
             Parameter.GAIN_Q: self._on_gain_q_changed,
             Parameter.OFFSET_I: self._on_offset_i_changed,
@@ -119,18 +123,6 @@ class QbloxModule(Instrument2[QbloxModuleDevice, TSettings, TSequencerSettings, 
             Parameter.GAIN_IMBALANCE: self._on_gain_imbalance_changed,
             Parameter.PHASE_IMBALANCE: self._on_phase_imbalance_changed,
         }
-
-    def _on_offset_out0_changed(self, value: float):
-        self.device.out0_offset(value)
-
-    def _on_offset_out1_changed(self, value: float):
-        self.device.out1_offset(value)
-
-    def _on_offset_out2_changed(self, value: float):
-        self.device.out2_offset(value)
-
-    def _on_offset_out3_changed(self, value: float):
-        self.device.out3_offset(value)
 
     def _on_gain_i_changed(self, value: float, channel: int):
         self.device.sequencers[channel].gain_awg_path0(value)
@@ -221,3 +213,87 @@ class QbloxModule(Instrument2[QbloxModuleDevice, TSettings, TSequencerSettings, 
         if self._is_sequencer_valid(sequencer_id) and sequencer_id in self.sequences:
             self.device.arm_sequencer(sequencer_id)
             self.device.start_sequencer(sequencer_id)
+
+
+TControlModuleSettings = TypeVar("TControlModuleSettings", bound=QbloxControlModuleSettings)
+
+
+class QbloxControlModule(QbloxModule[TControlModuleSettings, QbloxSequencerSettings, TOutputSettings, None], ABC):
+    pass
+
+
+TReadoutModuleSettings = TypeVar("TReadoutModuleSettings", bound=QbloxReadoutModuleSettings)
+
+
+class QbloxReadoutModule(
+    QbloxModule[TReadoutModuleSettings, QbloxADCSequencerSettings, TOutputSettings, TInputSettings], ABC
+):
+    def get_input_settings(self, input: int) -> InputSettings:
+        for input_settings in self.settings.inputs:
+            if input_settings.port == input:
+                return input_settings
+        raise ValueError(f"Input {input} not found.")
+
+    @check_device_initialized
+    def acquire_result(self) -> QbloxResult:
+        """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
+        If any of the timeouts is reached, a TimeoutError is raised.
+
+        Returns:
+            QbloxResult: Class containing the acquisition results.
+
+        """
+        results = []
+        integration_lengths = []
+        for sequencer in self.settings.sequencers:
+            if sequencer.id in self.sequences:
+                flags = self.device.get_sequencer_state(sequencer=sequencer.id, timeout=self.settings.timeout)
+                logger.info("Sequencer[%d] flags: \n%s", sequencer.id, flags)
+                self.device.get_acquisition_state(sequencer=sequencer.id, timeout=self.settings.timeout)
+
+                # if sequencer.scope_store_enabled:
+                #     self.device.store_scope_acquisition(sequencer=sequencer.id, name="default")
+
+                for key, data in self.device.get_acquisitions(sequencer=sequencer.id).items():
+                    acquisitions = data["acquisition"]
+                    # parse acquisition index
+                    _, qubit, measure = key.split("_")
+                    qubit = int(qubit[1:])
+                    measurement = int(measure)
+                    acquisitions["qubit"] = qubit
+                    acquisitions["measurement"] = measurement
+                    results.append(acquisitions)
+                    integration_lengths.append(sequencer.integration_length)
+                self.device.sequencers[sequencer.id].sync_en(False)
+                integration_lengths.append(sequencer.integration_length)
+                self.device.delete_acquisition_data(sequencer=sequencer.id, all=True)
+
+        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
+
+    @check_device_initialized
+    def acquire_qprogram_results(
+        self, acquisitions: dict[str, AcquisitionData], sequencer_id: int
+    ) -> list[QbloxMeasurementResult]:
+        """Read the result from the AWG instrument
+
+        Args:
+            acquisitions (list[str]): A list of acquisitions names.
+
+        Returns:
+            list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
+        """
+        results = []
+        for acquisition, acquistion_data in acquisitions.items():
+            if self._is_sequencer_valid(sequencer_id) and sequencer_id in self.sequences:
+                self.device.get_acquisition_state(sequencer=sequencer_id, timeout=self.settings.timeout)
+                if acquistion_data.save_adc:
+                    self.device.store_scope_acquisition(sequencer=sequencer_id, name=acquisition)
+                raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer_id)[acquisition]["acquisition"]
+                measurement_result = QbloxMeasurementResult(
+                    bus=acquisitions[acquisition].bus, raw_measurement_data=raw_measurement_data
+                )
+                results.append(measurement_result)
+
+                # always deleting acquisitions without checking save_adc flag
+                self.device.delete_acquisition_data(sequencer=sequencer_id, name=acquisition)
+        return results
