@@ -2,6 +2,10 @@
 
 ### New features since last release
 
+- Updated to latest qblox-instruments version. Changed some deprecated code from the new version and the QcmQrm into the more generic Module class.
+
+[#836](https://github.com/qilimanjaro-tech/qililab/pull/836)
+
 - Support GRES in %%submit_job magic method
 
 [#828](https://github.com/qilimanjaro-tech/qililab/pull/828)
