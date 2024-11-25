@@ -88,7 +88,7 @@ class QbloxModule(
         }
 
     @classmethod
-    def channel_parameter_to_settings(cls) -> dict[Parameter, str]:
+    def _channel_parameter_to_settings(cls) -> dict[Parameter, str]:
         return {
             Parameter.GAIN_I: "gain_i",
             Parameter.GAIN_Q: "gain_q",
@@ -112,8 +112,8 @@ class QbloxModule(
                 return output_settings
         raise ValueError(f"Output {output} not found.")
 
-    def channel_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super().channel_parameter_to_device_operation() | {
+    def _channel_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super()._channel_parameter_to_device_operation() | {
             Parameter.GAIN_I: self._on_gain_i_changed,
             Parameter.GAIN_Q: self._on_gain_q_changed,
             Parameter.OFFSET_I: self._on_offset_i_changed,

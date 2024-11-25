@@ -51,7 +51,7 @@ class QbloxD5A(Instrument2[QbloxD5ADevice, QbloxD5ASettings, QbloxD5AChannelSett
         return QbloxD5ASettings(alias="d5a")
 
     @classmethod
-    def channel_parameter_to_settings(cls) -> dict[Parameter, str]:
+    def _channel_parameter_to_settings(cls) -> dict[Parameter, str]:
         return {
             Parameter.VOLTAGE: "voltage",
             Parameter.SPAN: "span",
@@ -65,7 +65,7 @@ class QbloxD5A(Instrument2[QbloxD5ADevice, QbloxD5ASettings, QbloxD5AChannelSett
                 return channel_settings
         raise ValueError(f"Channel {channel} not found.")
 
-    def channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
+    def _channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
         return {
             Parameter.VOLTAGE: self._on_voltage_changed,
             Parameter.SPAN: self._on_span_changed,

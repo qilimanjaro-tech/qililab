@@ -61,8 +61,8 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings, QbloxRFOutputSettings, Q
             operations[input]("in0")
 
     @classmethod
-    def output_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return super().output_parameter_to_settings() | {
+    def _output_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super()._output_parameter_to_settings() | {
             Parameter.LO_ENABLED: "lo_enabled",
             Parameter.LO_FREQUENCY: "lo_frequency",
             Parameter.ATTENUATION: "attenuation",
@@ -70,8 +70,8 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings, QbloxRFOutputSettings, Q
             Parameter.OFFSET_Q: "offset_q",
         }
 
-    def output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super().output_parameter_to_device_operation() | {
+    def _output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super()._output_parameter_to_device_operation() | {
             Parameter.LO_ENABLED: self._on_output_lo_enabled_changed,
             Parameter.LO_FREQUENCY: self._on_output_lo_frequency_changed,
             Parameter.ATTENUATION: self._on_output_attenuation_changed,
@@ -110,15 +110,15 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings, QbloxRFOutputSettings, Q
         operations[output](value)
 
     @classmethod
-    def input_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return super().input_parameter_to_settings() | {
+    def _input_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super()._input_parameter_to_settings() | {
             Parameter.ATTENUATION: "attenuation",
             Parameter.OFFSET_I: "offset_i",
             Parameter.OFFSET_Q: "offset_q",
         }
 
-    def input_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super().input_parameter_to_device_operation() | {
+    def _input_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super()._input_parameter_to_device_operation() | {
             Parameter.ATTENUATION: self._on_input_attenuation_changed,
             Parameter.OFFSET_I: self._on_input_offset_i_changed,
             Parameter.OFFSET_Q: self._on_input_offset_q_changed,

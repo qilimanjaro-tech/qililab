@@ -53,8 +53,8 @@ class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings, QbloxRFOutputSettings]):
             operations[output]("IQ")
 
     @classmethod
-    def output_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return super().output_parameter_to_settings() | {
+    def _output_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super()._output_parameter_to_settings() | {
             Parameter.LO_ENABLED: "lo_enabled",
             Parameter.LO_FREQUENCY: "lo_frequency",
             Parameter.ATTENUATION: "attenuation",
@@ -62,8 +62,8 @@ class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings, QbloxRFOutputSettings]):
             Parameter.OFFSET_Q: "offset_q",
         }
 
-    def output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super().output_parameter_to_device_operation() | {
+    def _output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super()._output_parameter_to_device_operation() | {
             Parameter.LO_ENABLED: self._on_output_lo_enabled_changed,
             Parameter.LO_FREQUENCY: self._on_output_lo_frequency_changed,
             Parameter.ATTENUATION: self._on_output_attenuation_changed,

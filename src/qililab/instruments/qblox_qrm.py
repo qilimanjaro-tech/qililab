@@ -65,8 +65,8 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings, QbloxLFOutputSettings, Qblox
         }
 
     @classmethod
-    def channel_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return super().channel_parameter_to_settings() | {
+    def _channel_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super()._channel_parameter_to_settings() | {
             Parameter.HARDWARE_DEMODULATION: "hardware_demodulation",
             Parameter.INTEGRATION_LENGTH: "integration_length",
             Parameter.THRESHOLD: "threshold",
@@ -75,17 +75,17 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings, QbloxLFOutputSettings, Qblox
         }
 
     @classmethod
-    def output_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return super().output_parameter_to_settings() | {
+    def _output_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super()._output_parameter_to_settings() | {
             Parameter.OFFSET: "offset",
         }
 
     @classmethod
-    def input_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return super().input_parameter_to_settings() | {Parameter.GAIN: "gain", Parameter.OFFSET: "offset"}
+    def _input_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super()._input_parameter_to_settings() | {Parameter.GAIN: "gain", Parameter.OFFSET: "offset"}
 
-    def instrument_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super().instrument_parameter_to_device_operation() | {
+    def _instrument_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super()._instrument_parameter_to_device_operation() | {
             Parameter.SCOPE_HARDWARE_AVERAGING: self._on_scope_hardware_averaging_changed,
         }
 
@@ -93,8 +93,8 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings, QbloxLFOutputSettings, Qblox
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
 
-    def channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
-        return super().channel_parameter_to_device_operation() | {
+    def _channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
+        return super()._channel_parameter_to_device_operation() | {
             Parameter.HARDWARE_DEMODULATION: self._on_hardware_demodulation_changed,
             Parameter.INTEGRATION_LENGTH: self._on_integration_length_changed,
             Parameter.THRESHOLD: self._on_threshold_changed,
@@ -114,8 +114,8 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings, QbloxLFOutputSettings, Qblox
     def _on_threshold_rotation_changed(self, value: float, channel: int):
         self.device.sequencers[channel].thresholded_acq_rotation(value)
 
-    def output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super().output_parameter_to_device_operation() | {Parameter.OFFSET: self._on_output_offset_changed}
+    def _output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super()._output_parameter_to_device_operation() | {Parameter.OFFSET: self._on_output_offset_changed}
 
     def _on_output_offset_changed(self, value: float, output: int):
         operations = {
@@ -126,8 +126,8 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings, QbloxLFOutputSettings, Qblox
         }
         operations[output](value)
 
-    def input_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super().input_parameter_to_device_operation() | {
+    def _input_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super()._input_parameter_to_device_operation() | {
             Parameter.GAIN: self._on_input_gain_changed,
             Parameter.OFFSET: self._on_input_offset_changed,
         }

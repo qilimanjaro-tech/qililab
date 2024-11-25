@@ -47,7 +47,7 @@ class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC
         return QDevilQDAC2Settings(alias="qdac2", dacs=[QDevilQDAC2ChannelSettings(id=index) for index in range(24)])
 
     @classmethod
-    def channel_parameter_to_settings(cls) -> dict[Parameter, str]:
+    def _channel_parameter_to_settings(cls) -> dict[Parameter, str]:
         return {
             Parameter.VOLTAGE: "voltage",
             Parameter.SPAN: "span",
@@ -62,7 +62,7 @@ class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC
                 return channel_settings
         raise ValueError(f"Channel {channel} not found.")
 
-    def channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
+    def _channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
         return {
             Parameter.VOLTAGE: self._on_voltage_changed,
             Parameter.SPAN: self._on_span_changed,

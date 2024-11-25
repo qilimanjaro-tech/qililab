@@ -35,13 +35,13 @@ class QbloxQCM(QbloxControlModule[QbloxQCMSettings, QbloxLFOutputSettings]):
             self._on_output_offset_changed(value=output.offset, output=output.port)
 
     @classmethod
-    def output_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return super().output_parameter_to_settings() | {
+    def _output_parameter_to_settings(cls) -> dict[Parameter, str]:
+        return super()._output_parameter_to_settings() | {
             Parameter.OFFSET: "offset",
         }
 
-    def output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super().output_parameter_to_device_operation() | {Parameter.OFFSET: self._on_output_offset_changed}
+    def _output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
+        return super()._output_parameter_to_device_operation() | {Parameter.OFFSET: self._on_output_offset_changed}
 
     def _on_output_offset_changed(self, value: float, output: int):
         operations = {

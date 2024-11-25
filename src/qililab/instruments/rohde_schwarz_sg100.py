@@ -54,7 +54,7 @@ class RohdeSchwarzSG100(Instrument2[RohdeSchwarzSGS100ADevice, RohdeSchwarzSG100
             Parameter.RF_ON: "rf_on",
         }
 
-    def instrument_parameter_to_device_operation(self) -> Dict[Parameter, Callable[[Any], None]]:
+    def _instrument_parameter_to_device_operation(self) -> Dict[Parameter, Callable[[Any], None]]:
         return {
             Parameter.POWER: self._on_power_changed,
             Parameter.LO_FREQUENCY: self._on_frequency_changed,

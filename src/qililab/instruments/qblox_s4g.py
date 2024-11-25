@@ -51,7 +51,7 @@ class QbloxS4G(Instrument2[QbloxS4GDevice, QbloxS4GSettings, QbloxS4GChannelSett
         return QbloxS4GSettings(alias="s4g")
 
     @classmethod
-    def channel_parameter_to_settings(cls) -> dict[Parameter, str]:
+    def _channel_parameter_to_settings(cls) -> dict[Parameter, str]:
         return {
             Parameter.CURRENT: "current",
             Parameter.SPAN: "span",
@@ -65,7 +65,7 @@ class QbloxS4G(Instrument2[QbloxS4GDevice, QbloxS4GSettings, QbloxS4GChannelSett
                 return channel_settings
         raise ValueError(f"Channel {channel} not found.")
 
-    def channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
+    def _channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
         return {
             Parameter.CURRENT: self._on_current_changed,
             Parameter.SPAN: self._on_span_changed,
