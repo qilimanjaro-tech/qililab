@@ -67,7 +67,7 @@ class Arbitrary(Waveform):
 
         # Check for valid resolution
         if downsampled_length < 1:
-            raise ValueError("Resolution is too high compared to the waveform length.")
+            raise ValueError("Resolution is too high compared to the waveform duration.")
 
         # Reshape the waveform into blocks and compute mean for each block
         reshaped_samples = self.samples[: downsampled_length * resolution].reshape(-1, resolution)

@@ -98,7 +98,7 @@
 
   The most common way to route, will be automatically through `qililab.execute_circuit.execute()`, or also from `qililab.platform.execute/compile()`. Another way, would be doing the transpilation/routing directly from an instance of the Transpiler, with: `qililab.digital.circuit_transpiler.transpile/route_circuit()` (with this last one, you can route with a different topology from the platform one, if desired, defaults to platform)
 
-  Example:
+  Example
 
   ```python
   from qibo import gates
@@ -156,7 +156,7 @@
       ...
   ```
 
-[#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
+  [#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
 
 ### Improvements
 
@@ -198,11 +198,11 @@
   1. **Compilation**: Users can now compile a `QProgram` by calling:
 
   ```python
-  platform.compile_qprogram(
-    qprogram: QProgram,
-    bus_mapping: dict[str, str] | None = None,
-    calibration: Calibration | None = None
-  )
+    platform.compile_qprogram(
+      qprogram: QProgram,
+      bus_mapping: dict[str, str] | None = None,
+      calibration: Calibration | None = None
+    )
   ```
 
   This method can be executed without being connected to any instruments. It returns either a `QbloxCompilationOutput` or a `QuantumMachinesCompilationOutput`, depending on the platform setup.
@@ -210,21 +210,21 @@
   2. **Execution**: Once the compilation is complete, users can execute the resulting output by calling:
 
   ```python
-  platform.execute_compilation_output(
-    output: QbloxCompilationOutput | QuantumMachinesCompilationOutput,
-    debug: bool = False
-  )
+    platform.execute_compilation_output(
+      output: QbloxCompilationOutput | QuantumMachinesCompilationOutput,
+      debug: bool = False
+    )
   ```
 
   If desired, both steps can still be combined into a single call using the existing method:
 
   ```python
-  platform.execute_qprogram(
-    qprogram: QProgram,
-    bus_mapping: dict[str, str] | None = None,
-    calibration: Calibration | None = None,
-    debug: bool = False
-  )
+    platform.execute_qprogram(
+      qprogram: QProgram,
+      bus_mapping: dict[str, str] | None = None,
+      calibration: Calibration | None = None,
+      debug: bool = False
+    )
   ```
 
   [#817](https://github.com/qilimanjaro-tech/qililab/pull/817)
@@ -274,3 +274,5 @@
 - Fixed typo in ExceptionGroup import statement for python 3.11+ [#808](https://github.com/qilimanjaro-tech/qililab/pull/808)
 
 - Fixed serialization/deserialization of lambda functions, mainly used in `experiment.execute_qprogram()` method. The fix depends on the `dill` library which is added as requirement. [#815](https://github.com/qilimanjaro-tech/qililab/pull/815)
+
+- Fixed calculation of Arbitrary waveform's envelope when resolution is greater than 1ns. [#837](https://github.com/qilimanjaro-tech/qililab/pull/837)
