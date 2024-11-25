@@ -1,9 +1,10 @@
 import numpy as np
 import pytest
+import math
 
 from qililab.waveforms import Arbitrary
 
-samples = np.linspace(0, 100, 11)
+samples = np.concatenate([np.linspace(0, 10_000, 1000), np.linspace(10_000, 0, 1000)])
 
 
 @pytest.fixture(name="arbitrary")
@@ -22,7 +23,24 @@ class TestArbitrary:
 
     def test_envelope_with_higher_resolution(self, arbitrary):
         # test envelope method
-        assert np.allclose(arbitrary.envelope(resolution=2), np.array([0.0, 20.0, 40.0, 60.0, 80.0, 100.0]))
+        resolution = 100
+        envelope = arbitrary.envelope(resolution=resolution)
+        assert math.isclose(envelope[0], samples[0], abs_tol=1e-9)
+        assert math.isclose(envelope[-1], samples[-1], abs_tol=1e-9)
+        assert max(envelope) == max(samples)
+        assert min(envelope) == min(envelope)
+        assert np.allclose(envelope, np.array([
+            6.30961949e-14, 1.11111111e+03, 2.22222222e+03, 3.33333333e+03,
+            4.44444444e+03, 5.55555556e+03, 6.66666667e+03, 7.77777778e+03,
+            8.88888889e+03, 1.00000000e+04, 1.00000000e+04, 8.88888889e+03,
+            7.77777778e+03, 6.66666667e+03, 5.55555556e+03, 4.44444444e+03,
+            3.33333333e+03, 2.22222222e+03, 1.11111111e+03, 0.00000000e+00
+        ]))
+
+    def test_envelope_with_higher_resolution_raises_error(self, arbitrary):
+        resolution = 20_000
+        with pytest.raises(ValueError):
+            _ = arbitrary.envelope(resolution=resolution)
 
     def test_get_duration_method(self, arbitrary):
-        assert arbitrary.get_duration() == 11
+        assert arbitrary.get_duration() == 2000
