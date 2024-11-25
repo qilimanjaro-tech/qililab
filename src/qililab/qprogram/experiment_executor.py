@@ -104,9 +104,10 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment):
+    def __init__(self, platform: "Platform", experiment: Experiment, live_plot: bool = False):
         self.platform = platform
         self.experiment = experiment
+        self.live_plot = live_plot
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -553,11 +554,17 @@ class ExperimentExecutor:
         # Create file path to store results
         results_path = self._create_results_path(executed_at=executed_at)
 
+        # TODO: Find an alternative way of getting the experiment path at the beginning of the experiment execution
+        if self.live_plot:
+            print(results_path)
+
         # Prepare the results metadata
         self._prepare_metadata(executed_at=executed_at)
 
         # Create the ExperimentResultsWriter for storing results
-        self._results_writer = ExperimentResultsWriter(path=results_path, metadata=self._metadata)
+        self._results_writer = ExperimentResultsWriter(
+            path=results_path, metadata=self._metadata, live_plot=self.live_plot
+        )
 
         # Event to signal that the execution has completed
         execution_completed = threading.Event()
@@ -585,5 +592,6 @@ class ExperimentExecutor:
             # Now write the execution time to the results writer
             with self._results_writer:
                 self._results_writer.execution_time = execution_time
+                self._results_writer.execution_end = True
 
         return results_path

@@ -544,14 +544,14 @@ class Platform:
         instrument_controllers_dict = {RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
         digital_dict = {
-            RUNCARD.DIGITAL: self.digital_compilation_settings.to_dict()
-            if self.digital_compilation_settings is not None
-            else None
+            RUNCARD.DIGITAL: (
+                self.digital_compilation_settings.to_dict() if self.digital_compilation_settings is not None else None
+            )
         }
         analog_dict = {
-            RUNCARD.ANALOG: self.analog_compilation_settings.to_dict()
-            if self.analog_compilation_settings is not None
-            else None
+            RUNCARD.ANALOG: (
+                self.analog_compilation_settings.to_dict() if self.analog_compilation_settings is not None else None
+            )
         }
 
         return name_dict | instrument_dict | instrument_controllers_dict | buses_dict | digital_dict | analog_dict
@@ -665,7 +665,7 @@ class Platform:
             qprogram=qp_annealing, calibration=calibration, bus_mapping=bus_mapping, debug=debug
         )
 
-    def execute_experiment(self, experiment: Experiment) -> str:
+    def execute_experiment(self, experiment: Experiment, live_plot: bool = False) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
@@ -698,7 +698,7 @@ class Platform:
             - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment)
+        executor = ExperimentExecutor(platform=self, experiment=experiment, live_plot=live_plot)
         return executor.execute()
 
     def compile_qprogram(
