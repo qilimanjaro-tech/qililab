@@ -16,7 +16,7 @@ from qililab.data_management import build_platform
 from qililab.typings import AcquireTriggerMode, IntegrationMode, Parameter
 from typing import cast
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
-from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 from qililab.qprogram.qblox_compiler import AcquisitionData
 
 
