@@ -102,7 +102,7 @@
 
   The most common way to route, will be automatically through `qililab.execute_circuit.execute()`, or also from `qililab.platform.execute/compile()`. Another way, would be doing the transpilation/routing directly from an instance of the Transpiler, with: `qililab.digital.circuit_transpiler.transpile/route_circuit()` (with this last one, you can route with a different topology from the platform one, if desired, defaults to platform)
 
-  Example:
+  Example
 
   ```python
   from qibo import gates
@@ -160,7 +160,7 @@
       ...
   ```
 
-[#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
+  [#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
 
 ### Improvements
 
@@ -278,3 +278,5 @@
 - Fixed typo in ExceptionGroup import statement for python 3.11+ [#808](https://github.com/qilimanjaro-tech/qililab/pull/808)
 
 - Fixed serialization/deserialization of lambda functions, mainly used in `experiment.execute_qprogram()` method. The fix depends on the `dill` library which is added as requirement. [#815](https://github.com/qilimanjaro-tech/qililab/pull/815)
+
+- Fixed calculation of Arbitrary waveform's envelope when resolution is greater than 1ns. [#837](https://github.com/qilimanjaro-tech/qililab/pull/837)
