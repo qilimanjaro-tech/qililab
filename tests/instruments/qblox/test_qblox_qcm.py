@@ -30,7 +30,7 @@ def fixture_qrm(platform: Platform):
     qcm = cast(QbloxQCM, platform.get_element(alias="qcm"))
 
     sequencer_mock_spec = [
-        *Sequencer._get_required_parent_attr_names(),
+        *Sequencer._get_required_parent_qtm_attr_names(),
         "sync_en",
         "gain_awg_path0",
         "gain_awg_path1",
@@ -55,7 +55,7 @@ def fixture_qrm(platform: Platform):
     ]
 
     module_mock_spec = [
-        *QcmQrm._get_required_parent_attr_names(),
+        *QcmQrm._get_required_parent_qtm_attr_names(),
         "reference_source",
         "sequencer0",
         "sequencer1",
