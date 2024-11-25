@@ -376,8 +376,8 @@ class TestQbloxQRM:
 
         qrm.acquire_result()
 
-        assert qrm.device.get_sequencer_state.call_count == 2
-        assert qrm.device.get_acquisition_state.call_count == 2
+        assert qrm.device.get_sequencer_status.call_count == 2
+        assert qrm.device.get_acquisition_status.call_count == 2
         assert qrm.device.store_scope_acquisition.call_count == 1
         assert qrm.device.get_acquisitions.call_count == 2
         assert qrm.device.sequencers[0].sync_en.call_count == 1
@@ -400,7 +400,7 @@ class TestQbloxQRM:
 
         qrm.acquire_qprogram_results(acquisitions=qp_acqusitions, channel_id=0)
 
-        assert qrm.device.get_acquisition_state.call_count == 2
+        assert qrm.device.get_acquisition_status.call_count == 2
         assert qrm.device.store_scope_acquisition.call_count == 1
         assert qrm.device.get_acquisitions.call_count == 2
         assert qrm.device.delete_acquisition_data.call_count == 2
