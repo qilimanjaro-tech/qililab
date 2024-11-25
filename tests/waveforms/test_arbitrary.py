@@ -37,6 +37,12 @@ class TestArbitrary:
             3.33333333e+03, 2.22222222e+03, 1.11111111e+03, 0.00000000e+00
         ]))
 
+    def test_envelope_with_constant_values(self):
+        resolution = 20_000
+        arbitrary = Arbitrary(samples=np.ones(resolution))
+        envelope = arbitrary.envelope(resolution=resolution)
+        assert np.allclose(envelope, np.ones(200))
+
     def test_envelope_with_higher_resolution_raises_error(self, arbitrary):
         resolution = 20_000
         with pytest.raises(ValueError):
