@@ -12,17 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import ClassVar
+"""Class SPI Rack"""
 
-from pydantic import Field
+import qblox_instruments
 
-from qililab.settings.instrument_controllers.instrument_controller_settings import (
-    InstrumentControllerSettings,
-    ReferenceClock,
-)
+from qililab.typings.instruments.device import Device
 
 
-class QbloxClusterControllerSettings(InstrumentControllerSettings):
-    reference_clock: ReferenceClock = Field(default=ReferenceClock.INTERNAL)
-
-    NUMBER_OF_MODULES: ClassVar[int] = 20
+class QbloxSPIRackDevice(qblox_instruments.SpiRack, Device):
+    """Typing class of the SPI Rack class defined by Qblox."""

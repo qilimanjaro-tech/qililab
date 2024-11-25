@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Qblox SPI Rack Controller class"""
+
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -21,7 +22,7 @@ from qililab.instrument_controllers.utils.instrument_controller_factory import I
 from qililab.instruments.qblox.qblox_d5a import QbloxD5a
 from qililab.instruments.qblox.qblox_s4g import QbloxS4g
 from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName
-from qililab.typings.instruments.spi_rack import SPI_Rack
+from qililab.typings.instruments.qblox_spi_rack import QbloxSPIRackDevice
 
 
 @InstrumentControllerFactory.register
@@ -38,7 +39,7 @@ class QbloxSPIRackController(InstrumentController):
 
     name = InstrumentControllerName.QBLOX_SPIRACK
     number_available_modules = 12
-    device: SPI_Rack
+    device: QbloxSPIRackDevice
     modules: Sequence[QbloxD5a | QbloxS4g]
 
     @dataclass
@@ -55,7 +56,7 @@ class QbloxSPIRackController(InstrumentController):
 
     def _initialize_device(self):
         """Initialize device controller."""
-        self.device = SPI_Rack(name=f"{self.name.value}_{self.alias}", address=self.address)
+        self.device = QbloxSPIRackDevice(name=f"{self.name.value}_{self.alias}", address=self.address)
 
     def _set_device_to_all_modules(self):
         """Sets the initialized device to all attached modules,

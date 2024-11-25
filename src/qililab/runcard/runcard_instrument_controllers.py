@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
 from qililab.settings.instrument_controllers import (
     QbloxClusterControllerSettings,
+    QbloxSPIRackControllerSettings,
     QDevilQDAC2ControllerSettings,
     RohdeSchwarzSG100ControllerSettings,
 )
@@ -27,6 +28,13 @@ from qililab.settings.instrument_controllers import (
 class QbloxClusterRuncardInstrumentController(BaseModel):
     type: Literal[InstrumentControllerType.QBLOX_CLUSTER_CONTROLLER] = InstrumentControllerType.QBLOX_CLUSTER_CONTROLLER
     settings: QbloxClusterControllerSettings
+
+
+class QbloxSPIRackRuncardInstrumentController(BaseModel):
+    type: Literal[InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER] = (
+        InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER
+    )
+    settings: QbloxSPIRackControllerSettings
 
 
 class QDevilQDAC2RuncardInstrumentController(BaseModel):
@@ -44,6 +52,7 @@ class RohdeSchwarzSG100RuncardInstrumentController(BaseModel):
 # Discriminated Union for instruments
 RuncardInstrumentController = Annotated[
     QbloxClusterRuncardInstrumentController
+    | QbloxSPIRackRuncardInstrumentController
     | QDevilQDAC2RuncardInstrumentController
     | RohdeSchwarzSG100RuncardInstrumentController,
     Field(discriminator="type"),

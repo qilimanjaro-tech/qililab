@@ -26,7 +26,7 @@ from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
-from qililab.typings import QbloxD5a as QbloxD5aDriver
+from qililab.typings import QbloxD5ADevice as QbloxD5aDriver
 
 
 @InstrumentFactory.register

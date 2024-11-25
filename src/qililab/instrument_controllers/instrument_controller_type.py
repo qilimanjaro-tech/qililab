@@ -17,5 +17,6 @@ from enum import Enum
 
 class InstrumentControllerType(str, Enum):
     QBLOX_CLUSTER_CONTROLLER = "qblox_cluster_controller"
+    QBLOX_SPI_RACK_CONTROLLER = "qblox_spi_rack_controller"
     QDEVIL_QDAC2_CONTROLLER = "qdac2_controller"
     ROHDE_SCHWARZ_SG100_CONTROLLER = "sg100_controller"

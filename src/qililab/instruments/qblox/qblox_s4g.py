@@ -26,7 +26,7 @@ from qililab.instruments.decorators import check_device_initialized, log_set_par
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
-from qililab.typings import QbloxS4g as QbloxS4gDriver
+from qililab.typings import QbloxS4GDevice as QbloxS4gDriver
 
 
 @InstrumentFactory.register

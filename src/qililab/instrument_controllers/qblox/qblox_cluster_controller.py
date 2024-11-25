@@ -28,7 +28,7 @@ from qililab.typings.enums import (
     Parameter,
     ReferenceClock,
 )
-from qililab.typings.instruments.cluster import QbloxClusterDevice
+from qililab.typings.instruments.qblox_cluster import QbloxClusterDevice
 
 
 @InstrumentControllerFactory.register

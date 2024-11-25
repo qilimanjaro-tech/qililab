@@ -39,6 +39,10 @@ class InstrumentController2(ABC, Generic[TDevice, TSettings, TInstrument]):
         if loaded_instruments is not None:
             self.load_instruments(loaded_instruments)
 
+    @property
+    def alias(self):
+        return self.settings.alias
+
     @classmethod
     @abstractmethod
     def get_default_settings(cls) -> TSettings:

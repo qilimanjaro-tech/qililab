@@ -13,8 +13,9 @@
 # limitations under the License.
 
 from enum import Enum
+from typing import ClassVar
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from qililab.settings.settings2 import Settings2
 
@@ -46,3 +47,11 @@ class InstrumentControllerSettings(Settings2):
     connection: ConnectionSettings = Field(default=ConnectionSettings())
     modules: list[InstrumentModule] = Field(default=[])
     reset: bool = Field(default=True)
+
+    NUMBER_OF_MODULES: ClassVar[int]
+
+    @model_validator(mode="after")
+    def validate_modules(self):
+        if len(self.modules) > self.NUMBER_OF_MODULES:
+            raise ValueError(f"{self.__class__.__name__} supports up to {self.NUMBER_OF_MODULES} modules.")
+        return self

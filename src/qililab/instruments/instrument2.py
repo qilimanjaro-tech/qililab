@@ -47,11 +47,6 @@ class Instrument2(ABC, Generic[TDevice, TSettings, TChannelSettings, TChannel, T
 
     @property
     def alias(self):
-        """Instrument 'alias' property.
-
-        Returns:
-            str: settings.alias.
-        """
         return self.settings.alias
 
     def is_device_active(self) -> bool:

@@ -11,13 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import ClassVar
 
-"""Class SPI Rack"""
-
-import qblox_instruments
-
-from qililab.typings.instruments.device import Device
+from qililab.settings.instrument_controllers.instrument_controller_settings import InstrumentControllerSettings
 
 
-class SPI_Rack(qblox_instruments.SpiRack, Device):
-    """Typing class of the SPI Rack class defined by Qblox."""
+class QbloxSPIRackControllerSettings(InstrumentControllerSettings):
+    NUMBER_OF_MODULES: ClassVar[int] = 12

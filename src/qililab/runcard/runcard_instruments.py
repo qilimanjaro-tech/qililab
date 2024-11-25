@@ -18,10 +18,12 @@ from pydantic import BaseModel, Field
 
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.settings.instruments import (
+    QbloxD5ASettings,
     QbloxQCMRFSettings,
     QbloxQCMSettings,
     QbloxQRMRFSettings,
     QbloxQRMSettings,
+    QbloxS4GSettings,
     QDevilQDAC2Settings,
     RohdeSchwarzSG100Settings,
 )
@@ -57,6 +59,16 @@ class QbloxQRMRFRuncardInstrument(BaseModel):
     settings: QbloxQRMRFSettings
 
 
+class QbloxD5ARuncardInstrument(BaseModel):
+    type: Literal[InstrumentType.QBLOX_D5A] = InstrumentType.QBLOX_D5A
+    settings: QbloxD5ASettings
+
+
+class QbloxS4GRuncardInstrument(BaseModel):
+    type: Literal[InstrumentType.QBLOX_S4G] = InstrumentType.QBLOX_S4G
+    settings: QbloxS4GSettings
+
+
 # Discriminated Union for instruments
 RuncardInstrument = Annotated[
     QDevilQDAC2RuncardInstrument
@@ -64,6 +76,8 @@ RuncardInstrument = Annotated[
     | QbloxQCMRuncardInstrument
     | QbloxQCMRFRuncardInstrument
     | QbloxQRMRuncardInstrument
-    | QbloxQRMRFRuncardInstrument,
+    | QbloxQRMRFRuncardInstrument
+    | QbloxD5ARuncardInstrument
+    | QbloxS4GRuncardInstrument,
     Field(discriminator="type"),
 ]

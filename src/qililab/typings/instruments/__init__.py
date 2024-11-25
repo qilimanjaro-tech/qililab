@@ -14,13 +14,14 @@
 
 """Instruments module"""
 
-from .cluster import QbloxClusterDevice
 from .device import Device
 from .keithley_2600 import Keithley2600Driver
 from .mini_circuits import MiniCircuitsDriver
-from .qblox_d5a import QbloxD5a
-from .qblox_s4g import QbloxS4g
-from .qcm_qrm import QbloxModuleDevice
+from .qblox_cluster import QbloxClusterDevice
+from .qblox_d5a import QbloxD5ADevice
+from .qblox_module import QbloxModuleDevice
+from .qblox_s4g import QbloxS4GDevice
+from .qblox_spi_rack import QbloxSPIRackDevice
 from .qdevil_qdac2 import QDevilQDAC2Device
 from .qmm_driver import QMMDriver
 from .rohde_schwarz import RohdeSchwarzSGS100ADevice
@@ -33,9 +34,10 @@ __all__ = [
     "QDevilQDAC2Device",
     "QMMDriver",
     "QbloxClusterDevice",
-    "QbloxD5a",
+    "QbloxD5ADevice",
     "QbloxModuleDevice",
-    "QbloxS4g",
+    "QbloxS4GDevice",
+    "QbloxSPIRackDevice",
     "RohdeSchwarzSGS100ADevice",
     "YokogawaGS200",
 ]

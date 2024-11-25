@@ -21,7 +21,7 @@ from qililab.settings.instruments.instrument_settings import InstrumentSettings
 
 
 class QDevilQDAC2Span(str, Enum):
-    LOW = ("low",)
+    LOW = "low"
     HIGH = "high"
 
 

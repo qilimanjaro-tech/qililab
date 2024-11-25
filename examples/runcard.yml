@@ -717,6 +717,114 @@ instruments:
     power: 0.0
     frequency: 1000000000.0
     rf_on: false
+- type: s4g
+  settings:
+    alias: s4g
+    dacs:
+    - id: 0
+      current: 0.0
+      span: min_bi
+      ramping_enabled: true
+      ramping_rate: 0.001
+    - id: 1
+      current: 0.0
+      span: min_bi
+      ramping_enabled: true
+      ramping_rate: 0.001
+    - id: 2
+      current: 0.0
+      span: min_bi
+      ramping_enabled: true
+      ramping_rate: 0.001
+    - id: 3
+      current: 0.0
+      span: min_bi
+      ramping_enabled: true
+      ramping_rate: 0.001
+- type: d5a
+  settings:
+    alias: d5a
+    dacs:
+    - id: 0
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 1
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 2
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 3
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 4
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 5
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 6
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 7
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 8
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 9
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 10
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 11
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 12
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 13
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 14
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 15
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
 instrument_controllers:
 - type: qdac2_controller
   settings:
@@ -745,3 +853,15 @@ instrument_controllers:
       slot: 15
     reset: true
     reference_clock: internal
+- type: qblox_spi_rack_controller
+  settings:
+    alias: spi-rack
+    connection:
+      type: tcp_ip
+      address: 168.0.0.1
+    modules:
+    - alias: d5a
+      slot: 2
+    - alias: s4g
+      slot: 10
+    reset: true

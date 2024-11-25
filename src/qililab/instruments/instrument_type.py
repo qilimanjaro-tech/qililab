@@ -22,3 +22,5 @@ class InstrumentType(str, Enum):
     QBLOX_QRM = "qrm"
     QBLOX_QCM_RF = "qcm-rf"
     QBLOX_QRM_RF = "qrm-rf"
+    QBLOX_S4G = "s4g"
+    QBLOX_D5A = "d5a"

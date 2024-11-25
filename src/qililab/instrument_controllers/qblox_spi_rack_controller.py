@@ -15,38 +15,33 @@
 from qililab.instrument_controllers.instrument_controller2 import InstrumentController2
 from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
-from qililab.instruments import QbloxModule
+from qililab.instruments import QbloxD5A, QbloxS4G
 from qililab.runcard.runcard_instrument_controllers import (
-    QbloxClusterRuncardInstrumentController,
+    QbloxSPIRackRuncardInstrumentController,
     RuncardInstrumentController,
 )
-from qililab.settings.instrument_controllers import QbloxClusterControllerSettings
-from qililab.typings.instruments import QbloxClusterDevice
+from qililab.settings.instrument_controllers import ConnectionSettings, ConnectionType, QbloxSPIRackControllerSettings
+from qililab.typings.instruments import QbloxSPIRackDevice
 
 
 @InstrumentControllerFactory.register(InstrumentControllerType.QDEVIL_QDAC2_CONTROLLER)
-class QbloxClusterController(InstrumentController2[QbloxClusterDevice, QbloxClusterControllerSettings, QbloxModule]):
+class QbloxSPIRackController(
+    InstrumentController2[QbloxSPIRackDevice, QbloxSPIRackControllerSettings, QbloxD5A | QbloxS4G]
+):
     @classmethod
-    def get_default_settings(cls) -> QbloxClusterControllerSettings:
-        return QbloxClusterControllerSettings(alias="qblox_cluster_controller")
-
-    def initial_setup(self):
-        """Initial setup of the Qblox Cluster Controller."""
-        self.device.reference_source(self.settings.reference_clock.value)
-        super().initial_setup()
-
-    def reset(self):
-        """Reset the device and clear cache of all modules."""
-        self.device.reset()
-        for module in self.modules:
-            module.clear_cache()
+    def get_default_settings(cls) -> QbloxSPIRackControllerSettings:
+        return QbloxSPIRackControllerSettings(
+            alias="spi-rack", connection=ConnectionSettings(type=ConnectionType.USB, address="COM1")
+        )
 
     def _initialize_device(self):
-        self.device = QbloxClusterDevice(name=f"{self.settings.alias}", identifier=self.settings.connection.address)
+        self.device = QbloxSPIRackDevice(name=f"{self.alias}", address=self.settings.connection.address)
 
     def _set_device_to_all_modules(self):
         for module, instrument in zip(self.settings.modules, self.modules):
-            instrument.device = self.device.modules[module.slot - 1]
+            module_type = "S4g" if isinstance(instrument, QbloxS4G) else "D5a"
+            self.device.add_spi_module(address=module.slot, module_type=module_type)
+            instrument.device = getattr(self.device, f"module{module.slot}")
 
     def to_runcard(self) -> RuncardInstrumentController:
-        return QbloxClusterRuncardInstrumentController(settings=self.settings)
+        return QbloxSPIRackRuncardInstrumentController(settings=self.settings)
