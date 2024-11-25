@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Class QcmQrm"""
-from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm as Driver_QcmQrm
+from qblox_instruments.qcodes_drivers.module import Module as Driver_QcmQrm
 
 from qililab.typings.instruments.device import Device
 
