@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable
+from typing import Callable, ClassVar
+
+import numpy as np
 
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument2 import Instrument2
@@ -22,10 +24,13 @@ from qililab.runcard.runcard_instruments import QDevilQDAC2RuncardInstrument, Ru
 from qililab.settings.instruments import QDevilQDAC2ChannelSettings, QDevilQDAC2Settings
 from qililab.typings import QDevilQDAC2Device as QDevilQDac2Driver
 from qililab.typings.enums import Parameter
+from qililab.waveforms import Waveform
 
 
 @InstrumentFactory.register(InstrumentType.QDEVIL_QDAC2)
 class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2ChannelSettings, int, None, None]):
+    AWG_RESOLUTION: ClassVar[int] = 1000
+
     @check_device_initialized
     def turn_on(self):
         raise NotImplementedError
@@ -94,3 +99,52 @@ class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC
 
     def to_runcard(self) -> RuncardInstrument:
         return QDevilQDAC2RuncardInstrument(settings=self.settings)
+
+    def upload_waveform(self, waveform: Waveform, channel: int):
+        """Uploads a waveform to the instrument and saves it to _cache.
+        IMPORTANT: note that the waveform resolution is not to the ns, it is acutally around 1_micro_second.
+
+        Args:
+            waveform (Waveform): Waveform to upload
+            channel_id (ChannelID): channel id of the qdac
+
+        Raises:
+            ValueError: if a waveform is already allocated
+        """
+        envelope = waveform.envelope(self.AWG_RESOLUTION)
+        if channel in self._cache:
+            raise ValueError(
+                f"QDAC2 {self.alias} already has a waveform allocated to channel {channel}. Clear the cache before allocating a new waveform."
+            )
+        # check that waveform entries are multiple of 2, check that amplitudes are within [-1,1] range
+        if len(envelope) % 2 != 0:
+            raise ValueError("Waveform entries must be even.")
+        if np.max(np.abs(envelope)) >= 1:
+            raise ValueError("Waveform amplitudes must be within [-1,1] range.")
+        trace = self.device.allocate_trace(channel, len(envelope))
+        trace.waveform(envelope)
+        self._cache[channel] = True
+
+    def play(self, channel: int | None = None, clear_after: bool = True):
+        """Plays a waveform for a given channel id. If no channel id is given, plays all waveforms stored in the cache.
+
+        Args:
+            channel_id (ChannelID | None, optional): Channel id to play a waveform through. Defaults to None.
+            clear_after (bool): If True, clears cache. Defaults to True.
+        """
+        if channel is None:
+            for dac in self.settings.dacs:
+                awg_context = self.device.channel(dac.id).arbitrary_wave(dac.id)
+            self.device.start_all()
+        else:
+            awg_context = self.device.channel(channel).arbitrary_wave(channel)
+            awg_context.start()
+        if clear_after:
+            self.clear_cache()
+
+        # TODO: catch errors raised at self.device.errors()
+
+    def clear_cache(self):
+        """Clears the cache of the instrument"""
+        self.device.remove_traces()  # TODO: this method should be run at initial setup if instrument is in awg mode
+        self._cache = {}
