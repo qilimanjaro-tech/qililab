@@ -1,0 +1,27 @@
+!Calibration
+blocks:
+  measurement: !Block
+    _uuid: !UUID {int: 51382213198160002539890685064316003974}
+    elements:
+    - !Play
+      _uuid: !UUID {int: 214683360525838151494422436614319566592}
+      bus: readout
+      wait_time: null
+      waveform: !IQPair
+        I: !Square {amplitude: 1.0, duration: 2000}
+        Q: !Square {amplitude: 0.0, duration: 2000}
+    - !Measure
+      _uuid: !UUID {int: 249620897697541826616041194897618541375}
+      bus: readout
+      demodulation: true
+      rotation: null
+      save_adc: false
+      waveform: !IQPair
+        I: !Square {amplitude: 1.0, duration: 2000}
+        Q: !Square {amplitude: 0.0, duration: 2000}
+      weights: !IQPair
+        I: !Square {amplitude: 1.0, duration: 2000}
+        Q: !Square {amplitude: 0.0, duration: 2000}
+crosstalk_matrix: {}
+waveforms: {}
+weights: {}
