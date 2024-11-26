@@ -364,17 +364,16 @@ class TestQBloxCompiler:
         assert "drive_q0" in output.sequences
         assert isinstance(output.sequences["drive_q0"], QPy.Sequence)
     
-    def test_block_handlers(self, calibration: Calibration):
+    def test_block_handlers(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
         measurement_block = calibration.get_block("measurement")
-        measure_program = QProgram()
-        measure_program.insert_block(measurement_block)
+        play_named_operation.insert_block(measurement_block)
         
         with (
             patch.object(QbloxCompiler, "_handle_block") as handle_block,
         ):
             compiler.compile(
-                qprogram=measure_program, bus_mapping={"drive": "drive_q0"}, calibration=calibration
+                qprogram=play_named_operation, calibration=calibration
             )
 
             assert handle_block.call_count == 1
