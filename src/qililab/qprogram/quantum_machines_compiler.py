@@ -137,6 +137,7 @@ class QuantumMachinesCompiler:
             ResetPhase: self._handle_reset_phase,
             Wait: self._handle_wait,
             Sync: self._handle_sync,
+            Block: self._handle_block,
         }
 
         self._qprogram: QProgram
@@ -405,6 +406,9 @@ class QuantumMachinesCompiler:
             operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
             qua.play(pulse, element.bus)
+            
+    def _handle_block(self, element: Block):
+        pass
 
     def _handle_measure(self, element: Measure):
         waveform_I, waveform_Q = element.get_waveforms()
