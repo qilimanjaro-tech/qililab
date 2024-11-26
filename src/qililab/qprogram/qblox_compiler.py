@@ -604,7 +604,7 @@ class QbloxCompiler:
                 component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
             )
             self._buses[element.bus].marked_for_sync = True
-            
+
     def _handle_block(self, element: Block):
         pass
 

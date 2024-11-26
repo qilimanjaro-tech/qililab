@@ -406,7 +406,7 @@ class QuantumMachinesCompiler:
             operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
             qua.play(pulse, element.bus)
-            
+     
     def _handle_block(self, element: Block):
         pass
 
