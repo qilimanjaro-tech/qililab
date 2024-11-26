@@ -27,8 +27,8 @@ def fixture_calibration() -> Calibration:
     calibration.add_waveform(bus="drive_q2", name="Xpi", waveform=Square(1.0, 200))
 
     measure_block = Block()
-    play = Play(bus="drive_q0", name="Xpi", waveform=Square(1.0, 100))
-    measure = Measure(bus="readout_q0", name="measurement", waveform=Square(1.0, 100))
+    play = Play(bus="drive_q0", waveform=Square(1.0, 100))
+    measure = Measure(bus="readout_q0", waveform=Square(1.0, 100))
     measure_block.append(play)
     measure_block.append(measure)
     calibration.add_block("measurement", measure_block)
