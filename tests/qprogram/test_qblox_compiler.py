@@ -32,7 +32,7 @@ def fixture_calibration() -> Calibration:
     measure = Measure(bus="readout_q0", waveform=Square(1.0, 100), weights=weights)
     measure_block.append(play)
     measure_block.append(measure)
-    calibration.add_block("measurement", measure_block)
+    calibration.insert_block("measurement", measure_block)
 
     return calibration
 
