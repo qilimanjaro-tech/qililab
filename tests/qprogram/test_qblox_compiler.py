@@ -29,7 +29,7 @@ def fixture_calibration() -> Calibration:
     measure_block = Block()
     weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     play = Play(bus="drive_q0", waveform=Square(1.0, 2000))
-    measure = Measure(bus="readout_q0", waveform=Square(1.0, 100), weights=weights)
+    measure = Measure(bus="readout", waveform=Square(1.0, 100), weights=weights)
     measure_block.append(play)
     measure_block.append(measure)
     calibration.add_block("measurement", measure_block)
