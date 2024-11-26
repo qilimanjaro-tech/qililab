@@ -5,7 +5,8 @@ import pytest
 import qpysequence as QPy
 
 from qililab import Calibration, Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
-from qililab.qprogram.blocks import ForLoop
+from qililab.qprogram.blocks import Block, ForLoop
+from qililab.qprogram.operations import Measure, Play
 from tests.test_utils import is_q1asm_equal
 
 
@@ -24,6 +25,13 @@ def fixture_calibration() -> Calibration:
     calibration.add_waveform(bus="drive_q0", name="Xpi", waveform=Square(1.0, 100))
     calibration.add_waveform(bus="drive_q1", name="Xpi", waveform=Square(1.0, 150))
     calibration.add_waveform(bus="drive_q2", name="Xpi", waveform=Square(1.0, 200))
+
+    measure_block = Block()
+    play = Play(bus="drive_q0", name="Xpi", waveform=Square(1.0, 100))
+    measure = Measure(bus="readout_q0", name="measurement", waveform=Square(1.0, 100))
+    measure_block.append(play)
+    measure_block.append(measure)
+    calibration.add_block("measurement", measure_block)
 
     return calibration
 
@@ -354,6 +362,19 @@ class TestQBloxCompiler:
         assert len(output.sequences) == 1
         assert "drive_q0" in output.sequences
         assert isinstance(output.sequences["drive_q0"], QPy.Sequence)
+    
+    def test_block_handlers(self, calibration: Calibration):
+        compiler = QbloxCompiler()
+        measurement_block = calibration.get_block("measurement")
+        measure_program = QProgram()
+        measure_program.add_block(measurement_block)
+        
+        with (
+            patch.object(QbloxCompiler, "_handle_block") as handle_block,
+        ):
+            compiler.compile(measure_program)
+
+            assert handle_block.call_count == 1
 
     def test_play_named_operation_raises_error_if_operations_not_in_calibration(self, play_named_operation: QProgram):
         calibration = Calibration()
