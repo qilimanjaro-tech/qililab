@@ -373,7 +373,9 @@ class TestQBloxCompiler:
         with (
             patch.object(QbloxCompiler, "_handle_block") as handle_block,
         ):
-            compiler.compile(measure_program)
+            compiler.compile(
+                qprogram=measure_program, bus_mapping={"drive": "drive_q0"}, calibration=calibration
+            )
 
             assert handle_block.call_count == 1
 
