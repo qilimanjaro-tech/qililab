@@ -29,10 +29,10 @@ def fixture_calibration() -> Calibration:
     measure_block = Block()
     weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     play = Play(bus="drive_q0", waveform=Square(1.0, 2000))
-    measure = Measure(bus="readout", waveform=Square(1.0, 100), weights=weights)
+    play_1 = Play(bus="drive_q0", waveform=Square(1.0, 2000))
     measure_block.append(play)
-    measure_block.append(measure)
-    calibration.add_block("measurement", measure_block)
+    measure_block.append(play_1)
+    calibration.add_block("block", measure_block)
 
     return calibration
 
@@ -366,7 +366,7 @@ class TestQBloxCompiler:
     
     def test_block_handlers(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
-        measurement_block = calibration.get_block("measurement")
+        measurement_block = calibration.get_block("block")
         play_named_operation.insert_block(measurement_block)
         
         with (
