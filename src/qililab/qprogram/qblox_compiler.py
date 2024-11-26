@@ -147,6 +147,7 @@ class QbloxCompiler:
             Measure: self._handle_measure,
             Acquire: self._handle_acquire,
             Play: self._handle_play,
+            Block: self._handle_block,
         }
 
         self._qprogram: QProgram
@@ -603,6 +604,9 @@ class QbloxCompiler:
                 component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
             )
             self._buses[element.bus].marked_for_sync = True
+            
+    def _handle_block(self, element: Block):
+        pass
 
     @staticmethod
     def _get_reference_operation_of_loop(loop: Loop | ForLoop, starting_block: Block | None = None):
