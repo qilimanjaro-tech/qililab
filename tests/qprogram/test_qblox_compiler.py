@@ -45,7 +45,7 @@ def fixture_measurement_blocked_operation() -> QProgram:
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     with qp.block():
-        qp.play(bus="drive_q0", waveform=drag_wf)
+        qp.play(bus="drive", waveform=drag_wf)
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
 
     return qp
@@ -373,19 +373,19 @@ class TestQBloxCompiler:
         readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
         weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
         qp_no_block = QProgram()
-        qp_no_block.play(bus="drive_q0", waveform=drag_wf)
+        qp_no_block.play(bus="drive", waveform=drag_wf)
         qp_no_block.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(
-            qprogram=measurement_blocked_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
+            qprogram=measurement_blocked_operation
         )
 
         sequences_no_block, _ = compiler.compile(
-            qprogram=qp_no_block, bus_mapping={"drive": "drive_q0"}, calibration=calibration
+            qprogram=qp_no_block
         )
         assert len(sequences) == 2
-        assert "drive_q0" in sequences
+        assert "drive" in sequences
         assert "readout" in sequences
 
         drive_str = """
@@ -400,8 +400,8 @@ class TestQBloxCompiler:
                                 upd_param        4
                                 stop
             """
-        assert is_q1asm_equal(sequences["drive_q0"]._program, drive_str)
-        assert is_q1asm_equal(sequences["drive_q0"]._program, sequences_no_block["drive_q0"]._program)
+        assert is_q1asm_equal(sequences["drive"]._program, drive_str)
+        assert is_q1asm_equal(sequences["drive"]._program, sequences_no_block["drive"]._program)
 
     def test_play_named_operation_raises_error_if_operations_not_in_calibration(self, play_named_operation: QProgram):
         calibration = Calibration()
