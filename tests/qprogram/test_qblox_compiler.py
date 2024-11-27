@@ -369,14 +369,23 @@ class TestQBloxCompiler:
         assert isinstance(output.sequences["drive_q0"], QPy.Sequence)
     
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
+        drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+        readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+        weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qp_no_block = QProgram()
+        qp_no_block.play(bus="drive_q0", waveform=drag_wf)
+        qp_no_block.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(
             qprogram=measurement_blocked_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
         )
-        
-        print(sequences)
+
+        sequences_no_block, _ = compiler.compile(
+            qprogram=qp_no_block, bus_mapping={"drive": "drive_q0"}, calibration=calibration
+        )
         assert len(sequences) == 2
-        assert "drive" in sequences
+        assert "drive_q0" in sequences
         assert "readout" in sequences
 
         drive_str = """
@@ -386,17 +395,13 @@ class TestQBloxCompiler:
                                 upd_param        4
 
                 main:
-                                set_freq         1200
-                                set_ph           250000000
-                                reset_ph
-                                set_awg_gain     16383, 16383
-                                set_awg_offs     16383, 16383
-                                play             0, 1, 40
+                                play             0, 1, 100
                                 set_mrk          0
                                 upd_param        4
                                 stop
             """
-        assert is_q1asm_equal(sequences["drive_q0"], drive_str)
+        assert is_q1asm_equal(sequences["drive_q0"]._program, drive_str)
+        assert is_q1asm_equal(sequences["drive_q0"]._program, sequences_no_block["drive_q0"]._program)
 
     def test_play_named_operation_raises_error_if_operations_not_in_calibration(self, play_named_operation: QProgram):
         calibration = Calibration()
