@@ -15,6 +15,7 @@
 import hashlib
 import math
 from collections import deque
+from contextlib import contextmanager
 from typing import Callable
 
 import numpy as np
@@ -409,6 +410,7 @@ class QuantumMachinesCompiler:
             pulse = operation_name * gain if gain is not None else operation_name
             qua.play(pulse, element.bus)
 
+    @contextmanager
     def _handle_block(self, element: Block):
         pass
 
