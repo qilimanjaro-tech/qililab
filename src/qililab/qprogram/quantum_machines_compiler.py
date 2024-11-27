@@ -174,11 +174,9 @@ class QuantumMachinesCompiler:
                     raise NotImplementedError(
                         f"{element.__class__} operation is currently not supported in Quantum Machines."
                     )
-                if isinstance(element, (InfiniteLoop, ForLoop, Loop, Average, Parallel)):
+                if isinstance(element, (InfiniteLoop, ForLoop, Loop, Average, Parallel, Block)):
                     with handler(element):
                         traverse(element)
-                elif isinstance(element, Block):
-                    traverse(element)
                 else:
                     handler(element)
             self._qprogram_block_stack.pop()
@@ -412,7 +410,7 @@ class QuantumMachinesCompiler:
 
     @contextmanager
     def _handle_block(self, element: Block):
-        pass
+        yield
 
     def _handle_measure(self, element: Measure):
         waveform_I, waveform_Q = element.get_waveforms()
