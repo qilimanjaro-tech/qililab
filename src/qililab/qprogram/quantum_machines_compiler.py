@@ -15,6 +15,7 @@
 import hashlib
 import math
 from collections import deque
+from contextlib import contextmanager
 from typing import Callable
 
 import numpy as np
@@ -137,6 +138,7 @@ class QuantumMachinesCompiler:
             ResetPhase: self._handle_reset_phase,
             Wait: self._handle_wait,
             Sync: self._handle_sync,
+            Block: self._handle_block,
         }
 
         self._qprogram: QProgram
@@ -172,7 +174,7 @@ class QuantumMachinesCompiler:
                     raise NotImplementedError(
                         f"{element.__class__} operation is currently not supported in Quantum Machines."
                     )
-                if isinstance(element, (InfiniteLoop, ForLoop, Loop, Average, Parallel)):
+                if isinstance(element, (InfiniteLoop, ForLoop, Loop, Average, Parallel, Block)):
                     with handler(element):
                         traverse(element)
                 else:
@@ -405,6 +407,10 @@ class QuantumMachinesCompiler:
             operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
             qua.play(pulse, element.bus)
+
+    @contextmanager
+    def _handle_block(self, element: Block):
+        yield
 
     def _handle_measure(self, element: Measure):
         waveform_I, waveform_Q = element.get_waveforms()

@@ -6,6 +6,10 @@
 
 [#836](https://github.com/qilimanjaro-tech/qililab/pull/836)
 
+- Added empty handlers for Blocks in QProgram compilers
+
+[#839](https://github.com/qilimanjaro-tech/qililab/pull/839)
+
 - Support GRES in %%submit_job magic method
 
 [#828](https://github.com/qilimanjaro-tech/qililab/pull/828)
