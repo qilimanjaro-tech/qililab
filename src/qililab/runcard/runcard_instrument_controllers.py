@@ -21,6 +21,7 @@ from qililab.settings.instrument_controllers import (
     QbloxClusterControllerSettings,
     QbloxSPIRackControllerSettings,
     QDevilQDAC2ControllerSettings,
+    QuantumMachinesClusterControllerSettings,
     RohdeSchwarzSG100ControllerSettings,
 )
 
@@ -42,6 +43,13 @@ class QDevilQDAC2RuncardInstrumentController(BaseModel):
     settings: QDevilQDAC2ControllerSettings
 
 
+class QuantumMachinesClusterRuncardInstrumentController(BaseModel):
+    type: Literal[InstrumentControllerType.QUANTUM_MACHINES_CLUSTER_CONTROLLER] = (
+        InstrumentControllerType.QUANTUM_MACHINES_CLUSTER_CONTROLLER
+    )
+    settings: QuantumMachinesClusterControllerSettings
+
+
 class RohdeSchwarzSG100RuncardInstrumentController(BaseModel):
     type: Literal[InstrumentControllerType.ROHDE_SCHWARZ_SG100_CONTROLLER] = (
         InstrumentControllerType.ROHDE_SCHWARZ_SG100_CONTROLLER
@@ -54,6 +62,7 @@ RuncardInstrumentController = Annotated[
     QbloxClusterRuncardInstrumentController
     | QbloxSPIRackRuncardInstrumentController
     | QDevilQDAC2RuncardInstrumentController
+    | QuantumMachinesClusterRuncardInstrumentController
     | RohdeSchwarzSG100RuncardInstrumentController,
     Field(discriminator="type"),
 ]

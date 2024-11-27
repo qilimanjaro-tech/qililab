@@ -11,26 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import ClassVar
 
-from pydantic import BaseModel
+from pydantic import Field
 
-from qililab.settings.instruments.channel_settings import ChannelSettings
-
-
-class ControllerPort(BaseModel):
-    controller: str
-    port: int
+from qililab.settings.instrument_controllers.instrument_controller_settings import InstrumentControllerSettings
 
 
-class OPXElement(ChannelSettings[str]):
-    intermediate_frequency: float
+class QuantumMachinesClusterControllerSettings(InstrumentControllerSettings):
+    cluster: str
+    octaves: list[str] = Field(default=[])
+    calibration_db_path: str | None = Field(default=None)
 
-
-class IQElement(OPXElement):
-    I: ControllerPort
-    Q: ControllerPort
-    lo_frequency: float
-
-
-class SingleElement(OPXElement):
-    port: ControllerPort
+    NUMBER_OF_MODULES: ClassVar[int] = 1

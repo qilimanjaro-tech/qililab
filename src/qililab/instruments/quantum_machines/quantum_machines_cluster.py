@@ -28,7 +28,7 @@ from qm.program import Program
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, QMMDriver
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, QuantumMachinesDevice
 from qililab.utils import hash_qua_program, merge_dictionaries
 
 
@@ -409,7 +409,7 @@ class QuantumMachinesCluster(Instrument):
             return elements, mixers
 
     settings: QuantumMachinesClusterSettings
-    device: QMMDriver
+    device: QuantumMachinesDevice
     _qmm: QuantumMachinesManager
     _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
     _config: DictQuaConfig

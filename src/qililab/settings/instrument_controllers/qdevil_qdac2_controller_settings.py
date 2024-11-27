@@ -17,4 +17,4 @@ from qililab.settings.instrument_controllers.instrument_controller_settings impo
 
 
 class QDevilQDAC2ControllerSettings(InstrumentControllerSettings):
-    NUMBER_OF_MODULES: ClassVar[int] = 12
+    NUMBER_OF_MODULES: ClassVar[int] = 1

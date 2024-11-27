@@ -14,8 +14,10 @@
 
 """Class Quantum Machines Manager"""
 
+from qm import QuantumMachinesManager
+
 from qililab.typings.instruments.device import Device
 
 
-class QMMDriver(Device):
+class QuantumMachinesDevice(QuantumMachinesManager, Device):
     """Typing class of the Quantum Machine Manager class defined by Quantum Machines."""

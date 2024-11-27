@@ -23,7 +23,7 @@ from .qblox_module import QbloxModuleDevice
 from .qblox_s4g import QbloxS4GDevice
 from .qblox_spi_rack import QbloxSPIRackDevice
 from .qdevil_qdac2 import QDevilQDAC2Device
-from .qmm_driver import QMMDriver
+from .quantum_machines_opx import QuantumMachinesDevice
 from .rohde_schwarz import RohdeSchwarzSGS100ADevice
 from .yokogawa_gs200 import YokogawaGS200
 
@@ -32,12 +32,12 @@ __all__ = [
     "Keithley2600Driver",
     "MiniCircuitsDriver",
     "QDevilQDAC2Device",
-    "QMMDriver",
     "QbloxClusterDevice",
     "QbloxD5ADevice",
     "QbloxModuleDevice",
     "QbloxS4GDevice",
     "QbloxSPIRackDevice",
+    "QuantumMachinesDevice",
     "RohdeSchwarzSGS100ADevice",
     "YokogawaGS200",
 ]

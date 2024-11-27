@@ -27,6 +27,7 @@ from .qblox_qrm_rf import QbloxQRMRF
 from .qblox_s4g import QbloxS4G
 from .qdevil_qdac2 import QDevilQDAC2
 from .quantum_machines import QuantumMachinesCluster
+from .quantum_machines_opx import QuantumMachinesOPX
 from .rohde_schwarz import SGS100A
 from .signal_generator import SignalGenerator
 from .utils import InstrumentFactory
@@ -47,6 +48,7 @@ __all__ = [
     "QbloxQRMRF",
     "QbloxS4G",
     "QuantumMachinesCluster",
+    "QuantumMachinesOPX",
     "SignalGenerator",
     "check_device_initialized",
     "log_set_parameter",

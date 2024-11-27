@@ -20,11 +20,36 @@ from .qblox_qcm_settings import QbloxLFOutputSettings, QbloxQCMRFSettings, Qblox
 from .qblox_qrm_settings import QbloxLFInputSettings, QbloxQRMRFSettings, QbloxQRMSettings, QbloxRFInputSettings
 from .qblox_s4g_settings import QbloxS4GChannelSettings, QbloxS4GSettings
 from .qdevil_qdac2_settings import QDevilQDAC2ChannelSettings, QDevilQDAC2Settings
+from .quantum_machines_opx_settings import (
+    ControllerPort,
+    IQElement,
+    IQReadoutElement,
+    OctavePort,
+    OpxLFInput,
+    OpxLFOutput,
+    OpxRFInput,
+    OpxRFOutput,
+    OPXSettings,
+    RFElement,
+    RFReadoutElement,
+    SingleElement,
+)
 from .rohde_schwarz_sg100_settings import RohdeSchwarzSG100Settings
 
 __all__ = [
     "ChannelSettings",
+    "ControllerPort",
+    "IQElement",
+    "IQReadoutElement",
     "InstrumentSettings",
+    "OPXSettings",
+    "OctavePort",
+    "OpxLFInput",
+    "OpxLFOutput",
+    "OpxLFOutput",
+    "OpxRFInput",
+    "OpxRFOutput",
+    "OpxRFOutput",
     "QDevilQDAC2ChannelSettings",
     "QDevilQDAC2Settings",
     "QbloxADCSequencerSettings",
@@ -42,5 +67,8 @@ __all__ = [
     "QbloxS4GChannelSettings",
     "QbloxS4GSettings",
     "QbloxSequencerSettings",
+    "RFElement",
+    "RFReadoutElement",
     "RohdeSchwarzSG100Settings",
+    "SingleElement",
 ]

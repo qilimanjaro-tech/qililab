@@ -24,3 +24,4 @@ class InstrumentType(str, Enum):
     QBLOX_QRM_RF = "qrm-rf"
     QBLOX_S4G = "s4g"
     QBLOX_D5A = "d5a"
+    QUANTUM_MACHINES_OPX = "opx"

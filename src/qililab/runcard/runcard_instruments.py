@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.settings.instruments import (
+    OPXSettings,
     QbloxD5ASettings,
     QbloxQCMRFSettings,
     QbloxQCMSettings,
@@ -69,6 +70,11 @@ class QbloxS4GRuncardInstrument(BaseModel):
     settings: QbloxS4GSettings
 
 
+class QuantumMachinesOPXRuncardInstrument(BaseModel):
+    type: Literal[InstrumentType.QUANTUM_MACHINES_OPX] = InstrumentType.QUANTUM_MACHINES_OPX
+    settings: OPXSettings
+
+
 # Discriminated Union for instruments
 RuncardInstrument = Annotated[
     QDevilQDAC2RuncardInstrument
@@ -78,6 +84,7 @@ RuncardInstrument = Annotated[
     | QbloxQRMRuncardInstrument
     | QbloxQRMRFRuncardInstrument
     | QbloxD5ARuncardInstrument
-    | QbloxS4GRuncardInstrument,
+    | QbloxS4GRuncardInstrument
+    | QuantumMachinesOPXRuncardInstrument,
     Field(discriminator="type"),
 ]

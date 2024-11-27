@@ -14,6 +14,8 @@
 
 from typing import Generic, TypeVar
 
+from pydantic import BaseModel
+
 from qililab.settings.settings2 import Settings2
 
 ChannelID = TypeVar("ChannelID", int, str)
@@ -24,3 +26,25 @@ class ChannelSettings(Settings2, Generic[ChannelID]):
     """Base Settings for all Instruments"""
 
     id: ChannelID
+
+
+class ModulatedMixin(BaseModel):
+    intermediate_frequency: float
+
+
+class ToSingleOutputMixin(BaseModel):
+    output: int
+
+
+class ToIQOutputMixin(BaseModel):
+    output_i: int
+    output_q: int
+
+
+class FromSingleInputMixin(BaseModel):
+    input: int
+
+
+class FromIQInputMixin(BaseModel):
+    input_i: int
+    input_q: int

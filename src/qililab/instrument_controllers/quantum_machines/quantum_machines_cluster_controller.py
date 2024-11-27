@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Quantum Machines Manager Instrument Controller """
+"""Quantum Machines Manager Instrument Controller"""
+
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -20,7 +21,7 @@ from qililab.instrument_controllers.instrument_controller import InstrumentContr
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
-from qililab.typings import QMMDriver
+from qililab.typings import QuantumMachinesDevice
 from qililab.typings.enums import InstrumentControllerName
 
 
@@ -37,7 +38,7 @@ class QuantumMachinesClusterController(SingleInstrumentController):
     """
 
     name = InstrumentControllerName.QUANTUM_MACHINES_CLUSTER
-    device: QMMDriver
+    device: QuantumMachinesDevice
     modules: Sequence[QuantumMachinesCluster]
 
     @dataclass
@@ -48,7 +49,7 @@ class QuantumMachinesClusterController(SingleInstrumentController):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = QMMDriver()
+        self.device = QuantumMachinesDevice()
 
     def _check_supported_modules(self):
         """Checks if all instrument modules loaded are supported modules for the controller."""

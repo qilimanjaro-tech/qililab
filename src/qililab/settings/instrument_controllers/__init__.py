@@ -16,6 +16,7 @@ from .instrument_controller_settings import ConnectionSettings, ConnectionType, 
 from .qblox_cluster_controller_settings import QbloxClusterControllerSettings
 from .qblox_spi_rack_controller_settings import QbloxSPIRackControllerSettings
 from .qdevil_qdac2_controller_settings import QDevilQDAC2ControllerSettings
+from .quantum_machines_cluster_controller_settings import QuantumMachinesClusterControllerSettings
 from .rohde_schwarz_sg100_controller_settings import RohdeSchwarzSG100ControllerSettings
 
 __all__ = [
@@ -25,5 +26,6 @@ __all__ = [
     "QDevilQDAC2ControllerSettings",
     "QbloxClusterControllerSettings",
     "QbloxSPIRackControllerSettings",
+    "QuantumMachinesClusterControllerSettings",
     "RohdeSchwarzSG100ControllerSettings",
 ]
