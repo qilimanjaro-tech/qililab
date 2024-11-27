@@ -135,11 +135,11 @@ class QbloxQRM(QbloxModule):
         for sequencer in self.awg_sequencers:
             if sequencer.identifier in self.sequences:
                 sequencer_id = sequencer.identifier
-                flags = self.device.get_sequencer_state(
+                flags = self.device.get_sequencer_status(
                     sequencer=sequencer_id, timeout=cast(QbloxADCSequencer, sequencer).sequence_timeout
                 )
                 logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
-                self.device.get_acquisition_state(
+                self.device.get_acquisition_status(
                     sequencer=sequencer_id, timeout=cast(QbloxADCSequencer, sequencer).acquisition_timeout
                 )
 
@@ -180,7 +180,7 @@ class QbloxQRM(QbloxModule):
                 (sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None
             )
             if sequencer is not None and sequencer.identifier in self.sequences:
-                self.device.get_acquisition_state(
+                self.device.get_acquisition_status(
                     sequencer=sequencer.identifier,
                     timeout=cast(QbloxADCSequencer, sequencer).acquisition_timeout,
                 )
