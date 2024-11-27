@@ -26,14 +26,6 @@ def fixture_calibration() -> Calibration:
     calibration.add_waveform(bus="drive_q1", name="Xpi", waveform=Square(1.0, 150))
     calibration.add_waveform(bus="drive_q2", name="Xpi", waveform=Square(1.0, 200))
 
-    measure_block = Block()
-    weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
-    play = Play(bus="drive_q0", waveform=Square(1.0, 2000))
-    play_1 = Play(bus="drive_q0", waveform=Square(1.0, 2000))
-    measure_block.append(play)
-    measure_block.append(play_1)
-    calibration.add_block("block", measure_block)
-
     return calibration
 
 
@@ -43,6 +35,18 @@ def fixture_play_named_operation() -> QProgram:
     qp = QProgram()
     qp.play(bus="drive", waveform="Xpi")
     qp.play(bus="drive", waveform=drag_wf)
+
+    return qp
+
+@pytest.fixture(name="measurement_blocked_operation")
+def fixture_measurement_blocked_operation() -> QProgram:
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    with qp.block():
+        qp.play(bus="drive_q0", waveform=drag_wf)
+        qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
 
     return qp
 
@@ -364,19 +368,35 @@ class TestQBloxCompiler:
         assert "drive_q0" in output.sequences
         assert isinstance(output.sequences["drive_q0"], QPy.Sequence)
     
-    def test_block_handlers(self, play_named_operation: QProgram, calibration: Calibration):
+    def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
-        measurement_block = calibration.get_block("block")
-        play_named_operation.insert_block(measurement_block)
+        sequences, _ = compiler.compile(
+            qprogram=measurement_blocked_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
+        )
         
-        with (
-            patch.object(QbloxCompiler, "_handle_block") as handle_block,
-        ):
-            compiler.compile(
-                qprogram=play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
-            )
+        print(sequences)
+        assert len(sequences) == 2
+        assert "drive" in sequences
+        assert "readout" in sequences
 
-            assert handle_block.call_count == 1
+        drive_str = """
+                setup:
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+
+                main:
+                                set_freq         1200
+                                set_ph           250000000
+                                reset_ph
+                                set_awg_gain     16383, 16383
+                                set_awg_offs     16383, 16383
+                                play             0, 1, 40
+                                set_mrk          0
+                                upd_param        4
+                                stop
+            """
+        assert is_q1asm_equal(sequences["drive_q0"], drive_str)
 
     def test_play_named_operation_raises_error_if_operations_not_in_calibration(self, play_named_operation: QProgram):
         calibration = Calibration()
