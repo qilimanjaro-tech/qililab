@@ -51,6 +51,7 @@ class QbloxQCMRF(QbloxQCM):
             init=False,
             default_factory=list,  # QCM-RF module doesn't have an `out_offsets` parameter
         )
+        out0_in0_lo_freq_cal_type_default: str
 
     settings: QbloxQCMRFSettings
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
@@ -66,6 +67,7 @@ class QbloxQCMRF(QbloxQCM):
         Parameter.OUT1_ATT,
         Parameter.OUT1_OFFSET_PATH0,
         Parameter.OUT1_OFFSET_PATH1,
+        Parameter.OUT0_IN0_LO_FREQ_CAL_TYPE_DEFAULT
     }
 
     @check_device_initialized
@@ -138,3 +140,9 @@ class QbloxQCMRF(QbloxQCM):
         dictionary = super().to_dict()
         dictionary.pop("out_offsets")
         return dictionary
+
+    def calibrate_mixers(self, output: int, cal_type: str):
+        self.device._calibrate_lo(self.device.parent, output=output,
+                                  cal_type=cal_type)
+
+        return

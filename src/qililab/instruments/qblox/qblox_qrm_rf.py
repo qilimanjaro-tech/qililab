@@ -44,6 +44,7 @@ class QbloxQRMRF(QbloxQRM):
         out0_offset_path0: float
         out0_offset_path1: float
         out_offsets: list[float] = field(init=False, default_factory=list)
+        out0_in0_lo_freq_cal_type_default: str
 
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
@@ -54,6 +55,7 @@ class QbloxQRMRF(QbloxQRM):
         Parameter.IN0_ATT,
         Parameter.OUT0_OFFSET_PATH0,
         Parameter.OUT0_OFFSET_PATH1,
+        Parameter.OUT0_IN0_LO_FREQ_CAL_TYPE_DEFAULT
     }
 
     settings: QbloxQRMRFSettings
@@ -114,3 +116,9 @@ class QbloxQRMRF(QbloxQRM):
         dictionary = super().to_dict()
         dictionary.pop("out_offsets")
         return dictionary
+
+    def calibrate_mixers(self, cal_type: str):
+        self.device._calibrate_lo(parent=self.device.parent, output=0,
+                                  cal_type=cal_type)
+
+        return
