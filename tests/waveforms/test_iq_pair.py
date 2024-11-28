@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qililab.waveforms import DragCorrection, Gaussian, IQPair, Square
+from qililab.waveforms import GaussianDragCorrection, Gaussian, IQPair, Square
 
 
 @pytest.fixture(name="iq_pair")
@@ -38,10 +38,10 @@ class TestIQPair:
         """Test __init__ method"""
         drag = IQPair.DRAG(drag_coefficient=0.4, amplitude=0.7, duration=40, num_sigmas=2)
         gaus = Gaussian(amplitude=0.7, duration=40, num_sigmas=2)
-        corr = DragCorrection(drag_coefficient=0.4, waveform=gaus)
+        corr = GaussianDragCorrection(drag_coefficient=0.4, waveform=gaus)
 
         assert isinstance(drag, IQPair)
         assert isinstance(drag.I, Gaussian)
-        assert isinstance(drag.Q, DragCorrection)
+        assert isinstance(drag.Q, GaussianDragCorrection)
         assert np.allclose(drag.I.envelope(), gaus.envelope())
         assert np.allclose(drag.Q.envelope(), corr.envelope())

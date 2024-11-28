@@ -4,7 +4,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from qililab import Domain, DragCorrection, Gaussian, IQPair, QProgram, Square
+from qililab import Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square
 from qililab.qprogram.blocks import Average
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -398,7 +398,7 @@ class TestQProgram(TestStructuredProgram):
         for var in all_types - {scalar}:
             gaussian = Gaussian(amplitude=1.0, duration=40, num_sigmas=2.5)
             with pytest.raises(ValueError):
-                _ = DragCorrection(drag_coefficient=var, waveform=gaussian)
+                _ = GaussianDragCorrection(drag_coefficient=var, waveform=gaussian)
 
         for amplitude_var, duration_var, num_sigmas_var, drag_coefficient_var in set(product(all_types, repeat=4)) - {
             (voltage, time, scalar, scalar)

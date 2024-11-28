@@ -35,12 +35,24 @@ Waveforms
 
 from .arbitrary import Arbitrary
 from .chained import Chained
-from .drag_correction import DragCorrection
 from .flat_top import FlatTop
 from .gaussian import Gaussian
+from .gaussian_drag_correction import GaussianDragCorrection
+from .iq_drag import IQDrag
 from .iq_pair import IQPair
 from .ramp import Ramp
 from .square import Square
 from .waveform import Waveform
 
-__all__ = ["Arbitrary", "Chained", "DragCorrection", "FlatTop", "Gaussian", "IQPair", "Ramp", "Square", "Waveform"]
+__all__ = [
+    "Arbitrary",
+    "Chained",
+    "FlatTop",
+    "Gaussian",
+    "GaussianDragCorrection",
+    "IQDrag",
+    "IQPair",
+    "Ramp",
+    "Square",
+    "Waveform",
+]
