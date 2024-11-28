@@ -76,7 +76,7 @@ class TrackerWriter:
         self.data: dict[str, h5py.Group] = {}
         self.real: dict[str, h5py.Group] = {}
 
-    def __enter__(self):
+    def create_path(self):
         """Opens the HDF5 file and creates the structure for streaming.
 
         Returns:
@@ -109,7 +109,7 @@ class TrackerWriter:
         timestamp = executed_at.strftime("%H%M%S")
 
         # Format the path based on the path's format
-        time_path = f"/{date}/{timestamp}"
+        time_path = f"{date}/{timestamp}"
 
         # Construct the full path
         path_file = os.path.join(self.path, time_path)
@@ -167,9 +167,10 @@ class TrackerWriter:
         for alias in self._metadata["experiments"]["alias"]:
             self.experiment_path[alias] = {}
             os.makedirs(f"{self.path}/{alias}", exist_ok=True)
-            for value in self._metadata["experiments"]["values"]:
-                os.makedirs(f"{self.path}/{alias}/{value['label']}_{value['values']}", exist_ok=True)
-                self.experiment_path[alias][value["values"]] = f"{self.path}/{alias}/{value['label']}_{value['values']}"
+            values = self._metadata["values"]
+            for value in values['values']:
+                os.makedirs(f"{self.path}/{alias}/{values['label']}_{value}", exist_ok=True)
+                self.experiment_path[alias][value] = f"{self.path}/{alias}/{values['label']}_{value}"
 
     def _create_results_access(self):
         """Sets up internal data structures to allow for real-time data writing to the HDF5 file."""

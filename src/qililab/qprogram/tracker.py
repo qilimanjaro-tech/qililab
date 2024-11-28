@@ -141,6 +141,7 @@ class Tracker:
         )
 
         tracker_writer = TrackerWriter(tracker_path, metadata)
+        tracker_writer.create_path()
 
         execution_completed = threading.Event()
 
