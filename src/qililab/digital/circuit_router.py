@@ -70,7 +70,7 @@ class CircuitRouter:
         # 3) Layout stage, where the initial_layout will be created.
 
     def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict[str, int]]:
-        """Routes the virtual or logical qubits of a circuit to the physical qubits of a chip. Returns and/or logs the final qubit layout.
+        """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         **Examples:**
 

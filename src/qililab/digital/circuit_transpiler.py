@@ -51,19 +51,24 @@ class CircuitTranspiler:
         routing_iterations: int = 10,
         optimize: bool = True,
     ) -> tuple[list[PulseSchedule], list[dict]]:
-        """Transpiles a list of ``qibo.models.Circuit`` to a list of pulse schedules.
+        """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
-        First makes a routing and placement of the circuit to the chip's physical qubits. And returns/logs the final layout of the qubits.
-        If passed, this is done, with the `placer`, `router` and `routing_iterations` params (if not, default ones are applied).
+        The process involves the following steps:
 
-        Then translates the circuit to the native gate circuit, of the chip (CZ, RZ, Drag, Wait and M (Measurement).
+        1. Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters if provided; otherwise, default values are applied.
 
-        And finally, it converts the native gate circuit to a pulse schedule using calibrated settings from the runcard.
+        2. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
 
-        If ``optimize=True`` (default behaviour), then it also does some circuit optimization:
+        3. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
 
-        - cancelling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ and SWAPs).
-        - applying virtual Z gates and phase corrections (adding up several pulses into a single one, commuting them with virtual Zs).
+        |
+
+        If `optimize=True` (default behavior), the following optimizations are performed:
+
+        - Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
+        - Applying virtual Z gates and phase corrections by combining multiple pulses into a single one and commuting them with virtual Z gates.
+
+        |
 
         **Examples:**
 
@@ -144,9 +149,9 @@ class CircuitTranspiler:
         coupling_map: list[tuple[int, int]] | None = None,
         iterations: int = 10,
     ) -> tuple[Circuit, dict[str, int]]:
-        """Routes the virtual or logical qubits of a circuit to the physical qubits of a chip. Returns and/or logs the final qubit layout. 
+        """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
-This process uses the provided `placer`, `router`, and `routing_iterations` parameters if they are passed; otherwise, default values are applied.
+        This process uses the provided `placer`, `router`, and `routing_iterations` parameters if they are passed; otherwise, default values are applied.
 
         **Examples:**
 
