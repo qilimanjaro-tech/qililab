@@ -51,7 +51,8 @@ class QbloxQCMRF(QbloxQCM):
             init=False,
             default_factory=list,  # QCM-RF module doesn't have an `out_offsets` parameter
         )
-        out0_in0_lo_freq_cal_type_default: str
+        out0_in_lo_freq_cal_type_default: str
+        out1_in_lo_freq_cal_type_default: str
 
     settings: QbloxQCMRFSettings
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
@@ -67,7 +68,8 @@ class QbloxQCMRF(QbloxQCM):
         Parameter.OUT1_ATT,
         Parameter.OUT1_OFFSET_PATH0,
         Parameter.OUT1_OFFSET_PATH1,
-        Parameter.OUT0_IN0_LO_FREQ_CAL_TYPE_DEFAULT
+        Parameter.OUT0_IN_LO_FREQ_CAL_TYPE_DEFAULT,
+        Parameter.OUT1_IN_LO_FREQ_CAL_TYPE_DEFAULT
     }
 
     @check_device_initialized
