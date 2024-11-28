@@ -126,7 +126,7 @@ class ExperimentResultsWriter(ExperimentResults):
             qprograms_group = self._file.create_group(ExperimentResultsWriter.QPROGRAMS_PATH)
 
             # Register live plotting status
-            self._file.create_group("live_plotting", data=self.live_plot)
+            self._file["live_plotting"] = self.live_plot
 
             # Prepare for SWMR mode to allow for live plotting
             if self.live_plot:
@@ -191,7 +191,7 @@ class ExperimentResultsWriter(ExperimentResults):
         Returns:
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
-        self._file = h5py.File(self.path, mode="w")
+        self._file = h5py.File(self.path, mode="w", libver='latest')
         self._create_results_file()
         self._create_resuts_access()
 
@@ -211,7 +211,7 @@ class ExperimentResultsWriter(ExperimentResults):
             measurement_name = f"Measurement_{measurement_name}"
         self.data[qprogram_name, measurement_name][tuple(indices)] = value
         if self.live_plot:
-            self.data[qprogram_name, measurement_name][tuple(indices)].flush()
+            self.data[qprogram_name, measurement_name].flush()
 
     @ExperimentResults.platform.setter
     def platform(self, platform: str):
@@ -261,7 +261,7 @@ class ExperimentResultsWriter(ExperimentResults):
             del self._file[path]
         self._file[path] = str(time)
 
-    @ExperimentResults.execution_time.setter
+    @ExperimentResults.execution_end.setter
     def execution_end(self, end: bool):
         """Sets the execution time in seconds.
 

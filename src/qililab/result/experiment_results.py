@@ -67,13 +67,13 @@ class ExperimentResults:
         Returns:
             ExperimentResults: The ExperimentResults instance.
         """
-        self._file = h5py.File(self.path, mode="r")
+        self._file = h5py.File(self.path, mode="r", libver='latest', swmr=False)
 
         self._live_plot = self._file["live_plotting"]
 
         # Prepare for SWMR mode to allow for live plotting
-        if self._live_plot:
-            self._file.swmr_mode = True
+        # if self._live_plot:
+        #     self._file.swmr_mode = True
 
         # Prepare access to each results dataset and its dimensions
         for qprogram_name in self._file[ExperimentResults.QPROGRAMS_PATH]:
@@ -186,6 +186,15 @@ class ExperimentResults:
             float: The execution time in seconds.
         """
         return float(self._file[ExperimentResults.EXECUTION_TIME_PATH][()].decode("utf-8"))
+
+    @property
+    def execution_end(self) -> float:
+        """Gets the execution finished status.
+
+        Returns:
+            bool: The execution status.
+        """
+        return self._file[ExperimentResults.EXECUTION_END_PATH][()].decode("utf-8")
 
     # pylint: disable=too-many-statements
     def plot_S21(self, qprogram: int | str = 0, measurement: int | str = 0, save_plot: bool = True):
