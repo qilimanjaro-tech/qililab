@@ -349,6 +349,69 @@ def fixture_qmm_with_opx1000():
     return qmm
 
 
+@pytest.fixture(name="qmm_int_identifiers")
+def fixture_qmm_int_identifiers():
+    """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
+    settings = {
+        "alias": "qmm",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                    {"port": 2},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [],
+        "elements": [
+            {
+                "identifier": 1,
+                "mix_inputs": {
+                    "I": {"controller": "con1", "port": 1},
+                    "Q": {"controller": "con1", "port": 2},
+                    "lo_frequency": 6e9,
+                    "mixer_correction": [1.0, 0.0, 0.0, 1.0],
+                },
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "identifier": 0,
+                "mix_inputs": {
+                    "I": {"controller": "con1", "port": 3},
+                    "Q": {"controller": "con1", "port": 4},
+                    "lo_frequency": 6e9,
+                    "mixer_correction": [1.0, 0.0, 0.0, 1.0],
+                },
+                "outputs": {"out1": {"controller": "con1", "port": 1}, "out2": {"controller": "con1", "port": 2}},
+                "time_of_flight": 40,
+                "smearing": 10,
+                "threshold_rotation": 0.5,
+                "threshold": 0.09,
+                "intermediate_frequency": 6e9,
+            },
+            {"identifier": "flux_q0", "single_input": {"controller": "con1", "port": 5}},
+        ],
+        "run_octave_calibration": False,
+    }
+    qmm = QuantumMachinesCluster(settings=settings)
+    qmm.device = MagicMock
+
+    return qmm
+
+
 @pytest.fixture(name="compilation_config")
 def fixture_compilation_config() -> dict:
     """Fixture that returns a configuration dictionary as the QuantumMachinesCompiler would."""
@@ -420,7 +483,8 @@ class TestQuantumMachinesCluster:
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.Instrument.initial_setup")
     @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
+        "qmm_name",
+        ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000", "qmm_int_identifiers"],
     )
     def test_initial_setup(self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm_name, request):
         """Test QMM class initialization."""
@@ -441,7 +505,8 @@ class TestQuantumMachinesCluster:
         assert qmm._config == qmm.settings.to_qua_config()
 
     @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
+        "qmm_name",
+        ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000", "qmm_int_identifiers"],
     )
     def test_settings(self, qmm_name, request):
         """Test QuantumMachinesClusterSettings have been set correctly"""
@@ -454,7 +519,8 @@ class TestQuantumMachinesCluster:
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
+        "qmm_name",
+        ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000", "qmm_int_identifiers"],
     )
     def test_turn_on(self, mock_qmm, mock_qm, qmm_name, request):
         """Test turn_on method"""
@@ -476,7 +542,8 @@ class TestQuantumMachinesCluster:
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
+        "qmm_name",
+        ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000", "qmm_int_identifiers"],
     )
     def test_turn_off(self, mock_qmm, mock_qm, qmm_name, request):
         """Test turn_off method"""
