@@ -144,9 +144,9 @@ class CircuitTranspiler:
         coupling_map: list[tuple[int, int]] | None = None,
         iterations: int = 10,
     ) -> tuple[Circuit, dict[str, int]]:
-        """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits. And returns/logs the final layout of the qubits.
+        """Routes the virtual or logical qubits of a circuit to the physical qubits of a chip. Returns and/or logs the final qubit layout. 
 
-        If passed, this is done, with the passed `placer`, `router` and `routing_iterations` params (if not, default ones are applied).
+This process uses the provided `placer`, `router`, and `routing_iterations` parameters if they are passed; otherwise, default values are applied.
 
         **Examples:**
 
