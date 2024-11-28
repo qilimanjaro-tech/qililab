@@ -16,7 +16,7 @@ from qililab.data_management import build_platform
 from qililab.typings import Parameter
 from typing import cast
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
-from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 
 
 @pytest.fixture(name="platform")
@@ -55,7 +55,7 @@ def fixture_qrm(platform: Platform):
     ]
 
     module_mock_spec = [
-        *QcmQrm._get_required_parent_attr_names(),
+        *QcmQrm._get_required_parent_qtm_attr_names(),
         "reference_source",
         "sequencer0",
         "sequencer1",

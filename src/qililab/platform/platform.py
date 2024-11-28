@@ -21,6 +21,9 @@ import ast
 import io
 import re
 import tempfile
+import time
+import traceback
+import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -544,14 +547,14 @@ class Platform:
         instrument_controllers_dict = {RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
         digital_dict = {
-            RUNCARD.DIGITAL: self.digital_compilation_settings.to_dict()
-            if self.digital_compilation_settings is not None
-            else None
+            RUNCARD.DIGITAL: (
+                self.digital_compilation_settings.to_dict() if self.digital_compilation_settings is not None else None
+            )
         }
         analog_dict = {
-            RUNCARD.ANALOG: self.analog_compilation_settings.to_dict()
-            if self.analog_compilation_settings is not None
-            else None
+            RUNCARD.ANALOG: (
+                self.analog_compilation_settings.to_dict() if self.analog_compilation_settings is not None else None
+            )
         }
 
         return name_dict | instrument_dict | instrument_controllers_dict | buses_dict | digital_dict | analog_dict
@@ -597,6 +600,93 @@ class Platform:
             if cleanup_errors:
                 raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
 
+    def compile_annealing_program(
+        self,
+        annealing_program_dict: list[dict[str, dict[str, float]]],
+        transpiler: Callable,
+        calibration: Calibration,
+        num_averages: int = 1000,
+        num_shots: int = 1,
+        preparation_block: str = "preparation",
+        measurement_block: str = "measurement",
+    ) -> QProgram:
+        """
+        Compile an annealing program into a `QProgram` by mapping Ising coefficients to flux waveforms.
+
+        This method takes an annealing program, represented as a time-ordered list of circuit elements with
+        corresponding Ising coefficients, and compiles it into a quantum program (QProgram) that can be
+        executed on a quantum annealing hardware setup.
+
+        The input `annealing_program_dict` is structured as a list of dictionaries, each representing a
+        specific time point. Each dictionary maps qubit and coupler identifiers to Ising terms (`sigma_x`,
+        `sigma_y`, `sigma_z`), indicating the coefficient values for each term. For example:
+
+        .. code-block:: python
+
+            [
+                {"qubit_0": {"sigma_x": 0, "sigma_y": 1, "sigma_z": 2}, "coupler_1_0": {...}},
+                {...},  # time=1ns
+                ...,
+            ]
+
+        Using the provided `transpiler`, these Ising coefficients are converted to flux values. These fluxes
+        are then transformed into waveforms assigned to specific hardware buses, as defined by a `flux_to_bus`
+        mapping in the analog compilation settings.
+
+        Args:
+            annealing_program_dict (list[dict[str, dict[str, float]]]): The time-ordered list of qubit and
+                coupler Ising coefficients to be compiled.
+            transpiler (Callable): A function to convert Ising parameters (delta, epsilon) to flux values
+                (phix, phiz).
+            calibration (Calibration): Calibration data containing the required blocks (e.g., `preparation`,
+                `measurement`) and any applicable crosstalk corrections.
+            num_averages (int, optional): Number of times the program should be averaged per shot. Defaults to 1000.
+            num_shots (int, optional): Number of shots to execute the program. Defaults to 1.
+            preparation_block (str, optional): Name of the calibration block used for preparation. Defaults to "preparation".
+            measurement_block (str, optional): Name of the calibration block used for measurement. Defaults to "measurement".
+
+        Returns:
+            QProgram: A compiled quantum program (QProgram) ready for execution on the target hardware.
+
+        Raises:
+            ValueError: If the flux-to-bus topology is not defined in the analog compilation settings.
+            ValueError: If the specified `measurement_block` is not available in the calibration.
+
+        Notes:
+            - The method checks for essential compilation settings and calibrated blocks, ensuring the program can be executed successfully.
+            - Transpiled waveforms are adjusted for crosstalk when a crosstalk matrix is available in the calibration.
+            - Execution includes optional `preparation_block` and synchronizes waveforms before the final `measurement_block`.
+
+        """
+        if self.analog_compilation_settings is None:
+            raise ValueError("Flux to bus topology not given in the runcard")
+
+        if not calibration.has_block(name=measurement_block):
+            raise ValueError("The calibrated measurement is not present in the calibration file.")
+
+        annealing_program = AnnealingProgram(
+            flux_to_bus_topology=self.analog_compilation_settings.flux_control_topology,
+            annealing_program=annealing_program_dict,
+        )
+        annealing_program.transpile(transpiler)
+        crosstalk_matrix = calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
+        annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix, minimum_clock_time=4)
+
+        qp_annealing = QProgram()
+        shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
+
+        with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
+            with qp_annealing.average(num_averages):
+                if calibration.has_block(name=preparation_block):
+                    qp_annealing.insert_block(calibration.get_block(name=preparation_block))
+                    qp_annealing.sync()
+                for bus, waveform in annealing_waveforms.items():
+                    qp_annealing.play(bus=bus, waveform=waveform)
+                qp_annealing.sync()
+                qp_annealing.insert_block(calibration.get_block(name=measurement_block))
+
+        return qp_annealing
+
     def execute_annealing_program(
         self,
         annealing_program_dict: list[dict[str, dict[str, float]]],
@@ -634,36 +724,17 @@ class Platform:
             debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
                 For ``Quantum Machines`` clusters a ``.py`` file is created containing the ``QUA`` and config compilation. Defaults to False.
         """
-        if self.analog_compilation_settings is None:
-            raise ValueError("Flux to bus topology not given in the runcard")
 
-        if not calibration.has_block(name=measurement_block):
-            raise ValueError("The calibrated measurement is not present in the calibration file.")
-
-        annealing_program = AnnealingProgram(
-            flux_to_bus_topology=self.analog_compilation_settings.flux_control_topology,
-            annealing_program=annealing_program_dict,
+        qprogram = self.compile_annealing_program(
+            annealing_program_dict=annealing_program_dict,
+            transpiler=transpiler,
+            calibration=calibration,
+            num_averages=num_averages,
+            num_shots=num_shots,
+            preparation_block=preparation_block,
+            measurement_block=measurement_block,
         )
-        annealing_program.transpile(transpiler)
-        crosstalk_matrix = calibration.crosstalk_matrix.inverse() if calibration.crosstalk_matrix is not None else None
-        annealing_waveforms = annealing_program.get_waveforms(crosstalk_matrix=crosstalk_matrix, minimum_clock_time=4)
-
-        qp_annealing = QProgram()
-        shots_variable = qp_annealing.variable("num_shots", Domain.Scalar, int)
-
-        with qp_annealing.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
-            with qp_annealing.average(num_averages):
-                if calibration.has_block(name=preparation_block):
-                    qp_annealing.insert_block(calibration.get_block(name=preparation_block))
-                    qp_annealing.sync()
-                for bus, waveform in annealing_waveforms.items():
-                    qp_annealing.play(bus=bus, waveform=waveform)
-                qp_annealing.sync()
-                qp_annealing.insert_block(calibration.get_block(name=measurement_block))
-
-        return self.execute_qprogram(
-            qprogram=qp_annealing, calibration=calibration, bus_mapping=bus_mapping, debug=debug
-        )
+        return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
     def execute_experiment(self, experiment: Experiment) -> str:
         """Executes a quantum experiment on the platform.
@@ -771,7 +842,10 @@ class Platform:
         raise NotImplementedError("Compiling QProgram for a mixture of instruments is not supported.")
 
     def execute_compilation_output(
-        self, output: QbloxCompilationOutput | QuantumMachinesCompilationOutput, debug: bool = False
+        self,
+        output: QbloxCompilationOutput | QuantumMachinesCompilationOutput,
+        timeout_tries: int = 3,
+        debug: bool = False,
     ):
         if isinstance(output, QbloxCompilationOutput):
             return self._execute_qblox_compilation_output(output=output, debug=debug)
@@ -781,7 +855,9 @@ class Platform:
         if len(instruments) != 1:
             raise NotImplementedError("Executing QProgram in more than one Quantum Machines Cluster is not supported.")
         cluster: QuantumMachinesCluster = cast(QuantumMachinesCluster, next(iter(instruments)))
-        return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
+        return self._execute_quantum_machines_compilation_output(
+            output=output, cluster=cluster, timeout_tries=timeout_tries, debug=debug
+        )
 
     def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
         sequences, acquisitions = output.sequences, output.acquisitions
@@ -817,9 +893,13 @@ class Platform:
         results = QProgramResults()
         for bus_alias, bus in buses.items():
             if bus.has_adc():
-                bus_results = bus.acquire_qprogram_results(acquisitions=acquisitions[bus_alias])
-                for bus_result in bus_results:
-                    results.append_result(bus=bus_alias, result=bus_result)
+                for instrument, channel in zip(buses[bus_alias].instruments, buses[bus.alias].channels):
+                    if isinstance(instrument, QbloxModule):
+                        bus_results = bus.acquire_qprogram_results(
+                            acquisitions=acquisitions[bus_alias], channel_id=int(channel)
+                        )
+                        for bus_result in bus_results:
+                            results.append_result(bus=bus_alias, result=bus_result)
 
         # Reset instrument settings
         for bus_alias in sequences:
@@ -830,29 +910,51 @@ class Platform:
         return results
 
     def _execute_quantum_machines_compilation_output(
-        self, output: QuantumMachinesCompilationOutput, cluster: QuantumMachinesCluster, debug: bool = False
+        self,
+        output: QuantumMachinesCompilationOutput,
+        cluster: QuantumMachinesCluster,
+        timeout_tries: int = 3,
+        debug: bool = False,
     ):
         qua, configuration, measurements = output.qua, output.configuration, output.measurements
-        cluster.append_configuration(configuration=configuration)
+        for iteration in np.arange(timeout_tries):  # TODO: This is a temporal fix as QM fixes the timeout error
+            try:
+                cluster.append_configuration(configuration=configuration)
 
-        if debug:
-            with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                print(generate_qua_script(qua, cluster.config), file=sourceFile)
+                if debug:
+                    with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
+                        print(generate_qua_script(qua, cluster.config), file=sourceFile)
 
-        compiled_program_id = cluster.compile(program=qua)
-        job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+                compiled_program_id = cluster.compile(program=qua)
+                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
-        acquisitions = cluster.get_acquisitions(job=job)
+                acquisitions = cluster.get_acquisitions(job=job)
 
-        results = QProgramResults()
-        # Doing manual classification of results as QM does not return thresholded values like Qblox
-        for measurement in measurements:
-            measurement_result = QuantumMachinesMeasurementResult(
-                measurement.bus,
-                *[acquisitions[handle] for handle in measurement.result_handles],
-            )
-            measurement_result.set_classification_threshold(measurement.threshold)
-            results.append_result(bus=measurement.bus, result=measurement_result)
+                results = QProgramResults()
+                # Doing manual classification of results as QM does not return thresholded values like Qblox
+                for measurement in measurements:
+                    measurement_result = QuantumMachinesMeasurementResult(
+                        measurement.bus,
+                        *[acquisitions[handle] for handle in measurement.result_handles],
+                    )
+                    measurement_result.set_classification_threshold(measurement.threshold)
+                    results.append_result(bus=measurement.bus, result=measurement_result)
+
+                return results
+
+            except TimeoutError as timeout:
+                warnings.warn(
+                    f"Warning: {timeout} raised, retrying experiment ({iteration + 1}/{timeout_tries} available tries)"
+                )
+                warnings.warn(traceback.format_exc())
+                if iteration + 1 != timeout_tries:
+                    time.sleep(1 * timeout_tries)
+                    continue
+                cluster.turn_off()
+                raise timeout
+            except Exception as e:
+                cluster.turn_off()
+                raise e
 
         return results
 
@@ -861,6 +963,7 @@ class Platform:
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
+        timeout_tries: int = 3,
         debug: bool = False,
     ) -> QProgramResults:
         """Execute a :class:`.QProgram` using the platform instruments.
@@ -893,7 +996,7 @@ class Platform:
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
-        return self.execute_compilation_output(output=output, debug=debug)
+        return self.execute_compilation_output(output=output, timeout_tries=timeout_tries, debug=debug)
 
     def execute(
         self,

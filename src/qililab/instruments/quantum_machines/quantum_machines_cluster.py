@@ -294,7 +294,7 @@ class QuantumMachinesCluster(Instrument):
             mixers = {}
 
             for element in self.elements:
-                bus_name = element["identifier"]
+                bus_name = str(element["identifier"])
                 element_dict: dict = {"operations": {}}
 
                 # Flux bus
