@@ -56,14 +56,12 @@ class CircuitTranspiler:
         The process involves the following steps:
 
         1. Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters if provided; otherwise, default values are applied.
-
         2. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
-
         3. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
 
         |
 
-        If `optimize=True` (default behavior), the following optimizations are performed:
+        If `optimize=True` (default behavior), the following optimizations are also performed:
 
         - Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
         - Applying virtual Z gates and phase corrections by combining multiple pulses into a single one and commuting them with virtual Z gates.
