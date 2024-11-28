@@ -2,6 +2,14 @@
 
 ### New features since last release
 
+- Updated to latest qblox-instruments version. Changed some deprecated code from the new version and the QcmQrm into the more generic Module class.
+
+[#836](https://github.com/qilimanjaro-tech/qililab/pull/836)
+
+- Added empty handlers for Blocks in QProgram compilers
+
+[#839](https://github.com/qilimanjaro-tech/qililab/pull/839)
+
 - Support GRES in %%submit_job magic method
 
 [#828](https://github.com/qilimanjaro-tech/qililab/pull/828)
