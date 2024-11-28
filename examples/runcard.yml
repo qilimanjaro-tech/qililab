@@ -1,4 +1,10 @@
 name: saruman
+buses:
+- alias: dc_flux_0
+  instruments:
+  - d5a
+  channels:
+  - 0
 instruments:
 - type: qcm
   settings:

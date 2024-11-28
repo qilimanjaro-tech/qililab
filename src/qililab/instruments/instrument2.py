@@ -13,31 +13,24 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Callable, Generic, TypeVar
+from typing import Callable, Generic
 
 from qililab.instruments.decorators import check_device_initialized
 from qililab.runcard.runcard import RuncardInstrument
-from qililab.settings.instruments.channel_settings import ChannelSettings
 from qililab.settings.instruments.input_settings import InputSettings
-from qililab.settings.instruments.instrument_settings import InstrumentSettings
 from qililab.settings.instruments.output_settings import OutputSettings
+from qililab.types import TChannelID, TChannelSettings, TDevice, TInputSettings, TInstrumentSettings, TOutputSettings
 from qililab.typings.enums import Parameter
-from qililab.typings.instruments.device import Device
 from qililab.typings.type_aliases import ParameterValue
 
-TDevice = TypeVar("TDevice", bound=Device)
-TSettings = TypeVar("TSettings", bound=InstrumentSettings)
-TChannelSettings = TypeVar("TChannelSettings", bound=ChannelSettings | None)
-TChannel = TypeVar("TChannel", bound=int | str | None)
-TOutputSettings = TypeVar("TOutputSettings", bound=OutputSettings | None)
-TInputSettings = TypeVar("TInputSettings", bound=InputSettings | None)
 
-
-class Instrument2(ABC, Generic[TDevice, TSettings, TChannelSettings, TChannel, TOutputSettings, TInputSettings]):
-    settings: TSettings
+class Instrument2(
+    ABC, Generic[TDevice, TInstrumentSettings, TChannelSettings, TChannelID, TOutputSettings, TInputSettings]
+):
+    settings: TInstrumentSettings
     device: TDevice
 
-    def __init__(self, settings: TSettings | None = None):
+    def __init__(self, settings: TInstrumentSettings | None = None):
         if settings is None:
             settings = self.get_default_settings()
         self.settings = settings
@@ -76,7 +69,7 @@ class Instrument2(ABC, Generic[TDevice, TSettings, TChannelSettings, TChannel, T
 
     @classmethod
     @abstractmethod
-    def get_default_settings(cls) -> TSettings:
+    def get_default_settings(cls) -> TInstrumentSettings:
         pass
 
     @classmethod
@@ -95,7 +88,7 @@ class Instrument2(ABC, Generic[TDevice, TSettings, TChannelSettings, TChannel, T
     def _input_parameter_to_settings(cls) -> dict[Parameter, str]:
         return {}
 
-    def get_channel_settings(self, channel: TChannel) -> TChannelSettings | None:
+    def get_channel_settings(self, channel: TChannelID) -> TChannelSettings | None:
         return None
 
     def get_output_settings(self, output: int) -> OutputSettings | None:
@@ -121,7 +114,7 @@ class Instrument2(ABC, Generic[TDevice, TSettings, TChannelSettings, TChannel, T
         parameter: Parameter,
         value: ParameterValue,
         *,
-        channel: TChannel | None = None,
+        channel: TChannelID | None = None,
         output: int | None = None,
         input: int | None = None,
     ):
@@ -178,7 +171,7 @@ class Instrument2(ABC, Generic[TDevice, TSettings, TChannelSettings, TChannel, T
         self,
         parameter: Parameter,
         *,
-        channel: TChannel | None = None,
+        channel: TChannelID | None = None,
         output: int | None = None,
         input: int | None = None,
     ):

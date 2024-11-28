@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .runcard import Runcard, RuncardBus, RuncardInstrument, RuncardInstrumentController
+from qililab.settings.buses import BusSettings
 
-__all__ = ["Runcard", "RuncardBus", "RuncardInstrument", "RuncardInstrumentController"]
+
+class RuncardBus(BusSettings):
+    pass

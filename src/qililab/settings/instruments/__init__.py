@@ -13,7 +13,9 @@
 # limitations under the License.
 
 from .channel_settings import ChannelSettings
+from .input_settings import InputSettings
 from .instrument_settings import InstrumentSettings
+from .output_settings import OutputSettings
 from .qblox_base_settings import QbloxADCSequencerSettings, QbloxModuleSettings, QbloxSequencerSettings
 from .qblox_d5a_settings import QbloxD5AChannelSettings, QbloxD5ASettings
 from .qblox_qcm_settings import QbloxLFOutputSettings, QbloxQCMRFSettings, QbloxQCMSettings, QbloxRFOutputSettings
@@ -41,6 +43,7 @@ __all__ = [
     "ControllerPort",
     "IQElement",
     "IQReadoutElement",
+    "InputSettings",
     "InstrumentSettings",
     "OPXSettings",
     "OctavePort",
@@ -50,6 +53,7 @@ __all__ = [
     "OpxRFInput",
     "OpxRFOutput",
     "OpxRFOutput",
+    "OutputSettings",
     "QDevilQDAC2ChannelSettings",
     "QDevilQDAC2Settings",
     "QbloxADCSequencerSettings",

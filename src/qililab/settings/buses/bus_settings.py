@@ -11,7 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from pydantic import Field
 
-from .runcard import Runcard, RuncardBus, RuncardInstrument, RuncardInstrumentController
+from qililab.settings.settings2 import Settings2
 
-__all__ = ["Runcard", "RuncardBus", "RuncardInstrument", "RuncardInstrumentController"]
+
+class BusSettings(Settings2):
+    alias: str
+    instruments: list[str] = Field(default=[])
+    channels: list[int | str | None] = Field(default=[])
