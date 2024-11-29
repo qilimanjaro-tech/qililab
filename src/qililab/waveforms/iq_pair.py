@@ -16,12 +16,13 @@
 
 from __future__ import annotations
 
+from qililab.waveforms.iq_waveform import IQWaveform
 from qililab.waveforms.waveform import Waveform
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-class IQPair:
+class IQPair(IQWaveform):
     """IQPair containing the 'in-phase' (I) and 'quadrature' (Q) parts of a signal."""
 
     def __init__(self, I: Waveform, Q: Waveform):
@@ -33,6 +34,12 @@ class IQPair:
 
         self.I = I
         self.Q = Q
+
+    def get_I(self) -> Waveform:
+        return self.I
+
+    def get_Q(self) -> Waveform:
+        return self.Q
 
     def get_duration(self) -> int:
         """Get the duration of the waveforms

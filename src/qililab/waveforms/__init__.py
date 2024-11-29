@@ -40,6 +40,7 @@ from .gaussian import Gaussian
 from .gaussian_drag_correction import GaussianDragCorrection
 from .iq_drag import IQDrag
 from .iq_pair import IQPair
+from .iq_waveform import IQWaveform
 from .ramp import Ramp
 from .square import Square
 from .waveform import Waveform
@@ -52,6 +53,7 @@ __all__ = [
     "GaussianDragCorrection",
     "IQDrag",
     "IQPair",
+    "IQWaveform",
     "Ramp",
     "Square",
     "Waveform",

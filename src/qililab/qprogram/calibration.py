@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qililab.qprogram.blocks import Block
-from qililab.waveforms import IQPair, Waveform
+from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
@@ -29,30 +29,30 @@ class Calibration:
 
     def __init__(self) -> None:
         """Initialize a Calibration instance."""
-        self.waveforms: dict[str, dict[str, Waveform | IQPair]] = {}
-        self.weights: dict[str, dict[str, IQPair]] = {}
+        self.waveforms: dict[str, dict[str, Waveform | IQWaveform]] = {}
+        self.weights: dict[str, dict[str, IQWaveform]] = {}
         self.blocks: dict[str, Block] = {}
         self.crosstalk_matrix: CrosstalkMatrix | None = None
 
-    def add_waveform(self, bus: str, name: str, waveform: Waveform | IQPair):
-        """Add a waveform or IQPair for the specified bus.
+    def add_waveform(self, bus: str, name: str, waveform: Waveform | IQWaveform):
+        """Add a Waveform or IQWaveform for the specified bus.
 
         Args:
             bus (str): The bus to which the operation will be added.
             operation (str): The name of the operation to add.
-            waveform (Waveform | IQPair): The waveform or IQPair instance representing the operation.
+            waveform (Waveform | IQWaveform): The waveform or IQWaveform instance representing the operation.
         """
         if bus not in self.waveforms:
             self.waveforms[bus] = {}
         self.waveforms[bus][name] = waveform
 
-    def add_weights(self, bus: str, name: str, weights: IQPair):
+    def add_weights(self, bus: str, name: str, weights: IQWaveform):
         """Add a weight for the specified bus.
 
         Args:
             bus (str): The bus to which the operation will be added.
             operation (str): The name of the operation to add.
-            waveform (Waveform | IQPair): The waveform or IQPair instance representing the operation.
+            waveform (Waveform | IQWaveform): The waveform or IQWaveform instance representing the operation.
         """
         if bus not in self.weights:
             self.weights[bus] = {}
@@ -117,7 +117,7 @@ class Calibration:
             KeyError: If the waveform does not exist for the bus.
 
         Returns:
-            Waveform | IQPair: The waveform associated with the bus.
+            Waveform | IQWaveform: The waveform associated with the bus.
         """
         if bus not in self.waveforms or name not in self.waveforms[bus]:
             raise KeyError(f"The waveform {name} does not exist for the bus {bus}.")
@@ -134,7 +134,7 @@ class Calibration:
             KeyError: If the weights do not exist for the bus.
 
         Returns:
-            IQPair: The weights associated with the bus.
+            IQWaveform: The weights associated with the bus.
         """
         if bus not in self.weights or name not in self.weights[bus]:
             raise KeyError(f"The weights {name} do not exist for the bus {bus}.")
