@@ -19,9 +19,9 @@ from datetime import datetime
 from typing import Any
 
 import h5py
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
 
 
 @dataclass
@@ -67,7 +67,7 @@ class ExperimentResults:
         Returns:
             ExperimentResults: The ExperimentResults instance.
         """
-        self._file = h5py.File(self.path, mode="r", libver='latest', swmr=False)
+        self._file = h5py.File(self.path, mode="r", libver="latest", swmr=True)
 
         self._live_plot = self._file["live_plotting"]
 
@@ -116,6 +116,29 @@ class ExperimentResults:
         ]
 
         return data, dims
+
+    def get_data(self, qprogram: int | str = 0, measurement: int | str = 0) -> np.ndarray:
+        """Retrieves only data for a specified quantum program and measurement.
+
+        Args:
+            qprogram (int | str, optional): The index or name of the quantum program. Defaults to 0.
+            measurement (int | str, optional): The index or name of the measurement. Defaults to 0.
+
+        Returns:
+            np.ndarray: The data array.
+        """
+        if isinstance(qprogram, int):
+            qprogram = f"QProgram_{qprogram}"
+        if isinstance(measurement, int):
+            measurement = f"Measurement_{measurement}"
+
+        # Reset qprogram data
+        if self._live_plot:
+            self.data[qprogram, measurement].refresh()
+
+        data = self.data[qprogram, measurement][()]
+
+        return data
 
     def __getitem__(self, key: tuple):
         """Get an item from the results dataset.
@@ -335,39 +358,21 @@ class ExperimentResults:
             """Convert result values from s21 into dB"""
             return 20 * np.log10(np.abs(s21))
 
-        def plot_1d(s21: np.ndarray, dims: list[DimensionInfo]):
-            """Plot 1d"""
+        def figure_1d(dims: list[DimensionInfo]):
             x_labels, x_values = dims[0].labels, dims[0].values
+            x_edges = np.linspace(x_values[0].min(), x_values[0].max(), len(x_values[0]) + 1)
 
-            fig, ax1 = plt.subplots()
-            ax1.set_title(self.path)
-            ax1.set_xlabel(x_labels[0])
-            ax1.set_ylabel(r"$|S_{21}|$")
-            ax1.plot(x_values[0], s21, ".")
+            fig = go.FigureWidget()
+            fig.add_scatter(x=x_edges)
+            fig.layout.title = self.path
+            fig.layout.xaxis.title = x_labels[0]
+            fig.layout.yaxis.title = r"$|S_{21}|$"
 
-            if len(x_labels) > 1:
-                # Create secondary x-axis
-                ax2 = ax1.twiny()
-
-                # Set labels
-                ax2.set_xlabel(x_labels[1])
-                ax2.set_xlim(min(x_values[1]), max(x_values[1]))
-
-                # Set tick locations
-                ax2_ticks = np.linspace(min(x_values[1]), max(x_values[1]), num=6)
-                ax2.set_xticks(ax2_ticks)
-
-                # Force scientific notation
-                ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))
-
-            plt.tight_layout()
-            plt.draw()
+            display(fig)
 
             return fig
 
-        # pylint: disable=too-many-locals
-        def plot_2d(s21: np.ndarray, dims):
-            """Plot 2d"""
+        def figure_2d(dims: list[DimensionInfo]):
             x_labels, x_values = dims[0].labels, dims[0].values
             y_labels, y_values = dims[1].labels, dims[1].values
 
@@ -375,80 +380,55 @@ class ExperimentResults:
             x_edges = np.linspace(x_values[0].min(), x_values[0].max(), len(x_values[0]) + 1)
             y_edges = np.linspace(y_values[0].min(), y_values[0].max(), len(y_values[0]) + 1)
 
-            fig, ax1 = plt.subplots()
-            ax1.set_title(self.path)
-            ax1.set_xlabel(x_labels[0])
-            ax1.set_ylabel(y_labels[0])
+            fig = go.FigureWidget()
+            fig.add_heatmap(x=x_edges, y=y_edges)
+            fig.layout.title = self.path
+            fig.layout.xaxis.title = x_labels[0]
+            fig.layout.yaxis.title = y_labels[0]
 
-            # Force scientific notation
-            ax1.ticklabel_format(axis="both", style="sci", scilimits=(-3, 3))
-
-            mesh = ax1.pcolormesh(x_edges, y_edges, s21.T, cmap="viridis", shading="auto")
-            fig.colorbar(mesh, ax=ax1)
-
-            if len(x_labels) > 1:
-                # Create secondary x-axis
-                ax2 = ax1.twiny()
-
-                # Set labels
-                ax2.set_xlabel(x_labels[1])
-                ax2.set_xlim(min(x_values[1]), max(x_values[1]))
-
-                # Set tick locations
-                ax2_ticks = np.linspace(min(x_values[1]), max(x_values[1]), num=6)
-                ax2.set_xticks(ax2_ticks)
-
-                # Force scientific notation
-                ax2.ticklabel_format(axis="x", style="sci", scilimits=(-3, 3))
-            if len(y_labels) > 1:
-                ax3 = ax1.twinx()
-                ax3.set_ylabel(y_labels[1])
-                ax3.set_ylim(min(y_values[1]), max(y_values[1]))
-
-                # Set tick locations
-                ax3_ticks = np.linspace(min(y_values[1]), max(y_values[1]), num=6)
-                ax3.set_xticks(ax3_ticks)
-
-                # Force scientific notation
-                ax3.ticklabel_format(axis="y", style="sci", scilimits=(-3, 3))
-
-            plt.tight_layout()
-            plt.draw()
+            display(fig)
 
             return fig
 
-        qprogram_data = self._file[f"{ExperimentResults.QPROGRAMS_PATH}/{qprogram}"]
+        # Measure data and dimensions
+        data, dims = self.get(qprogram=qprogram, measurement=measurement)
+
+        # Calculate S21
+        s21 = data[..., 0] + 1j * data[..., 1]
+        s21 = decibels(s21)
+
+        n_dimensions = len(s21.shape)
+        if n_dimensions == 1:
+            fig = figure_1d(dims)
+        elif n_dimensions == 2:
+            fig = figure_2d(dims)
+        else:
+            raise NotImplementedError("3D and higher dimension plots are not supported yet.")
+
         initial_time = time.time()
         while True:
             if timeout is not None:
                 if timeout < (time.time() - initial_time):
                     raise TimeoutError("Live plotting has reached the time limit")
 
-            # Reset qprogram data
-            qprogram_data.refresh()
-
             # Measure data and dimensions
-            data = qprogram_data[f"{ExperimentResults.MEASUREMENTS_PATH}/{measurement}/results"]
-            dims = qprogram_data[f"{ExperimentResults.MEASUREMENTS_PATH}/{measurement}/results"].dims
+            data = self.get_data(qprogram=qprogram, measurement=measurement)
 
             # Calculate S21
             s21 = data[..., 0] + 1j * data[..., 1]
             s21 = decibels(s21)
 
-            n_dimensions = len(s21.shape)
             if n_dimensions == 1:
-                fig = plot_1d(s21, dims)
+                fig.data[0].y = s21.T
             elif n_dimensions == 2:
-                fig = plot_2d(s21, dims)
-            else:
-                raise NotImplementedError("3D and higher dimension plots are not supported yet.")
+                fig.data[0].z = s21.T
 
             folder = os.path.dirname(self.path)
             path = os.path.join(folder, ExperimentResults.S21_PLOT_NAME)
 
-            fig.savefig(path)
+            fig.write_image(path)
 
-            if self._file[ExperimentResults.EXECUTION_END_PATH]:
+            if self._file[ExperimentResults.EXECUTION_END_PATH][()]:
                 break
 
             time.sleep(refreshrate)

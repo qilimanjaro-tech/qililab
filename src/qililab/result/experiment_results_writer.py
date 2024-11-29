@@ -128,10 +128,6 @@ class ExperimentResultsWriter(ExperimentResults):
             # Register live plotting status
             self._file["live_plotting"] = self.live_plot
 
-            # Prepare for SWMR mode to allow for live plotting
-            if self.live_plot:
-                self._file.swmr_mode = True
-
             # Iterate through QPrograms and measurements in the structure
             for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
                 qgroup = qprograms_group.create_group(qprogram_name)
@@ -176,6 +172,10 @@ class ExperimentResultsWriter(ExperimentResults):
                     # Attach the extra dimension (usually for I/Q) to the results dataset
                     results_ds.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
+            # Prepare for SWMR mode to allow for live plotting
+            if self.live_plot:
+                self._file.swmr_mode = True
+
     def _create_resuts_access(self):
         """Sets up internal data structures to allow for real-time data writing to the HDF5 file."""
         if "qprograms" in self._metadata:
@@ -191,7 +191,7 @@ class ExperimentResultsWriter(ExperimentResults):
         Returns:
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
-        self._file = h5py.File(self.path, mode="w", libver='latest')
+        self._file = h5py.File(self.path, mode="w", libver="latest")
         self._create_results_file()
         self._create_resuts_access()
 
