@@ -15,9 +15,7 @@
 """__init__.py"""
 
 from .decorators import check_device_initialized, log_set_parameter
-from .instrument import Instrument, ParameterNotFound
-from .instruments import Instruments
-from .mini_circuits import Attenuator
+from .instrument import Instrument
 from .qblox_d5a import QbloxD5A
 from .qblox_module import QbloxModule
 from .qblox_qcm import QbloxQCM
@@ -26,19 +24,11 @@ from .qblox_qrm import QbloxQRM
 from .qblox_qrm_rf import QbloxQRMRF
 from .qblox_s4g import QbloxS4G
 from .qdevil_qdac2 import QDevilQDAC2
-from .quantum_machines import QuantumMachinesCluster
 from .quantum_machines_opx import QuantumMachinesOPX
-from .rohde_schwarz import SGS100A
-from .signal_generator import SignalGenerator
-from .utils import InstrumentFactory
+from .rohde_schwarz_sg100 import RohdeSchwarzSG100
 
 __all__ = [
-    "SGS100A",
-    "Attenuator",
     "Instrument",
-    "InstrumentFactory",
-    "Instruments",
-    "ParameterNotFound",
     "QDevilQDAC2",
     "QbloxD5A",
     "QbloxModule",
@@ -47,9 +37,8 @@ __all__ = [
     "QbloxQRM",
     "QbloxQRMRF",
     "QbloxS4G",
-    "QuantumMachinesCluster",
     "QuantumMachinesOPX",
-    "SignalGenerator",
+    "RohdeSchwarzSG100",
     "check_device_initialized",
     "log_set_parameter",
 ]

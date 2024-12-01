@@ -13,10 +13,10 @@
 # limitations under the License.
 from pydantic import Field
 
-from qililab.settings.settings2 import Settings2
+from qililab.settings.settings import Settings
 
 
-class BusSettings(Settings2):
+class BusSettings(Settings):
     alias: str
     instruments: list[str] = Field(default=[])
     channels: list[int | str | None] = Field(default=[])

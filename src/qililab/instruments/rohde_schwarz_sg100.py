@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from typing import Any, Callable, Dict
 
 from qililab.instruments.decorators import check_device_initialized
-from qililab.instruments.instrument2 import Instrument2
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import RohdeSchwarzSG100RuncardInstrument, RuncardInstrument
@@ -25,7 +26,7 @@ from qililab.typings.instruments.rohde_schwarz import RohdeSchwarzSGS100ADevice
 
 
 @InstrumentFactory.register(InstrumentType.ROHDE_SCHWARZ_SG100)
-class RohdeSchwarzSG100(Instrument2[RohdeSchwarzSGS100ADevice, RohdeSchwarzSG100Settings, None, None, None, None]):
+class RohdeSchwarzSG100(Instrument[RohdeSchwarzSGS100ADevice, RohdeSchwarzSG100Settings, None, None, None, None]):
     @classmethod
     def get_default_settings(cls) -> RohdeSchwarzSG100Settings:
         return RohdeSchwarzSG100Settings(alias="sg100", power=0.0, frequency=1e9, rf_on=False)

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import annotations
 
 from collections import Counter
 from typing import Counter as TCounter
@@ -68,7 +67,7 @@ class Counts:
         self._counter.update([state])
         self._total_measurements += 1
 
-    def add_counts(self, counts: Counts):
+    def add_counts(self, counts: "Counts"):
         """Adds all the counts from another Counts object to this Counts object.
 
         Args:
@@ -115,7 +114,7 @@ class Counts:
         """
         return str(self.as_dict())
 
-    def __iadd__(self, other: Counts) -> Counts:
+    def __iadd__(self, other: "Counts") -> "Counts":
         """In-place addition of two Counts objects (self += other). Adds the `other` Counts object to itself.
 
         Args:

@@ -11,16 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""TCPIPConnection class"""
-
-from qililab.instrument_connections.connection import Connection
-from qililab.typings import ConnectionName
-from qililab.utils import Factory
+from pydantic import BaseModel
 
 
-@Factory.register
-class TCPIPConnection(Connection):
-    """Class declaring the necessary attributes and methods for a TCP-IP connection."""
+class FluxToBus(BaseModel):
+    """Fluxes (e.g. phix_q0 for phix control of qubit 0) and their corresponding bus (e.g. flux_line_q0_x)"""
 
-    name = ConnectionName.TCP_IP
+    flux: str
+    bus: str

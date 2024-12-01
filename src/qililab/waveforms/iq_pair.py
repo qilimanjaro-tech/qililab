@@ -14,8 +14,6 @@
 
 """IQPair dataclass."""
 
-from __future__ import annotations
-
 from qililab.waveforms.iq_waveform import IQWaveform
 from qililab.waveforms.waveform import Waveform
 from qililab.yaml import yaml

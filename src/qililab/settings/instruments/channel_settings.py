@@ -16,13 +16,13 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
-from qililab.settings.settings2 import Settings2
+from qililab.settings.settings import Settings
 
 ChannelID = TypeVar("ChannelID", int, str)
 
 
 # Base settings model
-class ChannelSettings(Settings2, Generic[ChannelID]):
+class ChannelSettings(Settings, Generic[ChannelID]):
     """Base Settings for all Instruments"""
 
     id: ChannelID

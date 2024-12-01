@@ -89,7 +89,7 @@ class ExperimentResultsWriter(ExperimentResults):
     Inherits from `ExperimentResults` to support both read and write operations.
     """
 
-    def __init__(self, path: str, metadata: ExperimentMetadata):
+    def __init__(self, path: str, metadata: ExperimentMetadata, append_mode: bool = False):
         """Initializes the ExperimentResultsWriter instance.
 
         Args:
@@ -98,6 +98,7 @@ class ExperimentResultsWriter(ExperimentResults):
         """
         super().__init__(path)
         self._metadata = metadata
+        self._append_mode = append_mode
 
     # pylint: disable=too-many-locals
     def _create_results_file(self):

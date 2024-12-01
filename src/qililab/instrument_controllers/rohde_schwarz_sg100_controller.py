@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
-from qililab.instrument_controllers.instrument_controller2 import InstrumentController2
+from qililab.instrument_controllers.instrument_controller import InstrumentController
 from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
 from qililab.instruments.rohde_schwarz_sg100 import RohdeSchwarzSG100
@@ -26,7 +27,7 @@ from qililab.typings.instruments import RohdeSchwarzSGS100ADevice
 
 @InstrumentControllerFactory.register(InstrumentControllerType.ROHDE_SCHWARZ_SG100_CONTROLLER)
 class RohdeSchwarzSGS100AController(
-    InstrumentController2[
+    InstrumentController[
         RohdeSchwarzSGS100ADevice,
         RohdeSchwarzSG100ControllerSettings,
         RohdeSchwarzSG100,

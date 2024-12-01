@@ -13,20 +13,19 @@
 # limitations under the License.
 
 
-from typing import TYPE_CHECKING
-
 from pydantic import BaseModel, Field, ValidationError, model_validator
 from pydantic_yaml import parse_yaml_file_as, to_yaml_file
 from ruamel.yaml import YAML
 
+from qililab.buses.bus import Bus
+from qililab.instrument_controllers.instrument_controller import InstrumentController
+from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
+from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.runcard.runcard_buses import RuncardBus
 from qililab.runcard.runcard_instrument_controllers import RuncardInstrumentController
 from qililab.runcard.runcard_instruments import RuncardInstrument
-
-if TYPE_CHECKING:
-    from qililab.buses.bus import Bus
-    from qililab.instrument_controllers.instrument_controller2 import InstrumentController2
-    from qililab.instruments.instrument2 import Instrument2
+from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings
 
 yaml = YAML()
 yaml.width = 120
@@ -37,6 +36,8 @@ class Runcard(BaseModel):
     buses: list[RuncardBus] = Field(default=[])
     instruments: list[RuncardInstrument] = Field(default=[])
     instrument_controllers: list[RuncardInstrumentController] = Field(default=[])
+    analog: AnalogCompilationSettings = Field(default=AnalogCompilationSettings())
+    digital: DigitalCompilationSettings = Field(default=DigitalCompilationSettings())
 
     @model_validator(mode="after")
     def validate_instrument_aliases_are_not_duplicate(self):
@@ -82,7 +83,7 @@ class Runcard(BaseModel):
                 )
         return self
 
-    def add_instrument(self, instrument: "Instrument2"):
+    def add_instrument(self, instrument: "Instrument"):
         try:
             self.instruments.append(instrument.to_runcard())
             Runcard.model_validate(self)
@@ -96,7 +97,7 @@ class Runcard(BaseModel):
                 self.instruments.pop(i)
                 break
 
-    def add_instrument_controller(self, instrument_controller: "InstrumentController2"):
+    def add_instrument_controller(self, instrument_controller: InstrumentController):
         try:
             self.instrument_controllers.append(instrument_controller.to_runcard())
             Runcard.model_validate(self)
@@ -110,7 +111,7 @@ class Runcard(BaseModel):
                 self.instrument_controllers.pop(i)
                 break
 
-    def add_bus(self, bus: "Bus"):
+    def add_bus(self, bus: Bus):
         try:
             self.buses.append(bus.to_runcard())
             Runcard.model_validate(self)
@@ -126,6 +127,18 @@ class Runcard(BaseModel):
 
     def save_to(self, file: str):
         to_yaml_file(file=file, model=self, custom_yaml_writer=yaml)
+
+    def get_instruments(self) -> list[Instrument]:
+        return [InstrumentFactory.create(runcard_instrument) for runcard_instrument in self.instruments]
+
+    def get_instrument_controllers(self, loaded_instruments: list[Instrument] | None = None):
+        return [
+            InstrumentControllerFactory.create(runcard_instrument_controller, loaded_instruments=loaded_instruments)
+            for runcard_instrument_controller in self.instrument_controllers
+        ]
+
+    def get_buses(self, loaded_instruments: list[Instrument] | None = None):
+        return [Bus(settings=bus_settings, loaded_instruments=loaded_instruments) for bus_settings in self.buses]
 
     @classmethod
     def load_from(cls, file: str) -> "Runcard":

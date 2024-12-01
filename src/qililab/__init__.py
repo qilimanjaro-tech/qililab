@@ -19,8 +19,9 @@ import contextlib
 
 from .about import about
 from .config import __version__, logger
-from .data_management import build_platform, load_results, save_platform, save_results
-from .execute_circuit import execute
+
+# from .data_management import build_platform, load_results, save_platform, save_results
+# from .execute_circuit import execute
 from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
 from .result import ExperimentResults, stream_results
 from .typings import Parameter
@@ -70,14 +71,14 @@ __all__ = [
     "Waveform",
     "__version__",
     "about",
-    "build_platform",
+    # "build_platform",
     "deserialize",
     "deserialize_from",
-    "execute",
-    "load_results",
+    # "execute",
+    # "load_results",
     "logger",
-    "save_platform",
-    "save_results",
+    # "save_platform",
+    # "save_results",
     "serialize",
     "serialize_to",
     "stream_results",

@@ -36,12 +36,11 @@ from qpysequence.program.instructions import (
 from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config import logger
-from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
-from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.typings import InstrumentName
+
+# from qililab.instruments.instrument_type import InstrumentType
 
 if TYPE_CHECKING:
-    from qililab.instruments.qblox import QbloxModule, QbloxSequencer
+    from qililab.instruments.qblox_module import QbloxModule, QbloxSequencerSettings
     from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
     from qililab.pulse.pulse_schedule import PulseSchedule
     from qililab.pulse.pulse_shape.pulse_shape import PulseShape
@@ -50,7 +49,7 @@ if TYPE_CHECKING:
 
 class ModuleSequencer(TypedDict):
     module: QbloxModule
-    sequencer: QbloxSequencer
+    sequencer: QbloxSequencerSettings
 
 
 class QbloxCompiler:
@@ -74,8 +73,8 @@ class QbloxCompiler:
         self.nshots = 0
         self.num_bins = 0
         self.repetition_duration = 0
-        self.readout_modules = [InstrumentName.QBLOX_QRM, InstrumentName.QRMRF]
-        self.control_modules = [InstrumentName.QBLOX_QCM, InstrumentName.QCMRF]
+        # self.readout_modules = [InstrumentType.QBLOX_QRM, InstrumentType.QBLOX_QRM_RF]
+        # self.control_modules = [InstrumentType.QBLOX_QCM, InstrumentType.QBLOX_QCM_RF]
 
     def compile(
         self, pulse_schedule: PulseSchedule, num_avg: int, repetition_duration: int, num_bins: int
@@ -125,22 +124,20 @@ class QbloxCompiler:
             if bus_alias not in compiled_sequences:
                 compiled_sequences[bus_alias] = []
             # if the schedule is already compiled get it from the module's sequences
-            if sequencer_schedule == qblox_module.cache.get(
-                sequencer.identifier
-            ):  # if it's already cached then dont compile
-                compiled_sequences[bus_alias].append(qblox_module.sequences[sequencer.identifier])
+            if sequencer_schedule == qblox_module.cache.get(sequencer.id):  # if it's already cached then dont compile
+                compiled_sequences[bus_alias].append(qblox_module.sequences[sequencer.id])
                 # If the schedule is in the cache, delete the acquisition data (if uploaded) # FIXME: acquisitions should be deleted after acquisitions and not at compilation
-                if qblox_module.name in self.readout_modules and hasattr(
-                    qblox_module, "device"
-                ):  # TODO: remove hasattr when the fixme above is done
-                    qblox_module.device.delete_acquisition_data(sequencer=sequencer.identifier, all=True)
+                # TODO: remove hasattr when the fixme above is done
+                # TODO: fix this
+                if True:  # qblox_module.type in self.readout_modules and hasattr(qblox_module, "device"):
+                    qblox_module.device.delete_acquisition_data(sequencer=sequencer.id, all=True)
 
             else:
                 # compile the sequences
                 sequence = self._translate_pulse_bus_schedule(sequencer_schedule)
                 compiled_sequences[bus_alias].append(sequence)
-                qblox_module.cache[sequencer.identifier] = sequencer_schedule
-                qblox_module.sequences[sequencer.identifier] = sequence
+                qblox_module.cache[sequencer.id] = sequencer_schedule
+                qblox_module.sequences[sequencer.id] = sequence
 
         return compiled_sequences
 
@@ -213,7 +210,7 @@ class QbloxCompiler:
             Program: Q1ASM program.
         """
         bus = self.buses[pulse_bus_schedule.bus_alias]
-        qblox_module = self.module_and_sequencer_per_bus[pulse_bus_schedule.bus_alias]["module"]
+        # qblox_module = self.module_and_sequencer_per_bus[pulse_bus_schedule.bus_alias]["module"]
         sequencer = self.module_and_sequencer_per_bus[pulse_bus_schedule.bus_alias]["sequencer"]
         MIN_WAIT = 4
 
@@ -222,9 +219,10 @@ class QbloxCompiler:
         start = Block(name="start")
         start.append_component(ResetPh())
         # Check if any markers should be set ON
-        if qblox_module.name == InstrumentName.QCMRF:
+        # TODO: Fix this
+        if True:  # qblox_module.type == InstrumentType.QBLOX_QCM_RF:
             mask = int("".join(["1" if i in [0, 1] and i in sequencer.outputs else "0" for i in range(4)])[::-1], 2)
-        elif qblox_module.name == InstrumentName.QRMRF:
+        elif False:  # qblox_module.type == InstrumentType.QBLOX_QRM_RF:
             mask = int("".join(["1" if i in [1] and i - 1 in sequencer.outputs else "0" for i in range(4)])[::-1], 2)
         else:
             mask = 0

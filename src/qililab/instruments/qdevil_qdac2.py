@@ -11,24 +11,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
-from typing import Callable, ClassVar
+from typing import TYPE_CHECKING, Callable, ClassVar
 
 import numpy as np
 
 from qililab.instruments.decorators import check_device_initialized
-from qililab.instruments.instrument2 import Instrument2
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import QDevilQDAC2RuncardInstrument, RuncardInstrument
 from qililab.settings.instruments import QDevilQDAC2ChannelSettings, QDevilQDAC2Settings
 from qililab.typings import QDevilQDAC2Device as QDevilQDac2Driver
 from qililab.typings.enums import Parameter
-from qililab.waveforms import Waveform
+
+if TYPE_CHECKING:
+    from qililab.waveforms import Waveform
 
 
 @InstrumentFactory.register(InstrumentType.QDEVIL_QDAC2)
-class QDevilQDAC2(Instrument2[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2ChannelSettings, int, None, None]):
+class QDevilQDAC2(Instrument[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2ChannelSettings, int, None, None]):
     AWG_RESOLUTION: ClassVar[int] = 1000
 
     @check_device_initialized

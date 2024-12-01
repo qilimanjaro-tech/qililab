@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from typing import Callable
 
 from qililab.instruments.decorators import check_device_initialized
-from qililab.instruments.instrument2 import Instrument2
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import QbloxS4GRuncardInstrument, RuncardInstrument
@@ -25,7 +26,7 @@ from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_S4G)
-class QbloxS4G(Instrument2[QbloxS4GDevice, QbloxS4GSettings, QbloxS4GChannelSettings, int, None, None]):
+class QbloxS4G(Instrument[QbloxS4GDevice, QbloxS4GSettings, QbloxS4GChannelSettings, int, None, None]):
     @check_device_initialized
     def turn_on(self):
         pass

@@ -11,20 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from abc import ABC
-from typing import Any, Callable, ClassVar, TypeVar
-
-from qpysequence import Sequence as QpySequence
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, TypeVar
 
 from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized
-from qililab.instruments.instrument2 import Instrument2
-from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
-from qililab.qprogram.qblox_compiler import AcquisitionData
+from qililab.instruments.instrument import Instrument
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
-from qililab.settings.instruments.input_settings import InputSettings
 from qililab.settings.instruments.qblox_base_settings import (
     QbloxADCSequencerSettings,
     QbloxControlModuleSettings,
@@ -37,6 +33,13 @@ from qililab.settings.instruments.qblox_base_settings import (
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import QbloxModuleDevice
 
+if TYPE_CHECKING:
+    from qpysequence import Sequence as QpySequence
+
+    from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
+    from qililab.qprogram.qblox_compiler import AcquisitionData
+    from qililab.settings.instruments.input_settings import InputSettings
+
 TSettings = TypeVar("TSettings", bound=QbloxModuleSettings)
 TSequencerSettings = TypeVar("TSequencerSettings", bound=QbloxSequencerSettings)
 TOutputSettings = TypeVar("TOutputSettings", bound=QbloxOutputSettings)
@@ -44,7 +47,7 @@ TInputSettings = TypeVar("TInputSettings", bound=QbloxInputSettings | None)
 
 
 class QbloxModule(
-    Instrument2[QbloxModuleDevice, TSettings, TSequencerSettings, int, TOutputSettings, TInputSettings], ABC
+    Instrument[QbloxModuleDevice, TSettings, TSequencerSettings, int, TOutputSettings, TInputSettings], ABC
 ):
     cache: ClassVar[dict[int, PulseBusSchedule]] = {}
 

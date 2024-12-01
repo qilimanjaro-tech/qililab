@@ -11,19 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
-from qililab.instruments.instrument2 import Instrument2
-from qililab.runcard import RuncardBus
-from qililab.settings.buses import BusSettings
-from qililab.typings import Parameter, ParameterValue
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qpysequence import Sequence as QpySequence
+
+    from qililab.instruments.instrument import Instrument
+    from qililab.qprogram.qblox_compiler import AcquisitionData
+    from qililab.result import Result
+    from qililab.result.qprogram import MeasurementResult
+    from qililab.runcard.runcard_buses import RuncardBus
+    from qililab.settings.buses.bus_settings import BusSettings
+    from qililab.typings import Parameter, ParameterValue
 
 
 class Bus:
     _settings: BusSettings
-    _instruments: list[Instrument2]
+    _instruments: list[Instrument]
     _channels: list[int | str | None]
 
-    def __init__(self, settings: BusSettings, loaded_instruments: list[Instrument2] | None = None):
+    def __init__(self, settings: BusSettings, loaded_instruments: list[Instrument] | None = None):
         self._settings = settings
         self._instruments = []
         self._channels = []
@@ -39,10 +48,23 @@ class Bus:
         return self._settings
 
     @property
-    def connected_instruments_and_channels(self) -> list[tuple[Instrument2, int | str | None]]:
+    def instruments(self):
+        return self._instruments
+
+    @property
+    def channels(self):
+        return self._channels
+
+    def has_awg(self):
+        return True
+
+    def has_adc(self):
+        return True
+
+    def instruments_and_channels(self) -> list[tuple[Instrument, int | str | None]]:
         return list(zip(self._instruments, self._channels))
 
-    def load_instruments(self, instruments: list[Instrument2]):
+    def load_instruments(self, instruments: list[Instrument]):
         for instrument_alias, channel in list(zip(self.settings.instruments, self.settings.channels)):
             instrument = next(
                 (instrument for instrument in instruments if instrument.settings.alias == instrument_alias), None
@@ -53,14 +75,14 @@ class Bus:
             self._channels.append(channel)
 
     def set_parameter(self, parameter: Parameter, value: ParameterValue):
-        for instrument, channel in self.connected_instruments_and_channels:
+        for instrument, channel in self.instruments_and_channels():
             if parameter in instrument.get_instrument_parameters():
                 instrument.set_parameter(parameter=parameter, value=value)
             if channel is not None and parameter in instrument.get_channel_parameters():
                 instrument.set_parameter(parameter=parameter, value=value, channel=channel)
 
     def get_parameter(self, parameter: Parameter):
-        for instrument, channel in self.connected_instruments_and_channels:
+        for instrument, channel in self.instruments_and_channels():
             if parameter in instrument.get_instrument_parameters():
                 return instrument.get_parameter(parameter=parameter)
             if channel is not None and parameter in instrument.get_channel_parameters():
@@ -69,3 +91,81 @@ class Bus:
 
     def to_runcard(self) -> RuncardBus:
         return self.settings
+
+    def upload_qpysequence(self, qpysequence: QpySequence):
+        """Uploads the qpysequence into the instrument."""
+        # from qililab.instruments.qblox_module import QbloxModule  # pylint: disable=import-outside-toplevel
+
+        # for instrument, instrument_channel in self.instruments_and_channels():
+        #     if isinstance(instrument, QbloxModule):
+        #         instrument.upload_qpysequence(qpysequence=qpysequence, sequencer_id=int(instrument_channel))  # type: ignore[arg-type]
+        #         return
+
+        # raise AttributeError(f"Bus {self.alias} doesn't have any QbloxModule to upload a qpysequence.")
+
+    def upload(self):
+        """Uploads any previously compiled program into the instrument."""
+        # for instrument, instrument_channel in self.instruments_and_channels():
+        #     if isinstance(instrument, (QbloxQCM, QbloxQRM)):
+        #         instrument.upload(sequencer_id=instrument_channel)
+        #         return
+
+    def run(self) -> None:
+        """Runs any previously uploaded program into the instrument."""
+        # for instrument, instrument_channel in self.instruments_and_channels():
+        #     if isinstance(instrument, (QbloxQCM, QbloxQRM)):
+        #         instrument.run(sequencer_id=instrument_channel)  # type: ignore
+        #         return
+
+    def acquire_result(self) -> Result:
+        """Read the result from the vector network analyzer instrument
+
+        Returns:
+            Result: Acquired result
+        """
+        from typing import cast
+
+        return cast("Result", None)
+        # TODO: Support acquisition from multiple instruments
+        # results: list[Result] = []
+        # for instrument, _ in self.instruments_and_channels():
+        #     if isinstance(instrument, QbloxQRM):
+        #         result = instrument.acquire_result()
+        #         if result is not None:
+        #             results.append(result)
+
+        # if len(results) > 1:
+        #     raise ValueError(
+        #         f"Acquisition from multiple instruments is not supported. Obtained a total of {len(results)} results."
+        #     )
+
+        # if len(results) == 0:
+        #     raise AttributeError(f"The bus {self.alias} cannot acquire results.")
+
+        # return results[0]
+
+    def acquire_qprogram_results(
+        self, acquisitions: dict[str, AcquisitionData], channel_id: int | str | None = None
+    ) -> list[MeasurementResult]:
+        """Read the result from the instruments
+
+        Returns:
+            list[Result]: Acquired results in chronological order
+            channel_id (int | None, optional): instrument channel of QRM. Defaults to None.
+        """
+        return []
+        # TODO: Support acquisition from multiple instruments
+        # total_results: list[list[MeasurementResult]] = []
+        # for instrument, _ in self.instruments_and_channels():
+        #     if isinstance(instrument, QbloxQRM):
+        #         instrument_results = instrument.acquire_qprogram_results(
+        #             acquisitions=acquisitions, sequencer_id=channel_id
+        #         )
+        #         total_results.append(instrument_results)
+
+        # if len(total_results) == 0:
+        #     raise AttributeError(
+        #         f"The bus {self.alias} cannot acquire results because it doesn't have a readout system control."
+        #     )
+
+        # return total_results[0]

@@ -871,3 +871,33 @@ instrument_controllers:
     - alias: s4g
       slot: 10
     reset: true
+analog:
+  flux_control_topology:
+  - flux: phix_q0
+    bus: flux_q0_x
+  - flux: phiz_q0
+    bus: flux_q0_z
+digital:
+  minimum_clock_time: 4
+  delay_before_readout: 0
+  topology: []
+  gates:
+    DRAG(0):
+    - bus: drive_q0
+      pulse:
+        amplitude: 1.0
+        phase: 40.0
+        duration: 100
+        shape: {}
+        options: {}
+      wait_time: 0
+  buses:
+    drive_q0:
+      line: drive
+      qubits:
+      - 0
+      delay: 0
+      distortions: []
+      weights_i: []
+      weights_q: []
+      weighed_acq_enabled: false

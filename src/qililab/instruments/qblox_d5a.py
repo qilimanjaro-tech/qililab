@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 from typing import Callable
 
 from qililab.instruments.decorators import check_device_initialized
-from qililab.instruments.instrument2 import Instrument2
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import QbloxD5ARuncardInstrument, RuncardInstrument
@@ -25,7 +26,7 @@ from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_D5A)
-class QbloxD5A(Instrument2[QbloxD5ADevice, QbloxD5ASettings, QbloxD5AChannelSettings, int, None, None]):
+class QbloxD5A(Instrument[QbloxD5ADevice, QbloxD5ASettings, QbloxD5AChannelSettings, int, None, None]):
     @check_device_initialized
     def turn_on(self):
         raise NotImplementedError

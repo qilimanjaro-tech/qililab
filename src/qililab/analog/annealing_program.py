@@ -17,7 +17,7 @@ from typing import Callable
 import numpy as np
 
 from qililab.qprogram import CrosstalkMatrix, FluxVector
-from qililab.settings.analog import FluxControlTopology
+from qililab.settings.analog import FluxToBus
 from qililab.waveforms import Arbitrary
 
 
@@ -44,7 +44,7 @@ class AnnealingProgram:
 
     def __init__(
         self,
-        flux_to_bus_topology: list[FluxControlTopology],
+        flux_to_bus_topology: list[FluxToBus],
         annealing_program: list[dict[str, dict[str, float]]],
     ):
         """Init method"""

@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
-from qililab.instrument_controllers.instrument_controller2 import InstrumentController2
+from qililab.instrument_controllers.instrument_controller import InstrumentController
 from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
-from qililab.instruments import QbloxD5A, QbloxS4G
+from qililab.instruments.qblox_d5a import QbloxD5A
+from qililab.instruments.qblox_s4g import QbloxS4G
 from qililab.runcard.runcard_instrument_controllers import (
     QbloxSPIRackRuncardInstrumentController,
     RuncardInstrumentController,
@@ -24,9 +26,9 @@ from qililab.settings.instrument_controllers import ConnectionSettings, Connecti
 from qililab.typings.instruments import QbloxSPIRackDevice
 
 
-@InstrumentControllerFactory.register(InstrumentControllerType.QDEVIL_QDAC2_CONTROLLER)
+@InstrumentControllerFactory.register(InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER)
 class QbloxSPIRackController(
-    InstrumentController2[QbloxSPIRackDevice, QbloxSPIRackControllerSettings, QbloxD5A | QbloxS4G]
+    InstrumentController[QbloxSPIRackDevice, QbloxSPIRackControllerSettings, QbloxD5A | QbloxS4G]
 ):
     @classmethod
     def get_default_settings(cls) -> QbloxSPIRackControllerSettings:

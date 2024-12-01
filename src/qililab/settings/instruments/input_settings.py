@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qililab.settings.settings2 import Settings2
+from qililab.settings.settings import Settings
 
 
 # Base settings model
-class InputSettings(Settings2):
+class InputSettings(Settings):
     """Base Settings for all Instruments"""
 
     port: int

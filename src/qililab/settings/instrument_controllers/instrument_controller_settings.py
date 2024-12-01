@@ -17,7 +17,7 @@ from typing import ClassVar
 
 from pydantic import Field, model_validator
 
-from qililab.settings.settings2 import Settings2
+from qililab.settings.settings import Settings
 
 
 class ReferenceClock(str, Enum):
@@ -30,17 +30,17 @@ class ConnectionType(str, Enum):
     USB = "usb"
 
 
-class ConnectionSettings(Settings2):
+class ConnectionSettings(Settings):
     type: ConnectionType = Field(default=ConnectionType.TCP_IP)
     address: str = Field(default="168.0.0.1")
 
 
-class InstrumentModule(Settings2):
+class InstrumentModule(Settings):
     alias: str
     slot: int
 
 
-class InstrumentControllerSettings(Settings2):
+class InstrumentControllerSettings(Settings):
     """Base Settings for all Instruments"""
 
     alias: str

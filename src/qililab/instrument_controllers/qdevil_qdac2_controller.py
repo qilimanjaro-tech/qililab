@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
-from qililab.instrument_controllers.instrument_controller2 import InstrumentController2
+from qililab.instrument_controllers.instrument_controller import InstrumentController
 from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
-from qililab.instruments import QDevilQDAC2
+from qililab.instruments.qdevil_qdac2 import QDevilQDAC2
 from qililab.runcard.runcard_instrument_controllers import (
     QDevilQDAC2RuncardInstrumentController,
     RuncardInstrumentController,
@@ -25,7 +26,7 @@ from qililab.typings.instruments import QDevilQDAC2Device
 
 
 @InstrumentControllerFactory.register(InstrumentControllerType.QDEVIL_QDAC2_CONTROLLER)
-class QDevilQDAC2Controller(InstrumentController2[QDevilQDAC2Device, QDevilQDAC2ControllerSettings, QDevilQDAC2]):
+class QDevilQDAC2Controller(InstrumentController[QDevilQDAC2Device, QDevilQDAC2ControllerSettings, QDevilQDAC2]):
     @classmethod
     def get_default_settings(cls) -> QDevilQDAC2ControllerSettings:
         return QDevilQDAC2ControllerSettings(alias="qdac2_controller")

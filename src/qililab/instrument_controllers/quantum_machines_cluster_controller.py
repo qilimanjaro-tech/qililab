@@ -11,14 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
 import os
 
 from qm.octave import QmOctaveConfig
 
-from qililab.instrument_controllers.instrument_controller2 import InstrumentController2
+from qililab.instrument_controllers.instrument_controller import InstrumentController
 from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
-from qililab.instruments import QuantumMachinesOPX
+from qililab.instruments.quantum_machines_opx import QuantumMachinesOPX
 from qililab.runcard.runcard_instrument_controllers import (
     QuantumMachinesClusterRuncardInstrumentController,
     RuncardInstrumentController,
@@ -28,8 +30,8 @@ from qililab.typings.instruments import QuantumMachinesDevice
 
 
 @InstrumentControllerFactory.register(InstrumentControllerType.QUANTUM_MACHINES_CLUSTER_CONTROLLER)
-class QDevilQDAC2Controller(
-    InstrumentController2[QuantumMachinesDevice, QuantumMachinesClusterControllerSettings, QuantumMachinesOPX]
+class QuantumMachinesClusterController(
+    InstrumentController[QuantumMachinesDevice, QuantumMachinesClusterControllerSettings, QuantumMachinesOPX]
 ):
     @classmethod
     def get_default_settings(cls) -> QuantumMachinesClusterControllerSettings:

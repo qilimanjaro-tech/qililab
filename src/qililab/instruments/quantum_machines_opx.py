@@ -11,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
+from typing import TYPE_CHECKING
 
-import numpy as np
 from qm import DictQuaConfig, QmJob, QuantumMachine, SimulationConfig
-from qm.api.v2.job_api import JobApi
-from qm.jobs.running_qm_job import RunningQmJob
-from qm.program import Program
 
 from qililab.instruments.decorators import check_device_initialized
-from qililab.instruments.instrument2 import Instrument2
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import QuantumMachinesOPXRuncardInstrument, RuncardInstrument
@@ -40,10 +38,16 @@ from qililab.settings.instruments.quantum_machines_opx_settings import (
 from qililab.typings import QuantumMachinesDevice
 from qililab.utils import hash_qua_program, merge_dictionaries
 
+if TYPE_CHECKING:
+    import numpy as np
+    from qm.api.v2.job_api import JobApi
+    from qm.jobs.running_qm_job import RunningQmJob
+    from qm.program import Program
+
 
 @InstrumentFactory.register(InstrumentType.QUANTUM_MACHINES_OPX)
 class QuantumMachinesOPX(
-    Instrument2[
+    Instrument[
         QuantumMachinesDevice,
         OPXSettings,
         SingleElement | IQElement | IQReadoutElement | RFElement | RFReadoutElement,
