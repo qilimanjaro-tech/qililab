@@ -736,13 +736,14 @@ class Platform:
         )
         return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
-    def execute_experiment(self, experiment: Experiment, live_plot: bool = False) -> str:
+    def execute_experiment(self, experiment: Experiment, live_plot: bool = True) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
+            live_plot (bool): Flag that abilitates live plotting. Defaults to True.
 
         Returns:
             str: The path to the file where the results are stored.

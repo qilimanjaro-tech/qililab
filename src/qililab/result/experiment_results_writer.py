@@ -88,12 +88,13 @@ class ExperimentResultsWriter(ExperimentResults):
     Inherits from `ExperimentResults` to support both read and write operations.
     """
 
-    def __init__(self, path: str, metadata: ExperimentMetadata, live_plot: bool = False):
+    def __init__(self, path: str, metadata: ExperimentMetadata, live_plot: bool = True):
         """Initializes the ExperimentResultsWriter instance.
 
         Args:
             path (str): The file path to save the HDF5 results file.
             metadata (ExperimentMetadata): The metadata describing the experiment structure.
+            live_plot (bool): Flag that abilitates live plotting. Defaults to True.
         """
         super().__init__(path)
         self._metadata = metadata

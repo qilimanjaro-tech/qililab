@@ -73,6 +73,7 @@ class ExperimentExecutor:
         platform (Platform): The platform on which the experiment is to be executed.
         experiment (Experiment): The experiment object defining the sequence of operations and loops.
         base_data_path (str): The base directory path where the experiment results will be stored.
+        live_plot (bool): Flag that abilitates live plotting. Defaults to True.
 
     Example:
         .. code-block::
@@ -104,7 +105,7 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment, live_plot: bool = False):
+    def __init__(self, platform: "Platform", experiment: Experiment, live_plot: bool = True):
         self.platform = platform
         self.experiment = experiment
         self.live_plot = live_plot
