@@ -177,7 +177,7 @@
           shareable: True
   ```
 
-[#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
+[#844](https://github.com/qilimanjaro-tech/qililab/pull/844)
 
 ### Improvements
 
