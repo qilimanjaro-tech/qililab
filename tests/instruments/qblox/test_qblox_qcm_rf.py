@@ -18,6 +18,7 @@ from typing import cast
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 
+MAX_ATTENUATION = 30
 
 @pytest.fixture(name="platform")
 def fixture_platform():
@@ -80,8 +81,8 @@ def fixture_qrm(platform: Platform):
     # Create a mock device using create_autospec to follow the interface of the expected device
     qcm_rf.device = MagicMock()
     qcm_rf.device.mock_add_spec(module_mock_spec)
-    qcm_rf.device._get_max_out_att_0 = MagicMock(return_value=30)
-    qcm_rf.device._get_max_out_att_1 = MagicMock(return_value=30)
+    qcm_rf.device._get_max_out_att_0 = MagicMock(return_value=MAX_ATTENUATION)
+    qcm_rf.device._get_max_out_att_1 = MagicMock(return_value=MAX_ATTENUATION)
 
     qcm_rf.device.sequencers = {
         0: MagicMock(),
@@ -197,10 +198,10 @@ class TestQbloxQCMRF:
             qcm_rf.set_parameter(Parameter.LO_FREQUENCY, value=5e9, channel_id=None)
 
         with pytest.raises(Exception):
-            qcm_rf.set_parameter(Parameter.OUT0_ATT, value=40, channel_id=None)
+            qcm_rf.set_parameter(Parameter.OUT0_ATT, value=MAX_ATTENUATION+10, channel_id=None)
 
         with pytest.raises(Exception):
-            qcm_rf.set_parameter(Parameter.OUT1_ATT, value=40, channel_id=None)
+            qcm_rf.set_parameter(Parameter.OUT1_ATT, value=MAX_ATTENUATION+10, channel_id=None)
 
     @pytest.mark.parametrize(
         "parameter, expected_value",
