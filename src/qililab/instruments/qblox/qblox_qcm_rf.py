@@ -111,7 +111,7 @@ class QbloxQCMRF(QbloxQCM):
                     f"`{Parameter.OUT0_ATT}` for this module cannot be higher than {max_att}dB.\n"
                     "Please specify an attenuation level, multiple of 2, below this value."
                 )
-                
+
         if parameter == Parameter.OUT1_ATT:
             max_att = self.device._get_max_out_att_1()
             if value > max_att:
