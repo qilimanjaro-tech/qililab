@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar
 
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
+
 from qililab.exceptions import ParameterException
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.utils import InstrumentFactory
