@@ -71,10 +71,6 @@ class ExperimentResults:
 
         self._live_plot = self._file["live_plotting"]
 
-        # Prepare for SWMR mode to allow for live plotting
-        # if self._live_plot:
-        #     self._file.swmr_mode = True
-
         # Prepare access to each results dataset and its dimensions
         for qprogram_name in self._file[ExperimentResults.QPROGRAMS_PATH]:
             qprogram_data = self._file[f"{ExperimentResults.QPROGRAMS_PATH}/{qprogram_name}"]

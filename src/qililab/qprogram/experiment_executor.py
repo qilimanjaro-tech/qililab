@@ -344,8 +344,9 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element,
-                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
+                                lambda operation=element, value=current_value_of_variable[
+                                    element.value.uuid
+                                ]: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     value=value,
@@ -385,9 +386,7 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element,
-                            call_parameters=call_parameters,
-                            qprogram_index=qprogram_index: store_results(
+                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram(
                                         **{
@@ -583,14 +582,13 @@ class ExperimentExecutor:
                     operations = self._prepare_operations(self.experiment.body, progress)
                     self._execute_operations(operations, progress)
 
-            # Signal that the execution has completed
-            execution_completed.set()
+                # Signal that the execution has completed
+                execution_completed.set()
 
-            # Retrieve the execution time from the Future
-            execution_time = execution_time_future.result()
+                # Retrieve the execution time from the Future
+                execution_time = execution_time_future.result()
 
-            # Now write the execution time to the results writer
-            with self._results_writer:
+                # Now write the execution time to the results writer
                 self._results_writer.execution_time = execution_time
                 self._results_writer.execution_end = True
 

@@ -97,7 +97,7 @@ class ExperimentResultsWriter(ExperimentResults):
         """
         super().__init__(path)
         self._metadata = metadata
-        self.live_plot = live_plot
+        self._live_plot = live_plot
 
     # pylint: disable=too-many-locals
     def _create_results_file(self):
@@ -126,7 +126,7 @@ class ExperimentResultsWriter(ExperimentResults):
             qprograms_group = self._file.create_group(ExperimentResultsWriter.QPROGRAMS_PATH)
 
             # Register live plotting status
-            self._file["live_plotting"] = self.live_plot
+            self._file["live_plotting"] = self._live_plot
 
             # Iterate through QPrograms and measurements in the structure
             for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
@@ -173,7 +173,7 @@ class ExperimentResultsWriter(ExperimentResults):
                     results_ds.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
             # Prepare for SWMR mode to allow for live plotting
-            if self.live_plot:
+            if self._live_plot:
                 self._file.swmr_mode = True
 
     def _create_resuts_access(self):
@@ -194,6 +194,7 @@ class ExperimentResultsWriter(ExperimentResults):
         self._file = h5py.File(self.path, mode="w", libver="latest")
         self._create_results_file()
         self._create_resuts_access()
+        self._append_mode = True
 
         return self
 
@@ -210,7 +211,7 @@ class ExperimentResultsWriter(ExperimentResults):
         if isinstance(measurement_name, int):
             measurement_name = f"Measurement_{measurement_name}"
         self.data[qprogram_name, measurement_name][tuple(indices)] = value
-        if self.live_plot:
+        if self._live_plot:
             self.data[qprogram_name, measurement_name].flush()
 
     @ExperimentResults.platform.setter
