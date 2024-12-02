@@ -104,6 +104,14 @@ class QbloxQCMRF(QbloxQCM):
 
             parameter = Parameter(f"out{sequencer.outputs[0]}_lo_freq")
 
+        if parameter == Parameter.OUT0_ATT or parameter == Parameter.OUT1_ATT:
+            max_att = self.device.__get_max_out_att_0()
+            if parameter.value > max_att:
+                raise Exception(
+                    f"Attenuation for this module cannot be higher than {max_att}"
+                    "Please specify an attenuation level, multiple of 2, below this value."
+                )
+
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
             if self.is_device_active():
