@@ -1204,3 +1204,14 @@ class Platform:
         )
 
         return compiled_programs, final_layout
+    
+    def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
+        bus = self.get_element(alias=alias)
+        for instrument, instrument_channel in zip(bus.instruments, bus.channels):
+            if instrument.name == InstrumentName.QRMRF:
+                instrument.calibrate_mixers(cal_type, instrument_channel)
+            elif instrument.name == InstrumentName.QCMRF:
+                if channel_id is not None and channel_id == instrument_channel:
+                    instrument.calibrate_mixers(cal_type, channel_id)
+            else:
+                raise AttributeError("Mixers calibration not implemented for this instrument.")
