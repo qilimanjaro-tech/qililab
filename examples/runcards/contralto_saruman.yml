@@ -994,13 +994,13 @@ instruments:
   alias: QCM-RF1
   out0_lo_freq: 6700000000.0
   out0_lo_en: true
-  out0_in_lo_freq_cal_type_default: off
+  out0_lo_freq_cal_type_default: off
   out0_att: 10
   out0_offset_path0: 0.0
   out0_offset_path1: 0.0
   out1_lo_freq: 6000000000.0
   out1_lo_en: true
-  out1_in_lo_freq_cal_type_default: off
+  out1_lo_freq_cal_type_default: off
   out1_att: 10
   out1_offset_path0: 0.0
   out1_offset_path1: 0.0
@@ -1031,13 +1031,13 @@ instruments:
   alias: QCM-RF2
   out0_lo_freq: 5700000000.0
   out0_lo_en: true
-  out0_in_lo_freq_cal_type_default: off
+  out0_lo_freq_cal_type_default: off
   out0_att: 0
   out0_offset_path0: 0.0
   out0_offset_path1: 0.0
   out1_lo_freq: 6000000000.0
   out1_lo_en: true
-  out1_in_lo_freq_cal_type_default: off
+  out1_lo_freq_cal_type_default: off
   out1_att: 0
   out1_offset_path0: 0.0
   out1_offset_path1: 0.0
@@ -1068,13 +1068,13 @@ instruments:
   alias: QCM-RF3
   out0_lo_freq: 5080000000.0
   out0_lo_en: false
-  out0_in_lo_freq_cal_type_default: off
+  out0_lo_freq_cal_type_default: off
   out0_att: 10
   out0_offset_path0: 0.0
   out0_offset_path1: 0.0
   out1_lo_freq: 5980000000.0
   out1_lo_en: true
-  out1_in_lo_freq_cal_type_default: off
+  out1_lo_freq_cal_type_default: off
   out1_att: 10
   out1_offset_path0: 0.0
   out1_offset_path1: 0.0
@@ -1105,13 +1105,13 @@ instruments:
   alias: QCM-RF4
   out0_lo_freq: 5080000000.0
   out0_lo_en: false
-  out0_in_lo_freq_cal_type_default: off
+  out0_lo_freq_cal_type_default: off
   out0_att: 10
   out0_offset_path0: 0.0
   out0_offset_path1: 0.0
   out1_lo_freq: 5980000000.0
   out1_lo_en: true
-  out1_in_lo_freq_cal_type_default: off
+  out1_lo_freq_cal_type_default: off
   out1_att: 10
   out1_offset_path0: 0.0
   out1_offset_path1: 0.0
@@ -1142,13 +1142,13 @@ instruments:
   alias: QCM-RF5
   out0_lo_freq: 5080000000.0
   out0_lo_en: false
-  out0_in_lo_freq_cal_type_default: off
+  out0_lo_freq_cal_type_default: off
   out0_att: 10
   out0_offset_path0: 0.0
   out0_offset_path1: 0.0
   out1_lo_freq: 5980000000.0
   out1_lo_en: true
-  out1_in_lo_freq_cal_type_default: off
+  out1_lo_freq_cal_type_default: off
   out1_att: 10
   out1_offset_path0: 0.0
   out1_offset_path1: 0.0
