@@ -51,13 +51,22 @@ class CircuitTranspiler:
         routing_iterations: int = 10,
         optimize: bool = True,
     ) -> tuple[list[PulseSchedule], list[dict]]:
-        """Transpiles a list of ``qibo.models.Circuit`` to a list of pulse schedules.
+        """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
-        First makes a routing and placement of the circuit to the chip's physical qubits. And returns/logs the final layout of the qubits.
+        The process involves the following steps:
 
-        Then translates the circuit to a native gate circuit and applies virtual Z gates and phase corrections for CZ gates.
+        1. Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters if provided; otherwise, default values are applied.
+        2. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+        3. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
 
-        And finally, it converts the native gate circuit to a pulse schedule using calibrated settings from the runcard.
+        |
+
+        If `optimize=True` (default behavior), the following optimizations are also performed:
+
+        - Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
+        - Applying virtual Z gates and phase corrections by combining multiple pulses into a single one and commuting them with virtual Z gates.
+
+        |
 
         **Examples:**
 
@@ -138,9 +147,9 @@ class CircuitTranspiler:
         coupling_map: list[tuple[int, int]] | None = None,
         iterations: int = 10,
     ) -> tuple[Circuit, dict[str, int]]:
-        """Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
+        """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
-
+        This process uses the provided `placer`, `router`, and `routing_iterations` parameters if they are passed; otherwise, default values are applied.
 
         **Examples:**
 
@@ -217,7 +226,7 @@ class CircuitTranspiler:
         return CircuitOptimizer.run_gate_cancellations(circuit)
 
     def circuit_to_native(self, circuit: Circuit) -> Circuit:
-        """Converts circuit with qibo gates to circuit with native gates
+        """Converts circuit with qibo gates to circuit with native gates (CZ, RZ, Drag, Wait and M (Measurement).
 
         Args:
             circuit (Circuit): circuit with qibo gate.

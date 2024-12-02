@@ -236,17 +236,22 @@ class Bus:
 
         return results[0]
 
-    def acquire_qprogram_results(self, acquisitions: dict[str, AcquisitionData]) -> list[MeasurementResult]:
+    def acquire_qprogram_results(
+        self, acquisitions: dict[str, AcquisitionData], channel_id: ChannelID | None = None
+    ) -> list[MeasurementResult]:
         """Read the result from the instruments
 
         Returns:
             list[Result]: Acquired results in chronological order
+            channel_id (int | None, optional): instrument channel of QRM. Defaults to None.
         """
         # TODO: Support acquisition from multiple instruments
         total_results: list[list[MeasurementResult]] = []
         for instrument in self.instruments:
             if isinstance(instrument, QbloxQRM):
-                instrument_results = instrument.acquire_qprogram_results(acquisitions=acquisitions)
+                instrument_results = instrument.acquire_qprogram_results(
+                    acquisitions=acquisitions, channel_id=channel_id
+                )
                 total_results.append(instrument_results)
 
         if len(total_results) == 0:

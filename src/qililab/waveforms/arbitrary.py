@@ -34,6 +34,7 @@ class Arbitrary(Waveform):
         .. code-block:: python
 
             import numpy as np
+
             samples = np.ones(50)
 
         You would just need to do:
@@ -41,6 +42,7 @@ class Arbitrary(Waveform):
         .. code-block:: python
 
             import qililab as ql
+
             arbitrary_envelope = ql.Arbitrary(samples=samples)
     """
 
@@ -60,20 +62,23 @@ class Arbitrary(Waveform):
         if resolution == 1:
             return self.samples
 
-        # Calculate the averaging window
-        averaging_window = int(len(self.samples) / resolution)
+        # Calculate the downsampled length
+        downsampled_length = len(self.samples) // resolution
 
-        # Calculate the moving average
-        cumsum = np.cumsum(self.samples)
-        cumsum[averaging_window:] = cumsum[averaging_window:] - cumsum[:-averaging_window]
-        moving_avg = cumsum[averaging_window:] / averaging_window
+        # Check for valid resolution
+        if downsampled_length < 1:
+            raise ValueError("Resolution is too high compared to the waveform duration.")
 
-        # Apply scaling and shifting
-        scale_factor = (self.samples.max() - self.samples.min()) / (moving_avg.max() - moving_avg.min())
-        shift = self.samples.max() - moving_avg.max() * scale_factor
-        scaled_avg = moving_avg * scale_factor + shift
+        # Reshape the waveform into blocks and compute mean for each block
+        reshaped_samples = self.samples[: downsampled_length * resolution].reshape(-1, resolution)
+        downsampled = reshaped_samples.mean(axis=1)
 
-        # Apply clamping
-        clamped_avg = np.clip(scaled_avg, self.samples.min(), self.samples.max())
+        # Normalize the downsampled waveform
+        if downsampled.max() != downsampled.min():  # Avoid division by zero
+            normalized = (downsampled - downsampled.min()) / (downsampled.max() - downsampled.min())
+            normalized = normalized * (self.samples.max() - self.samples.min()) + self.samples.min()
+        else:
+            # If all values are the same, just return a constant array
+            normalized = np.full_like(downsampled, self.samples.min())
 
-        return clamped_avg
+        return normalized
