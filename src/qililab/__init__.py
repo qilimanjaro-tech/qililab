@@ -48,6 +48,7 @@ __all__ = [
     "Gaussian",
     "IQPair",
     "Parameter",
+    "ParameterException",
     "QProgram",
     "QbloxCompiler",
     "QuantumMachinesCompiler",
