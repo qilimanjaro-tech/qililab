@@ -129,6 +129,7 @@ class QuantumMachinesCluster(Instrument):
                                     if "filter" in output
                                     else {"feedforward": [], "feedback": []}
                                 ),
+                                "shareable": output["shareable"] if "shareable" in output else False,
                             }
                             for output in controller.get("analog_outputs", [])
                         },
@@ -177,6 +178,7 @@ class QuantumMachinesCluster(Instrument):
                                             if "filter" in output
                                             else {"feedforward": [], "feedback": []}
                                         ),
+                                        "shareable": output["shareable"] if "shareable" in output else False,
                                     }
                                     for output in fem.get("analog_outputs", [])
                                 },
