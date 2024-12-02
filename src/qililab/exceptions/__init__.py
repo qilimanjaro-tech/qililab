@@ -16,7 +16,6 @@
 
 from .data_unavailable import DataUnavailable
 from .exception_group import ExceptionGroup
-from .parameter_exception import ParameterException
 from .variable_allocated import VariableAllocated
 
-__all__ = ["DataUnavailable", "ExceptionGroup", "ParameterException", "VariableAllocated"]
+__all__ = ["DataUnavailable", "ExceptionGroup", "VariableAllocated"]
