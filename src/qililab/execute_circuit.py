@@ -38,6 +38,19 @@ def execute(
     The ``program`` argument is first translated into pulses using the transpilation settings of the runcard and the
     passed placer and router. Then the pulse will be compiled into the runcard machines assembly programs, and executed.
 
+    The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+
+    1. Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters if provided; otherwise, default values are applied.
+    2. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+    3. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+
+    |
+
+    If `optimize=True` (default behavior), the following optimizations are also performed:
+
+    - Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
+    - Applying virtual Z gates and phase corrections by combining multiple pulses into a single one and commuting them with virtual Z gates.
+
     Args:
         circuit (Circuit | list[Circuit]): Qibo Circuit.
         runcard (str | dict): If a string, path to the YAML file containing the serialization of the Platform to be

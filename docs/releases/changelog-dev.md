@@ -2,6 +2,14 @@
 
 ### New features since last release
 
+- Updated to latest qblox-instruments version. Changed some deprecated code from the new version and the QcmQrm into the more generic Module class.
+
+[#836](https://github.com/qilimanjaro-tech/qililab/pull/836)
+
+- Added empty handlers for Blocks in QProgram compilers
+
+[#839](https://github.com/qilimanjaro-tech/qililab/pull/839)
+
 - Support GRES in %%submit_job magic method
 
 [#828](https://github.com/qilimanjaro-tech/qililab/pull/828)
@@ -98,7 +106,7 @@
 
   The most common way to route, will be automatically through `qililab.execute_circuit.execute()`, or also from `qililab.platform.execute/compile()`. Another way, would be doing the transpilation/routing directly from an instance of the Transpiler, with: `qililab.digital.circuit_transpiler.transpile/route_circuit()` (with this last one, you can route with a different topology from the platform one, if desired, defaults to platform)
 
-  Example:
+  Example
 
   ```python
   from qibo import gates
@@ -156,7 +164,7 @@
       ...
   ```
 
-[#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
+  [#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
 
 ### Improvements
 
@@ -233,9 +241,13 @@
 
 - Added a `save_plot=True` parameter to the `plotS21()` method of `ExperimentResults`. When enabled (default: True), the plot is automatically saved in the same directory as the experiment results. [#819](https://github.com/qilimanjaro-tech/qililab/pull/819)
 
-- Improved the transpiler, by making it more modular, and adding a `gate_cancellation()` stage before the transpilation to natives, this stage can be skipped, together with the old `optimize_transpilation()`, if the flag `optimize=False` is passed.
+- Improved the transpiler, by making it more modular, and adding a `gate_cancellation()` stage before the transpilation to natives, this stage can be skipped, together with the old `optimize_transpilation()`, if the flag `optimize=False` is passed. [#823](https://github.com/qilimanjaro-tech/qililab/pull/823)
 
-[#823](https://github.com/qilimanjaro-tech/qililab/pull/823)
+- Split execution of annealing programs into two steps: compilation and execution. [#825](https://github.com/qilimanjaro-tech/qililab/pull/825)
+
+- Added a try and except similar to the dataloss error to restart the measurement in case of random timeout issue for quantum machines. This is a temporary fix and will be deleted once the Quantum Machines team fix their issue.
+
+[#832](https://github.com/qilimanjaro-tech/qililab/pull/832)
 
 ### Breaking changes
 
@@ -265,6 +277,10 @@
 
 ### Bug fixes
 
+- Fixed minor type bug in `CrosstalkMatrix`. [#825](https://github.com/qilimanjaro-tech/qililab/pull/825)
+
 - Fixed typo in ExceptionGroup import statement for python 3.11+ [#808](https://github.com/qilimanjaro-tech/qililab/pull/808)
 
 - Fixed serialization/deserialization of lambda functions, mainly used in `experiment.execute_qprogram()` method. The fix depends on the `dill` library which is added as requirement. [#815](https://github.com/qilimanjaro-tech/qililab/pull/815)
+
+- Fixed calculation of Arbitrary waveform's envelope when resolution is greater than 1ns. [#837](https://github.com/qilimanjaro-tech/qililab/pull/837)
