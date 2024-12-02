@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar
 
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
-
+from qililab.exceptions import ParameterException
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
@@ -90,7 +90,7 @@ class QbloxQRMRF(QbloxQRM):
         if parameter == Parameter.OUT0_ATT:
             max_att = self.device._get_max_out_att_0()
             if value > max_att:
-                raise Exception(
+                raise ParameterException(
                     f"`{Parameter.OUT0_ATT}` for this module cannot be higher than {max_att}dB.\n"
                     "Please specify an attenuation level, multiple of 2, below this value."
                 )

@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""__init__.py"""
+"""Parameter Exception class"""
 
-from .data_unavailable import DataUnavailable
-from .exception_group import ExceptionGroup
-from .parameter_exception import ParameterException
-from .variable_allocated import VariableAllocated
 
-__all__ = ["DataUnavailable", "ExceptionGroup", "ParameterException", "VariableAllocated"]
+class ParameterException(Exception):
+    """Exception raised when a parameter is set to not allowed values.
+
+    Args:
+        message (str): Optional message to be displayed
+    """
+
+    def __init__(self, message: str | None):
+        super().__init__("Parameter value cannot be set for this instrument." if message is None else message)
