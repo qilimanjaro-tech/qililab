@@ -21,7 +21,7 @@ from .about import about
 from .config import __version__, logger
 from .data_management import build_platform, load_results, save_platform, save_results
 from .execute_circuit import execute
-from .exceptions import ParameterException
+from .exceptions import ParameterException, VariableAllocated
 from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
 from .result import ExperimentResults, stream_results
 from .typings import Parameter
@@ -49,6 +49,7 @@ __all__ = [
     "IQPair",
     "Parameter",
     "ParameterException",
+    "VariableAllocated",
     "QProgram",
     "QbloxCompiler",
     "QuantumMachinesCompiler",
