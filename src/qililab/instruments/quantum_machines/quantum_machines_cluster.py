@@ -444,7 +444,10 @@ class QuantumMachinesCluster(Instrument):
             self._octave_config = QmOctaveConfig()
             self._octave_config.set_calibration_db(os.getcwd())
             for octave in self.settings.octaves:
-                self._octave_config.add_device_info(octave["name"], self.settings.address, octave["port"])
+                if "address" not in octave:
+                    self._octave_config.add_device_info(octave["name"], self.settings.address, octave["port"])
+                else:
+                    self._octave_config.add_device_info(octave["name"], octave["address"], octave["port"])
 
         self._qmm = QuantumMachinesManager(
             host=self.settings.address, cluster_name=self.settings.cluster, octave=self._octave_config
