@@ -39,7 +39,7 @@ def fixture_qmm():
                 "name": "con1",
                 "analog_outputs": [
                     {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
-                    {"port": 2},
+                    {"port": 2, "shareable": True},
                     {"port": 3},
                     {"port": 4},
                     {"port": 5},
