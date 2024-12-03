@@ -63,7 +63,7 @@ class QbloxSPIRackController(InstrumentController):
         """
         for module, slot_id in zip(self.modules, self.connected_modules_slot_ids):
             self.device.add_spi_module(address=slot_id, module_type=module.name)
-            module.device = self._module(module_id=slot_id)  # slot_id represents the number displayed in the cluster
+            module.device = self.module(module_id=slot_id)  # slot_id represents the number displayed in the cluster
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
@@ -75,7 +75,7 @@ class QbloxSPIRackController(InstrumentController):
                     + f"and {InstrumentTypeName.QBLOX_S4G}."
                 )
 
-    def _module(self, module_id: int):
+    def module(self, module_id: int):
         """get module associated to the specific module id
 
         Args:
