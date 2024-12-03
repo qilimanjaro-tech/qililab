@@ -2,6 +2,10 @@
 
 ### New features since last release
 
+- Incorporated new check for maximum allowed attenuation in RF modules.
+
+[#843](https://github.com/qilimanjaro-tech/qililab/pull/843)
+
 - Updated to latest qblox-instruments version. Changed some deprecated code from the new version and the QcmQrm into the more generic Module class.
 
 [#836](https://github.com/qilimanjaro-tech/qililab/pull/836)
