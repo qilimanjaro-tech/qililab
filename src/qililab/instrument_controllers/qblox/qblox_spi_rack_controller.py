@@ -55,7 +55,7 @@ class QbloxSPIRackController(InstrumentController):
 
     def _initialize_device(self):
         """Initialize device controller."""
-        self.device = SPI_Rack(name=f"{self.name.value}_{self.alias}", address=self.address)
+        self.device = SPI_Rack(name=f"{self.name.value}_{self.alias}", address=f"/dev/{self.address}")
 
     def _set_device_to_all_modules(self):
         """Sets the initialized device to all attached modules,
