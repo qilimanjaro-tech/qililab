@@ -294,6 +294,8 @@
 
 ### Bug fixes
 
+- Fixed minor type bug in `Platform`. [#846](https://github.com/qilimanjaro-tech/qililab/pull/846)
+
 - Fixed minor type bug in `CrosstalkMatrix`. [#825](https://github.com/qilimanjaro-tech/qililab/pull/825)
 
 - Fixed typo in ExceptionGroup import statement for python 3.11+ [#808](https://github.com/qilimanjaro-tech/qililab/pull/808)
