@@ -881,7 +881,7 @@ class Platform:
                 buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
                 self._qpy_sequence_cache[bus_alias] = sequence_hash
             # sync all relevant sequences
-            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus.alias].channels):
+            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                 if isinstance(instrument, QbloxModule):
                     instrument.sync_sequencer(sequencer_id=int(channel))
 
@@ -893,7 +893,7 @@ class Platform:
         results = QProgramResults()
         for bus_alias, bus in buses.items():
             if bus.has_adc():
-                for instrument, channel in zip(buses[bus_alias].instruments, buses[bus.alias].channels):
+                for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                     if isinstance(instrument, QbloxModule):
                         bus_results = bus.acquire_qprogram_results(
                             acquisitions=acquisitions[bus_alias], channel_id=int(channel)
@@ -903,7 +903,7 @@ class Platform:
 
         # Reset instrument settings
         for bus_alias in sequences:
-            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus.alias].channels):
+            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                 if isinstance(instrument, QbloxModule):
                     instrument.desync_sequencer(sequencer_id=int(channel))
 
