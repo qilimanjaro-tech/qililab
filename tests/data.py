@@ -725,7 +725,7 @@ class SauronSpiRack:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                "alias": "module1",
+                "alias": "S4g_1",
                 "slot_id": 1,
             }
         ],
