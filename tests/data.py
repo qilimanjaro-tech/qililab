@@ -752,7 +752,7 @@ class SauronSpiRack:
         spi_rack_controller_wrong_module,
     ]
 
-    buses: list[dict[str, Any]] = [{RUNCARD.ALIAS: "spi_bus", RUNCARD.INSTRUMENTS: ["spi_rack"], RUNCARD.CHANNELS: [1]}]
+    buses: list[dict[str, Any]] = [{RUNCARD.ALIAS: "spi_bus", RUNCARD.INSTRUMENTS: ["S4g_1"], RUNCARD.CHANNELS: [1]}]
 
     runcard = {
         RUNCARD.NAME: name,
