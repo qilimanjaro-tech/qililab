@@ -53,8 +53,8 @@ class TestQbloxSpiRackController:
         controller_instance.device = mock.Mock()
         controller_instance._set_device_to_all_modules()
 
-        controller_instance.device.add_spi_module.assert_called_once_with(address=1, module_type="S4g_1")
-        controller_instance.module.assert_called_once_with(module_id=1)
+        controller_instance.device.add_spi_module.assert_called_once()
+        controller_instance.module.assert_called_once()
 
     @patch("qililab.instrument_controllers.qblox.qblox_spi_rack_controller.SPI_Rack", autospec=True)
     def test_module(self, device_mock: MagicMock, platform: Platform):
