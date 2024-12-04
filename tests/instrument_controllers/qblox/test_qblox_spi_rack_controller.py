@@ -67,7 +67,7 @@ class TestQbloxSpiRackController:
     def test_check_supported_modules_raises_exception(self, platform: Platform):
         """Test SPI rack controller raises an error if initialized with wrong module."""
         controller_instance = platform.instrument_controllers.get_instrument_controller(
-            alias="spi_rack_controller_wrong_module"
+            alias="spi_controller_wrong_module"
         )
         with pytest.raises(ValueError):
             controller_instance._check_supported_modules()

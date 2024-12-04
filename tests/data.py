@@ -725,7 +725,7 @@ class SauronSpiRack:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                "alias": "S4g_1",
+                "alias": "module1",
                 "slot_id": 1,
             }
         ],
@@ -733,7 +733,7 @@ class SauronSpiRack:
 
     spi_rack_controller_wrong_module = {
         RUNCARD.NAME: InstrumentControllerName.QBLOX_SPIRACK,
-        RUNCARD.ALIAS: "qdac_controller_wrong_module",
+        RUNCARD.ALIAS: "spi_controller_wrong_module",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.USB.value,
             CONNECTION.ADDRESS: "ttyUSB0",
