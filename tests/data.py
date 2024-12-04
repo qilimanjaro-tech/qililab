@@ -708,6 +708,14 @@ class SauronSpiRack:
         "dacs": [1],
     }
 
+    rohde_schwarz: dict[str, Any] = {
+        "name": InstrumentName.ROHDE_SCHWARZ.value,
+        "alias": "rohde_schwarz",
+        Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 7.24730e09,
+        Parameter.RF_ON.value: True,
+    }
+
     spi_rack_controller_usb = {
         RUNCARD.NAME: InstrumentControllerName.QBLOX_SPIRACK,
         RUNCARD.ALIAS: "spi_controller_usb",
@@ -738,7 +746,7 @@ class SauronSpiRack:
         ],
     }
 
-    instruments = [spi_rack]
+    instruments = [spi_rack, rohde_schwarz]
     instrument_controllers = [
         spi_rack_controller_usb,
         spi_rack_controller_wrong_module,
