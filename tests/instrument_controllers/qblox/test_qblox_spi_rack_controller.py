@@ -48,6 +48,7 @@ class TestQbloxSpiRackController:
         """Test SPI rack controller initializes device correctly foa all modules."""
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias="spi_controller_usb")
 
+        controller_instance._initialize_device()
         controller_instance._set_device_to_all_modules()
 
         controller_instance.device.add_spi_module.assert_called_once_with(address=1, module_type="S4g_1")
@@ -58,6 +59,7 @@ class TestQbloxSpiRackController:
         """Test SPI rack controller sets module correctly."""
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias="spi_controller_usb")
 
+        controller_instance._initialize_device()
         controller_instance.module(1)
 
         assert controller_instance.module(1) == getattr(controller_instance.device, f"module{1}")
