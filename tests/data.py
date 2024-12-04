@@ -7,21 +7,14 @@ import numpy as np
 from qibo.gates import Align, I, M, X, Y
 from qibo.models.circuit import Circuit
 
-from qililab.constants import (
-    CONNECTION,
-    EXPERIMENT,
-    INSTRUMENTCONTROLLER,
-    PLATFORM,
-    RUNCARD,
-    AWGTypes,
-)
+from qililab.constants import CONNECTION, EXPERIMENT, INSTRUMENTCONTROLLER, PLATFORM, RUNCARD, AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
     ConnectionName,
     InstrumentControllerName,
     InstrumentName,
     IntegrationMode,
-    Parameter
+    Parameter,
 )
 
 
@@ -209,12 +202,11 @@ class Galadriel:
             "drive_line_q0_bus": {
                 "line": "drive",
                 "qubits": [0],
-                "distortions": [{"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}]
+                "distortions": [
+                    {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
+                ],
             },
-            "drive_line_q1_bus": {
-                "line": "drive",
-                "qubits": [1]
-            },
+            "drive_line_q1_bus": {"line": "drive", "qubits": [1]},
             "feedline_input_output_bus": {
                 "line": "readout",
                 "qubits": [0],
@@ -242,11 +234,8 @@ class Galadriel:
                 Parameter.WEIGHTS_Q.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
                 Parameter.WEIGHED_ACQ_ENABLED.value: True,
             },
-            "flux_line_q0_bus": {
-                "line": "flux",
-                "qubits": [0]
-            },
-        }
+            "flux_line_q0_bus": {"line": "flux", "qubits": [0]},
+        },
     }
 
     analog_compilation_settings: dict[str, Any] = {
@@ -565,32 +554,30 @@ class Galadriel:
             RUNCARD.ALIAS: "drive_line_q0_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             RUNCARD.CHANNELS: [0, None],
-            "distortions": [{"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}]
+            "distortions": [
+                {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
+            ],
         },
-        {
-            RUNCARD.ALIAS: "drive_line_q1_bus",
-            RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value],
-            RUNCARD.CHANNELS: [0]
-        },
+        {RUNCARD.ALIAS: "drive_line_q1_bus", RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value], RUNCARD.CHANNELS: [0]},
         {
             "alias": "feedline_input_output_bus",
             RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],
-            RUNCARD.CHANNELS: [0, None]
+            RUNCARD.CHANNELS: [0, None],
         },
         {
             "alias": "feedline_input_output_bus_1",
             RUNCARD.INSTRUMENTS: [f"{InstrumentName.QRMRF.value}"],
-            RUNCARD.CHANNELS: [0]
+            RUNCARD.CHANNELS: [0],
         },
         {
             "alias": "feedline_input_output_bus_2",
             RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_1"],
-            RUNCARD.CHANNELS: [0]
+            RUNCARD.CHANNELS: [0],
         },
         {
             RUNCARD.ALIAS: "flux_line_q0_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
-            RUNCARD.CHANNELS: [1, None]
+            RUNCARD.CHANNELS: [1, None],
         },
     ]
 
@@ -602,6 +589,7 @@ class Galadriel:
         RUNCARD.DIGITAL: digital_compilation_settings,
         RUNCARD.ANALOG: analog_compilation_settings,
     }
+
 
 class SauronYokogawa:
     """Test data of the sauron with yokogawa platform."""
@@ -693,23 +681,84 @@ class SauronYokogawa:
     ]
 
     buses: list[dict[str, Any]] = [
-        {
-            RUNCARD.ALIAS: "yokogawa_gs200_current_bus",
-            RUNCARD.INSTRUMENTS: ["yokogawa_current"],
-            RUNCARD.CHANNELS: [0]
-        },
-        {
-            RUNCARD.ALIAS: "yokogawa_gs200_voltage_bus",
-            RUNCARD.INSTRUMENTS: ["yokogawa_voltage"],
-            RUNCARD.CHANNELS: [0]
-        },
+        {RUNCARD.ALIAS: "yokogawa_gs200_current_bus", RUNCARD.INSTRUMENTS: ["yokogawa_current"], RUNCARD.CHANNELS: [0]},
+        {RUNCARD.ALIAS: "yokogawa_gs200_voltage_bus", RUNCARD.INSTRUMENTS: ["yokogawa_voltage"], RUNCARD.CHANNELS: [0]},
     ]
 
     runcard = {
         RUNCARD.NAME: name,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
-        RUNCARD.BUSES: buses
+        RUNCARD.BUSES: buses,
+    }
+
+
+class SauronSpiRack:
+    """Test data of the sauron with spi rack platform."""
+
+    name = "sauron_spi_rack"
+
+    spi_rack = {
+        RUNCARD.NAME: InstrumentName.QBLOX_S4G,
+        RUNCARD.ALIAS: "S4g_1",
+        Parameter.CURRENT.value: [0.0],
+        Parameter.RAMPING_ENABLED.value: [True],
+        Parameter.RAMPING_RATE.value: [0.01],
+        Parameter.SPAN.value: ["range_min_bi"],
+        "dacs": [1],
+    }
+
+    rohde_schwarz: dict[str, Any] = {
+        "name": InstrumentName.ROHDE_SCHWARZ.value,
+        "alias": "rohde_schwarz",
+        Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 7.24730e09,
+        Parameter.RF_ON.value: True,
+    }
+
+    spi_rack_controller_usb = {
+        RUNCARD.NAME: InstrumentControllerName.QBLOX_SPIRACK,
+        RUNCARD.ALIAS: "spi_controller_usb",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.USB.value,
+            CONNECTION.ADDRESS: "ttyUSB0",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "S4g_1",
+                "slot_id": 1,
+            }
+        ],
+    }
+
+    spi_rack_controller_wrong_module = {
+        RUNCARD.NAME: InstrumentControllerName.QBLOX_SPIRACK,
+        RUNCARD.ALIAS: "spi_controller_wrong_module",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.USB.value,
+            CONNECTION.ADDRESS: "ttyUSB0",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "rohde_schwarz",
+                "slot_id": 1,
+            }
+        ],
+    }
+
+    instruments = [spi_rack, rohde_schwarz]
+    instrument_controllers = [
+        spi_rack_controller_usb,
+        spi_rack_controller_wrong_module,
+    ]
+
+    buses: list[dict[str, Any]] = [{RUNCARD.ALIAS: "spi_bus", RUNCARD.INSTRUMENTS: ["S4g_1"], RUNCARD.CHANNELS: [1]}]
+
+    runcard = {
+        RUNCARD.NAME: name,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+        RUNCARD.BUSES: buses,
     }
 
 
@@ -789,19 +838,13 @@ class SauronQDevil:
         qdevil_qdac2_controller_wrong_module,
     ]
 
-    buses: list[dict[str, Any]] = [
-        {
-            RUNCARD.ALIAS: "qdac_bus",
-            RUNCARD.INSTRUMENTS: ["qdac"],
-            RUNCARD.CHANNELS: [1]
-        }
-    ]
+    buses: list[dict[str, Any]] = [{RUNCARD.ALIAS: "qdac_bus", RUNCARD.INSTRUMENTS: ["qdac"], RUNCARD.CHANNELS: [1]}]
 
     runcard = {
         RUNCARD.NAME: name,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
-        RUNCARD.BUSES: buses
+        RUNCARD.BUSES: buses,
     }
 
 
@@ -1197,50 +1240,30 @@ class SauronQuantumMachines:
     ]
 
     buses: list[dict[str, Any]] = [
-        {
-            RUNCARD.ALIAS: "drive_q0",
-            RUNCARD.INSTRUMENTS: ["qmm"],
-            RUNCARD.CHANNELS: ["drive_q0"]
-        },
-        {
-            RUNCARD.ALIAS: "readout_q0",
-            RUNCARD.INSTRUMENTS: ["qmm"],
-            RUNCARD.CHANNELS: ["readout_q0"]
-        },
-        {
-            RUNCARD.ALIAS: "flux_q0",
-            RUNCARD.INSTRUMENTS: ["qmm"],
-            RUNCARD.CHANNELS: ["flux_q0"]
-        },
-        {
-            RUNCARD.ALIAS: "drive_q0_rf",
-            RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
-            RUNCARD.CHANNELS: ["drive_q0_rf"]
-        },
-        {
-            RUNCARD.ALIAS: "readout_q0_rf",
-            RUNCARD.INSTRUMENTS: ["qmm_with_octave"],
-            RUNCARD.CHANNELS: ["readout_q0_rf"]
-        },
+        {RUNCARD.ALIAS: "drive_q0", RUNCARD.INSTRUMENTS: ["qmm"], RUNCARD.CHANNELS: ["drive_q0"]},
+        {RUNCARD.ALIAS: "readout_q0", RUNCARD.INSTRUMENTS: ["qmm"], RUNCARD.CHANNELS: ["readout_q0"]},
+        {RUNCARD.ALIAS: "flux_q0", RUNCARD.INSTRUMENTS: ["qmm"], RUNCARD.CHANNELS: ["flux_q0"]},
+        {RUNCARD.ALIAS: "drive_q0_rf", RUNCARD.INSTRUMENTS: ["qmm_with_octave"], RUNCARD.CHANNELS: ["drive_q0_rf"]},
+        {RUNCARD.ALIAS: "readout_q0_rf", RUNCARD.INSTRUMENTS: ["qmm_with_octave"], RUNCARD.CHANNELS: ["readout_q0_rf"]},
         {
             RUNCARD.ALIAS: "drive_q0_rf_custom",
             RUNCARD.INSTRUMENTS: ["qmm_with_octave_custom_connectivity"],
-            RUNCARD.CHANNELS: ["drive_q0_rf"]
+            RUNCARD.CHANNELS: ["drive_q0_rf"],
         },
         {
             RUNCARD.ALIAS: "readout_q0_rf_custom",
             RUNCARD.INSTRUMENTS: ["qmm_with_octave_custom_connectivity"],
-            RUNCARD.CHANNELS: ["readout_q0_rf"]
+            RUNCARD.CHANNELS: ["readout_q0_rf"],
         },
         {
             RUNCARD.ALIAS: "drive_q0_opx1000",
             RUNCARD.INSTRUMENTS: ["qmm_with_opx1000"],
-            RUNCARD.CHANNELS: ["drive_q0_rf"]
+            RUNCARD.CHANNELS: ["drive_q0_rf"],
         },
         {
             RUNCARD.ALIAS: "readout_q0_opx1000",
             RUNCARD.INSTRUMENTS: ["qmm_with_opx1000"],
-            RUNCARD.CHANNELS: ["readout_q0_rf"]
+            RUNCARD.CHANNELS: ["readout_q0_rf"],
         },
     ]
 
