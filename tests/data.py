@@ -709,7 +709,7 @@ class SauronSpiRack:
     }
 
     spi_rack_controller_usb = {
-        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.NAME: InstrumentControllerName.QBLOX_SPIRACK,
         RUNCARD.ALIAS: "spi_controller_usb",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.USB.value,
@@ -723,24 +723,25 @@ class SauronSpiRack:
         ],
     }
 
-    # qdevil_qdac2_controller_wrong_module = {
-    #     RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
-    #     RUNCARD.ALIAS: "qdac_controller_wrong_module",
-    #     INSTRUMENTCONTROLLER.CONNECTION: {
-    #         RUNCARD.NAME: ConnectionName.TCP_IP.value,
-    #         CONNECTION.ADDRESS: "192.168.1.15",
-    #     },
-    #     INSTRUMENTCONTROLLER.MODULES: [
-    #         {
-    #             "alias": "rohde_schwarz",
-    #             "slot_id": 0,
-    #         }
-    #     ],
-    # }
+    spi_rack_controller_wrong_module = {
+        RUNCARD.NAME: InstrumentControllerName.QBLOX_SPIRACK,
+        RUNCARD.ALIAS: "qdac_controller_wrong_module",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.USB.value,
+            CONNECTION.ADDRESS: "ttyUSB0",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "rohde_schwarz",
+                "slot_id": 0,
+            }
+        ],
+    }
 
     instruments = [spi_rack]
     instrument_controllers = [
         spi_rack_controller_usb,
+        spi_rack_controller_wrong_module,
     ]
 
     buses: list[dict[str, Any]] = [{RUNCARD.ALIAS: "spi_bus", RUNCARD.INSTRUMENTS: ["spi_rack"], RUNCARD.CHANNELS: [1]}]
