@@ -79,3 +79,20 @@ class InstrumentParameter(Parameter, Generic[TInstrument, TChannelID]):
             # Optionally call hardware-level update
             if self.set_driver_cmd and self.owner.is_device_active():
                 self.set_driver_cmd(value)
+
+    def __repr__(self):
+        """
+        Custom representation for InstrumentParameter.
+        Includes name, channel ID (if applicable), and current value.
+        """
+        current_value = self.get()
+
+        if self.channel_id is not None:
+            return (
+                f"InstrumentParameter(name={self.name}, "
+                f"channel_id={self.channel_id}, value={current_value})"
+            )
+        return (
+            f"InstrumentParameter(name={self.name}, "
+            f"value={current_value})"
+        )
