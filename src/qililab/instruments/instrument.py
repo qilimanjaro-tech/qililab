@@ -120,6 +120,8 @@ class InstrumentWithChannels(
         channel_id: TChannelID,
         name: str,
         setting_key: str,
+        get_driver_cmd: Callable | None = None,
+        set_driver_cmd: Callable | None = None,
         **kwargs,
     ):
         """
@@ -139,6 +141,8 @@ class InstrumentWithChannels(
             owner=self,
             setting_key=f"{setting_key}",
             channel_id=channel_id,
+            get_driver_cmd=get_driver_cmd,
+            set_driver_cmd=set_driver_cmd,
             **kwargs,
         )
         # Add the parameter to the channel

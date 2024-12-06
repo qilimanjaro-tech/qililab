@@ -53,7 +53,7 @@ class InstrumentParameter(Parameter, Generic[TInstrument, TChannelID]):
             value = self.get_driver_cmd()
             setattr(self.owner.settings, self.setting_key, value)
             return value
-        
+
         # Retrieve value from channel settings if channel_id is specified
         if self.channel_id is not None:
             channel_settings = self.owner.settings.get_channel(self.channel_id)
