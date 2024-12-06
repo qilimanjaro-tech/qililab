@@ -31,10 +31,10 @@ class QbloxQCMSettings(QbloxControlModuleSettings[QbloxLFOutputSettings]):
             or any(output.port not in {0, 1, 2, 3} for output in self.outputs)
         ):
             raise ValueError("Qblox QCM should have exactly four outputs with ports 0, 1, 2, and 3.")
-        for sequencer in self.sequencers:
-            if not sequencer.outputs or len(sequencer.outputs) not in {1, 2}:
+        for channel in self.channels:
+            if not channel.outputs or len(channel.outputs) not in {1, 2}:
                 raise ValueError("Qblox QCM sequencers should be connected to one or two outputs.")
-            if any(output not in {0, 1, 2, 3} for output in sequencer.outputs):
+            if any(output not in {0, 1, 2, 3} for output in channel.outputs):
                 raise ValueError("Qblox QCM sequencer outputs should be one of {0, 1, 2, 3}.")
         return self
 
@@ -46,9 +46,9 @@ class QbloxQCMRFSettings(QbloxControlModuleSettings[QbloxRFOutputSettings]):
     def validate_outputs(self):
         if not self.outputs or len(self.outputs) != 2 or any(output.port not in {0, 1} for output in self.outputs):
             raise ValueError("Qblox QCM-RF should have exactly two outputs with ports 0 and 1.")
-        for sequencer in self.sequencers:
-            if not sequencer.outputs or len(sequencer.outputs) != 1:
+        for channel in self.channels:
+            if not channel.outputs or len(channel.outputs) != 1:
                 raise ValueError("Qblox QCM-RF sequencers should be connected to one output.")
-            if any(output not in {0, 1} for output in sequencer.outputs):
+            if any(output not in {0, 1} for output in channel.outputs):
                 raise ValueError("Qblox QCM-RF sequencer outputs should be one of {0, 1}.")
         return self

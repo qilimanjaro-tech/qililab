@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Callable, ClassVar
 import numpy as np
 
 from qililab.instruments.decorators import check_device_initialized
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import InstrumentWithChannels
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import QDevilQDAC2RuncardInstrument, RuncardInstrument
@@ -31,8 +31,18 @@ if TYPE_CHECKING:
 
 
 @InstrumentFactory.register(InstrumentType.QDEVIL_QDAC2)
-class QDevilQDAC2(Instrument[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2ChannelSettings, int, None, None]):
+class QDevilQDAC2(InstrumentWithChannels[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2ChannelSettings, int]):
     AWG_RESOLUTION: ClassVar[int] = 1000
+
+    def __init__(self, settings: QDevilQDAC2Settings | None = None):
+        super().__init__(settings=settings)
+        for channel in self.settings.channels:
+            self.add_channel_parameter(
+                channel_id=channel.id,
+                name="voltage",
+                setting_key="voltage",
+                set_driver_cmd=self._set_voltage,
+            )
 
     @check_device_initialized
     def turn_on(self):
@@ -52,34 +62,12 @@ class QDevilQDAC2(Instrument[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2
 
     @classmethod
     def get_default_settings(cls) -> QDevilQDAC2Settings:
-        return QDevilQDAC2Settings(alias="qdac2", dacs=[QDevilQDAC2ChannelSettings(id=index) for index in range(24)])
+        return QDevilQDAC2Settings(alias="qdac2", channels=[QDevilQDAC2ChannelSettings(id=index) for index in range(24)])
 
-    @classmethod
-    def _channel_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return {
-            Parameter.VOLTAGE: "voltage",
-            Parameter.SPAN: "span",
-            Parameter.RAMPING_ENABLED: "ramping_enabled",
-            Parameter.RAMPING_RATE: "ramping_rate",
-            Parameter.LOW_PASS_FILTER: "low_pass_filter",
-        }
+    def _get_voltage(self, channel: int):
+        self.device.channel(channel).dc_constant_V()
 
-    def get_channel_settings(self, channel: int) -> QDevilQDAC2ChannelSettings:
-        for channel_settings in self.settings.dacs:
-            if channel_settings.id == channel:
-                return channel_settings
-        raise ValueError(f"Channel {channel} not found.")
-
-    def _channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
-        return {
-            Parameter.VOLTAGE: self._on_voltage_changed,
-            Parameter.SPAN: self._on_span_changed,
-            Parameter.RAMPING_ENABLED: self._on_ramping_enabled_changed,
-            Parameter.RAMPING_RATE: self._on_ramping_rate_changed,
-            Parameter.LOW_PASS_FILTER: self._on_low_pas_filter_changed,
-        }
-
-    def _on_voltage_changed(self, value: float, channel: int):
+    def _set_voltage(self, value: float, channel: int):
         self.device.channel(channel).dc_constant_V(value)
 
     def _on_span_changed(self, value: str, channel: int):
@@ -87,13 +75,13 @@ class QDevilQDAC2(Instrument[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2
 
     def _on_ramping_enabled_changed(self, value: bool, channel: int):
         if value:
-            ramping_rate = self.get_channel_settings(channel).ramping_rate
+            ramping_rate = self.settings.get_channel(channel).ramping_rate
             self.device.channel(channel).dc_slew_rate_V_per_s(ramping_rate)
         else:
             self.device.channel(channel).dc_slew_rate_V_per_s(2e7)
 
     def _on_ramping_rate_changed(self, value: float, channel: int):
-        ramping_enabled = self.get_channel_settings(channel).ramping_enabled
+        ramping_enabled = self.settings.get_channel(channel).ramping_enabled
         if ramping_enabled:
             self.device.channel(channel).dc_slew_rate_V_per_s(value)
 
@@ -136,7 +124,7 @@ class QDevilQDAC2(Instrument[QDevilQDac2Driver, QDevilQDAC2Settings, QDevilQDAC2
             clear_after (bool): If True, clears cache. Defaults to True.
         """
         if channel is None:
-            for dac in self.settings.dacs:
+            for dac in self.settings.channels:
                 awg_context = self.device.channel(dac.id).arbitrary_wave(dac.id)
             self.device.start_all()
         else:

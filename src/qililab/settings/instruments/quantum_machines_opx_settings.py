@@ -23,7 +23,7 @@ from qililab.settings.instruments.channel_settings import (
     ToSingleOutputMixin,
 )
 from qililab.settings.instruments.input_settings import InputSettings
-from qililab.settings.instruments.instrument_settings import InstrumentSettings
+from qililab.settings.instruments.instrument_settings import InstrumentWithChannelsSettings
 from qililab.settings.instruments.output_settings import OutputSettings
 
 
@@ -145,7 +145,7 @@ class RFReadoutElement(ReadoutElementMixin, FromSingleInputMixin, RFElement):
     pass
 
 
-class OPXSettings(InstrumentSettings):
+class OPXSettings(InstrumentWithChannelsSettings[SingleElement | IQElement | IQReadoutElement | RFElement | RFReadoutElement, str]):
     timeout: int = Field(default=600, ge=0, description="Timeout for communicating with QOP in seconds.")
     run_octave_calibration: bool = Field(
         default=True,
@@ -153,7 +153,7 @@ class OPXSettings(InstrumentSettings):
     )
     outputs: list[OpxLFOutput | OpxRFOutput] = Field(...)
     inputs: list[OpxLFInput | OpxRFInput] = Field(...)
-    elements: list[SingleElement | IQElement | IQReadoutElement | RFElement | RFReadoutElement] = Field(...)
+    channels: list[SingleElement | IQElement | IQReadoutElement | RFElement | RFReadoutElement] = Field(...)
 
     def to_qua_config(self):
         def add_controller(controller: str):
@@ -295,7 +295,7 @@ class OPXSettings(InstrumentSettings):
             if isinstance(input, OpxLFInput):
                 pass
 
-        for element in self.elements:
+        for element in self.channels:
             if isinstance(element, SingleElement):
                 connected_to = next(
                     output.connected_to

@@ -17,7 +17,7 @@ from enum import Enum
 from pydantic import Field, model_validator
 
 from qililab.settings.instruments.channel_settings import ChannelSettings
-from qililab.settings.instruments.instrument_settings import InstrumentSettings
+from qililab.settings.instruments.instrument_settings import InstrumentWithChannelsSettings
 
 
 class QDevilQDAC2Span(str, Enum):
@@ -41,15 +41,13 @@ class QDevilQDAC2ChannelSettings(ChannelSettings[int]):
     @model_validator(mode="after")
     def validate_voltage(self):
         if self.span == QDevilQDAC2Span.LOW and (self.voltage < -2.0 or self.voltage > 2.0):
-            raise ValueError("voltage should be in the range [-2, 2]V if span is set to `low`.")
+            raise ValueError("Voltage should be in the range [-2, 2]V if span is set to `low`.")
         return self
 
 
-class QDevilQDAC2Settings(InstrumentSettings):
-    dacs: list[QDevilQDAC2ChannelSettings]
-
+class QDevilQDAC2Settings(InstrumentWithChannelsSettings[QDevilQDAC2ChannelSettings, int]):
     @model_validator(mode="after")
     def validate_dacs(self):
-        if len(self.dacs) > 24:
+        if len(self.channels) > 24:
             raise ValueError("The maximum number of dacs is 24.")
         return self

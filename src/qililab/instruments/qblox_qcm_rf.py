@@ -24,12 +24,10 @@ from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_QCM_RF)
-class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings, QbloxRFOutputSettings]):
-    settings: QbloxQCMRFSettings
-
+class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings]):
     @classmethod
     def get_default_settings(cls) -> QbloxQCMRFSettings:
-        return QbloxQCMRFSettings(alias="qcm-rf", sequencers=[QbloxSequencerSettings(id=index) for index in range(6)])
+        return QbloxQCMRFSettings(alias="qcm-rf", channels=[QbloxSequencerSettings(id=index) for index in range(6)])
 
     def initial_setup(self):
         super().initial_setup()
@@ -52,25 +50,6 @@ class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings, QbloxRFOutputSettings]):
             }
             output = sequencer.outputs[0]
             operations[output]("IQ")
-
-    @classmethod
-    def _output_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return super()._output_parameter_to_settings() | {
-            Parameter.LO_ENABLED: "lo_enabled",
-            Parameter.LO_FREQUENCY: "lo_frequency",
-            Parameter.ATTENUATION: "attenuation",
-            Parameter.OFFSET_I: "offset_i",
-            Parameter.OFFSET_Q: "offset_q",
-        }
-
-    def _output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super()._output_parameter_to_device_operation() | {
-            Parameter.LO_ENABLED: self._on_output_lo_enabled_changed,
-            Parameter.LO_FREQUENCY: self._on_output_lo_frequency_changed,
-            Parameter.ATTENUATION: self._on_output_attenuation_changed,
-            Parameter.OFFSET_I: self._on_output_offset_i_changed,
-            Parameter.OFFSET_Q: self._on_output_offset_q_changed,
-        }
 
     def _on_output_lo_enabled_changed(self, value: bool, output: int):
         operations = {0: self.device.out0_lo_en, 1: self.device.out1_lo_en}

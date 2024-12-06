@@ -16,7 +16,7 @@ from enum import Enum
 from pydantic import Field, model_validator
 
 from qililab.settings.instruments.channel_settings import ChannelSettings
-from qililab.settings.instruments.instrument_settings import InstrumentSettings
+from qililab.settings.instruments.instrument_settings import InstrumentWithChannelsSettings
 
 
 class QbloxS4gSpan(str, Enum):
@@ -40,11 +40,9 @@ class QbloxS4GChannelSettings(ChannelSettings[int]):
         return self
 
 
-class QbloxS4GSettings(InstrumentSettings):
-    dacs: list[QbloxS4GChannelSettings] = Field(default=[QbloxS4GChannelSettings(id=index) for index in range(4)])
-
+class QbloxS4GSettings(InstrumentWithChannelsSettings[ChannelSettings, int]):
     @model_validator(mode="after")
     def validate_dacs(self):
-        if len(self.dacs) > 4:
+        if len(self.channels) > 4:
             raise ValueError("The maximum number of dacs is 4.")
         return self

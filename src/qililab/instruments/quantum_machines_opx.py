@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 from qm import DictQuaConfig, QmJob, QuantumMachine, SimulationConfig
 
 from qililab.instruments.decorators import check_device_initialized
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import InstrumentWithChannels
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import QuantumMachinesOPXRuncardInstrument, RuncardInstrument
@@ -47,13 +47,11 @@ if TYPE_CHECKING:
 
 @InstrumentFactory.register(InstrumentType.QUANTUM_MACHINES_OPX)
 class QuantumMachinesOPX(
-    Instrument[
+    InstrumentWithChannels[
         QuantumMachinesDevice,
         OPXSettings,
         SingleElement | IQElement | IQReadoutElement | RFElement | RFReadoutElement,
-        str,
-        OpxLFOutput | OpxRFOutput,
-        None,
+        str
     ]
 ):
     _qm: QuantumMachine
@@ -72,7 +70,7 @@ class QuantumMachinesOPX(
     def run_octave_calibration(self):
         """Run calibration procedure for the buses with octaves, if any."""
         elements = {
-            element.id for element in self.settings.elements if isinstance(element, (RFElement, RFReadoutElement))
+            element.id for element in self.settings.channels if isinstance(element, (RFElement, RFReadoutElement))
         }
         for element in elements:
             self._qm.calibrate_element(element)
@@ -139,7 +137,7 @@ class QuantumMachinesOPX(
                     connection_q=ControllerPort(controller="con1", port=2),
                 )
             ],
-            elements=[
+            channels=[
                 SingleElement(id="single_0", output=0),
                 SingleElement(id="single_1", output=1),
                 IQElement(id="iq_0", output_i=2, output_q=3, intermediate_frequency=100e6, lo_frequency=10e9),

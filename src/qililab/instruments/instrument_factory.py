@@ -28,7 +28,6 @@ class InstrumentFactory:
     @classmethod
     def register(cls, instrument_type: InstrumentType):
         def decorator(instrument_cls: type[Instrument]):
-            instrument_cls.type = instrument_type
             cls._registry[instrument_type] = instrument_cls
             return instrument_cls
 

@@ -15,15 +15,21 @@
 from typing import TYPE_CHECKING, Optional, TypeVar
 
 if TYPE_CHECKING:
+    from qililab.instruments.instrument import Instrument
     from qililab.settings.instruments.channel_settings import ChannelSettings
     from qililab.settings.instruments.input_settings import InputSettings
-    from qililab.settings.instruments.instrument_settings import InstrumentSettings
+    from qililab.settings.instruments.instrument_settings import InstrumentSettings, InstrumentWithChannelsSettings
     from qililab.settings.instruments.output_settings import OutputSettings
     from qililab.typings.instruments import Device
 
 TDevice = TypeVar("TDevice", bound="Device")
+TInstrument = TypeVar("TInstrument", bound="Instrument")
+
+TChannelID = TypeVar("TChannelID", bound=int | str)
+TChannelSettings = TypeVar("TChannelSettings", bound="ChannelSettings[TChannelID]")
+
 TInstrumentSettings = TypeVar("TInstrumentSettings", bound="InstrumentSettings")
-TChannelSettings = TypeVar("TChannelSettings", bound=Optional["ChannelSettings"])
-TChannelID = TypeVar("TChannelID", bound=Optional[int | str])
+TInstrumentWithChannelsSettings = TypeVar("TInstrumentWithChannelsSettings", bound="InstrumentWithChannelsSettings[TChannelSettings, TChannelID]")
+
 TOutputSettings = TypeVar("TOutputSettings", bound=Optional["OutputSettings"])
 TInputSettings = TypeVar("TInputSettings", bound=Optional["InputSettings"])

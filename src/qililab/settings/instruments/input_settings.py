@@ -15,7 +15,6 @@
 from qililab.settings.settings import Settings
 
 
-# Base settings model
 class InputSettings(Settings):
     """Base Settings for all Instruments"""
 

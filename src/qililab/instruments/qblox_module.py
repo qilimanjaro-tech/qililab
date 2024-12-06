@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Callable, ClassVar, TypeVar
 
 from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import InstrumentWithChannels
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.settings.instruments.qblox_base_settings import (
@@ -47,7 +47,7 @@ TInputSettings = TypeVar("TInputSettings", bound=QbloxInputSettings | None)
 
 
 class QbloxModule(
-    Instrument[QbloxModuleDevice, TSettings, TSequencerSettings, int, TOutputSettings, TInputSettings], ABC
+    InstrumentWithChannels[QbloxModuleDevice, TSettings, TSequencerSettings, int], ABC
 ):
     cache: ClassVar[dict[int, PulseBusSchedule]] = {}
 
@@ -72,7 +72,7 @@ class QbloxModule(
     def initial_setup(self):
         self._map_output_connections()
         self.clear_cache()
-        for sequencer in self.settings.sequencers:
+        for sequencer in self.settings.channels:
             self.device.sequencers[sequencer.id].sync_en(False)
             self.device.sequencers[sequencer.id].marker_ovr_en(False)
             self._on_gain_i_changed(value=sequencer.gain_i, channel=sequencer.id)
@@ -83,49 +83,6 @@ class QbloxModule(
             self._on_hardware_modulation_changed(value=sequencer.hardware_modulation, channel=sequencer.id)
             self._on_gain_imbalance_changed(value=sequencer.gain_imbalance, channel=sequencer.id)
             self._on_phase_imbalance_changed(value=sequencer.phase_imbalance, channel=sequencer.id)
-
-    @classmethod
-    def instrument_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return {
-            Parameter.TIMEOUT: "timeout",
-        }
-
-    @classmethod
-    def _channel_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return {
-            Parameter.GAIN_I: "gain_i",
-            Parameter.GAIN_Q: "gain_q",
-            Parameter.OFFSET_I: "offset_i",
-            Parameter.OFFSET_Q: "offset_q",
-            Parameter.HARDWARE_MODULATION: "hardware_modulation",
-            Parameter.IF: "intermediate_frequency",
-            Parameter.GAIN_IMBALANCE: "gain_imbalance",
-            Parameter.PHASE_IMBALANCE: "phase_imbalance",
-        }
-
-    def get_channel_settings(self, channel: int) -> TSequencerSettings:
-        for channel_settings in self.settings.sequencers:
-            if channel_settings.id == channel:
-                return channel_settings
-        raise ValueError(f"Channel {channel} not found.")
-
-    def get_output_settings(self, output: int) -> TOutputSettings:
-        for output_settings in self.settings.outputs:
-            if output_settings.port == output:
-                return output_settings
-        raise ValueError(f"Output {output} not found.")
-
-    def _channel_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super()._channel_parameter_to_device_operation() | {
-            Parameter.GAIN_I: self._on_gain_i_changed,
-            Parameter.GAIN_Q: self._on_gain_q_changed,
-            Parameter.OFFSET_I: self._on_offset_i_changed,
-            Parameter.OFFSET_Q: self._on_offset_q_changed,
-            Parameter.HARDWARE_MODULATION: self._on_hardware_modulation_changed,
-            Parameter.IF: self._on_intermediate_frequency_changed,
-            Parameter.GAIN_IMBALANCE: self._on_gain_imbalance_changed,
-            Parameter.PHASE_IMBALANCE: self._on_phase_imbalance_changed,
-        }
 
     def _on_gain_i_changed(self, value: float, channel: int):
         self.device.sequencers[channel].gain_awg_path0(value)
@@ -161,7 +118,7 @@ class QbloxModule(
 
     def desync_sequencers(self) -> None:
         """Desyncs all sequencers."""
-        for sequencer in self.settings.sequencers:
+        for sequencer in self.settings.channels:
             self.device.sequencers[sequencer.identifier].sync_en(False)
 
     def clear_cache(self):
@@ -184,7 +141,7 @@ class QbloxModule(
                 operations[output](path)
 
     def _is_sequencer_valid(self, sequencer_id: int):
-        return any(sequencer.id == sequencer_id for sequencer in self.settings.sequencers)
+        return any(sequencer.id == sequencer_id for sequencer in self.settings.channels)
 
     def upload_qpysequence(self, qpysequence: QpySequence, sequencer_id: int):
         """Upload the qpysequence to its corresponding sequencer.
@@ -221,7 +178,7 @@ class QbloxModule(
 TControlModuleSettings = TypeVar("TControlModuleSettings", bound=QbloxControlModuleSettings)
 
 
-class QbloxControlModule(QbloxModule[TControlModuleSettings, QbloxSequencerSettings, TOutputSettings, None], ABC):
+class QbloxControlModule(QbloxModule[TControlModuleSettings, QbloxSequencerSettings], ABC):
     pass
 
 
@@ -229,13 +186,8 @@ TReadoutModuleSettings = TypeVar("TReadoutModuleSettings", bound=QbloxReadoutMod
 
 
 class QbloxReadoutModule(
-    QbloxModule[TReadoutModuleSettings, QbloxADCSequencerSettings, TOutputSettings, TInputSettings], ABC
+    QbloxModule[TReadoutModuleSettings, QbloxADCSequencerSettings], ABC
 ):
-    def get_input_settings(self, input: int) -> InputSettings:
-        for input_settings in self.settings.inputs:
-            if input_settings.port == input:
-                return input_settings
-        raise ValueError(f"Input {input} not found.")
 
     @check_device_initialized
     def acquire_result(self) -> QbloxResult:
@@ -248,7 +200,7 @@ class QbloxReadoutModule(
         """
         results = []
         integration_lengths = []
-        for sequencer in self.settings.sequencers:
+        for sequencer in self.settings.channels:
             if sequencer.id in self.sequences:
                 flags = self.device.get_sequencer_state(sequencer=sequencer.id, timeout=self.settings.timeout)
                 logger.info("Sequencer[%d] flags: \n%s", sequencer.id, flags)

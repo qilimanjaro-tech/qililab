@@ -24,25 +24,16 @@ from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_QCM)
-class QbloxQCM(QbloxControlModule[QbloxQCMSettings, QbloxLFOutputSettings]):
+class QbloxQCM(QbloxControlModule[QbloxQCMSettings]):
     @classmethod
     def get_default_settings(cls) -> QbloxQCMSettings:
-        return QbloxQCMSettings(alias="qcm", sequencers=[QbloxSequencerSettings(id=index) for index in range(6)])
+        return QbloxQCMSettings(alias="qcm", channels=[QbloxSequencerSettings(id=index) for index in range(6)])
 
     def initial_setup(self):
         super().initial_setup()
 
         for output in self.settings.outputs:
             self._on_output_offset_changed(value=output.offset, output=output.port)
-
-    @classmethod
-    def _output_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return super()._output_parameter_to_settings() | {
-            Parameter.OFFSET: "offset",
-        }
-
-    def _output_parameter_to_device_operation(self) -> dict[Parameter, Callable[..., Any]]:
-        return super()._output_parameter_to_device_operation() | {Parameter.OFFSET: self._on_output_offset_changed}
 
     def _on_output_offset_changed(self, value: float, output: int):
         operations = {

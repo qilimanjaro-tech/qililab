@@ -21,10 +21,7 @@ from qililab.settings.settings import Settings
 ChannelID = TypeVar("ChannelID", int, str)
 
 
-# Base settings model
 class ChannelSettings(Settings, Generic[ChannelID]):
-    """Base Settings for all Instruments"""
-
     id: ChannelID
 
 

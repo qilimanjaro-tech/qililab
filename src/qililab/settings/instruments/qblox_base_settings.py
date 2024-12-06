@@ -17,7 +17,7 @@ from pydantic import Field
 
 from qililab.settings.instruments.channel_settings import ChannelSettings
 from qililab.settings.instruments.input_settings import InputSettings
-from qililab.settings.instruments.instrument_settings import InstrumentSettings
+from qililab.settings.instruments.instrument_settings import InstrumentSettings, InstrumentWithChannelsSettings
 from qililab.settings.instruments.output_settings import OutputSettings
 
 
@@ -105,10 +105,9 @@ TOutput = TypeVar("TOutput", bound=QbloxOutputSettings)
 TInput = TypeVar("TInput", bound=QbloxInputSettings)
 
 
-class QbloxModuleSettings(InstrumentSettings, Generic[TSequencer, TOutput]):
+class QbloxModuleSettings(InstrumentWithChannelsSettings[TSequencer, int], Generic[TSequencer, TOutput]):
     timeout: int = Field(default=1)
     outputs: list[TOutput]
-    sequencers: list[TSequencer]
 
 
 class QbloxControlModuleSettings(QbloxModuleSettings[QbloxSequencerSettings, TOutput], Generic[TOutput]):

@@ -17,7 +17,7 @@ from enum import Enum
 from pydantic import Field, model_validator
 
 from qililab.settings.instruments.channel_settings import ChannelSettings
-from qililab.settings.instruments.instrument_settings import InstrumentSettings
+from qililab.settings.instruments.instrument_settings import InstrumentWithChannelsSettings
 
 
 class QbloxD5ASpan(str, Enum):
@@ -47,11 +47,9 @@ class QbloxD5AChannelSettings(ChannelSettings[int]):
         return self
 
 
-class QbloxD5ASettings(InstrumentSettings):
-    dacs: list[QbloxD5AChannelSettings] = Field(default=[QbloxD5AChannelSettings(id=index) for index in range(16)])
-
+class QbloxD5ASettings(InstrumentWithChannelsSettings[QbloxD5AChannelSettings, int]):
     @model_validator(mode="after")
     def validate_dacs(self):
-        if len(self.dacs) > 16:
+        if len(self.channels) > 16:
             raise ValueError("The maximum number of dacs is 16.")
         return self

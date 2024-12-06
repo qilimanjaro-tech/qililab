@@ -14,10 +14,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, ClassVar, Generic
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Callable, ClassVar, Generic, Optional
 
 from qililab.instruments.decorators import check_device_initialized
-from qililab.types import TChannelID, TChannelSettings, TDevice, TInputSettings, TInstrumentSettings, TOutputSettings
+from qililab.instruments.instrument_parameter import InstrumentParameter
+from qililab.types import TChannelID, TChannelSettings, TDevice, TInstrumentSettings, TInstrumentWithChannelsSettings
 
 if TYPE_CHECKING:
     from qililab.instruments.instrument_type import InstrumentType
@@ -28,18 +30,16 @@ if TYPE_CHECKING:
     from qililab.typings.type_aliases import ParameterValue
 
 
-class Instrument(
-    ABC, Generic[TDevice, TInstrumentSettings, TChannelSettings, TChannelID, TOutputSettings, TInputSettings]
-):
-    settings: TInstrumentSettings
+class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
     device: TDevice
-
-    type: ClassVar[InstrumentType]
+    settings: TInstrumentSettings
+    parameters: dict[str, InstrumentParameter]
 
     def __init__(self, settings: TInstrumentSettings | None = None):
         if settings is None:
             settings = self.get_default_settings()
         self.settings = settings
+        self.parameters = {}
 
     @property
     def alias(self):
@@ -52,6 +52,26 @@ class Instrument(
             bool: Whether or not the device has been initialized.
         """
         return hasattr(self, "device") and self.device is not None
+    
+    def add_parameter(self, name: str, setting_key: str, get_driver_cmd: Callable | None = None, set_driver_cmd: Callable | None = None, **kwargs):
+        """
+        Registers a new QCoDeS parameter for the instrument.
+
+        Parameters:
+            name: The name of the parameter.
+            setting_key: The key in the settings model corresponding to this parameter.
+            **kwargs: Additional arguments for the `InstrumentParameter` class.
+        """
+        param: InstrumentParameter = InstrumentParameter(
+            name=name,
+            owner=self,
+            setting_key=setting_key,
+            get_driver_cmd=get_driver_cmd,
+            set_driver_cmd=set_driver_cmd,
+            **kwargs,
+        )
+        self.parameters[name] = param
+        setattr(self, name, param)
 
     @check_device_initialized
     @abstractmethod
@@ -78,165 +98,66 @@ class Instrument(
     def get_default_settings(cls) -> TInstrumentSettings:
         pass
 
-    @classmethod
-    def _instrument_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return {}
-
-    @classmethod
-    def _channel_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return {}
-
-    @classmethod
-    def _output_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return {}
-
-    @classmethod
-    def _input_parameter_to_settings(cls) -> dict[Parameter, str]:
-        return {}
-
-    def get_channel_settings(self, channel: TChannelID) -> TChannelSettings | None:
-        return None
-
-    def get_output_settings(self, output: int) -> OutputSettings | None:
-        return None
-
-    def get_input_settings(self, input: int) -> InputSettings | None:
-        return None
-
-    def _instrument_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
-        return {}
-
-    def _channel_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
-        return {}
-
-    def _output_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
-        return {}
-
-    def _input_parameter_to_device_operation(self) -> dict[Parameter, Callable]:
-        return {}
-
-    def set_parameter(
-        self,
-        parameter: Parameter,
-        value: ParameterValue,
-        *,
-        channel: TChannelID | None = None,
-        output: int | None = None,
-        input: int | None = None,
-    ):
-        number_of_specifiers = sum(param is not None for param in [channel, output, input])
-        if number_of_specifiers not in {0, 1}:
-            raise ValueError("Either none, or exactly one of channel, output, and input must be specified.")
-        if parameter in self._instrument_parameter_to_settings() and number_of_specifiers == 0:
-            field_name = self._instrument_parameter_to_settings()[parameter]
-            if hasattr(self.settings, field_name):
-                setattr(self.settings, field_name, value)
-                if self.is_device_active() and parameter in self._instrument_parameter_to_device_operation():
-                    self._instrument_parameter_to_device_operation()[parameter](value)
-            else:
-                raise ValueError(
-                    f"Field '{field_name}' linked with parameter {parameter.name} not found in instrument settings."
-                )
-        elif parameter in self._channel_parameter_to_settings() and channel is not None:
-            channel_settings = self.get_channel_settings(channel)
-            field_name = self._channel_parameter_to_settings()[parameter]
-            if hasattr(channel_settings, field_name):
-                setattr(channel_settings, field_name, value)
-                if self.is_device_active() and parameter in self._channel_parameter_to_device_operation():
-                    self._channel_parameter_to_device_operation()[parameter](value, channel)
-            else:
-                raise ValueError(
-                    f"Field '{field_name}' linked with parameter {parameter.name} not found in channel settings."
-                )
-        elif parameter in self._output_parameter_to_settings() and output is not None:
-            output_settings = self.get_output_settings(output)
-            field_name = self._output_parameter_to_settings()[parameter]
-            if hasattr(output_settings, field_name):
-                setattr(output_settings, field_name, value)
-                if self.is_device_active() and parameter in self._output_parameter_to_device_operation():
-                    self._output_parameter_to_device_operation()[parameter](value, output)
-            else:
-                raise ValueError(
-                    f"Field '{field_name}' linked with parameter {parameter.name} not found in output settings."
-                )
-        elif parameter in self._input_parameter_to_settings() and input is not None:
-            input_settings = self.get_input_settings(input)
-            field_name = self._input_parameter_to_settings()[parameter]
-            if hasattr(input_settings, field_name):
-                setattr(input_settings, field_name, value)
-                if self.is_device_active() and parameter in self._input_parameter_to_device_operation():
-                    self._input_parameter_to_device_operation()[parameter](value, input)
-            else:
-                raise ValueError(
-                    f"Field '{field_name}' linked with parameter {parameter.name} not found in input settings."
-                )
-        else:
-            raise ValueError(f"Parameter '{parameter.name}' not valid for {self.__class__.__name__}.")
-
-    def get_parameter(
-        self,
-        parameter: Parameter,
-        *,
-        channel: TChannelID | None = None,
-        output: int | None = None,
-        input: int | None = None,
-    ):
-        number_of_specifiers = sum(param is not None for param in [channel, output, input])
-        if number_of_specifiers not in {0, 1}:
-            raise ValueError("Either none, or exactly one of channel, output, and input must be specified.")
-        if parameter in self._instrument_parameter_to_settings() and number_of_specifiers == 0:
-            field_name = self._instrument_parameter_to_settings()[parameter]
-            if hasattr(self.settings, field_name):
-                return getattr(self.settings, field_name)
-            raise ValueError(f"Field '{field_name}' not found in instrument settings.")
-        if parameter in self._channel_parameter_to_settings() and channel is not None:
-            channel_settings = self.get_channel_settings(channel)
-            field_name = self._channel_parameter_to_settings()[parameter]
-            if hasattr(channel_settings, field_name):
-                return getattr(channel_settings, field_name)
-            raise ValueError(f"Field '{field_name}' not found in channel settings.")
-        if parameter in self._output_parameter_to_settings() and output is not None:
-            output_settings = self.get_output_settings(output)
-            field_name = self._output_parameter_to_settings()[parameter]
-            if hasattr(output_settings, field_name):
-                return getattr(output_settings, field_name)
-            raise ValueError(f"Field '{field_name}' not found in output settings.")
-        if parameter in self._input_parameter_to_settings() and input is not None:
-            input_settings = self.get_input_settings(input)
-            field_name = self._input_parameter_to_settings()[parameter]
-            if hasattr(input_settings, field_name):
-                return getattr(input_settings, field_name)
-            raise ValueError(f"Field '{field_name}' not found in input settings.")
-        raise ValueError(f"Parameter '{parameter.name}' not valid for {self.__class__.__name__}.")
-
-    @classmethod
-    def get_instrument_parameters(cls) -> set[Parameter]:
-        return set(cls._instrument_parameter_to_settings())
-
-    @classmethod
-    def get_channel_parameters(cls) -> set[Parameter]:
-        return set(cls._channel_parameter_to_settings())
-
-    @classmethod
-    def get_output_parameters(cls) -> set[Parameter]:
-        return set(cls._output_parameter_to_settings())
-
-    @classmethod
-    def get_input_parameters(cls) -> set[Parameter]:
-        return set(cls._input_parameter_to_settings())
-
-    @classmethod
-    def get_parameters(cls) -> set[Parameter]:
-        return (
-            cls.get_instrument_parameters()
-            | cls.get_channel_parameters()
-            | cls.get_output_parameters()
-            | cls.get_input_parameters()
-        )
-
     @abstractmethod
     def to_runcard(self) -> "RuncardInstrument":
         pass
 
     def __repr__(self):
         return f"{self.__class__.__name__}(settings={self.settings})"
+    
+
+class InstrumentWithChannels(
+    Instrument[TDevice, TInstrumentWithChannelsSettings], Generic[TDevice, TInstrumentWithChannelsSettings, TChannelSettings, TChannelID]
+):
+    channels: dict[TChannelID, Channel]
+
+    def __init__(self, settings: TInstrumentWithChannelsSettings | None = None):
+        super().__init__(settings=settings)
+        self.channels = {}
+
+    def add_channel_parameter(
+        self,
+        channel_id: TChannelID,
+        name: str,
+        setting_key: str,
+        **kwargs,
+    ):
+        """
+        Registers a QCoDeS parameter for a specific channel.
+
+        Parameters:
+            channel_id: The ID of the channel.
+            name: The name of the parameter.
+            setting_key: The key in the channel settings model corresponding to this parameter.
+            **kwargs: Additional arguments for the `InstrumentParameter` class.
+        """
+        if channel_id not in self.channels:
+            self.channels[channel_id] = Channel(channel_id)
+        
+        param = InstrumentParameter(
+            name=f"{name}_ch{channel_id}",
+            owner=self,
+            setting_key=f"{setting_key}",
+            channel_id=channel_id,
+            **kwargs,
+        )
+        # Add the parameter to the channel
+        self.channels[channel_id].add_parameter(name, param)
+
+        # Add the channel as an attribute for dot notation access
+        setattr(self, f"ch{channel_id}", self.channels[channel_id])
+
+
+class Channel:
+    parameters: dict[str, InstrumentParameter]
+
+    def __init__(self, channel_id: TChannelID):
+        self.channel_id = channel_id
+        self.parameters = {}
+
+    def add_parameter(self, name: str, parameter: InstrumentParameter):
+        """
+        Add a QCoDeS parameter to this channel.
+        """
+        self.parameters[name] = parameter
+        setattr(self, name, parameter)
