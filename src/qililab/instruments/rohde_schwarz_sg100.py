@@ -33,15 +33,20 @@ class RohdeSchwarzSG100(Instrument[RohdeSchwarzSGS100ADevice, RohdeSchwarzSG100S
         self.add_parameter(
             name="power",
             setting_key="power",
-            get_driver_cmd=self._get_power,
-            set_driver_cmd=self._set_power
+            get_device_value=self._get_power,
+            set_device_value=self._set_power
         )
-
         self.add_parameter(
             name="frequency",
             setting_key="frequency",
-            get_driver_cmd=self._get_frequency,
-            set_driver_cmd=self._set_frequency
+            get_device_value=self._get_frequency,
+            set_device_value=self._set_frequency
+        )
+        self.add_parameter(
+            name="rf_on",
+            setting_key="rf_on",
+            get_device_value=self._get_rf_on,
+            set_device_value=self._set_rf_on
         )
 
     @classmethod
@@ -75,6 +80,10 @@ class RohdeSchwarzSG100(Instrument[RohdeSchwarzSGS100ADevice, RohdeSchwarzSG100S
 
     def _set_frequency(self, value: float):
         self.device.frequency(value)
+
+    def _get_rf_on(self):
+        status = self.device.status()
+        return True if status == "on" else False
 
     def _set_rf_on(self, value):
         if value:

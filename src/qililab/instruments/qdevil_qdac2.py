@@ -40,8 +40,29 @@ class QDevilQDAC2(InstrumentWithChannels[QDevilQDac2Driver, QDevilQDAC2Settings,
             self.add_channel_parameter(
                 channel_id=channel.id,
                 name="voltage",
-                setting_key="voltage",
-                set_driver_cmd=self._set_voltage,
+                settings_field="voltage",
+                get_device_value=self._get_voltage,
+                set_device_value=self._set_voltage,
+            )
+            self.add_channel_parameter(
+                channel_id=channel.id,
+                name="span",
+                settings_field="span",
+                get_device_value=self._get_span,
+                set_device_value=self._set_span,
+            )
+            self.add_channel_parameter(
+                channel_id=channel.id,
+                name="ramping_enabled",
+                settings_field="ramping_enabled",
+                set_device_value=self._set_ramping_enabled,
+            )
+            self.add_channel_parameter(
+                channel_id=channel.id,
+                name="ramping_rate",
+                settings_field="ramping_rate",
+                get_device_value=self._get_ramping_rate,
+                set_device_value=self._set_ramping_rate,
             )
 
     @check_device_initialized
@@ -70,22 +91,28 @@ class QDevilQDAC2(InstrumentWithChannels[QDevilQDac2Driver, QDevilQDAC2Settings,
     def _set_voltage(self, value: float, channel: int):
         self.device.channel(channel).dc_constant_V(value)
 
-    def _on_span_changed(self, value: str, channel: int):
+    def _get_span(self, channel: int):
+        self.device.channel(channel).output_range()
+
+    def _set_span(self, value: str, channel: int):
         self.device.channel(channel).output_range(value)
 
-    def _on_ramping_enabled_changed(self, value: bool, channel: int):
+    def _set_ramping_enabled(self, value: bool, channel: int):
         if value:
             ramping_rate = self.settings.get_channel(channel).ramping_rate
             self.device.channel(channel).dc_slew_rate_V_per_s(ramping_rate)
         else:
             self.device.channel(channel).dc_slew_rate_V_per_s(2e7)
 
-    def _on_ramping_rate_changed(self, value: float, channel: int):
+    def _get_ramping_rate(self, channel: int):
+        return self.device.channel(channel).dc_slew_rate_V_per_s()
+
+    def _set_ramping_rate(self, value: float, channel: int):
         ramping_enabled = self.settings.get_channel(channel).ramping_enabled
         if ramping_enabled:
             self.device.channel(channel).dc_slew_rate_V_per_s(value)
 
-    def _on_low_pas_filter_changed(self, value: str, channel: int):
+    def _set_low_pas_filter(self, value: str, channel: int):
         self.device.channel(channel).output_filter(value)
 
     def to_runcard(self) -> RuncardInstrument:

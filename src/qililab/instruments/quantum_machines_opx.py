@@ -59,6 +59,22 @@ class QuantumMachinesOPX(
     _compiled_program_cache: dict[str, str]
     _pending_set_intermediate_frequency: dict[str, float]
 
+    def __init__(self, settings: OPXSettings | None = None):
+        super().__init__(settings=settings)
+        for channel in self.settings.channels:
+            if isinstance(channel, RFElement):
+                self.add_channel_parameter(
+                    channel_id=channel.id,
+                    name="intermediate_frequency",
+                    settings_field="intermediate_frequency"
+                )
+            if isinstance(channel, RFReadoutElement):
+                self.add_channel_parameter(
+                    channel_id=channel.id,
+                    name="time_of_flight",
+                    settings_field="time_of_flight"
+                )
+
     def is_qm_open(self) -> bool:
         """Check whether or not the device is currently active.
 

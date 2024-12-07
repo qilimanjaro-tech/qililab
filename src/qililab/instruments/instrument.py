@@ -14,20 +14,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
-from typing import TYPE_CHECKING, Callable, ClassVar, Generic, Optional
+from typing import TYPE_CHECKING, Callable, Generic
 
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument_parameter import InstrumentParameter
 from qililab.types import TChannelID, TChannelSettings, TDevice, TInstrumentSettings, TInstrumentWithChannelsSettings
 
 if TYPE_CHECKING:
-    from qililab.instruments.instrument_type import InstrumentType
     from qililab.runcard.runcard_instruments import RuncardInstrument
-    from qililab.settings.instruments.input_settings import InputSettings
-    from qililab.settings.instruments.output_settings import OutputSettings
-    from qililab.typings.enums import Parameter
-    from qililab.typings.type_aliases import ParameterValue
 
 
 class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
@@ -52,8 +46,8 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
             bool: Whether or not the device has been initialized.
         """
         return hasattr(self, "device") and self.device is not None
-    
-    def add_parameter(self, name: str, setting_key: str, get_driver_cmd: Callable | None = None, set_driver_cmd: Callable | None = None, **kwargs):
+
+    def add_parameter(self, name: str, setting_key: str, get_device_value: Callable | None = None, set_device_value: Callable | None = None, **kwargs):
         """
         Registers a new QCoDeS parameter for the instrument.
 
@@ -65,9 +59,9 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
         param: InstrumentParameter = InstrumentParameter(
             name=name,
             owner=self,
-            setting_key=setting_key,
-            get_driver_cmd=get_driver_cmd,
-            set_driver_cmd=set_driver_cmd,
+            settings_field=setting_key,
+            get_device_value=get_device_value,
+            set_device_value=set_device_value,
             **kwargs,
         )
         self.parameters[name] = param
@@ -119,9 +113,9 @@ class InstrumentWithChannels(
         self,
         channel_id: TChannelID,
         name: str,
-        setting_key: str,
-        get_driver_cmd: Callable | None = None,
-        set_driver_cmd: Callable | None = None,
+        settings_field: str,
+        get_device_value: Callable | None = None,
+        set_device_value: Callable | None = None,
         **kwargs,
     ):
         """
@@ -130,26 +124,30 @@ class InstrumentWithChannels(
         Parameters:
             channel_id: The ID of the channel.
             name: The name of the parameter.
-            setting_key: The key in the channel settings model corresponding to this parameter.
+            settings_field: The key in the channel settings model corresponding to this parameter.
+            get_device_value: Optional callable to retrieve the value from the device.
+            set_device_value: Optional callable to set the value in the device.
             **kwargs: Additional arguments for the `InstrumentParameter` class.
         """
         if channel_id not in self.channels:
             self.channels[channel_id] = Channel(channel_id)
         
+        channel_name = f"ch{channel_id}" if isinstance(channel_id, int) else f"{channel_id}"
+
         param = InstrumentParameter(
-            name=f"{name}_ch{channel_id}",
+            name=f"{name}_{channel_name}",
             owner=self,
-            setting_key=f"{setting_key}",
+            settings_field=f"{settings_field}",
             channel_id=channel_id,
-            get_driver_cmd=get_driver_cmd,
-            set_driver_cmd=set_driver_cmd,
+            get_device_value=get_device_value,
+            set_device_value=set_device_value,
             **kwargs,
         )
         # Add the parameter to the channel
         self.channels[channel_id].add_parameter(name, param)
 
         # Add the channel as an attribute for dot notation access
-        setattr(self, f"ch{channel_id}", self.channels[channel_id])
+        setattr(self, channel_name, self.channels[channel_id])
 
 
 class Channel:

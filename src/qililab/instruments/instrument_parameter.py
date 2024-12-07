@@ -15,7 +15,8 @@ from typing import Callable, Generic, Optional
 
 from qcodes import Parameter
 
-from qililab.types import TInstrument, TChannelID
+from qililab.config import logger
+from qililab.types import TChannelID, TInstrument
 
 
 class InstrumentParameter(Parameter, Generic[TInstrument, TChannelID]):
@@ -23,10 +24,10 @@ class InstrumentParameter(Parameter, Generic[TInstrument, TChannelID]):
         self,
         name: str,
         owner: TInstrument,
-        setting_key: str,
+        settings_field: str,
         channel_id: Optional[TChannelID] = None,
-        get_driver_cmd: Optional[Callable] = None,
-        set_driver_cmd: Optional[Callable] = None,
+        get_device_value: Optional[Callable] = None,
+        set_device_value: Optional[Callable] = None,
         **kwargs
     ):
         """
@@ -34,51 +35,61 @@ class InstrumentParameter(Parameter, Generic[TInstrument, TChannelID]):
 
         Parameters:
             name: The name of the parameter.
-            instrument: The instrument instance to which this parameter belongs.
-            setting_key: The key in the settings model corresponding to this parameter.
-            get_driver_cmd: Optional callable to retrieve the value from the driver.
-            set_driver_cmd: Optional callable to set the value in the driver.
+            instrument: The instrument instance to which this parameter belongs to.
+            settings_field: The field name in the settings model corresponding to this parameter.
+            get_device_value: Optional callable to retrieve the value from the device.
+            set_device_value: Optional callable to set the value in the device.
             **kwargs: Additional arguments for the QCoDeS `Parameter` class.
         """
         super().__init__(name=name, **kwargs)
         self.owner = owner
-        self.setting_key = setting_key
+        self.settings_field = settings_field
         self.channel_id = channel_id
-        self.get_driver_cmd = get_driver_cmd
-        self.set_driver_cmd = set_driver_cmd
+        self.get_device_value = get_device_value
+        self.set_device_value = set_device_value
 
     def get_raw(self):
-        # Prefer hardware call if get_driver_cmd is provided and the device is connected
-        if self.get_driver_cmd and self.owner.is_device_active():
-            value = self.get_driver_cmd()
-            setattr(self.owner.settings, self.setting_key, value)
-            return value
+        # Determine settings source
+        settings_source = (
+            self.owner.settings.get_channel(self.channel_id)
+            if self.channel_id is not None
+            else self.owner.settings
+        )
+        settings_value = getattr(settings_source, self.settings_field)
 
-        # Retrieve value from channel settings if channel_id is specified
-        if self.channel_id is not None:
-            channel_settings = self.owner.settings.get_channel(self.channel_id)
-            return getattr(channel_settings, self.setting_key)
+        # Check for hardware consistency if device is active and can provide the value
+        if self.owner.is_device_active() and self.get_device_value:
+            device_value = (
+                self.get_device_value(self.channel_id)
+                if self.channel_id is not None
+                else self.get_device_value()
+            )
+            if device_value != settings_value:
+                setattr(settings_source, self.settings_field, device_value)
+                logger.warning(
+                    "Parameter %s for instrument %s%s has inconsistent value between "
+                    "device and settings. Updated settings with value retrieved from device.",
+                    self.name,
+                    self.owner.alias,
+                    f" and channel {self.channel_id}" if self.channel_id is not None else "",
+                )
+            return device_value
 
-        # Otherwise, retrieve from instrument-level settings
-        return getattr(self.owner.settings, self.setting_key)
+        # Return settings value as fallback
+        return settings_value
 
     def set_raw(self, value):
-        # Update channel settings if channel_id is specified
-        if self.channel_id is not None:
-            channel_settings = self.owner.settings.get_channel(self.channel_id)
-            setattr(channel_settings, self.setting_key, value)
+        # Determine settings source
+        settings_source = (
+            self.owner.settings.get_channel(self.channel_id)
+            if self.channel_id is not None
+            else self.owner.settings
+        )
+        setattr(settings_source, self.settings_field, value)
 
-            # Optionally call hardware-level update
-            if self.set_driver_cmd and self.owner.is_device_active():
-                self.set_driver_cmd(value, self.channel_id)
-
-        # Update instrument-level settings if no channel is specified
-        else:
-            setattr(self.owner.settings, self.setting_key, value)
-
-            # Optionally call hardware-level update
-            if self.set_driver_cmd and self.owner.is_device_active():
-                self.set_driver_cmd(value)
+        # Call hardware-level update if applicable
+        if self.owner.is_device_active() and self.set_device_value:
+            self.set_device_value(value, *(self.channel_id,) if self.channel_id is not None else ())
 
     def __repr__(self):
         """

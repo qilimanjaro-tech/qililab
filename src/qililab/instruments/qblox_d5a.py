@@ -13,8 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-from typing import Callable
-
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument import InstrumentWithChannels
 from qililab.instruments.instrument_factory import InstrumentFactory
@@ -22,7 +20,6 @@ from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import QbloxD5ARuncardInstrument, RuncardInstrument
 from qililab.settings.instruments import QbloxD5AChannelSettings, QbloxD5ASettings
 from qililab.typings import QbloxD5ADevice
-from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_D5A)
@@ -31,30 +28,10 @@ class QbloxD5A(InstrumentWithChannels[QbloxD5ADevice, QbloxD5ASettings, QbloxD5A
         super().__init__(settings=settings)
 
         for channel in self.settings.channels:
-            self.add_channel_parameter(channel_id=channel.id, name="voltage", setting_key="voltage", get_driver_cmd=self._get_voltage, set_driver_cmd=self._set_voltage)
-            self.add_channel_parameter(channel_id=channel.id, name="span", setting_key="span", get_driver_cmd=self._get_span, set_driver_cmd=self._set_span)
-            self.add_channel_parameter(channel_id=channel.id, name="ramping_enabled", setting_key="ramping_enabled", get_driver_cmd=self._get_ramping_enabled, set_driver_cmd=self._set_ramping_enabled)
-            self.add_channel_parameter(channel_id=channel.id, name="ramping_rate", setting_key="ramping_rate", get_driver_cmd=self._get_ramping_rate, set_driver_cmd=self._set_ramping_rate)
-
-    @check_device_initialized
-    def turn_on(self):
-        raise NotImplementedError
-
-    @check_device_initialized
-    def turn_off(self):
-        self.device.set_dacs_zero()
-
-    @check_device_initialized
-    def reset(self):
-        self.device.set_dacs_zero()
-
-    @check_device_initialized
-    def initial_setup(self):
-        for channel in self.settings.channels:
-            self._set_span(channel.span, channel.id)
-            self._set_ramping_rate(channel.ramping_rate, channel.id)
-            self._set_ramping_enabled(channel.ramping_enabled, channel.id)
-            self._set_voltage(channel.voltage, channel.id)
+            self.add_channel_parameter(channel_id=channel.id, name="voltage", settings_field="voltage", get_device_value=self._get_voltage, set_device_value=self._set_voltage)
+            self.add_channel_parameter(channel_id=channel.id, name="span", settings_field="span", get_device_value=self._get_span, set_device_value=self._set_span)
+            self.add_channel_parameter(channel_id=channel.id, name="ramping_enabled", settings_field="ramping_enabled", get_device_value=self._get_ramping_enabled, set_device_value=self._set_ramping_enabled)
+            self.add_channel_parameter(channel_id=channel.id, name="ramping_rate", settings_field="ramping_rate", get_device_value=self._get_ramping_rate, set_device_value=self._set_ramping_rate)
 
     @classmethod
     def get_default_settings(cls) -> QbloxD5ASettings:
@@ -62,6 +39,29 @@ class QbloxD5A(InstrumentWithChannels[QbloxD5ADevice, QbloxD5ASettings, QbloxD5A
 
     def to_runcard(self) -> RuncardInstrument:
         return QbloxD5ARuncardInstrument(settings=self.settings)
+
+    @check_device_initialized
+    def initial_setup(self):
+        for channel in self.settings.channels:
+            self._set_span(channel.span, channel.id)
+            self._set_ramping_rate(channel.ramping_rate, channel.id)
+            self._set_ramping_enabled(channel.ramping_enabled, channel.id)
+
+    @check_device_initialized
+    def turn_on(self):
+        for channel in self.settings.channels:
+            self._set_voltage(channel.voltage, channel.id)
+
+    @check_device_initialized
+    def turn_off(self):
+        for channel in self.settings.channels:
+            self._set_voltage(0.0, channel.id)
+
+    @check_device_initialized
+    def reset(self):
+        self.turn_off()
+        for channel in self.settings.channels:
+            self._set_voltage(channel.voltage, channel.id)
     
     def _get_voltage(self, channel: int):
         getattr(self.device, f"dac{channel}").voltage()
@@ -80,11 +80,9 @@ class QbloxD5A(InstrumentWithChannels[QbloxD5ADevice, QbloxD5ASettings, QbloxD5A
 
     def _set_ramping_enabled(self, value: bool, channel: int):
         getattr(self.device, f"dac{channel}").ramping_enabled(value)
-    
+
     def _get_ramping_rate(self, channel: int):
         getattr(self.device, f"dac{channel}").ramp_rate()
 
     def _set_ramping_rate(self, value: float, channel: int):
         getattr(self.device, f"dac{channel}").ramp_rate(value)
-
-    
