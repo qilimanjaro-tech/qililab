@@ -13,7 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -24,7 +24,6 @@ from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import QDevilQDAC2RuncardInstrument, RuncardInstrument
 from qililab.settings.instruments import QDevilQDAC2ChannelSettings, QDevilQDAC2Settings
 from qililab.typings import QDevilQDAC2Device as QDevilQDac2Driver
-from qililab.typings.enums import Parameter
 
 if TYPE_CHECKING:
     from qililab.waveforms import Waveform

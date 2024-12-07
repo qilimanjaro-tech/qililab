@@ -13,8 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-from typing import Callable
-
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument import InstrumentWithChannels
 from qililab.instruments.instrument_factory import InstrumentFactory
@@ -22,7 +20,6 @@ from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import QbloxS4GRuncardInstrument, RuncardInstrument
 from qililab.settings.instruments import QbloxS4GChannelSettings, QbloxS4GSettings
 from qililab.typings import QbloxS4GDevice
-from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_S4G)
@@ -36,21 +33,20 @@ class QbloxS4G(InstrumentWithChannels[QbloxS4GDevice, QbloxS4GSettings, QbloxS4G
             self.add_channel_parameter(channel_id=channel.id, name="ramping_enabled", settings_field="ramping_enabled", get_device_value=self._get_ramping_enabled, set_device_value=self._set_ramping_enabled)
             self.add_channel_parameter(channel_id=channel.id, name="ramping_rate", settings_field="ramping_rate", get_device_value=self._get_ramping_rate, set_device_value=self._set_ramping_rate)
 
-    
     @classmethod
     def get_default_settings(cls) -> QbloxS4GSettings:
         return QbloxS4GSettings(alias="s4g", channels=[QbloxS4GChannelSettings(id=id) for id in range(4)])
-    
+
     def to_runcard(self) -> RuncardInstrument:
         return QbloxS4GRuncardInstrument(settings=self.settings)
-    
+
     @check_device_initialized
     def initial_setup(self):
         for channel in self.settings.channels:
             self._set_span(channel.span, channel.id)
             self._set_ramping_rate(channel.ramping_rate, channel.id)
             self._set_ramping_enabled(channel.ramping_enabled, channel.id)
-    
+
     @check_device_initialized
     def turn_on(self):
         for channel in self.settings.channels:

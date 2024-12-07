@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, TypeVar
+from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized
@@ -30,7 +30,6 @@ from qililab.settings.instruments.qblox_base_settings import (
     QbloxReadoutModuleSettings,
     QbloxSequencerSettings,
 )
-from qililab.typings.enums import Parameter
 from qililab.typings.instruments import QbloxModuleDevice
 
 if TYPE_CHECKING:
@@ -38,7 +37,6 @@ if TYPE_CHECKING:
 
     from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
     from qililab.qprogram.qblox_compiler import AcquisitionData
-    from qililab.settings.instruments.input_settings import InputSettings
 
 TSettings = TypeVar("TSettings", bound=QbloxModuleSettings)
 TSequencerSettings = TypeVar("TSequencerSettings", bound=QbloxSequencerSettings)

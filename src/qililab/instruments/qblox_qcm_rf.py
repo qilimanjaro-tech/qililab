@@ -13,14 +13,11 @@
 # limitations under the License.
 from __future__ import annotations
 
-from typing import Any, Callable
-
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.instruments.qblox_module import QbloxControlModule
 from qililab.runcard.runcard_instruments import QbloxQCMRFRuncardInstrument, RuncardInstrument
-from qililab.settings.instruments import QbloxQCMRFSettings, QbloxRFOutputSettings, QbloxSequencerSettings
-from qililab.typings.enums import Parameter
+from qililab.settings.instruments import QbloxQCMRFSettings, QbloxSequencerSettings
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_QCM_RF)

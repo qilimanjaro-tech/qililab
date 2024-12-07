@@ -62,10 +62,10 @@ class QbloxD5A(InstrumentWithChannels[QbloxD5ADevice, QbloxD5ASettings, QbloxD5A
         self.turn_off()
         for channel in self.settings.channels:
             self._set_voltage(channel.voltage, channel.id)
-    
+
     def _get_voltage(self, channel: int):
         getattr(self.device, f"dac{channel}").voltage()
-    
+
     def _set_voltage(self, value: float, channel: int):
         getattr(self.device, f"dac{channel}").voltage(value)
 

@@ -13,15 +13,12 @@
 # limitations under the License.
 from __future__ import annotations
 
-from typing import Any, Callable, Dict
-
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.runcard.runcard_instruments import RohdeSchwarzSG100RuncardInstrument, RuncardInstrument
 from qililab.settings.instruments.rohde_schwarz_sg100_settings import RohdeSchwarzSG100Settings
-from qililab.typings.enums import Parameter
 from qililab.typings.instruments.rohde_schwarz import RohdeSchwarzSGS100ADevice
 
 

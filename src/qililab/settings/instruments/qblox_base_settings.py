@@ -17,7 +17,7 @@ from pydantic import Field
 
 from qililab.settings.instruments.channel_settings import ChannelSettings
 from qililab.settings.instruments.input_settings import InputSettings
-from qililab.settings.instruments.instrument_settings import InstrumentSettings, InstrumentWithChannelsSettings
+from qililab.settings.instruments.instrument_settings import InstrumentWithChannelsSettings
 from qililab.settings.instruments.output_settings import OutputSettings
 
 

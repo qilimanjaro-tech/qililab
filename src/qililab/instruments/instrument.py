@@ -98,7 +98,7 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
 
     def __repr__(self):
         return f"{self.__class__.__name__}(settings={self.settings})"
-    
+
 
 class InstrumentWithChannels(
     Instrument[TDevice, TInstrumentWithChannelsSettings], Generic[TDevice, TInstrumentWithChannelsSettings, TChannelSettings, TChannelID]
@@ -131,7 +131,7 @@ class InstrumentWithChannels(
         """
         if channel_id not in self.channels:
             self.channels[channel_id] = Channel(channel_id)
-        
+
         channel_name = f"ch{channel_id}" if isinstance(channel_id, int) else f"{channel_id}"
 
         param = InstrumentParameter(

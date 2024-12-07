@@ -13,8 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-from typing import Any, Callable
-
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.instruments.qblox_module import QbloxReadoutModule
@@ -22,10 +20,7 @@ from qililab.runcard.runcard_instruments import QbloxQRMRFRuncardInstrument, Run
 from qililab.settings.instruments import (
     QbloxADCSequencerSettings,
     QbloxQRMRFSettings,
-    QbloxRFInputSettings,
-    QbloxRFOutputSettings,
 )
-from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_QRM_RF)
