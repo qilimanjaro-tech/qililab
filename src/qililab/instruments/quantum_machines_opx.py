@@ -61,6 +61,12 @@ class QuantumMachinesOPX(
 
     def __init__(self, settings: OPXSettings | None = None):
         super().__init__(settings=settings)
+        
+        self.add_parameter(
+            name="timeout",
+            settings_field="timeout"
+        )
+
         for channel in self.settings.channels:
             if isinstance(channel, RFElement):
                 self.add_channel_parameter(
@@ -74,48 +80,11 @@ class QuantumMachinesOPX(
                     name="time_of_flight",
                     settings_field="time_of_flight"
                 )
-
-    def is_qm_open(self) -> bool:
-        """Check whether or not the device is currently active.
-
-        Returns:
-            bool: Whether or not the device has been initialized.
-        """
-        return hasattr(self, "_qm") and self._qm is not None
-
-    def run_octave_calibration(self):
-        """Run calibration procedure for the buses with octaves, if any."""
-        elements = {
-            element.id for element in self.settings.channels if isinstance(element, (RFElement, RFReadoutElement))
-        }
-        for element in elements:
-            self._qm.calibrate_element(element)
-
-    @check_device_initialized
-    def turn_on(self):
-        if not self.is_qm_open():
-            self._qm = self.device.open_qm(config=self._config, close_other_machines=False)
-            self._compiled_program_cache = {}
-            self._pending_set_intermediate_frequency = {}
-
-            if self.settings.run_octave_calibration:
-                self.run_octave_calibration()
-
-    @check_device_initialized
-    def turn_off(self):
-        if self.is_qm_open():
-            self._qm.close()
-            del self._qm
-            del self._compiled_program_cache
-            del self._pending_set_intermediate_frequency
-
-    @check_device_initialized
-    def reset(self):
-        pass
-
-    @check_device_initialized
-    def initial_setup(self):
-        self._qua_config = self.settings.to_qua_config()
+                self.add_channel_parameter(
+                    channel_id=channel.id,
+                    name="smearing",
+                    settings_field="smearing"
+                )
 
     @classmethod
     def get_default_settings(cls) -> OPXSettings:
@@ -166,6 +135,75 @@ class QuantumMachinesOPX(
 
     def to_runcard(self) -> RuncardInstrument:
         return QuantumMachinesOPXRuncardInstrument(settings=self.settings)
+    
+    def _set_output_lo_frequency(self, value: float, channel: str):
+        self._qm.octave.set_lo_frequency(element=channel, lo_frequency=value)
+        self._qm.calibrate_element(channel)
+    
+    def _set_output_gain(self, value: float, channel: str):
+        self._qm.octave.set_rf_output_gain(element=channel, gain_in_db=value)
+
+    def _set_intermediate_frequency(self, value: float, channel: str):
+        self._qm.set_intermediate_frequency(element=channel, freq=value)
+
+    def _set_output_offset(self, value: float, channel: str):
+        input: str | tuple[str, str] = "single" if isinstance(self.settings.get_channel(channel), SingleElement) else ("I", "Q")
+        offset: float | tuple[float, float] = value if input == "single" else (value, value)
+        self._qm.set_output_dc_offset_by_element(element=channel, input=input, offset=offset)
+
+    def _set_output_offset_i(self, value: float, channel: str):
+        self._qm.set_output_dc_offset_by_element(element=channel, input="I", offset=value)
+
+    def _set_output_offset_q(self, value: float, channel: str):
+        self._qm.set_output_dc_offset_by_element(element=channel, input="Q", offset=value)
+
+    def _set_input_offset_i(self, value: float, channel: str):
+        self._qm.set_input_dc_offset_by_element(element=channel, output="out1", offset=value)
+
+    def _set_input_offset_q(self, value: float, channel: str):
+        self._qm.set_input_dc_offset_by_element(element=channel, output="out2", offset=value)
+
+    def is_qm_open(self) -> bool:
+        """Check whether or not the device is currently active.
+
+        Returns:
+            bool: Whether or not the device has been initialized.
+        """
+        return hasattr(self, "_qm") and self._qm is not None
+
+    def run_octave_calibration(self):
+        """Run calibration procedure for the buses with octaves, if any."""
+        elements = {
+            element.id for element in self.settings.channels if isinstance(element, (RFElement, RFReadoutElement))
+        }
+        for element in elements:
+            self._qm.calibrate_element(element)
+
+    @check_device_initialized
+    def turn_on(self):
+        if not self.is_qm_open():
+            self._qm = self.device.open_qm(config=self._config, close_other_machines=False)
+            self._compiled_program_cache = {}
+            self._pending_set_intermediate_frequency = {}
+
+            if self.settings.run_octave_calibration:
+                self.run_octave_calibration()
+
+    @check_device_initialized
+    def turn_off(self):
+        if self.is_qm_open():
+            self._qm.close()
+            del self._qm
+            del self._compiled_program_cache
+            del self._pending_set_intermediate_frequency
+
+    @check_device_initialized
+    def reset(self):
+        pass
+
+    @check_device_initialized
+    def initial_setup(self):
+        self._qua_config = self.settings.to_qua_config()
 
     def append_configuration(self, configuration: dict):
         """Update the `_config` dictionary by appending the configuration generated by compilation.
@@ -181,6 +219,7 @@ class QuantumMachinesOPX(
             self._qua_config = DictQuaConfig(**merged_configuration)
             # If we are already connected, reopen the connection with the new configuration
             if self.is_qm_open():
+                self._qm.close()
                 self._qm = self.device.open_qm(config=self._qua_config, close_other_machines=False)  # type: ignore[assignment]
                 self._compiled_program_cache = {}
                 self._pending_set_intermediate_frequency = {}
