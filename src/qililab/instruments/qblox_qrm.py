@@ -32,7 +32,7 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings]):
 
     def to_runcard(self) -> RuncardInstrument:
         return QbloxQRMRuncardInstrument(settings=self.settings)
-    
+
     @check_device_initialized
     def initial_setup(self):
         super().initial_setup()

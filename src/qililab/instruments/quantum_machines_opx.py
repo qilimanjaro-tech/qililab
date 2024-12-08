@@ -61,7 +61,7 @@ class QuantumMachinesOPX(
 
     def __init__(self, settings: OPXSettings | None = None):
         super().__init__(settings=settings)
-        
+
         self.add_parameter(
             name="timeout",
             settings_field="timeout"
@@ -135,11 +135,11 @@ class QuantumMachinesOPX(
 
     def to_runcard(self) -> RuncardInstrument:
         return QuantumMachinesOPXRuncardInstrument(settings=self.settings)
-    
+
     def _set_output_lo_frequency(self, value: float, channel: str):
         self._qm.octave.set_lo_frequency(element=channel, lo_frequency=value)
         self._qm.calibrate_element(channel)
-    
+
     def _set_output_gain(self, value: float, channel: str):
         self._qm.octave.set_rf_output_gain(element=channel, gain_in_db=value)
 

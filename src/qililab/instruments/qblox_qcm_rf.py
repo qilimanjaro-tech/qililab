@@ -25,7 +25,7 @@ class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings]):
     @classmethod
     def get_default_settings(cls) -> QbloxQCMRFSettings:
         return QbloxQCMRFSettings(alias="qcm-rf", channels=[QbloxSequencerSettings(id=index) for index in range(6)])
-    
+
     def to_runcard(self) -> RuncardInstrument:
         return QbloxQCMRFRuncardInstrument(settings=self.settings)
 

@@ -33,7 +33,7 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings]):
 
     def to_runcard(self) -> RuncardInstrument:
         return QbloxQRMRFRuncardInstrument(settings=self.settings)
-    
+
     def initial_setup(self):
         super().initial_setup()
 

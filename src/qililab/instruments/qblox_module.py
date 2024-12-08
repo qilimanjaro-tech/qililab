@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized
