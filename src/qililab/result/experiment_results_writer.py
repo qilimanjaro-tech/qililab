@@ -78,6 +78,7 @@ class ExperimentMetadata(TypedDict, total=False):
     experiment: str
     executed_at: datetime
     execution_time: float
+    finished: bool
     qprograms: dict[str, QProgramMetadata]
 
 
@@ -88,7 +89,7 @@ class ExperimentResultsWriter(ExperimentResults):
     Inherits from `ExperimentResults` to support both read and write operations.
     """
 
-    def __init__(self, path: str, metadata: ExperimentMetadata):
+    def __init__(self, path: str, metadata: ExperimentMetadata, append_mode: bool = False):
         """Initializes the ExperimentResultsWriter instance.
 
         Args:
@@ -97,6 +98,7 @@ class ExperimentResultsWriter(ExperimentResults):
         """
         super().__init__(path)
         self._metadata = metadata
+        self._append_mode = append_mode
 
     # pylint: disable=too-many-locals
     def _create_results_file(self):
@@ -184,7 +186,7 @@ class ExperimentResultsWriter(ExperimentResults):
         self._file = h5py.File(self.path, mode="w")
         self._create_results_file()
         self._create_resuts_access()
-
+        self._file.swmr_mode = True
         return self
 
     def __setitem__(self, key: tuple, value: float):
