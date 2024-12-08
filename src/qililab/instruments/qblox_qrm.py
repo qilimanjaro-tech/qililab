@@ -30,18 +30,33 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings]):
     def get_default_settings(cls) -> QbloxQRMSettings:
         return QbloxQRMSettings(alias="qrm", channels=[QbloxADCSequencerSettings(id=index) for index in range(6)])
 
+    def to_runcard(self) -> RuncardInstrument:
+        return QbloxQRMRuncardInstrument(settings=self.settings)
+    
     @check_device_initialized
     def initial_setup(self):
         super().initial_setup()
 
-        self._map_input_connections()
-        self._on_scope_hardware_averaging_changed(self.settings.scope_hardware_averaging)
-        for sequencer in self.settings.sequencers:
-            self.device.delete_acquisition_data(sequencer=sequencer.id, all=True)
-            self._on_hardware_demodulation_changed(value=sequencer.hardware_demodulation, channel=sequencer.id)
-            self._on_integration_length_changed(value=sequencer.integration_length, channel=sequencer.id)
-            self._on_threshold_changed(value=sequencer.threshold, channel=sequencer.id)
-            self._on_threshold_rotation_changed(value=sequencer.threshold_rotation, channel=sequencer.id)
+        # Set outputs
+        for output in self.settings.outputs:
+            self._set_output_offset(value=output.offset, output=output.port)
+
+        # Set inputs
+        for input in self.settings.inputs:
+            self._set_input_gain(value=input.gain, input=input.port)
+            self._set_input_offset(value=input.offset, input=input.port)
+
+    def _map_output_connections(self):
+        """Disable all connections and map sequencer paths with output channels."""
+        self.device.disconnect_outputs()
+
+        for channel in self.settings.channels:
+            operations = {
+                0: self.device.sequencers[channel.id].connect_out0,
+                1: self.device.sequencers[channel.id].connect_out1
+            }
+            for output, path in zip(channel.outputs, ["I", "Q"]):
+                operations[output](path)
 
     def _map_input_connections(self):
         """Disable all connections and map sequencer paths with output channels."""
@@ -51,39 +66,32 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings]):
             self.device.sequencers[sequencer.id].connect_acq_I("in0")
             self.device.sequencers[sequencer.id].connect_acq_Q("in1")
 
-    def to_runcard(self) -> RuncardInstrument:
-        return QbloxQRMRuncardInstrument(settings=self.settings)
-
-    def _on_scope_hardware_averaging_changed(self, value: float):
-        self.device.scope_acq_avg_mode_en_path0(value)
-        self.device.scope_acq_avg_mode_en_path1(value)
-
-    def _on_hardware_demodulation_changed(self, value: float, channel: int):
-        self.device.sequencers[channel].demod_en_acq(value)
-
-    def _on_integration_length_changed(self, value: float, channel: int):
-        self.device.sequencers[channel].integration_length_acq(value)
-
-    def _on_threshold_changed(self, value: float, channel: int):
-        integrated_value = value * self.device.sequencers[channel].integration_length_acq()
-        self.device.sequencers[channel].thresholded_acq_threshold(integrated_value)
-
-    def _on_threshold_rotation_changed(self, value: float, channel: int):
-        self.device.sequencers[channel].thresholded_acq_rotation(value)
-
-    def _on_output_offset_changed(self, value: float, output: int):
+    def _get_output_offset(self, output: int):
         operations = {
             0: self.device.out0_offset,
             1: self.device.out1_offset,
-            2: self.device.out2_offset,
-            3: self.device.out3_offset,
+        }
+        return operations[output]()
+
+    def _set_output_offset(self, value: float, output: int):
+        operations = {
+            0: self.device.out0_offset,
+            1: self.device.out1_offset,
         }
         operations[output](value)
 
-    def _on_input_gain_changed(self, value: float, input: int):
+    def _get_input_gain(self, input: int):
+        operations = {0: self.device.in0_gain, 1: self.device.in1_gain}
+        return operations[input]()
+
+    def _set_input_gain(self, value: float, input: int):
         operations = {0: self.device.in0_gain, 1: self.device.in1_gain}
         operations[input](value)
 
-    def _on_input_offset_changed(self, value: float, input: int):
+    def _get_input_offset(self, input: int):
+        operations = {0: self.device.in0_offset, 1: self.device.in1_offset}
+        operations[input]()
+
+    def _set_input_offset(self, value: float, input: int):
         operations = {0: self.device.in0_offset, 1: self.device.in1_offset}
         operations[input](value)

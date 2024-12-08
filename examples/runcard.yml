@@ -736,7 +736,7 @@ instruments:
     alias: d5a
     channels:
     - id: 0
-      voltage: 0.0
+      voltage: 0.5
       span: bi_2V
       ramping_enabled: true
       ramping_rate: 0.1

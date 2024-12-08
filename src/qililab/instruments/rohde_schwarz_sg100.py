@@ -29,19 +29,19 @@ class RohdeSchwarzSG100(Instrument[RohdeSchwarzSGS100ADevice, RohdeSchwarzSG100S
 
         self.add_parameter(
             name="power",
-            setting_key="power",
+            settings_field="power",
             get_device_value=self._get_power,
             set_device_value=self._set_power
         )
         self.add_parameter(
             name="frequency",
-            setting_key="frequency",
+            settings_field="frequency",
             get_device_value=self._get_frequency,
             set_device_value=self._set_frequency
         )
         self.add_parameter(
             name="rf_on",
-            setting_key="rf_on",
+            settings_field="rf_on",
             get_device_value=self._get_rf_on,
             set_device_value=self._set_rf_on
         )

@@ -66,7 +66,7 @@ class QbloxLFOutputSettings(QbloxOutputSettings):
 class QbloxRFOutputSettings(QbloxOutputSettings):
     lo_enabled: bool = Field(default=True, description="Output local oscillator enabled flag.")
     lo_frequency: float = Field(default=10e9, ge=2e9, le=18e9, description="Local oscillator frequency in Hz.")
-    attenuation: float = Field(
+    attenuation: int = Field(
         default=0,
         ge=0,
         le=60,
@@ -116,3 +116,4 @@ class QbloxControlModuleSettings(QbloxModuleSettings[QbloxSequencerSettings, TOu
 
 class QbloxReadoutModuleSettings(QbloxModuleSettings[QbloxADCSequencerSettings, TOutput], Generic[TOutput, TInput]):
     inputs: list[TInput]
+    scope_hardware_averaging: bool = Field(default=True)

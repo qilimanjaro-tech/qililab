@@ -125,7 +125,7 @@ class QbloxCompiler:
                 compiled_sequences[bus_alias] = []
             # if the schedule is already compiled get it from the module's sequences
             if sequencer_schedule == qblox_module.cache.get(sequencer.id):  # if it's already cached then dont compile
-                compiled_sequences[bus_alias].append(qblox_module.sequences[sequencer.id])
+                compiled_sequences[bus_alias].append(qblox_module.qpysequences[sequencer.id])
                 # If the schedule is in the cache, delete the acquisition data (if uploaded) # FIXME: acquisitions should be deleted after acquisitions and not at compilation
                 # TODO: remove hasattr when the fixme above is done
                 # TODO: fix this
@@ -137,7 +137,7 @@ class QbloxCompiler:
                 sequence = self._translate_pulse_bus_schedule(sequencer_schedule)
                 compiled_sequences[bus_alias].append(sequence)
                 qblox_module.cache[sequencer.id] = sequencer_schedule
-                qblox_module.sequences[sequencer.id] = sequence
+                qblox_module.qpysequences[sequencer.id] = sequence
 
         return compiled_sequences
 

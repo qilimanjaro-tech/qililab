@@ -125,9 +125,6 @@ class Runcard(BaseModel):
                 self.buses.pop(i)
                 break
 
-    def save_to(self, file: str):
-        to_yaml_file(file=file, model=self, custom_yaml_writer=yaml)
-
     def get_instruments(self) -> list[Instrument]:
         return [InstrumentFactory.create(runcard_instrument) for runcard_instrument in self.instruments]
 
@@ -139,6 +136,9 @@ class Runcard(BaseModel):
 
     def get_buses(self, loaded_instruments: list[Instrument] | None = None):
         return [Bus(settings=bus_settings, loaded_instruments=loaded_instruments) for bus_settings in self.buses]
+
+    def save_to(self, file: str):
+        to_yaml_file(file=file, model=self, custom_yaml_writer=yaml)
 
     @classmethod
     def load_from(cls, file: str) -> "Runcard":

@@ -47,7 +47,7 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
         """
         return hasattr(self, "device") and self.device is not None
 
-    def add_parameter(self, name: str, setting_key: str, get_device_value: Callable | None = None, set_device_value: Callable | None = None, **kwargs):
+    def add_parameter(self, name: str, settings_field: str, get_device_value: Callable | None = None, set_device_value: Callable | None = None, **kwargs):
         """
         Registers a new QCoDeS parameter for the instrument.
 
@@ -59,7 +59,7 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
         param: InstrumentParameter = InstrumentParameter(
             name=name,
             owner=self,
-            settings_field=setting_key,
+            settings_field=settings_field,
             get_device_value=get_device_value,
             set_device_value=set_device_value,
             **kwargs,

@@ -25,16 +25,19 @@ class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings]):
     @classmethod
     def get_default_settings(cls) -> QbloxQCMRFSettings:
         return QbloxQCMRFSettings(alias="qcm-rf", channels=[QbloxSequencerSettings(id=index) for index in range(6)])
+    
+    def to_runcard(self) -> RuncardInstrument:
+        return QbloxQCMRFRuncardInstrument(settings=self.settings)
 
     def initial_setup(self):
         super().initial_setup()
 
         for output in self.settings.outputs:
-            self._on_output_lo_enabled_changed(value=output.lo_enabled, output=output.port)
-            self._on_output_lo_frequency_changed(value=output.lo_frequency, output=output.port)
-            self._on_output_attenuation_changed(value=output.attenuation, output=output.port)
-            self._on_output_offset_i_changed(value=output.offset_i, output=output.port)
-            self._on_output_offset_q_changed(value=output.offset_q, output=output.port)
+            self._set_output_lo_enabled(value=output.lo_enabled, output=output.port)
+            self._set_output_lo_frequency(value=output.lo_frequency, output=output.port)
+            self._set_output_attenuation(value=output.attenuation, output=output.port)
+            self._set_output_offset_i(value=output.offset_i, output=output.port)
+            self._set_output_offset_q(value=output.offset_q, output=output.port)
 
     def _map_output_connections(self):
         """Disable all connections and map sequencer paths with output channels."""
@@ -48,25 +51,42 @@ class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings]):
             output = sequencer.outputs[0]
             operations[output]("IQ")
 
-    def _on_output_lo_enabled_changed(self, value: bool, output: int):
+    def _get_output_lo_enabled(self, output: int):
+        operations = {0: self.device.out0_lo_en, 1: self.device.out1_lo_en}
+        return operations[output]()
+
+    def _set_output_lo_enabled(self, value: bool, output: int):
         operations = {0: self.device.out0_lo_en, 1: self.device.out1_lo_en}
         operations[output](value)
 
-    def _on_output_lo_frequency_changed(self, value: float, output: int):
+    def _get_output_lo_frequency(self, output: int):
+        operations = {0: self.device.out0_lo_freq, 1: self.device.out1_lo_freq}
+        return operations[output]()
+
+    def _set_output_lo_frequency(self, value: float, output: int):
         operations = {0: self.device.out0_lo_freq, 1: self.device.out1_lo_freq}
         operations[output](value)
 
-    def _on_output_attenuation_changed(self, value: float, output: int):
+    def _get_output_attenuation(self, output: int):
+        operations = {0: self.device.out0_att, 1: self.device.out1_att}
+        return operations[output]()
+
+    def _set_output_attenuation(self, value: float, output: int):
         operations = {0: self.device.out0_att, 1: self.device.out1_att}
         operations[output](value)
 
-    def _on_output_offset_i_changed(self, value: float, output: int):
+    def _get_output_offset_i(self, output: int):
+        operations = {0: self.device.out0_offset_path0, 1: self.device.out1_offset_path0}
+        return operations[output]()
+
+    def _set_output_offset_i(self, value: float, output: int):
         operations = {0: self.device.out0_offset_path0, 1: self.device.out1_offset_path0}
         operations[output](value)
 
-    def _on_output_offset_q_changed(self, value: float, output: int):
+    def _get_output_offset_q(self, output: int):
+        operations = {0: self.device.out0_offset_path1, 1: self.device.out1_offset_path1}
+        return operations[output]()
+
+    def _set_output_offset_q(self, value: float, output: int):
         operations = {0: self.device.out0_offset_path1, 1: self.device.out1_offset_path1}
         operations[output](value)
-
-    def to_runcard(self) -> RuncardInstrument:
-        return QbloxQCMRFRuncardInstrument(settings=self.settings)

@@ -24,15 +24,46 @@ from qililab.settings.instruments import QbloxQCMSettings, QbloxSequencerSetting
 class QbloxQCM(QbloxControlModule[QbloxQCMSettings]):
     @classmethod
     def get_default_settings(cls) -> QbloxQCMSettings:
-        return QbloxQCMSettings(alias="qcm", channels=[QbloxSequencerSettings(id=index) for index in range(6)])
+        return QbloxQCMSettings(
+            alias="qcm",
+            channels=[
+                QbloxSequencerSettings(id=index, outputs=[index], hardware_modulation=False, intermediate_frequency=None, gain_q=0) for index in range(4)
+            ]
+        )
+
+    def to_runcard(self) -> RuncardInstrument:
+        return QbloxQCMRuncardInstrument(settings=self.settings)
 
     def initial_setup(self):
         super().initial_setup()
 
         for output in self.settings.outputs:
-            self._on_output_offset_changed(value=output.offset, output=output.port)
+            self._set_output_offset(value=output.offset, output=output.port)
 
-    def _on_output_offset_changed(self, value: float, output: int):
+    def _map_output_connections(self):
+        """Disable all connections and map sequencer paths with output channels."""
+        self.device.disconnect_outputs()
+
+        for channel in self.settings.channels:
+            operations = {
+                0: self.device.sequencers[channel.id].connect_out0,
+                1: self.device.sequencers[channel.id].connect_out1,
+                2: self.device.sequencers[channel.id].connect_out2,
+                3: self.device.sequencers[channel.id].connect_out3,
+            }
+            for output, path in zip(channel.outputs, ["I", "Q"]):
+                operations[output](path)
+
+    def _get_output_offset(self, output: int):
+        operations = {
+            0: self.device.out0_offset,
+            1: self.device.out1_offset,
+            2: self.device.out2_offset,
+            3: self.device.out3_offset,
+        }
+        return operations[output]()
+
+    def _set_output_offset(self, value: float, output: int):
         operations = {
             0: self.device.out0_offset,
             1: self.device.out1_offset,
@@ -40,9 +71,6 @@ class QbloxQCM(QbloxControlModule[QbloxQCMSettings]):
             3: self.device.out3_offset,
         }
         operations[output](value)
-
-    def to_runcard(self) -> RuncardInstrument:
-        return QbloxQCMRuncardInstrument(settings=self.settings)
 
     def is_awg(self) -> bool:
         return True

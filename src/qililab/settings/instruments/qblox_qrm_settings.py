@@ -26,7 +26,6 @@ from qililab.settings.instruments.qblox_base_settings import (
 class QbloxQRMSettings(QbloxReadoutModuleSettings[QbloxLFOutputSettings, QbloxLFInputSettings]):
     outputs: list[QbloxLFOutputSettings] = Field(default=[QbloxLFOutputSettings(port=index) for index in range(2)])
     inputs: list[QbloxLFInputSettings] = Field(default=[QbloxLFInputSettings(port=index) for index in range(2)])
-    scope_hardware_averaging: bool = Field(default=True)
 
     @model_validator(mode="after")
     def validate_outputs(self):
