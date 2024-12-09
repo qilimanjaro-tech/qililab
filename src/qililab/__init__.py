@@ -19,13 +19,26 @@ import contextlib
 
 from .about import about
 from .config import __version__, logger
-from .data_management import build_platform, load_results, save_platform, save_results
-from .execute_circuit import execute
+
+# from .data_management import build_platform, load_results, save_platform, save_results
+# from .execute_circuit import execute
 from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
 from .result import ExperimentResults, stream_results
 from .typings import Parameter
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
-from .waveforms import IQPair, Square, Gaussian, FlatTop, Arbitrary, DragCorrection, Waveform, Ramp, Chained
+from .waveforms import (
+    IQPair,
+    IQDrag,
+    IQWaveform,
+    Square,
+    Gaussian,
+    FlatTop,
+    Arbitrary,
+    GaussianDragCorrection,
+    Waveform,
+    Ramp,
+    Chained,
+)
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
 from .digital import Drag, Wait
@@ -40,12 +53,14 @@ __all__ = [
     "CrosstalkMatrix",
     "Domain",
     "Drag",
-    "DragCorrection",
     "Experiment",
     "ExperimentResults",
     "FlatTop",
     "Gaussian",
+    "GaussianDragCorrection",
+    "IQDrag",
     "IQPair",
+    "IQWaveform",
     "Parameter",
     "QProgram",
     "QbloxCompiler",
@@ -56,14 +71,14 @@ __all__ = [
     "Waveform",
     "__version__",
     "about",
-    "build_platform",
+    # "build_platform",
     "deserialize",
     "deserialize_from",
-    "execute",
-    "load_results",
+    # "execute",
+    # "load_results",
     "logger",
-    "save_platform",
-    "save_results",
+    # "save_platform",
+    # "save_results",
     "serialize",
     "serialize_to",
     "stream_results",

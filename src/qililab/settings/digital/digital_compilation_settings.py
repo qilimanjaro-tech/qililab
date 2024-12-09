@@ -14,37 +14,24 @@
 
 import ast
 import re
-from dataclasses import asdict, dataclass
+
+from pydantic import Field
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.digital.digital_compilation_bus_settings import DigitalCompilationBusSettings
 from qililab.settings.digital.gate_event_settings import GateEventSettings
+from qililab.settings.settings import Settings
 from qililab.typings import ChannelID, Parameter, ParameterValue
-from qililab.utils.asdict_factory import dict_factory
 
 
-@dataclass
-class DigitalCompilationSettings:
+class DigitalCompilationSettings(Settings):
     """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
-    minimum_clock_time: int
-    delay_before_readout: int
-    topology: list[tuple[int, int]]
-    gates: dict[str, list[GateEventSettings]]
-    buses: dict[str, DigitalCompilationBusSettings]
-
-    def __post_init__(self):
-        """Build the Gates Settings based on the master settings."""
-        self.topology = [tuple(element) if isinstance(element, list) else element for element in self.topology]
-        self.gates = {gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()}
-        self.buses = {bus: DigitalCompilationBusSettings(**settings) for bus, settings in self.buses.items()}
-
-    def to_dict(self):
-        """Serializes gate settings to dictionary and removes fields with None values"""
-
-        return asdict(self, dict_factory=dict_factory) | {
-            "buses": {bus: bus_settings.to_dict() for bus, bus_settings in self.buses.items()}
-        }
+    minimum_clock_time: int = Field(default=4)
+    delay_before_readout: int = Field(default=0)
+    topology: list[tuple[int, int]] = Field(default=[])
+    gates: dict[str, list[GateEventSettings]] = Field(default={})
+    buses: dict[str, DigitalCompilationBusSettings] = Field(default={})
 
     def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
         """Get gates settings from runcard for a given gate name and qubits.
