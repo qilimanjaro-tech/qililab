@@ -160,7 +160,7 @@
 
 - Added a timeout inside quantum machines to control the `wait_for_all_values` function. The timeout is controlled through the runcard as shown in the example:
 
-  ```yml
+  ```yaml
   instruments:
     - name: quantum_machines_cluster
       alias: QMM
@@ -195,7 +195,7 @@
 
   Example (for Qblox)
 
-  ```yml
+  ```yaml
   buses:
   - alias: readout
     ...
