@@ -171,9 +171,9 @@ class QbloxS4g(CurrentSource):
     @check_device_initialized
     def turn_off(self):
         """Stop outputing current."""
-        self.device.set_dacs_zero()
         for dac_index in self.settings.dacs:
             channel = self.dac(dac_index=dac_index)
+            channel.current(0)
             logger.debug("Dac%d current resetted to  %f", dac_index, channel.current())
 
     @check_device_initialized
