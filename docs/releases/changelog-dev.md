@@ -12,5 +12,5 @@
 
 ### Bug fixes
 
-- Fixed bug when appending configuration to an opened QM. Now the QM closes, before opening a new one with the updated configuration.
+- Fixed an issue where appending a configuration to an open QM instance left it hanging. The QM now properly closes before reopening with the updated configuration.
   [#851](https://github.com/qilimanjaro-tech/qililab/pull/851)
