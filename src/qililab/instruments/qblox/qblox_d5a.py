@@ -169,4 +169,6 @@ class QbloxD5a(VoltageSource):
     @check_device_initialized
     def reset(self):
         """Reset instrument."""
-        self.device.set_dacs_zero()
+        for dac_index in self.settings.dacs:
+            channel = self.dac(dac_index=dac_index)
+            channel.voltage(0)
