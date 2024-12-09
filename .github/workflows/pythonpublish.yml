@@ -10,6 +10,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/qililab
+    permissions:
+      id-token: write 
     steps:
       - uses: actions/checkout@v2
         with:
@@ -29,7 +34,5 @@ jobs:
           python -m pip install build wheel setuptools
           python -m build
 
-      - name: Publish package
-        uses: pypa/gh-action-pypi-publish@release/v1.12
-        with:
-          user: __token__
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
