@@ -15,6 +15,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from qililab.buses.aggregated_bus_parameter import AggregatedBusParameter
+from qililab.instruments.instrument import InstrumentWithChannels
+
 if TYPE_CHECKING:
     from qpysequence import Sequence as QpySequence
 
@@ -31,11 +34,13 @@ class Bus:
     _settings: BusSettings
     _instruments: list[Instrument]
     _channels: list[int | str | None]
+    parameters: dict[str, AggregatedBusParameter]
 
     def __init__(self, settings: BusSettings, loaded_instruments: list[Instrument] | None = None):
         self._settings = settings
         self._instruments = []
         self._channels = []
+        self.parameters = {}
         if loaded_instruments is not None:
             self.load_instruments(loaded_instruments)
 
@@ -74,20 +79,42 @@ class Bus:
             self._instruments.append(instrument)
             self._channels.append(channel)
 
-    def set_parameter(self, parameter: Parameter, value: ParameterValue):
-        for instrument, channel in self.instruments_and_channels():
-            if parameter in instrument.get_instrument_parameters():
-                instrument.set_parameter(parameter=parameter, value=value)
-            if channel is not None and parameter in instrument.get_channel_parameters():
-                instrument.set_parameter(parameter=parameter, value=value, channel=channel)
+        self._attach_aggregated_parameters()
 
-    def get_parameter(self, parameter: Parameter):
-        for instrument, channel in self.instruments_and_channels():
-            if parameter in instrument.get_instrument_parameters():
-                return instrument.get_parameter(parameter=parameter)
-            if channel is not None and parameter in instrument.get_channel_parameters():
-                return instrument.get_parameter(parameter=parameter, channel=channel)
-        return None
+    def _attach_aggregated_parameters(self):
+        # Gather all parameter names from instruments and their associated channels
+        parameter_names = set()
+        for instrument, channel_id in self.instruments_and_channels():
+            # Add top-level instrument parameters
+            parameter_names.update(instrument.parameters.keys())
+
+            # If the bus is connected to a channel, include that channel's parameters too
+            if channel_id is not None and isinstance(instrument, InstrumentWithChannels):
+                channel = instrument.channels.get(channel_id)
+                if channel is not None:
+                    parameter_names.update(channel.parameters.keys())
+
+        # Create a bus-level parameter for each discovered parameter name
+        for name in parameter_names:
+            if not hasattr(self, name):
+                parameter = AggregatedBusParameter(name=name, bus=self)
+                self.parameters[name] = parameter
+                setattr(self, name, parameter)
+
+    # def set_parameter(self, parameter: Parameter, value: ParameterValue):
+    #     for instrument, channel in self.instruments_and_channels():
+    #         if parameter in instrument.get_instrument_parameters():
+    #             instrument.set_parameter(parameter=parameter, value=value)
+    #         if channel is not None and parameter in instrument.get_channel_parameters():
+    #             instrument.set_parameter(parameter=parameter, value=value, channel=channel)
+
+    # def get_parameter(self, parameter: Parameter):
+    #     for instrument, channel in self.instruments_and_channels():
+    #         if parameter in instrument.get_instrument_parameters():
+    #             return instrument.get_parameter(parameter=parameter)
+    #         if channel is not None and parameter in instrument.get_channel_parameters():
+    #             return instrument.get_parameter(parameter=parameter, channel=channel)
+    #     return None
 
     def to_runcard(self) -> RuncardBus:
         return self.settings
