@@ -33,4 +33,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1.12
         with:
           user: __token__
-          password: ${{ secrets.PYPI_TOKEN_ALBERTMITJANS }}
