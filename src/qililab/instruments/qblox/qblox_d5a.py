@@ -161,12 +161,14 @@ class QbloxD5a(VoltageSource):
     @check_device_initialized
     def turn_off(self):
         """Stop outputing voltage."""
-        self.device.set_dacs_zero()
         for dac_index in self.settings.dacs:
             channel = self.dac(dac_index=dac_index)
+            channel.voltage(0)
             logger.debug("Dac%d voltage resetted to  %f", dac_index, channel.voltage())
 
     @check_device_initialized
     def reset(self):
         """Reset instrument."""
-        self.device.set_dacs_zero()
+        for dac_index in self.settings.dacs:
+            channel = self.dac(dac_index=dac_index)
+            channel.voltage(0)
