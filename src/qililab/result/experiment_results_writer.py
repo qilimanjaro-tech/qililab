@@ -95,6 +95,7 @@ class ExperimentResultsWriter(ExperimentResults):
             path (str): The file path to save the HDF5 results file.
             metadata (ExperimentMetadata): The metadata describing the experiment structure.
             live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+            slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
         """
         super().__init__(path)
         self._metadata = metadata

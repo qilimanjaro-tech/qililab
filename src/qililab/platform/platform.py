@@ -744,6 +744,7 @@ class Platform:
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
             live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+            slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
 
         Returns:
             str: The path to the file where the results are stored.
