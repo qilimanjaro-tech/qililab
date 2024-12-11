@@ -126,7 +126,7 @@ class Runcard(BaseModel):
                 break
 
     def get_instruments(self) -> list[Instrument]:
-        return [InstrumentFactory.create(runcard_instrument) for runcard_instrument in self.instruments]
+        return [InstrumentFactory.from_runcard(runcard_instrument) for runcard_instrument in self.instruments]
 
     def get_instrument_controllers(self, loaded_instruments: list[Instrument] | None = None):
         return [

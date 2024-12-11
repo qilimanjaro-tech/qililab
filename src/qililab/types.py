@@ -26,10 +26,10 @@ TDevice = TypeVar("TDevice", bound="Device")
 TInstrument = TypeVar("TInstrument", bound="Instrument")
 
 TChannelID = TypeVar("TChannelID", bound=int | str)
-TChannelSettings = TypeVar("TChannelSettings", bound="ChannelSettings[TChannelID]")
+TChannelSettings = TypeVar("TChannelSettings", bound="ChannelSettings")
 
 TInstrumentSettings = TypeVar("TInstrumentSettings", bound="InstrumentSettings")
-TInstrumentWithChannelsSettings = TypeVar("TInstrumentWithChannelsSettings", bound="InstrumentWithChannelsSettings[TChannelSettings, TChannelID]")
+TInstrumentWithChannelsSettings = TypeVar("TInstrumentWithChannelsSettings", bound="InstrumentWithChannelsSettings")
 
 TOutputSettings = TypeVar("TOutputSettings", bound=Optional["OutputSettings"])
 TInputSettings = TypeVar("TInputSettings", bound=Optional["InputSettings"])

@@ -34,7 +34,14 @@ class InstrumentFactory:
         return decorator
 
     @classmethod
-    def create(cls, runcard_instrument: RuncardInstrument) -> Instrument:
+    def get(cls, instrument_type: InstrumentType):
+        instrument_class = cls._registry.get(instrument_type)
+        if instrument_class is None:
+            raise ValueError(f"Unknown instrument type: {instrument_type}")
+        return instrument_class()
+
+    @classmethod
+    def from_runcard(cls, runcard_instrument: RuncardInstrument) -> Instrument:
         instrument_type = runcard_instrument.type
         instrument_class = cls._registry.get(instrument_type)
         if instrument_class is None:
