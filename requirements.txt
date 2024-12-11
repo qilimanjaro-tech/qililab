@@ -1,6 +1,6 @@
 pandas==1.5.3
-qibo==0.2.8
-qblox-instruments==0.11.2
+qibo==0.2.12
+qblox-instruments==0.14.2
 qcodes==0.42.0
 qcodes_contrib_drivers==0.18.0
 PyVISA-py==0.7.1
@@ -9,7 +9,7 @@ urllib3==1.26.12
 qpysequence==0.10.4
 h5py==3.11.0
 papermill==2.4.0
-qm-qua==1.2.0
+qm-qua==1.2.1a1
 qualang-tools==0.17.6
 networkx==3.2.1
 ruamel.yaml==0.18.6

@@ -8,14 +8,14 @@ import numpy as np
 import pytest
 from qm import Program
 from qm.qua import play, program
+from tests.data import SauronQuantumMachines
+from tests.test_utils import build_platform
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
-from tests.data import SauronQuantumMachines
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="qua_program")
@@ -27,17 +27,63 @@ def fixture_qua_program():
     return dummy_qua_program
 
 
-@pytest.fixture(name="platform")
-def fixture_platform() -> Platform:
-    """Return Platform object."""
-    return build_platform(runcard=SauronQuantumMachines.runcard)
-
-
 @pytest.fixture(name="qmm")
 def fixture_qmm():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
-    settings = copy.deepcopy(SauronQuantumMachines.qmm)
-    settings.pop("name")
+    settings = {
+        "alias": "qmm",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                    {"port": 2, "shareable": True},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [],
+        "elements": [
+            {
+                "identifier": "drive_q0",
+                "mix_inputs": {
+                    "I": {"controller": "con1", "port": 1},
+                    "Q": {"controller": "con1", "port": 2},
+                    "lo_frequency": 6e9,
+                    "mixer_correction": [1.0, 0.0, 0.0, 1.0],
+                },
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "identifier": "readout_q0",
+                "mix_inputs": {
+                    "I": {"controller": "con1", "port": 3},
+                    "Q": {"controller": "con1", "port": 4},
+                    "lo_frequency": 6e9,
+                    "mixer_correction": [1.0, 0.0, 0.0, 1.0],
+                },
+                "outputs": {"out1": {"controller": "con1", "port": 1}, "out2": {"controller": "con1", "port": 2}},
+                "time_of_flight": 40,
+                "smearing": 10,
+                "threshold_rotation": 0.5,
+                "threshold": 0.09,
+                "intermediate_frequency": 6e9,
+            },
+            {"identifier": "flux_q0", "single_input": {"controller": "con1", "port": 5}},
+        ],
+        "run_octave_calibration": False,
+    }
     qmm = QuantumMachinesCluster(settings=settings)
     qmm.device = MagicMock
 
@@ -47,8 +93,65 @@ def fixture_qmm():
 @pytest.fixture(name="qmm_with_octave")
 def fixture_qmm_with_octave():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
-    settings = copy.deepcopy(SauronQuantumMachines.qmm_with_octave)
-    settings.pop("name")
+    settings = {
+        "alias": "qmm_with_octave",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                    {"port": 2},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [
+            {
+                "name": "octave1",
+                "port": 11555,
+                "connectivity": {"controller": "con1"},
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
+                "rf_outputs": [
+                    {"port": 1, "lo_frequency": 6e9},
+                    {"port": 2, "lo_frequency": 6e9},
+                    {"port": 3, "lo_frequency": 6e9},
+                    {"port": 4, "lo_frequency": 6e9},
+                    {"port": 5, "lo_frequency": 6e9},
+                ],
+                "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
+            }
+        ],
+        "elements": [
+            {
+                "identifier": "drive_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 1},
+                "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
+                "digital_outputs": {"controller": "con1", "port": 1},
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "identifier": "readout_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 2},
+                "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
+                "rf_outputs": {"octave": "octave1", "port": 1},
+                "intermediate_frequency": 6e9,
+                "time_of_flight": 40,
+                "smearing": 10,
+            },
+        ],
+        "run_octave_calibration": True,
+    }
     qmm = QuantumMachinesCluster(settings=settings)
     qmm.device = MagicMock
 
@@ -58,8 +161,90 @@ def fixture_qmm_with_octave():
 @pytest.fixture(name="qmm_with_octave_custom_connectivity")
 def fixture_qmm_with_octave_custom_connectivity():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
-    settings = copy.deepcopy(SauronQuantumMachines.qmm_with_octave_custom_connectivity)
-    settings.pop("name")
+    settings = {
+        "alias": "qmm_with_octave_custom_connectivity",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                    {"port": 2},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [
+            {
+                "name": "octave1",
+                "port": 11555,
+                "rf_outputs": [
+                    {
+                        "port": 1,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 1},
+                        "q_connection": {"controller": "con1", "port": 2},
+                    },
+                    {
+                        "port": 2,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 3},
+                        "q_connection": {"controller": "con1", "port": 4},
+                    },
+                    {
+                        "port": 3,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 5},
+                        "q_connection": {"controller": "con1", "port": 6},
+                    },
+                    {
+                        "port": 4,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 7},
+                        "q_connection": {"controller": "con1", "port": 8},
+                    },
+                    {
+                        "port": 5,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 9},
+                        "q_connection": {"controller": "con1", "port": 10},
+                    },
+                ],
+                "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
+                "if_outputs": [{"controller": "con1", "port": 1}, {"controller": "con1", "port": 2}],
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
+            }
+        ],
+        "elements": [
+            {
+                "identifier": "drive_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 1},
+                "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
+                "digital_outputs": {"controller": "con1", "port": 1},
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "identifier": "readout_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 2},
+                "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
+                "rf_outputs": {"octave": "octave1", "port": 1},
+                "intermediate_frequency": 6e9,
+                "time_of_flight": 40,
+                "smearing": 10,
+            },
+        ],
+        "run_octave_calibration": True,
+    }
     qmm = QuantumMachinesCluster(settings=settings)
     qmm.device = MagicMock
 
@@ -69,8 +254,158 @@ def fixture_qmm_with_octave_custom_connectivity():
 @pytest.fixture(name="qmm_with_opx1000")
 def fixture_qmm_with_opx1000():
     """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
-    settings = copy.deepcopy(SauronQuantumMachines.qmm_with_opx1000)
-    settings.pop("name")
+    settings = {
+        "alias": "qmm_with_opx1000",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "type": "opx1000",
+                "fems": [
+                    {
+                        "fem": 1,
+                        "analog_outputs": [
+                            {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                            {"port": 2},
+                            {"port": 3},
+                            {"port": 4},
+                            {"port": 5},
+                            {"port": 6},
+                            {"port": 7},
+                            {"port": 8},
+                        ],
+                        "analog_inputs": [{"port": 1}, {"port": 2}],
+                        "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+                    }
+                ],
+            }
+        ],
+        "octaves": [
+            {
+                "name": "octave1",
+                "port": 11555,
+                "connectivity": {"controller": "con1", "fem": 1},
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
+                "rf_outputs": [
+                    {
+                        "port": 1,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 1},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 2},
+                    },
+                    {
+                        "port": 2,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 3},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 4},
+                    },
+                    {
+                        "port": 3,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 5},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 6},
+                    },
+                    {
+                        "port": 4,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 7},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 8},
+                    },
+                    {
+                        "port": 5,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 9},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 10},
+                    },
+                ],
+                "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
+            }
+        ],
+        "elements": [
+            {
+                "identifier": "drive_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 1},
+                "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
+                "digital_outputs": {"controller": "con1", "fem": 1, "port": 1},
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "identifier": "readout_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 2},
+                "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
+                "rf_outputs": {"octave": "octave1", "port": 1},
+                "intermediate_frequency": 6e9,
+                "time_of_flight": 40,
+                "smearing": 10,
+            },
+            {"identifier": "flux_q0", "single_input": {"controller": "con1", "fem": 1, "port": 5}},
+        ],
+        "run_octave_calibration": True,
+    }
+    qmm = QuantumMachinesCluster(settings=settings)
+    qmm.device = MagicMock
+
+    return qmm
+
+
+@pytest.fixture(name="qmm_int_identifiers")
+def fixture_qmm_int_identifiers():
+    """Fixture that returns an instance a qililab wrapper for Quantum Machines Manager."""
+    settings = {
+        "alias": "qmm",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                    {"port": 2},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [],
+        "elements": [
+            {
+                "identifier": 1,
+                "mix_inputs": {
+                    "I": {"controller": "con1", "port": 1},
+                    "Q": {"controller": "con1", "port": 2},
+                    "lo_frequency": 6e9,
+                    "mixer_correction": [1.0, 0.0, 0.0, 1.0],
+                },
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "identifier": 0,
+                "mix_inputs": {
+                    "I": {"controller": "con1", "port": 3},
+                    "Q": {"controller": "con1", "port": 4},
+                    "lo_frequency": 6e9,
+                    "mixer_correction": [1.0, 0.0, 0.0, 1.0],
+                },
+                "outputs": {"out1": {"controller": "con1", "port": 1}, "out2": {"controller": "con1", "port": 2}},
+                "time_of_flight": 40,
+                "smearing": 10,
+                "threshold_rotation": 0.5,
+                "threshold": 0.09,
+                "intermediate_frequency": 6e9,
+            },
+            {"identifier": "flux_q0", "single_input": {"controller": "con1", "port": 5}},
+        ],
+        "run_octave_calibration": False,
+    }
     qmm = QuantumMachinesCluster(settings=settings)
     qmm.device = MagicMock
 
@@ -114,7 +449,7 @@ class MockStreamingFetcher:
         self.values = [("I", MockSingleHandle()), ("Q", MockSingleHandle())]
         self.index = 0
 
-    def wait_for_all_values(self):
+    def wait_for_all_values(self, timeout: int | None = None):
         """Mocks waiting for all values method from streamer"""
         return MagicMock
 
@@ -148,7 +483,8 @@ class TestQuantumMachinesCluster:
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.Instrument.initial_setup")
     @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
+        "qmm_name",
+        ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000", "qmm_int_identifiers"],
     )
     def test_initial_setup(self, mock_instrument_init: MagicMock, mock_init: MagicMock, qmm_name, request):
         """Test QMM class initialization."""
@@ -169,18 +505,22 @@ class TestQuantumMachinesCluster:
         assert qmm._config == qmm.settings.to_qua_config()
 
     @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
+        "qmm_name",
+        ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000", "qmm_int_identifiers"],
     )
     def test_settings(self, qmm_name, request):
         """Test QuantumMachinesClusterSettings have been set correctly"""
 
         qmm = request.getfixturevalue(qmm_name)
         assert isinstance(qmm.settings, Settings)
+        assert qmm.is_awg()
+        assert qmm.is_adc()
 
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
+        "qmm_name",
+        ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000", "qmm_int_identifiers"],
     )
     def test_turn_on(self, mock_qmm, mock_qm, qmm_name, request):
         """Test turn_on method"""
@@ -202,7 +542,8 @@ class TestQuantumMachinesCluster:
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
     @pytest.mark.parametrize(
-        "qmm_name", ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000"]
+        "qmm_name",
+        ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000", "qmm_int_identifiers"],
     )
     def test_turn_off(self, mock_qmm, mock_qm, qmm_name, request):
         """Test turn_off method"""
@@ -312,7 +653,7 @@ class TestQuantumMachinesCluster:
         qmm.initial_setup()
         qmm.turn_on()
 
-        element = next((element for element in qmm.settings.elements if element["bus"] == "readout_q0"), None)
+        element = next((element for element in qmm.settings.elements if element["identifier"] == "readout_q0"), None)
 
         with pytest.raises(
             ValueError,
@@ -416,7 +757,7 @@ class TestQuantumMachinesCluster:
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_of_bus_method_with_octave(
+    def test_set_parameter_method_with_octave(
         self,
         mock_qmm,
         mock_qm,
@@ -430,7 +771,7 @@ class TestQuantumMachinesCluster:
         qmm_with_octave.turn_on()
         qmm_with_octave._config = qmm_with_octave.settings.to_qua_config()
 
-        qmm_with_octave.set_parameter_of_bus(bus, parameter, value)
+        qmm_with_octave.set_parameter(parameter=parameter, value=value, channel_id=bus)
         if parameter == Parameter.LO_FREQUENCY:
             qmm_with_octave._qm.octave.set_lo_frequency.assert_called_once()
             calls = [
@@ -470,7 +811,7 @@ class TestQuantumMachinesCluster:
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_of_bus_method(
+    def test_set_parameter_method(
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
     ):
         """Test the setup method with float value"""
@@ -478,9 +819,9 @@ class TestQuantumMachinesCluster:
         qmm.turn_on()
         qmm._config = qmm.settings.to_qua_config()
 
-        qmm.set_parameter_of_bus(bus, parameter, value)
+        qmm.set_parameter(parameter=parameter, value=value, channel_id=bus)
 
-        element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
+        element = next((element for element in qmm.settings.elements if element["identifier"] == bus))
         if parameter == Parameter.IF:
             assert value == element["intermediate_frequency"]
         if parameter == Parameter.THRESHOLD_ROTATION:
@@ -515,7 +856,7 @@ class TestQuantumMachinesCluster:
         """Test that both the local `settings` and `_config` are changed by the set method without connection."""
 
         # Set intermidiate frequency to 17e6 locally
-        qmm.set_parameter_of_bus(bus, parameter, value)
+        qmm.set_parameter(parameter=parameter, value=value, channel_id=bus)
         qmm.initial_setup()
 
         # Test that both the local `settings` and `_config` have been changed to 17e6:
@@ -556,7 +897,7 @@ class TestQuantumMachinesCluster:
         qmm_with_opx1000.turn_on()
         qmm_with_opx1000._config = qmm_with_opx1000.settings.to_qua_config()
 
-        qmm_with_opx1000.set_parameter_of_bus(bus, parameter, value)
+        qmm_with_opx1000.set_parameter(parameter=parameter, value=value, channel_id=bus)
 
         if parameter == Parameter.IF:
             # Test `_intermediate_frequency[bus]` is created for later use:
@@ -581,10 +922,10 @@ class TestQuantumMachinesCluster:
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_of_bus_method_raises_error_when_parameter_is_for_octave_and_there_is_no_octave(
+    def test_set_parameter_method_raises_error_when_parameter_is_for_octave_and_there_is_no_octave(
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
     ):
-        """Test the set_parameter_of_bus method raises exception when the parameter is for octave and there is no octave connected to the bus."""
+        """Test the set_parameter method raises exception when the parameter is for octave and there is no octave connected to the bus."""
         qmm.initial_setup()
         qmm.turn_on()
         qmm._config = qmm.settings.to_qua_config()
@@ -593,7 +934,7 @@ class TestQuantumMachinesCluster:
             ValueError,
             match=f"Trying to change parameter {parameter.name} in {qmm.name}, however bus {bus} is not connected to an octave.",
         ):
-            qmm.set_parameter_of_bus(bus, parameter, value)
+            qmm.set_parameter(parameter=parameter, value=value, channel_id=bus)
 
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
@@ -603,16 +944,16 @@ class TestQuantumMachinesCluster:
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_of_bus_method_raises_exception_when_bus_not_found(
+    def test_set_parameter_method_raises_exception_when_bus_not_found(
         self, mock_qmm, mock_qm, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
     ):
-        """Test the set_parameter_of_bus method raises exception when parameter is wrong."""
+        """Test the set_parameter method raises exception when parameter is wrong."""
         non_existent_bus = "non_existent_bus"
 
         qmm.initial_setup()
         qmm.turn_on()
         with pytest.raises(ValueError, match=f"Bus {non_existent_bus} was not found in {qmm.name} settings."):
-            qmm.set_parameter_of_bus(non_existent_bus, parameter, value)
+            qmm.set_parameter(parameter, value, channel_id=non_existent_bus)
 
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
@@ -620,14 +961,14 @@ class TestQuantumMachinesCluster:
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.OUT0_ATT, 0.0005)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_set_parameter_of_bus_method_raises_exception_when_parameter_not_found(
+    def test_set_parameter_method_raises_exception_when_parameter_not_found(
         self, mock_qmm, mock_qm, parameter: Parameter, value, qmm: QuantumMachinesCluster
     ):
-        """Test the set_parameter_of_bus method raises exception when parameter is wrong."""
+        """Test the set_parameter method raises exception when parameter is wrong."""
         qmm.initial_setup()
         qmm.turn_on()
         with pytest.raises(ParameterNotFound, match=f"Could not find parameter {parameter} in instrument {qmm.name}."):
-            qmm.set_parameter_of_bus("drive_q0", parameter, value)
+            qmm.set_parameter(parameter, value, channel_id="drive_q0")
 
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
@@ -653,7 +994,7 @@ class TestQuantumMachinesCluster:
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_parameter_of_bus_method(
+    def test_get_parameter_method(
         self,
         mock_qmm,
         mock_qm,
@@ -664,7 +1005,7 @@ class TestQuantumMachinesCluster:
     ):
         """Test the setup method with float value"""
         qmm = request.getfixturevalue(qmm_name)
-        value = qmm.get_parameter_of_bus(bus, parameter)
+        value = qmm.get_parameter(parameter, channel_id=bus)
 
         settings_config_dict = qmm.settings.to_qua_config()
 
@@ -683,10 +1024,11 @@ class TestQuantumMachinesCluster:
             if "mixInputs" in config_keys and "outputs" in config_keys:
                 port_i = settings_config_dict["elements"][bus]["outputs"]["out1"]
                 port_q = settings_config_dict["elements"][bus]["outputs"]["out2"]
-                assert value == (
-                    settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
-                    settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
-                )
+                assert value == settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"]
+                # assert value == (
+                #     settings_config_dict["controllers"][port_i[0]]["analog_inputs"][port_i[1]]["gain_db"],
+                #     settings_config_dict["controllers"][port_q[0]]["analog_inputs"][port_q[1]]["gain_db"],
+                # )
             if "RF_inputs" in config_keys:
                 port = settings_config_dict["elements"][bus]["RF_inputs"]["port"]
                 assert value == settings_config_dict["octaves"][port[0]]["RF_outputs"][port[1]]["gain"]
@@ -698,10 +1040,10 @@ class TestQuantumMachinesCluster:
                 assert value == settings_config_dict["elements"][bus]["smearing"]
 
         if parameter == Parameter.THRESHOLD_ROTATION:
-            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
+            element = next((element for element in qmm.settings.elements if element["identifier"] == bus))
             assert value == element.get("threshold_rotation", None)
         if parameter == Parameter.THRESHOLD:
-            element = next((element for element in qmm.settings.elements if element["bus"] == bus), None)
+            element = next((element for element in qmm.settings.elements if element["identifier"] == bus))
             assert value == element.get("threshold", None)
 
         if parameter == Parameter.DC_OFFSET:
@@ -730,7 +1072,7 @@ class TestQuantumMachinesCluster:
     )
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_parameter_of_bus_method_opx1000(
+    def test_get_parameter_method_opx1000(
         self,
         mock_qmm,
         mock_qm,
@@ -741,7 +1083,7 @@ class TestQuantumMachinesCluster:
     ):
         """Test the setup method with float value"""
         qmm = request.getfixturevalue(qmm_name)
-        value = qmm.get_parameter_of_bus(bus, parameter)
+        value = qmm.get_parameter(parameter, channel_id=bus)
 
         settings_config_dict = qmm.settings.to_qua_config()
 
@@ -762,14 +1104,14 @@ class TestQuantumMachinesCluster:
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
-    def test_get_parameter_of_bus_method_raises_exception_when_parameter_not_found(
+    def test_get_parameter_method_raises_exception_when_parameter_not_found(
         self, mock_qmm, mock_qm, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
-        """Test the get_parameter_of_bus method raises exception when parameter is wrong."""
+        """Test the get_parameter method raises exception when parameter is wrong."""
         qmm.initial_setup()
         qmm.turn_on()
         with pytest.raises(ParameterNotFound):
-            qmm.get_parameter_of_bus("drive_q0", parameter)
+            qmm.get_parameter(parameter, "drive_q0")
 
     @pytest.mark.parametrize("bus, parameter", [("drive_q0", Parameter.LO_FREQUENCY)])
     @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
@@ -777,10 +1119,10 @@ class TestQuantumMachinesCluster:
     def test_get_parameter_after_initial_setup(
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
-        """Test the get_parameter_of_bus method after and initial_setup."""
+        """Test the get_parameter method after and initial_setup."""
 
         qmm.initial_setup()
-        value = qmm.get_parameter_of_bus(bus, parameter)
+        value = qmm.get_parameter(parameter, channel_id=bus)
         config_keys = qmm._config["elements"][bus]
 
         if parameter == Parameter.LO_FREQUENCY:
@@ -799,7 +1141,7 @@ class TestQuantumMachinesCluster:
     def test_get_parameter_doesnt_create_a_config(
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
-        """Test the get_parameter_of_bus method doesn't create a `_config`."""
+        """Test the get_parameter method doesn't create a `_config`."""
         assert qmm._config_created is False
-        qmm.get_parameter_of_bus(bus, parameter)
+        qmm.get_parameter(parameter, channel_id=bus)
         assert qmm._config_created is False

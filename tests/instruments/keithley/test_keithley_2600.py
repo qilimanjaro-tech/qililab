@@ -1,96 +1,99 @@
 """Tests for the Keithley2600 class."""
-import copy
-from unittest.mock import MagicMock, patch
-
 import pytest
-from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
-
-from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
+from unittest import mock
+from qililab.instruments import ParameterNotFound
 from qililab.instruments.keithley import Keithley2600
-from qililab.platform import Platform
-from qililab.typings import Parameter
-from tests.data import Galadriel
-from tests.test_utils import build_platform
+from qililab.typings import ChannelID, Parameter, InstrumentName
+from qililab.instruments.utils import InstrumentFactory
+import numpy as np
 
-
-@pytest.fixture(name="platform")
-def fixture_platform() -> Platform:
-    """Return Platform object."""
-    return build_platform(runcard=Galadriel.runcard)
-
-
-@pytest.fixture(name="keithley_2600_controller")
-def fixture_keithley_2600_controller(platform: Platform):
-    """Return connected instance of Keithley2600Controller class"""
-    settings = copy.deepcopy(Galadriel.keithley_2600_controller_0)
-    settings.pop("name")
-    return Keithley2600Controller(settings=settings, loaded_instruments=platform.instruments)
-
-
-@pytest.fixture(name="keithley_2600_no_device")
-def fixture_keithley_2600_no_device():
-    """Return connected instance of Keithley2600 class"""
-    settings = copy.deepcopy(Galadriel.keithley_2600)
-    settings.pop("name")
-    return Keithley2600(settings=settings)
-
-
-@pytest.fixture(name="keithley_2600")
-@patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
-def fixture_keithley_2600(mock_driver: MagicMock, keithley_2600_controller: Keithley2600Controller):
-    """Return connected instance of Keithley2600 class"""
-    mock_instance = mock_driver.return_value
-    mock_instance.smua = MagicMock(KeithleyChannel)
-    mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
-    keithley_2600_controller.connect()
-    mock_driver.assert_called()
-    return keithley_2600_controller.modules[0]
+@pytest.fixture
+def keithley2600():
+    # Instantiate the Keithley2600 with mocked device and settings
+    settings = {
+        "alias": "keithley",
+        "max_current": 1.0,
+        "max_voltage": 10.0
+    }
+    Keithley2600 = InstrumentFactory.get(InstrumentName.KEITHLEY2600)
+    instrument = Keithley2600(settings=settings)
+    instrument.device = mock.Mock()
+    instrument.device.smua = mock.Mock()
+    return instrument
 
 
 class TestKeithley2600:
-    """Unit tests checking the Keithley2600 attributes and methods."""
 
-    @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.01), (Parameter.MAX_VOLTAGE, 19.0)])
-    def test_setup_method_current_parameter(self, parameter: Parameter, value: float, keithley_2600: Keithley2600):
-        """Test setup method."""
-        keithley_2600.setup(parameter=parameter, value=value)
-        if parameter == Parameter.CURRENT:
-            assert keithley_2600.settings.max_current == value
-        if parameter == Parameter.VOLTAGE:
-            assert keithley_2600.settings.max_voltage == value
+    def test_set_parameter_max_current(self, keithley2600):
+        # Test setting max current
+        keithley2600.set_parameter(Parameter.MAX_CURRENT, 2.0)
 
-    def test_initial_setup_method(self, keithley_2600: Keithley2600):
-        """Test initial_setup method."""
-        keithley_2600.initial_setup()
+        assert keithley2600.max_current == 2.0
+        keithley2600.device.smua.limiti.assert_called_with(2.0)
 
-    @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.01), (Parameter.MAX_VOLTAGE, 19.0)])
-    def test_setup_method_current_parameter_no_connection(
-        self, parameter: Parameter, value: float, keithley_2600_no_device: Keithley2600
-    ):
-        """Test setup method."""
-        keithley_2600_no_device.setup(parameter=parameter, value=value)
-        if parameter == Parameter.CURRENT:
-            assert keithley_2600_no_device.settings.max_current == value
-        if parameter == Parameter.VOLTAGE:
-            assert keithley_2600_no_device.settings.max_voltage == value
+    def test_set_parameter_max_voltage(self, keithley2600):
+        # Test setting max voltage
+        keithley2600.set_parameter(Parameter.MAX_VOLTAGE, 20.0)
 
-    def test_initial_setup_method_no_connection(self, keithley_2600_no_device: Keithley2600):
-        """Test initial setup method."""
-        with pytest.raises(AttributeError, match="Instrument Device has not been initialized"):
-            keithley_2600_no_device.initial_setup()
+        assert keithley2600.max_voltage == 20.0
+        keithley2600.device.smua.limitv.assert_called_with(20.0)
 
-    def test_turn_on_method(self, keithley_2600: Keithley2600):
-        """Test turn_on method."""
-        keithley_2600.turn_on()
+    def test_set_parameter_invalid(self, keithley2600):
+        # Test setting an invalid parameter
+        with pytest.raises(ParameterNotFound):
+            keithley2600.set_parameter("INVALID_PARAMETER", 100)
 
-    def test_turn_off_method(self, keithley_2600: Keithley2600):
-        """Test turn_off method."""
-        keithley_2600.turn_off()
+    def test_initial_setup(self, keithley2600):
+        # Test initial setup to ensure it calls the device methods correctly
+        keithley2600.initial_setup()
 
-    def test_reset_method(self, keithley_2600: Keithley2600):
-        """Test reset method."""
-        keithley_2600.reset()
+        keithley2600.device.smua.limiti.assert_called_with(keithley2600.max_current)
+        keithley2600.device.smua.limitv.assert_called_with(keithley2600.max_voltage)
 
-    def test_fast_sweep_method(self, keithley_2600: Keithley2600):
-        """Test fast_sweep method."""
-        keithley_2600.fast_sweep(start=0, stop=1, steps=10, mode="VI")
+    def test_turn_on(self, keithley2600):
+        # Placeholder test for the turn_on method, which could involve more device actions
+        keithley2600.turn_on()
+        # Add assertions if turn_on has real behavior in the future
+
+    def test_turn_off(self, keithley2600):
+        # Placeholder test for the turn_off method, which could involve more device actions
+        keithley2600.turn_off()
+        # Add assertions if turn_off has real behavior in the future
+
+    def test_reset(self, keithley2600):
+        # Test reset method to ensure it calls device.reset
+        keithley2600.reset()
+        keithley2600.device.reset.assert_called_once()
+
+    def test_fast_sweep(self, keithley2600):
+        # Mock the fast sweep return data
+        mock_sweep_data = mock.Mock()
+        mock_sweep_data.to_xarray.return_value.to_array.return_value.values.squeeze.return_value = np.array([0.1, 0.2, 0.3])
+        keithley2600.device.smua.doFastSweep.return_value = mock_sweep_data
+
+        start, stop, steps = 0.0, 10.0, 3
+        x_values, data = keithley2600.fast_sweep(start, stop, steps, mode='IV')
+
+        expected_x_values = np.linspace(start, stop, steps)
+        np.testing.assert_array_equal(x_values, expected_x_values)
+        np.testing.assert_array_equal(data, np.array([0.1, 0.2, 0.3]))
+
+    def test_max_current_getter(self, keithley2600):
+        # Test the max_current getter
+        assert keithley2600.max_current == keithley2600.settings.max_current
+
+    def test_max_current_setter(self, keithley2600):
+        # Test the max_current setter
+        keithley2600.max_current = 5.0
+        assert keithley2600.settings.max_current == 5.0
+        keithley2600.device.smua.limiti.assert_called_with(5.0)
+
+    def test_max_voltage_getter(self, keithley2600):
+        # Test the max_voltage getter
+        assert keithley2600.max_voltage == keithley2600.settings.max_voltage
+
+    def test_max_voltage_setter(self, keithley2600):
+        # Test the max_voltage setter
+        keithley2600.max_voltage = 50.0
+        assert keithley2600.settings.max_voltage == 50.0
+        keithley2600.device.smua.limitv.assert_called_with(50.0)

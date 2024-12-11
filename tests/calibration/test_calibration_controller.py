@@ -17,7 +17,7 @@ from qililab.platform.platform import Platform
 #################################### SET UPS ####################################
 #################################################################################
 
-path_runcard = "examples/runcards/galadriel.yml"
+path_runcard = "tests/calibration/galadriel.yml"
 
 
 def dummy_comparison_model(obtained: dict, comparison: dict) -> float:
