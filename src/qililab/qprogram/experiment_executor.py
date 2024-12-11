@@ -73,6 +73,8 @@ class ExperimentExecutor:
         platform (Platform): The platform on which the experiment is to be executed.
         experiment (Experiment): The experiment object defining the sequence of operations and loops.
         base_data_path (str): The base directory path where the experiment results will be stored.
+        live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+        slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
 
     Example:
         .. code-block::
@@ -104,9 +106,13 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment):
+    def __init__(
+        self, platform: "Platform", experiment: Experiment, live_plot: bool = True, slurm_execution: bool = True
+    ):
         self.platform = platform
         self.experiment = experiment
+        self._live_plot = live_plot
+        self._slurm_execution = slurm_execution
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -343,8 +349,9 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element,
-                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
+                                lambda operation=element, value=current_value_of_variable[
+                                    element.value.uuid
+                                ]: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     value=value,
@@ -384,9 +391,7 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element,
-                            call_parameters=call_parameters,
-                            qprogram_index=qprogram_index: store_results(
+                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram(
                                         **{
@@ -557,7 +562,9 @@ class ExperimentExecutor:
         self._prepare_metadata(executed_at=executed_at)
 
         # Create the ExperimentResultsWriter for storing results
-        self._results_writer = ExperimentResultsWriter(path=results_path, metadata=self._metadata)
+        self._results_writer = ExperimentResultsWriter(
+            path=results_path, metadata=self._metadata, live_plot=self._live_plot, slurm_execution=self._slurm_execution
+        )
 
         # Event to signal that the execution has completed
         execution_completed = threading.Event()
@@ -576,14 +583,14 @@ class ExperimentExecutor:
                     operations = self._prepare_operations(self.experiment.body, progress)
                     self._execute_operations(operations, progress)
 
-            # Signal that the execution has completed
-            execution_completed.set()
+                # Signal that the execution has completed
+                execution_completed.set()
 
-            # Retrieve the execution time from the Future
-            execution_time = execution_time_future.result()
+                # Retrieve the execution time from the Future
+                execution_time = execution_time_future.result()
 
-            # Now write the execution time to the results writer
-            with self._results_writer:
+                # Now write the execution time to the results writer
                 self._results_writer.execution_time = execution_time
+                self._results_writer.execution_end = True
 
         return results_path
