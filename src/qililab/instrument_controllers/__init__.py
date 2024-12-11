@@ -15,28 +15,17 @@
 """Instrument Controllers module."""
 
 from .instrument_controller import InstrumentController
-from .instrument_controllers import InstrumentControllers
-from .keithley import Keithley2600Controller
-from .mini_circuits import MiniCircuitsController
-from .qblox import QbloxClusterController, QbloxSPIRackController
-from .qdevil import QDevilQDac2Controller
-from .quantum_machines import QuantumMachinesClusterController
-from .rohde_schwarz import SGS100AController
-from .single_instrument_controller import SingleInstrumentController
-from .utils import InstrumentControllerFactory
-from .yokogawa import GS200Controller
+from .qblox_cluster_controller import QbloxClusterController
+from .qblox_spi_rack_controller import QbloxSPIRackController
+from .qdevil_qdac2_controller import QDevilQDAC2Controller
+from .quantum_machines_cluster_controller import QuantumMachinesClusterController
+from .rohde_schwarz_sg100_controller import RohdeSchwarzSGS100AController
 
 __all__ = [
-    "GS200Controller",
     "InstrumentController",
-    "InstrumentControllerFactory",
-    "InstrumentControllers",
-    "Keithley2600Controller",
-    "MiniCircuitsController",
-    "QDevilQDac2Controller",
+    "QDevilQDAC2Controller",
     "QbloxClusterController",
     "QbloxSPIRackController",
     "QuantumMachinesClusterController",
-    "SGS100AController",
-    "SingleInstrumentController",
+    "RohdeSchwarzSGS100AController",
 ]
