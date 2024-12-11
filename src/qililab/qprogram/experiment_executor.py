@@ -74,6 +74,7 @@ class ExperimentExecutor:
         experiment (Experiment): The experiment object defining the sequence of operations and loops.
         base_data_path (str): The base directory path where the experiment results will be stored.
         live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+        slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
 
     Example:
         .. code-block::
@@ -105,10 +106,13 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment, live_plot: bool = True):
+    def __init__(
+        self, platform: "Platform", experiment: Experiment, live_plot: bool = True, slurm_execution: bool = True
+    ):
         self.platform = platform
         self.experiment = experiment
-        self.live_plot = live_plot
+        self._live_plot = live_plot
+        self._slurm_execution = slurm_execution
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -554,16 +558,12 @@ class ExperimentExecutor:
         # Create file path to store results
         results_path = self._create_results_path(executed_at=executed_at)
 
-        # TODO: Find an alternative way of getting the experiment path at the beginning of the experiment execution
-        if self.live_plot:
-            print(results_path)
-
         # Prepare the results metadata
         self._prepare_metadata(executed_at=executed_at)
 
         # Create the ExperimentResultsWriter for storing results
         self._results_writer = ExperimentResultsWriter(
-            path=results_path, metadata=self._metadata, live_plot=self.live_plot
+            path=results_path, metadata=self._metadata, live_plot=self._live_plot, slurm_execution=self._slurm_execution
         )
 
         # Event to signal that the execution has completed

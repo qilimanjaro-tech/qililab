@@ -88,7 +88,7 @@ class ExperimentResultsWriter(ExperimentResults):
     Inherits from `ExperimentResults` to support both read and write operations.
     """
 
-    def __init__(self, path: str, metadata: ExperimentMetadata, live_plot: bool = True):
+    def __init__(self, path: str, metadata: ExperimentMetadata, live_plot: bool = True, slurm_execution: bool = True):
         """Initializes the ExperimentResultsWriter instance.
 
         Args:
@@ -98,7 +98,8 @@ class ExperimentResultsWriter(ExperimentResults):
         """
         super().__init__(path)
         self._metadata = metadata
-        self._live_plot = live_plot
+        self._live_plot_true = live_plot
+        self._slurm_execution = slurm_execution
 
     # pylint: disable=too-many-locals
     def _create_results_file(self):
@@ -107,8 +108,6 @@ class ExperimentResultsWriter(ExperimentResults):
         Writes the metadata to the HDF5 file and sets up the datasets and groups for streaming data.
         """
         h5py.get_config().track_order = True
-
-        self.execution_end = False
 
         if "platform" in self._metadata:
             self.platform = self._metadata["platform"]
@@ -126,8 +125,9 @@ class ExperimentResultsWriter(ExperimentResults):
             # Create the group for QPrograms
             qprograms_group = self._file.create_group(ExperimentResultsWriter.QPROGRAMS_PATH)
 
-            # Register live plotting status
-            self._file["live_plotting"] = self._live_plot
+            # Create dictionary for plot dimensions
+            if self._live_plot_true:
+                dims_dict = {}
 
             # Iterate through QPrograms and measurements in the structure
             for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
@@ -173,9 +173,14 @@ class ExperimentResultsWriter(ExperimentResults):
                     # Attach the extra dimension (usually for I/Q) to the results dataset
                     results_ds.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
-            # Prepare for SWMR mode to allow for live plotting
-            if self._live_plot:
-                self._file.swmr_mode = True
+                    # Fill plot dictionary with dimensions
+                    if self._live_plot_true:
+                        dims_dict[(qprogram_name, measurement_name)] = results_ds.dims
+
+            # Generate live plot figures
+            if self._live_plot_true:
+                self.results_liveplot = ExperimentResults(self.path, self._slurm_execution)
+                self.results_liveplot._live_plot_figures(dims_dict)
 
     def _create_resuts_access(self):
         """Sets up internal data structures to allow for real-time data writing to the HDF5 file."""
@@ -212,8 +217,10 @@ class ExperimentResultsWriter(ExperimentResults):
         if isinstance(measurement_name, int):
             measurement_name = f"Measurement_{measurement_name}"
         self.data[qprogram_name, measurement_name][tuple(indices)] = value
-        if self._live_plot:
-            self.data[qprogram_name, measurement_name].flush()
+        if self._live_plot_true:
+            self.results_liveplot._live_plot(
+                self.data[qprogram_name, measurement_name], qprogram_name, measurement_name
+            )
 
     @ExperimentResults.platform.setter
     def platform(self, platform: str):
@@ -262,15 +269,3 @@ class ExperimentResultsWriter(ExperimentResults):
         if path in self._file:
             del self._file[path]
         self._file[path] = str(time)
-
-    @ExperimentResults.execution_end.setter
-    def execution_end(self, end: bool):
-        """Sets the execution time in seconds.
-
-        Args:
-            time (float): The execution time in seconds.
-        """
-        path = ExperimentResults.EXECUTION_END_PATH
-        if path in self._file:
-            del self._file[path]
-        self._file[path] = end
