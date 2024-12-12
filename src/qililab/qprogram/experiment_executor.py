@@ -591,6 +591,5 @@ class ExperimentExecutor:
 
                 # Now write the execution time to the results writer
                 self._results_writer.execution_time = execution_time
-                self._results_writer.execution_end = True
 
         return results_path

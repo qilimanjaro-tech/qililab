@@ -116,25 +116,6 @@ class ExperimentResults:
 
         return data, dims
 
-    def get_data(self, qprogram: int | str = 0, measurement: int | str = 0) -> np.ndarray:
-        """Retrieves only data for a specified quantum program and measurement.
-
-        Args:
-            qprogram (int | str, optional): The index or name of the quantum program. Defaults to 0.
-            measurement (int | str, optional): The index or name of the measurement. Defaults to 0.
-
-        Returns:
-            np.ndarray: The data array.
-        """
-        if isinstance(qprogram, int):
-            qprogram = f"QProgram_{qprogram}"
-        if isinstance(measurement, int):
-            measurement = f"Measurement_{measurement}"
-
-        data = self.data[qprogram, measurement][()]
-
-        return data
-
     def __getitem__(self, key: tuple):
         """Get an item from the results dataset.
 
@@ -337,25 +318,29 @@ class ExperimentResults:
             self._live_plot_fig = go.Figure()
         else:
             self._live_plot_fig = go.FigureWidget()
-        self._live_plot_fig.set_subplots(rows=len(dims_dict), cols=1, subplot_titles=list(dims_dict.keys()))
+        self._live_plot_fig.set_subplots(rows=len(dims_dict), cols=1, subplot_titles=list(str(dims_dict.keys())))
         self._live_plot_fig.update_layout(height=500 * len(dims_dict), width=700, title_text=self.path)
 
         for i, coordinates in enumerate(dims_dict.keys()):
             self.live_plot_dict[coordinates] = i
 
-        for dims in dims_dict.values():
-            x_labels, x_values = dims[0].labels, dims[0].values
+        for dim in dims_dict.values():
+            dims_0 = DimensionInfo(labels=dim[0].label.split(","), values=[values[()] for values in dim[0].values()])
+            x_labels, x_values = dims_0.labels, dims_0.values
             x_edges = np.linspace(x_values[0].min(), x_values[0].max(), len(x_values[0]) + 1)
 
             self._live_plot_fig.layout.xaxis.title = x_labels[0]
 
-            n_dimensions = len(dims) - 1
+            n_dimensions = len(dim) - 1
             if n_dimensions == 1:
                 self._live_plot_fig.add_scatter(x=x_edges)
                 self._live_plot_fig.layout.yaxis.title = r"$|S_{21}|$"
 
             elif n_dimensions == 2:
-                y_labels, y_values = dims[1].labels, dims[1].values
+                dims_1 = DimensionInfo(
+                    labels=dim[1].label.split(","), values=[values[()] for values in dim[1].values()]
+                )
+                y_labels, y_values = dims_1.labels, dims_1.values
                 y_edges = np.linspace(y_values[0].min(), y_values[0].max(), len(y_values[0]) + 1)
 
                 self._live_plot_fig.add_heatmap(x=x_edges, y=y_edges)
@@ -369,7 +354,7 @@ class ExperimentResults:
                 self._dash_app.layout = html.Div(
                     [
                         dcc.Graph(figure=self._live_plot_fig, id="live-plot-graph"),
-                        dcc.Interval(id="interval-component", interval=1 * 1000, n_intervals=0),  # in milliseconds
+                        dcc.Interval(id="interval-component", interval=1 * 10, n_intervals=0),  # in milliseconds
                     ]
                 )
                 self._dash_app.run(debug=True)
@@ -412,7 +397,6 @@ class ExperimentResults:
 
                 return self._live_plot_fig
 
-            self._dash_app.run(debug=True)
         else:
             if n_dimensions == 1:
                 self._live_plot_fig.data[qprogram_num].y = s21.T
