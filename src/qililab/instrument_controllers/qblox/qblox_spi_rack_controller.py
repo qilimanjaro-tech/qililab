@@ -75,6 +75,7 @@ class QbloxSPIRackController(InstrumentController):
                     + f"and {InstrumentTypeName.QBLOX_S4G}."
                 )
 
+    # TODO: once the Xtalk is handled by qililab module has to be a private method
     def module(self, module_id: int):
         """get module associated to the specific module id
 
