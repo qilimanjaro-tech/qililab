@@ -39,9 +39,10 @@ class QbloxMeasurementResult(MeasurementResult):
 
     name = ResultName.QBLOX_QPROGRAM_MEASUREMENT
 
-    def __init__(self, bus: str, raw_measurement_data: dict):
+    def __init__(self, bus: str, raw_measurement_data: dict, shape: tuple):
         super().__init__(bus=bus)
         self.raw_measurement_data = raw_measurement_data
+        self.shape = shape
 
     @property
     def array(self) -> np.ndarray:
@@ -50,8 +51,8 @@ class QbloxMeasurementResult(MeasurementResult):
         Returns:
             np.ndarray: The I/Q data
         """
-        path0 = self.raw_measurement_data["bins"]["integration"]["path0"]
-        path1 = self.raw_measurement_data["bins"]["integration"]["path1"]
+        path0 = self.raw_measurement_data["bins"]["integration"]["path0"].reshape(self.shape[0], self.shape[1])
+        path1 = self.raw_measurement_data["bins"]["integration"]["path1"].reshape(self.shape[0], self.shape[1])
         return np.array([path0, path1])
 
     @property

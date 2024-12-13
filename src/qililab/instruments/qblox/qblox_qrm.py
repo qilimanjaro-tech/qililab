@@ -190,7 +190,9 @@ class QbloxQRM(QbloxModule):
                     "acquisition"
                 ]
                 measurement_result = QbloxMeasurementResult(
-                    bus=acquisitions[acquisition].bus, raw_measurement_data=raw_measurement_data
+                    bus=acquisitions[acquisition].bus,
+                    raw_measurement_data=raw_measurement_data,
+                    shape=acquisition_data.shape
                 )
                 results.append(measurement_result)
 
