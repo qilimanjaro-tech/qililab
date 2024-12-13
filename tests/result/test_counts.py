@@ -42,7 +42,6 @@ def fixture_raw_measurement_data() -> QProgramResults:
             result=QbloxMeasurementResult(
                 bus="readout_q0",
                 raw_measurement_data={"bins": {"integration": {"path0": [0], "path1": [0]}, "threshold": [th_q0]}},
-                shape=(5,)
             ),
         )
         results.append_result(
@@ -50,7 +49,6 @@ def fixture_raw_measurement_data() -> QProgramResults:
             result=QbloxMeasurementResult(
                 bus="readout_q1",
                 raw_measurement_data={"bins": {"integration": {"path0": [0], "path1": [0]}, "threshold": [th_q1]}},
-                shape=(5,)
             ),
         )
     return results

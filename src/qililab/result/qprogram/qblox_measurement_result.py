@@ -39,10 +39,9 @@ class QbloxMeasurementResult(MeasurementResult):
 
     name = ResultName.QBLOX_QPROGRAM_MEASUREMENT
 
-    def __init__(self, bus: str, raw_measurement_data: dict, shape: tuple):
+    def __init__(self, bus: str, raw_measurement_data: dict):
         super().__init__(bus=bus)
         self.raw_measurement_data = raw_measurement_data
-        self.shape = shape
 
     @property
     def array(self) -> np.ndarray:
