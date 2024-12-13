@@ -39,7 +39,7 @@ class QbloxMeasurementResult(MeasurementResult):
 
     name = ResultName.QBLOX_QPROGRAM_MEASUREMENT
 
-    def __init__(self, bus: str, raw_measurement_data: dict, shape=(-1,)):
+    def __init__(self, bus: str, raw_measurement_data: dict, shape=None):
         super().__init__(bus=bus)
         self.raw_measurement_data = raw_measurement_data
         self.shape = shape
@@ -53,7 +53,8 @@ class QbloxMeasurementResult(MeasurementResult):
         """
         path0 = self.raw_measurement_data["bins"]["integration"]["path0"]
         path1 = self.raw_measurement_data["bins"]["integration"]["path1"]
-        return np.array([path0, path1]).reshape(*self.shape)
+
+        return np.array([path0, path1]) if self.shape is None else np.array([path0, path1]).reshape(*self.shape)
 
     @property
     def threshold(self) -> np.ndarray:
@@ -62,4 +63,4 @@ class QbloxMeasurementResult(MeasurementResult):
         Returns:
             np.ndarray: The thresholded data.
         """
-        return np.array(self.raw_measurement_data["bins"]["threshold"]).reshape(*self.shape)
+        return np.array(self.raw_measurement_data["bins"]["threshold"]) if self.shape is None else np.array(self.raw_measurement_data["bins"]["threshold"]).reshape(*self.shape)

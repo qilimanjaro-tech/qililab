@@ -26,7 +26,7 @@ class MeasurementResult(ABC):
 
     name: ResultName
 
-    def __init__(self, bus: str, shape=(-1,)):
+    def __init__(self, bus: str, shape=None):
         self.bus: str = bus
         self.shape = shape
 

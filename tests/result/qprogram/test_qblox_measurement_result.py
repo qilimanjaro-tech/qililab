@@ -37,6 +37,7 @@ class TestsQbloxQProgramMeasurementResult:
         path0 = raw_measurement_data["bins"]["integration"]["path0"]
         path1 = raw_measurement_data["bins"]["integration"]["path1"]
         expected_array = np.array([path0, path1])
+        print(f"expected_array shape {expected_array.shape}")
         assert np.allclose(qblox_measurement_result.array, expected_array)
 
     def test_serialization_deserialization(self, qblox_measurement_result: QbloxMeasurementResult):
