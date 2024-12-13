@@ -137,6 +137,7 @@ class QuantumMachinesCluster(Instrument):
                             input["port"]: {
                                 "offset": input["offset"] if "offset" in input else 0.0,
                                 "gain_db": input["gain"] if "gain" in input else 0.0,
+                                "shareable": input["shareable"] if "shareable" in input else False,
                             }
                             for input in controller.get("analog_inputs", [])
                         },
@@ -178,7 +179,7 @@ class QuantumMachinesCluster(Instrument):
                                             if "filter" in output
                                             else {"feedforward": [], "feedback": []}
                                         ),
-                                        "shareable": output["shareable"] if "shareable" in output else False,
+                                        "shareable": fem["shareable"] if "shareable" in fem else False,
                                     }
                                     for output in fem.get("analog_outputs", [])
                                 },
@@ -187,6 +188,7 @@ class QuantumMachinesCluster(Instrument):
                                         "offset": input["offset"] if "offset" in input else 0.0,
                                         "gain_db": input["gain"] if "gain" in input else 0.0,
                                         "sampling_rate": input["sampling_rate"] if "sampling_rate" in input else 1e9,
+                                        "shareable": fem["shareable"] if "shareable" in fem else False,
                                     }
                                     for input in fem.get("analog_inputs", [])
                                 },
