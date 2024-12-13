@@ -62,4 +62,4 @@ class QbloxMeasurementResult(MeasurementResult):
         Returns:
             np.ndarray: The thresholded data.
         """
-        return np.array(self.raw_measurement_data["bins"]["threshold"])
+        return np.array(self.raw_measurement_data["bins"]["threshold"]).reshape(*self.shape)
