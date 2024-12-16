@@ -617,10 +617,10 @@ class QuantumMachinesCompiler:
     @staticmethod
     def __waveform_to_config(waveform: Waveform):
         if isinstance(waveform, Square):
-            amplitude = waveform.amplitude / QuantumMachinesCompiler.VOLTAGE_COEFF
+            amplitude = waveform.amplitude
             return {"type": "constant", "sample": amplitude}
 
-        envelope = waveform.envelope() / QuantumMachinesCompiler.VOLTAGE_COEFF
+        envelope = waveform.envelope()
         return {"type": "arbitrary", "samples": envelope.tolist()}
 
     @staticmethod
