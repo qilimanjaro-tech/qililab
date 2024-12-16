@@ -117,7 +117,6 @@ class QuantumMachinesCompiler:
 
     FREQUENCY_COEFF = 1
     PHASE_COEFF = 2 * np.pi
-    VOLTAGE_COEFF = 2
     WAIT_COEFF = 4
     MINIMUM_TIME = 4
 
@@ -395,7 +394,7 @@ class QuantumMachinesCompiler:
         duration = waveform_I.get_duration()
 
         gain = (
-            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore[arg-type]
+            qua.amp(self._buses[element.bus].current_gain)  # type: ignore[arg-type]
             if self._buses[element.bus].current_gain is not None
             else None
         )
@@ -419,7 +418,7 @@ class QuantumMachinesCompiler:
         waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q)
 
         gain = (
-            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore[arg-type]
+            qua.amp(self._buses[element.bus].current_gain)  # type: ignore[arg-type]
             if self._buses[element.bus].current_gain is not None
             else None
         )
