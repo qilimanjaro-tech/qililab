@@ -16,11 +16,6 @@ from qililab.digital.native_gates import Drag, Wait
 from qililab.pulse import PulseSchedule
 from qililab.settings.digital import DigitalCompilationSettings
 
-from qililab.digital import CircuitTranspiler
-from qililab.digital.native_gates import Drag, Wait
-from qililab.pulse import PulseSchedule
-from qililab.settings.digital import DigitalCompilationSettings
-
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
 # transpilable gates
@@ -485,7 +480,7 @@ class TestCircuitTranspiler:
         """
         # FIXME: do these equality tests for the unitary matrix resulting from the circuit rather
         # than from the state vectors for a more full-proof test
-        transpiler = CircuitTranspiler(digital_compilation_settings=MagicMock())
+        transpiler = CircuitTranspiler(settings=MagicMock())
 
         # Test with optimizer=False
         rng = np.random.default_rng(seed=42)  # init random number generator
@@ -533,7 +528,7 @@ class TestCircuitTranspiler:
 
     def test_optimize_transpilation(self, digital_settings):
         """Test that optimize_transpilation behaves as expected"""
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
 
         # gate list to optimize
         test_gates = [
@@ -573,7 +568,7 @@ class TestCircuitTranspiler:
 
     def test_circuit_to_pulses(self, digital_settings):
         """Test translate method"""
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         # test circuit
         circuit = Circuit(5)
         circuit.add(X(0))
@@ -613,12 +608,12 @@ class TestCircuitTranspiler:
         """Test that the angle is normalized properly for drag pulses"""
         c = Circuit(1)
         c.add(Drag(0, 2 * np.pi + 0.1, 0))
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[c])
         assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, 0.1 * 0.8 / np.pi)
         c = Circuit(1)
         c.add(Drag(0, np.pi + 0.1, 0))
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[c])
         assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, abs(-0.7745352091052967))
 
@@ -626,7 +621,7 @@ class TestCircuitTranspiler:
         """Test that transpiling negative amplitudes results in an added PI phase."""
         c = Circuit(1)
         c.add(Drag(0, -np.pi / 2, 0))
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         pulse_schedule = transpiler.circuit_to_pulses(circuits=[c])[0]
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.amplitude, (np.pi / 2) * 0.8 / np.pi)
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.phase, 0 + np.pi)
@@ -641,7 +636,7 @@ class TestCircuitTranspiler:
         )
         circuit = Circuit(1)
         circuit.add(Drag(0, 1, 1))
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         with pytest.raises(ValueError, match=error_string):
             transpiler.circuit_to_pulses(circuits=[circuit])
 
@@ -654,7 +649,7 @@ class TestCircuitTranspiler:
     @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.circuit_to_pulses")
     def test_transpile_circuits(self, mock_to_pulses, mock_to_native, mock_route, mock_opt_trans, mock_opt_circuit, optimize, digital_settings):
         """Test transpile_circuits method"""
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         placer = MagicMock()
         router = MagicMock()
         routing_iterations = 7
@@ -702,7 +697,7 @@ class TestCircuitTranspiler:
     @patch("qililab.digital.circuit_router.CircuitRouter.route")
     def test_route_circuit(self, mock_route, digital_settings):
         """Test route_circuit method"""
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         routing_iterations = 7
 
         # Mock the return values
@@ -722,7 +717,7 @@ class TestCircuitTranspiler:
     @patch("qililab.digital.circuit_transpiler.CircuitRouter")
     def test_that_route_circuit_instantiates_Router(self, mock_router, mock_graph, digital_settings):
         """Test route_circuit method"""
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         routing_iterations = 7
 
         # Mock the return values

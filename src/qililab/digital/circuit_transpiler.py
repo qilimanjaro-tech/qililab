@@ -14,6 +14,8 @@
 
 """Circuit Transpiler class"""
 
+from typing import Any
+
 import networkx as nx
 from qibo.models import Circuit
 from qibo.transpiler.placer import Placer
@@ -37,11 +39,17 @@ class CircuitTranspiler:
     - ``transpile_circuit``: runs both of the methods above sequentially
 
     Args:
-        platform (Platform): platform object containing the runcard and the chip's physical qubits.
+        settings (DigitalCompilationSettings | Platform): Object containing the digital compilations settings and the info on chip's physical qubits.
     """
 
-    def __init__(self, digital_compilation_settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
-        self.digital_compilation_settings = digital_compilation_settings
+    def __init__(self, settings: DigitalCompilationSettings | Any):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+        if isinstance(settings, DigitalCompilationSettings):
+            self.digital_compilation_settings = settings
+        else:
+            try:
+                self.digital_compilation_settings = settings.digital_compilation_settings
+            except AttributeError as e:
+                raise ValueError("`setting`s must be a `DigitalCompilationSettings` or `Platform`.") from e
 
     def transpile_circuits(
         self,
@@ -96,13 +104,13 @@ class CircuitTranspiler:
         .. code-block:: python
 
             # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
-            routed_circuit, final_layouts = transpiler.transpile_circuits([c])
+            transpiled_circuits, final_layouts = transpiler.transpile_circuits([c])
 
-            # Or another case, not doing optimization for some reason, and with Non-Default placer and router:
-            routed_circuit, final_layout = transpiler.transpile_circuits([c], placer=Trivial, router=Sabre, optimize=False)
+            # Or another case, not doing optimization for some reason, and with Non-Default placer:
+            transpiled_circuits, final_layout = transpiler.transpile_circuits([c], placer=Trivial, optimize=False)
 
             # Or also specifying the `router` with kwargs:
-            routed_circuit, final_layouts = transpiler.transpile_circuits([c], router=(Sabre, {"lookahead": 2}))
+            transpiled_circuits, final_layouts = transpiler.transpile_circuits([c], router=(Sabre, {"lookahead": 2}))
 
         Args:
             circuits (list[Circuit]): list of qibo circuits.
