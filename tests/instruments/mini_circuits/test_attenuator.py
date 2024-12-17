@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from qililab.instruments.mini_circuits.attenuator import Attenuator
 from qililab.instruments.instrument import ParameterNotFound
-from qililab.typings import Parameter, ParameterValue, ChannelID
+from qililab.typings import Parameter
 from qililab.typings.instruments.mini_circuits import MiniCircuitsDriver
 
 @pytest.fixture
