@@ -1,11 +1,7 @@
 """This file tests the the ``qblox_d5a`` class"""
-
-from unittest.mock import MagicMock
-
 import pytest
 
 from qililab.instruments.qblox import QbloxS4g
-from qililab.typings.enums import Parameter
 
 
 @pytest.fixture(name="s4g")
