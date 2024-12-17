@@ -54,7 +54,10 @@ class QbloxMeasurementResult(MeasurementResult):
         path0 = self.raw_measurement_data["bins"]["integration"]["path0"]
         path1 = self.raw_measurement_data["bins"]["integration"]["path1"]
 
-        return np.array([path0, path1]) if self.shape is None else np.array([path0, path1]).reshape(*self.shape)
+        array = np.array([path0, path1])
+        if self.shape:
+               array = array.reshape(2, *self.shape)
+        return array
 
     @property
     def threshold(self) -> np.ndarray:
