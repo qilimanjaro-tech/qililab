@@ -56,7 +56,7 @@ class QbloxMeasurementResult(MeasurementResult):
 
         array = np.array([path0, path1])
         if self.shape:
-               array = array.reshape(2, *self.shape)
+            array = array.reshape(2, *self.shape)
         return array
 
     @property
@@ -66,4 +66,7 @@ class QbloxMeasurementResult(MeasurementResult):
         Returns:
             np.ndarray: The thresholded data.
         """
-        return np.array(self.raw_measurement_data["bins"]["threshold"]) if self.shape is None else np.array(self.raw_measurement_data["bins"]["threshold"]).reshape(*self.shape)
+        array = np.array(self.raw_measurement_data["bins"]["threshold"])
+        if self.shape:
+            array = array.reshape(*self.shape)
+        return array
