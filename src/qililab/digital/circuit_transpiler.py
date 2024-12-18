@@ -44,11 +44,13 @@ class CircuitTranspiler:
     - ``transpile_circuit``: runs both of the methods above sequentially
 
     Args:
-        settings (DigitalCompilationSettings): Object containing the digital compilations settings and the info on chip's physical qubits.
+        settings (DigitalCompilationSettings): Object containing the Digital Compilations Settings and the info on chip's physical qubits.
+            It can be obtained from the `digital_compilation_settings` attribute of a `Platform` object.
     """
 
     def __init__(self, settings: DigitalCompilationSettings):
         self.settings: DigitalCompilationSettings = settings
+        """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
     def transpile_circuits(
         self,

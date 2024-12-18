@@ -33,10 +33,16 @@ from .native_gates import Drag, Wait
 
 
 class CircuitToPulses:
-    """Translates circuits into pulse sequences."""
+    """Translates circuits into pulse sequences.
+
+    Args:
+        settings (DigitalCompilationSettings): Object containing the Digital Compilations Settings and the info on chip's physical qubits.
+            It can be obtained from the `digital_compilation_settings` attribute of a `Platform` object.
+    """
 
     def __init__(self, settings: DigitalCompilationSettings):
-        self.settings = settings
+        self.settings: DigitalCompilationSettings = settings
+        """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
     def run(self, circuit: Circuit) -> PulseSchedule:
         """Translates a circuit into a  pulse sequences.
