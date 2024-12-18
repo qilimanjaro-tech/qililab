@@ -139,8 +139,8 @@ class CircuitTranspiler:
             final_layouts = tuple({f"q{i}": i for i in range(circuit.nqubits)} for circuit in circuits)
 
         # Optimze qibo gates, cancellating redundant gates, stage:
-        if optimize:
-            routed_circuits = tuple(self.optimize_circuit(circuit) for circuit in routed_circuits)
+        # if optimize:
+        #     routed_circuits = tuple(self.optimize_circuit(circuit) for circuit in routed_circuits)
 
         # Unroll to Natives stage:
         native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
