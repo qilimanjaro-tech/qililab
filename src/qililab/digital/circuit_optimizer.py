@@ -27,7 +27,7 @@ from .native_gates import Drag
 class CircuitOptimizer:
     """Optimizes a circuit, cancelling redundant gates."""
 
-    def __init__(self, settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+    def __init__(self, settings: DigitalCompilationSettings):
         self.settings = settings
 
     @classmethod

@@ -14,6 +14,8 @@
 
 """Circuit Transpiler class"""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Union
 
 import networkx as nx
@@ -47,7 +49,7 @@ class CircuitTranspiler:
             It can be both directly the `DigitalCompilationSettings` object or a `Platform` object with the settings defined in it.
     """
 
-    def __init__(self, settings: Union[DigitalCompilationSettings, "Platform"]):
+    def __init__(self, settings: Union[DigitalCompilationSettings, Platform]):
         if isinstance(settings, DigitalCompilationSettings):
             self.settings: DigitalCompilationSettings = settings
         elif hasattr(settings, "digital_compilation_settings") and settings.digital_compilation_settings is not None:
@@ -58,8 +60,8 @@ class CircuitTranspiler:
     def transpile_circuits(
         self,
         circuits: list[Circuit],
-        placer: Union["Placer", type["Placer"], tuple[type["Placer"], dict], None] = None,
-        router: Union["Router", type["Router"], tuple[type["Router"], dict], None] = None,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
         optimize: bool = True,
     ) -> tuple[list["PulseSchedule"], list[dict]]:
@@ -154,8 +156,8 @@ class CircuitTranspiler:
     def route_circuit(
         self,
         circuit: Circuit,
-        placer: Union["Placer", type["Placer"], tuple[type["Placer"], dict], None] = None,
-        router: Union["Router", type["Router"], tuple[type["Router"], dict], None] = None,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         coupling_map: list[tuple[int, int]] | None = None,
         iterations: int = 10,
     ) -> tuple[Circuit, dict[str, int]]:
@@ -284,7 +286,7 @@ class CircuitTranspiler:
         output_circuit.add(optimizer.optimize_transpilation(circuit))
         return output_circuit
 
-    def circuit_to_pulses(self, circuits: list[Circuit]) -> list["PulseSchedule"]:
+    def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence).
 
         For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit

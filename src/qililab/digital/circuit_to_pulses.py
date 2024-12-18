@@ -35,7 +35,7 @@ from .native_gates import Drag, Wait
 class CircuitToPulses:
     """Translates circuits into pulse sequences."""
 
-    def __init__(self, settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+    def __init__(self, settings: DigitalCompilationSettings):
         self.settings = settings
 
     def run(self, circuit: Circuit) -> PulseSchedule:
