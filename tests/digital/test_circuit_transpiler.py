@@ -673,8 +673,9 @@ class TestCircuitTranspiler:
         mock_to_pulses.return_value = [mock_schedule]
 
         circuit = random_circuit(5, 10, np.random.default_rng())
+        routing = True
 
-        list_schedules, list_layouts = transpiler.transpile_circuits([circuit]*list_size, placer, router, routing_iterations, optimize=optimize)
+        list_schedules, list_layouts = transpiler.transpile_circuits([circuit]*list_size, routing, placer, router, routing_iterations, optimize=optimize)
 
         # Asserts:
         # The next two functions get called for individual circuits:
@@ -693,6 +694,12 @@ class TestCircuitTranspiler:
         else:
             mock_opt_circuit.assert_not_called()
             mock_opt_trans.assert_not_called()
+
+        # If routing skipped:
+        routing = False
+        mock_route.reset_mock()
+        list_schedules, list_layouts = transpiler.transpile_circuits([circuit]*list_size, routing, placer, router, routing_iterations, optimize=optimize)
+        mock_route.assert_not_called()
 
     @patch("qililab.digital.circuit_router.CircuitRouter.route")
     def test_route_circuit(self, mock_route, digital_settings):
