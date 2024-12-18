@@ -1,6 +1,5 @@
 """This file tests the the ``qm_manager`` class"""
 
-import copy
 import re
 from unittest.mock import MagicMock, call, patch
 
@@ -8,12 +7,9 @@ import numpy as np
 import pytest
 from qm import Program
 from qm.qua import play, program
-from tests.data import SauronQuantumMachines
-from tests.test_utils import build_platform
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
-from qililab.platform import Platform
 from qililab.settings import Settings
 from qililab.typings import Parameter
 
