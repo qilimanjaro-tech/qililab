@@ -35,8 +35,8 @@ from .native_gates import Drag, Wait
 class CircuitToPulses:
     """Translates circuits into pulse sequences."""
 
-    def __init__(self, digital_compilation_settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
-        self.digital_compilation_settings = digital_compilation_settings
+    def __init__(self, settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+        self.settings = settings
 
     def run(self, circuit: Circuit) -> PulseSchedule:
         """Translates a circuit into a  pulse sequences.
@@ -103,14 +103,14 @@ class CircuitToPulses:
                 if isinstance(gate, gates.M):
                     gate = gates.M(*gate.qubits[1:])
                 # add event
-                delay = self.digital_compilation_settings.buses[gate_event.bus].delay
+                delay = self.settings.buses[gate_event.bus].delay
                 pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=gate_event.bus, delay=delay)  # type: ignore
 
-        for bus_alias in self.digital_compilation_settings.buses:
+        for bus_alias in self.settings.buses:
             # If we find a flux port, create empty schedule for that port.
             # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
             # add an empty schedule its offsets won't be activated and the results will be misleading.
-            if self.digital_compilation_settings.buses[bus_alias].line == Line.FLUX:
+            if self.settings.buses[bus_alias].line == Line.FLUX:
                 pulse_schedule.create_schedule(bus_alias=bus_alias)
 
         return pulse_schedule
@@ -126,7 +126,7 @@ class CircuitToPulses:
             list[GateEventSettings]: schedule list with each of the pulses settings
         """
 
-        gate_schedule = self.digital_compilation_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
+        gate_schedule = self.settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
 
         if not isinstance(gate, Drag):
             return gate_schedule
@@ -192,8 +192,8 @@ class CircuitToPulses:
             [
                 qubit
                 for schedule_element in schedule
-                for qubit in self.digital_compilation_settings.buses[schedule_element.bus].qubits
-                if schedule_element.bus in self.digital_compilation_settings.buses
+                for qubit in self.settings.buses[schedule_element.bus].qubits
+                if schedule_element.bus in self.settings.buses
             ]
             if schedule is not None
             else []
@@ -223,7 +223,7 @@ class CircuitToPulses:
         pulse_shape = Factory.get(pulse_shape_copy.pop(RUNCARD.NAME))(**pulse_shape_copy)
 
         # handle measurement gates and target qubits for control gates which might have multi-qubit schedules
-        bus = self.digital_compilation_settings.buses[gate_event.bus]
+        bus = self.settings.buses[gate_event.bus]
         qubit = (
             gate.qubits[0]
             if isinstance(gate, gates.M)
@@ -240,7 +240,7 @@ class CircuitToPulses:
                 frequency=0,
                 pulse_shape=pulse_shape,
             ),
-            start_time=time + gate_event.wait_time + self.digital_compilation_settings.delay_before_readout,
+            start_time=time + gate_event.wait_time + self.settings.delay_before_readout,
             pulse_distortions=bus.distortions,
             qubit=qubit,
         )
@@ -256,9 +256,9 @@ class CircuitToPulses:
         if qubit not in time:
             time[qubit] = 0
         old_time = time[qubit]
-        residue = (gate_time) % self.digital_compilation_settings.minimum_clock_time
+        residue = (gate_time) % self.settings.minimum_clock_time
         if residue != 0:
-            gate_time += self.digital_compilation_settings.minimum_clock_time - residue
+            gate_time += self.settings.minimum_clock_time - residue
         time[qubit] += gate_time
         return old_time
 

@@ -44,10 +44,10 @@ class CircuitTranspiler:
 
     def __init__(self, settings: DigitalCompilationSettings | Any):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
         if isinstance(settings, DigitalCompilationSettings):
-            self.digital_compilation_settings = settings
+            self.settings = settings
         else:
             try:
-                self.digital_compilation_settings = settings.digital_compilation_settings
+                self.settings = settings.digital_compilation_settings
             except AttributeError as e:
                 raise ValueError("`setting`s must be a `DigitalCompilationSettings` or `Platform`.") from e
 
@@ -214,7 +214,7 @@ class CircuitTranspiler:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
         # Get the chip's connectivity
-        topology = nx.Graph(coupling_map if coupling_map is not None else self.digital_compilation_settings.topology)
+        topology = nx.Graph(coupling_map if coupling_map is not None else self.settings.topology)
 
         circuit_router = CircuitRouter(topology, placer, router)
 
@@ -274,7 +274,7 @@ class CircuitTranspiler:
         Returns:
             Circuit: Circuit with optimized transpiled gates.
         """
-        optimizer = CircuitOptimizer(self.digital_compilation_settings)
+        optimizer = CircuitOptimizer(self.settings)
 
         output_circuit = Circuit(circuit.nqubits)
         output_circuit.add(optimizer.optimize_transpilation(circuit))
@@ -304,5 +304,5 @@ class CircuitTranspiler:
         Returns:
             list[PulseSequences]: List of :class:`PulseSequences` classes.
         """
-        circuit_to_pulses = CircuitToPulses(self.digital_compilation_settings)
+        circuit_to_pulses = CircuitToPulses(self.settings)
         return [circuit_to_pulses.run(circuit) for circuit in circuits]

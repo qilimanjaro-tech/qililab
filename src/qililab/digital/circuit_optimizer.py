@@ -27,8 +27,8 @@ from .native_gates import Drag
 class CircuitOptimizer:
     """Optimizes a circuit, cancelling redundant gates."""
 
-    def __init__(self, digital_compilation_settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
-        self.digital_compilation_settings = digital_compilation_settings
+    def __init__(self, settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+        self.settings = settings
 
     @classmethod
     def run_gate_cancellations(cls, circuit: Circuit) -> Circuit:
@@ -109,9 +109,7 @@ class CircuitOptimizer:
                 shift[gate.qubits[0]] += gate.parameters[0]
             # add CZ phase correction
             elif isinstance(gate, gates.CZ):
-                gate_settings = self.digital_compilation_settings.get_gate(
-                    name=gate.__class__.__name__, qubits=gate.qubits
-                )
+                gate_settings = self.settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
                 control_qubit, target_qubit = gate.qubits
                 corrections = next(
                     (
