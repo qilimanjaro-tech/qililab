@@ -12,6 +12,9 @@
 
 ### Bug fixes
 
+- Fixed an issue where having nested loops would output wrong shape in QbloxMeasurementResult.
+  [#853](https://github.com/qilimanjaro-tech/qililab/pull/853)
+
 - Fixed an issue where appending a configuration to an open QM instance left it hanging. The QM now properly closes before reopening with the updated configuration.
   [#851](https://github.com/qilimanjaro-tech/qililab/pull/851)
 

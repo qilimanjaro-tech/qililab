@@ -175,7 +175,7 @@ class QbloxQRM(QbloxModule):
             list[QbloxQProgramMeasurementResult]: Acquired Qblox results in chronological order.
         """
         results = []
-        for acquisition, acquistion_data in acquisitions.items():
+        for acquisition, acquisition_data in acquisitions.items():
             sequencer = next(
                 (sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None
             )
@@ -184,13 +184,15 @@ class QbloxQRM(QbloxModule):
                     sequencer=sequencer.identifier,
                     timeout=cast(QbloxADCSequencer, sequencer).acquisition_timeout,
                 )
-                if acquistion_data.save_adc:
+                if acquisition_data.save_adc:
                     self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
                 raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
                     "acquisition"
                 ]
                 measurement_result = QbloxMeasurementResult(
-                    bus=acquisitions[acquisition].bus, raw_measurement_data=raw_measurement_data
+                    bus=acquisitions[acquisition].bus,
+                    raw_measurement_data=raw_measurement_data,
+                    shape=acquisition_data.shape
                 )
                 results.append(measurement_result)
 
