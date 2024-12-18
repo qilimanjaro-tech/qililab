@@ -724,7 +724,7 @@ class TestCircuitTranspiler:
         mock_circuit = Circuit(5)
         mock_circuit.add(X(0))
 
-        graph_mocking = nx.Graph(transpiler.digital_compilation_settings.topology)
+        graph_mocking = nx.Graph(transpiler.settings.topology)
         mock_graph.return_value = graph_mocking
 
         # Execute the function
