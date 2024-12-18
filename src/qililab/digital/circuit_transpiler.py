@@ -46,7 +46,7 @@ class CircuitTranspiler:
 
     Args:
         settings (DigitalCompilationSettings | Platform): Object containing the digital compilations settings and the info on chip's physical qubits.
-            It can be both directly the `DigitalCompilationSettings` object or a `Platform` object with the settings defined in it.
+            It can be both directly the `DigitalCompilationSettings` object or a `Platform` object that contains the settings defined in it.
     """
 
     def __init__(self, settings: Union[DigitalCompilationSettings, Platform]):
@@ -64,7 +64,7 @@ class CircuitTranspiler:
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
         optimize: bool = True,
-    ) -> tuple[list["PulseSchedule"], list[dict]]:
+    ) -> tuple[list[PulseSchedule], list[dict]]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
         The process involves the following steps:
@@ -103,7 +103,7 @@ class CircuitTranspiler:
             platform = build_platform(runcard="<path_to_runcard>")
 
             # Create transpiler:
-            transpiler = CircuitTranspiler(platform)  # Or CircuitTranspiler(platform.digital_compilation_settings)
+            transpiler = CircuitTranspiler(platform)
 
         Now we can transpile like, in the following examples:
 
