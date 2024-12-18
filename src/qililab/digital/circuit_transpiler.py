@@ -14,21 +14,25 @@
 
 """Circuit Transpiler class"""
 
-from typing import Any
+from typing import TYPE_CHECKING, Union
 
 import networkx as nx
 from qibo.models import Circuit
-from qibo.transpiler.placer import Placer
-from qibo.transpiler.router import Router
 
 from qililab.config import logger
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.circuit_router import CircuitRouter
 from qililab.digital.circuit_to_pulses import CircuitToPulses
-from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 from .gate_decompositions import translate_gates
+
+if TYPE_CHECKING:
+    from qibo.transpiler.placer import Placer
+    from qibo.transpiler.router import Router
+
+    from qililab.platform.platform import Platform
+    from qililab.pulse.pulse_schedule import PulseSchedule
 
 
 class CircuitTranspiler:
@@ -42,7 +46,7 @@ class CircuitTranspiler:
         settings (DigitalCompilationSettings | Platform): Object containing the digital compilations settings and the info on chip's physical qubits.
     """
 
-    def __init__(self, settings: DigitalCompilationSettings | Any):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
+    def __init__(self, settings: Union[DigitalCompilationSettings, "Platform"]):
         if isinstance(settings, DigitalCompilationSettings):
             self.settings = settings
         else:
@@ -54,11 +58,11 @@ class CircuitTranspiler:
     def transpile_circuits(
         self,
         circuits: list[Circuit],
-        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
-        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        placer: Union["Placer", type["Placer"], tuple[type["Placer"], dict], None] = None,
+        router: Union["Router", type["Router"], tuple[type["Router"], dict], None] = None,
         routing_iterations: int = 10,
         optimize: bool = True,
-    ) -> tuple[list[PulseSchedule], list[dict]]:
+    ) -> tuple[list["PulseSchedule"], list[dict]]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
         The process involves the following steps:
@@ -150,8 +154,8 @@ class CircuitTranspiler:
     def route_circuit(
         self,
         circuit: Circuit,
-        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
-        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        placer: Union["Placer", type["Placer"], tuple[type["Placer"], dict], None] = None,
+        router: Union["Router", type["Router"], tuple[type["Router"], dict], None] = None,
         coupling_map: list[tuple[int, int]] | None = None,
         iterations: int = 10,
     ) -> tuple[Circuit, dict[str, int]]:
@@ -280,7 +284,7 @@ class CircuitTranspiler:
         output_circuit.add(optimizer.optimize_transpilation(circuit))
         return output_circuit
 
-    def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:
+    def circuit_to_pulses(self, circuits: list[Circuit]) -> list["PulseSchedule"]:
         """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence).
 
         For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
