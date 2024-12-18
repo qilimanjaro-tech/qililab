@@ -136,7 +136,7 @@ class CircuitTranspiler:
             logger.info(f"Circuits final layouts: {final_layouts}")
         else:
             routed_circuits = tuple(circuits)
-            final_layouts = tuple({i: i for i in range(circuit.nqubits)} for circuit in circuits)
+            final_layouts = tuple({f"q{i}": i for i in range(circuit.nqubits)} for circuit in circuits)
 
         # Optimze qibo gates, cancellating redundant gates, stage:
         if optimize:
