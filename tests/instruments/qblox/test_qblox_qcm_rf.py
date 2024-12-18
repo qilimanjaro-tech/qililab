@@ -1,14 +1,9 @@
 """Tests for the Qblox Module class."""
+from unittest.mock import MagicMock
 
-import copy
-import re
-from unittest.mock import MagicMock, patch, create_autospec
-
-import numpy as np
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
-from qililab.instrument_controllers.qblox.qblox_cluster_controller import QbloxClusterController
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQCMRF
 from qililab.platform import Platform
