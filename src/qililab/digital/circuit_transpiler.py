@@ -48,12 +48,11 @@ class CircuitTranspiler:
 
     def __init__(self, settings: Union[DigitalCompilationSettings, "Platform"]):
         if isinstance(settings, DigitalCompilationSettings):
-            self.settings = settings
+            self.settings: DigitalCompilationSettings = settings
+        elif hasattr(settings, "digital_compilation_settings") and settings.digital_compilation_settings is not None:
+            self.settings = settings.digital_compilation_settings
         else:
-            try:
-                self.settings = settings.digital_compilation_settings
-            except AttributeError as e:
-                raise ValueError("`setting`s must be a `DigitalCompilationSettings` or `Platform`.") from e
+            raise ValueError("`setting`s must be a `DigitalCompilationSettings` or a `Platform` with them defined.")
 
     def transpile_circuits(
         self,
