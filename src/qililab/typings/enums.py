@@ -198,6 +198,18 @@ class VNAScatteringParameters(str, Enum):
     S21 = "S21"
 
 
+class VNATriggerModes(str, Enum):
+    """Vector Network Analyzers Trigger Modes
+    Args:
+        enum (str): Available types of trigger modes:
+        * INT
+        * BUS
+    """
+
+    INT = "INT"
+    BUS = "BUS"
+
+
 class VNASweepModes(str, Enum):
     """Vector Network Analyzers Sweep Modes
     Args:
