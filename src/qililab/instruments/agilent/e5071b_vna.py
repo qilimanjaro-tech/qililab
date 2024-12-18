@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Agilent Vector Network Analyzer E5071B class."""
+
 from dataclasses import dataclass
 
 import numpy as np
