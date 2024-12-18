@@ -1,13 +1,8 @@
 """Data to use alongside the test suite."""
 
-import copy
 from typing import Any
 
-import numpy as np
-from qibo.gates import Align, I, M, X, Y
-from qibo.models.circuit import Circuit
-
-from qililab.constants import CONNECTION, EXPERIMENT, INSTRUMENTCONTROLLER, PLATFORM, RUNCARD, AWGTypes
+from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, PLATFORM, RUNCARD, AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
     ConnectionName,
