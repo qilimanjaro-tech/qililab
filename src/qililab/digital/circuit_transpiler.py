@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import networkx as nx
 from qibo.models import Circuit
@@ -25,7 +25,6 @@ from qililab.config import logger
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.circuit_router import CircuitRouter
 from qililab.digital.circuit_to_pulses import CircuitToPulses
-from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 from .gate_decompositions import translate_gates
 
@@ -33,8 +32,8 @@ if TYPE_CHECKING:
     from qibo.transpiler.placer import Placer
     from qibo.transpiler.router import Router
 
-    from qililab.platform.platform import Platform
     from qililab.pulse.pulse_schedule import PulseSchedule
+    from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 
 class CircuitTranspiler:
@@ -45,17 +44,11 @@ class CircuitTranspiler:
     - ``transpile_circuit``: runs both of the methods above sequentially
 
     Args:
-        settings (DigitalCompilationSettings | Platform): Object containing the digital compilations settings and the info on chip's physical qubits.
-            It can be both directly the `DigitalCompilationSettings` object or a `Platform` object that contains the settings defined in it.
+        settings (DigitalCompilationSettings): Object containing the digital compilations settings and the info on chip's physical qubits.
     """
 
-    def __init__(self, settings: Union[DigitalCompilationSettings, Platform]):
-        if isinstance(settings, DigitalCompilationSettings):
-            self.settings: DigitalCompilationSettings = settings
-        elif hasattr(settings, "digital_compilation_settings") and settings.digital_compilation_settings is not None:
-            self.settings = settings.digital_compilation_settings
-        else:
-            raise ValueError("`setting`s must be a `DigitalCompilationSettings` or a `Platform` with them defined.")
+    def __init__(self, settings: DigitalCompilationSettings):
+        self.settings: DigitalCompilationSettings = settings
 
     def transpile_circuits(
         self,
@@ -103,7 +96,7 @@ class CircuitTranspiler:
             platform = build_platform(runcard="<path_to_runcard>")
 
             # Create transpiler:
-            transpiler = CircuitTranspiler(platform)
+            transpiler = CircuitTranspiler(platform.digital_compilation_settings)
 
         Now we can transpile like, in the following examples:
 
