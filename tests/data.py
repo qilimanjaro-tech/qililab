@@ -847,6 +847,114 @@ class SauronQDevil:
         RUNCARD.BUSES: buses,
     }
 
+class SauronVNA:
+    """Test data of the sauron platform."""
+
+    name = "sauron_vna"
+
+    gates_settings: dict[str, Any] = {
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BEFORE_READOUT: 40,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "gates": {},
+        "operations": [],
+    }
+
+    keysight_e5080b_controller: dict[str, Any] = {
+        "name": InstrumentControllerName.KEYSIGHT_E5080B,
+        "alias": InstrumentControllerName.KEYSIGHT_E5080B.value,
+        Parameter.TIMEOUT.value: 10000,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.254",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": InstrumentName.KEYSIGHT_E5080B.value,
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    keysight_e5080b: dict[str, Any] = {
+        "name": InstrumentName.KEYSIGHT_E5080B,
+        "alias": InstrumentName.KEYSIGHT_E5080B.value,
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.POWER.value: -60.0,
+    }
+
+    agilent_e5071b_controller: dict[str, Any] = {
+        "name": InstrumentControllerName.AGILENT_E5071B,
+        "alias": InstrumentControllerName.AGILENT_E5071B.value,
+        Parameter.TIMEOUT.value: 10000,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.254",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": InstrumentName.AGILENT_E5071B.value,
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    agilent_e5071b: dict[str, Any] = {
+        "name": InstrumentName.AGILENT_E5071B,
+        "alias": InstrumentName.AGILENT_E5071B.value,
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.POWER.value: -60.0,
+    }
+
+    instruments: list[dict] = [keysight_e5080b, agilent_e5071b]
+    instrument_controllers: list[dict] = [keysight_e5080b_controller, agilent_e5071b_controller]
+
+    chip: dict[str, Any] = {
+        "nodes": [
+            {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
+            {"name": "port", "alias": "feedline_input", "line": "feedline_input", "nodes": ["resonator_q0"]},
+            {"name": "resonator", "alias": "resonator_q0", "frequency": 8.0726e09, "nodes": ["feedline_input", "q0"]},
+            {
+                "name": "qubit",
+                "alias": "q0",
+                "qubit_index": 0,
+                "frequency": 6.5328e09,
+                "nodes": ["drive_q0", "resonator_q0"],
+            },
+        ],
+    }
+
+    buses: list[dict[str, Any]] = [
+        {
+            "alias": "keysight_e5080b_readout_bus",
+            "system_control": {
+                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
+            },
+            "port": "drive_q0",
+            RUNCARD.DISTORTIONS: [],
+        },
+        {
+            "alias": "agilent_e5071b_readout_bus",
+            "system_control": {
+                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
+                RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
+            },
+            "port": "feedline_input",
+            RUNCARD.DISTORTIONS: [],
+        },
+    ]
+
+    runcard: dict[str, Any] = {
+        RUNCARD.NAME: name,
+        RUNCARD.GATES_SETTINGS: gates_settings,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+    }
 
 class SauronQuantumMachines:
     """Test data of the sauron with quantum machines platform."""

@@ -378,22 +378,18 @@ class VectorNetworkAnalyzer(Instrument, ABC):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
         return dict(super().to_dict().items())
 
-    @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Set initial instrument settings."""
         self.device.initial_setup()
 
-    @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument settings."""
         self.device.reset()
 
-    @Instrument.CheckDeviceInitialized
     def turn_on(self):
         """Start an instrument."""
         return self.send_command(command=":OUTP", arg="ON")
 
-    @Instrument.CheckDeviceInitialized
     def turn_off(self):
         """Stop an instrument."""
         return self.send_command(command=":OUTP", arg="OFF")
