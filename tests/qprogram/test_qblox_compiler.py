@@ -5,8 +5,7 @@ import pytest
 import qpysequence as QPy
 
 from qililab import Calibration, Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
-from qililab.qprogram.blocks import Block, ForLoop
-from qililab.qprogram.operations import Measure, Play
+from qililab.qprogram.blocks import ForLoop
 from tests.test_utils import is_q1asm_equal
 
 
@@ -367,7 +366,7 @@ class TestQBloxCompiler:
         assert len(output.sequences) == 1
         assert "drive_q0" in output.sequences
         assert isinstance(output.sequences["drive_q0"], QPy.Sequence)
-    
+
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
         drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
         readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))

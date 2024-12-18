@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from ruamel.yaml import YAML
 
 import qililab as ql
 from qililab.data_management import load_results, save_platform, save_results

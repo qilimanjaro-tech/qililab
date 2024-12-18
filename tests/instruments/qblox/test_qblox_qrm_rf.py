@@ -1,14 +1,9 @@
 """Tests for the Qblox Module class."""
+from unittest.mock import MagicMock
 
-import copy
-import re
-from unittest.mock import MagicMock, patch, create_autospec
-
-import numpy as np
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
-from qililab.instrument_controllers.qblox.qblox_cluster_controller import QbloxClusterController
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQRMRF
 from qililab.platform import Platform
@@ -189,7 +184,7 @@ class TestQbloxQRMRF:
         """Test setting parameters for QCM sequencers using parameterized values."""
         with pytest.raises(ParameterNotFound):
             qrm_rf.set_parameter(parameter, value, channel_id=0)
-  
+
         with pytest.raises(Exception):
             qrm_rf.set_parameter(Parameter.OUT0_ATT, value=MAX_ATTENUATION+10, channel_id=None)
 

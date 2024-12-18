@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from qililab import AnnealingProgram
-from qililab.settings import Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from tests.data import Galadriel
 
