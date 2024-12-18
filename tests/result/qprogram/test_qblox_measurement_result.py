@@ -99,7 +99,7 @@ class TestsQbloxQProgramMeasurementResult:
         """Test the thresholded data as an np.ndarray"""
         thresholded_data = qblox_measurement_result_nested_loops.threshold
         expected_thresholds = np.array(qblox_measurement_result_nested_loops.raw_measurement_data["bins"]["threshold"])
-        expected_thresholds = expected_thresholds.reshape((1, 6))
+        expected_thresholds = expected_thresholds.reshape((1, 2, 3))
 
         assert isinstance(thresholded_data, np.ndarray)
         assert np.all(thresholded_data == expected_thresholds)
