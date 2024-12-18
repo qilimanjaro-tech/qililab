@@ -68,5 +68,5 @@ class QbloxMeasurementResult(MeasurementResult):
         """
         array = np.array(self.raw_measurement_data["bins"]["threshold"])
         if self.shape:
-            array = array.reshape(*self.shape)
+            array = array.reshape(2, *self.shape)
         return array
