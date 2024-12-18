@@ -44,6 +44,7 @@ class CircuitTranspiler:
 
     Args:
         settings (DigitalCompilationSettings | Platform): Object containing the digital compilations settings and the info on chip's physical qubits.
+            It can be both directly the `DigitalCompilationSettings` object or a `Platform` object with the settings defined in it.
     """
 
     def __init__(self, settings: Union[DigitalCompilationSettings, "Platform"]):
@@ -100,7 +101,7 @@ class CircuitTranspiler:
             platform = build_platform(runcard="<path_to_runcard>")
 
             # Create transpiler:
-            transpiler = CircuitTranspiler(platform)
+            transpiler = CircuitTranspiler(platform)  # Or CircuitTranspiler(platform.digital_compilation_settings)
 
         Now we can transpile like, in the following examples:
 
