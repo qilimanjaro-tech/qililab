@@ -82,7 +82,7 @@ class VectorNetworkAnalyzer(Instrument, ABC):
         if isinstance(value, int):
             self._set_parameter_int(parameter=parameter, value=value)
             return
-        raise ParameterNotFound(f"Invalid Parameter: {parameter} with type {type(parameter)}")
+        raise ParameterNotFound(self, parameter)
 
     def _set_parameter_str(self, parameter: Parameter, value: str):
         """Set instrument settings parameter to the corresponding value
@@ -98,7 +98,7 @@ class VectorNetworkAnalyzer(Instrument, ABC):
             self.settings.trigger_mode = VNATriggerModes(value)
             return
 
-        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(self, parameter)
 
     def _set_parameter_bool(self, parameter: Parameter, value: bool):
         """Set instrument settings parameter to the corresponding value
@@ -111,7 +111,7 @@ class VectorNetworkAnalyzer(Instrument, ABC):
             self.averaging_enabled = value
             return
 
-        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(self, parameter)
 
     def _set_parameter_float(self, parameter: Parameter, value: float) -> None:
         """Set instrument settings parameter to the corresponding value
@@ -143,7 +143,7 @@ class VectorNetworkAnalyzer(Instrument, ABC):
             self.electrical_delay = value
             return
 
-        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(self, parameter)
 
     def _set_parameter_int(self, parameter: Parameter, value: int):
         """Set instrument settings parameter to the corresponding value
@@ -161,7 +161,7 @@ class VectorNetworkAnalyzer(Instrument, ABC):
             self.number_points = value
             return
 
-        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(self, parameter)
 
     @property
     def power(self):
