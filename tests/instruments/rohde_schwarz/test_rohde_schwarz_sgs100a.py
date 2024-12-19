@@ -1,15 +1,10 @@
 """Tests for the SGS100A class."""
-import copy
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
-from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import SGS100AController
 from qililab.instruments import SGS100A, ParameterNotFound
-from qililab.platform import Platform
 from qililab.typings.enums import Parameter
-from tests.data import Galadriel
-from tests.test_utils import build_platform
 
 @pytest.fixture(name="sdg100a")
 def fixture_sdg100a() -> SGS100A:
