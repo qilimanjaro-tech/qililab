@@ -415,7 +415,7 @@ class TestQuantumMachinesCompiler:
         play = statements[0].play
         assert play.qe.name == "drive"
         assert play.named_pulse.name in configuration["pulses"]
-        assert float(play.amp.v0.literal.value) == 0.5
+        assert float(play.amp.v0.literal.value) == 0.5 * 2
 
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QuantumMachinesCompiler()
