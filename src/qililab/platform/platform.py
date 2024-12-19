@@ -986,6 +986,7 @@ class Platform:
         repetition_duration: int,
         num_bins: int = 1,
         queue: Queue | None = None,
+        routing: bool = False,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
@@ -1017,6 +1018,7 @@ class Platform:
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
+            routing (bool, optional): whether to route the circuits. Defaults to False.
             placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
@@ -1035,7 +1037,7 @@ class Platform:
         """
         # Compile pulse schedule
         programs, final_layout = self.compile(
-            program, num_avg, repetition_duration, num_bins, placer, router, routing_iterations, optimize
+            program, num_avg, repetition_duration, num_bins, routing, placer, router, routing_iterations, optimize
         )
 
         # Upload pulse schedule
@@ -1128,6 +1130,7 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
+        routing: bool = False,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
@@ -1159,6 +1162,7 @@ class Platform:
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
+            routing (bool, optional): whether to route the circuits. Defaults to False.
             placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
@@ -1180,7 +1184,7 @@ class Platform:
             transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
 
             transpiled_circuits, final_layouts = transpiler.transpile_circuits(
-                [program], placer, router, routing_iterations, optimize
+                [program], routing, placer, router, routing_iterations, optimize
             )
             pulse_schedule, final_layout = transpiled_circuits[0], final_layouts[0]
 

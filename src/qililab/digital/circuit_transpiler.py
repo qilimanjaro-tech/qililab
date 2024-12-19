@@ -55,6 +55,7 @@ class CircuitTranspiler:
     def transpile_circuits(
         self,
         circuits: list[Circuit],
+        routing: bool = False,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
@@ -115,6 +116,7 @@ class CircuitTranspiler:
 
         Args:
             circuits (list[Circuit]): list of qibo circuits.
+            routing (bool, optional): whether to route the circuits. Defaults to False.
             placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
@@ -127,10 +129,14 @@ class CircuitTranspiler:
         """
 
         # Routing stage;
-        routed_circuits, final_layouts = zip(
-            *(self.route_circuit(circuit, placer, router, iterations=routing_iterations) for circuit in circuits)
-        )
-        logger.info(f"Circuits final layouts: {final_layouts}")
+        if routing:
+            routed_circuits, final_layouts = zip(
+                *(self.route_circuit(circuit, placer, router, iterations=routing_iterations) for circuit in circuits)
+            )
+            logger.info(f"Circuits final layouts: {final_layouts}")
+        else:
+            routed_circuits = tuple(circuits)
+            final_layouts = tuple({f"q{i}": i for i in range(circuit.nqubits)} for circuit in circuits)
 
         # Optimze qibo gates, cancellating redundant gates, stage:
         if optimize:
