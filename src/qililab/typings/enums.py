@@ -182,6 +182,50 @@ class InstrumentName(str, Enum):
     QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
+class VNAScatteringParameters(str, Enum):
+    """Vector Network Analyzers Scattering Parameters
+    Args:
+        enum (str): Available types of scattering parameters:
+        * S11
+        * S12
+        * S22
+        * S21
+    """
+
+    S11 = "S11"
+    S12 = "S12"
+    S22 = "S22"
+    S21 = "S21"
+
+
+class VNATriggerModes(str, Enum):
+    """Vector Network Analyzers Trigger Modes
+    Args:
+        enum (str): Available types of trigger modes:
+        * INT
+        * BUS
+    """
+
+    INT = "INT"
+    BUS = "BUS"
+
+
+class VNASweepModes(str, Enum):
+    """Vector Network Analyzers Sweep Modes
+    Args:
+        enum (str): Available types of sweeping modes:
+        * hold
+        * cont
+        * single
+        * group
+    """
+
+    HOLD = "hold"
+    CONT = "cont"
+    SING = "single"
+    GRO = "group"
+
+
 class InstrumentControllerName(str, Enum):
     """Instrument Controller names.
 
