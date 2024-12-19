@@ -898,30 +898,24 @@ class SauronVNA:
         RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
-
-    instruments: list[dict] = [keysight_e5080b, agilent_e5071b]
-    instrument_controllers: list[dict] = [keysight_e5080b_controller, agilent_e5071b_controller]
-
-    buses: list[dict[str, Any]] = [
-        {
-            "alias": "keysight_e5080b_readout_bus",
-            "port": "drive_q0",
-            RUNCARD.DISTORTIONS: [],
-        },
-        {
-            "alias": "agilent_e5071b_readout_bus",
-            "port": "feedline_input",
-            RUNCARD.DISTORTIONS: [],
-        },
+    
+    instruments = [keysight_e5080b, agilent_e5071b]
+    instrument_controllers = [
+        keysight_e5080b_controller,
+        agilent_e5071b_controller,
     ]
 
-    runcard: dict[str, Any] = {
+    buses: list[dict[str, Any]] = [
+        {RUNCARD.ALIAS: "keysight_e5080b_bus", RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value], RUNCARD.CHANNELS: [0]},
+        {RUNCARD.ALIAS: "agilent_e5071b_bus", RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value], RUNCARD.CHANNELS: [0]},
+    ]
+
+    runcard = {
         RUNCARD.NAME: name,
         RUNCARD.INSTRUMENTS: instruments,
-        RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+        RUNCARD.BUSES: buses,
     }
-
 
 class SauronQuantumMachines:
     """Test data of the sauron with quantum machines platform."""
