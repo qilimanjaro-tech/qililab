@@ -7,7 +7,7 @@ PyVISA-py==0.7.1
 tqdm==4.64.1
 urllib3==1.26.12
 qpysequence==0.10.4
-h5py==3.11.0
+h5py==3.12.1
 papermill==2.4.0
 qm-qua==1.2.1a1
 qualang-tools==0.17.6
