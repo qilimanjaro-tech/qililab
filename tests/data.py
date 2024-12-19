@@ -847,20 +847,11 @@ class SauronQDevil:
         RUNCARD.BUSES: buses,
     }
 
+
 class SauronVNA:
     """Test data of the sauron platform."""
 
     name = "sauron_vna"
-
-    gates_settings: dict[str, Any] = {
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BEFORE_READOUT: 40,
-        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
-        PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "gates": {},
-        "operations": [],
-    }
 
     keysight_e5080b_controller: dict[str, Any] = {
         "name": InstrumentControllerName.KEYSIGHT_E5080B,
@@ -926,11 +917,11 @@ class SauronVNA:
 
     runcard: dict[str, Any] = {
         RUNCARD.NAME: name,
-        RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
+
 
 class SauronQuantumMachines:
     """Test data of the sauron with quantum machines platform."""
