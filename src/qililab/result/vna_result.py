@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """VNA Result class."""
+
 from dataclasses import dataclass
 
 import numpy as np
