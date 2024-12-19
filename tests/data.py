@@ -911,37 +911,14 @@ class SauronVNA:
     instruments: list[dict] = [keysight_e5080b, agilent_e5071b]
     instrument_controllers: list[dict] = [keysight_e5080b_controller, agilent_e5071b_controller]
 
-    chip: dict[str, Any] = {
-        "nodes": [
-            {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
-            {"name": "port", "alias": "feedline_input", "line": "feedline_input", "nodes": ["resonator_q0"]},
-            {"name": "resonator", "alias": "resonator_q0", "frequency": 8.0726e09, "nodes": ["feedline_input", "q0"]},
-            {
-                "name": "qubit",
-                "alias": "q0",
-                "qubit_index": 0,
-                "frequency": 6.5328e09,
-                "nodes": ["drive_q0", "resonator_q0"],
-            },
-        ],
-    }
-
     buses: list[dict[str, Any]] = [
         {
             "alias": "keysight_e5080b_readout_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
-            },
             "port": "drive_q0",
             RUNCARD.DISTORTIONS: [],
         },
         {
             "alias": "agilent_e5071b_readout_bus",
-            "system_control": {
-                "name": SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
-            },
             "port": "feedline_input",
             RUNCARD.DISTORTIONS: [],
         },
@@ -951,7 +928,6 @@ class SauronVNA:
         RUNCARD.NAME: name,
         RUNCARD.GATES_SETTINGS: gates_settings,
         RUNCARD.INSTRUMENTS: instruments,
-        RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
