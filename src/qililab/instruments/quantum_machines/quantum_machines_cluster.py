@@ -137,6 +137,7 @@ class QuantumMachinesCluster(Instrument):
                             input["port"]: {
                                 "offset": input["offset"] if "offset" in input else 0.0,
                                 "gain_db": input["gain"] if "gain" in input else 0.0,
+                                "shareable": input["shareable"] if "shareable" in input else False,
                             }
                             for input in controller.get("analog_inputs", [])
                         },
@@ -178,7 +179,7 @@ class QuantumMachinesCluster(Instrument):
                                             if "filter" in output
                                             else {"feedforward": [], "feedback": []}
                                         ),
-                                        "shareable": output["shareable"] if "shareable" in output else False,
+                                        "shareable": fem["shareable"] if "shareable" in fem else False,
                                     }
                                     for output in fem.get("analog_outputs", [])
                                 },
@@ -187,6 +188,7 @@ class QuantumMachinesCluster(Instrument):
                                         "offset": input["offset"] if "offset" in input else 0.0,
                                         "gain_db": input["gain"] if "gain" in input else 0.0,
                                         "sampling_rate": input["sampling_rate"] if "sampling_rate" in input else 1e9,
+                                        "shareable": fem["shareable"] if "shareable" in fem else False,
                                     }
                                     for input in fem.get("analog_inputs", [])
                                 },
@@ -443,11 +445,18 @@ class QuantumMachinesCluster(Instrument):
         if self.settings.octaves:
             self._octave_config = QmOctaveConfig()
             self._octave_config.set_calibration_db(os.getcwd())
-            for octave in self.settings.octaves:
-                self._octave_config.add_device_info(octave["name"], self.settings.address, octave["port"])
 
-        self._qmm = QuantumMachinesManager(
-            host=self.settings.address, cluster_name=self.settings.cluster, octave=self._octave_config
+        self._qmm = (
+            QuantumMachinesManager(
+                host=self.settings.address,
+                cluster_name=self.settings.cluster,
+                octave_calibration_db_path=self._octave_config._calibration_db_path,
+            )
+            if self._octave_config is not None
+            else QuantumMachinesManager(
+                host=self.settings.address,
+                cluster_name=self.settings.cluster,
+            )
         )
         self._config = self.settings.to_qua_config()
         self._config_created = True
@@ -456,7 +465,7 @@ class QuantumMachinesCluster(Instrument):
     def turn_on(self):
         """Turns on the instrument."""
         if not self._is_connected_to_qm:
-            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)
+            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)
             self._compiled_program_cache = {}
             self._is_connected_to_qm = True
 
@@ -492,7 +501,7 @@ class QuantumMachinesCluster(Instrument):
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
                 self._qm.close()
-                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=False)  # type: ignore[assignment]
+                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
                 self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
