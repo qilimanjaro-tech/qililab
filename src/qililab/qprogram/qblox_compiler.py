@@ -612,6 +612,7 @@ class QbloxCompiler:
             self.optimize_square_waveforms
             and isinstance(waveform_I, Square)
             and (waveform_Q is None or isinstance(waveform_Q, Square))
+            and (waveform_I.duration >= 100)
         ):
             duration = waveform_I.duration
             chunk_duration, iterations, remainder = QbloxCompiler.calculate_square_waveform_optimization_values(
