@@ -715,23 +715,13 @@ class QbloxCompiler:
         return f"{waveform.__class__.__name__} {hashes}"
 
     @staticmethod
-    def calculate_ideal_coeff(duration):
-        if duration <= 1e3:
-            return 10
-        if duration <= 1e5:
-            return 100
-        if duration <= 1e7:
-            return 1000
-        return 10000
-
-    @staticmethod
     def calculate_square_waveform_optimization_values(duration):
         def remainder_conditions(pd):
             rem = duration % pd
             return rem, (pd >= 4 and (rem == 0 or rem >= 4))
 
         def find_piece_duration(condition_func):
-            for pd in range(100, 1101):
+            for pd in range(100, 501):
                 if pd <= duration:
                     rem, valid = remainder_conditions(pd)
                     if valid and condition_func(rem):
