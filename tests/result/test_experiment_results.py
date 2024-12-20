@@ -509,7 +509,7 @@ class TestExperimentResultsWriter:
             pass  # Just initializing should create the file structure
 
         assert mock_h5file.called
-        mock_h5file.assert_called_with("mock_path", mode="w")
+        mock_h5file.assert_called_with("mock_path", mode="w", libver="latest")
 
     def test_setters(self, experiment_results):
         """Test setters"""
