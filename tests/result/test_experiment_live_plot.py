@@ -458,4 +458,5 @@ class TestExperimentResultsWriter:
             pass  # Just initializing should create the file structure
 
         # test ExperimentLivePlot call
+        assert mocker_live_plot_figures.called
         mocker_live_plot_figures.assert_called_once()
