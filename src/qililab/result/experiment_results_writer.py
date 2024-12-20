@@ -18,6 +18,7 @@ from typing import TypedDict
 import h5py
 import numpy as np
 
+from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
 
 
@@ -180,7 +181,7 @@ class ExperimentResultsWriter(ExperimentResults):
 
             # Generate live plot figures
             if self._live_plot_true:
-                self.results_liveplot = ExperimentResults(self.path, self._slurm_execution)
+                self.results_liveplot = ExperimentLivePlot(self.path, self._slurm_execution)
                 self.results_liveplot._live_plot_figures(dims_dict)
 
     def _create_resuts_access(self):
