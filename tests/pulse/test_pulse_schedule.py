@@ -1,8 +1,6 @@
 """Tests for the PulseSequences class."""
 import pytest
 
-from qililab.digital import CircuitTranspiler
-from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
 
 
