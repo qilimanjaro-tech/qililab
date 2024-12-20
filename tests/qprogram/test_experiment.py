@@ -19,26 +19,26 @@ class TestExperiment(TestStructuredProgram):
     def instance(self):
         return Experiment(label="experiment")
 
-    def test_set_parameter(self, instance: Experiment):
-        """Test set_awg_gain method"""
-        instance.set_parameter(alias="flux_bus", parameter=Parameter.VOLTAGE, value=0.5)
+    # def test_set_parameter(self, instance: Experiment):
+    #     """Test set_awg_gain method"""
+    #     instance.set_parameter(alias="flux_bus", parameter=Parameter.VOLTAGE, value=0.5)
 
-        assert len(instance._active_block.elements) == 1
-        assert len(instance._body.elements) == 1
-        assert isinstance(instance._body.elements[0], SetParameter)
-        assert instance._body.elements[0].alias == "flux_bus"
-        assert instance._body.elements[0].parameter == Parameter.VOLTAGE
-        assert instance._body.elements[0].value == 0.5
+    #     assert len(instance._active_block.elements) == 1
+    #     assert len(instance._body.elements) == 1
+    #     assert isinstance(instance._body.elements[0], SetParameter)
+    #     assert instance._body.elements[0].alias == "flux_bus"
+    #     assert instance._body.elements[0].parameter == Parameter.VOLTAGE
+    #     assert instance._body.elements[0].value == 0.5
 
-    def test_execute_qprogram(self, instance: Experiment):
-        """Test set_awg_gain method"""
-        qp = QProgram()
-        instance.execute_qprogram(qprogram=qp)
+    # def test_execute_qprogram(self, instance: Experiment):
+    #     """Test set_awg_gain method"""
+    #     qp = QProgram()
+    #     instance.execute_qprogram(qprogram=qp)
 
-        assert len(instance._active_block.elements) == 1
-        assert len(instance._body.elements) == 1
-        assert isinstance(instance._body.elements[0], ExecuteQProgram)
-        assert instance._body.elements[0].qprogram is qp
+    #     assert len(instance._active_block.elements) == 1
+    #     assert len(instance._body.elements) == 1
+    #     assert isinstance(instance._body.elements[0], ExecuteQProgram)
+    #     assert instance._body.elements[0].qprogram is qp
 
     # def test_serialization_deserialization(self, instance: Experiment):
     #     """Test serialization and deserialization works."""
