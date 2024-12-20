@@ -2,8 +2,7 @@
 import pytest
 from unittest import mock
 from qililab.instruments import ParameterNotFound
-from qililab.instruments.keithley import Keithley2600
-from qililab.typings import ChannelID, Parameter, InstrumentName
+from qililab.typings import Parameter, InstrumentName
 from qililab.instruments.utils import InstrumentFactory
 import numpy as np
 
