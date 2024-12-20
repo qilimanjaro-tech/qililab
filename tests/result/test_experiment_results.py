@@ -505,7 +505,7 @@ class TestExperimentResultsWriter:
     def test_create_results_file(self, mock_h5file, metadata):
         """Test file creation"""
         # Test that the results file is created with the correct structure
-        with ExperimentResultsWriter(path="mock_path", metadata=metadata):
+        with ExperimentResultsWriter(path="mock_path", metadata=metadata, live_plot=False, slurm_execution=False):
             pass  # Just initializing should create the file structure
 
         assert mock_h5file.called
