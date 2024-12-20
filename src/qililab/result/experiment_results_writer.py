@@ -177,7 +177,7 @@ class ExperimentResultsWriter(ExperimentResults):
 
                     # Fill plot dictionary with dimensions
                     if self._live_plot_true:
-                        dims_dict[(qprogram_name, measurement_name)] = results_ds.dims
+                        dims_dict[qprogram_name, measurement_name] = results_ds.dims
 
             # Generate live plot figures
             if self._live_plot_true:

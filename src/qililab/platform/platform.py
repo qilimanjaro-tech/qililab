@@ -74,12 +74,12 @@ if TYPE_CHECKING:
 
     from qibo.transpiler.placer import Placer
     from qibo.transpiler.router import Router
+    from qpysequence import Sequence as QpySequence
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result
     from qililab.settings import Runcard
-    from qpysequence import Sequence as QpySequence
 
 
 class Platform:

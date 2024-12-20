@@ -146,7 +146,7 @@ class ExperimentLivePlot:
             return 20 * np.log10(np.abs(s21))
 
         n_dimensions = len(data.shape) - 1
-        qprogram_num = self.live_plot_dict[(qprogram_name, measurement_name)]
+        qprogram_num = self.live_plot_dict[qprogram_name, measurement_name]
 
         # Calculate S21
         s21 = data[..., 0] + 1j * data[..., 1]
