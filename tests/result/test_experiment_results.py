@@ -69,7 +69,9 @@ def sample_metadata():
 @pytest.fixture(name="experiment_results")
 def mock_experiment_results(metadata):
     """Create a mock HDF5 file structure for testing"""
-    with ExperimentResultsWriter(path=EXPERIMENT_RESULTS_PATH, metadata=metadata):
+    with ExperimentResultsWriter(
+        path=EXPERIMENT_RESULTS_PATH, metadata=metadata, live_plot=False, slurm_execution=False
+    ):
         ...
     yield EXPERIMENT_RESULTS_PATH
     Path(EXPERIMENT_RESULTS_PATH).unlink()
@@ -511,7 +513,9 @@ class TestExperimentResultsWriter:
 
     def test_setters(self, experiment_results):
         """Test setters"""
-        with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
+        with ExperimentResultsWriter(
+            path=experiment_results, metadata={}, live_plot=False, slurm_execution=False
+        ) as exp_writer:
             # test experiment property
             exp_writer.experiment = "new_experiment"
             assert exp_writer.experiment == "new_experiment"
