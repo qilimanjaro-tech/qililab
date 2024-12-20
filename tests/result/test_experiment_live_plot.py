@@ -452,7 +452,8 @@ def mock_experiment_live_plot_slurm(metadata):
 class TestExperimentResultsWriter:
     """Test ExperimentResultsWriter class"""
 
-    def test_set_live_plot(self, mocker_live_plot_figures, metadata):
+    @patch("qililab.result.experiment_live_plot.ExperimentLivePlot._live_plot_figures")
+    def test_set_live_plot(mocker_live_plot_figures: MagicMock, metadata):
         """Test setters"""
         with ExperimentResultsWriter(path="mock_path", metadata=metadata, live_plot=True, slurm_execution=True):
             pass  # Just initializing should create the file structure
