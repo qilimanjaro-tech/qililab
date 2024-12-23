@@ -70,7 +70,7 @@ class E5080B(VectorNetworkAnalyzer):
             self.electrical_delay = value
             return
         if parameter == Parameter.SWEEP_MODE:
-            self.sweep_mode(value=value, channel=channel_id)
+            self.set_sweep_mode(value=value, channel=channel_id)
             return
         if parameter == Parameter.DEVICE_TIMEOUT:
             self.device_timeout = value
@@ -119,7 +119,7 @@ class E5080B(VectorNetworkAnalyzer):
             value (str): new value
         """
         if parameter == Parameter.SWEEP_MODE:
-            self.sweep_mode = VNASweepModes(value)
+            self.set_sweep_mode(VNASweepModes(value))
             return
 
         super()._set_parameter_str(parameter, value)
@@ -150,8 +150,7 @@ class E5080B(VectorNetworkAnalyzer):
             etime = f"{self.settings.electrical_delay:.12f}"
             self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
 
-    @property
-    def sweep_mode(self):
+    def get_sweep_mode(self):
         """VectorNetworkAnalyzer'sweep_mode' property.
 
         Returns:mode
@@ -159,8 +158,7 @@ class E5080B(VectorNetworkAnalyzer):
         """
         return self.settings.sweep_mode
 
-    @sweep_mode.setter
-    def sweep_mode(self, value: str, channel=1):
+    def set_sweep_mode(self, value: str, channel=1):
         """
         Sets the sweep mode
 

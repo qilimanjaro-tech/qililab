@@ -198,19 +198,44 @@ class TestE5071B:
             assert e5071b.settings.electrical_delay == value
 
     @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            (Parameter.GATE_DURATION, 0),
+        ],
+    )
+    def test_set_parameter_raises_exception(self, parameter, value, e5071b: E5071B):
+        """Test the setup method raises exception with not supported parameter"""
+        with pytest.raises(ParameterNotFound):
+            e5071b.set_parameter(parameter, value)
+
+    @pytest.mark.parametrize(
         "parameter, expected_value",
         [
             # Test POWER setting
             (Parameter.POWER, -60.0),
-
+            # Test IF_BANDWITH setting
+            (Parameter.IF_BANDWIDTH, 1.5),
             # Test ELECTRICAL_DELAY setting
             (Parameter.ELECTRICAL_DELAY, 0.0)
         ]
     )
     def test_get_parameter(self, e5071b: E5071B, parameter, expected_value):
         """Test setting parameters for E5071B functionality using parameterized values."""
+        if parameter == Parameter.IF_BANDWIDTH:
+            e5071b.set_parameter(Parameter.IF_BANDWIDTH, 1.5)
         value = e5071b.get_parameter(parameter, channel_id=1)
         assert value == expected_value
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            (Parameter.GATE_DURATION, 0),
+        ],
+    )
+    def test_get_parameter_raises_exception(self, parameter, value, e5071b: E5071B):
+        """Test the setup method raises exception with not supported parameter"""
+        with pytest.raises(ParameterNotFound):
+            e5071b.get_parameter(parameter)
 
     @pytest.mark.parametrize(
         "parameter, value",

@@ -120,7 +120,7 @@ class TestE5080B:
         if parameter == Parameter.SCATTERING_PARAMETER:
             assert e5080b.scattering_parameter == VNAScatteringParameters(value)
         if parameter == Parameter.SWEEP_MODE:
-            assert e5080b.sweep_mode == VNASweepModes(value)
+            assert e5080b.get_sweep_mode() == VNASweepModes(value)
 
     @pytest.mark.parametrize(
         "parameter, value",
@@ -207,6 +207,82 @@ class TestE5080B:
         """Test the setup method raises exception with incorrect value type"""
         with pytest.raises(ParameterNotFound):
             e5080b.setup(parameter, value)
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Test POWER setting
+            (Parameter.POWER, 2.0),
+
+            # Test IF_BANDWIDTH setting
+            (Parameter.IF_BANDWIDTH, 1.0),
+
+            # Test ELECTRICAL_DELAY setting
+            (Parameter.ELECTRICAL_DELAY, 1.0),
+
+            # Test SWEEP_MODE setting
+            (Parameter.SWEEP_MODE, VNASweepModes.HOLD),
+
+            # Test DEVICE_TIMEOUT setting
+            (Parameter.DEVICE_TIMEOUT, 1.0)
+        ]
+    )
+    def test_set_parameter(self, e5080b: E5080B, parameter, value):
+        """Test setting parameters for E5071B functionality using parameterized values."""
+        e5080b.set_parameter(parameter, value, channel_id=1)
+
+        print(VNASweepModes("single"))
+        # Check values based on the parameter
+        if parameter == Parameter.POWER:
+            assert e5080b.settings.power == value
+        elif parameter == Parameter.IF_BANDWIDTH:
+            assert e5080b.settings.if_bandwidth == value
+        elif parameter == Parameter.ELECTRICAL_DELAY:
+            assert e5080b.settings.electrical_delay == value
+        elif parameter == Parameter.SWEEP_MODE:
+            assert e5080b.settings.sweep_mode == value
+        elif parameter == Parameter.DEVICE_TIMEOUT:
+            assert e5080b.settings.device_timeout == value
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            (Parameter.GATE_DURATION, 0),
+        ],
+    )
+    def test_set_parameter_raises_exception(self, parameter, value, e5080b: E5080B):
+        """Test the setup method raises exception with not supported parameter"""
+        with pytest.raises(ParameterNotFound):
+            e5080b.set_parameter(parameter, value)
+
+    @pytest.mark.parametrize(
+        "parameter, expected_value",
+        [
+            # Test POWER setting
+            (Parameter.POWER, -60.0),
+            # Test IF_BANDWITH setting
+            (Parameter.IF_BANDWIDTH, 1.5),
+            # Test ELECTRICAL_DELAY setting
+            (Parameter.ELECTRICAL_DELAY, 0.0)
+        ]
+    )
+    def test_get_parameter(self, e5080b: E5080B, parameter, expected_value):
+        """Test setting parameters for E5071B functionality using parameterized values."""
+        if parameter == Parameter.IF_BANDWIDTH:
+            e5080b.set_parameter(Parameter.IF_BANDWIDTH, 1.5)
+        value = e5080b.get_parameter(parameter, channel_id=1)
+        assert value == expected_value
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            (Parameter.GATE_DURATION, 0),
+        ],
+    )
+    def test_get_parameter_raises_exception(self, parameter, value, e5080b: E5080B):
+        """Test the setup method raises exception with not supported parameter"""
+        with pytest.raises(ParameterNotFound):
+            e5080b.get_parameter(parameter)
 
     def test_to_dict_method(self, e5080b_no_device: E5080B):
         """Test the dict method"""
@@ -430,11 +506,6 @@ class TestE5080B:
         """Test the electrical delay property"""
         assert hasattr(e5080b_no_device, "electrical_delay")
         assert e5080b_no_device.electrical_delay == e5080b_no_device.settings.electrical_delay
-
-    def test_sweep_mode_property(self, e5080b_no_device: E5080B):
-        """Test the sweep mode property"""
-        assert hasattr(e5080b_no_device, "sweep_mode")
-        assert e5080b_no_device.sweep_mode == e5080b_no_device.settings.sweep_mode
 
     def test_device_timeout_property(self, e5080b_no_device: E5080B):
         """Test the device timeout property"""
