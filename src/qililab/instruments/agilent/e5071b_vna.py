@@ -18,10 +18,12 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from qililab.instruments.decorators import log_set_parameter
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
-from qililab.typings.enums import InstrumentName
+from qililab.typings import InstrumentName, Parameter, ParameterValue
 from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
 
@@ -37,6 +39,42 @@ class E5071B(VectorNetworkAnalyzer):
         """Contains the settings of a specific VectorNetworkAnalyzer"""
 
     settings: E5071BSettings
+
+    @log_set_parameter
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: int = 1, port: int = 1) -> None:
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int): Channel identifier of the parameter to update.
+            port (int): Port identifier of the parameter to update.
+        """
+        channel_id = int(channel_id)
+        if parameter == Parameter.POWER:
+            self.power(value=value, channel=channel_id, port=port)
+            return
+        if parameter == Parameter.IF_BANDWIDTH:
+            self.if_bandwidth(value=value, channel=channel_id)
+            return
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            self.electrical_delay = value
+            return
+        raise ParameterNotFound(self, parameter)
+
+    def get_parameter(self, parameter: Parameter, channel_id: int = 1):
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): Channel identifier of the parameter to update.
+        """
+        if parameter == Parameter.POWER:
+            return self.settings.power
+        if parameter == Parameter.IF_BANDWIDTH:
+            return self.settings.if_bandwidth
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            return self.settings.electrical_delay
+        raise ParameterNotFound(self, parameter)
 
     @VectorNetworkAnalyzer.power.setter  # type: ignore
     def power(self, power: float, channel=1):

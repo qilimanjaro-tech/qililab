@@ -24,7 +24,7 @@ from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAna
 DEFAULT_NUMBER_POINTS = 1000
 
 
-class VectorNetworkAnalyzer(Instrument, ABC):
+class VectorNetworkAnalyzer(Instrument):
     """Abstract base class defining all vector network analyzers"""
 
     @dataclass

@@ -20,10 +20,13 @@ from dataclasses import dataclass
 import numpy as np
 
 from qililab.constants import DEFAULT_TIMEOUT
+from qililab.instruments.decorators import log_set_parameter
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
-from qililab.typings.enums import InstrumentName, Parameter, VNASweepModes
+from qililab.typings import InstrumentName, Parameter, ParameterValue
+from qililab.typings.enums import VNASweepModes
 from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
 
@@ -46,6 +49,52 @@ class E5080B(VectorNetworkAnalyzer):
         device_timeout: float = DEFAULT_TIMEOUT
 
     settings: E5080BSettings
+
+    @log_set_parameter
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: int = 1, port: int = 1) -> None:
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int): Channel identifier of the parameter to update.
+            port (int): Port identifier of the parameter to update.
+        """
+        channel_id = int(channel_id)
+        if parameter == Parameter.POWER:
+            self.power(value=value, channel=channel_id, port=port)
+            return
+        if parameter == Parameter.IF_BANDWIDTH:
+            self.if_bandwidth(value=value, channel=channel_id)
+            return
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            self.electrical_delay = value
+            return
+        if parameter == Parameter.SWEEP_MODE:
+            self.sweep_mode(value=value, channel=channel_id)
+            return
+        if parameter == Parameter.DEVICE_TIMEOUT:
+            self.device_timeout = value
+            return
+        raise ParameterNotFound(self, parameter)
+
+    def get_parameter(self, parameter: Parameter, channel_id: int = 1):
+        """Get instrument parameter.
+
+        Args:
+            parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): Channel identifier of the parameter to update.
+        """
+        if parameter == Parameter.POWER:
+            return self.settings.power
+        if parameter == Parameter.IF_BANDWIDTH:
+            return self.settings.if_bandwidth
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            return self.settings.electrical_delay
+        if parameter == Parameter.SWEEP_MODE:
+            return self._get_sweep_mode(channel=channel_id)
+        if parameter == Parameter.DEVICE_TIMEOUT:
+            return self.device_timeout
+        raise ParameterNotFound(self, parameter)
 
     def _set_parameter_float(self, parameter: Parameter, value: float):
         """Set instrument settings parameter to the corresponding value

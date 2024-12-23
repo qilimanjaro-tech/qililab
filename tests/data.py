@@ -867,7 +867,6 @@ class SauronVNA:
     keysight_e5080b: dict[str, Any] = {
         "name": InstrumentName.KEYSIGHT_E5080B,
         "alias": InstrumentName.KEYSIGHT_E5080B.value,
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
 
@@ -890,7 +889,6 @@ class SauronVNA:
     agilent_e5071b: dict[str, Any] = {
         "name": InstrumentName.AGILENT_E5071B,
         "alias": InstrumentName.AGILENT_E5071B.value,
-        RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
     
