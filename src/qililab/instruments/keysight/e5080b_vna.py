@@ -59,17 +59,19 @@ class E5080B(VectorNetworkAnalyzer):
             channel_id (int): Channel identifier of the parameter to update.
             port (int): Port identifier of the parameter to update.
         """
-        channel_id = int(channel_id)
         if parameter == Parameter.POWER:
+            value = float(value)
             self.set_power(power=value, channel=channel_id, port=port)
             return
         if parameter == Parameter.IF_BANDWIDTH:
+            value = float(value)
             self.set_if_bandwidth(value=value, channel=channel_id)
             return
         if parameter == Parameter.ELECTRICAL_DELAY:
             self.electrical_delay = value
             return
         if parameter == Parameter.SWEEP_MODE:
+            value = str(value)
             self.set_sweep_mode(value=value, channel=channel_id)
             return
         if parameter == Parameter.DEVICE_TIMEOUT:

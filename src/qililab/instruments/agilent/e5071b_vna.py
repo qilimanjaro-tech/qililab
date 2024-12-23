@@ -51,9 +51,11 @@ class E5071B(VectorNetworkAnalyzer):
         """
         channel_id = int(channel_id)
         if parameter == Parameter.POWER:
+            value = float(value)
             self.set_power(power=value, channel=channel_id)
             return
         if parameter == Parameter.IF_BANDWIDTH:
+            value = float(value)
             self.set_if_bandwidth(value=value, channel=channel_id)
             return
         if parameter == Parameter.ELECTRICAL_DELAY:
