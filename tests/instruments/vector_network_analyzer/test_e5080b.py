@@ -254,27 +254,35 @@ class TestE5080B:
             e5080b.set_parameter(parameter, value)
 
     @pytest.mark.parametrize(
-        "parameter, expected_value",
+        "parameter, expected_value, channel_id",
         [
             # Test POWER setting
-            (Parameter.POWER, -60.0),
+            (Parameter.POWER, -60.0, None),
             # Test IF_BANDWITH setting
-            (Parameter.IF_BANDWIDTH, 1.5),
+            (Parameter.IF_BANDWIDTH, 1.5, None),
             # Test ELECTRICAL_DELAY setting
-            (Parameter.ELECTRICAL_DELAY, 0.0),
-            # Test SWEEP_MODE setting
-            (Parameter.SWEEP_MODE, VNASweepModes.HOLD),
+            (Parameter.ELECTRICAL_DELAY, 0.0, None),
+            # Test SWEEP_MODE setting with channel
+            (Parameter.SWEEP_MODE, VNASweepModes.HOLD, 1),
+            # Test SWEEP_MODE setting without channel
+            (Parameter.SWEEP_MODE, VNASweepModes.HOLD, None),
             # Test DEVICE_TIMEOUT setting
-            (Parameter.DEVICE_TIMEOUT, 10000)
+            (Parameter.DEVICE_TIMEOUT, 10000, None)
         ]
     )
     @patch("qililab.instruments.keysight.e5080b_vna.E5080B._get_sweep_mode")
-    def test_get_parameter(self, mock_get_sweep_mode, e5080b: E5080B, parameter, expected_value):
+    def test_get_parameter(self, mock_get_sweep_mode, e5080b: E5080B, parameter, expected_value, channel_id):
         """Test setting parameters for E5071B functionality using parameterized values."""
         mock_get_sweep_mode.return_value = VNASweepModes.HOLD
         if parameter == Parameter.IF_BANDWIDTH:
             e5080b.set_parameter(Parameter.IF_BANDWIDTH, 1.5)
-        value = e5080b.get_parameter(parameter, channel_id=1)
+        value = e5080b.get_parameter(parameter, channel_id=channel_id)
+        # Assert _get_sweep_mode was called correctly
+        if parameter == Parameter.SWEEP_MODE:
+            if channel_id:
+                mock_get_sweep_mode.assert_called_once_with(channel=channel_id)
+            else:
+                mock_get_sweep_mode.assert_called_once_with()
         assert value == expected_value
 
     @pytest.mark.parametrize(
