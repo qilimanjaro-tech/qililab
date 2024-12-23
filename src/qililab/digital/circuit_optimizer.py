@@ -75,8 +75,11 @@ class CircuitOptimizer:
         # Create optimized circuit, from the obtained non-cancelled list:
         return cls._create_circuit(output_circ_list, circuit.nqubits)
 
-    def optimize_transpilation(self, circuit: Circuit) -> list[gates.Gate]:
-        """Optimizes transpiled circuit by applying virtual Z gates.
+    def add_phases_from_RZs_and_CZs_to_drags(self, circuit: Circuit) -> list[gates.Gate]:
+        """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
+
+            - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
+            - The RZs added phases on the Drags, come from commuting all the RZs all the way to the end of the circuit, so they can be deleted as "virtual Z gates".
 
         This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
         from each RZ is carried on as phase in all drag pulses left of the RZ operator.
@@ -142,6 +145,18 @@ class CircuitOptimizer:
                 new_gates.append(gate)
 
         return new_gates
+
+    def optimize_transpilation(self, circuit: Circuit) -> Circuit:
+        """Bunches consecutive Drag gates together into a single one.
+
+        Args:
+            circuit (Circuit): circuit to optimize.
+
+        Returns:
+            Circuit: optimized circuit.
+        """
+        # circuit =
+        return circuit
 
     @staticmethod
     def _get_circuit_gates(circuit: Circuit) -> list[tuple]:

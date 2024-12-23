@@ -145,9 +145,11 @@ class CircuitTranspiler:
         # Unroll to Natives stage:
         native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
 
-        # Optimize native gates, optimize transpilation stage:
-        if optimize:
-            native_circuits = (self.optimize_transpilation(circuit) for circuit in native_circuits)
+        # Add phases from RZs and CZs to Drags:
+        native_circuits = (self.add_phases_from_RZs_and_CZs_to_drags(circuit) for circuit in native_circuits)
+
+        # if optimize:
+        #     native_circuits = (self.optimize_transpilation(circuit) for circuit in native_circuits)
 
         # Pulse schedule stage:
         pulse_schedules = self.circuit_to_pulses(list(native_circuits))
@@ -254,8 +256,11 @@ class CircuitTranspiler:
 
         return new_circuit
 
-    def optimize_transpilation(self, circuit: Circuit) -> Circuit:
-        """Optimizes transpiled circuit by applying virtual Z gates.
+    def add_phases_from_RZs_and_CZs_to_drags(self, circuit: Circuit) -> Circuit:
+        """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
+
+            - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
+            - The RZs added phases on the Drags, come from commuting all the RZs all the way to the end of the circuit, so they can be deleted as "virtual Z gates".
 
         This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
         from each RZ is carried on as phase in all drag pulses left of the RZ operator.
@@ -284,8 +289,16 @@ class CircuitTranspiler:
         optimizer = CircuitOptimizer(self.settings)
 
         output_circuit = Circuit(circuit.nqubits)
-        output_circuit.add(optimizer.optimize_transpilation(circuit))
+        output_circuit.add(optimizer.add_phases_from_RZs_and_CZs_to_drags(circuit))
         return output_circuit
+
+    def optimize_transpilation(self, circuit: Circuit) -> Circuit:
+        """Bunches consecutive Drag gates together into a single one."""
+
+        optimizer = CircuitOptimizer(self.settings)
+        output_circuit = Circuit(circuit.nqubits)
+        output_circuit.add(optimizer.optimize_transpilation(circuit))
+        return
 
     def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence).
