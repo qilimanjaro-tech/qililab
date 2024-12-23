@@ -107,7 +107,6 @@ class TestE5080B:
             (Parameter.TRIGGER_MODE, "INT"),
             (Parameter.SCATTERING_PARAMETER, "S21"),
             (Parameter.SWEEP_MODE, "cont"),
-            (Parameter.SWEEP_MODE, "hold"),
         ],
     )
     def test_setup_method_value_str(self, parameter: Parameter, value, e5080b: E5080B):
@@ -231,7 +230,6 @@ class TestE5080B:
         """Test setting parameters for E5071B functionality using parameterized values."""
         e5080b.set_parameter(parameter, value, channel_id=1)
 
-        print(VNASweepModes("single"))
         # Check values based on the parameter
         if parameter == Parameter.POWER:
             assert e5080b.settings.power == value
@@ -263,11 +261,17 @@ class TestE5080B:
             # Test IF_BANDWITH setting
             (Parameter.IF_BANDWIDTH, 1.5),
             # Test ELECTRICAL_DELAY setting
-            (Parameter.ELECTRICAL_DELAY, 0.0)
+            (Parameter.ELECTRICAL_DELAY, 0.0),
+            # Test SWEEP_MODE setting
+            (Parameter.SWEEP_MODE, VNASweepModes.HOLD),
+            # Test DEVICE_TIMEOUT setting
+            (Parameter.DEVICE_TIMEOUT, 10000)
         ]
     )
-    def test_get_parameter(self, e5080b: E5080B, parameter, expected_value):
+    @patch("qililab.instruments.keysight.e5080b_vna.E5080B._get_sweep_mode")
+    def test_get_parameter(self, mock_get_sweep_mode, e5080b: E5080B, parameter, expected_value):
         """Test setting parameters for E5071B functionality using parameterized values."""
+        mock_get_sweep_mode.return_value = VNASweepModes.HOLD
         if parameter == Parameter.IF_BANDWIDTH:
             e5080b.set_parameter(Parameter.IF_BANDWIDTH, 1.5)
         value = e5080b.get_parameter(parameter, channel_id=1)
