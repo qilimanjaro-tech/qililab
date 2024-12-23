@@ -61,7 +61,7 @@ class E5071B(VectorNetworkAnalyzer):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: int = 1):
+    def get_parameter(self, parameter: Parameter):
         """Get instrument parameter.
 
         Args:
