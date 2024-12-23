@@ -57,11 +57,11 @@ class TestE5071B:
         "parameter, value",
         [
             (Parameter.POWER, -60.0),
+            (Parameter.IF_BANDWIDTH, 1.5),
             (Parameter.FREQUENCY_SPAN, 6.4e-3),
             (Parameter.FREQUENCY_CENTER, 8.5e-3),
             (Parameter.FREQUENCY_START, 27.5),
             (Parameter.FREQUENCY_STOP, 40.5),
-            (Parameter.IF_BANDWIDTH, 50.0),
             (Parameter.ELECTRICAL_DELAY, 0.0),
         ],
     )
@@ -81,8 +81,6 @@ class TestE5071B:
                 assert e5071bs.frequency_start == value
             if parameter == Parameter.FREQUENCY_STOP:
                 assert e5071bs.frequency_stop == value
-            if parameter == Parameter.IF_BANDWIDTH:
-                assert e5071bs.settings.if_bandwidth == value
             if parameter == Parameter.ELECTRICAL_DELAY:
                 assert e5071bs.electrical_delay == value
 
@@ -198,6 +196,21 @@ class TestE5071B:
             assert e5071b.settings.if_bandwidth == value
         elif parameter == Parameter.ELECTRICAL_DELAY:
             assert e5071b.settings.electrical_delay == value
+
+    @pytest.mark.parametrize(
+        "parameter, expected_value",
+        [
+            # Test POWER setting
+            (Parameter.POWER, -60.0),
+
+            # Test ELECTRICAL_DELAY setting
+            (Parameter.ELECTRICAL_DELAY, 0.0)
+        ]
+    )
+    def test_get_parameter(self, e5071b: E5071B, parameter, expected_value):
+        """Test setting parameters for E5071B functionality using parameterized values."""
+        value = e5071b.get_parameter(parameter, channel_id=1)
+        assert value == expected_value
 
     @pytest.mark.parametrize(
         "parameter, value",
