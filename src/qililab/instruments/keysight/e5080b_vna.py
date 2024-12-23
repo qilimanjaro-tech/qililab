@@ -128,8 +128,7 @@ class E5080B(VectorNetworkAnalyzer):
         """sets the power in dBm"""
         self.settings.power = power
         if self.is_device_active():
-            power = f"{self.settings.power:.1f}"
-            self.send_command(f"SOUR{channel}:POW{port}", f"{power}")
+            self.send_command(f"SOUR{channel}:POW{port}", f"{self.settings.power:.1f}")
 
     def set_if_bandwidth(self, value: float, channel=1):
         """sets the if bandwidth in Hz"""
