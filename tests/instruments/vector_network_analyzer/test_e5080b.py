@@ -106,7 +106,7 @@ class TestE5080B:
         [
             (Parameter.TRIGGER_MODE, "INT"),
             (Parameter.SCATTERING_PARAMETER, "S21"),
-            (Parameter.SWEEP_MODE, "cont"),
+            (Parameter.SWEEP_MODE, VNASweepModes.CONT),
         ],
     )
     def test_setup_method_value_str(self, parameter: Parameter, value, e5080b: E5080B):
@@ -273,7 +273,7 @@ class TestE5080B:
     @patch("qililab.instruments.keysight.e5080b_vna.E5080B._get_sweep_mode")
     def test_get_parameter(self, mock_get_sweep_mode, e5080b: E5080B, parameter, expected_value, channel_id):
         """Test setting parameters for E5071B functionality using parameterized values."""
-        mock_get_sweep_mode.return_value = VNASweepModes.HOLD
+        mock_get_sweep_mode.return_value = VNASweepModes.HOLD.name
         if parameter == Parameter.IF_BANDWIDTH:
             e5080b.set_parameter(Parameter.IF_BANDWIDTH, 1.5)
         value = e5080b.get_parameter(parameter, channel_id=channel_id)
@@ -283,7 +283,9 @@ class TestE5080B:
                 mock_get_sweep_mode.assert_called_once_with(channel=channel_id)
             else:
                 mock_get_sweep_mode.assert_called_once_with()
-        assert value == expected_value
+            assert value == expected_value.name
+        else:
+            assert value == expected_value
 
     @pytest.mark.parametrize(
         "parameter, value",

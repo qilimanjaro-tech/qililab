@@ -71,7 +71,6 @@ class E5080B(VectorNetworkAnalyzer):
             self.electrical_delay = value
             return
         if parameter == Parameter.SWEEP_MODE:
-            value = str(value)
             self.set_sweep_mode(value=value, channel=channel_id)
             return
         if parameter == Parameter.DEVICE_TIMEOUT:
