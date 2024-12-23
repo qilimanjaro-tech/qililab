@@ -47,7 +47,6 @@ class E5080B(VectorNetworkAnalyzer):
 
         sweep_mode: VNASweepModes = VNASweepModes.CONT
         device_timeout: float = DEFAULT_TIMEOUT
-        if_bandwidth: float = None
 
     settings: E5080BSettings
 
