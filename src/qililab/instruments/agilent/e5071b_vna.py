@@ -23,7 +23,7 @@ from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
-from qililab.typings import InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
 
@@ -61,7 +61,7 @@ class E5071B(VectorNetworkAnalyzer):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
         """Get instrument parameter.
 
         Args:
