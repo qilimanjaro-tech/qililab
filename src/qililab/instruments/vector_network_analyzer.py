@@ -14,7 +14,7 @@
 
 """VectorNetworkAnalyzer class."""
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
