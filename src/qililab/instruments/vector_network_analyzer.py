@@ -122,7 +122,7 @@ class VectorNetworkAnalyzer(Instrument):
         """
 
         if parameter == Parameter.POWER:
-            self.power = value
+            self.set_power(value)
             return
         if parameter == Parameter.FREQUENCY_SPAN:
             self.frequency_span = value
@@ -137,7 +137,7 @@ class VectorNetworkAnalyzer(Instrument):
             self.frequency_stop = value
             return
         if parameter == Parameter.IF_BANDWIDTH:
-            self.if_bandwidth = value
+            self.set_if_bandwidth(value)
             return
         if parameter == Parameter.ELECTRICAL_DELAY:
             self.electrical_delay = value
@@ -163,8 +163,7 @@ class VectorNetworkAnalyzer(Instrument):
 
         raise ParameterNotFound(self, parameter)
 
-    @property
-    def power(self):
+    def get_power(self):
         """VectorNetworkAnalyzer 'power' property.
 
         Returns:
@@ -172,9 +171,8 @@ class VectorNetworkAnalyzer(Instrument):
         """
         return self.settings.power
 
-    @power.setter
     @abstractmethod
-    def power(self, value: float, channel=1, port=1):
+    def set_power(self, power: float, channel=1, port=1):
         """sets the power in dBm"""
 
     @property
@@ -267,8 +265,7 @@ class VectorNetworkAnalyzer(Instrument):
             freq = str(self.settings.frequency_stop)
             self.send_command(f"SENS{channel}:FREQ:STOP", freq)
 
-    @property
-    def if_bandwidth(self):
+    def get_if_bandwidth(self):
         """VectorNetworkAnalyzer 'if_bandwidth' property.
 
         Returns:
@@ -276,9 +273,8 @@ class VectorNetworkAnalyzer(Instrument):
         """
         return self.settings.if_bandwidth
 
-    @if_bandwidth.setter
     @abstractmethod
-    def if_bandwidth(self, value: float, channel=1):
+    def set_if_bandwidth(self, value: float, channel=1):
         """sets the if bandwidth in Hz"""
 
     @property

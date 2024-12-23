@@ -45,7 +45,6 @@ def fixture_e5071b_no_device():
 def fixture_e5071b(mock_device: MagicMock, e5071b_controller: E5071BController):
     """Return connected instance of VectorNetworkAnalyzer class"""
     mock_instance = mock_device.return_value
-    mock_instance.mock_add_spec(["power"])
     e5071b_controller.connect()
     mock_device.assert_called()
     return e5071b_controller.modules[0]
@@ -57,7 +56,7 @@ class TestE5071B:
     @pytest.mark.parametrize(
         "parameter, value",
         [
-            (Parameter.POWER, -15.0),
+            (Parameter.POWER, -60.0),
             (Parameter.FREQUENCY_SPAN, 6.4e-3),
             (Parameter.FREQUENCY_CENTER, 8.5e-3),
             (Parameter.FREQUENCY_START, 27.5),
@@ -73,7 +72,7 @@ class TestE5071B:
         for e5071bs in [e5071b, e5071b_no_device]:
             e5071bs.setup(parameter, value)
             if parameter == Parameter.POWER:
-                assert e5071bs.power == value
+                assert e5071bs.settings.power == value
             if parameter == Parameter.FREQUENCY_SPAN:
                 assert e5071bs.frequency_span == value
             if parameter == Parameter.FREQUENCY_CENTER:
@@ -83,7 +82,7 @@ class TestE5071B:
             if parameter == Parameter.FREQUENCY_STOP:
                 assert e5071bs.frequency_stop == value
             if parameter == Parameter.IF_BANDWIDTH:
-                assert e5071bs.if_bandwidth == value
+                assert e5071bs.settings.if_bandwidth == value
             if parameter == Parameter.ELECTRICAL_DELAY:
                 assert e5071bs.electrical_delay == value
 
@@ -174,6 +173,31 @@ class TestE5071B:
             assert e5071b.number_points == value
         if parameter == Parameter.NUMBER_AVERAGES:
             assert e5071b.number_averages == value
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Test POWER setting
+            (Parameter.POWER, 2.0),
+
+            # Test IF_BANDWIDTH setting
+            (Parameter.IF_BANDWIDTH, 1.0),
+
+            # Test ELECTRICAL_DELAY setting
+            (Parameter.ELECTRICAL_DELAY, 1.0)
+        ]
+    )
+    def test_set_parameter(self, e5071b: E5071B, parameter, value):
+        """Test setting parameters for E5071B functionality using parameterized values."""
+        e5071b.set_parameter(parameter, value, channel_id=1)
+
+        # Check values based on the parameter
+        if parameter == Parameter.POWER:
+            assert e5071b.settings.power == value
+        elif parameter == Parameter.IF_BANDWIDTH:
+            assert e5071b.settings.if_bandwidth == value
+        elif parameter == Parameter.ELECTRICAL_DELAY:
+            assert e5071b.settings.electrical_delay == value
 
     @pytest.mark.parametrize(
         "parameter, value",
@@ -301,11 +325,6 @@ class TestE5071B:
         e5071b.autoscale()
         e5071b.device.send_command.assert_called_with(command="DISP:WIND:TRAC:Y:AUTO", arg="")
 
-    def test_power_property(self, e5071b_no_device: E5071B):
-        """Test power property."""
-        assert hasattr(e5071b_no_device, "power")
-        assert e5071b_no_device.power == e5071b_no_device.settings.power
-
     def test_scattering_parameter_property(self, e5071b_no_device: E5071B):
         """Test the scattering parametter property"""
         assert hasattr(e5071b_no_device, "scattering_parameter")
@@ -330,11 +349,6 @@ class TestE5071B:
         """Test the frequency stop property"""
         assert hasattr(e5071b_no_device, "frequency_stop")
         assert e5071b_no_device.frequency_stop == e5071b_no_device.settings.frequency_stop
-
-    def test_if_bandwidth_property(self, e5071b_no_device: E5071B):
-        """Test the if bandwidth property"""
-        assert hasattr(e5071b_no_device, "if_bandwidth")
-        assert e5071b_no_device.if_bandwidth == e5071b_no_device.settings.if_bandwidth
 
     def test_averaging_enabled_property(self, e5071b_no_device: E5071B):
         """Test the averaging enabled property"""

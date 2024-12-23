@@ -47,6 +47,7 @@ class E5080B(VectorNetworkAnalyzer):
 
         sweep_mode: VNASweepModes = VNASweepModes.CONT
         device_timeout: float = DEFAULT_TIMEOUT
+        if_bandwidth: float = None
 
     settings: E5080BSettings
 
@@ -61,10 +62,10 @@ class E5080B(VectorNetworkAnalyzer):
         """
         channel_id = int(channel_id)
         if parameter == Parameter.POWER:
-            self.power(value=value, channel=channel_id, port=port)
+            self.set_power(power=value, channel=channel_id, port=port)
             return
         if parameter == Parameter.IF_BANDWIDTH:
-            self.if_bandwidth(value=value, channel=channel_id)
+            self.set_if_bandwidth(value=value, channel=channel_id)
             return
         if parameter == Parameter.ELECTRICAL_DELAY:
             self.electrical_delay = value
@@ -124,16 +125,14 @@ class E5080B(VectorNetworkAnalyzer):
 
         super()._set_parameter_str(parameter, value)
 
-    @VectorNetworkAnalyzer.power.setter  # type: ignore
-    def power(self, value: float, channel=1, port=1):
+    def set_power(self, power: float, channel=1, port=1):
         """sets the power in dBm"""
-        self.settings.power = value
+        self.settings.power = power
         if self.is_device_active():
             power = f"{self.settings.power:.1f}"
             self.send_command(f"SOUR{channel}:POW{port}", power)
 
-    @VectorNetworkAnalyzer.if_bandwidth.setter  # type: ignore
-    def if_bandwidth(self, value: float, channel=1):
+    def set_if_bandwidth(self, value: float, channel=1):
         """sets the if bandwidth in Hz"""
         self.settings.if_bandwidth = value
         if self.is_device_active():

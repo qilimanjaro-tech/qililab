@@ -42,7 +42,7 @@ class E5071B(VectorNetworkAnalyzer):
 
     @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: int = 1, port: int = 1) -> None:
-        """Get instrument parameter.
+        """Set instrument parameter.
 
         Args:
             parameter (Parameter): Name of the parameter to get.
@@ -51,10 +51,10 @@ class E5071B(VectorNetworkAnalyzer):
         """
         channel_id = int(channel_id)
         if parameter == Parameter.POWER:
-            self.power(value=value, channel=channel_id, port=port)
+            self.set_power(power=value, channel=channel_id)
             return
         if parameter == Parameter.IF_BANDWIDTH:
-            self.if_bandwidth(value=value, channel=channel_id)
+            self.set_if_bandwidth(value=value, channel=channel_id)
             return
         if parameter == Parameter.ELECTRICAL_DELAY:
             self.electrical_delay = value
@@ -76,8 +76,7 @@ class E5071B(VectorNetworkAnalyzer):
             return self.settings.electrical_delay
         raise ParameterNotFound(self, parameter)
 
-    @VectorNetworkAnalyzer.power.setter  # type: ignore
-    def power(self, power: float, channel=1):
+    def set_power(self, power: float, channel=1, port=1):
         """Set or read current power"""
         self.settings.power = power
         if self.is_device_active():
@@ -94,12 +93,11 @@ class E5071B(VectorNetworkAnalyzer):
         if self.is_device_active():
             self.send_command("CALC:MEAS:CORR:EDEL:TIME", f"{time}")
 
-    @VectorNetworkAnalyzer.if_bandwidth.setter  # type: ignore
-    def if_bandwidth(self, bandwidth: float, channel=1):
+    def set_if_bandwidth(self, value: float, channel=1):
         """Set/query IF Bandwidth for specified channel"""
-        self.settings.if_bandwidth = bandwidth
+        self.settings.if_bandwidth = value
         if self.is_device_active():
-            self.send_command(command=f":SENS{channel}:BAND:RES", arg=f"{bandwidth}")
+            self.send_command(command=f":SENS{channel}:BAND:RES", arg=f"{value}")
 
     def get_data(self):
         """get data"""
