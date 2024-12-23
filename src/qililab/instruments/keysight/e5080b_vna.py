@@ -25,7 +25,7 @@ from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
-from qililab.typings import InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings.enums import VNASweepModes
 from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
@@ -77,7 +77,7 @@ class E5080B(VectorNetworkAnalyzer):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: int = 1):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
         """Get instrument parameter.
 
         Args:
@@ -91,7 +91,9 @@ class E5080B(VectorNetworkAnalyzer):
         if parameter == Parameter.ELECTRICAL_DELAY:
             return self.settings.electrical_delay
         if parameter == Parameter.SWEEP_MODE:
-            return self._get_sweep_mode(channel=channel_id)
+            if channel_id:
+                return self._get_sweep_mode(channel=channel_id)
+            return self._get_sweep_mode()
         if parameter == Parameter.DEVICE_TIMEOUT:
             return self.device_timeout
         raise ParameterNotFound(self, parameter)
