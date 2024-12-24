@@ -162,7 +162,6 @@ class QbloxCompiler:
         times_of_flight: dict[str, int] | None = None,
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
-        voltage_coefficient: dict[str, float] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -174,8 +173,6 @@ class QbloxCompiler:
         Returns:
             QbloxCompilationOutput:
         """
-
-        self.voltage_coefficient = voltage_coefficient
 
         def traverse(block: Block):
             delay_implemented = False

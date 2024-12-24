@@ -11,6 +11,9 @@
 
 ### Deprecations / Removals
 
+- Removed quick fix for the timeout error while running with QM as it has been fixed.
+  [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
 ### Documentation
 
 ### Bug fixes
