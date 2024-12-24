@@ -7,6 +7,8 @@ import qpysequence as QPy
 from qililab import Calibration, Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
 from tests.test_utils import is_q1asm_equal
+from qililab.config import logger
+import logging
 
 
 def setup_q1asm(marker: str):
@@ -353,6 +355,26 @@ def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
     qp.play(bus="drive", waveform=gaussian)
     qp.play(bus="drive", waveform=gaussian)
     qp.play(bus="drive", waveform=Gaussian(amplitude=1.0, duration=40, num_sigmas=4))
+    return qp
+
+@pytest.fixture(name="play_square_waveforms_with_optimization")
+def fixture_lay_square_waveforms_with_optimization() -> QProgram:
+    qp = QProgram()
+    qp.play(bus="drive", waveform=IQPair(I=Square(1.0, duration=25), Q=Square(0.5, duration=25)))
+    qp.play(bus="drive", waveform=Square(1.0, duration=50))
+    qp.play(bus="drive", waveform=Square(1.0, duration=500))
+    qp.play(bus="drive", waveform=IQPair(I=Square(1.0, duration=500), Q=Square(0.0, duration=500)))
+    qp.play(bus="drive", waveform=Square(1.0, duration=50_000))
+    qp.play(bus="drive", waveform=Square(1.0, duration=9790223))
+    qp.play(bus="drive", waveform=IQPair(I=Square(1.0, duration=9790223), Q=Square(1.0, duration=9790223)))
+    qp.play(bus="drive", waveform=Square(0.5, duration=1234567))
+    return qp
+
+@pytest.fixture(name="play_operation_with_variable_in_waveform")
+def fixture_play_operation_with_variable_in_waveform() -> QProgram:
+    qp = QProgram()
+    amplitude = qp.variable(label="amplitude", domain=Domain.Voltage)
+    qp.play(bus="drive", waveform=Square(amplitude=amplitude, duration=100))
     return qp
 
 
@@ -1246,6 +1268,62 @@ class TestQBloxCompiler:
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_play_square_waveforms_with_optimization(self, play_square_waveforms_with_optimization: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=play_square_waveforms_with_optimization, optimize_square_waveforms=True)
+
+        assert len(sequences["drive"]._waveforms._waveforms) == 11
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 25
+                            play             2, 3, 50
+                            move             5, R0
+            square_0:
+                            play             4, 5, 100
+                            loop             R0, @square_0
+                            move             5, R1
+            square_1:
+                            play             4, 6, 100
+                            loop             R1, @square_1
+                            move             500, R2
+            square_2:
+                            play             4, 5, 100
+                            loop             R2, @square_2
+                            move             97902, R3
+            square_3:
+                            play             4, 5, 100
+                            loop             R3, @square_3
+                            play             7, 8, 23
+                            move             97902, R4
+            square_4:
+                            play             4, 4, 100
+                            loop             R4, @square_4
+                            play             7, 7, 23
+                            move             9721, R5
+            square_5:
+                            play             9, 10, 127
+                            loop             R5, @square_5
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_play_operation_with_variable_in_waveform(self, caplog, play_operation_with_variable_in_waveform: QProgram):
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.ERROR):
+            _ = compiler.compile(qprogram=play_operation_with_variable_in_waveform)
+
+        assert "Variables in waveforms are not supported in Qblox." in caplog.text
+
 
     def test_delay(self, average_with_for_loop_nshots: QProgram):
         compiler = QbloxCompiler()
