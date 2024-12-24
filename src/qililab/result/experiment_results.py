@@ -44,7 +44,7 @@ class ExperimentResults:
 
     S21_PLOT_NAME = "S21.png"
 
-    def __init__(self, path: str, slurm_execution: bool = True):
+    def __init__(self, path: str):
         """Initializes the ExperimentResults instance.
 
         Args:

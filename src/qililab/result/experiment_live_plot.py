@@ -33,7 +33,6 @@ class DimensionInfo:
 class ExperimentLivePlot:
     """Provides methods to access the experiment results stored in an HDF5 file."""
 
-    S21_PLOT_NAME = "S21.png"
     LIVE_PLOT_NAME = "live_plot.png"
 
     def __init__(self, path: str, slurm_execution: bool = True):
@@ -51,7 +50,7 @@ class ExperimentLivePlot:
         self._live_plot_fig: go.Figure | go.FigureWidget
         self._dash_app: Dash
 
-    def _live_plot_figures(self, dims_dict: dict[tuple[str, str], list[DimensionInfo]]):
+    def _live_plot_figures(self, dims_dict: dict[tuple[str, str], list]):
         """Generates the figures for live plotting the S21 parameter from the experiment results.
 
         Args:
@@ -158,6 +157,6 @@ class ExperimentLivePlot:
             self._live_plot_fig.data[qprogram_num].z = s21.T
 
         folder = os.path.dirname(self.path)
-        path = os.path.join(folder, ExperimentLivePlot.S21_PLOT_NAME)
+        path = os.path.join(folder, ExperimentLivePlot.LIVE_PLOT_NAME)
 
         self._live_plot_fig.write_image(path)
