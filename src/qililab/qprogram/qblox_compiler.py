@@ -717,27 +717,27 @@ class QbloxCompiler:
 
     @staticmethod
     def calculate_square_waveform_optimization_values(duration):
-        def remainder_conditions(pd):
-            rem = duration % pd
-            return rem, (pd >= 4 and (rem == 0 or rem >= 4))
+        def remainder_conditions(chunk_duration):
+            remainder = duration % chunk_duration
+            return remainder, (chunk_duration >= 4 and (remainder == 0 or remainder >= 4))
 
-        def find_piece_duration(condition_func):
-            for pd in range(100, 501):
-                if pd <= duration:
-                    rem, valid = remainder_conditions(pd)
-                    if valid and condition_func(rem):
-                        return pd
+        def find_chunk_duration(condition_func):
+            for chunk_duration in range(100, 501):
+                if chunk_duration <= duration:
+                    remainder, valid = remainder_conditions(chunk_duration)
+                    if valid and condition_func(remainder):
+                        return chunk_duration
             return None
 
         # First try for remainder == 0
-        final_pd = find_piece_duration(lambda rem: rem == 0)
-        if final_pd is not None:
-            return final_pd, duration // final_pd, duration % final_pd
+        final_chunk_duration = find_chunk_duration(lambda rem: rem == 0)
+        if final_chunk_duration is not None:
+            return final_chunk_duration, duration // final_chunk_duration, duration % final_chunk_duration
 
         # If not found, try for remainder ≥ 4
-        final_pd = find_piece_duration(lambda rem: rem >= 4)
-        if final_pd is not None:
-            return final_pd, duration // final_pd, duration % final_pd
+        final_chunk_duration = find_chunk_duration(lambda rem: rem >= 4)
+        if final_chunk_duration is not None:
+            return final_chunk_duration, duration // final_chunk_duration, duration % final_chunk_duration
 
         # If no suitable piece_duration found, fallback to entire duration
         return duration, 1, 0
