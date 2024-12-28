@@ -69,8 +69,6 @@ from qililab.utils import hash_qpy_sequence
 if TYPE_CHECKING:
     from queue import Queue
 
-    from qibo.transpiler.placer import Placer
-    from qibo.transpiler.router import Router
     from qpysequence import Sequence as QpySequence
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
@@ -986,11 +984,7 @@ class Platform:
         repetition_duration: int,
         num_bins: int = 1,
         queue: Queue | None = None,
-        routing: bool = False,
-        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
-        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
-        routing_iterations: int = 10,
-        optimize: bool = False,
+        transpilation_config: dict | None = None,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -1001,16 +995,18 @@ class Platform:
 
         The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-        1. Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters if provided; otherwise, default values are applied.
-        2. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
-        3. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+        1. *)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters from `transpilation_config` if provided; otherwise, default values are applied.
+        2. **)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
+        3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+        4. Commuting virtual RZ gates and adding phase corrections from CZ.
+        5. **)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
+        6. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
 
         |
 
-        If `optimize=True` (default behavior), the following optimizations are also performed:
+        *) If `routing=False` in `transpilation_config` (default behavior), step 1. is skipped.
 
-        - Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-        - Applying virtual Z gates and phase corrections by combining multiple pulses into a single one and commuting them with virtual Z gates.
+        **) If `optimize=False` in `transpilation_config` (default behavior), steps 2. and 5. are skipped.
 
         Args:
             program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
@@ -1018,13 +1014,14 @@ class Platform:
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            routing (bool, optional): whether to route the circuits. Defaults to False.
-            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
-            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+            transpilation_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
+                - routing (bool, optional): whether to route the circuits. Defaults to False.
+                - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+                    use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+                - router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+                    use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+                - routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+                - optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
@@ -1036,9 +1033,7 @@ class Platform:
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
         """
         # Compile pulse schedule
-        programs, final_layout = self.compile(
-            program, num_avg, repetition_duration, num_bins, routing, placer, router, routing_iterations, optimize
-        )
+        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpilation_config)
 
         # Upload pulse schedule
         for bus_alias in programs:
@@ -1129,11 +1124,7 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        routing: bool = False,
-        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
-        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
-        routing_iterations: int = 10,
-        optimize: bool = True,
+        transpilation_config: dict | None = None,
     ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
@@ -1142,16 +1133,20 @@ class Platform:
 
         The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-        1. Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters if provided; otherwise, default values are applied.
-        2. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
-        3. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+        1. *)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters from `transpilation_config` if provided; otherwise, default values are applied.
+        2. **)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
+        3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+        4. Commuting virtual RZ gates and adding phase corrections from CZ.
+        5. **)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
+        6. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
 
         |
 
-        If `optimize=True` (default behavior), the following optimizations are also performed:
+        *) If `routing=False` in `transpilation_config` (default behavior), step 1. is skipped.
 
-        - Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-        - Applying virtual Z gates and phase corrections by combining multiple pulses into a single one and commuting them with virtual Z gates.
+        **) If `optimize=False` in `transpilation_config` (default behavior), steps 2. and 5. are skipped.
+
+        The rest of steps are always done.
 
         .. note::
             This method is called during the ``platform.execute()`` method, check its documentation for more information.
@@ -1161,13 +1156,14 @@ class Platform:
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            routing (bool, optional): whether to route the circuits. Defaults to False.
-            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
-            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+            transpilation_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
+                - routing (bool, optional): whether to route the circuits. Defaults to False.
+                - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+                    use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+                - router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+                    use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+                - routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+                - optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
         Returns:
             tuple[dict, dict[str, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {"qX":Y}.
@@ -1181,10 +1177,7 @@ class Platform:
 
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
-
-            pulse_schedule, final_layout = transpiler.transpile_circuit(
-                program, routing, placer, router, routing_iterations, optimize
-            )
+            pulse_schedule, final_layout = transpiler.transpile_circuit(program, **transpilation_config)
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
