@@ -172,7 +172,7 @@ class CircuitOptimizer:
         Returns:
             list[gates.Gate]: list of gates of the transpiled circuit, with drag gates bunched."""
 
-        # Add bunching of Drag gates here:
+        # TODO: Add bunching of Drag gates here:
         # gate_list =
         return gate_list
 
@@ -185,7 +185,7 @@ class CircuitOptimizer:
 
         Returns:
             list[gates.Gate]: list of gates of the transpiled circuit, with gates without amplitude deleted."""
-        # Add deletion of Drag gates without amplitude here:
+        # TODO: Add deletion of Drag gates without amplitude here:
         # gate_list =
         return gate_list
 
