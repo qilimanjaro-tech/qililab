@@ -997,10 +997,10 @@ class Platform:
 
         1. \\*)Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged.
         2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-        3. Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+        3. Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M).
         4. Commuting virtual RZ gates and adding phase corrections from CZ.
         5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
-        6. Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+        6. Converts the native gates into a pulse schedule using calibrated settings from the runcard.
 
         .. note ::
 
@@ -1135,10 +1135,10 @@ class Platform:
 
         1. \\*)Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged.
         2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-        3. Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+        3. Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M).
         4. Commuting virtual RZ gates and adding phase corrections from CZ.
         5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
-        6. Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+        6. Converts the native gates into a pulse schedule using calibrated settings from the runcard.
 
         .. note ::
 
