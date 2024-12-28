@@ -984,7 +984,7 @@ class Platform:
         repetition_duration: int,
         num_bins: int = 1,
         queue: Queue | None = None,
-        transpile_config: dict | None = None,
+        transpile_config: dict = {},
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -1124,7 +1124,7 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        transpile_config: dict | None = None,
+        transpile_config: dict = {},
     ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 

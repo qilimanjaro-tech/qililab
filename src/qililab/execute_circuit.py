@@ -23,7 +23,7 @@ from .data_management import build_platform
 
 
 def execute(
-    program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1, transpile_config: dict | None = None
+    program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1, transpile_config: dict = {}
 ) -> Result | list[Result]:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 
