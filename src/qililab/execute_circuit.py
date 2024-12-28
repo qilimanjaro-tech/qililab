@@ -30,7 +30,7 @@ def execute(
     The ``program`` argument is first translated into pulses using the transpilation settings of the runcard and the passed transpile
     configuration. Then the pulse will be compiled into the runcard machines assembly programs, and executed.
 
-    The transpilation is performed using the :class:`.CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+    The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
     1. \\*)Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged.
     2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
