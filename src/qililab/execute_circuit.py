@@ -50,12 +50,10 @@ def execute(
         runcard (str | dict): If a string, path to the YAML file containing the serialization of the Platform to be
             used. If a dictionary, the serialized platform to be used.
         nshots (int, optional): Number of shots to execute. Defaults to 1.
-        transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to {}. It can contain the following keys and values:
+        transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to ``{}``. It can contain the following keys and values:
             - routing (bool, optional): whether to route the circuits. Defaults to False.
-            - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-            - router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
+            - router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
             - routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
             - optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 

@@ -127,10 +127,10 @@ class CircuitTranspiler:
         Args:
             circuit (Circuit): Qibo circuit.
             routing (bool, optional): whether to route the circuit. Defaults to False.
-            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
+            router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
             routing_iterations (int, optional): Number of times to repeat the routing pipeline, to get the best stochastic result. Defaults to 10.
             optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 

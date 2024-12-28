@@ -1014,12 +1014,10 @@ class Platform:
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to {}. It can contain the following keys and values:
+            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to ``{}``. It can contain the following keys and values:
                 - routing (bool, optional): whether to route the circuits. Defaults to False.
-                - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                    use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-                - router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                    use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+                - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
+                - router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
                 - routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
                 - optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
@@ -1154,12 +1152,10 @@ class Platform:
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to {}. It can contain the following keys and values:
+            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to ``{}``. It can contain the following keys and values:
                 - routing (bool, optional): whether to route the circuits. Defaults to False.
-                - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                    use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-                - router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                    use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+                - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
+                - router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
                 - routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
                 - optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
