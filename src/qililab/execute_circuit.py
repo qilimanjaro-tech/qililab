@@ -23,7 +23,7 @@ from .data_management import build_platform
 
 
 def execute(
-    program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1, transpilation_config: dict | None = None
+    program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1, transpile_config: dict | None = None
 ) -> Result | list[Result]:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 
@@ -32,7 +32,7 @@ def execute(
 
     The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-    1. *)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters from `transpilation_config` if provided; otherwise, default values are applied.
+    1. *)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters from `transpile_config` if provided; otherwise, default values are applied.
     2. **)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
     3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
     4. Commuting virtual RZ gates and adding phase corrections from CZ.
@@ -41,16 +41,16 @@ def execute(
 
     |
 
-    *) If `routing=False` in `transpilation_config` (default behavior), step 1. is skipped.
+    *) If `routing=False` in `transpile_config` (default behavior), step 1. is skipped.
 
-    **) If `optimize=False` in `transpilation_config` (default behavior), steps 2. and 5. are skipped.
+    **) If `optimize=False` in `transpile_config` (default behavior), steps 2. and 5. are skipped.
 
     Args:
         circuit (Circuit | list[Circuit]): Qibo Circuit.
         runcard (str | dict): If a string, path to the YAML file containing the serialization of the Platform to be
             used. If a dictionary, the serialized platform to be used.
         nshots (int, optional): Number of shots to execute. Defaults to 1.
-        transpilation_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
+        transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
             - routing (bool, optional): whether to route the circuits. Defaults to False.
             - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
@@ -104,7 +104,7 @@ def execute(
                 num_avg=1,
                 repetition_duration=200_000,
                 num_bins=nshots,
-                transpilation_config=transpilation_config,
+                transpile_config=transpile_config,
             )
             for circuit in tqdm(program, total=len(program))
         ]

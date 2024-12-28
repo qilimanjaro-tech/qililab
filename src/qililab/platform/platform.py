@@ -984,7 +984,7 @@ class Platform:
         repetition_duration: int,
         num_bins: int = 1,
         queue: Queue | None = None,
-        transpilation_config: dict | None = None,
+        transpile_config: dict | None = None,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -995,7 +995,7 @@ class Platform:
 
         The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-        1. *)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters from `transpilation_config` if provided; otherwise, default values are applied.
+        1. *)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters from `transpile_config` if provided; otherwise, default values are applied.
         2. **)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
         3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
         4. Commuting virtual RZ gates and adding phase corrections from CZ.
@@ -1004,9 +1004,9 @@ class Platform:
 
         |
 
-        *) If `routing=False` in `transpilation_config` (default behavior), step 1. is skipped.
+        *) If `routing=False` in `transpile_config` (default behavior), step 1. is skipped.
 
-        **) If `optimize=False` in `transpilation_config` (default behavior), steps 2. and 5. are skipped.
+        **) If `optimize=False` in `transpile_config` (default behavior), steps 2. and 5. are skipped.
 
         Args:
             program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
@@ -1014,7 +1014,7 @@ class Platform:
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            transpilation_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
+            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
                 - routing (bool, optional): whether to route the circuits. Defaults to False.
                 - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                     use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
@@ -1033,7 +1033,7 @@ class Platform:
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
         """
         # Compile pulse schedule
-        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpilation_config)
+        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpile_config)
 
         # Upload pulse schedule
         for bus_alias in programs:
@@ -1124,7 +1124,7 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        transpilation_config: dict | None = None,
+        transpile_config: dict | None = None,
     ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
@@ -1133,7 +1133,7 @@ class Platform:
 
         The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-        1. *)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters from `transpilation_config` if provided; otherwise, default values are applied.
+        1. *)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters from `transpile_config` if provided; otherwise, default values are applied.
         2. **)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
         3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
         4. Commuting virtual RZ gates and adding phase corrections from CZ.
@@ -1142,9 +1142,9 @@ class Platform:
 
         |
 
-        *) If `routing=False` in `transpilation_config` (default behavior), step 1. is skipped.
+        *) If `routing=False` in `transpile_config` (default behavior), step 1. is skipped.
 
-        **) If `optimize=False` in `transpilation_config` (default behavior), steps 2. and 5. are skipped.
+        **) If `optimize=False` in `transpile_config` (default behavior), steps 2. and 5. are skipped.
 
         The rest of steps are always done.
 
@@ -1156,7 +1156,7 @@ class Platform:
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            transpilation_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
+            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
                 - routing (bool, optional): whether to route the circuits. Defaults to False.
                 - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                     use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
@@ -1177,7 +1177,7 @@ class Platform:
 
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
-            pulse_schedule, final_layout = transpiler.transpile_circuit(program, **transpilation_config)
+            pulse_schedule, final_layout = transpiler.transpile_circuit(program, **transpile_config)
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
