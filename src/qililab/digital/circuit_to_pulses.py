@@ -18,7 +18,6 @@ from dataclasses import asdict
 
 import numpy as np
 from qibo import gates
-from qibo.models import Circuit
 
 from qililab.constants import RUNCARD
 from qililab.pulse.pulse import Pulse
@@ -44,7 +43,7 @@ class CircuitToPulses:
         self.settings: DigitalCompilationSettings = settings
         """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
-    def run(self, circuit: Circuit) -> PulseSchedule:
+    def run(self, gate_list: list[gates.Gate]) -> PulseSchedule:
         """Translates a circuit into a  pulse sequences.
 
         For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
@@ -63,7 +62,7 @@ class CircuitToPulses:
         time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
 
         Args:
-            circuits (List[Circuit]): List of Qibo Circuit classes.
+            gate_list (list[gates.Gate]): list of native gates of the qibo circuit.
 
         Returns:
             list[PulseSequences]: List of :class:`PulseSequences` classes.
@@ -71,7 +70,7 @@ class CircuitToPulses:
 
         pulse_schedule: PulseSchedule = PulseSchedule()
         time: dict[int, int] = {}  # init/restart time
-        for gate in circuit.queue:
+        for gate in gate_list:
             # handle wait gates
             if isinstance(gate, Wait):
                 self._update_time(time=time, qubit=gate.qubits[0], gate_time=gate.parameters[0])

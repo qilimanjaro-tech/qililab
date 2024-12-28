@@ -19,7 +19,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import networkx as nx
-from qibo.models import Circuit
 
 from qililab.config import logger
 from qililab.digital.circuit_optimizer import CircuitOptimizer
@@ -29,6 +28,7 @@ from qililab.digital.circuit_to_pulses import CircuitToPulses
 from .gate_decompositions import translate_gates
 
 if TYPE_CHECKING:
+    from qibo import Circuit, gates
     from qibo.transpiler.placer import Placer
     from qibo.transpiler.router import Router
 
@@ -52,15 +52,18 @@ class CircuitTranspiler:
         self.settings: DigitalCompilationSettings = settings
         """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
-    def transpile_circuits(
+        self.optimizer: CircuitOptimizer = CircuitOptimizer(self.settings)
+        """Object to do do the complex circuit manipulations with."""
+
+    def transpile_circuit(
         self,
-        circuits: list[Circuit],
+        circuit: Circuit,
         routing: bool = False,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
         optimize: bool = True,
-    ) -> tuple[list[PulseSchedule], list[dict]]:
+    ) -> tuple[PulseSchedule, dict]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
         The process involves the following steps:
@@ -106,17 +109,17 @@ class CircuitTranspiler:
         .. code-block:: python
 
             # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
-            transpiled_circuits, final_layouts = transpiler.transpile_circuits([c])
+            transpiled_circuit, final_layouts = transpiler.transpile_circuit(c)
 
             # Or another case, not doing optimization for some reason, and with Non-Default placer:
-            transpiled_circuits, final_layout = transpiler.transpile_circuits([c], placer=Trivial, optimize=False)
+            transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Trivial, optimize=False)
 
             # Or also specifying the `router` with kwargs:
-            transpiled_circuits, final_layouts = transpiler.transpile_circuits([c], router=(Sabre, {"lookahead": 2}))
+            transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
 
         Args:
-            circuits (list[Circuit]): list of qibo circuits.
-            routing (bool, optional): whether to route the circuits. Defaults to False.
+            circuit (Circuit): Qibo circuit.
+            routing (bool, optional): whether to route the circuit. Defaults to False.
             placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
@@ -125,36 +128,38 @@ class CircuitTranspiler:
             optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
         Returns:
-            tuple[list[PulseSchedule],list[dict[str, int]]]: list of pulse schedules and list of the final layouts of the qubits, in each circuit {"qI": J}.
+            tuple[PulseSchedule, dict[str, int]]: Pulse schedule and final layouts of the qubits, in the circuit {"qI": J}.
         """
 
         # Routing stage;
         if routing:
-            routed_circuits, final_layouts = zip(
-                *(self.route_circuit(circuit, placer, router, iterations=routing_iterations) for circuit in circuits)
-            )
-            logger.info(f"Circuits final layouts: {final_layouts}")
+            circuit, final_layout = self.route_circuit(circuit, placer, router, iterations=routing_iterations)
+            logger.info(f"The physical qubits used for the execution will be: {final_layout}")
         else:
-            routed_circuits = tuple(circuits)
-            final_layouts = tuple({f"q{i}": i for i in range(circuit.nqubits)} for circuit in circuits)
+            final_layout = {f"q{i}": i for i in range(circuit.nqubits)}
 
-        # Optimze qibo gates, cancellating redundant gates, stage:
+        # Transpilation is done without constructing the Circuit class, from here onwards:
+        gate_list = circuit.queue
+        nqubits = circuit.nqubits
+
+        # Optimze qibo gates, cancelling redundant gates:
         if optimize:
-            routed_circuits = tuple(self.optimize_circuit(circuit) for circuit in routed_circuits)
+            gate_list = self.optimize_gates(gate_list)
 
-        # Unroll to Natives stage:
-        native_circuits = (self.circuit_to_native(circuit) for circuit in routed_circuits)
+        # Unroll to Natives gates:
+        gate_list = self.gates_to_native(gate_list)
 
         # Add phases from RZs and CZs to Drags:
-        native_circuits = (self.add_phases_from_RZs_and_CZs_to_drags(circuit) for circuit in native_circuits)
+        gate_list = self.add_phases_from_RZs_and_CZs_to_drags(gate_list, nqubits)
 
-        # if optimize:
-        #     native_circuits = (self.optimize_transpilation(circuit) for circuit in native_circuits)
+        # Optimze transpiled qibo gates, cancelling redundant gates:
+        if optimize:
+            gate_list = self.optimize_transpiled_gates(gate_list)
 
         # Pulse schedule stage:
-        pulse_schedules = self.circuit_to_pulses(list(native_circuits))
+        pulse_schedule = self.gates_to_pulses(gate_list)
 
-        return pulse_schedules, list(final_layouts)
+        return pulse_schedule, final_layout
 
     def route_circuit(
         self,
@@ -224,39 +229,38 @@ class CircuitTranspiler:
         """
         # Get the chip's connectivity
         topology = nx.Graph(coupling_map if coupling_map is not None else self.settings.topology)
-
         circuit_router = CircuitRouter(topology, placer, router)
 
         return circuit_router.route(circuit, iterations)
 
-    def optimize_circuit(self, circuit: Circuit) -> Circuit:
-        """Main function to optimize circuits with. Currently works by cancelling adjacent hermitian gates.
+    @staticmethod
+    def optimize_gates(gate_list: list[gates.Gate]) -> list[gates.Gate]:
+        """Main function to optimize the circuit with. Currently works by cancelling adjacent hermitian gates.
 
         The total optimization can/might be expanded in the future.
 
         Args:
-            circuit (Circuit): circuit to optimize.
+            gate_list (list[gates.Gate]): list of gates of the Qibo circuit to optimize.
 
         Returns:
-            Circuit: optimized circuit.
+            list[gates.Gate]: list of the gates of the Qibo circuit, optimized.
         """
-        return CircuitOptimizer.run_gate_cancellations(circuit)
+        return CircuitOptimizer.optimize_gates(gate_list)
 
-    def circuit_to_native(self, circuit: Circuit) -> Circuit:
+    @staticmethod
+    def gates_to_native(gate_list: list[gates.Gate]) -> list[gates.Gate]:
         """Converts circuit with qibo gates to circuit with native gates (CZ, RZ, Drag, Wait and M (Measurement).
 
         Args:
-            circuit (Circuit): circuit with qibo gate.
+            gate_list (list[gates.Gate]): list of gates of the Qibo circuit, to pass to native.
 
         Returns:
-            new_circuit (Circuit): circuit with transpiled gates
+            list[gates.Gate]: list of native gates of the Qibo circuit.
+
         """
-        new_circuit = Circuit(circuit.nqubits)
-        new_circuit.add(translate_gates(circuit.queue))
+        return translate_gates(gate_list)
 
-        return new_circuit
-
-    def add_phases_from_RZs_and_CZs_to_drags(self, circuit: Circuit) -> Circuit:
+    def add_phases_from_RZs_and_CZs_to_drags(self, gate_list: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
         """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
 
             - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
@@ -281,27 +285,27 @@ class CircuitTranspiler:
         For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
 
         Args:
-            circuit (Circuit): circuit with native gates, to optimize.
+            gate_list (list[gates.Gate]): list of native gates of the circuit, to pass phases to the Drag gates.
+            nqubits (int): Number of qubits of the circuit.
 
         Returns:
-            Circuit: Circuit with optimized transpiled gates.
+            list[gates.Gate]: list of native gates of the circuit, with phases passed to the Drag gates.
         """
-        optimizer = CircuitOptimizer(self.settings)
+        return self.optimizer.add_phases_from_RZs_and_CZs_to_drags(gate_list, nqubits)
 
-        output_circuit = Circuit(circuit.nqubits)
-        output_circuit.add(optimizer.add_phases_from_RZs_and_CZs_to_drags(circuit))
-        return output_circuit
+    def optimize_transpiled_gates(self, gate_list: list[gates.Gate]) -> list[gates.Gate]:
+        """Bunches consecutive Drag gates together into a single one.
 
-    def optimize_transpilation(self, circuit: Circuit) -> Circuit:
-        """Bunches consecutive Drag gates together into a single one."""
+        Args:
+            gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to optimize.
 
-        optimizer = CircuitOptimizer(self.settings)
-        output_circuit = Circuit(circuit.nqubits)
-        output_circuit.add(optimizer.optimize_transpilation(circuit))
-        return
+        Returns:
+            list[gates.Gate]: list of gates of the transpiled circuit, optimized.
+        """
+        return self.optimizer.optimize_transpiled_gates(gate_list)
 
-    def circuit_to_pulses(self, circuits: list[Circuit]) -> list[PulseSchedule]:
-        """Translates a list of circuits into a list of pulse sequences (each circuit to an independent pulse sequence).
+    def gates_to_pulses(self, gate_list: list[gates.Gate]) -> PulseSchedule:
+        """Translates a Qibo circuit into its corresponding pulse sequences.
 
         For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
         gate and the name of the gate in the runcard should match) and load its schedule of GateEvents.
@@ -319,10 +323,11 @@ class CircuitTranspiler:
         time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
 
         Args:
-            circuits (List[Circuit]): List of Qibo Circuit classes.
+            gate_list (list[gates.Gate]): list of native gates of the Qibo circuit.
 
         Returns:
-            list[PulseSequences]: List of :class:`PulseSequences` classes.
+            PulseSequences: equivalent :class:`PulseSequences` class.
         """
         circuit_to_pulses = CircuitToPulses(self.settings)
-        return [circuit_to_pulses.run(circuit) for circuit in circuits]
+
+        return circuit_to_pulses.run(gate_list)

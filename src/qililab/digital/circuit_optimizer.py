@@ -16,7 +16,7 @@
 
 from copy import deepcopy
 
-from qibo import Circuit, gates
+from qibo import gates
 
 from qililab import digital
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
@@ -37,31 +37,34 @@ class CircuitOptimizer:
         """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
     @classmethod
-    def run_gate_cancellations(cls, circuit: Circuit) -> Circuit:
-        """Main method to run the gate cancellations. Currently only consists of cancelling pairs of hermitian gates.
+    def optimize_gates(cls, gate_list: list[gates.Gate]) -> list[gates.Gate]:
+        """Main method to run the gate optimizations. Currently only consists of cancelling pairs of hermitian gates.
 
-        Can/Might be extended in the future to include more complex gate cancellations.
+        Can/Might be extended in the future to include more complex gate optimization.
 
         Args:
-            circuit (Circuit): circuit to optimize.
+            gate_list (list[gates.Gate]): list of gates of the Qibo circuit to cancel gates.
 
         Returns:
-            Circuit: optimized circuit.
+            list[gates.Gate]: list of the gates of the Qibo circuit, optimized.
         """
-        return cls.cancel_pairs_of_hermitian_gates(circuit)
+        # Add more future methods of optimizing gates here, like 2local optimizations, cliffords ...:
+        gate_list = cls.cancel_pairs_of_hermitian_gates(gate_list)
+        # gate_list = cls.2local_gate_optimization(gate_list) TODO:
+        return gate_list
 
     @classmethod
-    def cancel_pairs_of_hermitian_gates(cls, circuit: Circuit) -> Circuit:
+    def cancel_pairs_of_hermitian_gates(cls, gate_list: list[gates.Gate]) -> list[gates.Gate]:
         """Optimizes circuit by cancelling adjacent hermitian gates.
 
         Args:
-            circuit (Circuit): circuit to optimize.
+            gate_list (list[gates.Gate]): list of gates of the Qibo circuit to cancel pairs of hermitians.
 
         Returns:
-            Circuit: optimized circuit.
+            list[gates.Gate]: list of the gates of the Qibo circuit, optimized.
         """
         # Initial and final circuit gates lists, from which to, one by one, after checks, pass non-cancelled gates:
-        circ_list: list[tuple] = cls._get_circuit_gates(circuit)
+        circ_list: list[tuple] = cls._get_circuit_gates(gate_list)
 
         # We want to do the sweep circuit cancelling gates least once always:
         previous_circ_list = deepcopy(circ_list)
@@ -73,9 +76,9 @@ class CircuitOptimizer:
             output_circ_list = cls._sweep_circuit_cancelling_pairs_of_hermitian_gates(output_circ_list)
 
         # Create optimized circuit, from the obtained non-cancelled list:
-        return cls._create_circuit(output_circ_list, circuit.nqubits)
+        return cls._create_circuit_gate_list(output_circ_list)
 
-    def add_phases_from_RZs_and_CZs_to_drags(self, circuit: Circuit) -> list[gates.Gate]:
+    def add_phases_from_RZs_and_CZs_to_drags(self, gate_list: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
         """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
 
             - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
@@ -100,18 +103,16 @@ class CircuitOptimizer:
         For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
 
         Args:
-            circuit (Circuit): circuit with native gates, to optimize.
+            gate_list (list[gates.Gate]): list of native gates of the circuit, to pass phases to the Drag gates.
+            nqubits (int): Number of qubits of the circuit.
 
         Returns:
-            list[gates.Gate] : list of re-ordered gates
+            list[gates.Gate]: list of re-ordered gates
         """
-        nqubits: int = circuit.nqubits
-        ngates: list[gates.Gate] = circuit.queue
-
         supported_gates = ["rz", "drag", "cz", "wait", "measure"]
         new_gates = []
         shift = dict.fromkeys(range(nqubits), 0)
-        for gate in ngates:
+        for gate in gate_list:
             if gate.name not in supported_gates:
                 raise NotImplementedError(f"{gate.name} not part of native supported gates {supported_gates}")
             if isinstance(gate, gates.RZ):
@@ -146,29 +147,59 @@ class CircuitOptimizer:
 
         return new_gates
 
-    def optimize_transpilation(self, circuit: Circuit) -> Circuit:
+    @classmethod
+    def optimize_transpiled_gates(cls, gate_list: list[gates.Gate]) -> list[gates.Gate]:
         """Bunches consecutive Drag gates together into a single one.
 
         Args:
-            circuit (Circuit): circuit to optimize.
+            gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to optimize.
 
         Returns:
-            Circuit: optimized circuit.
+            list[gates.Gate]: list of gates of the transpiled circuit, optimized.
         """
-        # circuit =
-        return circuit
+        # Add more optimizations of the transpiled circuit here:
+        gate_list = cls.bunch_drag_gates(gate_list)
+        gate_list = cls.delete_gates_with_no_amplitude(gate_list)
+        return gate_list
 
     @staticmethod
-    def _get_circuit_gates(circuit: Circuit) -> list[tuple]:
+    def bunch_drag_gates(gate_list: list[gates.Gate]) -> list[gates.Gate]:
+        """Bunches consecutive Drag gates together into a single one.
+
+        Args:
+            gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to bunch drag gates.
+
+        Returns:
+            list[gates.Gate]: list of gates of the transpiled circuit, with drag gates bunched."""
+
+        # Add bunching of Drag gates here:
+        # gate_list =
+        return gate_list
+
+    @staticmethod
+    def delete_gates_with_no_amplitude(gate_list: list[gates.Gate]) -> list[gates.Gate]:
+        """Bunches consecutive Drag gates together into a single one.
+
+        Args:
+            gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to delete gates without amplitude.
+
+        Returns:
+            list[gates.Gate]: list of gates of the transpiled circuit, with gates without amplitude deleted."""
+        # Add deletion of Drag gates without amplitude here:
+        # gate_list =
+        return gate_list
+
+    @staticmethod
+    def _get_circuit_gates(gate_list: list[gates.Gate]) -> list[tuple]:
         """Get the gates of the circuit.
 
         Args:
-            circuit (qibo.models.Circuit): Circuit to get the gates from.
+            gate_list (list[gates.Gate]): list of native gates of the Qibo circuit.
 
         Returns:
-            list[tuple]: List of gates in the circuit. Where each gate is a tuple of ('name', 'init_args', 'initi_kwargs').
+            list[tuple]: List of gates in the circuit. Where each gate is a tuple of ('name', 'init_args', 'init_kwargs').
         """
-        return [(type(gate).__name__, gate.init_args, gate.init_kwargs) for gate in circuit.queue]
+        return [(type(gate).__name__, gate.init_args, gate.init_kwargs) for gate in gate_list]
 
     @staticmethod
     def _create_gate(gate_class: str, gate_args: list | int, gate_kwargs: dict) -> gates.Gate:
@@ -192,7 +223,7 @@ class CircuitOptimizer:
         )
 
     @classmethod
-    def _create_circuit(cls, gates_list: list[tuple], nqubits: int) -> Circuit:
+    def _create_circuit_gate_list(cls, gates_list: list[tuple]) -> list[gates.Gate]:
         """Converts a list of gates (name, qubits) into a qibo Circuit object.
 
         Args:
@@ -200,15 +231,15 @@ class CircuitOptimizer:
             nqubits (int): Number of qubits in the circuit.
 
         Returns:
-            Circuit: The qibo Circuit object.
+            list[gates.Gate]: Gate list of the qibo Circuit.
         """
         # Create optimized circuit, from the obtained non-cancelled list:
-        output_circuit = Circuit(nqubits)
+        output_gates_list = []
         for gate, gate_args, gate_kwargs in gates_list:
             qibo_gate = cls._create_gate(gate, gate_args, gate_kwargs)
-            output_circuit.add(qibo_gate)
+            output_gates_list.append(qibo_gate)
 
-        return output_circuit
+        return output_gates_list
 
     @classmethod
     def _sweep_circuit_cancelling_pairs_of_hermitian_gates(cls, circ_list: list[tuple]) -> list[tuple]:

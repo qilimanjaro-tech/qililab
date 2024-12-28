@@ -37,17 +37,17 @@ class TestCircuitOptimizerIntegration:
 
         # Optimize the circuit.
         optimizer = CircuitOptimizer(None)
-        optimized_circuit = optimizer.run_gate_cancellations(circuit)
+        optimized_gates = optimizer.optimize_gates(circuit.queue)
 
         # Check that the circuit is optimized
-        assert len(optimized_circuit.queue) == 5
+        assert len(optimized_gates) == 5
         # Check name attribute:
-        assert [gate.name for gate in optimized_circuit.queue] == ["cx", "h", "drag", "h", "cx"]
+        assert [gate.name for gate in optimized_gates] == ["cx", "h", "drag", "h", "cx"]
         # CHeck the type of the gates:
-        assert [type(gate).__name__ for gate in optimized_circuit.queue] == ["CNOT", "H", "Drag", "H", "CNOT"]
+        assert [type(gate).__name__ for gate in optimized_gates] == ["CNOT", "H", "Drag", "H", "CNOT"]
         # Assert the initial arguments:
-        assert [gate.init_args for gate in optimized_circuit.queue] == [[2,3], [3], [3], [3], [2,3]]
-        assert [gate.init_kwargs for gate in optimized_circuit.queue] == [{}, {}, {"theta": 2*np.pi, "phase": np.pi, "trainable": True}, {}, {}]
+        assert [gate.init_args for gate in optimized_gates] == [[2,3], [3], [3], [3], [2,3]]
+        assert [gate.init_kwargs for gate in optimized_gates] == [{}, {}, {"theta": 2*np.pi, "phase": np.pi, "trainable": True}, {}, {}]
 
 
 class TestCircuitOptimizerUnit:
@@ -62,7 +62,7 @@ class TestCircuitOptimizerUnit:
         circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
 
         optimizer = CircuitOptimizer(None)
-        optimized_gates = optimizer.run_gate_cancellations(circuit)
+        optimized_gates = optimizer.optimize_gates(circuit)
 
         mock_cancelation.assert_called_once_with(circuit)
         assert len(optimized_gates) == 2
@@ -70,7 +70,7 @@ class TestCircuitOptimizerUnit:
         assert [type(gate).__name__ for gate in optimized_gates] == ["CZ", "Drag"]
 
 
-    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._create_circuit", return_value=Circuit(5))
+    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._create_circuit_gate_list", return_value=Circuit(5).queue)
     @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates", return_value=[("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
     @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._get_circuit_gates", return_value=[("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
     def test_cancel_pairs_of_hermitian_gates(self, mock_get_circuit_gates, mock_sweep_circuit, mock_create_circuit):
@@ -81,11 +81,11 @@ class TestCircuitOptimizerUnit:
         circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
 
         optimizer = CircuitOptimizer(None)
-        _ = optimizer.cancel_pairs_of_hermitian_gates(circuit)
+        _ = optimizer.cancel_pairs_of_hermitian_gates(circuit.queue)
 
-        mock_get_circuit_gates.assert_called_once_with(circuit)
+        mock_get_circuit_gates.assert_called_once_with(circuit.queue)
         mock_sweep_circuit.assert_called_once_with([("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
-        mock_create_circuit.assert_called_once_with([("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})], circuit.nqubits)
+        mock_create_circuit.assert_called_once_with([("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
 
 
     def test_get_circuit_gates(self):
@@ -94,7 +94,7 @@ class TestCircuitOptimizerUnit:
         circuit.add(gates.X(0))
         circuit.add(gates.H(1))
 
-        gates_list = CircuitOptimizer._get_circuit_gates(circuit)
+        gates_list = CircuitOptimizer._get_circuit_gates(circuit.queue)
 
         assert gates_list == [("X", [0], {}), ("H", [1], {})]
 
@@ -107,10 +107,10 @@ class TestCircuitOptimizerUnit:
     def test_create_circuit(self):
         """Test create circuit."""
         gates_list = [("X", [0], {}), ("H", [1], {})]
-        circuit = CircuitOptimizer._create_circuit(gates_list, 2)
+        circuit_list = CircuitOptimizer._create_circuit_gate_list(gates_list)
 
-        assert len(circuit.queue) == 2
-        assert [gate.name for gate in circuit.queue] == ["x", "h"]
+        assert len(circuit_list) == 2
+        assert [gate.name for gate in circuit_list] == ["x", "h"]
 
     def test_sweep_circuit_cancelling_pairs_of_hermitian_gates(self):
         """Test sweep circuit cancelling pairs of hermitian gates."""

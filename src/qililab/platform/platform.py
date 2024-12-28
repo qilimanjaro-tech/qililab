@@ -1085,20 +1085,19 @@ class Platform:
 
         # Flatten results if more than one readout bus was used for a qblox module
         if len(results) > 1:
-            results = [
-                QbloxResult(
-                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
-                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
-                )
-            ]
-        if not results:
+            result = QbloxResult(
+                integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
+                qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
+            )
+        elif not results:
             raise ValueError("There are no readout buses in the platform.")
+        else:
+            result = results[0]
 
         if isinstance(program, Circuit):
-            results = [self._order_result(results[0], program, final_layout)]
+            result = self._order_result(result, program, final_layout)
 
-        # FIXME: return result instead of results[0]
-        return results[0]
+        return result
 
     def _order_result(self, result: Result, circuit: Circuit, final_layout: dict[str, int] | None) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
@@ -1202,10 +1201,9 @@ class Platform:
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
 
-            transpiled_circuits, final_layouts = transpiler.transpile_circuits(
-                [program], routing, placer, router, routing_iterations, optimize
+            pulse_schedule, final_layout = transpiler.transpile_circuit(
+                program, routing, placer, router, routing_iterations, optimize
             )
-            pulse_schedule, final_layout = transpiled_circuits[0], final_layouts[0]
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
