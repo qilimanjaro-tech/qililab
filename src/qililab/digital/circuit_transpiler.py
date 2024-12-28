@@ -80,14 +80,13 @@ class CircuitTranspiler:
 
         6. Pulse Schedule Conversion: Converts the native gates into a pulse schedule using calibrated settings from the runcard.
 
-        |
+        .. note::
 
-        \\*) If ``routing=False`` in ``transpile_config`` (default behavior), step 1. is skipped.
+            \\*) If ``routing=False`` in ``transpile_config`` (default behavior), step 1. is skipped.
 
-        \\**) If ``optimize=False`` in ``transpile_config`` (default behavior), steps 2. and 5. are skipped.
+            \\**) If ``optimize=False`` in ``transpile_config`` (default behavior), steps 2. and 5. are skipped.
 
-        The rest of steps are always done.
-        |
+            The rest of steps are always done.
 
         **Examples:**
 
