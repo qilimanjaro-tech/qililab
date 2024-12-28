@@ -656,7 +656,7 @@ class TestCircuitTranspiler:
     @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.gates_to_native")
     @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.gates_to_pulses")
     def test_transpile_circuit(self, mock_to_pulses, mock_to_native, mock_route, mock_opt_trans, mock_opt_circuit, mock_add_phases, optimize, digital_settings):
-        """Test transpile_circuits method"""
+        """Test transpile_circuit method"""
         transpiler = CircuitTranspiler(settings=digital_settings)
         placer = MagicMock()
         router = MagicMock()
