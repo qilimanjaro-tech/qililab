@@ -988,28 +988,28 @@ class Platform:
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
-        If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
-        settings of the platform and the passed placer and router. Then the pulse schedules will be compiled into the assembly programs and executed.
+        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
+        settings of the platform and the passed transpile onfiguration. Then the pulse schedules will be compiled into the assembly programs and executed.
 
         To compile to assembly programs, the ``platform.compile()`` method is called; check its documentation for more information.
 
-        The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+        The transpilation is performed using the :class:`.CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-        1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpile_config`` if provided; otherwise, default values are applied.
+        1. \\*)Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged.
         2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-        3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+        3. Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
         4. Commuting virtual RZ gates and adding phase corrections from CZ.
         5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
-        6. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+        6. Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
 
-        |
+        .. note ::
 
-        \\*) If ``routing=False`` in ``transpile_config`` (default behavior), step 1. is skipped.
+            \\*) Step `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
-        \\**) If ``optimize=False`` in ``transpile_config`` (default behavior), steps 2. and 5. are skipped.
+            \\**) Steps 2. and 5 are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
         Args:
-            program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
+            program (``PulseSchedule`` | ``Circuit``): Circuit or pulse schedule to execute.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int, optional): Number of bins used. Defaults to 1.
@@ -1128,29 +1128,29 @@ class Platform:
     ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
-        If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
-        settings of the platform and passed placer and router. Then the pulse schedules will be compiled into the assembly programs.
+        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
+        settings of the platform and passed  transpile configuration. Then the pulse schedules will be compiled into the assembly programs.
 
-        The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+        The transpilation is performed using the :class:`.CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-        1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpile_config`` if provided; otherwise, default values are applied.
+        1. \\*)Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged.
         2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-        3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+        3. Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
         4. Commuting virtual RZ gates and adding phase corrections from CZ.
         5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
-        6. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+        6. Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
 
-        |
+        .. note ::
 
-        \\*) If ``routing=False`` in ``transpile_config`` (default behavior), step 1. is skipped.
+            \\*) Step `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
-        \\**) If ``optimize=False`` in ``transpile_config`` (default behavior), steps 2. and 5. are skipped.
+            \\**) Steps 2. and 5 are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
         .. note::
             This method is called during the ``platform.execute()`` method, check its documentation for more information.
 
         Args:
-            program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to compile.
+            program (``PulseSchedule`` | ``Circuit``): Circuit or pulse schedule to compile.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.

@@ -27,23 +27,23 @@ def execute(
 ) -> Result | list[Result]:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 
-    The ``program`` argument is first translated into pulses using the transpilation settings of the runcard and the
-    passed placer and router. Then the pulse will be compiled into the runcard machines assembly programs, and executed.
+    The ``program`` argument is first translated into pulses using the transpilation settings of the runcard and the passed transpile
+    configuration. Then the pulse will be compiled into the runcard machines assembly programs, and executed.
 
-    The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+    The transpilation is performed using the :class:`.CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-    1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpile_config`` if provided; otherwise, default values are applied.
+    1. \\*)Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged.
     2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-    3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+    3. Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
     4. Commuting virtual RZ gates and adding phase corrections from CZ.
     5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
-    6. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+    6. Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
 
-    |
+    .. note ::
 
-    \\*) If ``routing=False`` in ``transpile_config`` (default behavior), step 1. is skipped.
+        \\*) Step `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
-    \\**) If ``optimize=False`` in ``transpile_config`` (default behavior), steps 2. and 5. are skipped.
+        \\**) Steps 2. and 5 are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
     Args:
         circuit (Circuit | list[Circuit]): Qibo Circuit.
