@@ -1014,7 +1014,7 @@ class Platform:
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
+            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to {}. It can contain the following keys and values:
                 - routing (bool, optional): whether to route the circuits. Defaults to False.
                 - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                     use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
@@ -1156,7 +1156,7 @@ class Platform:
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
+            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to {}. It can contain the following keys and values:
                 - routing (bool, optional): whether to route the circuits. Defaults to False.
                 - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                     use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.

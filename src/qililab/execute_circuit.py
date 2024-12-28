@@ -50,7 +50,7 @@ def execute(
         runcard (str | dict): If a string, path to the YAML file containing the serialization of the Platform to be
             used. If a dictionary, the serialized platform to be used.
         nshots (int, optional): Number of shots to execute. Defaults to 1.
-        transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to None. It can contain the following keys and values:
+        transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to {}. It can contain the following keys and values:
             - routing (bool, optional): whether to route the circuits. Defaults to False.
             - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
