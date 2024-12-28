@@ -995,7 +995,7 @@ class Platform:
 
         The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-        1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters from `transpile_config` if provided; otherwise, default values are applied.
+        1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpile_config`` if provided; otherwise, default values are applied.
         2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
         3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
         4. Commuting virtual RZ gates and adding phase corrections from CZ.
@@ -1004,9 +1004,9 @@ class Platform:
 
         |
 
-        \\*) If `routing=False` in `transpile_config` (default behavior), step 1. is skipped.
+        \\*) If ``routing=False`` in ``transpile_config`` (default behavior), step 1. is skipped.
 
-        \\**) If `optimize=False` in `transpile_config` (default behavior), steps 2. and 5. are skipped.
+        \\**) If ``optimize=False`` in ``transpile_config`` (default behavior), steps 2. and 5. are skipped.
 
         Args:
             program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
@@ -1133,7 +1133,7 @@ class Platform:
 
         The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-        1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters from `transpile_config` if provided; otherwise, default values are applied.
+        1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpile_config`` if provided; otherwise, default values are applied.
         2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
         3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
         4. Commuting virtual RZ gates and adding phase corrections from CZ.
@@ -1142,11 +1142,9 @@ class Platform:
 
         |
 
-        \\*) If `routing=False` in `transpile_config` (default behavior), step 1. is skipped.
+        \\*) If ``routing=False`` in ``transpile_config`` (default behavior), step 1. is skipped.
 
-        \\**) If `optimize=False` in `transpile_config` (default behavior), steps 2. and 5. are skipped.
-
-        The rest of steps are always done.
+        \\**) If ``optimize=False`` in ``transpile_config`` (default behavior), steps 2. and 5. are skipped.
 
         .. note::
             This method is called during the ``platform.execute()`` method, check its documentation for more information.
