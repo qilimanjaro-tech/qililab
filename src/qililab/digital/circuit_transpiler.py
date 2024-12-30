@@ -124,6 +124,10 @@ class CircuitTranspiler:
             # Or also specifying the `router` with kwargs:
             transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
 
+        .. note::
+
+            Check :ref:`Transpilation <transpilation>`, for more examples of how ``execute()``'s methods automatically apply this.
+
         Args:
             circuit (Circuit): Qibo circuit.
             routing (bool, optional): whether to route the circuit. Defaults to False.

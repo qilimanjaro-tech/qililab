@@ -993,7 +993,7 @@ class Platform:
 
         To compile to assembly programs, the ``platform.compile()`` method is called; check its documentation for more information.
 
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
         1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
 
         .. note ::
@@ -1141,7 +1141,7 @@ class Platform:
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
         settings of the platform and passed  transpile configuration. Then the pulse schedules will be compiled into the assembly programs.
 
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
         1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
 
         .. note ::

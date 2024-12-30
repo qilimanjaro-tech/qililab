@@ -30,7 +30,7 @@ def execute(
     The ``program`` argument is first translated into pulses using the transpilation settings of the runcard and the passed transpile
     configuration. Then the pulse will be compiled into the runcard machines assembly programs, and executed.
 
-    The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+    The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
     1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
 
     .. note ::
