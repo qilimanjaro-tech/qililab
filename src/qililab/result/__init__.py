@@ -34,8 +34,9 @@ Functions
     ~stream_results
 """
 
+from .experiment_live_plot import ExperimentLivePlot
 from .experiment_results import ExperimentResults
 from .result import Result
 from .stream_results import stream_results
 
-__all__ = ["ExperimentResults", "Result", "stream_results"]
+__all__ = ["ExperimentLivePlot", "ExperimentResults", "Result", "stream_results"]
