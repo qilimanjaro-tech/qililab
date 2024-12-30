@@ -1040,7 +1040,7 @@ class Platform:
             transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
 
             # Execute with automatic transpilation:
-            result = platform.execute(c, num_avg=1000, repetition_duration=200_000, transpile_config=transpilation)
+            result = platform.execute(c, num_avg=1000, transpile_config=transpilation)
         """
         # Compile pulse schedule
         programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpile_config)
