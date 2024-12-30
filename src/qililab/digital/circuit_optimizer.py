@@ -16,6 +16,8 @@
 
 from copy import deepcopy
 
+import numpy as np
+import sympy as sp
 from qibo import gates
 
 from qililab import digital
@@ -51,7 +53,6 @@ class CircuitOptimizer:
         """
         # Add more future methods of optimizing gates here, like 2local optimizations, cliffords ...:
         gate_list = cls.cancel_pairs_of_hermitian_gates(gate_list)
-        # gate_list = cls.2local_gate_optimization(gate_list) TODO:
         return gate_list
 
     @classmethod
@@ -161,35 +162,118 @@ class CircuitOptimizer:
             list[gates.Gate]: list of gates of the transpiled circuit, optimized.
         """
         # Add more optimizations of the transpiled circuit here:
-        gate_list = cls.bunch_drag_gates(gate_list)
+        gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=True)
+        gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=False)
         gate_list = cls.delete_gates_with_no_amplitude(gate_list)
         return gate_list
 
-    @staticmethod
-    def bunch_drag_gates(gate_list: list[gates.Gate]) -> list[gates.Gate]:
+    @classmethod
+    def bunch_drag_gates(cls, gate_list: list[gates.Gate], only_same_phi: bool = False) -> list[gates.Gate]:
         """Bunches consecutive Drag gates together into a single one.
 
         Args:
             gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to bunch drag gates.
+            only_same_phi (bool, optional): If True, only Drag gates with the same phi are bunched. Defaults to False.
 
         Returns:
             list[gates.Gate]: list of gates of the transpiled circuit, with drag gates bunched."""
 
-        # TODO: Add bunching of Drag gates here:
-        # gate_list =
-        return gate_list
+        for idx1, drag1 in enumerate(gate_list):
+            # We are in the last gate, so there is no next one to merge with:
+            if idx1 == len(gate_list) - 1:
+                break
+
+            # Find a Drag gate to merge with:
+            if not isinstance(drag1, Drag):
+                continue
+
+            for idx2, drag2 in enumerate(gate_list[idx1 + 1 :]):
+                # Find next gate in the same qubit
+                if drag2.qubits != drag1.qubits:
+                    continue
+
+                # If the next gate in the same qubit is not a Drag gate, we can't optimize:
+                if not isinstance(drag2, Drag):
+                    break
+
+                # If the next gate in the same qubit is a Drag gate, we can merge them:
+                new_drag = cls.merge_consecutive_drags(drag1, drag2, only_same_phi)
+                if new_drag is not None:
+                    gate_list[idx1] = new_drag
+                    gate_list[idx2] = None
+
+        # Remove None values from the list:
+        return [gate for gate in gate_list if gate is not None]
+
+    @staticmethod
+    def merge_consecutive_drags(drag1: Drag, drag2: Drag, only_same_phi: bool) -> Drag:
+        """Merges two consecutive Drag gates into a single one.
+
+        Args:
+            drag1 (Drag): First Drag gate.
+            drag2 (Drag): Second Drag gate.
+            only_same_phi (bool): If True, only Drag gates with the same phi are merged.
+
+        Returns:
+            Drag | None: Merged Drag gate. None, if not possible to merge.
+        """
+        if drag1.qubits != drag2.qubits:
+            raise ValueError("Cannot merge Drag gates acting on different qubits.")
+
+        # For the same phi, we just need to add the theta parameters:
+        if drag1.parameters[1] == drag2.parameters[1]:
+            return Drag(drag1.qubits[0], drag1.parameters[0] + drag2.parameters[0], drag1.parameters[1])
+
+        # If we are merging only Drag gates with same phi, we can't merge these gates:
+        if only_same_phi:
+            return None
+
+        # Old parameters
+        theta, phi = drag1.parameters
+        theta_prime, phi_prime = drag2.parameters
+
+        # New parameters
+        new_theta = 2 * sp.acos(
+            (
+                (1 - np.exp(1j * theta))
+                * (1 - np.exp(1j * theta_prime))
+                * np.exp(1j * (2 * phi_prime + theta + theta_prime) / 2)
+                + (np.exp(1j * theta) + 1)
+                * (np.exp(1j * theta_prime) + 1)
+                * np.exp(1j * (2 * phi + theta + theta_prime) / 2)
+            )
+            * np.exp(-1j * (phi + theta + theta_prime))
+            / 4
+        )
+        new_phi = (
+            sp.arg(
+                (
+                    (1 - np.exp(1j * theta)) * (np.exp(1j * theta_prime) + 1) * np.exp(1j * phi)
+                    + (1 - np.exp(1j * theta_prime)) * (np.exp(1j * theta) + 1) * np.exp(1j * phi_prime)
+                )
+                * np.exp(1j * (phi + phi_prime))
+                / (
+                    (1 - np.exp(1j * theta)) * (np.exp(1j * theta_prime) + 1) * np.exp(1j * phi_prime)
+                    + (1 - np.exp(1j * theta_prime)) * (np.exp(1j * theta) + 1) * np.exp(1j * phi)
+                )
+            )
+            / 2
+        )
+
+        return Drag(drag1.qubits[0], new_theta, new_phi)
 
     @staticmethod
     def delete_gates_with_no_amplitude(gate_list: list[gates.Gate]) -> list[gates.Gate]:
-        """Bunches consecutive Drag gates together into a single one.
+        """Deletes gates without amplitude.
 
         Args:
             gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to delete gates without amplitude.
 
         Returns:
             list[gates.Gate]: list of gates of the transpiled circuit, with gates without amplitude deleted."""
-        # TODO: Add deletion of Drag gates without amplitude here:
-        # gate_list =
+        for gate in gate_list:
+            if isinstance(gate, Drag) and np.isclose(gate.parameters[0], 0):
+                gate_list.remove(gate)
         return gate_list
 
     @staticmethod
