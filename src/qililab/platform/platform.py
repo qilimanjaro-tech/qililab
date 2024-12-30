@@ -983,7 +983,7 @@ class Platform:
         self,
         program: PulseSchedule | Circuit,
         num_avg: int,
-        repetition_duration: int,
+        repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
         routing: bool = False,
