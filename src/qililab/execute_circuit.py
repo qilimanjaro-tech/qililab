@@ -30,48 +30,40 @@ def execute(
     The ``program`` argument is first translated into pulses using the transpilation settings of the runcard and the passed transpile
     configuration. Then the pulse will be compiled into the runcard machines assembly programs, and executed.
 
-    The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
-
-    1. \\*)Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged.
-    2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-    3. Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M).
-    4. Commuting virtual RZ gates and adding phase corrections from CZ.
-    5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
-    6. Converts the native gates into a pulse schedule using calibrated settings from the runcard.
+    The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
+    1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
 
     .. note ::
 
-        \\*) Step `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
+        \\*) `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
-        \\**) Steps 2. and 5 are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
+        \\**) `2.` and `5.` are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
     Args:
         circuit (Circuit | list[Circuit]): Qibo Circuit.
         runcard (str | dict): If a string, path to the YAML file containing the serialization of the Platform to be
             used. If a dictionary, the serialized platform to be used.
         nshots (int, optional): Number of shots to execute. Defaults to 1.
-        transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to ``{}``. It can contain the following keys and values:
-            - routing (bool, optional): whether to route the circuits. Defaults to False.
-            - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
-            - router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
-            - routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-            - optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+        transpile_config (dict, optional): Kwargs (``!circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()`
+            method. Contains the configuration used during transpilation. Defaults to ``{}`` (not changing any default value).
+            Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
 
     Returns:
         Result | list[Result]: :class:`Result` class (or list of :class:`Result` classes) containing the results of the
             execution.
 
+    |
+
     Example Usage:
 
     .. code-block:: python
 
-        from qibo.models import Circuit
-        from qibo import gates
-        from pathlib import Path
-        import qililab as ql
-        import os
         import numpy as np
+        from qibo import Circuit, gates
+        from qibo.transpiler import Sabre, ReverseTraversal
+        import qililab as ql
 
+        # Create circuit:
         nqubits = 5
         c = Circuit(nqubits)
         for qubit in range(nqubits):
@@ -83,7 +75,11 @@ def execute(
         c.add(gates.SWAP(4, 2))
         c.add(gates.RX(1, 3 * np.pi / 2))
 
-        probabilities = ql.execute(c, runcard="./runcards/galadriel.yml")
+        # Create transpilation config:
+        transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
+
+        # Execute with automatic transpilation:
+        probabilities = ql.execute(c, runcard="./runcards/galadriel.yml", transpile_config=transpilation)
     """
     if isinstance(program, Circuit):
         program = [program]

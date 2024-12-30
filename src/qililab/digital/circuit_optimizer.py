@@ -38,6 +38,7 @@ class CircuitOptimizer:
 
     @classmethod
     def optimize_gates(cls, gate_list: list[gates.Gate]) -> list[gates.Gate]:
+        # Docstring related to the public method: :meth:`.CircuitTranspiler.optimize_gates()`. Change it there too.
         """Main method to run the gate optimizations. Currently only consists of cancelling pairs of hermitian gates.
 
         Can/Might be extended in the future to include more complex gate optimization.
@@ -79,6 +80,7 @@ class CircuitOptimizer:
         return cls._create_circuit_gate_list(output_circ_list)
 
     def add_phases_from_RZs_and_CZs_to_drags(self, gate_list: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
+        # Docstring related to the public method: :meth:`.CircuitTranspiler.add_phases_from_RZs_and_CZs_to_drags()`. Change it there too.
         """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
 
             - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
@@ -149,6 +151,7 @@ class CircuitOptimizer:
 
     @classmethod
     def optimize_transpiled_gates(cls, gate_list: list[gates.Gate]) -> list[gates.Gate]:
+        # Docstring related to the public method: :meth:`.CircuitTranspiler.optimize_transpiled_gates()`. Change it there too.
         """Bunches consecutive Drag gates together into a single one.
 
         Args:

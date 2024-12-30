@@ -63,12 +63,13 @@ class GateDecompositions:
 
 
 def translate_gates(gate_list: list[gates.Gate]) -> list[gates.Gate]:
+    # Docstring related to the public method: :meth:`.CircuitTranspiler.gates_to_native()`. Change it there too.
     """Maps Qibo gates to a hardware native implementation (CZ, RZ, Drag, Wait and M (Measurement))
-    - CZ gates are our 2 qubit gates
-    - RZ gates are applied as virtual Z gates if optimize=True in the transpiler
-    - Drag gates are our single qubit gates
-    - Wait gates add wait time at a single qubit
-    - Measurement gates measure the circuit
+        - CZ gates are our 2 qubit gates
+        - RZ gates are applied as virtual Z gates if optimize=True in the transpiler
+        - Drag gates are our single qubit gates
+        - Wait gates add wait time at a single qubit
+        - Measurement gates measure the circuit
 
     Args:
         gate_list (list[gates.Gate]): list of gates to be decomposed.

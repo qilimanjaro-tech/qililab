@@ -674,7 +674,7 @@ class TestCircuitTranspiler:
         mock_schedule = PulseSchedule()
 
         # Mock the return values
-        mock_route.return_value = mock_circuit, mock_layout
+        mock_route.return_value = mock_circuit.queue, mock_layout, mock_circuit.nqubits
         mock_opt_circuit.return_value = mock_gate_list
         mock_to_native.return_value = mock_gate_list
         mock_add_phases.return_value = mock_gate_list
@@ -687,7 +687,7 @@ class TestCircuitTranspiler:
         schedule, layout = transpiler.transpile_circuit(circuit, routing, placer, router, routing_iterations, optimize=optimize)
 
         # Mandatory asserts in order:
-        mock_route.assert_called_once_with(circuit, placer, router, iterations=routing_iterations)
+        mock_route.assert_called_once_with(circuit, placer, router, routing_iterations)
         mock_to_native.assert_called_once_with(mock_circuit.queue)
         mock_add_phases.assert_called_once_with(mock_gate_list, mock_circuit.nqubits)
         mock_to_pulses.assert_called_once_with(mock_gate_list)
@@ -720,11 +720,11 @@ class TestCircuitTranspiler:
         mock_route.return_value = (mock_circuit, mock_layout)
 
         # Execute the function
-        circuit, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        gate_list, layout, nqubits = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
 
         # Asserts:
-        mock_route.assert_called_once_with(circuit, routing_iterations)
-        assert circuit, layout == (mock_circuit, mock_layout)
+        mock_route.assert_called_once_with(mock_circuit, routing_iterations)
+        assert (gate_list, layout, nqubits) == (mock_circuit.queue, mock_layout, mock_circuit.nqubits)
 
     @patch("qililab.digital.circuit_transpiler.nx.Graph")
     @patch("qililab.digital.circuit_transpiler.CircuitRouter")
@@ -741,7 +741,8 @@ class TestCircuitTranspiler:
         mock_graph.return_value = graph_mocking
 
         # Execute the function
-        transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        with pytest.raises(ValueError, match=re.escape("not enough values to unpack (expected 2, got 0)")):
+            transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
 
         # Asserts:
         mock_router.assert_called_once_with(graph_mocking, None, None)

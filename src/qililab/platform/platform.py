@@ -981,7 +981,7 @@ class Platform:
         self,
         program: PulseSchedule | Circuit,
         num_avg: int,
-        repetition_duration: int,
+        repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
         transpile_config: dict = {},
@@ -993,33 +993,24 @@ class Platform:
 
         To compile to assembly programs, the ``platform.compile()`` method is called; check its documentation for more information.
 
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
-
-        1. \\*)Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged.
-        2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-        3. Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M).
-        4. Commuting virtual RZ gates and adding phase corrections from CZ.
-        5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
-        6. Converts the native gates into a pulse schedule using calibrated settings from the runcard.
+        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
+        1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
 
         .. note ::
 
-            \\*) Step `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
+            \\*) `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
-            \\**) Steps 2. and 5 are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
+            \\**) `2.` and `5.` are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
         Args:
             program (``PulseSchedule`` | ``Circuit``): Circuit or pulse schedule to execute.
             num_avg (int): Number of hardware averages used.
-            repetition_duration (int): Minimum duration of a single execution.
+            repetition_duration (int): Minimum duration of a single execution. Defaults to 200_000.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to ``{}``. It can contain the following keys and values:
-                - routing (bool, optional): whether to route the circuits. Defaults to False.
-                - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
-                - router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
-                - routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-                - optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+            transpile_config (dict, optional): Kwargs (``!circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()`
+                method. Contains the configuration used during transpilation. Defaults to ``{}`` (not changing any default value).
+                Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
@@ -1029,6 +1020,27 @@ class Platform:
                     path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
 
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
+
+        |
+
+        Example Usage:
+
+        .. code-block:: python
+
+            from qibo import gates, Circuit
+            from qibo.transpiler import ReverseTraversal, Sabre
+            from qililab import build_platform
+
+            # Create circuit:
+            c = Circuit(5)
+            c.add(gates.CNOT(1, 0))
+
+            # Create platform and transpilation config:
+            platform = build_platform(runcard="<path_to_runcard>")
+            transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
+
+            # Execute with automatic transpilation:
+            result = platform.execute(c, num_avg=1000, transpile_config=transpilation)
         """
         # Compile pulse schedule
         programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpile_config)
@@ -1129,20 +1141,14 @@ class Platform:
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
         settings of the platform and passed  transpile configuration. Then the pulse schedules will be compiled into the assembly programs.
 
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
-
-        1. \\*)Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged.
-        2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-        3. Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M).
-        4. Commuting virtual RZ gates and adding phase corrections from CZ.
-        5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
-        6. Converts the native gates into a pulse schedule using calibrated settings from the runcard.
+        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
+        1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
 
         .. note ::
 
-            \\*) Step `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
+            \\*) `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
-            \\**) Steps 2. and 5 are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
+            \\**) `2.` and `5.` are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
         .. note::
             This method is called during the ``platform.execute()`` method, check its documentation for more information.
@@ -1152,12 +1158,9 @@ class Platform:
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            transpile_config (dict, optional): Configuration dictionary for the transpilation process. Defaults to ``{}``. It can contain the following keys and values:
-                - routing (bool, optional): whether to route the circuits. Defaults to False.
-                - placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
-                - router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
-                - routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-                - optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+            transpile_config (dict, optional): Kwargs (``!circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()`
+                method. Contains the configuration used during transpilation. Defaults to ``{}`` (not changing any default value).
+                Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
 
         Returns:
             tuple[dict, dict[str, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {"qX":Y}.

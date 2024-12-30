@@ -68,23 +68,23 @@ class CircuitTranspiler:
 
         The process involves the following steps:
 
-        1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpile_config`` if provided; otherwise, default values are applied.
+        1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpile_config`` if provided; otherwise, default values are applied. Refer to the :meth:`.CircuitTranspiler.route_circuit()` method for more information.
 
-        2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
+        2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs). Refer to the :meth:`.CircuitTranspiler.optimize_gates()` method for more information.
 
-        3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+        3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)). Refer to the :meth:`.CircuitTranspiler.gates_to_native()` method for more information.
 
-        4. Commuting virtual RZ gates and adding phase corrections from CZ.
+        4. Adding phases to our Drag gates, due to commuting RZ gates until the end of the circuit to discard them as virtual Z gates, and due to the phase corrections from CZ. Refer to the :meth:`.CircuitTranspiler.add_phases_from_RZs_and_CZs_to_drags()` method for more information.
 
-        5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one.
+        5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one. Refer to the :meth:`.CircuitTranspiler.optimize_transpiled_gates()` method for more information.
 
-        6. Pulse Schedule Conversion: Converts the native gates into a pulse schedule using calibrated settings from the runcard.
+        6. Pulse Schedule Conversion: Converts the native gates into a pulse schedule using calibrated settings from the runcard. Refer to the :meth:`.CircuitTranspiler.gates_to_pulses()` method for more information.
 
         .. note::
 
-            \\*) If ``routing=False`` in ``transpile_config`` (default behavior), step 1. is skipped.
+            \\*) If ``routing=False`` (default behavior), step 1. is skipped.
 
-            \\**) If ``optimize=False`` in ``transpile_config`` (default behavior), steps 2. and 5. are skipped.
+            \\**) If ``optimize=False`` (default behavior), steps 2. and 5. are skipped.
 
             The rest of steps are always done.
 
@@ -124,6 +124,10 @@ class CircuitTranspiler:
             # Or also specifying the `router` with kwargs:
             transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
 
+        .. note::
+
+            Check :ref:`Transpilation <transpilation>`, for more examples of how ``execute()``'s methods automatically apply this.
+
         Args:
             circuit (Circuit): Qibo circuit.
             routing (bool, optional): whether to route the circuit. Defaults to False.
@@ -140,14 +144,10 @@ class CircuitTranspiler:
 
         # Routing stage;
         if routing:
-            circuit, final_layout = self.route_circuit(circuit, placer, router, iterations=routing_iterations)
-            logger.info(f"The physical qubits used for the execution will be: {final_layout}")
+            gate_list, final_layout, nqubits = self.route_circuit(circuit, placer, router, routing_iterations)
         else:
-            final_layout = {f"q{i}": i for i in range(circuit.nqubits)}
-
-        # Transpilation is done without constructing the Circuit class, from here onwards:
-        gate_list = circuit.queue
-        nqubits = circuit.nqubits
+            gate_list, nqubits = circuit.queue, circuit.nqubits
+            final_layout = {f"q{i}": i for i in range(nqubits)}
 
         # Optimze qibo gates, cancelling redundant gates:
         if optimize:
@@ -173,9 +173,9 @@ class CircuitTranspiler:
         circuit: Circuit,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
-        coupling_map: list[tuple[int, int]] | None = None,
         iterations: int = 10,
-    ) -> tuple[Circuit, dict[str, int]]:
+        coupling_map: list[tuple[int, int]] | None = None,
+    ) -> tuple[list[gates.Gate], dict[str, int], int]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         This process uses the provided `placer`, `router`, and `routing_iterations` parameters if they are passed; otherwise, default values are applied.
@@ -219,17 +219,16 @@ class CircuitTranspiler:
 
         Args:
             circuit (Circuit): circuit to route.
-            coupling_map (list[tuple[int, int]], optional): coupling map of the chip to route. This topology will be the one that rules,
-                which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
             placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-
+            coupling_map (list[tuple[int, int]], optional): coupling map of the chip to route. This topology will be the one that rules,
+                which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
 
         Returns:
-            tuple[Circuit, dict[str, int]]: routed circuit, and final layout of the circuit {"qI": J}.
+            tuple[list[Gate], dict[str, int], int]: List of gates of the routed circuit, final layout of the circuit {"qI": J}, and number of qubits in the final circuit.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -238,7 +237,10 @@ class CircuitTranspiler:
         topology = nx.Graph(coupling_map if coupling_map is not None else self.settings.topology)
         circuit_router = CircuitRouter(topology, placer, router)
 
-        return circuit_router.route(circuit, iterations)
+        circuit, final_layout = circuit_router.route(circuit, iterations)
+        logger.info(f"The physical qubits used for the execution will be: {final_layout}")
+
+        return circuit.queue, final_layout, circuit.nqubits
 
     @staticmethod
     def optimize_gates(gate_list: list[gates.Gate]) -> list[gates.Gate]:
@@ -256,7 +258,12 @@ class CircuitTranspiler:
 
     @staticmethod
     def gates_to_native(gate_list: list[gates.Gate]) -> list[gates.Gate]:
-        """Converts circuit with qibo gates to circuit with native gates (CZ, RZ, Drag, Wait and M (Measurement).
+        """Maps Qibo gates to a hardware native implementation (CZ, RZ, Drag, Wait and M (Measurement))
+            - CZ gates are our 2 qubit gates
+            - RZ gates are applied as virtual Z gates if optimize=True in the transpiler
+            - Drag gates are our single qubit gates
+            - Wait gates add wait time at a single qubit
+            - Measurement gates measure the circuit
 
         Args:
             gate_list (list[gates.Gate]): list of gates of the Qibo circuit, to pass to native.
