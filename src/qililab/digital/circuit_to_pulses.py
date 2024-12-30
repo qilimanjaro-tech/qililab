@@ -44,6 +44,7 @@ class CircuitToPulses:
         """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
     def run(self, gate_list: list[gates.Gate]) -> PulseSchedule:
+        # Docstring related to the public method: :meth:`.CircuitTranspiler.gates_to_pulses()`. Change it there too.
         """Translates a circuit into a  pulse sequences.
 
         For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
