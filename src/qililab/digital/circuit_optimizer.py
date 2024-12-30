@@ -197,7 +197,7 @@ class CircuitOptimizer:
                     break
 
                 # If the next gate in the same qubit is a Drag gate, we can merge them:
-                new_drag = cls.merge_consecutive_drags(drag1, drag2, only_same_phi)
+                new_drag: Drag | None = cls.merge_consecutive_drags(drag1, drag2, only_same_phi)
                 if new_drag is not None:
                     gate_list[idx1] = new_drag
                     gate_list[idx2] = None
@@ -206,7 +206,7 @@ class CircuitOptimizer:
         return [gate for gate in gate_list if gate is not None]
 
     @staticmethod
-    def merge_consecutive_drags(drag1: Drag, drag2: Drag, only_same_phi: bool) -> Drag:
+    def merge_consecutive_drags(drag1: Drag, drag2: Drag, only_same_phi: bool) -> Drag | None:
         """Merges two consecutive Drag gates into a single one.
 
         Args:
