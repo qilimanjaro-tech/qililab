@@ -1,5 +1,6 @@
 from unittest.mock import patch
 import numpy as np
+from pytest import mark
 from qibo import Circuit, gates
 
 from qililab.digital.circuit_optimizer import CircuitOptimizer
@@ -126,3 +127,87 @@ class TestCircuitOptimizerUnit:
 
         qubits = CircuitOptimizer._extract_qubits(0)
         assert qubits == [0]
+
+    @mark.parametrize("only_same_phi", [True, False])
+    def test_bunch_drag_gates(self, only_same_phi):
+        """Test bunch drag gates."""
+        circuit = Circuit(2)
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi))
+        circuit.add(gates.RX(1, theta=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
+
+
+        optimizer = CircuitOptimizer(None)
+        gate_list = optimizer.bunch_drag_gates(circuit.queue, only_same_phi)
+
+        if only_same_phi:
+            assert len(gate_list) == 5
+
+            assert isinstance(gate_list[0], Drag)
+            assert gate_list[0].parameters == (3 * np.pi, np.pi / 2)
+
+            assert isinstance(gate_list[1], Drag)
+            assert gate_list[1].parameters == (2 * np.pi, np.pi / 2)
+
+            assert isinstance(gate_list[2], Drag)
+            assert gate_list[2].parameters == (np.pi, np.pi)
+
+            assert isinstance(gate_list[3], gates.RX)
+
+            assert isinstance(gate_list[4], Drag)
+            assert gate_list[4].parameters == (np.pi, np.pi / 2)
+
+        # When combining all the Drags
+        else:
+            assert len(gate_list) == 4
+
+            assert isinstance(gate_list[0], Drag)
+            assert gate_list[0].parameters[1] not in [np.pi / 2, np.pi]
+
+            assert isinstance(gate_list[1], Drag)
+            assert gate_list[1].parameters == (2 * np.pi, np.pi / 2)
+
+            assert isinstance(gate_list[2], gates.RX)
+
+            assert isinstance(gate_list[3], Drag)
+            assert gate_list[3].parameters == (np.pi, np.pi / 2)
+
+
+    def test_delete_gates_with_no_amplitude(self):
+        """Test delete gates with no amplitude."""
+        circuit = Circuit(2)
+        circuit.add(Drag(0, theta=0, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+
+        gate_list = CircuitOptimizer.delete_gates_with_no_amplitude(circuit.queue)
+
+        assert len(gate_list) == 1
+        assert isinstance(gate_list[0], Drag)
+        assert gate_list[0].parameters == (np.pi, np.pi / 2)
+
+    def test_normalize_angles_of_drags(self):
+        """Test normalize angles of drags."""
+        circuit = Circuit(2)
+        circuit.add(Drag(0, theta=3 * np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=2 * np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=2*np.pi))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+
+        gate_list = CircuitOptimizer.normalize_angles_of_drags(circuit.queue)
+
+        assert len(gate_list) == 6
+        assert [gate.parameters for gate in gate_list] == [
+            (np.pi, np.pi / 2),
+            (0, np.pi / 2),
+            (np.pi, 0),
+            (np.pi, np.pi / 2),
+            (np.pi, np.pi / 2),
+            (np.pi, np.pi / 2),
+        ]

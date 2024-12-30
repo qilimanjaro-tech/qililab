@@ -164,6 +164,7 @@ class CircuitOptimizer:
         # Add more optimizations of the transpiled circuit here:
         gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=True)
         gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=False)
+        gate_list = cls.normalize_angles_of_drags(gate_list)
         gate_list = cls.delete_gates_with_no_amplitude(gate_list)
         return gate_list
 
@@ -189,7 +190,7 @@ class CircuitOptimizer:
 
             for idx2, drag2 in enumerate(gate_list[idx1 + 1 :]):
                 # Find next gate in the same qubit
-                if drag2.qubits != drag1.qubits:
+                if drag2 is None or drag2.qubits != drag1.qubits:
                     continue
 
                 # If the next gate in the same qubit is not a Drag gate, we can't optimize:
@@ -199,8 +200,8 @@ class CircuitOptimizer:
                 # If the next gate in the same qubit is a Drag gate, we can merge them:
                 new_drag: Drag | None = cls.merge_consecutive_drags(drag1, drag2, only_same_phi)
                 if new_drag is not None:
-                    gate_list[idx1] = new_drag
-                    gate_list[idx2] = None
+                    gate_list[idx1], drag1 = new_drag, new_drag
+                    gate_list[idx2 + idx1 + 1] = None
 
         # Remove None values from the list:
         return [gate for gate in gate_list if gate is not None]
@@ -275,6 +276,33 @@ class CircuitOptimizer:
             if isinstance(gate, Drag) and np.isclose(gate.parameters[0], 0):
                 gate_list.remove(gate)
         return gate_list
+
+    @classmethod
+    def normalize_angles_of_drags(cls, gate_list: list[gates.Gate]) -> list[gates.Gate]:
+        """Normalizes angles in the gates of the circuit.
+
+        Args:
+            gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to normalize the angles.
+
+        Returns:
+            list[gates.Gate]: list of gates of the transpiled circuit, with normalized angles.
+        """
+        for gate in gate_list:
+            if isinstance(gate, Drag):
+                gate.parameters = cls._normalize_angle(gate.parameters[0]), cls._normalize_angle(gate.parameters[1])
+        return gate_list
+
+    @staticmethod
+    def _normalize_angle(angle: float):
+        """Normalizes angle in range [-pi, pi].
+
+        Args:
+            angle (float): Normalized angle.
+        """
+        angle %= 2 * np.pi
+        if angle > np.pi:
+            angle -= 2 * np.pi
+        return angle
 
     @staticmethod
     def _get_circuit_gates(gate_list: list[gates.Gate]) -> list[tuple]:
