@@ -983,7 +983,7 @@ class Platform:
         self,
         program: PulseSchedule | Circuit,
         num_avg: int,
-        repetition_duration: int,
+        repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
         routing: bool = False,
@@ -1015,7 +1015,7 @@ class Platform:
         Args:
             program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
             num_avg (int): Number of hardware averages used.
-            repetition_duration (int): Minimum duration of a single execution.
+            repetition_duration (int): Minimum duration of a single execution. Defaults to 200_000.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
             routing (bool, optional): whether to route the circuits. Defaults to False.
