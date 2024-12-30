@@ -82,9 +82,9 @@ class CircuitTranspiler:
 
         .. note::
 
-            \\*) If ``routing=False`` in ``transpile_config`` (default behavior), step 1. is skipped.
+            \\*) If ``routing=False`` (default behavior), step 1. is skipped.
 
-            \\**) If ``optimize=False`` in ``transpile_config`` (default behavior), steps 2. and 5. are skipped.
+            \\**) If ``optimize=False`` (default behavior), steps 2. and 5. are skipped.
 
             The rest of steps are always done.
 

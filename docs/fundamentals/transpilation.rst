@@ -29,7 +29,44 @@ The process involves the following steps:
 
 **Examples:**
 
-If we instantiate some ``Circuit``, ``Platform`` and ``CircuitTranspiler`` objects like:
+For example, the most basic use, would be to automatically transpile during an execute, like:
+
+.. code-block:: python
+
+    from qibo import gates, Circuit
+    from qibo.transpiler import ReverseTraversal, Sabre
+    import qililab as ql
+
+    # Create circuit:
+    c = Circuit(5)
+    c.add(gates.CNOT(1, 0))
+
+    # Create transpilation config:
+    transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
+
+    # Create transpiler:
+    result = ql.execute(c, runcard="<path_to_runcard>", transpile_config=transpilation)
+
+Or from a ``platform.execute()`` instead, like:
+
+.. code-block:: python
+
+    from qibo import gates, Circuit
+    from qibo.transpiler import ReverseTraversal, Sabre
+    from qililab import build_platform
+
+    # Create circuit:
+    c = Circuit(5)
+    c.add(gates.CNOT(1, 0))
+
+    # Create platform:
+    platform = build_platform(runcard="<path_to_runcard>")
+    transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
+
+    # Create transpiler:
+     result = platform.execute(c, num_avg=1000, repetition_duration=200_000, transpile_config=transpilation)
+
+Now, if we want more manual control instead, we can instantiate the ``CircuitTranspiler`` object like:
 
 .. code-block:: python
 
@@ -50,7 +87,7 @@ If we instantiate some ``Circuit``, ``Platform`` and ``CircuitTranspiler`` objec
     # Create transpiler:
     transpiler = CircuitTranspiler(platform.digital_compilation_settings)
 
-Now we can transpile like, in the following examples:
+And now, transpile manually, like in the following examples:
 
 .. code-block:: python
 
