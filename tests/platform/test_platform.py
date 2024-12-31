@@ -571,6 +571,8 @@ class TestMethods:
         assert isinstance(sequences, dict)
         if not optimize:
             assert len(sequences) == len_sequences
+        else:
+            assert len(sequences) < len_sequences
         for alias, sequences_list in sequences.items():
             assert alias in {bus.alias for bus in platform.buses}
             assert isinstance(sequences_list, list)
