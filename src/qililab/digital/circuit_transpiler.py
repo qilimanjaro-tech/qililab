@@ -62,7 +62,7 @@ class CircuitTranspiler:
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
-        optimize: bool = True,
+        optimize: bool = False,
     ) -> tuple[PulseSchedule, dict]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
