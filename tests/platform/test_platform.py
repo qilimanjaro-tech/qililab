@@ -526,7 +526,8 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
-    def test_compile_circuit(self, platform: Platform):
+    @pytest.mark.parametrize("optimize", [True, False])
+    def test_compile_circuit(self, optimize: bool, platform: Platform):
         """Test the compilation of a qibo Circuit."""
         circuit = Circuit(3)
         circuit.add(gates.X(0))
@@ -535,7 +536,7 @@ class TestMethods:
         circuit.add(gates.Y(1))
         circuit.add(gates.M(0, 1, 2))
 
-        self._compile_and_assert(platform, circuit, 6)
+        self._compile_and_assert(platform, circuit, 6, optimize=optimize)
 
     def test_compile_circuit_raises_error_if_digital_settings_missing(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
@@ -565,10 +566,11 @@ class TestMethods:
 
         self._compile_and_assert(platform, pulse_schedule, 2)
 
-    def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int):
-        sequences, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
+    def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize:bool = False):
+        sequences, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1, transpile_config={"optimize": optimize})
         assert isinstance(sequences, dict)
-        assert len(sequences) == len_sequences
+        if not optimize:
+            assert len(sequences) == len_sequences
         for alias, sequences_list in sequences.items():
             assert alias in {bus.alias for bus in platform.buses}
             assert isinstance(sequences_list, list)
