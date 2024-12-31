@@ -529,7 +529,6 @@ class TestMethods:
     @pytest.mark.parametrize("optimize", [True, False])
     def test_compile_circuit(self, optimize: bool, platform: Platform):
         """Test the compilation of a qibo Circuit."""
-
         circuit = Circuit(3)
         circuit.add(gates.X(0))
         circuit.add(gates.X(1))
@@ -572,6 +571,8 @@ class TestMethods:
         assert isinstance(sequences, dict)
         if not optimize:
             assert len(sequences) == len_sequences
+        else:
+            assert len(sequences) < len_sequences
         for alias, sequences_list in sequences.items():
             assert alias in {bus.alias for bus in platform.buses}
             assert isinstance(sequences_list, list)
