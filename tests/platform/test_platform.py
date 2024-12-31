@@ -528,7 +528,6 @@ class TestMethods:
 
     def test_compile_circuit(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
-
         circuit = Circuit(3)
         circuit.add(gates.X(0))
         circuit.add(gates.X(1))
