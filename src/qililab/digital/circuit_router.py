@@ -70,6 +70,7 @@ class CircuitRouter:
         # 3) Layout stage, where the initial_layout will be created.
 
     def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict[str, int]]:
+        # Docstring related to the public method: :meth:`.CircuitTranspiler.route_circuit()`. Change it there too.
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         **Examples:**
