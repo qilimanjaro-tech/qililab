@@ -155,6 +155,7 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
+        self._voltage_coefficient: dict[str, float] | None = None
 
     def compile(
         self,
@@ -165,6 +166,7 @@ class QbloxCompiler:
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
         optimize_square_waveforms: bool = False,
+        voltage_coefficient: dict[str, float] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -222,6 +224,7 @@ class QbloxCompiler:
         self.optimize_square_waveforms = optimize_square_waveforms
         self._sync_counter = 0
         self._buses = self._populate_buses()
+        self._voltage_coefficient = voltage_coefficient
 
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
@@ -286,7 +289,7 @@ class QbloxCompiler:
                 )
                 return index, length
 
-            envelope = waveform.envelope() if waveform else np.zeros(default_length)
+            envelope = waveform.envelope() / self._voltage_coefficient[bus] if waveform else np.zeros(default_length)
             index = self._buses[bus].qpy_sequence._waveforms.add(envelope)
             self._buses[bus].waveform_to_index[_hash] = index
             return index, len(envelope)
@@ -410,7 +413,7 @@ class QbloxCompiler:
             else convert(element.gain)
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
+            component=QPyInstructions.SetAwgGain(gain_0=gain // self._voltage_coefficient, gain_1=gain)
         )
 
     def _handle_set_offset(self, element: SetOffset):
