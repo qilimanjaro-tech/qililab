@@ -14,19 +14,26 @@
 
 """Circuit Transpiler class"""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import networkx as nx
 from qibo.models import Circuit
-from qibo.transpiler.placer import Placer
-from qibo.transpiler.router import Router
 
 from qililab.config import logger
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.circuit_router import CircuitRouter
 from qililab.digital.circuit_to_pulses import CircuitToPulses
-from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 from .gate_decompositions import translate_gates
+
+if TYPE_CHECKING:
+    from qibo.transpiler.placer import Placer
+    from qibo.transpiler.router import Router
+
+    from qililab.pulse.pulse_schedule import PulseSchedule
+    from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 
 class CircuitTranspiler:
@@ -37,15 +44,18 @@ class CircuitTranspiler:
     - ``transpile_circuit``: runs both of the methods above sequentially
 
     Args:
-        platform (Platform): platform object containing the runcard and the chip's physical qubits.
+        settings (DigitalCompilationSettings): Object containing the Digital Compilations Settings and the info on chip's physical qubits.
+            It can be obtained from the `digital_compilation_settings` attribute of a `Platform` object.
     """
 
-    def __init__(self, digital_compilation_settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
-        self.digital_compilation_settings = digital_compilation_settings
+    def __init__(self, settings: DigitalCompilationSettings):
+        self.settings: DigitalCompilationSettings = settings
+        """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
     def transpile_circuits(
         self,
         circuits: list[Circuit],
+        routing: bool = False,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
@@ -89,23 +99,24 @@ class CircuitTranspiler:
             platform = build_platform(runcard="<path_to_runcard>")
 
             # Create transpiler:
-            transpiler = CircuitTranspiler(platform)
+            transpiler = CircuitTranspiler(platform.digital_compilation_settings)
 
         Now we can transpile like, in the following examples:
 
         .. code-block:: python
 
             # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
-            routed_circuit, final_layouts = transpiler.transpile_circuits([c])
+            transpiled_circuits, final_layouts = transpiler.transpile_circuits([c])
 
-            # Or another case, not doing optimization for some reason, and with Non-Default placer and router:
-            routed_circuit, final_layout = transpiler.transpile_circuits([c], placer=Trivial, router=Sabre, optimize=False)
+            # Or another case, not doing optimization for some reason, and with Non-Default placer:
+            transpiled_circuits, final_layout = transpiler.transpile_circuits([c], placer=Trivial, optimize=False)
 
             # Or also specifying the `router` with kwargs:
-            routed_circuit, final_layouts = transpiler.transpile_circuits([c], router=(Sabre, {"lookahead": 2}))
+            transpiled_circuits, final_layouts = transpiler.transpile_circuits([c], router=(Sabre, {"lookahead": 2}))
 
         Args:
             circuits (list[Circuit]): list of qibo circuits.
+            routing (bool, optional): whether to route the circuits. Defaults to False.
             placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
@@ -118,10 +129,14 @@ class CircuitTranspiler:
         """
 
         # Routing stage;
-        routed_circuits, final_layouts = zip(
-            *(self.route_circuit(circuit, placer, router, iterations=routing_iterations) for circuit in circuits)
-        )
-        logger.info(f"Circuits final layouts: {final_layouts}")
+        if routing:
+            routed_circuits, final_layouts = zip(
+                *(self.route_circuit(circuit, placer, router, iterations=routing_iterations) for circuit in circuits)
+            )
+            logger.info(f"Circuits final layouts: {final_layouts}")
+        else:
+            routed_circuits = tuple(circuits)
+            final_layouts = tuple({f"q{i}": i for i in range(circuit.nqubits)} for circuit in circuits)
 
         # Optimze qibo gates, cancellating redundant gates, stage:
         if optimize:
@@ -206,7 +221,7 @@ class CircuitTranspiler:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
         # Get the chip's connectivity
-        topology = nx.Graph(coupling_map if coupling_map is not None else self.digital_compilation_settings.topology)
+        topology = nx.Graph(coupling_map if coupling_map is not None else self.settings.topology)
 
         circuit_router = CircuitRouter(topology, placer, router)
 
@@ -266,7 +281,7 @@ class CircuitTranspiler:
         Returns:
             Circuit: Circuit with optimized transpiled gates.
         """
-        optimizer = CircuitOptimizer(self.digital_compilation_settings)
+        optimizer = CircuitOptimizer(self.settings)
 
         output_circuit = Circuit(circuit.nqubits)
         output_circuit.add(optimizer.optimize_transpilation(circuit))
@@ -296,5 +311,5 @@ class CircuitTranspiler:
         Returns:
             list[PulseSequences]: List of :class:`PulseSequences` classes.
         """
-        circuit_to_pulses = CircuitToPulses(self.digital_compilation_settings)
+        circuit_to_pulses = CircuitToPulses(self.settings)
         return [circuit_to_pulses.run(circuit) for circuit in circuits]

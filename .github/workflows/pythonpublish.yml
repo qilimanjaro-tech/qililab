@@ -10,13 +10,18 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/qililab
+    permissions:
+      id-token: write 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Install dependencies
@@ -29,8 +34,5 @@ jobs:
           python -m pip install build wheel setuptools
           python -m build
 
-      - name: Publish package
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN_ALBERTMITJANS }}
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.12.2

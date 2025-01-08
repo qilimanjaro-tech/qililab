@@ -21,9 +21,6 @@ import ast
 import io
 import re
 import tempfile
-import time
-import traceback
-import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -844,7 +841,6 @@ class Platform:
     def execute_compilation_output(
         self,
         output: QbloxCompilationOutput | QuantumMachinesCompilationOutput,
-        timeout_tries: int = 3,
         debug: bool = False,
     ):
         if isinstance(output, QbloxCompilationOutput):
@@ -855,9 +851,7 @@ class Platform:
         if len(instruments) != 1:
             raise NotImplementedError("Executing QProgram in more than one Quantum Machines Cluster is not supported.")
         cluster: QuantumMachinesCluster = cast(QuantumMachinesCluster, next(iter(instruments)))
-        return self._execute_quantum_machines_compilation_output(
-            output=output, cluster=cluster, timeout_tries=timeout_tries, debug=debug
-        )
+        return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
 
     def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
         sequences, acquisitions = output.sequences, output.acquisitions
@@ -913,48 +907,36 @@ class Platform:
         self,
         output: QuantumMachinesCompilationOutput,
         cluster: QuantumMachinesCluster,
-        timeout_tries: int = 3,
         debug: bool = False,
     ):
         qua, configuration, measurements = output.qua, output.configuration, output.measurements
-        for iteration in np.arange(timeout_tries):  # TODO: This is a temporal fix as QM fixes the timeout error
-            try:
-                cluster.append_configuration(configuration=configuration)
+        try:
+            cluster.append_configuration(configuration=configuration)
 
-                if debug:
-                    with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                        print(generate_qua_script(qua, cluster.config), file=sourceFile)
+            if debug:
+                with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
+                    print(generate_qua_script(qua, cluster.config), file=sourceFile)
 
-                compiled_program_id = cluster.compile(program=qua)
-                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+            compiled_program_id = cluster.compile(program=qua)
+            job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
-                acquisitions = cluster.get_acquisitions(job=job)
+            acquisitions = cluster.get_acquisitions(job=job)
 
-                results = QProgramResults()
-                # Doing manual classification of results as QM does not return thresholded values like Qblox
-                for measurement in measurements:
-                    measurement_result = QuantumMachinesMeasurementResult(
-                        measurement.bus,
-                        *[acquisitions[handle] for handle in measurement.result_handles],
-                    )
-                    measurement_result.set_classification_threshold(measurement.threshold)
-                    results.append_result(bus=measurement.bus, result=measurement_result)
-
-                return results
-
-            except TimeoutError as timeout:
-                warnings.warn(
-                    f"Warning: {timeout} raised, retrying experiment ({iteration + 1}/{timeout_tries} available tries)"
+            results = QProgramResults()
+            # Doing manual classification of results as QM does not return thresholded values like Qblox
+            for measurement in measurements:
+                measurement_result = QuantumMachinesMeasurementResult(
+                    measurement.bus,
+                    *[acquisitions[handle] for handle in measurement.result_handles],
                 )
-                warnings.warn(traceback.format_exc())
-                if iteration + 1 != timeout_tries:
-                    time.sleep(1 * timeout_tries)
-                    continue
-                cluster.turn_off()
-                raise timeout
-            except Exception as e:
-                cluster.turn_off()
-                raise e
+                measurement_result.set_classification_threshold(measurement.threshold)
+                results.append_result(bus=measurement.bus, result=measurement_result)
+
+            return results
+
+        except Exception as e:
+            cluster.turn_off()
+            raise e
 
         return results
 
@@ -963,7 +945,6 @@ class Platform:
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
-        timeout_tries: int = 3,
         debug: bool = False,
     ) -> QProgramResults:
         """Execute a :class:`.QProgram` using the platform instruments.
@@ -996,15 +977,16 @@ class Platform:
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
-        return self.execute_compilation_output(output=output, timeout_tries=timeout_tries, debug=debug)
+        return self.execute_compilation_output(output=output, debug=debug)
 
     def execute(
         self,
         program: PulseSchedule | Circuit,
         num_avg: int,
-        repetition_duration: int,
+        repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
+        routing: bool = False,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
@@ -1033,9 +1015,10 @@ class Platform:
         Args:
             program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
             num_avg (int): Number of hardware averages used.
-            repetition_duration (int): Minimum duration of a single execution.
+            repetition_duration (int): Minimum duration of a single execution. Defaults to 200_000.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
+            routing (bool, optional): whether to route the circuits. Defaults to False.
             placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
@@ -1054,7 +1037,7 @@ class Platform:
         """
         # Compile pulse schedule
         programs, final_layout = self.compile(
-            program, num_avg, repetition_duration, num_bins, placer, router, routing_iterations, optimize
+            program, num_avg, repetition_duration, num_bins, routing, placer, router, routing_iterations, optimize
         )
 
         # Upload pulse schedule
@@ -1147,6 +1130,7 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
+        routing: bool = False,
         placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
@@ -1178,6 +1162,7 @@ class Platform:
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
+            routing (bool, optional): whether to route the circuits. Defaults to False.
             placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
@@ -1196,10 +1181,10 @@ class Platform:
             raise ValueError("Cannot compile Qibo Circuit or Pulse Schedule without gates settings.")
 
         if isinstance(program, Circuit):
-            transpiler = CircuitTranspiler(digital_compilation_settings=self.digital_compilation_settings)
+            transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
 
             transpiled_circuits, final_layouts = transpiler.transpile_circuits(
-                [program], placer, router, routing_iterations, optimize
+                [program], routing, placer, router, routing_iterations, optimize
             )
             pulse_schedule, final_layout = transpiled_circuits[0], final_layouts[0]
 

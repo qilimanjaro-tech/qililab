@@ -4,7 +4,6 @@ from qibo import Circuit, gates
 
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.native_gates import Drag
-from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 
 class TestCircuitOptimizerIntegration:

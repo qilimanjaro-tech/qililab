@@ -371,13 +371,9 @@ class TestQuantumMachinesCompiler:
         qp_no_block.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
 
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, _ = compiler.compile(
-            qprogram=measurement_blocked_operation
-        )
+        qua_program, configuration, _ = compiler.compile(qprogram=measurement_blocked_operation)
 
-        qua_program_no_block, _, _ = compiler.compile(
-            qprogram=qp_no_block
-        )
+        qua_program_no_block, _, _ = compiler.compile(qprogram=qp_no_block)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 4
@@ -419,7 +415,7 @@ class TestQuantumMachinesCompiler:
         play = statements[0].play
         assert play.qe.name == "drive"
         assert play.named_pulse.name in configuration["pulses"]
-        assert float(play.amp.v0.literal.value) == 0.5 * 2
+        assert float(play.amp.v0.literal.value) == 1
 
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QuantumMachinesCompiler()

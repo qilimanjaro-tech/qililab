@@ -1,7 +1,7 @@
 import pytest
-from unittest.mock import MagicMock, patch
-from qililab.instruments import Instrument, ParameterNotFound
-from qililab.typings import Parameter, ParameterValue, ChannelID, InstrumentName
+from unittest.mock import MagicMock
+from qililab.instruments import Instrument
+from qililab.typings import Parameter, ParameterValue, ChannelID
 
 # A concrete subclass of Instrument for testing purposes
 class DummyInstrument(Instrument):
