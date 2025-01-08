@@ -88,6 +88,8 @@ class QDevilQDac2(VoltageSource):
             self.settings.ramping_enabled[index] = ramping_enabled
             if self.is_device_active():
                 if ramping_enabled:
+                    if self.ramp_rate[index] < 0.01 or self.ramp_rate[index] > 2**7:
+                        raise ValueError(f"The ramp rate is out of range on channel {channel}. It should be between 0.01 V/s and 2e7 V/s.")
                     channel.dc_slew_rate_V_per_s(self.ramp_rate[index])
                 else:
                     channel.dc_slew_rate_V_per_s(2e7)
@@ -98,7 +100,7 @@ class QDevilQDac2(VoltageSource):
             ramping_enabled = self.ramping_enabled[index]
             if ramping_enabled and self.is_device_active():
                 channel.dc_slew_rate_V_per_s(ramping_rate)
-                if ramping_rate<0.01 or ramping_rate>2**7:
+                if ramping_rate < 0.01 or ramping_rate > 2**7:
                     raise ValueError(f"The ramp rate is out of range on channel {channel}. It should be between 0.01 V/s and 2e7 V/s.")
             return
         if parameter == Parameter.LOW_PASS_FILTER:
@@ -193,6 +195,8 @@ class QDevilQDac2(VoltageSource):
             channel.output_range(self.span[index])
             channel.output_filter(self.low_pass_filter[index])
             if self.ramping_enabled[index]:
+                if self.ramp_rate[index] < 0.01 or self.ramp_rate[index] > 2**7:
+                    raise ValueError(f"The ramp rate is out of range on channel {channel}. It should be between 0.01 V/s and 2e7 V/s.")
                 channel.dc_slew_rate_V_per_s(self.ramp_rate[index])
             else:
                 channel.dc_slew_rate_V_per_s(2e7)
