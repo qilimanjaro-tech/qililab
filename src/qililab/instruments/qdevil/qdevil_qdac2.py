@@ -98,6 +98,8 @@ class QDevilQDac2(VoltageSource):
             ramping_enabled = self.ramping_enabled[index]
             if ramping_enabled and self.is_device_active():
                 channel.dc_slew_rate_V_per_s(ramping_rate)
+                if ramping_rate<0.01 or ramping_rate>2**7:
+                    raise ValueError(f"The ramp rate is out of range on channel {channel}. It should be between 0.01 V/s and 2e7 V/s.")
             return
         if parameter == Parameter.LOW_PASS_FILTER:
             low_pass_filter = str(value)
