@@ -7,6 +7,7 @@ from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.typings.enums import Parameter
 from qililab.waveforms import Square
+from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import QDac2Channel
 
 
 @pytest.fixture(name="qdac")
@@ -27,23 +28,29 @@ def fixture_qdac() -> QDevilQDac2:
     return qdac
 
 
-@pytest.fixture(name="qdac_out_range_input")
+@pytest.fixture(name="qdac_out_range")
 def range_input() -> QDevilQDac2:
     """Fixture that returns an instance of a dummy QDAC-II."""
-    qdac_out_range_input = QDevilQDac2(
+    
+
+    qdac_out_range = QDevilQDac2(
         {
-            "alias": "qdac",
-            "voltage": [0.5, 0.5],
-            "span": ["low", "low"],
-            "ramping_enabled": [True, False],
-            "ramp_rate": [0.01, 0.01],
-            "ramping_rate": [0.01, 3**7],
-            "dacs": [10, 11],
-            "low_pass_filter": ["dc", "dc"],
+            "alias": "qdac_out_range",
+            "voltage": [0.5],
+            "span": ["low"],
+            "ramping_enabled": [True],
+            "ramp_rate": [0.001],
+            #"ramping_rate": [0.001, 2e7],
+            "dacs": [10],
+            "low_pass_filter": ["dc"],
         }
     )
-    qdac_out_range_input.device = MagicMock()
-    return qdac_out_range_input
+    #channel = MagicMockQDac2Channel(QDevilQDac2, "channel", 10)
+   #  Mock the `channel()` method on the device
+    mock_device = MagicMock()
+    # Assign the mock device to qdac_out_range.device
+    qdac_out_range.device = mock_device
+    return qdac_out_range
 
 
 @pytest.fixture(name="waveform")
@@ -163,30 +170,27 @@ class TestQDevilQDac2:
         qdac.clear_cache()
         assert qdac._cache == {}
         qdac.device.remove_traces.assert_called_once()
-
-    def input_range_set_parameter(self, qdac: QDevilQDac2, waveform: Square):
-        """Test that an error is raised when the input value on set_parameter RAMPING_ENABLED for the qdac are out of bound"""
-        channel_id = 11
-        qdac._cache = {channel_id: True}
+    
+    def test_input_range_runcard(self, qdac_out_range: QDevilQDac2):
+        #Test that an error is raised when the input value on the runcard for the qdac are out of bound
+        channel_id = 10
         error_string = re.escape(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
         with pytest.raises(ValueError, match=error_string):
-            qdac.set_parameter(parameter=Parameter.RAMPING_ENABLED, value=0.0001, channel_id=channel_id)
+            qdac_out_range.initial_setup()
 
-    def input_range_set_parameter_enabled(self, qdac: QDevilQDac2, waveform: Square):
-        """Test that an error is raised when the input value on set_parameter RAMPING_RATE for the qdac are out of bound"""
-        channel_id = 11
-        qdac._cache = {channel_id: True}
+    def test_input_range_set_parameter(self, qdac: QDevilQDac2):
+        #Test that an error is raised when the input value on set_parameter RAMPING_RATE for the qdac are out of bound
+        channel_id = 10
         error_string = re.escape(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
         with pytest.raises(ValueError, match=error_string):
             qdac.set_parameter(parameter=Parameter.RAMPING_RATE, value=0.0001, channel_id=channel_id)
 
-    def input_range_runcard(self, qdac_out_range_input: QDevilQDac2, waveform: Square):
-        """Test that an error is raised when the input value on the runcard for the qdac are out of bound"""
-        channel_id = 11
-        qdac_out_range_input._cache = {channel_id: True}
+    def test_input_range_set_parameter_enabled(self, qdac_out_range: QDevilQDac2):
+        #Test that an error is raised when the input value on set_parameter RAMPING_ENABLED for the qdac are out of bound
+        channel_id = 10
         error_string = re.escape(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
         with pytest.raises(ValueError, match=error_string):
-            qdac_out_range_input.initial_setup()
+            qdac_out_range.set_parameter(parameter=Parameter.RAMPING_ENABLED, value=True, channel_id=channel_id)
 
     @pytest.mark.parametrize(
         "parameter, value",
