@@ -42,26 +42,6 @@ def sample_metadata():
                         "shape": (3, 4, 2),
                         "shots": 100,
                     },
-                    # This simulates an inner loop
-                    "Measurement_1": {
-                        "variables": [
-                            {"label": "y", "values": np.array([10, 20, 30, 40])},
-                            {"label": "z", "values": np.array([110, 120, 130, 140])},
-                        ],
-                        "dims": [["y"], ["z"]],
-                        "shape": (3, 4, 4, 2),
-                        "shots": 100,
-                    },
-                    # This simulates a parallel loop
-                    "Measurement_2": {
-                        "variables": [
-                            {"label": "y", "values": np.array([10, 20, 30, 40])},
-                            {"label": "z", "values": np.array([110, 120, 130, 140])},
-                        ],
-                        "dims": [["y", "z"]],
-                        "shape": (3, 4, 2),
-                        "shots": 100,
-                    },
                 },
             }
         },
@@ -89,251 +69,189 @@ def mock_experiment_live_plot_slurm(metadata):
 class TestExperimentLivePlot:
     """Test ExperimentLivePlot class"""
 
-    def test_live_plot_figures(self):
-        """Test plot_S21 with 1D data and verify the plot correctness."""
+    @patch("h5py.File")
+    def test_live_plot_1d(self, mock_h5file, metadata):
+        """Test the plots generated with 1D data."""
         experiment_live_plot = create_autospec(ExperimentLivePlot, instance=True)
         experiment_live_plot._slurm_execution = False
         experiment_live_plot.path = "test.h5"
         experiment_live_plot.live_plot_dict = {}
 
-        # Manually set the plot_S21 method to the real one
         experiment_live_plot._live_plot_figures = MethodType(
             ExperimentLivePlot._live_plot_figures, experiment_live_plot
         )
 
         # Mock the get method to return 1D data
-        dims = {
-            ("Qprogram_0", "Measurement_0"): [
-                DimensionInfo(labels=["Frequency (Hz)"], values=[np.linspace(1e6, 1e7, 100)]),
-                DimensionInfo(labels=["I/Q"], values=[]),
-            ]
-        }  # MAAAAAAAL
+        mock_h5group = mock_h5file.create_group("mockpath_group")
 
-        # experiment_live_plot.get.return_value = (data, dims)
+        dims_dict = {}
+        for qprogram_name, qprogram_data in metadata["qprograms"].items():
+            qgroup = mock_h5group.create_group(qprogram_name)
 
-        # Call the plot_S21 method
-        experiment_live_plot._live_plot_figures(dims)
+            for measurement_name, measurement_data in qprogram_data["measurements"].items():
+                mgroup = qgroup.create_group(measurement_name)
+                mock_h5dataset = mgroup.create_dataset("mockpath_dataset", shape=measurement_data["shape"])
+
+                # Create the labels
+                for idx, dim_variables in enumerate(qprogram_data["dims"]):
+                    mock_h5dataset.dims[idx].label = ",".join(list(dim_variables))
+                for idx, dim_variables in enumerate(measurement_data["dims"]):
+                    mock_h5dataset.dims[len(qprogram_data["dims"]) + idx].label = ",".join(list(dim_variables))
+
+                # Attach the extra dimension (usually for I/Q) to the results dataset
+                mock_h5dataset.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
+
+                dims_dict[qprogram_name, measurement_name] = mock_h5dataset.dims
+
+                # Mock the values of the loops for a 1D measure
+                dims_dict[qprogram_name, measurement_name][0].values.return_value = [np.linspace(0, 10, 20)]
+                dims_dict[qprogram_name, measurement_name].__len__.return_value = 2
+
+        # Create the figures
+        experiment_live_plot._live_plot_figures(dims_dict)
+
+        # Make sure the figures run
+        experiment_live_plot._live_plot(np.linspace(0, 10, 20), qprogram_name, measurement_name)
 
         # Make sure right plot is created
         assert isinstance(experiment_live_plot._live_plot_fig, go.FigureWidget)
 
-    #     # Retrieve the current figure and axes
-    #     fig = plt.gcf()
-    #     ax1 = fig.axes[0]
+    @patch("h5py.File")
+    def test_live_plot_2d(self, mock_h5file, metadata):
+        """Test the plots generated with 2D data."""
+        experiment_live_plot = create_autospec(ExperimentLivePlot, instance=True)
+        experiment_live_plot._slurm_execution = False
+        experiment_live_plot.path = "test.h5"
+        experiment_live_plot.live_plot_dict = {}
 
-    #     # Check the title, labels, and line data
-    #     assert ax1.get_title() == experiment_results.path
-    #     assert ax1.get_xlabel() == "Frequency (Hz)"
-    #     assert ax1.get_ylabel() == r"$|S_{21}|$"
+        experiment_live_plot._live_plot_figures = MethodType(
+            ExperimentLivePlot._live_plot_figures, experiment_live_plot
+        )
 
-    #     lines = ax1.get_lines()
-    #     assert len(lines) == 1  # Should have one line plotted
+        # Mock the get method to return 2D data
+        mock_h5group = mock_h5file.create_group("mockpath_group")
 
-    #     # Verify the data plotted
-    #     x_plotted = lines[0].get_xdata()
-    #     y_plotted = lines[0].get_ydata()
+        dims_dict = {}
+        for qprogram_name, qprogram_data in metadata["qprograms"].items():
+            qgroup = mock_h5group.create_group(qprogram_name)
 
-    #     # Recompute s21 to compare
-    #     s21 = data[:, 0] + 1j * data[:, 1]
-    #     s21_db = 20 * np.log10(np.abs(s21))
-    #     x_expected = dims[0].values[0]
+            for measurement_name, measurement_data in qprogram_data["measurements"].items():
+                mgroup = qgroup.create_group(measurement_name)
+                mock_h5dataset = mgroup.create_dataset("mockpath_dataset", shape=measurement_data["shape"])
 
-    #     np.testing.assert_array_almost_equal(x_plotted, x_expected)
-    #     np.testing.assert_array_almost_equal(y_plotted, s21_db)
+                # Create the labels
+                for idx, dim_variables in enumerate(qprogram_data["dims"]):
+                    mock_h5dataset.dims[idx].label = ",".join(list(dim_variables))
+                for idx, dim_variables in enumerate(measurement_data["dims"]):
+                    mock_h5dataset.dims[len(qprogram_data["dims"]) + idx].label = ",".join(list(dim_variables))
 
-    #     # Close the plot
-    #     plt.close(fig)
+                # Attach the extra dimension (usually for I/Q) to the results dataset
+                mock_h5dataset.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
-    #     # Verify that the plot was saved to a file.
-    #     plot_path = os.path.join(os.path.dirname(experiment_results.path), ExperimentResults.S21_PLOT_NAME)
-    #     assert os.path.exists(plot_path)
+                dims_dict[qprogram_name, measurement_name] = mock_h5dataset.dims
 
-    #     # Remove the file
-    #     os.remove(plot_path)
+                # Mock the values of the loops for a 2D measure
+                dims_dict[qprogram_name, measurement_name][0].values.return_value = [np.linspace(0, 10, 20)]
+                dims_dict[qprogram_name, measurement_name][1].values.return_value = [np.linspace(0, 10, 20)]
+                dims_dict[qprogram_name, measurement_name].__len__.return_value = 3
 
-    #     # Verify that if `save_plot == False` then the plot is not saved.
-    #     experiment_results.plot_S21(save_plot=False)
-    #     assert not os.path.exists(plot_path)
+        experiment_live_plot._live_plot_figures(dims_dict)
+        experiment_live_plot._live_plot(np.linspace(0, 10, 20), qprogram_name, measurement_name)
 
-    #     # Close the plot
-    #     plt.close(plt.gcf())
+        # Make sure right plot is created
+        assert isinstance(experiment_live_plot._live_plot_fig, go.FigureWidget)
 
-    # def test_live_plot_figures_slurm(self):
-    #     """Test plot_S21 with 1D data and verify the plot correctness."""
-    #     experiment_results = create_autospec(ExperimentResults, instance=True, path="test.h5")
+    @patch("h5py.File")
+    def test_live_plot_figures_throw_error_for_dim_bigger_than_2d(self, mock_h5file, metadata):
+        """Test plot_S21 with 3D data, should raise NotImplementedError."""
+        experiment_live_plot = create_autospec(ExperimentLivePlot, instance=True)
+        experiment_live_plot._slurm_execution = False
+        experiment_live_plot.path = "test.h5"
+        experiment_live_plot.live_plot_dict = {}
 
-    #     # Manually set the plot_S21 method to the real one
-    #     experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
+        experiment_live_plot._live_plot_figures = MethodType(
+            ExperimentLivePlot._live_plot_figures, experiment_live_plot
+        )
 
-    #     # Mock the get method to return 1D data
-    #     data = np.random.rand(100, 2)  # 100 data points, real and imaginary parts
-    #     dims = [
-    #         DimensionInfo(labels=["Frequency (Hz)"], values=[np.linspace(1e6, 1e7, 100)]),
-    #         DimensionInfo(labels=["I/Q"], values=[]),
-    #     ]
+        # Mock the get method to return 3D data
+        mock_h5group = mock_h5file.create_group("mockpath_group")
 
-    #     experiment_results.get.return_value = (data, dims)
+        dims_dict = {}
+        for qprogram_name, qprogram_data in metadata["qprograms"].items():
+            qgroup = mock_h5group.create_group(qprogram_name)
 
-    #     # Call the plot_S21 method
-    #     experiment_results.plot_S21()
+            for measurement_name, measurement_data in qprogram_data["measurements"].items():
+                mgroup = qgroup.create_group(measurement_name)
+                mock_h5dataset = mgroup.create_dataset("mockpath_dataset", shape=measurement_data["shape"])
 
-    #     # Ensure get was called correctly
-    #     experiment_results.get.assert_called_with(qprogram=0, measurement=0)
+                # Create the labels
+                for idx, dim_variables in enumerate(qprogram_data["dims"]):
+                    mock_h5dataset.dims[idx].label = ",".join(list(dim_variables))
+                for idx, dim_variables in enumerate(measurement_data["dims"]):
+                    mock_h5dataset.dims[len(qprogram_data["dims"]) + idx].label = ",".join(list(dim_variables))
 
-    #     # Retrieve the current figure and axes
-    #     fig = plt.gcf()
-    #     ax1 = fig.axes[0]
+                # Attach the extra dimension (usually for I/Q) to the results dataset
+                mock_h5dataset.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
-    #     # Check the title, labels, and line data
-    #     assert ax1.get_title() == experiment_results.path
-    #     assert ax1.get_xlabel() == "Frequency (Hz)"
-    #     assert ax1.get_ylabel() == r"$|S_{21}|$"
+                dims_dict[qprogram_name, measurement_name] = mock_h5dataset.dims
 
-    #     lines = ax1.get_lines()
-    #     assert len(lines) == 1  # Should have one line plotted
+                # Mock the values of the loops for a 2D measure
+                dims_dict[qprogram_name, measurement_name][0].values.return_value = [np.linspace(0, 10, 20)]
+                dims_dict[qprogram_name, measurement_name][1].values.return_value = [np.linspace(0, 10, 20)]
+                dims_dict[qprogram_name, measurement_name][2].values.return_value = [np.linspace(0, 10, 20)]
+                dims_dict[qprogram_name, measurement_name].__len__.return_value = 4
 
-    #     # Verify the data plotted
-    #     x_plotted = lines[0].get_xdata()
-    #     y_plotted = lines[0].get_ydata()
+        with pytest.raises(NotImplementedError):
+            experiment_live_plot._live_plot_figures(dims_dict)
 
-    #     # Recompute s21 to compare
-    #     s21 = data[:, 0] + 1j * data[:, 1]
-    #     s21_db = 20 * np.log10(np.abs(s21))
-    #     x_expected = dims[0].values[0]
+    @patch("h5py.File")
+    def test_live_plot_slurm_execution(self, mock_h5file, metadata):
+        """Test the plots generated with 1D data."""
+        experiment_live_plot = create_autospec(ExperimentLivePlot, instance=True)
+        experiment_live_plot._slurm_execution = True
+        experiment_live_plot.path = "test.h5"
+        experiment_live_plot.live_plot_dict = {}
 
-    #     np.testing.assert_array_almost_equal(x_plotted, x_expected)
-    #     np.testing.assert_array_almost_equal(y_plotted, s21_db)
+        experiment_live_plot._live_plot_figures = MethodType(
+            ExperimentLivePlot._live_plot_figures, experiment_live_plot
+        )
 
-    #     # Close the plot
-    #     plt.close(fig)
+        # Mock the get method to return 1D data
+        mock_h5group = mock_h5file.create_group("mockpath_group")
 
-    #     # Verify that the plot was saved to a file.
-    #     plot_path = os.path.join(os.path.dirname(experiment_results.path), ExperimentResults.S21_PLOT_NAME)
-    #     assert os.path.exists(plot_path)
+        dims_dict = {}
+        for qprogram_name, qprogram_data in metadata["qprograms"].items():
+            qgroup = mock_h5group.create_group(qprogram_name)
 
-    #     # Remove the file
-    #     os.remove(plot_path)
+            for measurement_name, measurement_data in qprogram_data["measurements"].items():
+                mgroup = qgroup.create_group(measurement_name)
+                mock_h5dataset = mgroup.create_dataset("mockpath_dataset", shape=measurement_data["shape"])
 
-    #     # Verify that if `save_plot == False` then the plot is not saved.
-    #     experiment_results.plot_S21(save_plot=False)
-    #     assert not os.path.exists(plot_path)
+                # Create the labels
+                for idx, dim_variables in enumerate(qprogram_data["dims"]):
+                    mock_h5dataset.dims[idx].label = ",".join(list(dim_variables))
+                for idx, dim_variables in enumerate(measurement_data["dims"]):
+                    mock_h5dataset.dims[len(qprogram_data["dims"]) + idx].label = ",".join(list(dim_variables))
 
-    #     # Close the plot
-    #     plt.close(plt.gcf())
+                # Attach the extra dimension (usually for I/Q) to the results dataset
+                mock_h5dataset.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
-    # def test_live_plot(self):
-    #     """Test plot_S21 with 1D data and secondary x-axis."""
-    #     experiment_results = create_autospec(ExperimentResults, instance=True, path="test.h5")
+                dims_dict[qprogram_name, measurement_name] = mock_h5dataset.dims
 
-    #     # Manually set the plot_S21 method to the real one
-    #     experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
+                # Mock the values of the loops for a 1D measure
+                dims_dict[qprogram_name, measurement_name][0].values.return_value = [np.linspace(0, 10, 20)]
+                dims_dict[qprogram_name, measurement_name].__len__.return_value = 2
 
-    #     # Mock the get method to return 1D data with secondary axis data
-    #     data = np.random.rand(100, 2)  # 100 data points, real and imaginary parts
-    #     dims = [
-    #         DimensionInfo(
-    #             labels=["Frequency (Hz)", "Time (s)"], values=[np.linspace(1e6, 1e7, 100), np.linspace(0, 1, 100)]
-    #         ),
-    #         DimensionInfo(labels=["I/Q"], values=[]),
-    #     ]
+        # Create the figures
+        experiment_live_plot._live_plot_figures(dims_dict)
 
-    #     experiment_results.get.return_value = (data, dims)
+        # Make sure the figures run
+        experiment_live_plot._live_plot(np.linspace(0, 10, 20), qprogram_name, measurement_name)
 
-    #     # Call the plot_S21 method
-    #     experiment_results.plot_S21()
+        experiment_live_plot.stop_execution()
 
-    #     # Retrieve the current figure and axes
-    #     fig = plt.gcf()
-    #     ax1 = fig.axes[0]
-    #     ax2 = fig.axes[1]
-
-    #     # Verify that the secondary axis is created
-    #     assert ax2 is not None, "Secondary x-axis was not created."
-
-    #     # Check labels
-    #     assert ax1.get_xlabel() == "Frequency (Hz)"
-    #     assert ax2.get_xlabel() == "Time (s)"
-
-    #     # Check limits
-    #     np.testing.assert_almost_equal(ax2.get_xlim(), [0, 1])
-
-    #     # Check ticks
-    #     expected_ticks = np.linspace(0, 1, num=6)
-    #     np.testing.assert_array_almost_equal(ax2.get_xticks(), expected_ticks)
-
-    #     # Close the plot
-    #     plt.close(fig)
-
-    #     # Verify that the plot was saved to a file.
-    #     plot_path = os.path.join(os.path.dirname(experiment_results.path), ExperimentResults.S21_PLOT_NAME)
-    #     assert os.path.exists(plot_path)
-
-    #     # Remove the file
-    #     os.remove(plot_path)
-
-    #     # Verify that if `save_plot == False` then the plot is not saved.
-    #     experiment_results.plot_S21(save_plot=False)
-    #     assert not os.path.exists(plot_path)
-
-    #     # Close the plot
-    #     plt.close(plt.gcf())
-
-    # def test_live_plot_slurm(self):
-    #     """Test plot_S21 with 1D data and secondary x-axis."""
-    #     experiment_results = create_autospec(ExperimentResults, instance=True, path="test.h5")
-
-    #     # Manually set the plot_S21 method to the real one
-    #     experiment_results.plot_S21 = MethodType(ExperimentResults.plot_S21, experiment_results)
-
-    #     # Mock the get method to return 1D data with secondary axis data
-    #     data = np.random.rand(100, 2)  # 100 data points, real and imaginary parts
-    #     dims = [
-    #         DimensionInfo(
-    #             labels=["Frequency (Hz)", "Time (s)"], values=[np.linspace(1e6, 1e7, 100), np.linspace(0, 1, 100)]
-    #         ),
-    #         DimensionInfo(labels=["I/Q"], values=[]),
-    #     ]
-
-    #     experiment_results.get.return_value = (data, dims)
-
-    #     # Call the plot_S21 method
-    #     experiment_results.plot_S21()
-
-    #     # Retrieve the current figure and axes
-    #     fig = plt.gcf()
-    #     ax1 = fig.axes[0]
-    #     ax2 = fig.axes[1]
-
-    #     # Verify that the secondary axis is created
-    #     assert ax2 is not None, "Secondary x-axis was not created."
-
-    #     # Check labels
-    #     assert ax1.get_xlabel() == "Frequency (Hz)"
-    #     assert ax2.get_xlabel() == "Time (s)"
-
-    #     # Check limits
-    #     np.testing.assert_almost_equal(ax2.get_xlim(), [0, 1])
-
-    #     # Check ticks
-    #     expected_ticks = np.linspace(0, 1, num=6)
-    #     np.testing.assert_array_almost_equal(ax2.get_xticks(), expected_ticks)
-
-    #     # Close the plot
-    #     plt.close(fig)
-
-    #     # Verify that the plot was saved to a file.
-    #     plot_path = os.path.join(os.path.dirname(experiment_results.path), ExperimentResults.S21_PLOT_NAME)
-    #     assert os.path.exists(plot_path)
-
-    #     # Remove the file
-    #     os.remove(plot_path)
-
-    #     # Verify that if `save_plot == False` then the plot is not saved.
-    #     experiment_results.plot_S21(save_plot=False)
-    #     assert not os.path.exists(plot_path)
-
-    #     # Close the plot
-    #     plt.close(plt.gcf())
+        # Make sure right plot is created
+        assert isinstance(experiment_live_plot._live_plot_fig, go.Figure)
 
 
 class TestExperimentResultsWriterLivePlot:
