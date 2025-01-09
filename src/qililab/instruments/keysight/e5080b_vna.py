@@ -218,13 +218,16 @@ class E5080B(VectorNetworkAnalyzer):
             self.number_averages = 1
         self._set_count(str(self.settings.number_averages))
 
-    def _start_measurement(self):
+    def _start_measurement(self, channel=1):
         """
         This function is called at the beginning of each single measurement in the spectroscopy script.
         Also, the averages need to be reset.
         """
         self.average_clear()
-        self.sweep_mode = "group"
+        self.settings.sweep_mode = VNASweepModes("group")
+        mode = self.settings.sweep_mode.name
+        self.send_command(f"SENS{channel}:SWE:MODE", mode)
+
 
     def _wait_until_ready(self, period=0.25) -> bool:
         """Waiting function to wait until VNA is ready."""
@@ -256,7 +259,8 @@ class E5080B(VectorNetworkAnalyzer):
     def release(self, channel=1):
         """Bring the VNA back to a mode where it can be easily used by the operator."""
         self.settings.sweep_mode = VNASweepModes("cont")
-        self.send_command(f"SENS{channel}:SWE:MODE", self.settings.sweep_mode.value)
+        mode = self.settings.sweep_mode.name
+        self.send_command(f"SENS{channel}:SWE:MODE", mode)
 
     def read_tracedata(self):
         """
