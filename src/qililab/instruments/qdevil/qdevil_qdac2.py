@@ -87,7 +87,6 @@ class QDevilQDac2(VoltageSource):
             return
         if parameter == Parameter.RAMPING_ENABLED:
             ramping_enabled = bool(value)
-            print("aaa")
             self.settings.ramping_enabled[index] = ramping_enabled
             if self.is_device_active():
                 if ramping_enabled:
