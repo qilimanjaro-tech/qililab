@@ -228,7 +228,6 @@ class E5080B(VectorNetworkAnalyzer):
         mode = self.settings.sweep_mode.name
         self.send_command(f"SENS{channel}:SWE:MODE", mode)
 
-
     def _wait_until_ready(self, period=0.25) -> bool:
         """Waiting function to wait until VNA is ready."""
         timelimit = time.time() + self.device_timeout
