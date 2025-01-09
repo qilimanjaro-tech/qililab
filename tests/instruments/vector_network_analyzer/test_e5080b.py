@@ -402,7 +402,7 @@ class TestE5080B:
     def test_start_measurement_method(self, e5080b: E5080B):
         """Test the auxiliary private method start measurment"""
         e5080b._start_measurement()
-        assert e5080b.sweep_mode == VNASweepModes("group")
+        assert e5080b.get_sweep_mode() == VNASweepModes("group")
 
     @patch("qililab.instruments.keysight.e5080b_vna.E5080B.ready")
     def test_wait_until_ready_method(self, mock_ready, e5080b: E5080B):
