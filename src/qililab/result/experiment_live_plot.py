@@ -13,12 +13,15 @@
 # limitations under the License.
 # mypy: disable-error-code="attr-defined"
 import os
+import threading
 import warnings
 from dataclasses import dataclass
+from wsgiref.simple_server import make_server
 
 import numpy as np
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, callback, dcc, html
+from flask import Flask
 from IPython.display import display
 
 
@@ -107,7 +110,8 @@ class ExperimentLivePlot:
                 raise NotImplementedError("3D and higher dimension plots are not supported yet.")
 
         if self._slurm_execution:
-            self._dash_app = Dash("Live Plot")
+            server = Flask("Live Plot Server")
+            self._dash_app = Dash("Live Plot", server=server)
             self._dash_app.layout = html.Div(
                 [
                     dcc.Graph(figure=self._live_plot_fig, id="live-plot-graph"),
@@ -122,11 +126,24 @@ class ExperimentLivePlot:
             def put_more_data_on_figure(n_intervals):
                 return self._live_plot_fig
 
-            self._dash_app.run(debug=True)
+            self.server = make_server("localhost", 8070, server)
+            self.server_thread = threading.Thread(target=self.server.serve_forever)
+            self.server_thread.start()
+
+            def start_dash_app():
+                self._dash_app.run(debug=False)
+
+            dash_thread = threading.Thread(target=start_dash_app)
+            dash_thread.start()
 
         else:
             warnings.filterwarnings("ignore")
             display(self._live_plot_fig)
+
+    def stop_execution(self):
+        if self._slurm_execution:
+            self.server.shutdown()
+            self.server_thread.join()
 
     def _live_plot(self, data: np.ndarray, qprogram_name: str, measurement_name: str):
         """Live plots the S21 parameter from the experiment results.
