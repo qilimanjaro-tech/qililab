@@ -35,8 +35,8 @@ class QDevilQDac2(VoltageSource):
         settings (QDevilQDac2Settings): Settings of the instrument.
     """
 
-    _MIN_QDAC: float = 0.01
-    _MAX_QDAC: float = 2e7
+    _MIN_RAMPING_RATE: float = 0.01
+    _MAX_RAMPING_RATE: float = 2e7
     name = InstrumentName.QDEVIL_QDAC2
 
     @dataclass
@@ -90,7 +90,7 @@ class QDevilQDac2(VoltageSource):
             self.settings.ramping_enabled[index] = ramping_enabled
             if self.is_device_active():
                 if ramping_enabled:
-                    if self.ramp_rate[index] < QDevilQDac2._MIN_QDAC or self.ramp_rate[index] > QDevilQDac2._MAX_QDAC:
+                    if self.ramp_rate[index] < QDevilQDac2._MIN_RAMPING_RATE or self.ramp_rate[index] > QDevilQDac2._MAX_RAMPING_RATE:
                         raise ValueError(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
                     channel.dc_slew_rate_V_per_s(self.ramp_rate[index])
                 else:
@@ -101,7 +101,7 @@ class QDevilQDac2(VoltageSource):
             self.settings.ramp_rate[index] = ramping_rate
             ramping_enabled = self.ramping_enabled[index]
             if ramping_enabled and self.is_device_active():
-                if ramping_rate < QDevilQDac2._MIN_QDAC or ramping_rate > QDevilQDac2._MAX_QDAC:
+                if ramping_rate < QDevilQDac2._MIN_RAMPING_RATE or ramping_rate > QDevilQDac2._MAX_RAMPING_RATE:
                     raise ValueError(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
                 channel.dc_slew_rate_V_per_s(ramping_rate)
             return
@@ -200,7 +200,7 @@ class QDevilQDac2(VoltageSource):
             channel.output_filter(self.low_pass_filter[index])
 
             if self.ramping_enabled[index]:
-                if self.ramp_rate[index] < QDevilQDac2._MIN_QDAC or self.ramp_rate[index] > QDevilQDac2._MAX_QDAC:
+                if self.ramp_rate[index] < QDevilQDac2._MIN_RAMPING_RATE or self.ramp_rate[index] > QDevilQDac2._MAX_RAMPING_RATE:
                     raise ValueError(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
                 channel.dc_slew_rate_V_per_s(self.ramp_rate[index])
             else:
