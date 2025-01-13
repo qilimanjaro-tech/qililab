@@ -70,45 +70,9 @@ class CircuitRouter:
         # 3) Layout stage, where the initial_layout will be created.
 
     def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict[str, int]]:
-        # Docstring related to the public method: :meth:`.CircuitTranspiler.route_circuit()`. Change it there too.
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
-        **Examples:**
-
-        If we instantiate some ``Circuit``, ``Platform`` and ``CircuitTranspiler`` objects like:
-
-        .. code-block:: python
-
-            from qibo import gates
-            from qibo.models import Circuit
-            from qibo.transpiler.placer import ReverseTraversal, Trivial
-            from qibo.transpiler.router import Sabre
-            from qililab import build_platform
-            from qililab.circuit_transpiler import CircuitTranspiler
-
-            # Create circuit:
-            c = Circuit(5)
-            c.add(gates.CNOT(1, 0))
-
-            # Create platform:
-            platform = build_platform(runcard="<path_to_runcard>")
-            coupling_map = platform.digital_compilation_settings.topology
-
-            # Create transpiler:
-            transpiler = CircuitTranspiler(platform)
-
-        Now we can transpile like:
-
-        .. code-block:: python
-
-            # Default Transpilation:
-            routed_circuit, final_layouts = transpiler.route_circuit([c])  # Defaults to ReverseTraversal, Sabre and platform connectivity
-
-            # Non-Default Trivial placer, and coupling_map specified:
-            routed_circuit, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=Sabre, coupling_map)
-
-            # Specifying one of the a kwargs:
-            routed_circuit, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=(Sabre, {"lookahead": 2}))
+        Check public docstring in :meth:`.CircuitTranspiler.route_circuit()` for more information.
 
         Args:
             circuit (Circuit): circuit to route.

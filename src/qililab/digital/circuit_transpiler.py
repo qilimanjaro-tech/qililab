@@ -63,7 +63,7 @@ class CircuitTranspiler:
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         routing_iterations: int = 10,
         optimize: bool = False,
-    ) -> tuple[PulseSchedule, dict]:
+    ) -> tuple[PulseSchedule, dict[str, int]]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
         The process involves the following steps:
@@ -244,9 +244,11 @@ class CircuitTranspiler:
 
     @staticmethod
     def optimize_gates(gate_list: list[gates.Gate]) -> list[gates.Gate]:
-        """Main function to optimize the circuit with. Currently works by cancelling adjacent hermitian gates.
+        """Main method to optimize the gates of a Quantum Circuit before unrolling to native gates.
 
-        The total optimization can/might be expanded in the future.
+        Currently only applies a cancellation for adjacent hermitian gates (H, X, Y, Z, CNOT, CZ, SWAP).
+
+        The total optimization can/might be expanded in the future to include more complex gate optimization.
 
         Args:
             gate_list (list[gates.Gate]): list of gates of the Qibo circuit to optimize.
@@ -308,7 +310,11 @@ class CircuitTranspiler:
         return self.optimizer.add_phases_from_RZs_and_CZs_to_drags(gate_list, nqubits)
 
     def optimize_transpiled_gates(self, gate_list: list[gates.Gate]) -> list[gates.Gate]:
-        """Bunches consecutive Drag gates together into a single one.
+        """Main method to optimize the gates of a Quantum Circuit after having unrolled to native gates.
+
+        Currently no optimization is done, but it will be implemented soon.
+
+        The total optimization can/might be expanded in the future to include more complex optimizations.
 
         Args:
             gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to optimize.
