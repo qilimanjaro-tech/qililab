@@ -44,11 +44,11 @@ class DigitalTranspileConfig(TypedDict, total=False):
     Should contain the args of the :meth:`.CircuitTranspiler.transpile_circuit()` method.
     """
 
-    routing: Optional[bool]
+    routing: bool
     placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]]
     router: Optional[Router | type[Router] | tuple[type[Router], dict]]
-    routing_iterations: Optional[int]
-    optimize: Optional[bool]
+    routing_iterations: int
+    optimize: bool
 
 
 class CircuitTranspiler:
@@ -73,11 +73,11 @@ class CircuitTranspiler:
     def transpile_circuit(
         self,
         circuit: Circuit,
-        routing: Optional[bool] = False,
+        routing: bool = False,
         placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None,
         router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
-        routing_iterations: Optional[int] = 10,
-        optimize: Optional[bool] = False,
+        routing_iterations: int = 10,
+        optimize: bool = False,
     ) -> tuple[PulseSchedule, dict[str, int]]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
@@ -189,7 +189,7 @@ class CircuitTranspiler:
         placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None,
         router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
         iterations: int = 10,
-        coupling_map: list[tuple[int, int]] | None = None,
+        coupling_map: Optional[list[tuple[int, int]]] = None,
     ) -> tuple[list[gates.Gate], dict[str, int], int]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
