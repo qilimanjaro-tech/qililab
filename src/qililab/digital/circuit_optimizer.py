@@ -38,10 +38,11 @@ class CircuitOptimizer:
 
     @classmethod
     def optimize_gates(cls, gate_list: list[gates.Gate]) -> list[gates.Gate]:
-        # Docstring related to the public method: :meth:`.CircuitTranspiler.optimize_gates()`. Change it there too.
-        """Main method to run the gate optimizations. Currently only consists of cancelling pairs of hermitian gates.
+        """Main method to optimize the gates of a Quantum Circuit before unrolling to native gates.
 
-        Can/Might be extended in the future to include more complex gate optimization.
+        The total optimization can/might be expanded in the future to include more complex gate optimization.
+
+        Check public docstring in :meth:`.CircuitTranspiler.optimize_gates()` for more information.
 
         Args:
             gate_list (list[gates.Gate]): list of gates of the Qibo circuit to cancel gates.
@@ -80,29 +81,12 @@ class CircuitOptimizer:
         return cls._create_circuit_gate_list(output_circ_list)
 
     def add_phases_from_RZs_and_CZs_to_drags(self, gate_list: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
-        # Docstring related to the public method: :meth:`.CircuitTranspiler.add_phases_from_RZs_and_CZs_to_drags()`. Change it there too.
         """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
 
             - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
             - The RZs added phases on the Drags, come from commuting all the RZs all the way to the end of the circuit, so they can be deleted as "virtual Z gates".
 
-        This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
-        from each RZ is carried on as phase in all drag pulses left of the RZ operator.
-
-        Virtual Z gates are also applied to correct phase errors from CZ gates.
-
-        The final RZ operator left to be applied as the last operator in the circuit can afterwards be removed since the last
-        operation is going to be a measurement, which is performed on the Z basis and is therefore invariant under rotations
-        around the Z axis.
-
-        This last step can also be seen from the fact that an RZ operator applied on a single qubit, with no operations carried
-        on afterwards induces a phase rotation. Since phase is an imaginary unitary component, its absolute value will be 1
-        independent on any (unitary) operations carried on it.
-
-        Mind that moving an operator to the left is equivalent to applying this operator last so
-        it is actually moved to the _right_ of ``Circuit.queue`` (last element of list).
-
-        For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
+        Check public docstring in :meth:`.CircuitTranspiler.add_phases_from_RZs_and_CZs_to_drags()` for more information.
 
         Args:
             gate_list (list[gates.Gate]): list of native gates of the circuit, to pass phases to the Drag gates.
@@ -151,8 +135,11 @@ class CircuitOptimizer:
 
     @classmethod
     def optimize_transpiled_gates(cls, gate_list: list[gates.Gate]) -> list[gates.Gate]:
-        # Docstring related to the public method: :meth:`.CircuitTranspiler.optimize_transpiled_gates()`. Change it there too.
-        """Bunches consecutive Drag gates together into a single one.
+        """Main method to optimize the gates of a Quantum Circuit after having unrolled to native gates.
+
+        The total optimization can/might be expanded in the future to include more complex optimizations.
+
+        Check public docstring in :meth:`.CircuitTranspiler.optimize_transpiled_gates()` for more information.
 
         Args:
             gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to optimize.
