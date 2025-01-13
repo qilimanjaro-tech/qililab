@@ -750,7 +750,6 @@ class TestCircuitTranspiler:
     def test_DigitalTranspilerConfig(self):
         """Test that the class contains the same arguments as the CircuitTranspiler.transpile_circuit method, with their typings (Except for the circuit argument, which is not included in the DigitalTranspileConfig)
         """
-        from typing import get_type_hints
 
         for arg, arg_type in CircuitTranspiler.transpile_circuit.__annotations__.items():
             if arg not in ["circuit", "return"]:
