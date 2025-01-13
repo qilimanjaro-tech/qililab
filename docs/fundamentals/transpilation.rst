@@ -49,13 +49,14 @@ For example, the most basic use, would be to automatically transpile during an e
     # Create transpiler:
     result = ql.execute(c, runcard="<path_to_runcard>", transpile_config=transpilation)
 
-Or from a ``platform.execute()`` instead, like:
+Or from a ``platform.execute()`` and using `DigitalTranspileConfig` for argument hintings instead, like:
 
 .. code-block:: python
 
     from qibo import gates, Circuit
     from qibo.transpiler import ReverseTraversal, Sabre
     from qililab import build_platform
+    from qililab.digital import DigitalTranspileConfig
 
     # Create circuit:
     c = Circuit(5)
@@ -63,10 +64,10 @@ Or from a ``platform.execute()`` instead, like:
 
     # Create platform:
     platform = build_platform(runcard="<path_to_runcard>")
-    transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
+    transpilation = DigitalTranspileConfig(routing= True, optimize= False, router= Sabre, placer= ReverseTraversal)
 
     # Create transpiler:
-     result = platform.execute(c, num_avg=1000, repetition_duration=200_000, transpile_config=transpilation)
+    result = platform.execute(c, num_avg=1000, repetition_duration=200_000, transpile_config=transpilation)
 
 Now, if we want more manual control instead, we can instantiate the ``CircuitTranspiler`` object like:
 
