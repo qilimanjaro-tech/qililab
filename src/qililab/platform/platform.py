@@ -24,7 +24,7 @@ import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Callable, cast
 
 import numpy as np
 from qibo.gates import M
@@ -68,9 +68,11 @@ from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
     from queue import Queue
+    from typing import Optional
 
     from qpysequence import Sequence as QpySequence
 
+    from qililab.digital.circuit_transpiler import DigitalTranspileConfig
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result
@@ -984,7 +986,7 @@ class Platform:
         repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
-        transpile_config: dict[str, Any] | None = None,
+        transpile_config: Optional[DigitalTranspileConfig] = None,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -1008,8 +1010,9 @@ class Platform:
             repetition_duration (int): Minimum duration of a single execution. Defaults to 200_000.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            transpile_config (dict[str, Any], optional): Kwargs (``!circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()`
-                method. Contains the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
+            transpile_config (DigitalTranspileConfig, optional): :class:`.DigitalTranspileConfig` TypedDict containing
+                the Kwargs (except ``circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()` method.
+                Contains the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
                 Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
 
         Returns:
@@ -1134,7 +1137,7 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        transpile_config: dict[str, Any] | None = None,
+        transpile_config: Optional[DigitalTranspileConfig] = None,
     ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
@@ -1154,12 +1157,13 @@ class Platform:
             This method is called during the ``platform.execute()`` method, check its documentation for more information.
 
         Args:
-            program (``PulseSchedule`` | ``Circuit``): Circuit or pulse schedule to compile.
+            program (PulseSchedule | Circuit): Circuit or pulse schedule to compile.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            transpile_config (dict[str, Any], optional): Kwargs (``!circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()`
-                method. Contains the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
+            transpile_config (DigitalTranspileConfig, optional): :class:`.DigitalTranspileConfig` TypedDict containing
+                the Kwargs (except ``circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()` method.
+                Contains the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
                 Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
 
         Returns:

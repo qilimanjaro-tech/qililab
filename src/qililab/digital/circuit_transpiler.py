@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import networkx as nx
 
@@ -28,12 +28,27 @@ from qililab.digital.circuit_to_pulses import CircuitToPulses
 from .gate_decompositions import translate_gates
 
 if TYPE_CHECKING:
+    from typing import Optional
+
     from qibo import Circuit, gates
     from qibo.transpiler.placer import Placer
     from qibo.transpiler.router import Router
 
     from qililab.pulse.pulse_schedule import PulseSchedule
     from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
+
+
+class DigitalTranspileConfig(TypedDict, total=False):
+    """Dictionary containing the transpile configuration (except for the `circuit` arg).
+
+    Should contain the args of the :meth:`.CircuitTranspiler.transpile_circuit()` method.
+    """
+
+    routing: Optional[bool]
+    placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]]
+    router: Optional[Router | type[Router] | tuple[type[Router], dict]]
+    routing_iterations: Optional[int]
+    optimize: Optional[bool]
 
 
 class CircuitTranspiler:
@@ -58,11 +73,11 @@ class CircuitTranspiler:
     def transpile_circuit(
         self,
         circuit: Circuit,
-        routing: bool = False,
-        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
-        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
-        routing_iterations: int = 10,
-        optimize: bool = False,
+        routing: Optional[bool] = False,
+        placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None,
+        router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
+        routing_iterations: Optional[int] = 10,
+        optimize: Optional[bool] = False,
     ) -> tuple[PulseSchedule, dict[str, int]]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
@@ -171,8 +186,8 @@ class CircuitTranspiler:
     def route_circuit(
         self,
         circuit: Circuit,
-        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
-        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None,
+        router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
         iterations: int = 10,
         coupling_map: list[tuple[int, int]] | None = None,
     ) -> tuple[list[gates.Gate], dict[str, int], int]:
