@@ -68,6 +68,7 @@ def execute(
         import numpy as np
         from qibo import Circuit, gates
         from qibo.transpiler import Sabre, ReverseTraversal
+        from qililab.digital import DigitalTranspileConfig
         import qililab as ql
 
         # Create circuit:
@@ -83,7 +84,7 @@ def execute(
         c.add(gates.RX(1, 3 * np.pi / 2))
 
         # Create transpilation config:
-        transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
+        transpilation = DigitalTranspileConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
         # Execute with automatic transpilation:
         probabilities = ql.execute(c, runcard="./runcards/galadriel.yml", transpile_config=transpilation)

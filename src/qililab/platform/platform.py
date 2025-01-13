@@ -1033,14 +1033,15 @@ class Platform:
             from qibo import gates, Circuit
             from qibo.transpiler import ReverseTraversal, Sabre
             from qililab import build_platform
+            from qililab.digital import DigitalTranspileConfig
 
             # Create circuit:
             c = Circuit(5)
             c.add(gates.CNOT(1, 0))
 
-            # Create platform and transpilation config:
+            # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
+            transpilation = DigitalTranspileConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
             # Execute with automatic transpilation:
             result = platform.execute(c, num_avg=1000, transpile_config=transpilation)
