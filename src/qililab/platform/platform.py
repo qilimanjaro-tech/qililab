@@ -874,7 +874,7 @@ class Platform:
             if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
                 buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
                 self._qpy_sequence_cache[bus_alias] = sequence_hash
-            # sync all relevant sequences
+            # sync all relevant sequencers
             for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                 if isinstance(instrument, QbloxModule):
                     instrument.sync_sequencer(sequencer_id=int(channel))
