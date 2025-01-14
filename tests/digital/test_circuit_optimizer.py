@@ -155,7 +155,7 @@ class TestCircuitOptimizerUnit:
         drag_2 = Drag(0, theta=np.pi, phase=np.pi)
 
         optimizer = CircuitOptimizer(None)
-        final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2, only_same_phi=True)
+        final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2, only_same_phi=False)
 
         assert final_drag is None
 
