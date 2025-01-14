@@ -327,7 +327,7 @@ class CircuitTranspiler:
     def optimize_transpiled_gates(self, gate_list: list[gates.Gate]) -> list[gates.Gate]:
         """Main method to optimize the gates of a Quantum Circuit after having unrolled to native gates.
 
-        Currently only bunches consecutive Drag gates together into a single one, and removes redundant Drag gates.
+        Currently only bunches consecutive Drag gates, with same phi's, together into a single one, and removes redundant Drag gates.
 
         The total optimization can/might be expanded in the future to include more complex optimizations.
 
