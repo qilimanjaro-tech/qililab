@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Bias tee correction."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -93,8 +94,8 @@ class BiasTeeCorrection(PulseDistortion):
         corr_envelope = signal.lfilter(b=b, a=a, x=envelope)
         return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "BiasTeeCorrection":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "BiasTeeCorrection":
         """Load BiasTeeCorrection object from dictionary.
 
         Args:
@@ -107,7 +108,7 @@ class BiasTeeCorrection(PulseDistortion):
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
+        return BiasTeeCorrection(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Return dictionary representation of the distortion.

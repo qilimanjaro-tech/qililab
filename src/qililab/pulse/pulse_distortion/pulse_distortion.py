@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """PulseDistortion abstract base class."""
+
 from abc import abstractmethod
 from dataclasses import dataclass
 
@@ -47,7 +48,6 @@ class PulseDistortion(FactoryElement):
     .. code-block:: python3
 
         if self.auto_norm:
-
             if corrected_norm != 0:
                 auto_norm_envelope = corrected_envelope * (original_norm / corrected_norm)
 
@@ -94,7 +94,9 @@ class PulseDistortion(FactoryElement):
 
         Which if ended bigger/smaller than you wanted, you can then also manually modify it like:
 
-        >>> distorted_envelope_manual_norm = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6], auto_norm=False, norm_factor=0.8).apply(envelope)
+        >>> distorted_envelope_manual_norm = LFilterCorrection(
+        ...     a=[0.7, 1.3], b=[0.5, 0.6], auto_norm=False, norm_factor=0.8
+        ... ).apply(envelope)
         >>> np.max(distorted_envelope_manual_norm) == 0.8 * np.max(distorted_envelope_no_norm) != np.max(envelope)
         True
     """
@@ -113,8 +115,8 @@ class PulseDistortion(FactoryElement):
             np.ndarray: Distorted pulse envelope.
         """
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "PulseDistortion":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "PulseDistortion":
         """Loads PulseDistortion object from dictionary.
 
         Args:

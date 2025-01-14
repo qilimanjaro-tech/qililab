@@ -151,8 +151,8 @@ class PulseSchedule:
         """
         return {PULSESCHEDULES.ELEMENTS: [pulse_sequence.to_dict() for pulse_sequence in self.elements]}
 
-    @classmethod
-    def from_dict(cls, dictionary: dict):
+    @staticmethod
+    def from_dict(dictionary: dict):
         """Builds PulseSequence instance from dictionary.
 
         Args:

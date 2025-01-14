@@ -35,6 +35,7 @@ class Rectangular(PulseShape):
         .. code-block:: python
 
             from qililab.pulse.pulse_shape import Rectangular
+
             rectangular_envelope = Rectangular().envelope(amplitude=X, duration=50)
 
         which for ``X`` being ``1.`` and ``0.75``, look respectively like:
@@ -59,8 +60,8 @@ class Rectangular(PulseShape):
         """
         return amplitude * np.ones(round(duration / resolution))
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "Rectangular":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "Rectangular":
         """Loads Rectangular object/shape from dictionary.
 
         Args:
@@ -71,7 +72,7 @@ class Rectangular(PulseShape):
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
+        return Rectangular(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the Rectangular object/shape.

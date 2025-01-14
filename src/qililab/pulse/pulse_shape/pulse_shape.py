@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """PulseShape abstract base class."""
+
 from abc import abstractmethod
 from dataclasses import dataclass, field
 
@@ -49,8 +50,8 @@ class PulseShape(FactoryElement):
             ndarray: Amplitude of the envelope for each time step.
         """
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "PulseShape":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "PulseShape":
         """Returns dictionary representation of the pulse shape.
 
         Args:
