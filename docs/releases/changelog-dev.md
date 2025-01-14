@@ -27,7 +27,7 @@
 
 - Added optimizations for Digital Transpilation for Native gates:
 
-  - Make bunching of consecutive Drag Gates
+  - Make bunching of consecutive Drag Gates, with same phi's
   - Make the deletion of gates with no amplitude
 
   [#863](https://github.com/qilimanjaro-tech/qililab/pull/863)
