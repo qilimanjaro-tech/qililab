@@ -22,7 +22,8 @@
   - Make `Transpilation` efficient, by not constructing the `Circuit` class so many times, between methods
   - Pass a transpilation `kwargs` as a TypedDict instead of so many args in `platform`/`qililab`'s `execute(...)`
   - Improve documentation on transpilation, simplifying it in `execute()`'s, and creating Transpilation new section.
-    [#862](https://github.com/qilimanjaro-tech/qililab/pull/862)
+
+  [#862](https://github.com/qilimanjaro-tech/qililab/pull/862)
 
 ### Breaking changes
 
