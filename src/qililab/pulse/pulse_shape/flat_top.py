@@ -36,6 +36,7 @@ class FlatTop(PulseShape):
         .. code-block:: python
 
             from qililab.pulse.pulse_shape import Rectangular
+
             rectangular_envelope = Rectangular().envelope(amplitude=X, duration=50)
 
         which for ``X`` being ``1.`` and ``0.75``, look respectively like:
@@ -66,8 +67,8 @@ class FlatTop(PulseShape):
         dur = duration
         return 0.5 * A * np.real((erf(g * x - buf) - erf(g * (x - (dur + -buf / g)))))
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "FlatTop":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "FlatTop":
         """Loads Rectangular object/shape from dictionary.
 
         Args:
@@ -78,7 +79,7 @@ class FlatTop(PulseShape):
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
+        return FlatTop(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the Rectangular object/shape.
