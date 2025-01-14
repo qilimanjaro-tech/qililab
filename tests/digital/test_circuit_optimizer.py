@@ -262,5 +262,6 @@ class TestCircuitOptimizerUnit:
         """Test normalize angle."""
         assert CircuitOptimizer._normalize_angle(3 * np.pi) == np.pi
         assert CircuitOptimizer._normalize_angle(2 * np.pi) == 0
+        assert CircuitOptimizer._normalize_angle(3/2 * np.pi) == - np.pi/2
         assert CircuitOptimizer._normalize_angle(np.pi) == np.pi
         assert CircuitOptimizer._normalize_angle(np.pi / 2) == np.pi / 2
