@@ -149,6 +149,16 @@ class TestCircuitOptimizerUnit:
         assert isinstance(final_drag, Drag)
         assert final_drag.parameters == (2 * np.pi, np.pi / 2)
 
+    def test_merge_consecutive_drags_diff_phis(self):
+        """Test merge drag gates."""
+        drag_1 = Drag(0, theta=np.pi, phase=np.pi / 2)
+        drag_2 = Drag(0, theta=np.pi, phase=np.pi)
+
+        optimizer = CircuitOptimizer(None)
+        final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2, only_same_phi=True)
+
+        assert final_drag is None
+
 
     def test_bunch_drag_gates_only_same_phis(self):
         """Test bunch drag gates."""
@@ -181,6 +191,17 @@ class TestCircuitOptimizerUnit:
 
         assert isinstance(gate_list[4], Drag)
         assert gate_list[4].parameters == (np.pi, np.pi / 2)
+
+    def test_bunch_drag_gates_diff_phis(self):
+        """Test bunch drag gates."""
+        circuit = Circuit(2)
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi))
+
+        optimizer = CircuitOptimizer(None)
+        gate_list = optimizer.bunch_drag_gates(circuit.queue, only_same_phi=True)
+
+        assert gate_list == circuit.queue
 
     def test_delete_gates_with_no_amplitude(self):
         """Test delete gates with no amplitude."""
