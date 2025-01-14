@@ -12,24 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module contains all the decomposition and transpilation methods used within qililab.
+"""Vector Network Analyzer Controllers."""
 
-Transpilation
-~~~~~~~~~~~~~
+from .agilent_E5071B_vna_controller import E5071BController
+from .keysight_E5080B_vna_controller import E5080BController
 
-.. currentmodule:: qililab.digital
-
-.. autosummary::
-    :toctree: api
-
-    ~CircuitTranspiler
-    ~DigitalTranspileConfig
-
-"""
-
-from .circuit_transpiler import CircuitTranspiler, DigitalTranspileConfig
-from .gate_decompositions import GateDecompositions
-from .native_gates import Drag, Wait
-
-__all__ = ["CircuitTranspiler", "DigitalTranspileConfig", "Drag", "GateDecompositions", "Wait"]
+__all__ = ["E5071BController", "E5080BController"]

@@ -1,6 +1,5 @@
 import re
 from dataclasses import asdict
-from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -16,6 +15,7 @@ from qililab.digital import CircuitTranspiler
 from qililab.digital.native_gates import Drag, Wait
 from qililab.pulse import PulseSchedule
 from qililab.settings.digital import DigitalCompilationSettings
+from qililab.digital import DigitalTranspileConfig
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
@@ -746,3 +746,11 @@ class TestCircuitTranspiler:
 
         # Asserts:
         mock_router.assert_called_once_with(graph_mocking, None, None)
+
+    def test_DigitalTranspilerConfig(self):
+        """Test that the class contains the same arguments as the CircuitTranspiler.transpile_circuit method, with their typings (Except for the circuit argument, which is not included in the DigitalTranspileConfig)
+        """
+        for arg, arg_type in CircuitTranspiler.transpile_circuit.__annotations__.items():
+            if arg not in ["circuit", "return"]:
+                assert arg in DigitalTranspileConfig.__annotations__
+                assert arg_type == DigitalTranspileConfig.__annotations__[arg].__forward_arg__

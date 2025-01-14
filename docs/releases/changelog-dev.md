@@ -15,6 +15,15 @@
 - Updated qm-qua to stable version 1.2.1. And close other machines has been set to True as now it closes only stated ports.
   [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
 
+- Improvements to Digital Transpilation:
+
+  - Move `optimize` flag, for actual optional optimizations (& Improve `optimize` word use in methods names)
+  - Make `Transpilation`/`execute`/`compile` only for single circuits (unify code standard across `qililab`)
+  - Make `Transpilation` efficient, by not constructing the `Circuit` class so many times, between methods
+  - Pass a transpilation `kwargs` as a TypedDict instead of so many args in `platform`/`qililab`'s `execute(...)`
+  - Improve documentation on transpilation, simplifying it in `execute()`'s, and creating Transpilation new section.
+    [#862](https://github.com/qilimanjaro-tech/qililab/pull/862)
+
 ### Breaking changes
 
 ### Deprecations / Removals
@@ -25,6 +34,9 @@
 ### Documentation
 
 ### Bug fixes
+
+- Restore the vna driver as it was deleted.
+  [#857](https://github.com/qilimanjaro-tech/qililab/pull/857)
 
 - Fixed an issue where appending a configuration to an open QM instance left it hanging. The QM now properly closes before reopening with the updated configuration.
   [#851](https://github.com/qilimanjaro-tech/qililab/pull/851)

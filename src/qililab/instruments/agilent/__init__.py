@@ -12,24 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module contains all the decomposition and transpilation methods used within qililab.
+"""Agilent instruments"""
 
-Transpilation
-~~~~~~~~~~~~~
+from .e5071b_vna import E5071B
 
-.. currentmodule:: qililab.digital
-
-.. autosummary::
-    :toctree: api
-
-    ~CircuitTranspiler
-    ~DigitalTranspileConfig
-
-"""
-
-from .circuit_transpiler import CircuitTranspiler, DigitalTranspileConfig
-from .gate_decompositions import GateDecompositions
-from .native_gates import Drag, Wait
-
-__all__ = ["CircuitTranspiler", "DigitalTranspileConfig", "Drag", "GateDecompositions", "Wait"]
+__all__ = ["E5071B"]

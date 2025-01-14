@@ -14,16 +14,22 @@
 
 """Execute function used to execute a qibo Circuit using the given runcard."""
 
+from typing import Optional
+
 from qibo.models import Circuit
 from tqdm.auto import tqdm
 
+from qililab.digital.circuit_transpiler import DigitalTranspileConfig
 from qililab.result import Result
 
 from .data_management import build_platform
 
 
 def execute(
-    program: Circuit | list[Circuit], runcard: str | dict, nshots: int = 1, transpile_config: dict = {}
+    program: Circuit | list[Circuit],
+    runcard: str | dict,
+    nshots: int = 1,
+    transpile_config: Optional[DigitalTranspileConfig] = None,
 ) -> Result | list[Result]:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 
@@ -44,8 +50,9 @@ def execute(
         runcard (str | dict): If a string, path to the YAML file containing the serialization of the Platform to be
             used. If a dictionary, the serialized platform to be used.
         nshots (int, optional): Number of shots to execute. Defaults to 1.
-        transpile_config (dict, optional): Kwargs (``!circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()`
-            method. Contains the configuration used during transpilation. Defaults to ``{}`` (not changing any default value).
+        transpile_config (DigitalTranspileConfig, optional): :class:`.DigitalTranspileConfig` TypedDict containing
+            the Kwargs (except ``circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()` method.
+            Contains the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
             Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
 
     Returns:
@@ -61,6 +68,7 @@ def execute(
         import numpy as np
         from qibo import Circuit, gates
         from qibo.transpiler import Sabre, ReverseTraversal
+        from qililab.digital import DigitalTranspileConfig
         import qililab as ql
 
         # Create circuit:
@@ -76,7 +84,7 @@ def execute(
         c.add(gates.RX(1, 3 * np.pi / 2))
 
         # Create transpilation config:
-        transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
+        transpilation = DigitalTranspileConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
         # Execute with automatic transpilation:
         probabilities = ql.execute(c, runcard="./runcards/galadriel.yml", transpile_config=transpilation)
