@@ -58,8 +58,8 @@ class TwoStep(PulseShape):
         step_amp = self.step_amplitude
         return np.concatenate((amplitude * np.ones(step_duration), step_amp * np.ones(duration - step_duration)))
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "TwoStep":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "TwoStep":
         """Loads Twostep object/shape from dictionary.
 
         Args:
@@ -70,7 +70,7 @@ class TwoStep(PulseShape):
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
+        return TwoStep(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the TwoStep object/shape.

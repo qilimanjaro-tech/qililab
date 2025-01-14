@@ -98,8 +98,8 @@ class Gaussian(PulseShape):
 
         return gaussian * norm / corr_norm if corr_norm != 0 else gaussian
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "Gaussian":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "Gaussian":
         """Loads Gaussian object/shape from dictionary.
 
         The dictionary representation must include the name of the pulse shape and the number of sigmas.
@@ -113,7 +113,7 @@ class Gaussian(PulseShape):
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
+        return Gaussian(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the Gaussian object/shape.
