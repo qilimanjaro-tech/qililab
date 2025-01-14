@@ -15,7 +15,7 @@
 """CircuitRouter class"""
 
 import contextlib
-import re
+from numbers import Number
 
 import networkx as nx
 from qibo import Circuit, gates
@@ -69,7 +69,7 @@ class CircuitRouter:
         # 2) Routing stage, where the final_layout and swaps will be created.
         # 3) Layout stage, where the initial_layout will be created.
 
-    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict[str, int]]:
+    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict[int, int]]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         Check public docstring in :meth:`.CircuitTranspiler.route_circuit()` for more information.
@@ -79,7 +79,7 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple [Circuit, dict[str, int]: routed circuit and final layout of the circuit.
+            tuple [Circuit, dict[int, int]: routed circuit and final layout of the circuit {Original Algorithm Qubit: Physical qubit}.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -90,7 +90,7 @@ class CircuitRouter:
 
         if self._if_layout_is_not_valid(best_final_layout):
             raise ValueError(
-                f"The final layout: {best_final_layout} is not valid. i.e. a qubit is mapped to more than one physical qubit. Try again, if the problem persists, try another placer/routing algorithm."
+                f"The final layout: {best_final_layout} is not valid. i.e. a algorithm qubit is mapped to more than one physical qubit or viceversa, or a key/value from the layout wasn't a number. Try again, if the problem persists, try another placer/routing algorithm."
             )
 
         if least_swaps is not None:
@@ -103,7 +103,7 @@ class CircuitRouter:
     @staticmethod
     def _iterate_routing(
         routing_pipeline: Passes, circuit: Circuit, iterations: int = 10
-    ) -> tuple[Circuit, dict[str, int], int | None]:
+    ) -> tuple[Circuit, dict[int, int], int | None]:
         """Iterates through the routing pipeline to retain the best stochastic result. Returns and/or logs the final qubit layout.
 
         Args:
@@ -112,7 +112,7 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple[Circuit, dict[str, int], int]: Best transpiled circuit, best final layout and least swaps.
+            tuple[Circuit, dict[int, int], int]: Best transpiled circuit, best final layout {Original Algorithm Qubit: Physical qubit}, and least swaps.
         """
         # We repeat the routing pipeline a few times, to keep the best stochastic result:
         least_swaps: int | None = None
@@ -164,21 +164,22 @@ class CircuitRouter:
         return max(dict(connectivity.degree()).items(), key=lambda x: x[1])[0]
 
     @staticmethod
-    def _if_layout_is_not_valid(layout: dict[str, int]) -> bool:
+    def _if_layout_is_not_valid(layout: dict[int, int]) -> bool:
         """True if the layout is not valid.
 
         For example, if a qubit is mapped to more than one physical qubit. Or if the keys or values are not int.
 
         Args:
-            layout (dict[str, int]): Initial or final layout of the circuit.
+            layout (dict[int, int]): Initial or final layout of the circuit.
 
         Returns:
             bool: True if the layout is not valid.
         """
         return (
             len(layout.values()) != len(set(layout.values()))
-            or not all(isinstance(value, int) for value in layout.values())
-            or not all(isinstance(key, str) and re.match(r"^q\d+$", key) for key in layout)
+            or len(layout.keys()) != len(set(layout.keys()))
+            or not all(isinstance(value, Number) for value in layout.values())
+            or not all(isinstance(keys, Number) for keys in layout)
         )
 
     @classmethod
@@ -197,7 +198,7 @@ class CircuitRouter:
         """
         # If router is None, we build default one:
         if router is None:
-            return Sabre(connectivity)
+            return Sabre(connectivity=connectivity)
 
         kwargs = {}
         if isinstance(router, tuple):
@@ -221,7 +222,7 @@ class CircuitRouter:
                 if issubclass(router, StarConnectivityRouter):
                     # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
                     kwargs["middle_qubit"] = cls._highest_degree_node(connectivity)
-                return router(connectivity, **kwargs)
+                return router(connectivity=connectivity, **kwargs)
 
         raise TypeError(
             f"`router` arg ({type(router)}), must be a `Router` instance, subclass or tuple(subclass, kwargs), in `execute()`, `compile()`, `transpile_circuit()` or `route_circuit()`."
@@ -244,7 +245,7 @@ class CircuitRouter:
         """
         # If placer is None, we build default one:
         if placer is None:
-            return ReverseTraversal(connectivity, router)
+            return ReverseTraversal(connectivity=connectivity, routing_algorithm=router)
 
         kwargs = {}
         if isinstance(placer, tuple):
@@ -272,7 +273,7 @@ class CircuitRouter:
                 if issubclass(placer, StarConnectivityPlacer):
                     # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
                     kwargs["middle_qubit"] = self._highest_degree_node(connectivity)
-                return placer(connectivity, **kwargs)
+                return placer(connectivity=connectivity, **kwargs)
 
         raise TypeError(
             f"`placer` arg ({type(placer)}), must be a `Placer` instance, subclass or tuple(subclass, kwargs), in `execute()`, `compile()`, `transpile_circuit()` or `route_circuit()`."

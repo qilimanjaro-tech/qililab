@@ -1089,7 +1089,7 @@ class Platform:
 
         return result
 
-    def _order_result(self, result: Result, circuit: Circuit, final_layout: dict[str, int] | None) -> Result:
+    def _order_result(self, result: Result, circuit: Circuit, final_layout: dict[int, int] | None) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1100,7 +1100,7 @@ class Platform:
         Args:
             result (Result): Result obtained from the execution
             circuit (Circuit): qibo circuit being executed
-            final_layouts (dict[str, int]): final layout of the qubits in the circuit.
+            final_layouts (dict[int, int]): final layout of the qubits in the circuit {Original Algorithm Qubit: Physical qubit}.
 
         Returns:
             Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
@@ -1127,7 +1127,7 @@ class Platform:
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
-            original_qubit = final_layout[f"q{qubit}"] if final_layout is not None else qubit
+            original_qubit = final_layout[qubit] if final_layout is not None else qubit
             results[order[original_qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
@@ -1139,7 +1139,7 @@ class Platform:
         repetition_duration: int,
         num_bins: int,
         transpile_config: Optional[DigitalTranspileConfig] = None,
-    ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
+    ) -> tuple[dict[str, list[QpySequence]], dict[int, int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
@@ -1168,7 +1168,7 @@ class Platform:
                 Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
 
         Returns:
-            tuple[dict, dict[str, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {"qX":Y}.
+            tuple[dict, dict[int, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {Original Algorithm Qubit: Physical qubit}..
 
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.

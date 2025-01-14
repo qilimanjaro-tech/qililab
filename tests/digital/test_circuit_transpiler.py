@@ -668,7 +668,7 @@ class TestCircuitTranspiler:
         mock_gate_list = mock_circuit.queue
 
         # Mock layout for return values
-        mock_layout = {"q0": 0, "q1": 2, "q2": 1, "q3": 3, "q4": 4}
+        mock_layout = {0: 0, 1: 2, 2: 1, 3: 3, 4: 4}
 
         # Mock schedule for return values
         mock_schedule = PulseSchedule()
@@ -716,7 +716,7 @@ class TestCircuitTranspiler:
         # Mock the return values
         mock_circuit = Circuit(5)
         mock_circuit.add(X(0))
-        mock_layout = {"q0": 0, "q1": 2, "q2": 1, "q3": 3, "q4": 4}
+        mock_layout = {0: 0, 1: 2, 2: 1, 3: 3, 4: 4}
         mock_route.return_value = (mock_circuit, mock_layout)
 
         # Execute the function

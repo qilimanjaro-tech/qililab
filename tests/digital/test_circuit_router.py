@@ -33,8 +33,8 @@ circuit_test.add(gates.H(0))
 circuit_w_swap_test = Circuit(5)
 circuit_w_swap_test.add(gates.SWAP(0,1))
 # Tests layouts
-test_layout = {"q1":0}
-test_bad_layout = {"q0":0, "q1":0}
+test_layout = {1:0}
+test_bad_layout = {0:0, 1:0}
 
 #########################
 ### INTEGRATION TESTS ###
@@ -71,7 +71,7 @@ class TestCircuitRouterIntegration:
         """Test the routing of a circuit"""
         routed_circuit, final_layout = CircuitRouter(linear_topology).route(linear_circuit)
 
-        assert final_layout == {"q0":0, "q1":1, "q2":2, "q3":3, "q4":4}
+        assert final_layout == {0:0, 1:1, 2:2, 3:3, 4:4}
         assert routed_circuit.nqubits == linear_circuit.nqubits
         assert routed_circuit.depth == linear_circuit.depth
         assert [(gate.name, gate.qubits) for gate in routed_circuit.queue] == [(gate.name, gate.qubits)  for gate in linear_circuit.queue]
@@ -82,14 +82,14 @@ class TestCircuitRouterIntegration:
         routed_circuit, final_layout = CircuitRouter(star_topology).route(linear_circuit)
 
         # Assert that the circuit was routed:
-        assert final_layout != {"q0":0, "q1":1, "q2":2, "q3":3, "q4":4}
+        assert final_layout != {0:0, 1:1, 2:2, 3:3, 4:4}
         assert routed_circuit.nqubits == linear_circuit.nqubits
         assert routed_circuit.depth > linear_circuit.depth
         assert [(gate.name, gate.qubits) for gate in routed_circuit.queue] != [(gate.name, gate.qubits)  for gate in linear_circuit.queue]
         assert {gate.name for gate in routed_circuit.queue} >= {gate.name for gate in linear_circuit.queue} # Assert more gates
 
         # Assert that the circuit is routed in a concrete way:
-        assert final_layout == {'q0': 3, 'q1': 1, 'q2': 2, 'q3': 0, 'q4': 4}
+        assert final_layout == {0: 3, 1: 1, 2: 2, 3: 0, 4: 4}
         assert routed_circuit.draw() == 'q0: ───X─o─x─X─o─\nq1: ───|─|─x─|─|─\nq2: ───|─X───o─|─\nq3: ─H─o───────|─\nq4: ───────────X─'
 
 

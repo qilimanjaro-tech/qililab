@@ -78,7 +78,7 @@ class CircuitTranspiler:
         router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
         routing_iterations: int = 10,
         optimize: bool = False,
-    ) -> tuple[PulseSchedule, dict[str, int]]:
+    ) -> tuple[PulseSchedule, dict[int, int]]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
         The process involves the following steps:
@@ -154,7 +154,7 @@ class CircuitTranspiler:
             optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
         Returns:
-            tuple[PulseSchedule, dict[str, int]]: Pulse schedule and final layouts of the qubits, in the circuit {"qI": J}.
+            tuple[PulseSchedule, dict[int, int]]: Pulse schedule and final layout of the qubits, in the circuit {Original Algorithm Qubit: Physical qubit}..
         """
 
         # Routing stage;
@@ -162,7 +162,7 @@ class CircuitTranspiler:
             gate_list, final_layout, nqubits = self.route_circuit(circuit, placer, router, routing_iterations)
         else:
             gate_list, nqubits = circuit.queue, circuit.nqubits
-            final_layout = {f"q{i}": i for i in range(nqubits)}
+            final_layout = {i: i for i in range(nqubits)}
 
         # Optimze qibo gates, cancelling redundant gates:
         if optimize:
@@ -189,8 +189,8 @@ class CircuitTranspiler:
         placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None,
         router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
         iterations: int = 10,
-        coupling_map: Optional[list[tuple[int, int]]] = None,
-    ) -> tuple[list[gates.Gate], dict[str, int], int]:
+        coupling_map: Optional[tuple[int, int]] = None,
+    ) -> tuple[list[gates.Gate], dict[int, int], int]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         This process uses the provided `placer`, `router`, and `routing_iterations` parameters if they are passed; otherwise, default values are applied.
@@ -239,11 +239,11 @@ class CircuitTranspiler:
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-            coupling_map (list[tuple[int, int]], optional): coupling map of the chip to route. This topology will be the one that rules,
+            coupling_map (tuple[int, int], optional): coupling map of the chip to route. This topology will be the one that rules,
                 which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
 
         Returns:
-            tuple[list[Gate], dict[str, int], int]: List of gates of the routed circuit, final layout of the circuit {"qI": J}, and number of qubits in the final circuit.
+            tuple[list[Gate], dict[int, int], int]: List of gates of the routed circuit, final layout of the circuit {Original Algorithm Qubit: Physical qubit}, and number of qubits in the final circuit.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
