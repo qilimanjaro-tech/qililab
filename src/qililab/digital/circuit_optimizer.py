@@ -149,7 +149,7 @@ class CircuitOptimizer:
         """
         # Add more optimizations of the transpiled circuit here:
         gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=True)
-        # TODO: SOLVE BUNCHING DRAG GATES FOR DIFFERENT PHI's!
+        # TODO: ADD BUNCHING DRAG GATES FOR DIFFERENT PHI's!
         # gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=False)
         gate_list = cls.normalize_angles_of_drags(gate_list)
         gate_list = cls.delete_gates_with_no_amplitude(gate_list)
