@@ -218,62 +218,12 @@ class CircuitOptimizer:
         if drag1.parameters[1] == drag2.parameters[1]:
             return Drag(drag1.qubits[0], drag1.parameters[0] + drag2.parameters[0], drag1.parameters[1])
 
-        # If we are merging only Drag gates with same phi, we can't merge these gates:
+        # If we are merging only same phi, we don't merge gates with phi_1 != phi_2:
         if only_same_phi:
             return None
 
-        # TODO: SOLVE BUNCHING DRAG GATES FOR DIFFERENT PHI's!
-        return None
-
-        # # Merge the Drag gates with different phi:
-        # # Old parameters
-        # theta, phi = drag1.parameters
-        # theta_prime, phi_prime = drag2.parameters
-
-        # # Compute theta''
-        # new_theta = 2 * sp.acos(
-        #     sp.cos(theta / 2) * sp.cos(theta_prime / 2)
-        #     - sp.sin(theta / 2) * sp.sin(theta_prime / 2) * sp.cos(phi - phi_prime)
-        # )
-
-        # # Compute phi'' using components of the matrix
-        # new_phi = sp.atan2(
-        #     sp.sin(theta / 2) * sp.cos(phi) * sp.cos(theta_prime / 2)
-        #     + sp.sin(theta_prime / 2) * sp.cos(phi_prime) * sp.cos(theta / 2),
-        #     sp.sin(phi) * sp.sin(theta / 2) * sp.cos(theta_prime / 2)
-        #     + sp.sin(phi_prime) * sp.sin(theta_prime / 2) * sp.cos(theta / 2),
-        # )
-
-        # # New parameters
-        # new_theta = 2 * sp.acos(
-        #     (
-        #         (1 - np.exp(1j * theta))
-        #         * (1 - np.exp(1j * theta_prime))
-        #         * np.exp(1j * (2 * phi_prime + theta + theta_prime) / 2)
-        #         + (np.exp(1j * theta) + 1)
-        #         * (np.exp(1j * theta_prime) + 1)
-        #         * np.exp(1j * (2 * phi + theta + theta_prime) / 2)
-        #     )
-        #     * np.exp(-1j * (phi + theta + theta_prime))
-        #     / 4
-        # )
-
-        # new_phi = (
-        #     sp.arg(
-        #         (
-        #             (1 - np.exp(1j * theta)) * (np.exp(1j * theta_prime) + 1) * np.exp(1j * phi)
-        #             + (1 - np.exp(1j * theta_prime)) * (np.exp(1j * theta) + 1) * np.exp(1j * phi_prime)
-        #         )
-        #         * np.exp(1j * (phi + phi_prime))
-        #         / (
-        #             (1 - np.exp(1j * theta)) * (np.exp(1j * theta_prime) + 1) * np.exp(1j * phi_prime)
-        #             + (1 - np.exp(1j * theta_prime)) * (np.exp(1j * theta) + 1) * np.exp(1j * phi)
-        #         )
-        #     )
-        #     / 2
-        # )
-
-        # return Drag(drag1.qubits[0], new_theta, new_phi)
+        # TODO: ADD BUNCHING DRAG GATES FOR GENERAL DIFFERENT PHI's!
+        return None  # This should return the merged Drag gate, for different phi's!
 
     @staticmethod
     def delete_gates_with_no_amplitude(gate_list: list[gates.Gate]) -> list[gates.Gate]:

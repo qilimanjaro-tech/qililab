@@ -182,48 +182,6 @@ class TestCircuitOptimizerUnit:
         assert isinstance(gate_list[4], Drag)
         assert gate_list[4].parameters == (np.pi, np.pi / 2)
 
-        # TODO: SOLVE BUNCHING DRAG GATES FOR DIFFERENT PHI's!
-        # # When combining all the Drags
-        # if only_same_phi=False:
-        #     assert len(gate_list) == 4
-
-        #     assert isinstance(gate_list[0], Drag)
-        #     assert gate_list[0].parameters[1] not in [np.pi / 2, np.pi]
-
-        #     assert isinstance(gate_list[1], Drag)
-        #     assert gate_list[1].parameters == (2 * np.pi, np.pi / 2)
-
-        #     assert isinstance(gate_list[2], gates.RX)
-
-        #     assert isinstance(gate_list[3], Drag)
-        #     assert gate_list[3].parameters == (np.pi, np.pi / 2)
-
-    # TODO: SOLVE BUNCHING DRAG GATES FOR DIFFERENT PHI's!
-    # def test_bunch_drag_gates_YX(self):
-    #     """Test bunching concrete drag gates."""
-    #     circuit = Circuit(2)
-    #     circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
-    #     circuit.add(Drag(0, theta=np.pi, phase=0))
-
-    #     gate_list = CircuitOptimizer.bunch_drag_gates(circuit.queue)
-
-    #     assert len(gate_list) == 1
-    #     assert isinstance(gate_list[0], Drag)
-    #     assert np.isclose(np.array(gate_list[0].parameters, dtype=float), (np.pi, np.pi/4)).all()
-
-    # def test_bunch_drag_gates_XY(self):
-    #     """Test bunching concrete drag gates."""
-    #     circuit = Circuit(2)
-    #     circuit.add(Drag(0, theta=np.pi, phase=0))
-    #     circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
-
-    #     gate_list = CircuitOptimizer.bunch_drag_gates(circuit.queue)
-
-    #     assert len(gate_list) == 1
-    #     assert isinstance(gate_list[0], Drag)
-    #     assert np.isclose(np.array(gate_list[0].parameters, dtype=float), (np.pi, np.pi/4)).all()
-
-
     def test_delete_gates_with_no_amplitude(self):
         """Test delete gates with no amplitude."""
         circuit = Circuit(2)
