@@ -355,16 +355,16 @@ class Parameter(str, Enum):
     T_PHI = "t_phi"
     GATE_OPTIONS = "options"
 
-    @classmethod
-    def to_yaml(cls, representer, node):
+    @staticmethod
+    def to_yaml(representer, node):
         """Method to be called automatically during YAML serialization."""
         return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
 
-    @classmethod
-    def from_yaml(cls, _, node):
+    @staticmethod
+    def from_yaml(_, node):
         """Method to be called automatically during YAML deserialization."""
         _, value = node.value.split("-")
-        return cls(value)
+        return Parameter(value)
 
 
 class ResultName(str, Enum):

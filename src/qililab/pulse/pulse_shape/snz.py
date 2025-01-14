@@ -104,8 +104,8 @@ class SNZ(PulseShape):
 
         return envelope
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "SNZ":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "SNZ":
         """Loads SNZ object/shape from dictionary.
 
         Args:
@@ -117,7 +117,7 @@ class SNZ(PulseShape):
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
+        return SNZ(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the Rectangular object/shape.

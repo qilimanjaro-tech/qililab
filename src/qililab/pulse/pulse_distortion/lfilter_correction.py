@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """LFilter correction."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -107,8 +108,8 @@ class LFilterCorrection(PulseDistortion):
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
         return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "LFilterCorrection":
         """Loads LFilterCorrection object from dictionary.
 
         Args:
@@ -120,7 +121,7 @@ class LFilterCorrection(PulseDistortion):
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
+        return LFilterCorrection(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the distortion.

@@ -86,8 +86,8 @@ class Cosine(PulseShape):
         x_values = np.linspace(start=0, stop=2 * np.pi, num=int(duration / resolution))
         return amplitude / 2 * (1 - (1 - self.lambda_2) * np.cos(x_values) - self.lambda_2 * np.cos(2 * x_values))
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "Cosine":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "Cosine":
         """Loads Cosine object/shape from dictionary.
 
         Args:
@@ -99,7 +99,7 @@ class Cosine(PulseShape):
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
+        return Cosine(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the Cosine object/shape.
