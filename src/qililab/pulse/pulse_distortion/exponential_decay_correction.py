@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Exponential decay correction."""
+
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -113,8 +114,8 @@ class ExponentialCorrection(PulseDistortion):
         corr_envelope = signal.lfilter(b=[b_0, b_1], a=[1, a_1], x=envelope)
         return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "ExponentialCorrection":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "ExponentialCorrection":
         """Loads ExponentialCorrection object from dictionary.
 
         Args:
@@ -127,7 +128,7 @@ class ExponentialCorrection(PulseDistortion):
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
+        return ExponentialCorrection(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the distortion.

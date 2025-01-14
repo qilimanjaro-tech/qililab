@@ -190,8 +190,8 @@ class PulseBusSchedule:
             "bus_alias": self.bus_alias,
         }
 
-    @classmethod
-    def from_dict(cls, dictionary: dict):
+    @staticmethod
+    def from_dict(dictionary: dict):
         """Loads PulseBusSchedule object from dictionary.
 
         Args:
