@@ -17,7 +17,6 @@
 from copy import deepcopy
 
 import numpy as np
-import sympy as sp
 from qibo import gates
 
 from qililab import digital
@@ -150,7 +149,8 @@ class CircuitOptimizer:
         """
         # Add more optimizations of the transpiled circuit here:
         gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=True)
-        gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=False)
+        # TODO: SOLVE BUNCHING DRAG GATES FOR DIFFERENT PHI's!
+        # gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=False)
         gate_list = cls.normalize_angles_of_drags(gate_list)
         gate_list = cls.delete_gates_with_no_amplitude(gate_list)
         return gate_list
@@ -216,39 +216,58 @@ class CircuitOptimizer:
         if only_same_phi:
             return None
 
-        # Old parameters
-        theta, phi = drag1.parameters
-        theta_prime, phi_prime = drag2.parameters
+        # TODO: SOLVE BUNCHING DRAG GATES FOR DIFFERENT PHI's!
+        return None
 
-        # New parameters
-        new_theta = 2 * sp.acos(
-            (
-                (1 - np.exp(1j * theta))
-                * (1 - np.exp(1j * theta_prime))
-                * np.exp(1j * (2 * phi_prime + theta + theta_prime) / 2)
-                + (np.exp(1j * theta) + 1)
-                * (np.exp(1j * theta_prime) + 1)
-                * np.exp(1j * (2 * phi + theta + theta_prime) / 2)
-            )
-            * np.exp(-1j * (phi + theta + theta_prime))
-            / 4
-        )
-        new_phi = (
-            sp.arg(
-                (
-                    (1 - np.exp(1j * theta)) * (np.exp(1j * theta_prime) + 1) * np.exp(1j * phi)
-                    + (1 - np.exp(1j * theta_prime)) * (np.exp(1j * theta) + 1) * np.exp(1j * phi_prime)
-                )
-                * np.exp(1j * (phi + phi_prime))
-                / (
-                    (1 - np.exp(1j * theta)) * (np.exp(1j * theta_prime) + 1) * np.exp(1j * phi_prime)
-                    + (1 - np.exp(1j * theta_prime)) * (np.exp(1j * theta) + 1) * np.exp(1j * phi)
-                )
-            )
-            / 2
-        )
+        # # Merge the Drag gates with different phi:
+        # # Old parameters
+        # theta, phi = drag1.parameters
+        # theta_prime, phi_prime = drag2.parameters
 
-        return Drag(drag1.qubits[0], new_theta, new_phi)
+        # # Compute theta''
+        # new_theta = 2 * sp.acos(
+        #     sp.cos(theta / 2) * sp.cos(theta_prime / 2)
+        #     - sp.sin(theta / 2) * sp.sin(theta_prime / 2) * sp.cos(phi - phi_prime)
+        # )
+
+        # # Compute phi'' using components of the matrix
+        # new_phi = sp.atan2(
+        #     sp.sin(theta / 2) * sp.cos(phi) * sp.cos(theta_prime / 2)
+        #     + sp.sin(theta_prime / 2) * sp.cos(phi_prime) * sp.cos(theta / 2),
+        #     sp.sin(phi) * sp.sin(theta / 2) * sp.cos(theta_prime / 2)
+        #     + sp.sin(phi_prime) * sp.sin(theta_prime / 2) * sp.cos(theta / 2),
+        # )
+
+        # # New parameters
+        # new_theta = 2 * sp.acos(
+        #     (
+        #         (1 - np.exp(1j * theta))
+        #         * (1 - np.exp(1j * theta_prime))
+        #         * np.exp(1j * (2 * phi_prime + theta + theta_prime) / 2)
+        #         + (np.exp(1j * theta) + 1)
+        #         * (np.exp(1j * theta_prime) + 1)
+        #         * np.exp(1j * (2 * phi + theta + theta_prime) / 2)
+        #     )
+        #     * np.exp(-1j * (phi + theta + theta_prime))
+        #     / 4
+        # )
+
+        # new_phi = (
+        #     sp.arg(
+        #         (
+        #             (1 - np.exp(1j * theta)) * (np.exp(1j * theta_prime) + 1) * np.exp(1j * phi)
+        #             + (1 - np.exp(1j * theta_prime)) * (np.exp(1j * theta) + 1) * np.exp(1j * phi_prime)
+        #         )
+        #         * np.exp(1j * (phi + phi_prime))
+        #         / (
+        #             (1 - np.exp(1j * theta)) * (np.exp(1j * theta_prime) + 1) * np.exp(1j * phi_prime)
+        #             + (1 - np.exp(1j * theta_prime)) * (np.exp(1j * theta) + 1) * np.exp(1j * phi)
+        #         )
+        #     )
+        #     / 2
+        # )
+
+        # return Drag(drag1.qubits[0], new_theta, new_phi)
 
     @staticmethod
     def delete_gates_with_no_amplitude(gate_list: list[gates.Gate]) -> list[gates.Gate]:
