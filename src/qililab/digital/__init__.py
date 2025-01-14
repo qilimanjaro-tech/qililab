@@ -24,11 +24,12 @@ Transpilation
     :toctree: api
 
     ~CircuitTranspiler
+    ~DigitalTranspileConfig
 
 """
 
-from .circuit_transpiler import CircuitTranspiler
+from .circuit_transpiler import CircuitTranspiler, DigitalTranspileConfig
 from .gate_decompositions import GateDecompositions
 from .native_gates import Drag, Wait
 
-__all__ = ["CircuitTranspiler", "Drag", "GateDecompositions", "Wait"]
+__all__ = ["CircuitTranspiler", "DigitalTranspileConfig", "Drag", "GateDecompositions", "Wait"]

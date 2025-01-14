@@ -18,7 +18,6 @@ from dataclasses import asdict
 
 import numpy as np
 from qibo import gates
-from qibo.models import Circuit
 
 from qililab.constants import RUNCARD
 from qililab.pulse.pulse import Pulse
@@ -44,34 +43,21 @@ class CircuitToPulses:
         self.settings: DigitalCompilationSettings = settings
         """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
-    def run(self, circuit: Circuit) -> PulseSchedule:
-        """Translates a circuit into a  pulse sequences.
+    def run(self, gate_list: list[gates.Gate]) -> PulseSchedule:
+        """Translates a Qibo circuit into its corresponding pulse sequences.
 
-        For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
-        gate and the name of the gate in the runcard should match) and load its schedule of GateEvents.
-
-        Each gate event corresponds to a concrete pulse applied at a certain time w.r.t the gate's start time and through a specific bus
-        (see gates settings docstrings for more details).
-
-        Measurement gates are handled in a slightly different manner. For a circuit gate M(0,1,2) the settings for each M(0), M(1), M(2)
-        will be looked up and will be applied in sync. Note that thus a circuit gate for M(0,1,2) is different from the circuit sequence
-        M(0)M(1)M(2) since the later will not be necessarily applied at the same time for all the qubits involved.
-
-        Times for each qubit are kept track of with the dictionary `time`.
-
-        The times at which each pulse is applied are padded if they are not multiples of the minimum clock time. This means that if min clock
-        time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
+        Check public docstring in :meth:`.CircuitTranspiler.gates_to_pulses()` for more information.
 
         Args:
-            circuits (List[Circuit]): List of Qibo Circuit classes.
+            gate_list (list[gates.Gate]): list of native gates of the qibo circuit.
 
         Returns:
-            list[PulseSequences]: List of :class:`PulseSequences` classes.
+            PulseSequences: equivalent :class:`PulseSequences` class.
         """
 
         pulse_schedule: PulseSchedule = PulseSchedule()
         time: dict[int, int] = {}  # init/restart time
-        for gate in circuit.queue:
+        for gate in gate_list:
             # handle wait gates
             if isinstance(gate, Wait):
                 self._update_time(time=time, qubit=gate.qubits[0], gate_time=gate.parameters[0])

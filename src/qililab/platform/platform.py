@@ -68,11 +68,11 @@ from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
     from queue import Queue
+    from typing import Optional
 
-    from qibo.transpiler.placer import Placer
-    from qibo.transpiler.router import Router
     from qpysequence import Sequence as QpySequence
 
+    from qililab.digital.circuit_transpiler import DigitalTranspileConfig
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result
@@ -986,45 +986,34 @@ class Platform:
         repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
-        routing: bool = False,
-        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
-        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
-        routing_iterations: int = 10,
-        optimize: bool = True,
+        transpile_config: Optional[DigitalTranspileConfig] = None,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
-        If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
-        settings of the platform and the passed placer and router. Then the pulse schedules will be compiled into the assembly programs and executed.
+        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
+        settings of the platform and the passed transpile onfiguration. Then the pulse schedules will be compiled into the assembly programs and executed.
 
         To compile to assembly programs, the ``platform.compile()`` method is called; check its documentation for more information.
 
-        The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
+        1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
 
-        1. Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters if provided; otherwise, default values are applied.
-        2. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
-        3. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+        .. note ::
 
-        |
+            \\*) `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
-        If `optimize=True` (default behavior), the following optimizations are also performed:
-
-        - Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-        - Applying virtual Z gates and phase corrections by combining multiple pulses into a single one and commuting them with virtual Z gates.
+            \\**) `2.` and `5.` are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
         Args:
-            program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
+            program (``PulseSchedule`` | ``Circuit``): Circuit or pulse schedule to execute.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution. Defaults to 200_000.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            routing (bool, optional): whether to route the circuits. Defaults to False.
-            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
-            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+            transpile_config (DigitalTranspileConfig, optional): :class:`.DigitalTranspileConfig` TypedDict containing
+                the Kwargs (except ``circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()` method.
+                Contains the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
+                Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
@@ -1034,11 +1023,31 @@ class Platform:
                     path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
 
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
+
+        |
+
+        Example Usage:
+
+        .. code-block:: python
+
+            from qibo import gates, Circuit
+            from qibo.transpiler import ReverseTraversal, Sabre
+            from qililab import build_platform
+            from qililab.digital import DigitalTranspileConfig
+
+            # Create circuit:
+            c = Circuit(5)
+            c.add(gates.CNOT(1, 0))
+
+            # Create platform:
+            platform = build_platform(runcard="<path_to_runcard>")
+            transpilation = DigitalTranspileConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
+
+            # Execute with automatic transpilation:
+            result = platform.execute(c, num_avg=1000, transpile_config=transpilation)
         """
         # Compile pulse schedule
-        programs, final_layout = self.compile(
-            program, num_avg, repetition_duration, num_bins, routing, placer, router, routing_iterations, optimize
-        )
+        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpile_config)
 
         # Upload pulse schedule
         for bus_alias in programs:
@@ -1066,20 +1075,19 @@ class Platform:
 
         # Flatten results if more than one readout bus was used for a qblox module
         if len(results) > 1:
-            results = [
-                QbloxResult(
-                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
-                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
-                )
-            ]
-        if not results:
+            result = QbloxResult(
+                integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
+                qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
+            )
+        elif not results:
             raise ValueError("There are no readout buses in the platform.")
+        else:
+            result = results[0]
 
         if isinstance(program, Circuit):
-            results = [self._order_result(results[0], program, final_layout)]
+            result = self._order_result(result, program, final_layout)
 
-        # FIXME: return result instead of results[0]
-        return results[0]
+        return result
 
     def _order_result(self, result: Result, circuit: Circuit, final_layout: dict[str, int] | None) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
@@ -1130,45 +1138,34 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        routing: bool = False,
-        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
-        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
-        routing_iterations: int = 10,
-        optimize: bool = True,
+        transpile_config: Optional[DigitalTranspileConfig] = None,
     ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
-        If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
-        settings of the platform and passed placer and router. Then the pulse schedules will be compiled into the assembly programs.
+        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
+        settings of the platform and passed  transpile configuration. Then the pulse schedules will be compiled into the assembly programs.
 
-        The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
+        1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
 
-        1. Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters if provided; otherwise, default values are applied.
-        2. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
-        3. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+        .. note ::
 
-        |
+            \\*) `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
-        If `optimize=True` (default behavior), the following optimizations are also performed:
-
-        - Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
-        - Applying virtual Z gates and phase corrections by combining multiple pulses into a single one and commuting them with virtual Z gates.
+            \\**) `2.` and `5.` are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
 
         .. note::
             This method is called during the ``platform.execute()`` method, check its documentation for more information.
 
         Args:
-            program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to compile.
+            program (PulseSchedule | Circuit): Circuit or pulse schedule to compile.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            routing (bool, optional): whether to route the circuits. Defaults to False.
-            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
-            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+            transpile_config (DigitalTranspileConfig, optional): :class:`.DigitalTranspileConfig` TypedDict containing
+                the Kwargs (except ``circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()` method.
+                Contains the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
+                Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
 
         Returns:
             tuple[dict, dict[str, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {"qX":Y}.
@@ -1182,11 +1179,7 @@ class Platform:
 
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
-
-            transpiled_circuits, final_layouts = transpiler.transpile_circuits(
-                [program], routing, placer, router, routing_iterations, optimize
-            )
-            pulse_schedule, final_layout = transpiled_circuits[0], final_layouts[0]
+            pulse_schedule, final_layout = transpiler.transpile_circuit(program, **(transpile_config or {}))
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program

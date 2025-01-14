@@ -13,11 +13,27 @@
 -Raises an error when the inputed value for the QDAC is outside of the bounds provided by QM. Done in 3 ways, runcard, set_parameter RAMPING_ENABLED and set_parameter RAMPING_RATE.
 [#865](https://github.com/qilimanjaro-tech/qililab/pull/865)
 
-
 ### Improvements
 
 - Updated qm-qua to stable version 1.2.1. And close other machines has been set to True as now it closes only stated ports.
   [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
+- Improvements to Digital Transpilation:
+
+  - Move `optimize` flag, for actual optional optimizations (& Improve `optimize` word use in methods names)
+  - Make `Transpilation`/`execute`/`compile` only for single circuits (unify code standard across `qililab`)
+  - Make `Transpilation` efficient, by not constructing the `Circuit` class so many times, between methods
+  - Pass a transpilation `kwargs` as a TypedDict instead of so many args in `platform`/`qililab`'s `execute(...)`
+  - Improve documentation on transpilation, simplifying it in `execute()`'s, and creating Transpilation new section.
+
+  [#862](https://github.com/qilimanjaro-tech/qililab/pull/862)
+
+- Added optimizations for Digital Transpilation for Native gates:
+
+  - Make bunching of consecutive Drag Gates, with same phi's
+  - Make the deletion of gates with no amplitude
+
+  [#863](https://github.com/qilimanjaro-tech/qililab/pull/863)
 
 ### Breaking changes
 

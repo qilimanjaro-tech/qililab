@@ -27,11 +27,11 @@ linear_circuit.add(gates.CNOT(2, 3))
 linear_circuit.add(gates.CNOT(3, 4))
 
 # Tests circuit
-test_circuit = Circuit(5)
-test_circuit.add(gates.H(0))
+circuit_test = Circuit(5)
+circuit_test.add(gates.H(0))
 # Tests circuit with SWAP
-test_circuit_w_swap = Circuit(5)
-test_circuit_w_swap.add(gates.SWAP(0,1))
+circuit_w_swap_test = Circuit(5)
+circuit_w_swap_test.add(gates.SWAP(0,1))
 # Tests layouts
 test_layout = {"q1":0}
 test_bad_layout = {"q0":0, "q1":0}
@@ -104,9 +104,9 @@ class TestCircuitRouterUnit:
     @pytest.mark.parametrize(
         "type, circuit, layout, least_swaps",
         [
-            ("good", test_circuit, test_layout, 0),
-            ("none_swaos", test_circuit, test_layout, None),
-            ("bad_layout", test_circuit, test_bad_layout, 0)
+            ("good", circuit_test, test_layout, 0),
+            ("none_swaos", circuit_test, test_layout, None),
+            ("bad_layout", circuit_test, test_bad_layout, 0)
         ]
     )
     @patch("qililab.config.logger.info")
@@ -120,7 +120,7 @@ class TestCircuitRouterUnit:
         if type in ["good", "none_swaos"]:
             routed_circuit, final_layout = self.circuit_router.route(linear_circuit)
             # Assert you return the same outputs as the mocked _iterate_routing
-            assert (routed_circuit, final_layout) ==(test_circuit, test_layout)
+            assert (routed_circuit, final_layout) ==(circuit_test, test_layout)
         elif type == "bad_layout":
             with pytest.raises(ValueError, match=re.escape(f"The final layout: {test_bad_layout} is not valid. i.e. a qubit is mapped to more than one physical qubit. Try again, if the problem persists, try another placer/routing algorithm.")):
                 _, _ = self.circuit_router.route(linear_circuit)
@@ -139,8 +139,8 @@ class TestCircuitRouterUnit:
     @pytest.mark.parametrize(
         "type, circuit, layout, least_swaps, iterations",
         [
-            ("without_swaps", test_circuit, test_layout, None, 10),
-            ("with_swaps", test_circuit_w_swap, test_layout, 1, 7),
+            ("without_swaps", circuit_test, test_layout, None, 10),
+            ("with_swaps", circuit_w_swap_test, test_layout, 1, 7),
 
         ]
     )
