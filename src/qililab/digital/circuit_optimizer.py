@@ -211,7 +211,7 @@ class CircuitOptimizer:
             raise ValueError("Cannot merge Drag gates acting on different qubits.")
 
         # For the same phi, we just need to add the theta parameters:
-        if drag1.parameters[1] == drag2.parameters[1]:
+        if np.isclose(drag1.parameters[1], drag2.parameters[1]):
             return Drag(drag1.qubits[0], drag1.parameters[0] + drag2.parameters[0], drag1.parameters[1])
 
         # TODO: ADD BUNCHING DRAG GATES FOR GENERAL DIFFERENT PHI's!
