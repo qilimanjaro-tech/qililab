@@ -148,20 +148,17 @@ class CircuitOptimizer:
             list[gates.Gate]: list of gates of the transpiled circuit, optimized.
         """
         # Add more optimizations of the transpiled circuit here:
-        gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=True)
-        # TODO: ADD BUNCHING DRAG GATES FOR DIFFERENT PHI's!
-        # gate_list = cls.bunch_drag_gates(gate_list, only_same_phi=False)
+        gate_list = cls.bunch_drag_gates(gate_list)  # TODO: Add bunching of Drag Gates for diff phis!
         gate_list = cls.normalize_angles_of_drags(gate_list)
         gate_list = cls.delete_gates_with_no_amplitude(gate_list)
         return gate_list
 
     @classmethod
-    def bunch_drag_gates(cls, gate_list: list[gates.Gate], only_same_phi: bool = False) -> list[gates.Gate]:
+    def bunch_drag_gates(cls, gate_list: list[gates.Gate]) -> list[gates.Gate]:
         """Bunches consecutive Drag gates together into a single one.
 
         Args:
             gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to bunch drag gates.
-            only_same_phi (bool, optional): If True, only Drag gates with the same phi are bunched. Defaults to False.
 
         Returns:
             list[gates.Gate]: list of gates of the transpiled circuit, with drag gates bunched."""
@@ -185,7 +182,7 @@ class CircuitOptimizer:
                     break
 
                 # If the next gate in the same qubit is a Drag gate, we can merge them:
-                new_drag: Drag | None = cls.merge_consecutive_drags(drag1, drag2, only_same_phi)
+                new_drag: Drag | None = cls.merge_consecutive_drags(drag1, drag2)
 
                 # If successful bunching, substitute old gates with new one:
                 if new_drag is not None:
@@ -200,13 +197,12 @@ class CircuitOptimizer:
         return [gate for gate in gate_list if gate is not None]
 
     @staticmethod
-    def merge_consecutive_drags(drag1: Drag, drag2: Drag, only_same_phi: bool) -> Drag | None:
+    def merge_consecutive_drags(drag1: Drag, drag2: Drag) -> Drag | None:
         """Merges two consecutive Drag gates into a single one.
 
         Args:
             drag1 (Drag): First Drag gate.
             drag2 (Drag): Second Drag gate.
-            only_same_phi (bool): If True, only Drag gates with the same phi are merged.
 
         Returns:
             Drag | None: Merged Drag gate. None, if not possible to merge.
@@ -217,10 +213,6 @@ class CircuitOptimizer:
         # For the same phi, we just need to add the theta parameters:
         if np.isclose(drag1.parameters[1], drag2.parameters[1]):
             return Drag(drag1.qubits[0], drag1.parameters[0] + drag2.parameters[0], drag1.parameters[1])
-
-        # If we are merging only same phi, we don't merge gates with phi_1 != phi_2:
-        if only_same_phi:
-            return None
 
         # TODO: ADD BUNCHING DRAG GATES FOR GENERAL DIFFERENT PHI's!
         return None  # This should return the merged Drag gate, for different phi's!

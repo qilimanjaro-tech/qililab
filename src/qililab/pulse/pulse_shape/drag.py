@@ -98,8 +98,8 @@ class Drag(PulseShape):
 
         return drag_gaussian * norm / corr_norm if corr_norm != 0 else drag_gaussian
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "Drag":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "Drag":
         """Loads Drag object/shape from dictionary.
 
         Args:
@@ -111,7 +111,7 @@ class Drag(PulseShape):
         """
         local_dictionary = deepcopy(dictionary)
         local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
+        return Drag(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary representation of the Drag object/shape.

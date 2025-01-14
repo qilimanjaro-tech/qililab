@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """PulseEvent class."""
+
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -100,8 +101,8 @@ class PulseEvent:
 
         return envelope
 
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "PulseEvent":
+    @staticmethod
+    def from_dict(dictionary: dict) -> "PulseEvent":
         """Loads PulseEvent object from dictionary.
 
         Args:
@@ -124,7 +125,7 @@ class PulseEvent:
 
         local_dictionary[PULSEEVENT.PULSE_DISTORTIONS] = pulse_distortions_list
 
-        return cls(**local_dictionary)
+        return PulseEvent(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary of pulse.

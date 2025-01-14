@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Instrument Reference class. """
+"""Instrument Reference class."""
 
 from dataclasses import dataclass
 
@@ -42,8 +42,8 @@ class InstrumentReference:
         """Return a dict representation of the InstrumentReference class."""
         return {"alias": self.alias, "slot_id": self.slot_id}
 
-    @classmethod
-    def from_dict(cls, settings: dict):
+    @staticmethod
+    def from_dict(settings: dict):
         """Build an InstrumentReference from a settings dictionary
 
         Args:
