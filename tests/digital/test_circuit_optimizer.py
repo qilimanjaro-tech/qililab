@@ -136,7 +136,7 @@ class TestCircuitOptimizerUnit:
 
         optimizer = CircuitOptimizer(None)
         with pytest.raises(ValueError, match=re.escape("Cannot merge Drag gates acting on different qubits.")):
-            _ = optimizer.merge_consecutive_drags(drag_1, drag_2, only_same_phi=True)
+            _ = optimizer.merge_consecutive_drags(drag_1, drag_2)
 
     def test_merge_consecutive_drags_same_phis(self):
         """Test merge drag gates."""
@@ -144,7 +144,7 @@ class TestCircuitOptimizerUnit:
         drag_2 = Drag(0, theta=np.pi, phase=np.pi / 2)
 
         optimizer = CircuitOptimizer(None)
-        final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2, only_same_phi=True)
+        final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2)
 
         assert isinstance(final_drag, Drag)
         assert final_drag.parameters == (2 * np.pi, np.pi / 2)
@@ -155,7 +155,7 @@ class TestCircuitOptimizerUnit:
         drag_2 = Drag(0, theta=np.pi, phase=np.pi)
 
         optimizer = CircuitOptimizer(None)
-        final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2, only_same_phi=False)
+        final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2)
 
         assert final_drag is None
 
@@ -174,7 +174,7 @@ class TestCircuitOptimizerUnit:
 
 
         optimizer = CircuitOptimizer(None)
-        gate_list = optimizer.bunch_drag_gates(circuit.queue, only_same_phi=True)
+        gate_list = optimizer.bunch_drag_gates(circuit.queue)
 
         assert len(gate_list) == 5
 
@@ -199,7 +199,7 @@ class TestCircuitOptimizerUnit:
         circuit.add(Drag(0, theta=np.pi, phase=np.pi))
 
         optimizer = CircuitOptimizer(None)
-        gate_list = optimizer.bunch_drag_gates(circuit.queue, only_same_phi=True)
+        gate_list = optimizer.bunch_drag_gates(circuit.queue)
 
         assert gate_list == circuit.queue
 
