@@ -15,6 +15,7 @@
 """PulseShape abstract base class."""
 
 from abc import abstractmethod
+from copy import deepcopy
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -50,23 +51,36 @@ class PulseShape(FactoryElement):
             ndarray: Amplitude of the envelope for each time step.
         """
 
-    @staticmethod
-    def from_dict(dictionary: dict) -> "PulseShape":
-        """Returns dictionary representation of the pulse shape.
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> "PulseShape":
+        """Loads a `PulseShape` object from a dictionary representation.
 
         Args:
-            dictionary (dict): Dictionary representation of the PulseShape object.
+            dictionary (dict): Dictionary representation of the `PulseShape` object, containing all its attributes.
+                If called directly from the Abstract parent class: `PulseShape`, it must include the child class name to instantiate.
 
         Returns:
-            PulseShape: PulseShape loaded class, including the name of the pulse shape and attributes.
+            PulseShape: PulseShape loaded class, including the name of the pulse shape and its attributes set.
         """
-        shape_class = Factory.get(name=dictionary["name"])
-        return shape_class.from_dict(dictionary)
+        # For calls from parent PulseShape:
+        if cls is PulseShape:
+            shape_class = Factory.get(name=dictionary["name"])
+            return shape_class.from_dict(dictionary)
 
-    @abstractmethod
+        # For calls from childs directly:
+        local_dictionary = deepcopy(dictionary)
+        name = local_dictionary.pop("name", None)
+        # If the dict name is not the same as the class name, raise an error:
+        if name not in [cls.name.value, None]:
+            raise ValueError(f"Class: {cls.name.value} to instantiate, does not match the given dict name {name}")
+        return cls(**local_dictionary)
+
     def to_dict(self) -> dict:
-        """Returns dictionary representation of the pulse shape.
+        """Returns dictionary representation of the `PulseShape`. This includes the class name an all its attributes.
 
         Returns:
-            dict: Dictionary representation of the pulse shape including the name and attributes of the pulse shape.
+            dict: Dictionary describing the `PulseShape`, including the name and its attributes.
         """
+        return {"name": self.name.value} | {
+            attribute: getattr(self, attribute) for attribute in self.__dataclass_fields__.keys()
+        }

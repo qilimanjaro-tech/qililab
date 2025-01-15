@@ -190,8 +190,8 @@ class PulseBusSchedule:
             "bus_alias": self.bus_alias,
         }
 
-    @staticmethod
-    def from_dict(dictionary: dict):
+    @classmethod
+    def from_dict(cls, dictionary: dict):
         """Loads PulseBusSchedule object from dictionary.
 
         Args:
@@ -202,4 +202,4 @@ class PulseBusSchedule:
         """
         timeline = [PulseEvent.from_dict(event) for event in dictionary[PULSEBUSSCHEDULE.TIMELINE]]
         bus_alias = dictionary["bus_alias"]
-        return PulseBusSchedule(timeline=timeline, bus_alias=bus_alias)
+        return cls(timeline=timeline, bus_alias=bus_alias)
