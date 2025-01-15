@@ -6,6 +6,7 @@ import pytest
 from qililab.instruments import SGS100A, ParameterNotFound
 from qililab.typings.enums import Parameter
 
+
 @pytest.fixture(name="sdg100a")
 def fixture_sdg100a() -> SGS100A:
     """Fixture that returns an instance of a dummy QDAC-II."""
@@ -14,18 +15,36 @@ def fixture_sdg100a() -> SGS100A:
             "alias": "qdac",
             "power": 100,
             "frequency": 1e6,
-            "rf_on": True
+            "rf_on": True,
+            "IQ_state": True
         }
     )
     sdg100a.device = MagicMock()
     return sdg100a
+
+
+@pytest.fixture(name="sdg100a_iq")
+def fixture_sdg100a_iq() -> SGS100A:
+    """Fixture that returns an instance of a dummy QDAC-II."""
+    sdg100a_iq = SGS100A(
+        {
+            "alias": "qdac",
+            "power": 100,
+            "frequency": 1e6,
+            "rf_on": True,
+            "IQ_state": True
+        }
+    )
+    sdg100a_iq.device = MagicMock()
+    return sdg100a_iq
+
 
 class TestSGS100A:
     """Unit tests checking the SGS100A attributes and methods"""
 
     @pytest.mark.parametrize(
         "parameter, value",
-        [(Parameter.POWER, 0.01), (Parameter.LO_FREQUENCY, 6.0e09), (Parameter.RF_ON, True), (Parameter.RF_ON, False)],
+        [(Parameter.POWER, 0.01), (Parameter.LO_FREQUENCY, 6.0e09), (Parameter.RF_ON, True), (Parameter.RF_ON, False), (Parameter.IQ_STATE, True), (Parameter.IQ_STATE, False)],
     )
     def test_set_parameter_method(
         self, sdg100a: SGS100A, parameter: Parameter, value: float,
@@ -38,6 +57,8 @@ class TestSGS100A:
             assert sdg100a.settings.frequency == value
         if parameter == Parameter.RF_ON:
             assert sdg100a.settings.rf_on == value
+        if parameter == Parameter.IQ_STATE:
+            assert sdg100a.settings.IQ_state == value
 
     def test_set_parameter_method_raises_error(self, sdg100a: SGS100A):
         """Test setup method"""
