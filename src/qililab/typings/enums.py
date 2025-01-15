@@ -355,8 +355,8 @@ class Parameter(str, Enum):
     T_PHI = "t_phi"
     GATE_OPTIONS = "options"
 
-    @staticmethod
-    def to_yaml(representer, node):
+    @classmethod
+    def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
         return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
 
