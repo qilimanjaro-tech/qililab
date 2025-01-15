@@ -55,7 +55,7 @@ class AcquisitionData:
 
 
 Sequences = dict[str, QPy.Sequence]
-Acquisitions = dict[str, dict[str, AcquisitionData]]
+Acquisitions = dict[str, list[dict[str, AcquisitionData]]]
 
 
 class QbloxCompilationOutput:
@@ -127,7 +127,7 @@ class BusCompilationInfo:
         self.marked_for_sync: bool = False
 
         # Time of flight. Defaults to minimum_wait_duration and is updated if times_of_flight parameter is provided during compilation.
-        self.time_of_flight: int = QbloxCompiler.minimum_wait_duration
+        self.time_of_flight: int = QbloxCompiler.MINIMUM_REALTIME_OPERATIONS_DURATION
 
         # Delay. Defaults 0 delay and is updated if delays parameter is provided within the runcard.
         self.delay: int = 0
@@ -138,7 +138,9 @@ class BusCompilationInfo:
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
 
-    minimum_wait_duration: int = 4
+    MINIMUM_REALTIME_OPERATIONS_DURATION: int = 4
+    MINIMUM_TARGET_DURATION_OF_SQUARE_WAVEFORMS: int = 100
+    MAXIMUM_TARGET_DURATION_OF_SQUARE_WAVEFORMS: int = 500
 
     def __init__(self) -> None:
         # Handlers to map each operation to a corresponding handler function
@@ -232,17 +234,17 @@ class QbloxCompiler:
 
         self.optimize_square_waveforms = optimize_square_waveforms
         self._sync_counter = 0
-        self._buses = self._populate_buses()
+        self._buses = {bus: BusCompilationInfo() for bus in self._qprogram.buses}
 
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
-            for bus in self._buses.keys() & times_of_flight.keys():
-                self._buses[bus].time_of_flight = times_of_flight[bus]
+            for bus_alias in self._buses.keys() & times_of_flight.keys():
+                self._buses[bus_alias].time_of_flight = times_of_flight[bus_alias]
 
         # Pre-processing: Update delay
         if delays is not None:
-            for bus in self._buses.keys() & delays.keys():
-                self._buses[bus].delay = delays[bus]
+            for bus_alias in self._buses.keys() & delays.keys():
+                self._buses[bus_alias].delay = delays[bus_alias]
 
         # Pre-processing: Set markers ON/OFF
         for bus_alias, bus in self._buses.items():
@@ -274,15 +276,6 @@ class QbloxCompiler:
             for bus_alias, bus in self._buses.items()
         }
         return QbloxCompilationOutput(qprogram=self._qprogram, sequences=sequences, acquisitions=acquisitions)
-
-    def _populate_buses(self):
-        """Map each bus in the QProgram to a BusCompilationInfo instance.
-
-        Returns:
-            A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
-        """
-
-        return {bus: BusCompilationInfo() for bus in self._qprogram.buses}
 
     def _append_to_waveforms_of_sequencer(
         self, sequencer: SequencerCompilationInfo, waveform_I: Waveform, waveform_Q: Waveform
@@ -354,15 +347,16 @@ class QbloxCompiler:
         # iterations = min(QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step) for loop in element.loops)
         # loops = [(QbloxCompiler._convert_for_loop_values(for_loop=loop, operation=QbloxCompiler._get_reference_operation_of_loop(element)))[:2]) for loop in element.loops]
 
-        for bus in self._buses:
-            qpy_loop = QPyProgram.IterativeLoop(
-                name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=loops
-            )
-            for i, loop in enumerate(element.loops):
-                self._buses[bus].variable_to_register[loop.variable] = qpy_loop.loop_registers[i]
-            self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
-            self._buses[bus].qpy_block_stack.append(qpy_loop)
-            self._buses[bus].loop_counter += 1
+        for bus in self._buses.values():
+            for sequencer in bus.sequencers:
+                qpy_loop = QPyProgram.IterativeLoop(
+                    name=f"loop_{sequencer.loop_counter}", iterations=iterations, loops=loops
+                )
+                for i, loop in enumerate(element.loops):
+                    sequencer.variable_to_register[loop.variable] = qpy_loop.loop_registers[i]
+                sequencer.qpy_block_stack[-1].append_component(qpy_loop)
+                sequencer.qpy_block_stack.append(qpy_loop)
+                sequencer.loop_counter += 1
         return True
 
     def _handle_average(self, element: Average):
@@ -622,10 +616,11 @@ class QbloxCompiler:
         waveform_I, waveform_Q = element.get_waveforms()
         if waveform_Q is None:
             waveform_Q = Square(amplitude=0.0, duration=waveform_I.get_duration())
-        waveform_variables = element.get_waveform_variables()
-        if waveform_variables:
+        if element.get_waveform_variables():
             logger.error("Variables in waveforms are not supported in Qblox.")
             return
+        
+        bus = self._buses[element.bus]
         for sequencer in self._buses[element.bus].sequencers:
             if element.wait_time:
                 # The qp.qblox.play() was used. Don't apply optimizations
@@ -641,7 +636,7 @@ class QbloxCompiler:
                 self.optimize_square_waveforms
                 and isinstance(waveform_I, Square)
                 and isinstance(waveform_Q, Square)
-                and (waveform_I.duration >= 100)
+                and (waveform_I.duration >= QbloxCompiler.MINIMUM_TARGET_DURATION_OF_SQUARE_WAVEFORMS)
             ):
                 duration = waveform_I.duration
                 chunk_duration, iterations, remainder = QbloxCompiler.calculate_square_waveform_optimization_values(
@@ -730,8 +725,8 @@ class QbloxCompiler:
             SetPhase: lambda x: int(x * 1e9 / (2 * np.pi)),
             SetGain: lambda x: int(x * 32_767),
             SetOffset: lambda x: int(x * 32_767),
-            Wait: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
-            Play: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
+            Wait: lambda x: int(max(x, QbloxCompiler.MINIMUM_REALTIME_OPERATIONS_DURATION)),
+            Play: lambda x: int(max(x, QbloxCompiler.MINIMUM_REALTIME_OPERATIONS_DURATION)),
         }
         return conversion_map.get(type(operation), lambda x: int(x))
 
@@ -746,10 +741,10 @@ class QbloxCompiler:
     def calculate_square_waveform_optimization_values(duration) -> tuple[int, int, int]:
         def remainder_conditions(chunk_duration):
             remainder = duration % chunk_duration
-            return remainder, (chunk_duration >= 4 and (remainder == 0 or remainder >= 4))
+            return remainder, (chunk_duration >= QbloxCompiler.MINIMUM_REALTIME_OPERATIONS_DURATION and (remainder == 0 or remainder >= QbloxCompiler.MINIMUM_REALTIME_OPERATIONS_DURATION))
 
         def find_chunk_duration(condition_func):
-            for chunk_duration in range(100, 501):
+            for chunk_duration in range(QbloxCompiler.MINIMUM_TARGET_DURATION_OF_SQUARE_WAVEFORMS, QbloxCompiler.MAXIMUM_TARGET_DURATION_OF_SQUARE_WAVEFORMS + 1):
                 if chunk_duration <= duration:
                     remainder, valid = remainder_conditions(chunk_duration)
                     if valid and condition_func(remainder):
@@ -762,7 +757,7 @@ class QbloxCompiler:
             return final_chunk_duration, duration // final_chunk_duration, duration % final_chunk_duration
 
         # If not found, try for remainder ≥ 4
-        final_chunk_duration = find_chunk_duration(lambda rem: rem >= 4)
+        final_chunk_duration = find_chunk_duration(lambda rem: rem >= QbloxCompiler.MINIMUM_REALTIME_OPERATIONS_DURATION)
         if final_chunk_duration is not None:
             return final_chunk_duration, duration // final_chunk_duration, duration % final_chunk_duration
 
