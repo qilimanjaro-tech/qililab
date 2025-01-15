@@ -30,8 +30,8 @@ class Domain(Enum):
     Phase = 3
     Voltage = 4
 
-    @staticmethod
-    def to_yaml(representer, node):
+    @classmethod
+    def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
         return representer.represent_scalar("!Domain", f"{node.name}-{node.value}")
 
