@@ -14,7 +14,6 @@
 
 """Gaussian pulse shape."""
 
-from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
@@ -97,31 +96,3 @@ class Gaussian(PulseShape):
         corr_norm = np.amax(np.abs(np.real(gaussian)))
 
         return gaussian * norm / corr_norm if corr_norm != 0 else gaussian
-
-    @staticmethod
-    def from_dict(dictionary: dict) -> "Gaussian":
-        """Loads Gaussian object/shape from dictionary.
-
-        The dictionary representation must include the name of the pulse shape and the number of sigmas.
-
-        Args:
-            dictionary (dict): Dictionary representation of the Gaussian object/shape including the name of the pulse shape and
-            the number of sigmas.
-
-        Returns:
-            Gaussian: Loaded class.
-        """
-        local_dictionary = deepcopy(dictionary)
-        local_dictionary.pop("name", None)
-        return Gaussian(**local_dictionary)
-
-    def to_dict(self) -> dict:
-        """Returns dictionary representation of the Gaussian object/shape.
-
-        Returns:
-            dict: Dictionary representation including the name of the pulse shape and the number of sigmas.
-        """
-        return {
-            "name": self.name.value,  # type: ignore[operator]
-            "num_sigmas": self.num_sigmas,
-        }

@@ -14,7 +14,6 @@
 
 """Two-Step pulse shape."""
 
-from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
@@ -57,25 +56,3 @@ class TwoStep(PulseShape):
         step_duration = self.step_duration
         step_amp = self.step_amplitude
         return np.concatenate((amplitude * np.ones(step_duration), step_amp * np.ones(duration - step_duration)))
-
-    @staticmethod
-    def from_dict(dictionary: dict) -> "TwoStep":
-        """Loads Twostep object/shape from dictionary.
-
-        Args:
-            dictionary (dict): Dictionary representation of the Two-Step object/shape including the name of the pulse shape.
-
-        Returns:
-            TwoStep: Loaded class.
-        """
-        local_dictionary = deepcopy(dictionary)
-        local_dictionary.pop("name", None)
-        return TwoStep(**local_dictionary)
-
-    def to_dict(self) -> dict:
-        """Returns dictionary representation of the TwoStep object/shape.
-
-        Returns:
-            dict: Dictionary representation of the pulse shape including its name.
-        """
-        return {"name": self.name.value, "step_amplitude": self.step_amplitude, "step_duration": self.step_duration}  # type: ignore[operator]
