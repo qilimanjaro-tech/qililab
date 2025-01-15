@@ -360,11 +360,11 @@ class Parameter(str, Enum):
         """Method to be called automatically during YAML serialization."""
         return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
 
-    @staticmethod
-    def from_yaml(_, node):
+    @classmethod
+    def from_yaml(cls, _, node):
         """Method to be called automatically during YAML deserialization."""
         _, value = node.value.split("-")
-        return Parameter(value)
+        return cls(value)
 
 
 class ResultName(str, Enum):

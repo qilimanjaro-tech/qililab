@@ -42,11 +42,11 @@ class InstrumentReference:
         """Return a dict representation of the InstrumentReference class."""
         return {"alias": self.alias, "slot_id": self.slot_id}
 
-    @staticmethod
-    def from_dict(settings: dict):
+    @classmethod
+    def from_dict(cls, settings: dict):
         """Build an InstrumentReference from a settings dictionary
 
         Args:
             settings (dict): an instrument reference from the settings file
         """
-        return InstrumentReference(**settings)
+        return cls(**settings)

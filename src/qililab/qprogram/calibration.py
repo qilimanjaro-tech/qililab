@@ -170,8 +170,8 @@ class Calibration:
 
         return file
 
-    @staticmethod
-    def load_from(file: str):
+    @classmethod
+    def load_from(cls, file: str):
         """Load calibration data from a YAML file.
 
         Args:
@@ -184,6 +184,6 @@ class Calibration:
             Calibration: An instance of the Calibration class with data loaded from the file.
         """
         data = yaml.load(Path(file))
-        if not isinstance(data, Calibration):
+        if not isinstance(data, cls):
             raise TypeError("The loaded data is not an instance of the Calibration class.")
         return data

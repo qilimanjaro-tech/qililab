@@ -101,8 +101,8 @@ class PulseEvent:
 
         return envelope
 
-    @staticmethod
-    def from_dict(dictionary: dict) -> "PulseEvent":
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> "PulseEvent":
         """Loads PulseEvent object from dictionary.
 
         Args:
@@ -125,7 +125,7 @@ class PulseEvent:
 
         local_dictionary[PULSEEVENT.PULSE_DISTORTIONS] = pulse_distortions_list
 
-        return PulseEvent(**local_dictionary)
+        return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Returns dictionary of pulse.

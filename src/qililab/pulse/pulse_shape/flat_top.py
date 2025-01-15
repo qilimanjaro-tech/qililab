@@ -14,7 +14,6 @@
 
 """Rectangular pulse shape."""
 
-from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
@@ -66,25 +65,3 @@ class FlatTop(PulseShape):
         buf = buffer
         dur = duration
         return 0.5 * A * np.real((erf(g * x - buf) - erf(g * (x - (dur + -buf / g)))))
-
-    @staticmethod
-    def from_dict(dictionary: dict) -> "FlatTop":
-        """Loads Rectangular object/shape from dictionary.
-
-        Args:
-            dictionary (dict): Dictionary representation of the Rectangular object/shape including the name of the pulse shape.
-
-        Returns:
-            Rectangular: Loaded class.
-        """
-        local_dictionary = deepcopy(dictionary)
-        local_dictionary.pop("name", None)
-        return FlatTop(**local_dictionary)
-
-    def to_dict(self) -> dict:
-        """Returns dictionary representation of the Rectangular object/shape.
-
-        Returns:
-            dict: Dictionary representation of the pulse shape including its name.
-        """
-        return {"name": self.name.value, "gaussian": self.gaussian}  # type: ignore[operator]
