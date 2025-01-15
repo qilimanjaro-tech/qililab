@@ -84,7 +84,7 @@ class TestPulseShape:
 
         assert pulse_shape == pulse_shape2 == pulse_shape3
 
-    def test_incorrect_from_dict(self):
+    def test_incorrect_from_dict(self, pulse_shape: PulseShape):
         """Test for the from_dict method with incorrect dictionary."""
         with pytest.raises(ValueError, match=re.escape(f"Class: {Rectangular.name.value} to instantiate, does not match the given dict name {SNZ.name.value}")):
             Rectangular.from_dict({"name": SNZ.name.value})
