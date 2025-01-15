@@ -1,5 +1,6 @@
 """Tests for the pulse distortion class."""
 import itertools
+import re
 
 import numpy as np
 import pytest
@@ -166,6 +167,11 @@ class TestPulseDistortion:
         assert pulse_distortion2 is not None and pulse_distortion3 is not None
         assert isinstance(pulse_distortion2, PulseDistortion) and isinstance(pulse_distortion3, PulseDistortion)
         assert pulse_distortion == pulse_distortion2 == pulse_distortion3
+
+    def test_incorrect_from_dict(self):
+        """Test for the from_dict method with incorrect dictionary."""
+        with pytest.raises(ValueError, match=re.escape(f"Class: {BiasTeeCorrection.name.value} to instantiate, does not match the given dict name {LFilterCorrection.name.value}")):
+            BiasTeeCorrection.from_dict({"name": LFilterCorrection.name.value})
 
     def test_to_dict(self, pulse_distortion: PulseDistortion):
         """Test for the to_dict method."""

@@ -71,8 +71,8 @@ class PulseShape(FactoryElement):
         local_dictionary = deepcopy(dictionary)
         name = local_dictionary.pop("name", None)
         # If the dict name is not the same as the class name, raise an error:
-        if name not in [cls.name, None]:
-            raise ValueError(f"Class: {cls.name} to instantiate, does not match the given dict name {name}")
+        if name not in [cls.name.value, None]:
+            raise ValueError(f"Class: {cls.name.value} to instantiate, does not match the given dict name {name}")
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
