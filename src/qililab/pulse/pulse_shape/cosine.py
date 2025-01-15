@@ -15,7 +15,6 @@
 
 """Rectangular pulse shape."""
 
-from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
@@ -85,29 +84,3 @@ class Cosine(PulseShape):
         """
         x_values = np.linspace(start=0, stop=2 * np.pi, num=int(duration / resolution))
         return amplitude / 2 * (1 - (1 - self.lambda_2) * np.cos(x_values) - self.lambda_2 * np.cos(2 * x_values))
-
-    @staticmethod
-    def from_dict(dictionary: dict) -> "Cosine":
-        """Loads Cosine object/shape from dictionary.
-
-        Args:
-            dictionary (dict): Dictionary representation of the Cosine object/shape containing the name of the pulse shape and,
-            optionally, the lambda_2 factor.
-
-        Returns:
-            Cosine: Cosine pulse shape loaded class.
-        """
-        local_dictionary = deepcopy(dictionary)
-        local_dictionary.pop("name", None)
-        return Cosine(**local_dictionary)
-
-    def to_dict(self) -> dict:
-        """Returns dictionary representation of the Cosine object/shape.
-
-        Returns:
-            dict: Dictionary representing the Cosine pulse shape. It contains the name of the pulse shape plus the lambda_2 factor.
-        """
-        return {
-            "name": self.name.value,  # type: ignore[operator]
-            "lambda_2": self.lambda_2,
-        }

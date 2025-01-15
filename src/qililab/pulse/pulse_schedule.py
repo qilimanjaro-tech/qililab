@@ -151,8 +151,8 @@ class PulseSchedule:
         """
         return {PULSESCHEDULES.ELEMENTS: [pulse_sequence.to_dict() for pulse_sequence in self.elements]}
 
-    @staticmethod
-    def from_dict(dictionary: dict):
+    @classmethod
+    def from_dict(cls, dictionary: dict):
         """Builds PulseSequence instance from dictionary.
 
         Args:
@@ -163,7 +163,7 @@ class PulseSchedule:
         """
         elements = [PulseBusSchedule.from_dict(dictionary=settings) for settings in dictionary[PULSESCHEDULES.ELEMENTS]]
 
-        return PulseSchedule(elements=elements)
+        return cls(elements=elements)
 
     def __iter__(self):
         """Redirects __iter__ magic method to elements."""

@@ -14,7 +14,6 @@
 
 """SNZ pulse shape."""
 
-from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
@@ -103,30 +102,3 @@ class SNZ(PulseShape):
         envelope[halfpulse_t + 2 + self.t_phi :] = -amplitude * np.ones(halfpulse_t)  # negative square halfpulse
 
         return envelope
-
-    @staticmethod
-    def from_dict(dictionary: dict) -> "SNZ":
-        """Loads SNZ object/shape from dictionary.
-
-        Args:
-            dictionary (dict): Dictionary representation of the SNZ object/shape, including the name of the pulse shape, the
-            b parameter and the t_phi parameter.
-
-        Returns:
-            Rectangular: Loaded class.
-        """
-        local_dictionary = deepcopy(dictionary)
-        local_dictionary.pop("name", None)
-        return SNZ(**local_dictionary)
-
-    def to_dict(self) -> dict:
-        """Returns dictionary representation of the Rectangular object/shape.
-
-        Returns:
-            dict: Dictionary representation including the name of the pulse shape, the b parameter and the t_phi parameter..
-        """
-        return {
-            "name": self.name.value,  # type: ignore[operator]
-            "b": self.b,
-            "t_phi": self.t_phi,
-        }

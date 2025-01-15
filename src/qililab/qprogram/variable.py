@@ -35,12 +35,12 @@ class Domain(Enum):
         """Method to be called automatically during YAML serialization."""
         return representer.represent_scalar("!Domain", f"{node.name}-{node.value}")
 
-    @staticmethod
-    def from_yaml(_, node):
+    @classmethod
+    def from_yaml(cls, _, node):
         """Method to be called automatically during YAML deserialization."""
         _, value = node.value.split("-")
         value = int(value)
-        return Domain(value)
+        return cls(value)
 
 
 @yaml.register_class
