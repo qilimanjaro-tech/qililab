@@ -55,8 +55,8 @@ class Pulse:
             amplitude = self.amplitude
         return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
 
-    @staticmethod
-    def from_dict(dictionary: dict) -> "Pulse":
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> "Pulse":
         """Loads Pulse object from dictionary.
 
         Args:
@@ -71,7 +71,7 @@ class Pulse:
             pulse_shape_dict
         )
 
-        return Pulse(**local_dictionary)
+        return cls(**local_dictionary)
 
     def to_dict(self):
         """Returns dictionary of pulse.
