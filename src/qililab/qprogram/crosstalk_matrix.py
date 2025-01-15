@@ -43,8 +43,8 @@ class FluxVector:
         """
         return self.vector
 
-    @staticmethod
-    def from_dict(flux_dict: dict[str, float]) -> "FluxVector":
+    @classmethod
+    def from_dict(cls, flux_dict: dict[str, float]) -> "FluxVector":
         """Creates a FluxVector instance from a dictionary of bus[flux]
 
         Args:
@@ -53,7 +53,7 @@ class FluxVector:
         Returns:
             FluxVector: FluxVector instance
         """
-        instance = FluxVector()
+        instance = cls()
         instance.vector = flux_dict
         return instance
 
@@ -155,8 +155,8 @@ class CrosstalkMatrix:
             rows.append(" ".join(row))
         return header + "\n".join(rows)
 
-    @staticmethod
-    def from_array(buses: list[str], matrix_array: np.ndarray) -> "CrosstalkMatrix":
+    @classmethod
+    def from_array(cls, buses: list[str], matrix_array: np.ndarray) -> "CrosstalkMatrix":
         """Creates crosstalk matrix from an array and corresponding set of buses. For a set of buses
         [bus1,bus2,...,busN] the corresponding matrix should have the same indices for rows and columns
         i.e. for the set of buses [bus1,bus2,...,busN], matrix[0,0] will be the coefficient for bus1[bus1],
@@ -170,7 +170,7 @@ class CrosstalkMatrix:
             CrosstalkMatrix: CrosstalkMatrix: An instance of CrosstalkMatrix
         """
 
-        instance = CrosstalkMatrix()
+        instance = cls()
         instance.matrix = {}
         for i, bus1 in enumerate(buses):
             for j, bus2 in enumerate(buses):
@@ -179,8 +179,8 @@ class CrosstalkMatrix:
                 instance.matrix[bus1][bus2] = float(matrix_array[i, j])
         return instance
 
-    @staticmethod
-    def from_buses(buses: dict[str, dict[str, float]]) -> "CrosstalkMatrix":
+    @classmethod
+    def from_buses(cls, buses: dict[str, dict[str, float]]) -> "CrosstalkMatrix":
         """
         Creates a CrosstalkMatrix with all possible associations set to 1.0.
 
@@ -190,7 +190,7 @@ class CrosstalkMatrix:
         Returns:
             CrosstalkMatrix: An instance of CrosstalkMatrix with all associations set to 1.0.
         """
-        instance = CrosstalkMatrix()
+        instance = cls()
         instance.matrix = {}
         instance.matrix = {bus1: {bus2: buses[bus1][bus2] for bus2 in buses} for bus1 in buses}
 

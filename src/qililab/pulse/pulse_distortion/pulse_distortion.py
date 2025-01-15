@@ -15,6 +15,7 @@
 """PulseDistortion abstract base class."""
 
 from abc import abstractmethod
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
@@ -115,27 +116,38 @@ class PulseDistortion(FactoryElement):
             np.ndarray: Distorted pulse envelope.
         """
 
-    @staticmethod
-    def from_dict(dictionary: dict) -> "PulseDistortion":
-        """Loads PulseDistortion object from dictionary.
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> "PulseDistortion":
+        """Loads a `PulseDistortion` object from a dictionary representation.
 
         Args:
-            dictionary (dict): Dictionary representation of the PulseDistortion object. It must include the name of the
-            correction.
+            dictionary (dict): Dictionary representation of the `PulseDistortion` object, containing all its attributes.
+                If called directly from the Abstract parent class: `PulseDistortion`, it must include the child class name to instantiate.
 
         Returns:
-            PulseDistortion: Loaded class.
+            PulseDistortion: Loaded child class, including the name of the pulse distortion and its attributes set.
         """
-        distortion_class = Factory.get(name=dictionary["name"])
-        return distortion_class.from_dict(dictionary)
+        # For calls from parent PulseShape:
+        if cls is PulseDistortion:
+            shape_class = Factory.get(name=dictionary["name"])
+            return shape_class.from_dict(dictionary)
 
-    @abstractmethod
+        # For calls from childs directly:
+        local_dictionary = deepcopy(dictionary)
+        name = local_dictionary.pop("name", None)
+        if name not in [cls.name, None]:
+            raise ValueError(f"Class: {cls.name} to instantiate, does not match the given dict name {name}")
+        return cls(**local_dictionary)
+
     def to_dict(self) -> dict:
-        """Returns dictionary of PulseDistortion.
+        """Returns dictionary representation of `PulseDistortion`. This includes the class name an all its attributes.
 
         Returns:
-            dict: Dictionary describing the pulse distortion.
+            dict: Dictionary describing the `PulseDistortion`, including the name and its attributes.
         """
+        return {"name": self.name.value} | {
+            attribute: getattr(self, attribute) for attribute in self.__dataclass_fields__.keys()
+        }
 
     def normalize_envelope(self, envelope: np.ndarray, corr_envelope: np.ndarray) -> np.ndarray:
         """Normalizes the envelope depending on the `norm_factor` and `auto_norm` attributes.
