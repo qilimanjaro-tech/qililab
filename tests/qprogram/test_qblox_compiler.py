@@ -887,7 +887,7 @@ class TestQBloxCompiler:
             assert handle_acquire.call_count == 1
             assert handle_play.call_args[0][0].bus == measure.bus
             assert handle_play.call_args[0][0].waveform == measure.waveform
-            assert handle_play.call_args[0][0].wait_time == QbloxCompiler.minimum_wait_duration
+            assert handle_play.call_args[0][0].wait_time == QbloxCompiler.MINIMUM_REALTIME_OPERATIONS_DURATION
             assert handle_acquire.call_args[0][0].bus == measure.bus
             assert handle_acquire.call_args[0][0].weights == measure.weights
 
