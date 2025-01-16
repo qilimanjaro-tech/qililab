@@ -65,11 +65,12 @@ class QbloxS4g(CurrentSource):
         Args:
             dac_index (int): dac specific index channel
         """
+        channel_index = self.dacs.index(dac_index)
         channel = self.dac(dac_index=dac_index)
-        channel.ramping_enabled(self.ramping_enabled[dac_index])
-        channel.ramp_rate(self.ramp_rate[dac_index])
-        channel.span(self.span[dac_index])
-        channel.current(self.current[dac_index])
+        channel.ramping_enabled(self.ramping_enabled[channel_index])
+        channel.ramp_rate(self.ramp_rate[channel_index])
+        channel.span(self.span[channel_index])
+        channel.current(self.current[channel_index])
         logger.debug("SPI current set to %f", channel.current())
         while channel.is_ramping():
             sleep(0.1)
@@ -132,31 +133,36 @@ class QbloxS4g(CurrentSource):
 
     def _set_current(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the current"""
-        self.settings.current[channel_id] = float(value)
+        dac_index = self.dacs.index(channel_id)
+        self.settings.current[dac_index] = float(value)
 
         if self.is_device_active():
-            channel.current(self.current[channel_id])
+            dac_index = self.dacs.index(channel_id)
+            channel.current(self.current[dac_index])
 
     def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the span"""
         self.settings.span[channel_id] = str(value)
 
         if self.is_device_active():
-            channel.span(self.span[channel_id])
+            dac_index = self.dacs.index(channel_id)
+            channel.span(self.span[dac_index])
 
     def _set_ramping_enabled(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramping_enabled"""
         self.settings.ramping_enabled[channel_id] = bool(value)
 
         if self.is_device_active():
-            channel.ramping_enabled(self.ramping_enabled[channel_id])
+            dac_index = self.dacs.index(channel_id)
+            channel.ramping_enabled(self.ramping_enabled[dac_index])
 
     def _set_ramping_rate(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramp_rate"""
         self.settings.ramp_rate[channel_id] = float(value)
 
         if self.is_device_active():
-            channel.ramp_rate(self.ramp_rate[channel_id])
+            dac_index = self.dacs.index(channel_id)
+            channel.ramp_rate(self.ramp_rate[dac_index])
 
     @check_device_initialized
     def initial_setup(self):
