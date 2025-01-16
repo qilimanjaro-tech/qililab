@@ -17,12 +17,15 @@
 from abc import abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
+from typing import Type, TypeVar
 
 import numpy as np
 
 from qililab.typings import PulseShapeName
 from qililab.typings.factory_element import FactoryElement
 from qililab.utils import Factory
+
+T = TypeVar("T", bound="PulseShape")
 
 
 @dataclass(frozen=True, eq=True)
@@ -52,7 +55,7 @@ class PulseShape(FactoryElement):
         """
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> "PulseShape":
+    def from_dict(cls: Type[T], dictionary: dict) -> T:
         """Loads a `PulseShape` object from a dictionary representation.
 
         Args:
