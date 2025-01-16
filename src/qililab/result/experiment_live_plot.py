@@ -131,7 +131,7 @@ class ExperimentLivePlot:
             self.server_thread.start()
 
             def start_dash_app():
-                self._dash_app.run(debug=False)
+                self._dash_app.run(debug=False, host="0.0.0.0")
 
             dash_thread = threading.Thread(target=start_dash_app)
             dash_thread.start()
