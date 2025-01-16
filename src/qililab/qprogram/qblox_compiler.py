@@ -92,6 +92,9 @@ class SequencerCompilationInfo:
         # Acquisitions information
         self.acquisitions: dict[str, AcquisitionData] = {}
 
+        # Waveform memory
+        self.available_waveform_memory: int = QbloxCompiler.SEQUENCER_WAVEFORM_MEMORY
+
         # Dictionaries to hold mappings useful during compilation.
         self.variable_to_register: dict[Variable, QPyProgram.Register] = {}
         self.waveform_to_index: dict[str, int] = {}
@@ -113,10 +116,20 @@ class SequencerCompilationInfo:
         self.square_optimization_counter = 0
 
 
+class WaveformAllocation:
+    def __init__(self) -> None:
+        self.duration: int
+        self.sequencer: int
+        self.memory_index: int
+
+
 class BusCompilationInfo:
     def __init__(self) -> None:
         # Stacks to manage block hierarchy during compilation
         self.qprogram_block_stack: deque[Block] = deque()
+
+        # Waveform allocation
+        self.waveform_allocation: dict[str, list[]]
 
         # Syncing durations
         self.static_duration = 0
@@ -138,6 +151,7 @@ class BusCompilationInfo:
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
 
+    SEQUENCER_WAVEFORM_MEMORY: int = 16384
     MINIMUM_REALTIME_OPERATIONS_DURATION: int = 4
     MINIMUM_TARGET_DURATION_OF_SQUARE_WAVEFORMS: int = 100
     MAXIMUM_TARGET_DURATION_OF_SQUARE_WAVEFORMS: int = 500
@@ -276,6 +290,16 @@ class QbloxCompiler:
             for bus_alias, bus in self._buses.items()
         }
         return QbloxCompilationOutput(qprogram=self._qprogram, sequences=sequences, acquisitions=acquisitions)
+    
+    def _search_waveform_memory(self, bus: BusCompilationInfo, waveform: Waveform):
+        waveform_hash = QbloxCompiler._hash_waveform(waveform)
+        sequencer = next((sequencer for sequencer in bus.sequencers if waveform_hash in sequencer.waveform_to_index), None)
+        if sequencer is None:
+            return None
+        return sequencer, sequencer.waveform_to_index[waveform_hash]
+    
+    def _find_place_to_waveform_memory(self, bus: BusCompilationInfo, waveform: Waveform, allow_splitting_to_multiple_sequencers: bool):
+
 
     def _append_to_waveforms_of_sequencer(
         self, sequencer: SequencerCompilationInfo, waveform_I: Waveform, waveform_Q: Waveform
@@ -613,14 +637,52 @@ class QbloxCompiler:
         self._buses[element.bus].marked_for_sync = True
 
     def _handle_play(self, element: Play):
-        waveform_I, waveform_Q = element.get_waveforms()
-        if waveform_Q is None:
-            waveform_Q = Square(amplitude=0.0, duration=waveform_I.get_duration())
+        # If Play operation has variables, raise error
         if element.get_waveform_variables():
             logger.error("Variables in waveforms are not supported in Qblox.")
             return
         
-        bus = self._buses[element.bus]
+        # Retrieve waveforms
+        waveform_I, waveform_Q = element.get_waveforms()
+
+        # If Q is None, treat it as zero-amplitude but same duration as I.
+        if waveform_Q is None:
+            waveform_Q = Square(amplitude=0.0, duration=waveform_I.get_duration())
+        
+        # If both waveforms are Square
+        if (
+            self.optimize_square_waveforms
+            and isinstance(waveform_I, Square)
+            and isinstance(waveform_Q, Square)
+            and (waveform_I.duration >= QbloxCompiler.MINIMUM_TARGET_DURATION_OF_SQUARE_WAVEFORMS)
+        ):
+            duration = waveform_I.duration
+            chunk_duration, iterations, remainder = QbloxCompiler.calculate_square_waveform_optimization_values(
+                duration
+            )
+            waveform_memory_needed = chunk_duration + remainder
+            sequencer = next(sequencer for sequencer in self._buses[element.bus].sequencers if sequencer.available_waveform_memory >= waveform_memory_needed)
+            waveform_I.duration = chunk_duration
+            waveform_Q.duration = chunk_duration
+            index_I, index_Q, _ = self._append_to_waveforms_of_sequencer(
+                sequencer=sequencer, waveform_I=waveform_I, waveform_Q=waveform_Q
+            )
+            loop = QPyProgram.IterativeLoop(
+                name=f"square_{sequencer.square_optimization_counter}", iterations=iterations
+            )
+            loop.append_component(component=QPyInstructions.Play(index_I, index_Q, wait_time=chunk_duration))
+            sequencer.qpy_block_stack[-1].append_component(component=loop)
+            if remainder != 0:
+                waveform_I.duration = remainder
+                waveform_Q.duration = remainder
+                index_I, index_Q, _ = self._append_to_waveforms_of_sequencer(
+                    sequencer=sequencer, waveform_I=waveform_I, waveform_Q=waveform_Q
+                )
+                sequencer.qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Play(index_I, index_Q, wait_time=remainder)
+                )
+            sequencer.square_optimization_counter += 1
+
         for sequencer in self._buses[element.bus].sequencers:
             if element.wait_time:
                 # The qp.qblox.play() was used. Don't apply optimizations
@@ -632,36 +694,6 @@ class QbloxCompiler:
                 sequencer.qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
                 )
-            elif (
-                self.optimize_square_waveforms
-                and isinstance(waveform_I, Square)
-                and isinstance(waveform_Q, Square)
-                and (waveform_I.duration >= QbloxCompiler.MINIMUM_TARGET_DURATION_OF_SQUARE_WAVEFORMS)
-            ):
-                duration = waveform_I.duration
-                chunk_duration, iterations, remainder = QbloxCompiler.calculate_square_waveform_optimization_values(
-                    duration
-                )
-                waveform_I.duration = chunk_duration
-                waveform_Q.duration = chunk_duration
-                index_I, index_Q, _ = self._append_to_waveforms_of_sequencer(
-                    sequencer=sequencer, waveform_I=waveform_I, waveform_Q=waveform_Q
-                )
-                loop = QPyProgram.IterativeLoop(
-                    name=f"square_{sequencer.square_optimization_counter}", iterations=iterations
-                )
-                loop.append_component(component=QPyInstructions.Play(index_I, index_Q, wait_time=chunk_duration))
-                sequencer.qpy_block_stack[-1].append_component(component=loop)
-                if remainder != 0:
-                    waveform_I.duration = remainder
-                    waveform_Q.duration = remainder
-                    index_I, index_Q, _ = self._append_to_waveforms_of_sequencer(
-                        sequencer=sequencer, waveform_I=waveform_I, waveform_Q=waveform_Q
-                    )
-                    sequencer.qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.Play(index_I, index_Q, wait_time=remainder)
-                    )
-                sequencer.square_optimization_counter += 1
             else:
                 index_I, index_Q, duration = self._append_to_waveforms_of_sequencer(
                     sequencer=sequencer, waveform_I=waveform_I, waveform_Q=waveform_Q
