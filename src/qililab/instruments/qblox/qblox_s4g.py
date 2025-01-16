@@ -137,7 +137,6 @@ class QbloxS4g(CurrentSource):
         self.settings.current[dac_index] = float(value)
 
         if self.is_device_active():
-            dac_index = self.dacs.index(channel_id)
             channel.current(self.current[dac_index])
 
     def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
