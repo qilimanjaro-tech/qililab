@@ -16,7 +16,7 @@ def fixture_sdg100a() -> SGS100A:
             "power": 100,
             "frequency": 1e6,
             "rf_on": True,
-            "IQ_state": True
+            "hardware_modulation": True
         }
     )
     sdg100a.device = MagicMock()
@@ -32,7 +32,7 @@ def fixture_sdg100a_iq() -> SGS100A:
             "power": 100,
             "frequency": 1e6,
             "rf_on": True,
-            "IQ_state": True
+            "hardware_modulation": True
         }
     )
     sdg100a_iq.device = MagicMock()
@@ -44,7 +44,7 @@ class TestSGS100A:
 
     @pytest.mark.parametrize(
         "parameter, value",
-        [(Parameter.POWER, 0.01), (Parameter.LO_FREQUENCY, 6.0e09), (Parameter.RF_ON, True), (Parameter.RF_ON, False), (Parameter.IQ_STATE, True), (Parameter.IQ_STATE, False)],
+        [(Parameter.POWER, 0.01), (Parameter.LO_FREQUENCY, 6.0e09), (Parameter.RF_ON, True), (Parameter.RF_ON, False), (Parameter.HARDWARE_MODULATION, True), (Parameter.HARDWARE_MODULATION, False)],
     )
     def test_set_parameter_method(
         self, sdg100a: SGS100A, parameter: Parameter, value: float,
@@ -57,8 +57,8 @@ class TestSGS100A:
             assert sdg100a.settings.frequency == value
         if parameter == Parameter.RF_ON:
             assert sdg100a.settings.rf_on == value
-        if parameter == Parameter.IQ_STATE:
-            assert sdg100a.settings.IQ_state == value
+        if parameter == Parameter.HARDWARE_MODULATION:
+            assert sdg100a.settings.hardware_modulation == value
 
     def test_set_parameter_method_raises_error(self, sdg100a: SGS100A):
         """Test setup method"""
@@ -67,7 +67,7 @@ class TestSGS100A:
 
     @pytest.mark.parametrize(
         "parameter, expected_value",
-        [(Parameter.POWER, 100), (Parameter.LO_FREQUENCY, 1e6), (Parameter.RF_ON, True), (Parameter.IQ_STATE, True)],
+        [(Parameter.POWER, 100), (Parameter.LO_FREQUENCY, 1e6), (Parameter.RF_ON, True), (Parameter.HARDWARE_MODULATION, True)],
     )
     def test_get_parameter_method(
         self, sdg100a: SGS100A, parameter: Parameter, expected_value: float,

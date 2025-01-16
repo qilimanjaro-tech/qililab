@@ -354,7 +354,6 @@ class Parameter(str, Enum):
     B = "b"
     T_PHI = "t_phi"
     GATE_OPTIONS = "options"
-    IQ_STATE = "IQ_state"
 
     @classmethod
     def to_yaml(cls, representer, node):
