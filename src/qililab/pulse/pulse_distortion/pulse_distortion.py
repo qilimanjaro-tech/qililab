@@ -17,11 +17,14 @@
 from abc import abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
+from typing import Type, TypeVar
 
 import numpy as np
 
 from qililab.typings.factory_element import FactoryElement
 from qililab.utils import Factory
+
+T = TypeVar("T", bound="PulseDistortion")
 
 
 @dataclass(frozen=True, eq=True, kw_only=True)
@@ -117,7 +120,7 @@ class PulseDistortion(FactoryElement):
         """
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> "PulseDistortion":
+    def from_dict(cls: Type[T], dictionary: dict) -> T:
         """Loads a `PulseDistortion` object from a dictionary representation.
 
         Args:
