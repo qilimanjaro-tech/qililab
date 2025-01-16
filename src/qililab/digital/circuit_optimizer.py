@@ -184,14 +184,13 @@ class CircuitOptimizer:
                 # If the next gate in the same qubit is a Drag gate, we can merge them:
                 new_drag: Drag | None = CircuitOptimizer.merge_consecutive_drags(drag1, drag2)
 
-                # If successful bunching, substitute old gates with new one:
-                if new_drag is not None:
-                    gate_list[idx1], drag1 = new_drag, new_drag
-                    gate_list[idx2 + idx1 + 1] = None
-
                 # If not successful bunching, we can't merge this gate, go next one:
                 if new_drag is None:
                     break
+
+                # If successful bunching, substitute old gates with new one:
+                gate_list[idx1], drag1 = new_drag, new_drag
+                gate_list[idx2 + idx1 + 1] = None
 
         # Remove None values from the list:
         return [gate for gate in gate_list if gate is not None]
