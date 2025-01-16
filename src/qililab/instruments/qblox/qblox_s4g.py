@@ -149,18 +149,18 @@ class QbloxS4g(CurrentSource):
 
     def _set_ramping_enabled(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramping_enabled"""
-        self.settings.ramping_enabled[channel_id] = bool(value)
+        dac_index = self.dacs.index(channel_id)
+        self.settings.ramping_enabled[dac_index] = bool(value)
 
         if self.is_device_active():
-            dac_index = self.dacs.index(channel_id)
             channel.ramping_enabled(self.ramping_enabled[dac_index])
 
     def _set_ramping_rate(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramp_rate"""
-        self.settings.ramp_rate[channel_id] = float(value)
+        dac_index = self.dacs.index(channel_id)
+        self.settings.ramp_rate[dac_index] = float(value)
 
         if self.is_device_active():
-            dac_index = self.dacs.index(channel_id)
             channel.ramp_rate(self.ramp_rate[dac_index])
 
     @check_device_initialized
