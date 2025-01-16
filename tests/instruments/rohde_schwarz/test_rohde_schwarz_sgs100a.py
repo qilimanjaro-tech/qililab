@@ -67,7 +67,7 @@ class TestSGS100A:
 
     @pytest.mark.parametrize(
         "parameter, expected_value",
-        [(Parameter.POWER, 100), (Parameter.LO_FREQUENCY, 1e6), (Parameter.RF_ON, True)],
+        [(Parameter.POWER, 100), (Parameter.LO_FREQUENCY, 1e6), (Parameter.RF_ON, True), (Parameter.IQ_STATE, True)],
     )
     def test_get_parameter_method(
         self, sdg100a: SGS100A, parameter: Parameter, expected_value: float,
