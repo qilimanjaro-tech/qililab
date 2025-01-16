@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """PulseEvent class."""
+
 from dataclasses import dataclass, field
 
 import numpy as np
