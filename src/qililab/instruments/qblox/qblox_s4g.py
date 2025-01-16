@@ -128,7 +128,8 @@ class QbloxS4g(CurrentSource):
                 + " Number of dacs is 4 -> maximum channel_id should be 3."
             )
         if hasattr(self.settings, parameter.value):
-            return getattr(self.settings, parameter.value)[channel_id]
+            channel_index = self.dacs.index(channel_id)
+            return getattr(self.settings, parameter.value)[channel_index]
         raise ParameterNotFound(self, parameter)
 
     def _set_current(self, value: float | str | bool, channel_id: int, channel: Any):
@@ -141,7 +142,8 @@ class QbloxS4g(CurrentSource):
 
     def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the span"""
-        self.settings.span[channel_id] = str(value)
+        channel_index = self.dacs.index(channel_id)
+        self.settings.span[channel_index] = str(value)
 
         if self.is_device_active():
             dac_index = self.dacs.index(channel_id)
