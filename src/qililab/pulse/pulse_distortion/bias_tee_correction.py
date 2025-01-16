@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Bias tee correction."""
-from copy import deepcopy
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -92,34 +92,3 @@ class BiasTeeCorrection(PulseDistortion):
         # Filtered signal
         corr_envelope = signal.lfilter(b=b, a=a, x=envelope)
         return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
-
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "BiasTeeCorrection":
-        """Load BiasTeeCorrection object from dictionary.
-
-        Args:
-            dictionary (dict): Dictionary representation of the BiasTeeCorrection object. It must include the name of the
-            correction, the tau bias tee factor, the sampling rate, the normalization factor and the
-            auto normalization flag value.
-
-        Returns:
-            BiasTeeCorrection: Loaded class.
-        """
-        local_dictionary = deepcopy(dictionary)
-        local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
-
-    def to_dict(self) -> dict:
-        """Return dictionary representation of the distortion.
-
-        Returns:
-            dict: Dictionary representation including the name of the correction, the tau bias tee factor,
-            the sampling rate, the normalization factor and the auto normalization flag value.
-        """
-        return {
-            "name": self.name.value,
-            "tau_bias_tee": self.tau_bias_tee,
-            "sampling_rate": self.sampling_rate,
-            "norm_factor": self.norm_factor,
-            "auto_norm": self.auto_norm,
-        }

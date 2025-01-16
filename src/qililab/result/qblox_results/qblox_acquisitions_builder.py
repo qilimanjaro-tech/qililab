@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Qblox Acquisitions Builder """
+"""Qblox Acquisitions Builder"""
+
 from qililab.result.qblox_results.bins_data import BinsData
 from qililab.result.qblox_results.qblox_bins_acquisitions import QbloxBinsAcquisitions
 from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
@@ -22,10 +23,10 @@ from qililab.result.qblox_results.scope_data import ScopeData
 class QbloxAcquisitionsBuilder:
     """Qblox Acquisitions Results Builder"""
 
-    @classmethod
-    def get_scope(cls, integration_lengths: list[int], qblox_raw_results: list[dict]) -> QbloxScopeAcquisitions | None:
+    @staticmethod
+    def get_scope(integration_lengths: list[int], qblox_raw_results: list[dict]) -> QbloxScopeAcquisitions | None:
         """Cast dictionaries to their corresponding class."""
-        sequencer_scope = cls._get_sequencer_with_scope_data_available(qblox_raw_results)
+        sequencer_scope = QbloxAcquisitionsBuilder._get_sequencer_with_scope_data_available(qblox_raw_results)
         if sequencer_scope is not None:
             scope_data = qblox_raw_results[sequencer_scope]["scope"]
             return QbloxScopeAcquisitions(
@@ -33,8 +34,8 @@ class QbloxAcquisitionsBuilder:
             )
         return None
 
-    @classmethod
-    def get_bins(cls, integration_lengths: list[int], qblox_raw_results: list[dict]) -> QbloxBinsAcquisitions:
+    @staticmethod
+    def get_bins(integration_lengths: list[int], qblox_raw_results: list[dict]) -> QbloxBinsAcquisitions:
         """Cast dictionaries to their corresponding class."""
         bins_data = [sequencer_acq["bins"] for sequencer_acq in qblox_raw_results]
         return QbloxBinsAcquisitions(
@@ -42,8 +43,8 @@ class QbloxAcquisitionsBuilder:
             bins=[BinsData(**sequencer_bins_data) for sequencer_bins_data in bins_data],
         )
 
-    @classmethod
-    def _get_sequencer_with_scope_data_available(cls, qblox_raw_results: list[dict]) -> int | None:
+    @staticmethod
+    def _get_sequencer_with_scope_data_available(qblox_raw_results: list[dict]) -> int | None:
         """Returns the sequencer with scope data available.
 
         Returns:
