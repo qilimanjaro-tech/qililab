@@ -709,6 +709,7 @@ class SauronSpiRack:
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
+        Parameter.IQ_STATE.value: True,
     }
 
     spi_rack_controller_usb = {
