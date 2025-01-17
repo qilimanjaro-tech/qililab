@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.27.2 (2025-01-17)
+
+### Improvements
+
+- Updated to qcodes_contrib_drivers 0.22.0 version.
+  [#875](https://github.com/qilimanjaro-tech/qililab/pull/875)
+
 ## 0.27.1 (2024-09-16)
 
 ### New features since last release
