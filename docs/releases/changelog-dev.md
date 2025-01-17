@@ -10,8 +10,11 @@
   Each chunk duration is restricted to the range (\[100, 500\]) ns, ensuring that chunks are neither too small (leading to excessive repetitions) nor too large (risking out-of-memory issues). If no duration within (\[100, 500\]) ns meets these remainder constraints, the compiler defaults to using the original waveform in its entirety.
   [#861](https://github.com/qilimanjaro-tech/qililab/pull/861)
 
--Raises an error when the inputed value for the QDAC is outside of the bounds provided by QM. Done in 3 ways, runcard, set_parameter RAMPING_ENABLED and set_parameter RAMPING_RATE.
+- Raises an error when the inputed value for the QDAC is outside of the bounds provided by QM. Done in 3 ways, runcard, set_parameter RAMPING_ENABLED and set_parameter RAMPING_RATE.
 [#865](https://github.com/qilimanjaro-tech/qililab/pull/865)
+
+- Enable square waveforms optimization for Qblox.
+[#874](https://github.com/qilimanjaro-tech/qililab/pull/874)
 
 
 ### Improvements
