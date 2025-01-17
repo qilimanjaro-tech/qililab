@@ -59,22 +59,6 @@ class QbloxS4g(CurrentSource):
         """
         return getattr(self.device, f"dac{dac_index}")
 
-    def _channel_setup(self, dac_index: int) -> None:
-        """Setup for a specific dac channel
-
-        Args:
-            dac_index (int): dac specific index channel
-        """
-        channel_index = self.dacs.index(dac_index)
-        channel = self.dac(dac_index=dac_index)
-        channel.ramping_enabled(self.ramping_enabled[channel_index])
-        channel.ramp_rate(self.ramp_rate[channel_index])
-        channel.span(self.span[channel_index])
-        channel.current(self.current[channel_index])
-        logger.debug("SPI current set to %f", channel.current())
-        while channel.is_ramping():
-            sleep(0.1)
-
     @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set Qblox instrument calibration settings."""
@@ -128,48 +112,55 @@ class QbloxS4g(CurrentSource):
                 + " Number of dacs is 4 -> maximum channel_id should be 3."
             )
         if hasattr(self.settings, parameter.value):
-            channel_index = self.dacs.index(channel_id)
-            return getattr(self.settings, parameter.value)[channel_index]
+            index = self.dacs.index(channel_id)
+            return getattr(self.settings, parameter.value)[index]
         raise ParameterNotFound(self, parameter)
 
     def _set_current(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the current"""
-        dac_index = self.dacs.index(channel_id)
-        self.settings.current[dac_index] = float(value)
+        index = self.dacs.index(channel_id)
+        self.settings.current[index] = float(value)
 
         if self.is_device_active():
-            channel.current(self.current[channel_id])
+            channel.current(self.current[index])
 
     def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the span"""
-        channel_index = self.dacs.index(channel_id)
-        self.settings.span[channel_index] = str(value)
+        index = self.dacs.index(channel_id)
+        self.settings.span[index] = str(value)
 
         if self.is_device_active():
-            dac_index = self.dacs.index(channel_id)
-            channel.span(self.span[dac_index])
+            channel.span(self.span[index])
 
     def _set_ramping_enabled(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramping_enabled"""
-        dac_index = self.dacs.index(channel_id)
-        self.settings.ramping_enabled[dac_index] = bool(value)
+        index = self.dacs.index(channel_id)
+        self.settings.ramping_enabled[index] = bool(value)
 
         if self.is_device_active():
-            channel.ramping_enabled(self.ramping_enabled[dac_index])
+            channel.ramping_enabled(self.ramping_enabled[index])
 
     def _set_ramping_rate(self, value: float | str | bool, channel_id: int, channel: Any):
         """Set the ramp_rate"""
-        dac_index = self.dacs.index(channel_id)
-        self.settings.ramp_rate[dac_index] = float(value)
+        index = self.dacs.index(channel_id)
+        self.settings.ramp_rate[index] = float(value)
 
         if self.is_device_active():
-            channel.ramp_rate(self.ramp_rate[dac_index])
+            channel.ramp_rate(self.ramp_rate[index])
 
     @check_device_initialized
     def initial_setup(self):
         """performs an initial setup."""
-        for dac_index in self.dacs:
-            self._channel_setup(dac_index=dac_index)
+        for channel_id in self.dacs:
+            index = self.dacs.index(channel_id)
+            channel = self.dac(dac_index=channel_id)
+            channel.ramping_enabled(self.ramping_enabled[index])
+            channel.ramp_rate(self.ramp_rate[index])
+            channel.span(self.span[index])
+            channel.current(self.current[index])
+            logger.debug("SPI current set to %f", channel.current())
+            while channel.is_ramping():
+                sleep(0.1)
 
     @check_device_initialized
     def turn_on(self):
@@ -178,14 +169,13 @@ class QbloxS4g(CurrentSource):
     @check_device_initialized
     def turn_off(self):
         """Stop outputing current."""
-        for dac_index in self.settings.dacs:
-            channel = self.dac(dac_index=dac_index)
+        for channel_id in self.settings.dacs:
+            channel = self.dac(dac_index=channel_id)
             channel.current(0)
-            logger.debug("Dac%d current resetted to  %f", dac_index, channel.current())
 
     @check_device_initialized
     def reset(self):
         """Reset instrument."""
-        for dac_index in self.settings.dacs:
-            channel = self.dac(dac_index=dac_index)
+        for channel_id in self.settings.dacs:
+            channel = self.dac(dac_index=channel_id)
             channel.current(0)
