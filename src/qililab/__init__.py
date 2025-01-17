@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Top level module from which all Qililab basic functions and classes can be directly imported."""
+"""
+This is the top level module from which all basic functions and classes of
+Qililab can be directly imported.
+"""
 
 # isort: skip_file
 import contextlib
@@ -21,16 +24,17 @@ from .about import about
 from .config import __version__, logger
 from .data_management import build_platform, load_results, save_platform, save_results
 from .execute_circuit import execute
-from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
+from .experiment import Experiment
+from .qprogram import Calibration, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler
 from .result import Results, stream_results
-from .typings import Parameter
+from .typings import ExperimentOptions, ExperimentSettings, Parameter
 from .utils import Loop
+from .utils.load_data import load
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
 from .waveforms import *
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
 from .circuit_transpiler import Drag, Wait
-from .analog import AnnealingProgram  # same as circuit transpiler, top modules should be imported at top
 
 with contextlib.suppress(NameError, ImportError):
     # Since Ipython magic methods can only be imported from inside a Jupyter Notebook,

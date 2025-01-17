@@ -112,7 +112,9 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
-    def _set_parameter_float(self, parameter: Parameter, value: float) -> None:
+    def _set_parameter_float(  # pylint: disable=too-many-branches, too-many-return-statements
+        self, parameter: Parameter, value: float
+    ):
         """Set instrument settings parameter to the corresponding value
 
         Args:

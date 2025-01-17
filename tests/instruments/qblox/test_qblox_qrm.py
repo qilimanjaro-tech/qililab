@@ -424,6 +424,7 @@ class TestQbloxQRM:
             acquisitions={"default": AcquisitionData(save_adc=False)}, port="feedline_input"
         )
         qrm.device.store_scope_acquisition.assert_not_called()
+        qrm.device.delete_acquisition_data.assert_not_called()
         assert isinstance(acquisitions_no_adc, list)
         assert len(acquisitions_no_adc) == 1
 

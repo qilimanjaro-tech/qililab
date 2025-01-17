@@ -189,22 +189,6 @@ class TestQbloxModule:  # pylint: disable=too-few-public-methods
         qrm.desync_by_port(port="feedline_input")
         qrm.device.sequencers[0].sync_en.assert_called_with(False)
 
-    def test_set_markers_override_enabled_by_port(self):
-        """Test sync_by_port method."""
-        qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
-        qrm_settings.pop("name")
-        qrm = DummyQRM(settings=qrm_settings)
-        qrm.set_markers_override_enabled_by_port(value=True, port="feedline_input")
-        qrm.device.sequencers[0].marker_ovr_en.assert_called_with(True)
-
-    def test_set_markers_override_value_by_port(self):
-        """Test sync_by_port method."""
-        qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)
-        qrm_settings.pop("name")
-        qrm = DummyQRM(settings=qrm_settings)
-        qrm.set_markers_override_value_by_port(value=15, port="feedline_input")
-        qrm.device.sequencers[0].marker_ovr_value.assert_called_with(15)
-
     def test_upload_qpysequence(self, qpysequence: Sequence):
         """Test upload_qpysequence method."""
         qrm_settings = copy.deepcopy(Galadriel.qblox_qrm_0)

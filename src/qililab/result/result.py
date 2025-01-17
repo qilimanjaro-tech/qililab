@@ -25,47 +25,13 @@ from qililab.utils import nested_dict_to_pandas_dataframe
 
 
 class Result(FactoryElement, ABC):
-    """Class used to hold the results of a single execution."""
+    """Abstract class used to hold the results of a single execution."""
 
     name: ResultName
-    """Name of the result."""
     data_dataframe_indices: set[str]
-    """Set of indices that are used in the data DataFrame."""
-
-    def counts(self) -> dict:
-        """(Only for `Qblox`) Returns a Counts object containing the counts of each state.
-
-        Returns:
-            Counts: Counts object containing the counts of each state.
-
-        Raises:
-            NotImplementedError: this method is not implemented for n measurements on the same qubit
-        """
-        raise NotImplementedError
-
-    def samples(self) -> np.ndarray:
-        """(Only for `Qblox`) Returns an array containing the measured samples.
-
-        The shape of the returned array is ``(# sequencers, # bins)``.
-
-        Returns:
-            np.ndarray: An array containing the measured samples (0 or 1).
-
-        Raises:
-            NotImplementedError: this method is not implemented for n measurements on the same qubit
-        """
-        raise NotImplementedError
-
-    def acquisitions(self) -> pd.DataFrame:
-        """Return acquisition values.
-
-        Returns:
-            pd.DataFrame: I, Q, amplitude and phase.
-        """
-        raise NotImplementedError
 
     def probabilities(self) -> dict[str, float]:
-        """(Only for `Qblox`) Return probabilities of being in the ground and excited state.
+        """Return probabilities of being in the ground and excited state.
 
         Returns:
             dict[str, float]: Dictionary containing the quantum states as the keys of the dictionary, and the
@@ -74,7 +40,7 @@ class Result(FactoryElement, ABC):
         return self.counts_object().probabilities()
 
     def counts_object(self) -> Counts:
-        """(Only for `Qblox`) Returns a Counts object containing the amount of times each state was measured.
+        """Returns a Counts object containing the amount of times each state was measured.
 
         Raises:
             NotImplementedError: Not implemented.
