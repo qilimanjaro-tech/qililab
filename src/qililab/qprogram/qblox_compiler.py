@@ -164,7 +164,6 @@ class QbloxCompiler:
         times_of_flight: dict[str, int] | None = None,
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
-        optimize_square_waveforms: bool = False,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -219,7 +218,6 @@ class QbloxCompiler:
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
 
-        self.optimize_square_waveforms = optimize_square_waveforms
         self._sync_counter = 0
         self._buses = self._populate_buses()
 
@@ -609,8 +607,7 @@ class QbloxCompiler:
                 component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
             )
         elif (
-            self.optimize_square_waveforms
-            and isinstance(waveform_I, Square)
+            isinstance(waveform_I, Square)
             and (waveform_Q is None or isinstance(waveform_Q, Square))
             and (waveform_I.duration >= 100)
         ):
