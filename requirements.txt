@@ -2,7 +2,7 @@ pandas==1.5.3
 qibo==0.2.8
 qblox-instruments==0.11.2
 qcodes==0.42.0
-qcodes_contrib_drivers==0.18.0
+qcodes_contrib_drivers==0.22.0
 PyVISA-py==0.7.1
 tqdm==4.64.1
 urllib3==1.26.12
