@@ -233,10 +233,10 @@ class QuantumMachinesCompiler:
 
             def _process_stream(stream: qua_dsl._ResultSource, save_as: str) -> None:
                 processing_stream: qua_dsl._ResultSource | qua_dsl._ResultStream = stream
-                for loop_iteration in measurement.loops_iterations:
-                    processing_stream = processing_stream.buffer(loop_iteration)
                 if measurement.average:
                     processing_stream = processing_stream.average()
+                for loop_iteration in measurement.loops_iterations:
+                    processing_stream = processing_stream.buffer(loop_iteration)
                 processing_stream.save(save_as)
                 result_handles.append(save_as)
 
