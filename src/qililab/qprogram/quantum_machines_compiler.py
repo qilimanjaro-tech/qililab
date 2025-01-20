@@ -236,7 +236,7 @@ class QuantumMachinesCompiler:
                 processing_stream: qua_dsl._ResultSource | qua_dsl._ResultStream = stream
                 if measurement.average:
                     processing_stream = processing_stream.buffer(measurement.average_len)
-                    processing_stream = processing_stream.map(qua_dsl.FUNCTIONS.average)
+                    processing_stream = processing_stream.map(["average"])
                 for loop_iteration in measurement.loops_iterations:
                     processing_stream = processing_stream.buffer(loop_iteration)
                 processing_stream.save(save_as)
