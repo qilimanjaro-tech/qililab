@@ -70,6 +70,7 @@ class _MeasurementCompilationInfo:
         self.stream_raw_adc: qua_dsl._ResultSource | None = stream_raw_adc
         self.loops_iterations: list[int] = []
         self.average: bool = False
+        self.average_len: int = 0
 
 
 class MeasurementInfo:
@@ -234,7 +235,8 @@ class QuantumMachinesCompiler:
             def _process_stream(stream: qua_dsl._ResultSource, save_as: str) -> None:
                 processing_stream: qua_dsl._ResultSource | qua_dsl._ResultStream = stream
                 if measurement.average:
-                    processing_stream = processing_stream.average()
+                    processing_stream = processing_stream.buffer(measurement.average_len)
+                    processing_stream = processing_stream.map(qua_dsl.FUNCTIONS.average)
                 for loop_iteration in measurement.loops_iterations:
                     processing_stream = processing_stream.buffer(loop_iteration)
                 processing_stream.save(save_as)
@@ -490,6 +492,7 @@ class QuantumMachinesCompiler:
                 measurement_info.loops_iterations.append(iterations)
             if isinstance(block, Average):
                 measurement_info.average = True
+                measurement_info.average_len = block.shots
 
         self._measurements.append(measurement_info)
 
