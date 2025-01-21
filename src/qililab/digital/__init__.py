@@ -15,21 +15,16 @@
 """
 This module contains all the decomposition and transpilation methods used within qililab.
 
-.. currentmodule:: qililab
-
 Transpilation
 ~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-Gate Decomposition
-~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: qililab.digital
 
 .. autosummary::
     :toctree: api
+
+    ~CircuitTranspiler
+
 """
 
 from .circuit_transpiler import CircuitTranspiler

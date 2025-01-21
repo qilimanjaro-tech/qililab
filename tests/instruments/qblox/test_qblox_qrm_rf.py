@@ -1,14 +1,9 @@
 """Tests for the Qblox Module class."""
+from unittest.mock import MagicMock
 
-import copy
-import re
-from unittest.mock import MagicMock, patch, create_autospec
-
-import numpy as np
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
-from qililab.instrument_controllers.qblox.qblox_cluster_controller import QbloxClusterController
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQRMRF
 from qililab.platform import Platform
@@ -16,8 +11,9 @@ from qililab.data_management import build_platform
 from qililab.typings import Parameter
 from typing import cast
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
-from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 
+MAX_ATTENUATION = 30
 
 @pytest.fixture(name="platform")
 def fixture_platform():
@@ -57,7 +53,7 @@ def fixture_qrm(platform: Platform):
     ]
 
     module_mock_spec = [
-        *QcmQrm._get_required_parent_attr_names(),
+        *QcmQrm._get_required_parent_qtm_attr_names(),
         "reference_source",
         "sequencer0",
         "sequencer1",
@@ -83,6 +79,7 @@ def fixture_qrm(platform: Platform):
     # Create a mock device using create_autospec to follow the interface of the expected device
     qrm_rf.device = MagicMock()
     qrm_rf.device.mock_add_spec(module_mock_spec)
+    qrm_rf.device._get_max_out_att_0 = MagicMock(return_value=MAX_ATTENUATION)
 
     qrm_rf.device.sequencers = {
         0: MagicMock(),
@@ -187,6 +184,9 @@ class TestQbloxQRMRF:
         """Test setting parameters for QCM sequencers using parameterized values."""
         with pytest.raises(ParameterNotFound):
             qrm_rf.set_parameter(parameter, value, channel_id=0)
+
+        with pytest.raises(Exception):
+            qrm_rf.set_parameter(Parameter.OUT0_ATT, value=MAX_ATTENUATION+10, channel_id=None)
 
     @pytest.mark.parametrize(
         "parameter, expected_value",

@@ -14,6 +14,8 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
+from tests.data import Galadriel, SauronQuantumMachines
+from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -29,13 +31,11 @@ from qililab.qprogram import Calibration, Domain, Experiment, QProgram
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
-from qililab.settings import Runcard, DigitalCompilationSettings, AnalogCompilationSettings
-from qililab.settings.digital.gate_event_settings import GateEventSettings
+from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
+from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
-from tests.data import Galadriel, SauronQuantumMachines
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
@@ -528,6 +528,7 @@ class TestMethods:
 
     def test_compile_circuit(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
+
         circuit = Circuit(3)
         circuit.add(gates.X(0))
         circuit.add(gates.X(1))
@@ -566,7 +567,7 @@ class TestMethods:
         self._compile_and_assert(platform, pulse_schedule, 2)
 
     def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int):
-        sequences = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
+        sequences, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len_sequences
         for alias, sequences_list in sequences.items():
@@ -775,6 +776,29 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
+    def test_execute_qprogram_with_quantum_machines_raises_error(self, platform_quantum_machines: Platform):
+        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
+
+        error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
+        escaped_error_str = re.escape(error_string)
+        platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
+        platform_quantum_machines.compile.return_value = Exception(escaped_error_str)
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_q0_rf", waveform=drive_wf)
+        qprogram.sync()
+        qprogram.play(bus="readout_q0_rf", waveform=readout_wf)
+        qprogram.measure(bus="readout_q0_rf", waveform=readout_wf, weights=weights_wf)
+
+        with patch.object(QuantumMachinesCluster, "turn_off") as turn_off:
+            with pytest.raises(ValueError, match=escaped_error_str):
+                _ = platform_quantum_machines.execute_qprogram(qprogram=qprogram, debug=True)
+
+        turn_off.assert_called_once_with()
+
     def test_execute(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method calls the buses to run and return the results."""
         # Define pulse schedule
@@ -839,24 +863,27 @@ class TestMethods:
         c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
         # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
-        platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"feedline_input_output_bus": None}
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers"):
-                        acquire_result.return_value = QbloxResult(
-                            qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
-                        )
-                        result = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
+        for idx, final_layout in enumerate([{"q0": 0, "q1": 1}, {"q0": 1, "q1": 0}]):
+            platform.compile = MagicMock()  # type: ignore # don't care about compilation
+            platform.compile.return_value = {"feedline_input_output_bus": None}, final_layout
+            with patch.object(Bus, "upload"):
+                with patch.object(Bus, "run"):
+                    with patch.object(Bus, "acquire_result") as acquire_result:
+                        with patch.object(QbloxModule, "desync_sequencers"):
+                            acquire_result.return_value = QbloxResult(
+                                qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
+                            )
+                            result = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
 
-        # check that the order of #measurement # qubit is the same as in the circuit
-        assert [(result["measurement"], result["qubit"]) for result in result.qblox_raw_results] == [  # type: ignore
-            (0, 1),
-            (0, 0),
-            (1, 0),
-            (1, 1),
-        ]
+            # check that the order of #measurement # qubit is the same as in the circuit
+            order_measurement_qubit = [(result["measurement"], result["qubit"]) for result in result.qblox_raw_results]  # type: ignore
+
+            # Change the qubit mappings, given the final_layout:
+            assert (
+                order_measurement_qubit == [(0, 1), (0, 0), (1, 0), (1, 1)]
+                if idx == 0
+                else [(0, 0), (0, 1), (1, 1), (1, 0)]
+            )
 
     def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):
         """Test that executing with some circuit returns acquisitions with multiple measurements in same order
@@ -873,7 +900,7 @@ class TestMethods:
         # ]
         # in platform will be empty
         platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"drive_line_q0_bus": None}
+        platform.compile.return_value = {"drive_line_q0_bus": None}, {"q0": 0}
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
@@ -896,7 +923,7 @@ class TestMethods:
         n_m = len([qubit for gate in c.queue for qubit in gate.qubits if isinstance(gate, gates.M)])
 
         platform.compile = MagicMock()  # type: ignore[method-assign] # don't care about compilation
-        platform.compile.return_value = {"feedline_input_output_bus": None}
+        platform.compile.return_value = {"feedline_input_output_bus": None}, {"q0": 0}
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
@@ -945,7 +972,10 @@ class TestMethods:
         pulse_schedule = PulseSchedule()
         # mock compile method
         platform.compile = MagicMock()  # type: ignore[method-assign]
-        platform.compile.return_value = {"feedline_input_output_bus": None, "feedline_input_output_bus_2": None}
+        platform.compile.return_value = (
+            {"feedline_input_output_bus": None, "feedline_input_output_bus_2": None},
+            {"q0": 0},
+        )
         # mock execution
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
@@ -1036,4 +1066,8 @@ class TestMethods:
         """Get the bus from a flux using get_element"""
         for flux in ["phiz_q0", "phix_c0_1"]:
             bus = platform.get_element(flux)
-            assert bus.alias == next(flux_bus.bus for flux_bus in platform.analog_compilation_settings.flux_control_topology if flux_bus.flux == flux)
+            assert bus.alias == next(
+                flux_bus.bus
+                for flux_bus in platform.analog_compilation_settings.flux_control_topology
+                if flux_bus.flux == flux
+            )

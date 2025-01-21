@@ -24,6 +24,19 @@ def fixture_play_operation() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="measurement_blocked_operation")
+def fixture_measurement_blocked_operation() -> QProgram:
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    with qp.block():
+        qp.play(bus="drive", waveform=drag_wf)
+        qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+
+    return qp
+
+
 @pytest.fixture(name="play_operations_share_waveforms")
 def fixture_play_operations_share_waveforms() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
@@ -349,6 +362,32 @@ class TestQuantumMachinesCompiler:
         assert play.qe.name == "drive"
         assert play.named_pulse.name in configuration["pulses"]
 
+    def test_block_handlers(self, measurement_blocked_operation: QProgram):
+        drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+        readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+        weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        qp_no_block = QProgram()
+        qp_no_block.play(bus="drive", waveform=drag_wf)
+        qp_no_block.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+
+        compiler = QuantumMachinesCompiler()
+        qua_program, configuration, _ = compiler.compile(qprogram=measurement_blocked_operation)
+
+        qua_program_no_block, _, _ = compiler.compile(qprogram=qp_no_block)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 4
+
+        play = statements[0].play
+        assert play.qe.name == "drive"
+        assert play.named_pulse.name in configuration["pulses"]
+
+        measure = statements[1].measure
+        assert measure.qe.name == "readout"
+        assert measure.pulse.name in configuration["pulses"]
+
+        assert qua_program._program == qua_program_no_block._program
+
     def test_play_operations_share_waveforms(self, play_operations_share_waveforms: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, configuration, _ = compiler.compile(play_operations_share_waveforms)
@@ -376,7 +415,7 @@ class TestQuantumMachinesCompiler:
         play = statements[0].play
         assert play.qe.name == "drive"
         assert play.named_pulse.name in configuration["pulses"]
-        assert float(play.amp.v0.literal.value) == 0.5 * 2
+        assert float(play.amp.v0.literal.value) == 1
 
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QuantumMachinesCompiler()

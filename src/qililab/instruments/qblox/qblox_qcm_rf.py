@@ -17,7 +17,7 @@
 from dataclasses import dataclass, field
 from typing import ClassVar
 
-from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.utils import InstrumentFactory
@@ -103,6 +103,22 @@ class QbloxQCMRF(QbloxQCM):
                 )
 
             parameter = Parameter(f"out{sequencer.outputs[0]}_lo_freq")
+
+        if parameter == Parameter.OUT0_ATT:
+            max_att = self.device._get_max_out_att_0()
+            if value > max_att:
+                raise Exception(
+                    f"`{Parameter.OUT0_ATT}` for this module cannot be higher than {max_att}dB.\n"
+                    "Please specify an attenuation level, multiple of 2, below this value."
+                )
+
+        if parameter == Parameter.OUT1_ATT:
+            max_att = self.device._get_max_out_att_1()
+            if value > max_att:
+                raise Exception(
+                    f"`{Parameter.OUT1_ATT}` for this module cannot be higher than {max_att}dB.\n"
+                    "Please specify an attenuation level, multiple of 2, below this value."
+                )
 
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)

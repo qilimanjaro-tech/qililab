@@ -1,6 +1,6 @@
 import re
 from dataclasses import asdict
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -9,18 +9,12 @@ from qibo import gates
 from qibo.backends import NumpyBackend
 from qibo.gates import CZ, M, X
 from qibo.models import Circuit
+import networkx as nx
 
 from qililab.digital import CircuitTranspiler
 from qililab.digital.native_gates import Drag, Wait
-from qililab.platform import Bus, Buses, Platform
-from qililab.pulse import Pulse, PulseEvent, PulseSchedule
-from qililab.pulse.pulse_shape import SNZ, Gaussian, Rectangular
-from qililab.pulse.pulse_shape import Drag as Drag_pulse
-from qililab.settings import Runcard
+from qililab.pulse import PulseSchedule
 from qililab.settings.digital import DigitalCompilationSettings
-from qililab.settings.digital.gate_event_settings import GateEventSettings
-from tests.data import Galadriel
-from tests.test_utils import build_platform
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
@@ -486,7 +480,7 @@ class TestCircuitTranspiler:
         """
         # FIXME: do these equality tests for the unitary matrix resulting from the circuit rather
         # than from the state vectors for a more full-proof test
-        transpiler = CircuitTranspiler(digital_compilation_settings=MagicMock())
+        transpiler = CircuitTranspiler(settings=MagicMock())
 
         # Test with optimizer=False
         rng = np.random.default_rng(seed=42)  # init random number generator
@@ -502,7 +496,7 @@ class TestCircuitTranspiler:
                 exhaustive=True,
             )
 
-            c2 = transpiler.circuit_to_native(c1, optimize=False)
+            c2 = transpiler.circuit_to_native(c1)
 
             # check that both c1, c2 are qibo.Circuit
             assert isinstance(c1, Circuit)
@@ -534,7 +528,7 @@ class TestCircuitTranspiler:
 
     def test_optimize_transpilation(self, digital_settings):
         """Test that optimize_transpilation behaves as expected"""
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
 
         # gate list to optimize
         test_gates = [
@@ -560,8 +554,13 @@ class TestCircuitTranspiler:
             Drag(1, 2, -2),
         ]
 
+        # create circuit to test function with
+        circuit = Circuit(3)
+        circuit.add(test_gates)
+
         # check that lists are the same
-        optimized_gates = transpiler.optimize_transpilation(3, test_gates)
+        circuit = transpiler.optimize_transpilation(circuit)
+        optimized_gates = list(circuit.queue)
         for gate_r, gate_opt in zip(result_gates, optimized_gates):
             assert gate_r.name == gate_opt.name
             assert gate_r.parameters == gate_opt.parameters
@@ -569,7 +568,7 @@ class TestCircuitTranspiler:
 
     def test_circuit_to_pulses(self, digital_settings):
         """Test translate method"""
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         # test circuit
         circuit = Circuit(5)
         circuit.add(X(0))
@@ -609,12 +608,12 @@ class TestCircuitTranspiler:
         """Test that the angle is normalized properly for drag pulses"""
         c = Circuit(1)
         c.add(Drag(0, 2 * np.pi + 0.1, 0))
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[c])
         assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, 0.1 * 0.8 / np.pi)
         c = Circuit(1)
         c.add(Drag(0, np.pi + 0.1, 0))
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         pulse_schedules = transpiler.circuit_to_pulses(circuits=[c])
         assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, abs(-0.7745352091052967))
 
@@ -622,7 +621,7 @@ class TestCircuitTranspiler:
         """Test that transpiling negative amplitudes results in an added PI phase."""
         c = Circuit(1)
         c.add(Drag(0, -np.pi / 2, 0))
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         pulse_schedule = transpiler.circuit_to_pulses(circuits=[c])[0]
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.amplitude, (np.pi / 2) * 0.8 / np.pi)
         assert np.allclose(pulse_schedule.elements[0].timeline[0].pulse.phase, 0 + np.pi)
@@ -637,6 +636,106 @@ class TestCircuitTranspiler:
         )
         circuit = Circuit(1)
         circuit.add(Drag(0, 1, 1))
-        transpiler = CircuitTranspiler(digital_compilation_settings=digital_settings)
+        transpiler = CircuitTranspiler(settings=digital_settings)
         with pytest.raises(ValueError, match=error_string):
             transpiler.circuit_to_pulses(circuits=[circuit])
+
+
+    @pytest.mark.parametrize("optimize", [True, False])
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.optimize_circuit")
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.optimize_transpilation")
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.route_circuit")
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.circuit_to_native")
+    @patch("qililab.digital.circuit_transpiler.CircuitTranspiler.circuit_to_pulses")
+    def test_transpile_circuits(self, mock_to_pulses, mock_to_native, mock_route, mock_opt_trans, mock_opt_circuit, optimize, digital_settings):
+        """Test transpile_circuits method"""
+        transpiler = CircuitTranspiler(settings=digital_settings)
+        placer = MagicMock()
+        router = MagicMock()
+        routing_iterations = 7
+        list_size = 2
+
+        # Mock circuit for return values
+        mock_circuit = Circuit(5)
+        mock_circuit.add(Drag(0, 2*np.pi, np.pi))
+
+        # Mock layout for return values
+        mock_layout = {"q0": 0, "q1": 2, "q2": 1, "q3": 3, "q4": 4}
+
+        # Mock schedule for return values
+        mock_schedule = PulseSchedule()
+
+        # Mock the return values
+        mock_route.return_value = mock_circuit, mock_layout
+        mock_opt_circuit.return_value = mock_circuit
+        mock_to_native.return_value = mock_circuit
+        mock_opt_trans.return_value = mock_circuit
+        mock_to_pulses.return_value = [mock_schedule]
+
+        circuit = random_circuit(5, 10, np.random.default_rng())
+        routing = True
+
+        list_schedules, list_layouts = transpiler.transpile_circuits([circuit]*list_size, routing, placer, router, routing_iterations, optimize=optimize)
+
+        # Asserts:
+        # The next two functions get called for individual circuits:
+        mock_route.assert_called_with(circuit, placer, router, iterations=routing_iterations)
+        mock_to_native.assert_called_with(mock_circuit)
+        assert mock_route.call_count == mock_to_native.call_count == list_size
+        # The last one instead gets called for the whole list:
+        mock_to_pulses.assert_called_once_with([mock_circuit]*list_size)
+        assert list_schedules, list_layouts == ([mock_schedule]*list_size, [mock_layout]*list_size)
+
+        # Asserts in optimizeL, which is called for individual circuits:
+        if optimize:
+            mock_opt_circuit.assert_called_with(mock_circuit)
+            mock_opt_trans.assert_called_with(mock_circuit)
+            assert mock_opt_circuit.call_count == mock_opt_trans.call_count == list_size
+        else:
+            mock_opt_circuit.assert_not_called()
+            mock_opt_trans.assert_not_called()
+
+        # If routing skipped:
+        routing = False
+        mock_route.reset_mock()
+        list_schedules, list_layouts = transpiler.transpile_circuits([circuit]*list_size, routing, placer, router, routing_iterations, optimize=optimize)
+        mock_route.assert_not_called()
+
+    @patch("qililab.digital.circuit_router.CircuitRouter.route")
+    def test_route_circuit(self, mock_route, digital_settings):
+        """Test route_circuit method"""
+        transpiler = CircuitTranspiler(settings=digital_settings)
+        routing_iterations = 7
+
+        # Mock the return values
+        mock_circuit = Circuit(5)
+        mock_circuit.add(X(0))
+        mock_layout = {"q0": 0, "q1": 2, "q2": 1, "q3": 3, "q4": 4}
+        mock_route.return_value = (mock_circuit, mock_layout)
+
+        # Execute the function
+        circuit, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+
+        # Asserts:
+        mock_route.assert_called_once_with(circuit, routing_iterations)
+        assert circuit, layout == (mock_circuit, mock_layout)
+
+    @patch("qililab.digital.circuit_transpiler.nx.Graph")
+    @patch("qililab.digital.circuit_transpiler.CircuitRouter")
+    def test_that_route_circuit_instantiates_Router(self, mock_router, mock_graph, digital_settings):
+        """Test route_circuit method"""
+        transpiler = CircuitTranspiler(settings=digital_settings)
+        routing_iterations = 7
+
+        # Mock the return values
+        mock_circuit = Circuit(5)
+        mock_circuit.add(X(0))
+
+        graph_mocking = nx.Graph(transpiler.settings.topology)
+        mock_graph.return_value = graph_mocking
+
+        # Execute the function
+        transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+
+        # Asserts:
+        mock_router.assert_called_once_with(graph_mocking, None, None)

@@ -1,3 +1,4 @@
+import re
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -5,6 +6,7 @@ import pytest
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.typings.enums import Parameter
+from qililab.waveforms import Square
 
 
 @pytest.fixture(name="qdac")
@@ -23,6 +25,31 @@ def fixture_qdac() -> QDevilQDac2:
     )
     qdac.device = MagicMock()
     return qdac
+
+
+@pytest.fixture(name="qdac_out_range")
+def range_input() -> QDevilQDac2:
+    """Fixture that returns an instance of a dummy QDAC-II."""
+
+    qdac_out_range = QDevilQDac2(
+        {
+            "alias": "qdac_out_range",
+            "voltage": [0.5],
+            "span": ["low"],
+            "ramping_enabled": [True],
+            "ramp_rate": [0.001],
+            "dacs": [10],
+            "low_pass_filter": ["dc"],
+        }
+    )
+    mock_device = MagicMock()
+    qdac_out_range.device = mock_device
+    return qdac_out_range
+
+
+@pytest.fixture(name="waveform")
+def get_square_waveform() -> Square:
+    return Square(0.1, 4)
 
 
 class TestQDevilQDac2:
@@ -73,6 +100,91 @@ class TestQDevilQDac2:
         qdac.reset()
 
         qdac.device.reset.assert_called_once()
+
+    def test_get_dac(self, qdac: QDevilQDac2):
+        """Test get_dac method"""
+        channel_calls = []
+        for channel_id in qdac.dacs:
+            qdac.get_dac(channel_id)
+            channel_calls.append(call(channel_id))
+        qdac.device.channel.assert_has_calls(channel_calls)
+
+    def test_upload_waveform(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        qdac.upload_waveform(waveform, channel_id)
+        qdac.device.allocate_trace.assert_called_once_with(channel_id, len(waveform.envelope()))
+        assert qdac._cache == {4: True}
+
+    def test_upload_waveform_fails_overwrite_cache(self, qdac: QDevilQDac2, waveform: Square):
+        """Test that upload waveform raises an error when trying to allocate a waveform to an already allocated channel id"""
+        channel_id = 2
+        qdac._cache = {channel_id: True}
+        error_string = re.escape(f"Device {qdac.name} already has a waveform allocated to channel {channel_id}. Clear the cache before allocating a new waveform")
+        with pytest.raises(ValueError, match=error_string):
+            qdac.upload_waveform(waveform, channel_id)
+
+    def test_upload_waveform_fails_odd_value(self, qdac: QDevilQDac2, waveform: Square):
+        """Test that upload waveform raises an error when uploading a waveform with odd number of entries"""
+        channel_id = 2
+        waveform = Square(0.1, 3)
+        error_string = "Waveform entries must be even."
+        with pytest.raises(ValueError, match=error_string):
+            qdac.upload_waveform(waveform, channel_id)
+
+    def test_upload_waveform_fails_amp_range(self, qdac: QDevilQDac2, waveform: Square):
+        """Test that upload waveform raises an error when uploading a waveform with outside the allowed amplitude range"""
+        channel_id = 2
+        waveform = Square(1, 4)
+        error_string = re.escape("Waveform amplitudes must be within [-1,1] range.")
+        with pytest.raises(ValueError, match=error_string):
+            qdac.upload_waveform(waveform, channel_id)
+        qdac.clear_cache()
+        channel_id = 2
+        waveform = Square(-1.1, 4)
+        with pytest.raises(ValueError, match=error_string):
+            qdac.upload_waveform(waveform, channel_id)
+
+    def test_play(self, qdac: QDevilQDac2):
+        """Test play method"""
+        channel_id = 4
+        channel_calls = [call(10), call(11), call(4), call().start]
+        qdac._cache = {channel_id: True}
+        qdac.play(clear_after=False)
+        # cache not erased if default clear_after
+        assert qdac._cache == {channel_id: True}
+        qdac.play(channel_id)
+        qdac.get_dac(4).arbitrary_wave.assert_has_calls(channel_calls)
+        # check that cache is erased
+        assert qdac._cache == {}
+
+    def test_clear_cache(self, qdac: QDevilQDac2):
+        """Test clear_cache method"""
+        qdac._cache = {2: True}
+        qdac.clear_cache()
+        assert qdac._cache == {}
+        qdac.device.remove_traces.assert_called_once()
+
+    def test_input_range_runcard(self, qdac_out_range: QDevilQDac2):
+        # Test that an error is raised when the input value on the runcard for the qdac are out of bound
+        channel_id = 10
+        error_string = re.escape(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
+        with pytest.raises(ValueError, match=error_string):
+            qdac_out_range.initial_setup()
+
+    def test_input_range_set_parameter(self, qdac: QDevilQDac2):
+        # Test that an error is raised when the input value on set_parameter RAMPING_RATE for the qdac are out of bound
+        channel_id = 10
+        error_string = re.escape(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
+        with pytest.raises(ValueError, match=error_string):
+            qdac.set_parameter(parameter=Parameter.RAMPING_RATE, value=0.0001, channel_id=channel_id)
+
+    def test_input_range_set_parameter_enabled(self, qdac_out_range: QDevilQDac2):
+        # Test that an error is raised when the input value on set_parameter RAMPING_ENABLED for the qdac are out of bound
+        channel_id = 10
+        error_string = re.escape(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
+        with pytest.raises(ValueError, match=error_string):
+            qdac_out_range.set_parameter(parameter=Parameter.RAMPING_ENABLED, value=True, channel_id=channel_id)
 
     @pytest.mark.parametrize(
         "parameter, value",

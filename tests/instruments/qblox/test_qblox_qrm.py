@@ -1,14 +1,9 @@
 """Tests for the Qblox Module class."""
+from unittest.mock import MagicMock
 
-import copy
-import re
-from unittest.mock import MagicMock, patch, create_autospec
-
-import numpy as np
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
-from qililab.instrument_controllers.qblox.qblox_cluster_controller import QbloxClusterController
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQRM
 from qililab.platform import Platform
@@ -16,7 +11,7 @@ from qililab.data_management import build_platform
 from qililab.typings import AcquireTriggerMode, IntegrationMode, Parameter
 from typing import cast
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
-from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 from qililab.qprogram.qblox_compiler import AcquisitionData
 
 
@@ -59,7 +54,7 @@ def fixture_qrm(platform: Platform) -> QbloxQRM:
     ]
 
     module_mock_spec = [
-        *QcmQrm._get_required_parent_attr_names(),
+        *QcmQrm._get_required_parent_qtm_attr_names(),
         "reference_source",
         "sequencer0",
         "sequencer1",
@@ -376,8 +371,8 @@ class TestQbloxQRM:
 
         qrm.acquire_result()
 
-        assert qrm.device.get_sequencer_state.call_count == 2
-        assert qrm.device.get_acquisition_state.call_count == 2
+        assert qrm.device.get_sequencer_status.call_count == 2
+        assert qrm.device.get_acquisition_status.call_count == 2
         assert qrm.device.store_scope_acquisition.call_count == 1
         assert qrm.device.get_acquisitions.call_count == 2
         assert qrm.device.sequencers[0].sync_en.call_count == 1
@@ -400,7 +395,7 @@ class TestQbloxQRM:
 
         qrm.acquire_qprogram_results(acquisitions=qp_acqusitions, channel_id=0)
 
-        assert qrm.device.get_acquisition_state.call_count == 2
+        assert qrm.device.get_acquisition_status.call_count == 2
         assert qrm.device.store_scope_acquisition.call_count == 1
         assert qrm.device.get_acquisitions.call_count == 2
         assert qrm.device.delete_acquisition_data.call_count == 2
