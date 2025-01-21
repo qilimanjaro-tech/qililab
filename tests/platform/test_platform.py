@@ -866,7 +866,7 @@ class TestMethods:
         c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
         # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
-        for idx, final_layout in enumerate([{"q0": 0, "q1": 1}, {"q0": 1, "q1": 0}]):
+        for idx, final_layout in enumerate([{0: 0, 1: 1}, {0: 1, 1: 0}]):
             platform.compile = MagicMock()  # type: ignore # don't care about compilation
             platform.compile.return_value = {"feedline_input_output_bus": None}, final_layout
             with patch.object(Bus, "upload"):
