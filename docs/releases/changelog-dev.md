@@ -11,10 +11,10 @@
   [#861](https://github.com/qilimanjaro-tech/qililab/pull/861)
 
 - Raises an error when the inputed value for the QDAC is outside of the bounds provided by QM. Done in 3 ways, runcard, set_parameter RAMPING_ENABLED and set_parameter RAMPING_RATE.
-[#865](https://github.com/qilimanjaro-tech/qililab/pull/865)
+  [#865](https://github.com/qilimanjaro-tech/qililab/pull/865)
 
 - Enable square waveforms optimization for Qblox.
-[#874](https://github.com/qilimanjaro-tech/qililab/pull/874)
+  [#874](https://github.com/qilimanjaro-tech/qililab/pull/874)
 
 ### Improvements
 
@@ -37,6 +37,9 @@
   - Make the deletion of gates with no amplitude
 
   [#863](https://github.com/qilimanjaro-tech/qililab/pull/863)
+
+- Improved the layout information display and Updated qibo version to the last version (0.2.15), which improves layout handling
+  [#869](https://github.com/qilimanjaro-tech/qililab/pull/869)
 
 ### Breaking changes
 

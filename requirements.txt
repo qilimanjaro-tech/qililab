@@ -1,5 +1,5 @@
 pandas==1.5.3
-qibo==0.2.14
+qibo==0.2.15
 qblox-instruments==0.14.2
 qcodes==0.42.0
 qcodes_contrib_drivers==0.18.0
