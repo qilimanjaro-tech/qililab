@@ -126,7 +126,8 @@ class ExperimentLivePlot:
 
             if not self._port_number:
                 self._port_number = 8000
-            self._dash_app.run(debug=False, host="0.0.0.0", port=self._port_number)
+            # TODO: assign with access a host that is not 0.0.0.0 as 127.0.0.1 does not work
+            self._dash_app.run(debug=False, host="0.0.0.0", port=self._port_number)  # noqa: S104
 
         else:
             warnings.filterwarnings("ignore")
