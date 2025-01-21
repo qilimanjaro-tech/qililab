@@ -163,7 +163,7 @@ class PulseSchedule:
         """
         elements = [PulseBusSchedule.from_dict(dictionary=settings) for settings in dictionary[PULSESCHEDULES.ELEMENTS]]
 
-        return PulseSchedule(elements=elements)
+        return cls(elements=elements)
 
     def __iter__(self):
         """Redirects __iter__ magic method to elements."""

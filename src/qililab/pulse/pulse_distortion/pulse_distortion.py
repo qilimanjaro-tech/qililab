@@ -13,13 +13,18 @@
 # limitations under the License.
 
 """PulseDistortion abstract base class."""
+
 from abc import abstractmethod
+from copy import deepcopy
 from dataclasses import dataclass
+from typing import Type, TypeVar
 
 import numpy as np
 
 from qililab.typings.factory_element import FactoryElement
 from qililab.utils import Factory
+
+T = TypeVar("T", bound="PulseDistortion")
 
 
 @dataclass(frozen=True, eq=True, kw_only=True)
@@ -47,7 +52,6 @@ class PulseDistortion(FactoryElement):
     .. code-block:: python3
 
         if self.auto_norm:
-
             if corrected_norm != 0:
                 auto_norm_envelope = corrected_envelope * (original_norm / corrected_norm)
 
@@ -94,7 +98,9 @@ class PulseDistortion(FactoryElement):
 
         Which if ended bigger/smaller than you wanted, you can then also manually modify it like:
 
-        >>> distorted_envelope_manual_norm = LFilterCorrection(a=[0.7, 1.3], b=[0.5, 0.6], auto_norm=False, norm_factor=0.8).apply(envelope)
+        >>> distorted_envelope_manual_norm = LFilterCorrection(
+        ...     a=[0.7, 1.3], b=[0.5, 0.6], auto_norm=False, norm_factor=0.8
+        ... ).apply(envelope)
         >>> np.max(distorted_envelope_manual_norm) == 0.8 * np.max(distorted_envelope_no_norm) != np.max(envelope)
         True
     """
@@ -114,26 +120,37 @@ class PulseDistortion(FactoryElement):
         """
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> "PulseDistortion":
-        """Loads PulseDistortion object from dictionary.
+    def from_dict(cls: Type[T], dictionary: dict) -> T:
+        """Loads a `PulseDistortion` object from a dictionary representation.
 
         Args:
-            dictionary (dict): Dictionary representation of the PulseDistortion object. It must include the name of the
-            correction.
+            dictionary (dict): Dictionary representation of the `PulseDistortion` object, containing all its attributes.
+                If called directly from the Abstract parent class: `PulseDistortion`, it must include the child class name to instantiate.
 
         Returns:
-            PulseDistortion: Loaded class.
+            PulseDistortion: Loaded child class, including the name of the pulse distortion and its attributes set.
         """
-        distortion_class = Factory.get(name=dictionary["name"])
-        return distortion_class.from_dict(dictionary)
+        # For calls from parent PulseShape:
+        if cls is PulseDistortion:
+            shape_class = Factory.get(name=dictionary["name"])
+            return shape_class.from_dict(dictionary)
 
-    @abstractmethod
+        # For calls from childs directly:
+        local_dictionary = deepcopy(dictionary)
+        name = local_dictionary.pop("name", None)
+        if name not in [cls.name.value, None]:
+            raise ValueError(f"Class: {cls.name.value} to instantiate, does not match the given dict name {name}")
+        return cls(**local_dictionary)
+
     def to_dict(self) -> dict:
-        """Returns dictionary of PulseDistortion.
+        """Returns dictionary representation of `PulseDistortion`. This includes the class name an all its attributes.
 
         Returns:
-            dict: Dictionary describing the pulse distortion.
+            dict: Dictionary describing the `PulseDistortion`, including the name and its attributes.
         """
+        return {"name": self.name.value} | {
+            attribute: getattr(self, attribute) for attribute in self.__dataclass_fields__.keys()
+        }
 
     def normalize_envelope(self, envelope: np.ndarray, corr_envelope: np.ndarray) -> np.ndarray:
         """Normalizes the envelope depending on the `norm_factor` and `auto_norm` attributes.
