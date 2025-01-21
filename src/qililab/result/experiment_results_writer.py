@@ -89,7 +89,14 @@ class ExperimentResultsWriter(ExperimentResults):
     Inherits from `ExperimentResults` to support both read and write operations.
     """
 
-    def __init__(self, path: str, metadata: ExperimentMetadata, live_plot: bool = True, slurm_execution: bool = True):
+    def __init__(
+        self,
+        path: str,
+        metadata: ExperimentMetadata,
+        live_plot: bool = True,
+        slurm_execution: bool = True,
+        port_number: int | None = None,
+    ):
         """Initializes the ExperimentResultsWriter instance.
 
         Args:
@@ -97,11 +104,13 @@ class ExperimentResultsWriter(ExperimentResults):
             metadata (ExperimentMetadata): The metadata describing the experiment structure.
             live_plot (bool): Flag that abilitates live plotting. Defaults to True.
             slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
+            port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
         """
         super().__init__(path)
         self._metadata = metadata
         self._live_plot_true = live_plot
         self._slurm_execution = slurm_execution
+        self._port_number = port_number
 
     # pylint: disable=too-many-locals
     def _create_results_file(self):
@@ -181,8 +190,8 @@ class ExperimentResultsWriter(ExperimentResults):
 
             # Generate live plot figures
             if self._live_plot_true:
-                self.results_liveplot = ExperimentLivePlot(self.path, self._slurm_execution)
-                self.results_liveplot._live_plot_figures(dims_dict)
+                self.results_liveplot = ExperimentLivePlot(self.path, self._slurm_execution, self._port_number)
+                self.results_liveplot.live_plot_figures(dims_dict)
 
     def _create_resuts_access(self):
         """Sets up internal data structures to allow for real-time data writing to the HDF5 file."""
@@ -220,9 +229,7 @@ class ExperimentResultsWriter(ExperimentResults):
             measurement_name = f"Measurement_{measurement_name}"
         self.data[qprogram_name, measurement_name][tuple(indices)] = value
         if self._live_plot_true:
-            self.results_liveplot._live_plot(
-                self.data[qprogram_name, measurement_name], qprogram_name, measurement_name
-            )
+            self.results_liveplot.live_plot(self.data[qprogram_name, measurement_name], qprogram_name, measurement_name)
 
     @ExperimentResults.platform.setter
     def platform(self, platform: str):

@@ -733,7 +733,13 @@ class Platform:
         )
         return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
-    def execute_experiment(self, experiment: Experiment, live_plot: bool = True, slurm_execution: bool = True) -> str:
+    def execute_experiment(
+        self,
+        experiment: Experiment,
+        live_plot: bool = True,
+        slurm_execution: bool = True,
+        port_number: int | None = None,
+    ) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
@@ -741,7 +747,10 @@ class Platform:
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
             live_plot (bool): Flag that abilitates live plotting. Defaults to True.
-            slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
+            slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell.
+                                    Defaults to True.
+            port_number (int|None): Optional parameter for when slurm_execution is True.
+                                    It defines the port number of the Dash server. Defaults to None.
 
         Returns:
             str: The path to the file where the results are stored.
@@ -769,7 +778,11 @@ class Platform:
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
         executor = ExperimentExecutor(
-            platform=self, experiment=experiment, live_plot=live_plot, slurm_execution=slurm_execution
+            platform=self,
+            experiment=experiment,
+            live_plot=live_plot,
+            slurm_execution=slurm_execution,
+            port_number=port_number,
         )
         return executor.execute()
 

@@ -13,15 +13,12 @@
 # limitations under the License.
 # mypy: disable-error-code="attr-defined"
 import os
-import threading
 import warnings
 from dataclasses import dataclass
-from wsgiref.simple_server import make_server
 
 import numpy as np
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, callback, dcc, html
-from flask import Flask
 from IPython.display import display
 
 
@@ -38,22 +35,24 @@ class ExperimentLivePlot:
 
     LIVE_PLOT_NAME = "live_plot.png"
 
-    def __init__(self, path: str, slurm_execution: bool = True):
+    def __init__(self, path: str, slurm_execution: bool = True, port_number: int | None = None):
         """Initializes the ExperimentResults instance.
 
         Args:
             path (str): The file path to the HDF5 results file.
             slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
+            port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
         """
         self.path = path
         self._slurm_execution = slurm_execution
+        self._port_number = port_number
 
         self.live_plot_dict: dict[tuple[str, str], int] = {}
 
         self._live_plot_fig: go.Figure | go.FigureWidget
         self._dash_app: Dash
 
-    def _live_plot_figures(self, dims_dict: dict[tuple[str, str], list]):
+    def live_plot_figures(self, dims_dict: dict[tuple[str, str], list]):
         """Generates the figures for live plotting the S21 parameter from the experiment results.
 
         Args:
@@ -110,8 +109,7 @@ class ExperimentLivePlot:
                 raise NotImplementedError("3D and higher dimension plots are not supported yet.")
 
         if self._slurm_execution:
-            server = Flask("Live Plot Server")
-            self._dash_app = Dash("Live Plot", server=server)
+            self._dash_app = Dash("Live Plot")
             self._dash_app.layout = html.Div(
                 [
                     dcc.Graph(figure=self._live_plot_fig, id="live-plot-graph"),
@@ -126,26 +124,15 @@ class ExperimentLivePlot:
             def put_more_data_on_figure(n_intervals):
                 return self._live_plot_fig
 
-            self.server = make_server("localhost", 8070, server)
-            self.server_thread = threading.Thread(target=self.server.serve_forever)
-            self.server_thread.start()
-
-            def start_dash_app():
-                self._dash_app.run(debug=False, host="0.0.0.0")
-
-            dash_thread = threading.Thread(target=start_dash_app)
-            dash_thread.start()
+            if not self._port_number:
+                self._port_number = 8000
+            self._dash_app.run(debug=False, host="0.0.0.0", port=self._port_number)
 
         else:
             warnings.filterwarnings("ignore")
             display(self._live_plot_fig)
 
-    def stop_execution(self):
-        if self._slurm_execution:
-            self.server.shutdown()
-            self.server_thread.join()
-
-    def _live_plot(self, data: np.ndarray, qprogram_name: str, measurement_name: str):
+    def live_plot(self, data: np.ndarray, qprogram_name: str, measurement_name: str):
         """Live plots the S21 parameter from the experiment results.
 
         Args:

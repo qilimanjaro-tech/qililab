@@ -75,6 +75,7 @@ class ExperimentExecutor:
         base_data_path (str): The base directory path where the experiment results will be stored.
         live_plot (bool): Flag that abilitates live plotting. Defaults to True.
         slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
+        port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
 
     Example:
         .. code-block::
@@ -107,12 +108,18 @@ class ExperimentExecutor:
     """
 
     def __init__(
-        self, platform: "Platform", experiment: Experiment, live_plot: bool = True, slurm_execution: bool = True
+        self,
+        platform: "Platform",
+        experiment: Experiment,
+        live_plot: bool = True,
+        slurm_execution: bool = True,
+        port_number: int | None = None,
     ):
         self.platform = platform
         self.experiment = experiment
         self._live_plot = live_plot
         self._slurm_execution = slurm_execution
+        self._port_number = port_number
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -563,7 +570,11 @@ class ExperimentExecutor:
 
         # Create the ExperimentResultsWriter for storing results
         self._results_writer = ExperimentResultsWriter(
-            path=results_path, metadata=self._metadata, live_plot=self._live_plot, slurm_execution=self._slurm_execution
+            path=results_path,
+            metadata=self._metadata,
+            live_plot=self._live_plot,
+            slurm_execution=self._slurm_execution,
+            port_number=self._port_number,
         )
 
         # Event to signal that the execution has completed

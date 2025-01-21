@@ -77,9 +77,7 @@ class TestExperimentLivePlot:
         experiment_live_plot.path = "test.h5"
         experiment_live_plot.live_plot_dict = {}
 
-        experiment_live_plot._live_plot_figures = MethodType(
-            ExperimentLivePlot._live_plot_figures, experiment_live_plot
-        )
+        experiment_live_plot.live_plot_figures = MethodType(ExperimentLivePlot.live_plot_figures, experiment_live_plot)
 
         # Mock the get method to return 1D data
         mock_h5group = mock_h5file.create_group("mockpath_group")
@@ -124,9 +122,7 @@ class TestExperimentLivePlot:
         experiment_live_plot.path = "test.h5"
         experiment_live_plot.live_plot_dict = {}
 
-        experiment_live_plot._live_plot_figures = MethodType(
-            ExperimentLivePlot._live_plot_figures, experiment_live_plot
-        )
+        experiment_live_plot.live_plot_figures = MethodType(ExperimentLivePlot.live_plot_figures, experiment_live_plot)
 
         # Mock the get method to return 2D data
         mock_h5group = mock_h5file.create_group("mockpath_group")
@@ -169,9 +165,7 @@ class TestExperimentLivePlot:
         experiment_live_plot.path = "test.h5"
         experiment_live_plot.live_plot_dict = {}
 
-        experiment_live_plot._live_plot_figures = MethodType(
-            ExperimentLivePlot._live_plot_figures, experiment_live_plot
-        )
+        experiment_live_plot.live_plot_figures = MethodType(ExperimentLivePlot.live_plot_figures, experiment_live_plot)
 
         # Mock the get method to return 3D data
         mock_h5group = mock_h5file.create_group("mockpath_group")
