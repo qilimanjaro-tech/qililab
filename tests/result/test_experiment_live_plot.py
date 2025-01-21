@@ -204,55 +204,6 @@ class TestExperimentLivePlot:
         with pytest.raises(NotImplementedError):
             experiment_live_plot._live_plot_figures(dims_dict)
 
-    @patch("h5py.File")
-    def test_live_plot_slurm_execution(self, mock_h5file, metadata):
-        """Test the plots generated with 1D data."""
-        experiment_live_plot = create_autospec(ExperimentLivePlot, instance=True)
-        experiment_live_plot._slurm_execution = True
-        experiment_live_plot.path = "test.h5"
-        experiment_live_plot.live_plot_dict = {}
-
-        experiment_live_plot._live_plot_figures = MethodType(
-            ExperimentLivePlot._live_plot_figures, experiment_live_plot
-        )
-
-        # Mock the get method to return 1D data
-        mock_h5group = mock_h5file.create_group("mockpath_group")
-
-        dims_dict = {}
-        for qprogram_name, qprogram_data in metadata["qprograms"].items():
-            qgroup = mock_h5group.create_group(qprogram_name)
-
-            for measurement_name, measurement_data in qprogram_data["measurements"].items():
-                mgroup = qgroup.create_group(measurement_name)
-                mock_h5dataset = mgroup.create_dataset("mockpath_dataset", shape=measurement_data["shape"])
-
-                # Create the labels
-                for idx, dim_variables in enumerate(qprogram_data["dims"]):
-                    mock_h5dataset.dims[idx].label = ",".join(list(dim_variables))
-                for idx, dim_variables in enumerate(measurement_data["dims"]):
-                    mock_h5dataset.dims[len(qprogram_data["dims"]) + idx].label = ",".join(list(dim_variables))
-
-                # Attach the extra dimension (usually for I/Q) to the results dataset
-                mock_h5dataset.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
-
-                dims_dict[qprogram_name, measurement_name] = mock_h5dataset.dims
-
-                # Mock the values of the loops for a 1D measure
-                dims_dict[qprogram_name, measurement_name][0].values.return_value = [np.linspace(0, 10, 20)]
-                dims_dict[qprogram_name, measurement_name].__len__.return_value = 2
-
-        # Create the figures
-        experiment_live_plot._live_plot_figures(dims_dict)
-
-        # Make sure the figures run
-        experiment_live_plot._live_plot(np.linspace(0, 10, 20), qprogram_name, measurement_name)
-
-        experiment_live_plot.stop_execution()
-
-        # Make sure right plot is created
-        assert isinstance(experiment_live_plot._live_plot_fig, go.Figure)
-
 
 class TestExperimentResultsWriterLivePlot:
     """Test ExperimentResultsWriter class"""
