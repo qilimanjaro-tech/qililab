@@ -15,7 +15,7 @@ from qililab.digital import CircuitTranspiler
 from qililab.digital.native_gates import Drag, Wait
 from qililab.pulse import PulseSchedule
 from qililab.settings.digital import DigitalCompilationSettings
-from qililab.digital import DigitalTranspileConfig
+from qililab.digital import DigitalTranspilationConfig
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
@@ -661,6 +661,8 @@ class TestCircuitTranspiler:
         placer = MagicMock()
         router = MagicMock()
         routing_iterations = 7
+        routing=True
+        transpilation_config = DigitalTranspilationConfig(routing=routing, optimize=optimize, router=router, placer=placer, routing_iterations=routing_iterations)
 
         # Mock circuit for return values
         mock_circuit = Circuit(5)
@@ -682,9 +684,8 @@ class TestCircuitTranspiler:
         mock_to_pulses.return_value = mock_schedule
 
         circuit = random_circuit(5, 10, np.random.default_rng())
-        routing = True
 
-        schedule, layout = transpiler.transpile_circuit(circuit, routing, placer, router, routing_iterations, optimize=optimize)
+        schedule, layout = transpiler.transpile_circuit(circuit, transpilation_config)
 
         # Mandatory asserts in order:
         mock_route.assert_called_once_with(circuit, placer, router, routing_iterations)
@@ -702,9 +703,9 @@ class TestCircuitTranspiler:
             mock_opt_trans.assert_not_called()
 
         # If routing skipped:
-        routing = False
+        transpilation_config.routing = False
         mock_route.reset_mock()
-        _, _ = transpiler.transpile_circuit(circuit, routing, placer, router, routing_iterations, optimize=optimize)
+        _, _ = transpiler.transpile_circuit(circuit, transpilation_config)
         mock_route.assert_not_called()
 
     @patch("qililab.digital.circuit_router.CircuitRouter.route")
@@ -748,9 +749,7 @@ class TestCircuitTranspiler:
         mock_router.assert_called_once_with(graph_mocking, None, None)
 
     def test_DigitalTranspilerConfig(self):
-        """Test that the class contains the same arguments as the CircuitTranspiler.transpile_circuit method, with their typings (Except for the circuit argument, which is not included in the DigitalTranspileConfig)
+        """Test that the dataclass default values are correct, and that properies give the correct order
         """
-        for arg, arg_type in CircuitTranspiler.transpile_circuit.__annotations__.items():
-            if arg not in ["circuit", "return"]:
-                assert arg in DigitalTranspileConfig.__annotations__
-                assert arg_type == DigitalTranspileConfig.__annotations__[arg].__forward_arg__
+        tc = DigitalTranspilationConfig()
+        assert tc.attributes_ordered == (False, None, None, 10, False)

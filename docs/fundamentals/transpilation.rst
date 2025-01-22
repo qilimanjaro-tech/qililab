@@ -9,7 +9,7 @@ But it can also be done manually, with more control, directly using the :class:`
 The process involves the following steps (by default only: **3.**, **4**., and **6.** run):
 
 
-1. **Routing and Placement:** Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpile_config`` if provided; otherwise, default values are applied. Refer to the :meth:`.CircuitTranspiler.route_circuit()` method for more information.
+1. **Routing and Placement:** Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpilation_config`` if provided; otherwise, default values are applied. Refer to the :meth:`.CircuitTranspiler.route_circuit()` method for more information.
 
 2. **1st Optimization:** Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs). Refer to the :meth:`.CircuitTranspiler.optimize_gates()` method for more information.
 
@@ -25,9 +25,9 @@ The process involves the following steps (by default only: **3.**, **4**., and *
 
     Default steps are only: **3.**, **4**., and **6.**, since they are always needed.
 
-    To do Step **1.** set ``routing=True`` in ``transpile_config`` (default behavior skips it).
+    To do Step **1.** set ``routing=True`` in ``transpilation_config`` (default behavior skips it).
 
-    To do Steps **2.** and **5.** set ``optimize=True`` in ``transpile_config`` (default behavior skips it).
+    To do Steps **2.** and **5.** set ``optimize=True`` in ``transpilation_config`` (default behavior skips it).
 
 **Examples:**
 
@@ -47,16 +47,16 @@ For example, the most basic use, would be to automatically transpile during an e
     transpilation = {routing: True, optimize: False, router: Sabre, placer: ReverseTraversal}
 
     # Create transpiler:
-    result = ql.execute(c, runcard="<path_to_runcard>", transpile_config=transpilation)
+    result = ql.execute(c, runcard="<path_to_runcard>", transpilation_config=transpilation)
 
-Or from a ``platform.execute()`` and using `DigitalTranspileConfig` for argument hintings instead, like:
+Or from a ``platform.execute()`` and using `DigitalTranspilationConfig` for argument hintings instead, like:
 
 .. code-block:: python
 
     from qibo import gates, Circuit
     from qibo.transpiler import ReverseTraversal, Sabre
     from qililab import build_platform
-    from qililab.digital import DigitalTranspileConfig
+    from qililab.digital import DigitalTranspilationConfig
 
     # Create circuit:
     c = Circuit(5)
@@ -64,10 +64,10 @@ Or from a ``platform.execute()`` and using `DigitalTranspileConfig` for argument
 
     # Create platform:
     platform = build_platform(runcard="<path_to_runcard>")
-    transpilation = DigitalTranspileConfig(routing= True, optimize= False, router= Sabre, placer= ReverseTraversal)
+    transpilation = DigitalTranspilationConfig(routing= True, optimize= False, router= Sabre, placer= ReverseTraversal)
 
     # Create transpiler:
-    result = platform.execute(c, num_avg=1000, repetition_duration=200_000, transpile_config=transpilation)
+    result = platform.execute(c, num_avg=1000, repetition_duration=200_000, transpilation_config=transpilation)
 
 Now, if we want more manual control instead, we can instantiate the ``CircuitTranspiler`` object like:
 

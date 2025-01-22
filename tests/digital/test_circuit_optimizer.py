@@ -72,8 +72,8 @@ class TestCircuitOptimizerUnit:
 
     @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._create_circuit_circuit_gates", return_value=Circuit(5).queue)
     @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates", return_value=[("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
-    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._get_circuit_gates", return_value=[("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
-    def test_cancel_pairs_of_hermitian_gates(self, mock_get_circuit_gates, mock_sweep_circuit, mock_create_circuit):
+    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer._get_circuit_gates_info", return_value=[("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
+    def test_cancel_pairs_of_hermitian_gates(self, mock_get_circuit_gates_info, mock_sweep_circuit, mock_create_circuit):
         """Test run gate cancellations with mocks."""
         circuit = Circuit(2)
         circuit.add(gates.RZ(0, theta=np.pi / 2))
@@ -83,18 +83,18 @@ class TestCircuitOptimizerUnit:
         optimizer = CircuitOptimizer(None)
         _ = optimizer.cancel_pairs_of_hermitian_gates(circuit.queue)
 
-        mock_get_circuit_gates.assert_called_once_with(circuit.queue)
+        mock_get_circuit_gates_info.assert_called_once_with(circuit.queue)
         mock_sweep_circuit.assert_called_once_with([("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
         mock_create_circuit.assert_called_once_with([("CZ", [0, 1], {}), ("Drag", [0], {"theta": np.pi, "phase": np.pi / 2})])
 
 
-    def test_get_circuit_gates(self):
+    def test_get_circuit_gates_info(self):
         """Test get circuit gates."""
         circuit = Circuit(2)
         circuit.add(gates.X(0))
         circuit.add(gates.H(1))
 
-        circuit_gates_info = CircuitOptimizer._get_circuit_gates(circuit.queue)
+        circuit_gates_info = CircuitOptimizer._get_circuit_gates_info(circuit.queue)
 
         assert circuit_gates_info == [("X", [0], {}), ("H", [1], {})]
 

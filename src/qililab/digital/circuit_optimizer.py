@@ -66,7 +66,7 @@ class CircuitOptimizer:
             list[gates.Gate]: list of the gates of the Qibo circuit, optimized.
         """
         # Initial and final circuit gates lists, from which to, one by one, after checks, pass non-cancelled gates:
-        circuit_gates_info: list[tuple] = cls._get_circuit_gates(circuit_gates)
+        circuit_gates_info: list[tuple] = cls._get_circuit_gates_info(circuit_gates)
 
         # We want to do the sweep circuit cancelling gates least once always:
         previous_circuit_gates_info = deepcopy(circuit_gates_info)
@@ -182,7 +182,7 @@ class CircuitOptimizer:
         return circuit_gates
 
     @staticmethod
-    def _get_circuit_gates(circuit_gates: list[gates.Gate]) -> list[tuple]:
+    def _get_circuit_gates_info(circuit_gates: list[gates.Gate]) -> list[tuple]:
         """Get the gates of the circuit.
 
         Args:

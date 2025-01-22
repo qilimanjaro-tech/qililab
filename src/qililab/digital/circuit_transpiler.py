@@ -16,7 +16,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import networkx as nx
 
@@ -38,17 +39,31 @@ if TYPE_CHECKING:
     from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 
-class DigitalTranspileConfig(TypedDict, total=False):
-    """Dictionary containing the transpile configuration (except for the `circuit` arg).
+@dataclass
+class DigitalTranspilationConfig:
+    """Dataclass containing the digital transpilation configuration. Used in the :meth:`.CircuitTranspiler.transpile_circuit()` method"""
 
-    Should contain the args of the :meth:`.CircuitTranspiler.transpile_circuit()` method.
-    """
+    routing: bool = False
+    """(bool, optional): Whether to route the circuit. Defaults to False."""
 
-    routing: bool
-    placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]]
-    router: Optional[Router | type[Router] | tuple[type[Router], dict]]
-    routing_iterations: int
-    optimize: bool
+    placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None
+    """(Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
+        use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``."""
+
+    router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None
+    """(Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to
+        use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``."""
+
+    routing_iterations: int = 10
+    """(int, optional): Number of times to repeat the routing pipeline, to get the best stochastic result. Defaults to 10."""
+
+    optimize: bool = False
+    """(bool, optional): Whether to optimize the circuit and/or transpilation. Defaults to False."""
+
+    @property
+    def _attributes_ordered(self) -> tuple:
+        """Returns the attributes of the dataclass in order, as a tuple."""
+        return self.routing, self.placer, self.router, self.routing_iterations, self.optimize
 
 
 class CircuitTranspiler:
@@ -60,7 +75,7 @@ class CircuitTranspiler:
 
     Args:
         settings (DigitalCompilationSettings): Object containing the Digital Compilations Settings and the info on chip's physical qubits.
-            It can be obtained from the `digital_compilation_settings` attribute of a `Platform` object.
+            It can be obtained from the :attr:`.Platform.digital_compilation_settings` attribute.
     """
 
     def __init__(self, settings: DigitalCompilationSettings):
@@ -73,11 +88,7 @@ class CircuitTranspiler:
     def transpile_circuit(
         self,
         circuit: Circuit,
-        routing: bool = False,
-        placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None,
-        router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
-        routing_iterations: int = 10,
-        optimize: bool = False,
+        transpilation_config: Optional[DigitalTranspilationConfig] = None,
     ) -> tuple[PulseSchedule, dict[str, int]]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
@@ -146,17 +157,19 @@ class CircuitTranspiler:
 
         Args:
             circuit (Circuit): Qibo circuit.
-            routing (bool, optional): whether to route the circuit. Defaults to False.
-            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
-            router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
-            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to get the best stochastic result. Defaults to 10.
-            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
+                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
+                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
             tuple[PulseSchedule, dict[str, int]]: Pulse schedule and final layouts of the qubits, in the circuit {"qI": J}.
         """
+        # Default values:
+        if transpilation_config is None:
+            transpilation_config = DigitalTranspilationConfig()
+
+        # Unpack dataclass attributes:
+        routing, placer, router, routing_iterations, optimize = transpilation_config._attributes_ordered
 
         # Routing stage;
         if routing:
