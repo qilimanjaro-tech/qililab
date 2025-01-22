@@ -62,13 +62,13 @@ class GateDecompositions:
         return [g.on_qubits(dict(enumerate(gate.qubits))) for g in decomposition]
 
 
-def translate_gates(gate_list: list[gates.Gate]) -> list[gates.Gate]:
+def translate_gates(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
     """Maps Qibo gates to a hardware native implementation (CZ, RZ, Drag, Wait and M (Measurement))
 
     Check public docstring in :meth:`.CircuitTranspiler.gates_to_native()` for more information.
 
     Args:
-        gate_list (list[gates.Gate]): list of gates to be decomposed.
+        circuit_gates (list[gates.Gate]): list of gates to be decomposed.
 
     Returns:
         list[gates.Gate]: list of native gates corresponding to input gates
@@ -78,15 +78,15 @@ def translate_gates(gate_list: list[gates.Gate]) -> list[gates.Gate]:
     supported_gates = (*native_gates(), gates.RZ, gates.M)
 
     # check which gates are native gates and if not all of them are so, translate
-    to_translate = [not isinstance(gate, supported_gates) for gate in gate_list]
+    to_translate = [not isinstance(gate, supported_gates) for gate in circuit_gates]
     new_gates = []
 
     # If no more gates to translate, finish:
     if sum(to_translate) == 0:
-        return gate_list
+        return circuit_gates
 
     # iterate through all gates
-    for gate, tt in zip(gate_list, to_translate):
+    for gate, tt in zip(circuit_gates, to_translate):
         if not tt:
             new_gates.append(gate)  # append already native gates
         # distinguish 1 or 2 qubit gates

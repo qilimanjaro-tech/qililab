@@ -160,27 +160,27 @@ class CircuitTranspiler:
 
         # Routing stage;
         if routing:
-            gate_list, final_layout, nqubits = self.route_circuit(circuit, placer, router, routing_iterations)
+            circuit_gates, final_layout, nqubits = self.route_circuit(circuit, placer, router, routing_iterations)
         else:
-            gate_list, nqubits = circuit.queue, circuit.nqubits
+            circuit_gates, nqubits = circuit.queue, circuit.nqubits
             final_layout = {f"q{i}": i for i in range(nqubits)}
 
         # Optimze qibo gates, cancelling redundant gates:
         if optimize:
-            gate_list = self.optimize_gates(gate_list)
+            circuit_gates = self.optimize_gates(circuit_gates)
 
         # Unroll to Natives gates:
-        gate_list = self.gates_to_native(gate_list)
+        circuit_gates = self.gates_to_native(circuit_gates)
 
         # Add phases from RZs and CZs to Drags:
-        gate_list = self.add_phases_from_RZs_and_CZs_to_drags(gate_list, nqubits)
+        circuit_gates = self.add_phases_from_RZs_and_CZs_to_drags(circuit_gates, nqubits)
 
         # Optimze transpiled qibo gates, cancelling redundant gates:
         if optimize:
-            gate_list = self.optimize_transpiled_gates(gate_list)
+            circuit_gates = self.optimize_transpiled_gates(circuit_gates)
 
         # Pulse schedule stage:
-        pulse_schedule = self.gates_to_pulses(gate_list)
+        pulse_schedule = self.gates_to_pulses(circuit_gates)
 
         return pulse_schedule, final_layout
 
@@ -259,7 +259,7 @@ class CircuitTranspiler:
         return circuit.queue, final_layout, circuit.nqubits
 
     @staticmethod
-    def optimize_gates(gate_list: list[gates.Gate]) -> list[gates.Gate]:
+    def optimize_gates(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
         """Main method to optimize the gates of a Quantum Circuit before unrolling to native gates.
 
         Currently only applies a cancellation for adjacent hermitian gates (H, X, Y, Z, CNOT, CZ, SWAP).
@@ -267,15 +267,15 @@ class CircuitTranspiler:
         The total optimization can/might be expanded in the future to include more complex gate optimization.
 
         Args:
-            gate_list (list[gates.Gate]): list of gates of the Qibo circuit to optimize.
+            circuit_gates (list[gates.Gate]): list of gates of the Qibo circuit to optimize.
 
         Returns:
             list[gates.Gate]: list of the gates of the Qibo circuit, optimized.
         """
-        return CircuitOptimizer.optimize_gates(gate_list)
+        return CircuitOptimizer.optimize_gates(circuit_gates)
 
     @staticmethod
-    def gates_to_native(gate_list: list[gates.Gate]) -> list[gates.Gate]:
+    def gates_to_native(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
         """Maps Qibo gates to a hardware native implementation (CZ, RZ, Drag, Wait and M (Measurement))
             - CZ gates are our 2 qubit gates
             - RZ gates are applied as virtual Z gates if optimize=True in the transpiler
@@ -284,15 +284,15 @@ class CircuitTranspiler:
             - Measurement gates measure the circuit
 
         Args:
-            gate_list (list[gates.Gate]): list of gates of the Qibo circuit, to pass to native.
+            circuit_gates (list[gates.Gate]): list of gates of the Qibo circuit, to pass to native.
 
         Returns:
             list[gates.Gate]: list of native gates of the Qibo circuit.
 
         """
-        return translate_gates(gate_list)
+        return translate_gates(circuit_gates)
 
-    def add_phases_from_RZs_and_CZs_to_drags(self, gate_list: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
+    def add_phases_from_RZs_and_CZs_to_drags(self, circuit_gates: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
         """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
 
             - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
@@ -317,15 +317,15 @@ class CircuitTranspiler:
         For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
 
         Args:
-            gate_list (list[gates.Gate]): list of native gates of the circuit, to pass phases to the Drag gates.
+            circuit_gates (list[gates.Gate]): list of native gates of the circuit, to pass phases to the Drag gates.
             nqubits (int): Number of qubits of the circuit.
 
         Returns:
             list[gates.Gate]: list of native gates of the circuit, with phases passed to the Drag gates.
         """
-        return self.optimizer.add_phases_from_RZs_and_CZs_to_drags(gate_list, nqubits)
+        return self.optimizer.add_phases_from_RZs_and_CZs_to_drags(circuit_gates, nqubits)
 
-    def optimize_transpiled_gates(self, gate_list: list[gates.Gate]) -> list[gates.Gate]:
+    def optimize_transpiled_gates(self, circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
         """Main method to optimize the gates of a Quantum Circuit after having unrolled to native gates.
 
         Currently no optimization is done, but it will be implemented soon.
@@ -333,14 +333,14 @@ class CircuitTranspiler:
         The total optimization can/might be expanded in the future to include more complex optimizations.
 
         Args:
-            gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to optimize.
+            circuit_gates (list[gates.Gate]): list of gates of the transpiled circuit, to optimize.
 
         Returns:
             list[gates.Gate]: list of gates of the transpiled circuit, optimized.
         """
-        return self.optimizer.optimize_transpiled_gates(gate_list)
+        return self.optimizer.optimize_transpiled_gates(circuit_gates)
 
-    def gates_to_pulses(self, gate_list: list[gates.Gate]) -> PulseSchedule:
+    def gates_to_pulses(self, circuit_gates: list[gates.Gate]) -> PulseSchedule:
         """Translates a Qibo circuit into its corresponding pulse sequences.
 
         For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
@@ -359,11 +359,11 @@ class CircuitTranspiler:
         time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
 
         Args:
-            gate_list (list[gates.Gate]): list of native gates of the Qibo circuit.
+            circuit_gates (list[gates.Gate]): list of native gates of the Qibo circuit.
 
         Returns:
             PulseSequences: equivalent :class:`PulseSequences` class.
         """
         circuit_to_pulses = CircuitToPulses(self.settings)
 
-        return circuit_to_pulses.run(gate_list)
+        return circuit_to_pulses.run(circuit_gates)
