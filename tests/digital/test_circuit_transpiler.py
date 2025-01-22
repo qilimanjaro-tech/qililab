@@ -15,7 +15,7 @@ from qililab.digital import CircuitTranspiler
 from qililab.digital.native_gates import Drag, Wait
 from qililab.pulse import PulseSchedule
 from qililab.settings.digital import DigitalCompilationSettings
-from qililab.digital import DigitalTranspileConfig
+from qililab.digital import DigitalTranspilationConfig
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
@@ -58,7 +58,7 @@ def random_circuit(
     nqubits: int,
     ngates: int,
     rng: np.random.Generator,
-    gates_list: list[qibo.gates.Gate] | None = None,
+    circuit_gates: list[qibo.gates.Gate] | None = None,
     exhaustive=False,
 ) -> Circuit:
     """Generates random qibo circuit with ngates
@@ -66,7 +66,7 @@ def random_circuit(
     Args:
         nqubits (int): number of qubits in the circuit
         ngates (int): number of gates in the circuit
-        gates_list (dict[gates:int]): dictionary with gates and amount of qubits where those should be applied
+        circuit_gates (dict[gates:int]): dictionary with gates and amount of qubits where those should be applied
         exhaustive (bool) : use all gates at least once (requires ngates>=len(gates))
 
     Returns:
@@ -74,23 +74,23 @@ def random_circuit(
     """
 
     # get list available gates
-    if gates_list is None:
-        gates_list = default_gates
+    if circuit_gates is None:
+        circuit_gates = default_gates
 
     # init circuit
     c = Circuit(nqubits)
 
     # get list of gates to use
     if not exhaustive:
-        list_gates = rng.choice(gates_list, ngates)
+        list_gates = rng.choice(circuit_gates, ngates)
     # if exhaustive = True then add all the gates available
     else:
-        if ngates < len(gates_list):
-            raise ValueError("If exhaustive is set to True then ngates must be bigger than len(gates_list)!")
+        if ngates < len(circuit_gates):
+            raise ValueError("If exhaustive is set to True then ngates must be bigger than len(circuit_gates)!")
         list_gates = []
-        for _ in range(ngates // len(gates_list)):
-            list_gates.extend(gates_list)
-        list_gates.extend(rng.choice(gates_list, ngates % len(gates_list), replace=False))
+        for _ in range(ngates // len(circuit_gates)):
+            list_gates.extend(circuit_gates)
+        list_gates.extend(rng.choice(circuit_gates, ngates % len(circuit_gates), replace=False))
         rng.shuffle(list_gates)
 
     # add gates iteratively
@@ -492,20 +492,20 @@ class TestCircuitTranspiler:
                 nqubits=nqubits,
                 ngates=len(default_gates),
                 rng=rng,
-                gates_list=None,
+                circuit_gates=None,
                 exhaustive=True,
             )
 
-            c2_list = transpiler.gates_to_native(c1.queue)
+            c2_native_gates = transpiler.gates_to_native(c1.queue)
 
             # check that both c1, c2 are qibo.Circuit
             assert isinstance(c1, Circuit)
-            assert isinstance(c2_list, list)
-            assert isinstance(c2_list[0], gates.Gate)
+            assert isinstance(c2_native_gates, list)
+            assert isinstance(c2_native_gates[0], gates.Gate)
 
             # Build circuit for comparison:
             c2 = Circuit(nqubits)
-            [c2.add(gate) for gate in c2_list]
+            [c2.add(gate) for gate in c2_native_gates]
 
             # check that states are equivalent up to a global phase
             assert np.allclose(1, compare_circuits(c1, c2, nqubits))
@@ -520,18 +520,18 @@ class TestCircuitTranspiler:
                 nqubits=nqubits,
                 ngates=len(default_gates),
                 rng=rng,
-                gates_list=None,
+                circuit_gates=None,
                 exhaustive=True,
             )
-            c2_list = transpiler.gates_to_native(c1.queue)
+            c2_native_gates = transpiler.gates_to_native(c1.queue)
             # check that both c1, c2 are qibo.Circuit
             assert isinstance(c1, Circuit)
-            assert isinstance(c2_list, list)
-            assert isinstance(c2_list[0], gates.Gate)
+            assert isinstance(c2_native_gates, list)
+            assert isinstance(c2_native_gates[0], gates.Gate)
 
             # Build circuit for comparison:
             c2 = Circuit(nqubits)
-            [c2.add(gate) for gate in c2_list]
+            [c2.add(gate) for gate in c2_native_gates]
 
             # check that states have the same absolute coefficients
             z1_exp, z2_exp = compare_exp_z(c1, c2, nqubits)
@@ -661,11 +661,13 @@ class TestCircuitTranspiler:
         placer = MagicMock()
         router = MagicMock()
         routing_iterations = 7
+        routing=True
+        transpilation_config = DigitalTranspilationConfig(routing=routing, optimize=optimize, router=router, placer=placer, routing_iterations=routing_iterations)
 
         # Mock circuit for return values
         mock_circuit = Circuit(5)
         mock_circuit.add(Drag(0, 2*np.pi, np.pi))
-        mock_gate_list = mock_circuit.queue
+        mock_circuit_gates = mock_circuit.queue
 
         # Mock layout for return values
         mock_layout = {0: 0, 1: 2, 2: 1, 3: 3, 4: 4}
@@ -675,36 +677,35 @@ class TestCircuitTranspiler:
 
         # Mock the return values
         mock_route.return_value = mock_circuit.queue, mock_layout, mock_circuit.nqubits
-        mock_opt_circuit.return_value = mock_gate_list
-        mock_to_native.return_value = mock_gate_list
-        mock_add_phases.return_value = mock_gate_list
-        mock_opt_trans.return_value = mock_gate_list
+        mock_opt_circuit.return_value = mock_circuit_gates
+        mock_to_native.return_value = mock_circuit_gates
+        mock_add_phases.return_value = mock_circuit_gates
+        mock_opt_trans.return_value = mock_circuit_gates
         mock_to_pulses.return_value = mock_schedule
 
         circuit = random_circuit(5, 10, np.random.default_rng())
-        routing = True
 
-        schedule, layout = transpiler.transpile_circuit(circuit, routing, placer, router, routing_iterations, optimize=optimize)
+        schedule, layout = transpiler.transpile_circuit(circuit, transpilation_config)
 
         # Mandatory asserts in order:
         mock_route.assert_called_once_with(circuit, placer, router, routing_iterations)
         mock_to_native.assert_called_once_with(mock_circuit.queue)
-        mock_add_phases.assert_called_once_with(mock_gate_list, mock_circuit.nqubits)
-        mock_to_pulses.assert_called_once_with(mock_gate_list)
+        mock_add_phases.assert_called_once_with(mock_circuit_gates, mock_circuit.nqubits)
+        mock_to_pulses.assert_called_once_with(mock_circuit_gates)
         assert (schedule, layout) == (mock_schedule, mock_layout)
 
         # Asserts if optimize=True:
         if optimize:
-            mock_opt_circuit.assert_called_once_with(mock_gate_list)
-            mock_opt_trans.assert_called_once_with(mock_gate_list)
+            mock_opt_circuit.assert_called_once_with(mock_circuit_gates)
+            mock_opt_trans.assert_called_once_with(mock_circuit_gates)
         else:
             mock_opt_circuit.assert_not_called()
             mock_opt_trans.assert_not_called()
 
         # If routing skipped:
-        routing = False
+        transpilation_config.routing = False
         mock_route.reset_mock()
-        _, _ = transpiler.transpile_circuit(circuit, routing, placer, router, routing_iterations, optimize=optimize)
+        _, _ = transpiler.transpile_circuit(circuit, transpilation_config)
         mock_route.assert_not_called()
 
     @patch("qililab.digital.circuit_router.CircuitRouter.route")
@@ -720,11 +721,11 @@ class TestCircuitTranspiler:
         mock_route.return_value = (mock_circuit, mock_layout)
 
         # Execute the function
-        gate_list, layout, nqubits = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        circuit_gates, layout, nqubits = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
 
         # Asserts:
         mock_route.assert_called_once_with(mock_circuit, routing_iterations)
-        assert (gate_list, layout, nqubits) == (mock_circuit.queue, mock_layout, mock_circuit.nqubits)
+        assert (circuit_gates, layout, nqubits) == (mock_circuit.queue, mock_layout, mock_circuit.nqubits)
 
     @patch("qililab.digital.circuit_transpiler.nx.Graph")
     @patch("qililab.digital.circuit_transpiler.CircuitRouter")
@@ -748,9 +749,7 @@ class TestCircuitTranspiler:
         mock_router.assert_called_once_with(graph_mocking, None, None)
 
     def test_DigitalTranspilerConfig(self):
-        """Test that the class contains the same arguments as the CircuitTranspiler.transpile_circuit method, with their typings (Except for the circuit argument, which is not included in the DigitalTranspileConfig)
+        """Test that the dataclass default values are correct, and that properies give the correct order
         """
-        for arg, arg_type in CircuitTranspiler.transpile_circuit.__annotations__.items():
-            if arg not in ["circuit", "return"]:
-                assert arg in DigitalTranspileConfig.__annotations__
-                assert arg_type == DigitalTranspileConfig.__annotations__[arg].__forward_arg__
+        tc = DigitalTranspilationConfig()
+        assert tc._attributes_ordered == (False, None, None, 10, False)
