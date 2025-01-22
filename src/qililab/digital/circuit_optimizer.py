@@ -77,10 +77,10 @@ class CircuitOptimizer:
         # And then keep iterating, sweeping over the circuit (cancelling gates) each time, until there is full sweep without any cancellations:
         while new_gates_info != old_gates_info:
             old_gates_info = deepcopy(new_gates_info)
-            new_circuit_gates_info = CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates(new_gates_info)
+            new_gates_info = CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates(new_gates_info)
 
         # Create optimized circuit, from the obtained non-cancelled list:
-        return CircuitOptimizer._create_circuit_circuit_gates(new_circuit_gates_info)
+        return CircuitOptimizer._create_circuit_circuit_gates(new_gates_info)
 
     def add_phases_from_RZs_and_CZs_to_drags(self, circuit_gates: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
         """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
