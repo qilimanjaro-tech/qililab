@@ -150,9 +150,8 @@ class CircuitOptimizer:
             list[gates.Gate]: list of gates of the transpiled circuit, optimized.
         """
         # Add more optimizations of the transpiled circuit here:
-        circuit_gates = CircuitOptimizer.bunch_drag_gates(
-            circuit_gates
-        )  # TODO: Add bunching of Drag Gates for diff phis!
+        circuit_gates = CircuitOptimizer.bunch_drag_gates(circuit_gates)
+        # TODO: Add bunching of Drag Gates for diff phis!
         circuit_gates = CircuitOptimizer.normalize_angles_of_drags(circuit_gates)
         circuit_gates = CircuitOptimizer.delete_gates_with_no_amplitude(circuit_gates)
         return circuit_gates
