@@ -569,15 +569,15 @@ class TestMethods:
         self._compile_and_assert(platform, pulse_schedule, 2)
 
     def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize:bool = False):
-        sequences, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1, transpilation_config=DigitalTranspilationConfig(optimize=optimize))
-        assert isinstance(sequences, dict)
+        sequences_w_alias, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1, transpilation_config=DigitalTranspilationConfig(optimize=optimize))
+        assert isinstance(sequences_w_alias, dict)
         if not optimize:
-            assert len(sequences) == len_sequences
-        for alias, sequences_list in sequences.items():
+            assert len(sequences_w_alias) == len_sequences
+        for alias, sequences in sequences_w_alias.items():
             assert alias in {bus.alias for bus in platform.buses}
-            assert isinstance(sequences_list, list)
-            assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
-            assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
+            assert isinstance(sequences, list)
+            assert all(isinstance(sequence, Sequence) for sequence in sequences)
+            assert sequences[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
     @pytest.mark.parametrize(
         "qprogram_fixture, calibration_fixture",
