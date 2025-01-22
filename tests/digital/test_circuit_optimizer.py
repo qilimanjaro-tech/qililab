@@ -1,6 +1,8 @@
+import re
 from unittest.mock import patch
 import numpy as np
 from qibo import Circuit, gates
+import pytest
 
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.native_gates import Drag
@@ -126,3 +128,119 @@ class TestCircuitOptimizerUnit:
 
         qubits = CircuitOptimizer._extract_qubits(0)
         assert qubits == [0]
+
+    def test_merge_consecutive_drags_diff_qubits(self):
+        """Test merge drag gates, with incorrect input."""
+        drag_1 = Drag(0, theta=np.pi, phase=np.pi / 2)
+        drag_2 = Drag(1, theta=np.pi, phase=np.pi / 2)
+
+        optimizer = CircuitOptimizer(None)
+        with pytest.raises(ValueError, match=re.escape("Cannot merge Drag gates acting on different qubits.")):
+            _ = optimizer.merge_consecutive_drags(drag_1, drag_2)
+
+    def test_merge_consecutive_drags_same_phis(self):
+        """Test merge drag gates."""
+        drag_1 = Drag(0, theta=np.pi, phase=np.pi / 2)
+        drag_2 = Drag(0, theta=np.pi, phase=np.pi / 2)
+
+        optimizer = CircuitOptimizer(None)
+        final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2)
+
+        assert isinstance(final_drag, Drag)
+        assert final_drag.parameters == (2 * np.pi, np.pi / 2)
+
+    def test_merge_consecutive_drags_diff_phis(self):
+        """Test merge drag gates."""
+        drag_1 = Drag(0, theta=np.pi, phase=np.pi / 2)
+        drag_2 = Drag(0, theta=np.pi, phase=np.pi)
+
+        optimizer = CircuitOptimizer(None)
+        final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2)
+
+        assert final_drag is None
+
+
+    def test_bunch_drag_gates_only_same_phis(self):
+        """Test bunch drag gates."""
+        circuit = Circuit(2)
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi))
+        circuit.add(gates.RX(1, theta=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
+
+
+        optimizer = CircuitOptimizer(None)
+        gate_list = optimizer.bunch_drag_gates(circuit.queue)
+
+        assert len(gate_list) == 5
+
+        assert isinstance(gate_list[0], Drag)
+        assert gate_list[0].parameters == (3 * np.pi, np.pi / 2)
+
+        assert isinstance(gate_list[1], Drag)
+        assert gate_list[1].parameters == (2 * np.pi, np.pi / 2)
+
+        assert isinstance(gate_list[2], Drag)
+        assert gate_list[2].parameters == (np.pi, np.pi)
+
+        assert isinstance(gate_list[3], gates.RX)
+
+        assert isinstance(gate_list[4], Drag)
+        assert gate_list[4].parameters == (np.pi, np.pi / 2)
+
+    def test_bunch_drag_gates_diff_phis(self):
+        """Test bunch drag gates."""
+        circuit = Circuit(2)
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi))
+
+        optimizer = CircuitOptimizer(None)
+        gate_list = optimizer.bunch_drag_gates(circuit.queue)
+
+        assert gate_list == circuit.queue
+
+    def test_delete_gates_with_no_amplitude(self):
+        """Test delete gates with no amplitude."""
+        circuit = Circuit(2)
+        circuit.add(Drag(0, theta=0, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+
+        gate_list = CircuitOptimizer.delete_gates_with_no_amplitude(circuit.queue)
+
+        assert len(gate_list) == 1
+        assert isinstance(gate_list[0], Drag)
+        assert gate_list[0].parameters == (np.pi, np.pi / 2)
+
+    def test_normalize_angles_of_drags(self):
+        """Test normalize angles of drags."""
+        circuit = Circuit(2)
+        circuit.add(Drag(0, theta=3 * np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=2 * np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=2*np.pi))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+
+        gate_list = CircuitOptimizer.normalize_angles_of_drags(circuit.queue)
+
+        assert len(gate_list) == 6
+        assert [gate.parameters for gate in gate_list] == [
+            (np.pi, np.pi / 2),
+            (0, np.pi / 2),
+            (np.pi, 0),
+            (np.pi, np.pi / 2),
+            (np.pi, np.pi / 2),
+            (np.pi, np.pi / 2),
+        ]
+
+    def test_normalize_angle(self):
+        """Test normalize angle."""
+        assert CircuitOptimizer._normalize_angle(3 * np.pi) == np.pi
+        assert CircuitOptimizer._normalize_angle(2 * np.pi) == 0
+        assert CircuitOptimizer._normalize_angle(3/2 * np.pi) == - np.pi/2
+        assert CircuitOptimizer._normalize_angle(np.pi) == np.pi
+        assert CircuitOptimizer._normalize_angle(np.pi / 2) == np.pi / 2

@@ -16,7 +16,6 @@
 - Enable square waveforms optimization for Qblox.
 [#874](https://github.com/qilimanjaro-tech/qililab/pull/874)
 
-
 ### Improvements
 
 - Updated qm-qua to stable version 1.2.1. And close other machines has been set to True as now it closes only stated ports.
@@ -31,6 +30,13 @@
   - Improve documentation on transpilation, simplifying it in `execute()`'s, and creating Transpilation new section.
 
   [#862](https://github.com/qilimanjaro-tech/qililab/pull/862)
+
+- Added optimizations for Digital Transpilation for Native gates:
+
+  - Make bunching of consecutive Drag Gates, with same phi's
+  - Make the deletion of gates with no amplitude
+
+  [#863](https://github.com/qilimanjaro-tech/qililab/pull/863)
 
 ### Breaking changes
 
