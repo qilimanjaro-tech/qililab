@@ -752,4 +752,4 @@ class TestCircuitTranspiler:
         """Test that the dataclass default values are correct, and that properies give the correct order
         """
         tc = DigitalTranspilationConfig()
-        assert tc.attributes_ordered == (False, None, None, 10, False)
+        assert tc._attributes_ordered == (False, None, None, 10, False)
