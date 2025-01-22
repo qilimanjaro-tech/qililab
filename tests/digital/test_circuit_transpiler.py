@@ -702,11 +702,19 @@ class TestCircuitTranspiler:
             mock_opt_circuit.assert_not_called()
             mock_opt_trans.assert_not_called()
 
-        # If routing skipped:
-        transpilation_config.routing = False
-        mock_route.reset_mock()
-        _, _ = transpiler.transpile_circuit(circuit, transpilation_config)
-        mock_route.assert_not_called()
+            # Test if routing skipped:
+            transpilation_config.routing = False
+            mock_route.reset_mock()
+            _, _ = transpiler.transpile_circuit(circuit, transpilation_config)
+            mock_route.assert_not_called()
+
+            # Test if no config is provided:
+            mock_route.reset_mock()
+            _, _ = transpiler.transpile_circuit(circuit)
+            mock_route.assert_not_called()
+            mock_opt_circuit.assert_not_called()
+            mock_opt_trans.assert_not_called()
+
 
     @patch("qililab.digital.circuit_router.CircuitRouter.route")
     def test_route_circuit(self, mock_route, digital_settings):

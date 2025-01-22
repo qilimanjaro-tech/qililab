@@ -14,6 +14,7 @@
 
 """File containing the supported native gates."""
 
+import numpy as np
 from qibo.gates.abstract import ParametrizedGate
 from qibo.gates.gates import _Un_
 
@@ -75,3 +76,15 @@ class Wait(ParametrizedGate):
         self.parameters = t
         self.init_args = [q]
         self.init_kwargs = {"t": t}
+
+
+def normalize_angle(angle: float):
+    """Normalizes angle in range [-pi, pi].
+
+    Args:
+        angle (float): Normalized angle.
+    """
+    angle %= 2 * np.pi
+    if angle > np.pi:
+        angle -= 2 * np.pi
+    return angle

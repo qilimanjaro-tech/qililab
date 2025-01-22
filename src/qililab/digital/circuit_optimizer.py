@@ -22,7 +22,7 @@ from qibo import gates
 from qililab import digital
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
-from .native_gates import Drag
+from .native_gates import Drag, normalize_angle
 
 
 class CircuitOptimizer:
@@ -150,8 +150,8 @@ class CircuitOptimizer:
             list[gates.Gate]: list of gates of the transpiled circuit, optimized.
         """
         # Add more optimizations of the transpiled circuit here:
+        circuit_gates = CircuitOptimizer.bunch_drag_gates(circuit_gates)
         # TODO: Add bunching of Drag Gates for diff phis!
-        circuit_gates = CircuitOptimizer.bunch_drag_gates(circuit_gates)  
         circuit_gates = CircuitOptimizer.normalize_angles_of_drags(circuit_gates)
         circuit_gates = CircuitOptimizer.delete_gates_with_no_amplitude(circuit_gates)
         return circuit_gates
@@ -246,8 +246,8 @@ class CircuitOptimizer:
         for gate in circuit_gates:
             if isinstance(gate, Drag):
                 gate.parameters = (
-                    CircuitOptimizer._normalize_angle(gate.parameters[0]),
-                    CircuitOptimizer._normalize_angle(gate.parameters[1]),
+                    normalize_angle(gate.parameters[0]),
+                    normalize_angle(gate.parameters[1]),
                 )
         return circuit_gates
 
