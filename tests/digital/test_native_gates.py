@@ -1,6 +1,6 @@
 import numpy as np
 
-from qililab.digital.native_gates import Drag
+from qililab.digital.native_gates import Drag, normalize_angle
 
 
 def test_native_gates_drag():
@@ -23,3 +23,11 @@ def test_native_gates_drag():
         drag_gate = Drag(qubit, theta, phi)  # initialize gate
         assert drag_gate.parameters == (theta, phi)
         assert drag_gate.qubits == qubit
+
+def test_normalize_angle():
+    """Test normalize angle."""
+    assert normalize_angle(3 * np.pi) == np.pi
+    assert normalize_angle(2 * np.pi) == 0
+    assert normalize_angle(3/2 * np.pi) == - np.pi/2
+    assert normalize_angle(np.pi) == np.pi
+    assert normalize_angle(np.pi / 2) == np.pi / 2

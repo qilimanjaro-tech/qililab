@@ -20,6 +20,7 @@ import numpy as np
 from qibo import gates
 
 from qililab.constants import RUNCARD
+from qililab.digital.native_gates import normalize_angle
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
@@ -131,27 +132,15 @@ class CircuitToPulses:
         drag_schedule = GateEventSettings(
             **asdict(gate_schedule[0])
         )  # make new object so that gate_schedule is not overwritten
-        theta = self._normalize_angle(angle=gate.parameters[0])
+        theta = normalize_angle(angle=gate.parameters[0])
         amplitude = drag_schedule.pulse.amplitude * theta / np.pi
-        phase = self._normalize_angle(angle=gate.parameters[1])
+        phase = normalize_angle(angle=gate.parameters[1])
         if amplitude < 0:
             amplitude = -amplitude
-            phase = self._normalize_angle(angle=gate.parameters[1] + np.pi)
+            phase = normalize_angle(angle=gate.parameters[1] + np.pi)
         drag_schedule.pulse.amplitude = amplitude
         drag_schedule.pulse.phase = phase
         return [drag_schedule]
-
-    @staticmethod
-    def _normalize_angle(angle: float):
-        """Normalizes angle in range [-pi, pi].
-
-        Args:
-            angle (float): Normalized angle.
-        """
-        angle %= 2 * np.pi
-        if angle > np.pi:
-            angle -= 2 * np.pi
-        return angle
 
     @staticmethod
     def _get_total_schedule_duration(schedule: list[GateEventSettings]) -> int:

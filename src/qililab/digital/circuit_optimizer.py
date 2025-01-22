@@ -22,7 +22,7 @@ from qibo import gates
 from qililab import digital
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
-from .native_gates import Drag
+from .native_gates import Drag, normalize_angle
 
 
 class CircuitOptimizer:
@@ -247,22 +247,10 @@ class CircuitOptimizer:
         for gate in circuit_gates:
             if isinstance(gate, Drag):
                 gate.parameters = (
-                    CircuitOptimizer._normalize_angle(gate.parameters[0]),
-                    CircuitOptimizer._normalize_angle(gate.parameters[1]),
+                    normalize_angle(gate.parameters[0]),
+                    normalize_angle(gate.parameters[1]),
                 )
         return circuit_gates
-
-    @staticmethod
-    def _normalize_angle(angle: float):
-        """Normalizes angle in range [-pi, pi].
-
-        Args:
-            angle (float): Normalized angle.
-        """
-        angle %= 2 * np.pi
-        if angle > np.pi:
-            angle -= 2 * np.pi
-        return angle
 
     @staticmethod
     def _get_circuit_gates_info(circuit_gates: list[gates.Gate]) -> list[tuple]:
