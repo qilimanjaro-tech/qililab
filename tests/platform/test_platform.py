@@ -14,6 +14,7 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
+from qililab.digital.circuit_transpiler import DigitalTranspilationConfig
 from tests.data import Galadriel, SauronQuantumMachines
 from tests.test_utils import build_platform
 
@@ -567,7 +568,7 @@ class TestMethods:
         self._compile_and_assert(platform, pulse_schedule, 2)
 
     def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize:bool = False):
-        sequences, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1, transpile_config={"optimize": optimize})
+        sequences, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1, transpilation_config=DigitalTranspilationConfig(optimize=optimize))
         assert isinstance(sequences, dict)
         if not optimize:
             assert len(sequences) == len_sequences
