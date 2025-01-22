@@ -188,13 +188,13 @@ class CalibrationNode:
                 circuit = ...
 
                 # Loop over the sweeps executing the platform:
-                results_list = []
+                results = []
                 for X in sweep_interval:
                     platform.set_parameter(alias=alias, parameter=ql.Parameter.X, value=X)
                     result = platform.execute(program=circuit, num_avg=hw_avg, repetition_duration=repetition_duration)
-                    results_list.append(result.array)
+                    results.append(result.array)
 
-                results = np.hstack(results_list)
+                results = np.hstack(results)
 
         |
 
@@ -490,10 +490,10 @@ class CalibrationNode:
         distinguish_str = f"_{self.node_distinguisher!s}" if self.node_distinguisher is not None else ""
 
         # Remove .ipynb from end if it has one, and separate the folder and name with the last "/":
-        path_list = original_path.split(".ipynb")[0].split("/")
+        split_path = original_path.split(".ipynb")[0].split("/")
 
-        name = path_list.pop() + distinguish_str + qubit_str
-        folder_path = "/".join(path_list)
+        name = split_path.pop() + distinguish_str + qubit_str
+        folder_path = "/".join(split_path)
         return name, folder_path
 
     def get_last_calibrated_timestamp(self) -> float | None:
