@@ -710,7 +710,7 @@ class TestCircuitTranspiler:
 
             # Test if no config is provided:
             mock_route.reset_mock()
-            _, _ = transpiler.transpile_circuit(circuit, transpilation_config)
+            _, _ = transpiler.transpile_circuit(circuit)
             mock_route.assert_not_called()
             mock_opt_circuit.assert_not_called()
             mock_opt_trans.assert_not_called()
