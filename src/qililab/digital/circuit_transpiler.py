@@ -81,27 +81,28 @@ class CircuitTranspiler:
     ) -> tuple[PulseSchedule, dict[str, int]]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
-        The process involves the following steps:
+        The process involves the following steps (by default only: **3.**, **4**., and **6.** run):
 
-        1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpile_config`` if provided; otherwise, default values are applied. Refer to the :meth:`.CircuitTranspiler.route_circuit()` method for more information.
 
-        2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs). Refer to the :meth:`.CircuitTranspiler.optimize_gates()` method for more information.
+        1. **Routing and Placement:** Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters if provided; otherwise, default values are applied. Refer to the :meth:`.CircuitTranspiler.route_circuit()` method for more information.
 
-        3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)). Refer to the :meth:`.CircuitTranspiler.gates_to_native()` method for more information.
+        2. **1st Optimization:** Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs). Refer to the :meth:`.CircuitTranspiler.optimize_gates()` method for more information.
 
-        4. Adding phases to our Drag gates, due to commuting RZ gates until the end of the circuit to discard them as virtual Z gates, and due to the phase corrections from CZ. Refer to the :meth:`.CircuitTranspiler.add_phases_from_RZs_and_CZs_to_drags()` method for more information.
+        3. **Native Gate Translation:** Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)). Refer to the :meth:`.CircuitTranspiler.gates_to_native()` method for more information.
 
-        5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one. Refer to the :meth:`.CircuitTranspiler.optimize_transpiled_gates()` method for more information.
+        4. **Adding phases to our Drag gates:** commuting RZ gates until the end of the circuit to discard them as virtual Z gates, and due to the phase corrections from CZ. Refer to the :meth:`.CircuitTranspiler.add_phases_from_RZs_and_CZs_to_drags()` method for more information.
 
-        6. Pulse Schedule Conversion: Converts the native gates into a pulse schedule using calibrated settings from the runcard. Refer to the :meth:`.CircuitTranspiler.gates_to_pulses()` method for more information.
+        5. **2nd Optimization:** Optimizing the resulting Drag gates, by combining multiple pulses into a single one. Refer to the :meth:`.CircuitTranspiler.optimize_transpiled_gates()` method for more information.
+
+        6. **Pulse Schedule Conversion:** Converts the native gates into a pulse schedule using calibrated settings from the runcard. Refer to the :meth:`.CircuitTranspiler.gates_to_pulses()` method for more information.
 
         .. note::
 
-            \\*) If ``routing=False`` (default behavior), step 1. is skipped.
+            Default steps are only: **3.**, **4**., and **6.**, since they are always needed.
 
-            \\**) If ``optimize=False`` (default behavior), steps 2. and 5. are skipped.
+            To do Step **1.** set ``routing=True`` (default behavior skips it).
 
-            The rest of steps are always done.
+            To do Steps **2.** and **5.** set ``optimize=True`` (default behavior skips it).
 
         **Examples:**
 

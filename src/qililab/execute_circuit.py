@@ -36,14 +36,17 @@ def execute(
     The ``program`` argument is first translated into pulses using the transpilation settings of the runcard and the passed transpile
     configuration. Then the pulse will be compiled into the runcard machines assembly programs, and executed.
 
-    The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
-    1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
+    The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
+
+    The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
 
     .. note ::
 
-        \\*) `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
+        Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
 
-        \\**) `2.` and `5.` are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
+        To do Step **1.** set routing=True in transpile_config (default behavior skips it).
+
+        To do Steps **2.** and **5.** set optimize=True in transpile_config (default behavior skips it)
 
     Args:
         circuit (Circuit | list[Circuit]): Qibo Circuit.
