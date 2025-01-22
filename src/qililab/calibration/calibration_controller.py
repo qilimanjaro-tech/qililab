@@ -376,21 +376,6 @@ class CalibrationController:
 
         return q1_df, q2_df
 
-    @staticmethod
-    def _get_qubit_from_node(node) -> str:
-        """Retrieves the qubit from the node_id.
-
-        Args:
-            node (CalibrationNode): The node from which the qubit needs to be retrieved.
-
-        Returns:
-            str: The qubit corresponding to the node.
-        """
-        qubits: list = node.node_id.split("_")
-        return "_".join(
-            [i for i in qubits if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
-        ).replace("q", "-")[1:]
-
     def _create_empty_dataframes(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Creates the structure of the dataframe for the qubits table.
 
@@ -413,6 +398,21 @@ class CalibrationController:
         df_q2.index.name = "qubit"
 
         return df_q1, df_q2
+
+    @staticmethod
+    def _get_qubit_from_node(node) -> str:
+        """Retrieves the qubit from the node_id.
+
+        Args:
+            node (CalibrationNode): The node from which the qubit needs to be retrieved.
+
+        Returns:
+            str: The qubit corresponding to the node.
+        """
+        qubits: list = node.node_id.split("_")
+        return "_".join(
+            [i for i in qubits if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
+        ).replace("q", "-")[1:]
 
     @staticmethod
     def _get_idx_and_columns(node: CalibrationNode, qubit: str, idx: list, col: list) -> tuple[list, list]:
