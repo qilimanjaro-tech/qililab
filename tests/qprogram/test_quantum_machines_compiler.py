@@ -182,7 +182,8 @@ def fixture_measure_operation_with_average() -> QProgram:
     weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
     qp = QProgram()
     with qp.average(shots=1000):
-        qp.measure(bus="readout", waveform=drag_wf, weights=weights)
+        with qp.average(shots=1000):
+            qp.measure(bus="readout", waveform=drag_wf, weights=weights)
 
     return qp
 
