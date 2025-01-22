@@ -72,7 +72,7 @@ if TYPE_CHECKING:
 
     from qpysequence import Sequence as QpySequence
 
-    from qililab.digital.circuit_transpiler import DigitalTranspileConfig
+    from qililab.digital.circuit_transpiler import DigitalTranspilationConfig
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result
@@ -986,7 +986,7 @@ class Platform:
         repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
-        transpile_config: Optional[DigitalTranspileConfig] = None,
+        transpilation_config: Optional[DigitalTranspilationConfig] = None,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -995,14 +995,17 @@ class Platform:
 
         To compile to assembly programs, the ``platform.compile()`` method is called; check its documentation for more information.
 
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
-        1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
+        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
+
+        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
 
         .. note ::
 
-            \\*) `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
+            Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
 
-            \\**) `2.` and `5.` are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
+            To do Step **1.** set routing=True in transpilation_config (default behavior skips it).
+
+            To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
 
         Args:
             program (``PulseSchedule`` | ``Circuit``): Circuit or pulse schedule to execute.
@@ -1010,10 +1013,9 @@ class Platform:
             repetition_duration (int): Minimum duration of a single execution. Defaults to 200_000.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            transpile_config (DigitalTranspileConfig, optional): :class:`.DigitalTranspileConfig` TypedDict containing
-                the Kwargs (except ``circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()` method.
-                Contains the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
-                Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
+            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
+                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
+                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
@@ -1033,7 +1035,7 @@ class Platform:
             from qibo import gates, Circuit
             from qibo.transpiler import ReverseTraversal, Sabre
             from qililab import build_platform
-            from qililab.digital import DigitalTranspileConfig
+            from qililab.digital import DigitalTranspilationConfig
 
             # Create circuit:
             c = Circuit(5)
@@ -1041,13 +1043,13 @@ class Platform:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            transpilation = DigitalTranspileConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
+            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
             # Execute with automatic transpilation:
-            result = platform.execute(c, num_avg=1000, transpile_config=transpilation)
+            result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
         """
         # Compile pulse schedule
-        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpile_config)
+        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpilation_config)
 
         # Upload pulse schedule
         for bus_alias in programs:
@@ -1138,34 +1140,37 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        transpile_config: Optional[DigitalTranspileConfig] = None,
+        transpilation_config: Optional[DigitalTranspilationConfig] = None,
     ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
         settings of the platform and passed  transpile configuration. Then the pulse schedules will be compiled into the assembly programs.
 
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information. The main stages of this process are:
-        1. \\*)Routing, 2. \\**)Canceling Hermitian pairs, 3. Translate to native gates, 4. Commute virtual RZ & adding CZ phase corrections, 5. \\**)Optimize Drag gates, 6. Convert to pulse schedule.
+        .. note::
+
+            Compile is called during ``platform.execute()``, check its documentation for more information.
+
+        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
+
+        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
 
         .. note ::
 
-            \\*) `1.` is done only if ``routing=True`` is passed in ``transpile_config``. Otherwise its skipped.
+            Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
 
-            \\**) `2.` and `5.` are done only if ``optimize=True`` is passed in ``transpile_config``. Otherwise its skipped.
+            To do Step **1.** set routing=True in transpilation_config (default behavior skips it).
 
-        .. note::
-            This method is called during the ``platform.execute()`` method, check its documentation for more information.
+            To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
 
         Args:
             program (PulseSchedule | Circuit): Circuit or pulse schedule to compile.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            transpile_config (DigitalTranspileConfig, optional): :class:`.DigitalTranspileConfig` TypedDict containing
-                the Kwargs (except ``circuit``) passed to the :meth:`.CircuitTranspiler.transpile_circuit()` method.
-                Contains the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
-                Check the ``transpile_circuit()`` method documentation for the keys and values it can contain.
+            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
+                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
+                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
             tuple[dict, dict[str, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {"qX":Y}.
@@ -1179,7 +1184,7 @@ class Platform:
 
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
-            pulse_schedule, final_layout = transpiler.transpile_circuit(program, **(transpile_config or {}))
+            pulse_schedule, final_layout = transpiler.transpile_circuit(program, transpilation_config)
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program

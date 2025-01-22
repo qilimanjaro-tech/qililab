@@ -43,13 +43,13 @@ class CircuitToPulses:
         self.settings: DigitalCompilationSettings = settings
         """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
-    def run(self, gate_list: list[gates.Gate]) -> PulseSchedule:
+    def run(self, circuit_gates: list[gates.Gate]) -> PulseSchedule:
         """Translates a Qibo circuit into its corresponding pulse sequences.
 
         Check public docstring in :meth:`.CircuitTranspiler.gates_to_pulses()` for more information.
 
         Args:
-            gate_list (list[gates.Gate]): list of native gates of the qibo circuit.
+            circuit_gates (list[gates.Gate]): list of native gates of the qibo circuit.
 
         Returns:
             PulseSequences: equivalent :class:`PulseSequences` class.
@@ -57,7 +57,7 @@ class CircuitToPulses:
 
         pulse_schedule: PulseSchedule = PulseSchedule()
         time: dict[int, int] = {}  # init/restart time
-        for gate in gate_list:
+        for gate in circuit_gates:
             # handle wait gates
             if isinstance(gate, Wait):
                 self._update_time(time=time, qubit=gate.qubits[0], gate_time=gate.parameters[0])

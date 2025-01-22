@@ -16,7 +16,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import networkx as nx
 
@@ -38,17 +39,31 @@ if TYPE_CHECKING:
     from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 
-class DigitalTranspileConfig(TypedDict, total=False):
-    """Dictionary containing the transpile configuration (except for the `circuit` arg).
+@dataclass
+class DigitalTranspilationConfig:
+    """Dataclass containing the digital transpilation configuration. Used in the :meth:`.CircuitTranspiler.transpile_circuit()` method"""
 
-    Should contain the args of the :meth:`.CircuitTranspiler.transpile_circuit()` method.
-    """
+    routing: bool = False
+    """(bool, optional): Whether to route the circuit. Defaults to False."""
 
-    routing: bool
-    placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]]
-    router: Optional[Router | type[Router] | tuple[type[Router], dict]]
-    routing_iterations: int
-    optimize: bool
+    placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None
+    """(Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
+        use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``."""
+
+    router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None
+    """(Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to
+        use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``."""
+
+    routing_iterations: int = 10
+    """(int, optional): Number of times to repeat the routing pipeline, to get the best stochastic result. Defaults to 10."""
+
+    optimize: bool = False
+    """(bool, optional): Whether to optimize the circuit and/or transpilation. Defaults to False."""
+
+    @property
+    def _attributes_ordered(self) -> tuple:
+        """Returns the attributes of the dataclass in order, as a tuple."""
+        return self.routing, self.placer, self.router, self.routing_iterations, self.optimize
 
 
 class CircuitTranspiler:
@@ -60,7 +75,7 @@ class CircuitTranspiler:
 
     Args:
         settings (DigitalCompilationSettings): Object containing the Digital Compilations Settings and the info on chip's physical qubits.
-            It can be obtained from the `digital_compilation_settings` attribute of a `Platform` object.
+            It can be obtained from the :attr:`.Platform.digital_compilation_settings` attribute.
     """
 
     def __init__(self, settings: DigitalCompilationSettings):
@@ -73,35 +88,32 @@ class CircuitTranspiler:
     def transpile_circuit(
         self,
         circuit: Circuit,
-        routing: bool = False,
-        placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None,
-        router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
-        routing_iterations: int = 10,
-        optimize: bool = False,
+        transpilation_config: Optional[DigitalTranspilationConfig] = None,
     ) -> tuple[PulseSchedule, dict[str, int]]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
-        The process involves the following steps:
+        The process involves the following steps (by default only: **3.**, **4**., and **6.** run):
 
-        1. \\*)Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters from ``transpile_config`` if provided; otherwise, default values are applied. Refer to the :meth:`.CircuitTranspiler.route_circuit()` method for more information.
 
-        2. \\**)Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs). Refer to the :meth:`.CircuitTranspiler.optimize_gates()` method for more information.
+        1. **Routing and Placement:** Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the ``placer``, ``router``, and ``routing_iterations`` parameters if provided; otherwise, default values are applied. Refer to the :meth:`.CircuitTranspiler.route_circuit()` method for more information.
 
-        3. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)). Refer to the :meth:`.CircuitTranspiler.gates_to_native()` method for more information.
+        2. **1st Optimization:** Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs). Refer to the :meth:`.CircuitTranspiler.optimize_gates()` method for more information.
 
-        4. Adding phases to our Drag gates, due to commuting RZ gates until the end of the circuit to discard them as virtual Z gates, and due to the phase corrections from CZ. Refer to the :meth:`.CircuitTranspiler.add_phases_from_RZs_and_CZs_to_drags()` method for more information.
+        3. **Native Gate Translation:** Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)). Refer to the :meth:`.CircuitTranspiler.gates_to_native()` method for more information.
 
-        5. \\**)Optimizing the resulting Drag gates, by combining multiple pulses into a single one. Refer to the :meth:`.CircuitTranspiler.optimize_transpiled_gates()` method for more information.
+        4. **Adding phases to our Drag gates:** commuting RZ gates until the end of the circuit to discard them as virtual Z gates, and due to the phase corrections from CZ. Refer to the :meth:`.CircuitTranspiler.add_phases_from_RZs_and_CZs_to_drags()` method for more information.
 
-        6. Pulse Schedule Conversion: Converts the native gates into a pulse schedule using calibrated settings from the runcard. Refer to the :meth:`.CircuitTranspiler.gates_to_pulses()` method for more information.
+        5. **2nd Optimization:** Optimizing the resulting Drag gates, by combining multiple pulses into a single one. Refer to the :meth:`.CircuitTranspiler.optimize_transpiled_gates()` method for more information.
+
+        6. **Pulse Schedule Conversion:** Converts the native gates into a pulse schedule using calibrated settings from the runcard. Refer to the :meth:`.CircuitTranspiler.gates_to_pulses()` method for more information.
 
         .. note::
 
-            \\*) If ``routing=False`` (default behavior), step 1. is skipped.
+            Default steps are only: **3.**, **4**., and **6.**, since they are always needed.
 
-            \\**) If ``optimize=False`` (default behavior), steps 2. and 5. are skipped.
+            To do Step **1.** set ``routing=True`` (default behavior skips it).
 
-            The rest of steps are always done.
+            To do Steps **2.** and **5.** set ``optimize=True`` (default behavior skips it).
 
         **Examples:**
 
@@ -145,41 +157,43 @@ class CircuitTranspiler:
 
         Args:
             circuit (Circuit): Qibo circuit.
-            routing (bool, optional): whether to route the circuit. Defaults to False.
-            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
-            router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
-            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to get the best stochastic result. Defaults to 10.
-            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
+                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
+                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
             tuple[PulseSchedule, dict[str, int]]: Pulse schedule and final layouts of the qubits, in the circuit {"qI": J}.
         """
+        # Default values:
+        if transpilation_config is None:
+            transpilation_config = DigitalTranspilationConfig()
+
+        # Unpack dataclass attributes:
+        routing, placer, router, routing_iterations, optimize = transpilation_config._attributes_ordered
 
         # Routing stage;
         if routing:
-            gate_list, final_layout, nqubits = self.route_circuit(circuit, placer, router, routing_iterations)
+            circuit_gates, final_layout, nqubits = self.route_circuit(circuit, placer, router, routing_iterations)
         else:
-            gate_list, nqubits = circuit.queue, circuit.nqubits
+            circuit_gates, nqubits = circuit.queue, circuit.nqubits
             final_layout = {f"q{i}": i for i in range(nqubits)}
 
         # Optimze qibo gates, cancelling redundant gates:
         if optimize:
-            gate_list = self.optimize_gates(gate_list)
+            circuit_gates = self.optimize_gates(circuit_gates)
 
         # Unroll to Natives gates:
-        gate_list = self.gates_to_native(gate_list)
+        circuit_gates = self.gates_to_native(circuit_gates)
 
         # Add phases from RZs and CZs to Drags:
-        gate_list = self.add_phases_from_RZs_and_CZs_to_drags(gate_list, nqubits)
+        circuit_gates = self.add_phases_from_RZs_and_CZs_to_drags(circuit_gates, nqubits)
 
         # Optimze transpiled qibo gates, cancelling redundant gates:
         if optimize:
-            gate_list = self.optimize_transpiled_gates(gate_list)
+            circuit_gates = self.optimize_transpiled_gates(circuit_gates)
 
         # Pulse schedule stage:
-        pulse_schedule = self.gates_to_pulses(gate_list)
+        pulse_schedule = self.gates_to_pulses(circuit_gates)
 
         return pulse_schedule, final_layout
 
@@ -258,7 +272,7 @@ class CircuitTranspiler:
         return circuit.queue, final_layout, circuit.nqubits
 
     @staticmethod
-    def optimize_gates(gate_list: list[gates.Gate]) -> list[gates.Gate]:
+    def optimize_gates(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
         """Main method to optimize the gates of a Quantum Circuit before unrolling to native gates.
 
         Currently only applies a cancellation for adjacent hermitian gates (H, X, Y, Z, CNOT, CZ, SWAP).
@@ -266,15 +280,15 @@ class CircuitTranspiler:
         The total optimization can/might be expanded in the future to include more complex gate optimization.
 
         Args:
-            gate_list (list[gates.Gate]): list of gates of the Qibo circuit to optimize.
+            circuit_gates (list[gates.Gate]): list of gates of the Qibo circuit to optimize.
 
         Returns:
             list[gates.Gate]: list of the gates of the Qibo circuit, optimized.
         """
-        return CircuitOptimizer.optimize_gates(gate_list)
+        return CircuitOptimizer.optimize_gates(circuit_gates)
 
     @staticmethod
-    def gates_to_native(gate_list: list[gates.Gate]) -> list[gates.Gate]:
+    def gates_to_native(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
         """Maps Qibo gates to a hardware native implementation (CZ, RZ, Drag, Wait and M (Measurement))
             - CZ gates are our 2 qubit gates
             - RZ gates are applied as virtual Z gates if optimize=True in the transpiler
@@ -283,15 +297,15 @@ class CircuitTranspiler:
             - Measurement gates measure the circuit
 
         Args:
-            gate_list (list[gates.Gate]): list of gates of the Qibo circuit, to pass to native.
+            circuit_gates (list[gates.Gate]): list of gates of the Qibo circuit, to pass to native.
 
         Returns:
             list[gates.Gate]: list of native gates of the Qibo circuit.
 
         """
-        return translate_gates(gate_list)
+        return translate_gates(circuit_gates)
 
-    def add_phases_from_RZs_and_CZs_to_drags(self, gate_list: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
+    def add_phases_from_RZs_and_CZs_to_drags(self, circuit_gates: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
         """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
 
             - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
@@ -316,15 +330,15 @@ class CircuitTranspiler:
         For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
 
         Args:
-            gate_list (list[gates.Gate]): list of native gates of the circuit, to pass phases to the Drag gates.
+            circuit_gates (list[gates.Gate]): list of native gates of the circuit, to pass phases to the Drag gates.
             nqubits (int): Number of qubits of the circuit.
 
         Returns:
             list[gates.Gate]: list of native gates of the circuit, with phases passed to the Drag gates.
         """
-        return self.optimizer.add_phases_from_RZs_and_CZs_to_drags(gate_list, nqubits)
+        return self.optimizer.add_phases_from_RZs_and_CZs_to_drags(circuit_gates, nqubits)
 
-    def optimize_transpiled_gates(self, gate_list: list[gates.Gate]) -> list[gates.Gate]:
+    def optimize_transpiled_gates(self, circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
         """Main method to optimize the gates of a Quantum Circuit after having unrolled to native gates.
 
         Currently only bunches consecutive Drag gates, with same phi's, together into a single one, and removes redundant Drag gates.
@@ -332,14 +346,14 @@ class CircuitTranspiler:
         The total optimization can/might be expanded in the future to include more complex optimizations.
 
         Args:
-            gate_list (list[gates.Gate]): list of gates of the transpiled circuit, to optimize.
+            circuit_gates (list[gates.Gate]): list of gates of the transpiled circuit, to optimize.
 
         Returns:
             list[gates.Gate]: list of gates of the transpiled circuit, optimized.
         """
-        return self.optimizer.optimize_transpiled_gates(gate_list)
+        return self.optimizer.optimize_transpiled_gates(circuit_gates)
 
-    def gates_to_pulses(self, gate_list: list[gates.Gate]) -> PulseSchedule:
+    def gates_to_pulses(self, circuit_gates: list[gates.Gate]) -> PulseSchedule:
         """Translates a Qibo circuit into its corresponding pulse sequences.
 
         For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
@@ -358,11 +372,11 @@ class CircuitTranspiler:
         time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
 
         Args:
-            gate_list (list[gates.Gate]): list of native gates of the Qibo circuit.
+            circuit_gates (list[gates.Gate]): list of native gates of the Qibo circuit.
 
         Returns:
             PulseSequences: equivalent :class:`PulseSequences` class.
         """
         circuit_to_pulses = CircuitToPulses(self.settings)
 
-        return circuit_to_pulses.run(gate_list)
+        return circuit_to_pulses.run(circuit_gates)
