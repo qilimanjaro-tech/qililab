@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Nested Dictionary Iterator"""
+
 from typing import Generator
 
 import pandas as pd
