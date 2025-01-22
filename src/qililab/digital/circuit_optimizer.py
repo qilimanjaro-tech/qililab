@@ -38,7 +38,7 @@ class CircuitOptimizer:
         """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
     @staticmethod
-    def optimize_gates(cls, circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
+    def optimize_gates(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
         """Main method to optimize the gates of a Quantum Circuit before unrolling to native gates.
 
         The total optimization can/might be expanded in the future to include more complex gate optimization.
@@ -68,19 +68,19 @@ class CircuitOptimizer:
             list[gates.Gate]: list of the gates of the Qibo circuit, optimized.
         """
         # Initial and final circuit gates lists, from which to, one by one, after checks, pass non-cancelled gates:
-        circuit_gates_info: list[tuple] = CircuitOptimizer._get_circuit_gates_info(circuit_gates)
+        gates_info: list[tuple] = CircuitOptimizer._get_circuit_gates_info(circuit_gates)
 
         # We want to do the sweep circuit cancelling gates least once always:
-        old_circuit_gates_info = deepcopy(circuit_gates_info)
-        new = cls._sweep_circuit_cancelling_pairs_of_hermitian_gates(circuit_gates_info)
+        old_gates_info = deepcopy(gates_info)
+        new_gates_info = CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates(gates_info)
 
         # And then keep iterating, sweeping over the circuit (cancelling gates) each time, until there is full sweep without any cancellations:
-        while new_circuit_gates_info != old_circuit_gates_info:
-            old_circuit_gates_info = deepcopy(new_circuit_gates_info)
-            new_circuit_gates_info = CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates(new_circuit_gates_info)
+        while new_gates_info != old_gates_info:
+            old_gates_info = deepcopy(new_gates_info)
+            new_circuit_gates_info = CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates(new_gates_info)
 
         # Create optimized circuit, from the obtained non-cancelled list:
-        return CircuitOptimizer._create_circuit_circuit_gates(output_circuit_gates_info)
+        return CircuitOptimizer._create_circuit_circuit_gates(new_circuit_gates_info)
 
     def add_phases_from_RZs_and_CZs_to_drags(self, circuit_gates: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
         """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
@@ -150,7 +150,9 @@ class CircuitOptimizer:
             list[gates.Gate]: list of gates of the transpiled circuit, optimized.
         """
         # Add more optimizations of the transpiled circuit here:
-        circuit_gates = CircuitOptimizer.bunch_drag_gates(circuit_gates)  # TODO: Add bunching of Drag Gates for diff phis!
+        circuit_gates = CircuitOptimizer.bunch_drag_gates(
+            circuit_gates
+        )  # TODO: Add bunching of Drag Gates for diff phis!
         circuit_gates = CircuitOptimizer.normalize_angles_of_drags(circuit_gates)
         circuit_gates = CircuitOptimizer.delete_gates_with_no_amplitude(circuit_gates)
         return circuit_gates
@@ -263,7 +265,7 @@ class CircuitOptimizer:
         return angle
 
     @staticmethod
-    def _get_circuit_gates(circuit_gates: list[gates.Gate]) -> list[tuple]:
+    def _get_circuit_gates_info(circuit_gates: list[gates.Gate]) -> list[tuple]:
         """Get the gates of the circuit.
 
         Args:
@@ -307,10 +309,10 @@ class CircuitOptimizer:
             list[gates.Gate]: Gate list of the qibo Circuit.
         """
         # Create optimized circuit, from the obtained non-cancelled list:
-        output_gates_list = []
+        output_gates = []
         for gate, gate_args, gate_kwargs in circuit_gates:
             qibo_gate = CircuitOptimizer._create_gate(gate, gate_args, gate_kwargs)
-            output_gates_list.append(qibo_gate)
+            output_gates.append(qibo_gate)
 
         return output_gates
 
@@ -336,7 +338,7 @@ class CircuitOptimizer:
 
             # Gate of the original circuit, to find a match for:
             gate, gate_args, gate_kwargs = circuit_gates.pop(0)
-            gate_qubits = cls._extract_qubits(gate_args)  # Assuming qubits are the first two args
+            gate_qubits = CircuitOptimizer._extract_qubits(gate_args)  # Assuming qubits are the first two args
 
             # If gate is not hermitian (can't be cancelled), add it to the output circuit and continue:
             if gate not in hermitian_gates:
