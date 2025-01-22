@@ -40,7 +40,7 @@ def nested_dict_to_path_tuples(dict_obj: dict) -> Generator:
             yield key, value
 
 
-def nested_dict_to_path_value_list(dict_obj: dict) -> list:
+def nested_dict_to_path_values(dict_obj: dict) -> list:
     """Transform a nested dict into a list of [key0, keyN, value] into a list using the nested_dict_to_path_tuples
     generator"""
     return list(nested_dict_to_path_tuples(dict_obj=dict_obj))
@@ -50,10 +50,10 @@ def nested_dict_to_pandas_dataframe(dict_obj: dict) -> pd.DataFrame:
     """Transform a nested dict into a pandas dataframe, with a (multi)index as `key0/key1/.../keyN`, and a single
     column `value`. A more classical table structure can be easily recovered by calling the `.reset_index()` method of
     the dataframe instance."""
-    path_value_list = nested_dict_to_path_value_list(dict_obj)
+    path_values: list = nested_dict_to_path_values(dict_obj)
 
-    indices = (unnested_result[:-1] for unnested_result in path_value_list)
-    values = (unnested_result[-1:] for unnested_result in path_value_list)
+    indices = (unnested_result[:-1] for unnested_result in path_values)
+    values = (unnested_result[-1:] for unnested_result in path_values)
 
     pandas_index = pd.MultiIndex.from_frame(pd.DataFrame(indices))
     return pd.DataFrame(values, index=pandas_index, columns=["value"])
