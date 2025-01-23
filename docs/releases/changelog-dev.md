@@ -38,6 +38,9 @@
 
   [#863](https://github.com/qilimanjaro-tech/qililab/pull/863)
 
+- Now the QM qprogram compiler is able to generate the correct stream_processing while the average loop is inside any other kind of loop, before it was only able to be located on the outermost loop due to the way qprogram generated the stream_processing.
+  [#880](https://github.com/qilimanjaro-tech/qililab/pull/880)
+
 ### Breaking changes
 
 ### Deprecations / Removals
