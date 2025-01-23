@@ -1091,7 +1091,7 @@ class Platform:
 
         return result
 
-    def _order_result(self, result: Result, circuit: Circuit, final_layout: dict[int, int] | None) -> Result:
+    def _order_result(self, result: Result, circuit: Circuit, final_layout: Optional[dict[int, int]]) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1140,7 +1140,7 @@ class Platform:
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
     @staticmethod
-    def _get_logical_qubit_from_physical(physical_qubit: int, final_layout: dict[int, int]) -> int:
+    def _get_logical_qubit_from_physical(physical_qubit: int, final_layout: Optional[dict[int, int]]) -> int:
         """Get the logical qubit corresponding to a physical qubit.
 
         Args:
