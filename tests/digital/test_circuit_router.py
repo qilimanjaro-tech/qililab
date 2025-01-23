@@ -118,7 +118,7 @@ class TestCircuitRouterUnit:
             # Assert you return the same outputs as the mocked _iterate_routing
             assert (routed_circuit, final_layout) ==(circuit_test, test_layout)
         elif type == "bad_layout":
-            with pytest.raises(ValueError, match=re.escape(f"The final layout: {test_bad_layout} is not valid. i.e. a algorithm qubit is mapped to more than one physical qubit or viceversa, or a key/value from the layout wasn't a number. Try again, if the problem persists, try another placer/routing algorithm.")):
+            with pytest.raises(ValueError, match=re.escape(f"The final layout: {test_bad_layout} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm.")):
                 _, _ = self.circuit_router.route(linear_circuit)
 
         # Assert that the logger is called properly

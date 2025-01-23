@@ -1102,7 +1102,7 @@ class Platform:
         Args:
             result (Result): Result obtained from the execution
             circuit (Circuit): qibo circuit being executed
-            final_layouts (dict[int, int]): final layout of the qubits in the circuit {Original Algorithm Qubit: Physical qubit}.
+            final_layouts (dict[int, int]): final layout of the qubits in the circuit {Original logical qubit: Physical qubit where it ended after execution}.
 
         Returns:
             Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
@@ -1130,6 +1130,9 @@ class Platform:
             measurement = qblox_result["measurement"]
             qubit = qblox_result["qubit"]
             original_qubit = final_layout[qubit] if final_layout is not None else qubit
+            logger.info(
+                "Undoing final physical qubit mapping, so you get back the original qubit order in your logical circuit."
+            )
             results[order[original_qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
@@ -1173,7 +1176,9 @@ class Platform:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[dict, dict[int, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {Original Algorithm Qubit: Physical qubit}..
+            tuple[dict, dict[int, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
+                and the value is the assembly compilation (``list``)), and the final layout of the qubits in the circuit:
+                {Original logical qubit: Physical qubit where it ended after execution}.
 
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.

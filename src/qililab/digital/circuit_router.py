@@ -15,9 +15,9 @@
 """CircuitRouter class"""
 
 import contextlib
-from numbers import Number
 
 import networkx as nx
+import numpy as np
 from qibo import Circuit, gates
 from qibo.transpiler.optimizer import Preprocessing
 from qibo.transpiler.pipeline import Passes
@@ -79,7 +79,7 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple [Circuit, dict[int, int]: routed circuit and final layout of the circuit {Original Algorithm Qubit: Physical qubit}.
+            tuple [Circuit, dict[int, int]: routed circuit and final layout of the circuit {Original logical qubit: Physical qubit where it ended after execution}.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -90,7 +90,7 @@ class CircuitRouter:
 
         if self._if_layout_is_not_valid(best_final_layout):
             raise ValueError(
-                f"The final layout: {best_final_layout} is not valid. i.e. a algorithm qubit is mapped to more than one physical qubit or viceversa, or a key/value from the layout wasn't a number. Try again, if the problem persists, try another placer/routing algorithm."
+                f"The final layout: {best_final_layout} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm."
             )
 
         if least_swaps is not None:
@@ -112,7 +112,8 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple[Circuit, dict[int, int], int]: Best transpiled circuit, best final layout {Original Algorithm Qubit: Physical qubit}, and least swaps.
+            tuple[Circuit, dict[int, int], int]: Best transpiled circuit, best final layout:
+                {Original logical qubit: Physical qubit where it ended after execution}, and least swaps.
         """
         # We repeat the routing pipeline a few times, to keep the best stochastic result:
         least_swaps: int | None = None
@@ -178,8 +179,8 @@ class CircuitRouter:
         return (
             len(layout.values()) != len(set(layout.values()))
             or len(layout.keys()) != len(set(layout.keys()))
-            or not all(isinstance(value, Number) for value in layout.values())
-            or not all(isinstance(keys, Number) for keys in layout)
+            or not all(np.issubdtype(type(value), np.integer) for value in layout.values())
+            or not all(np.issubdtype(type(keys), np.integer) for keys in layout)
         )
 
     @staticmethod

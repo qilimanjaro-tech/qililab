@@ -162,7 +162,8 @@ class CircuitTranspiler:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[PulseSchedule, dict[int, int]]: Pulse schedule and final layout of the qubits, in the circuit {Original Algorithm Qubit: Physical qubit}..
+            tuple[PulseSchedule, dict[int, int]]: Pulse schedule and final layout of the circuit:
+                {Original logical qubit: Physical qubit where it ended after execution}.
         """
         # Default values:
         if transpilation_config is None:
@@ -257,7 +258,8 @@ class CircuitTranspiler:
                 which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
 
         Returns:
-            tuple[list[Gate], dict[int, int], int]: List of gates of the routed circuit, final layout of the circuit {Original Algorithm Qubit: Physical qubit}, and number of qubits in the final circuit.
+            tuple[list[Gate], dict[int, int], int]: List of gates of the routed circuit, final layout of the qubits in the circuit:
+                {Original logical qubit: Physical qubit where it ended after execution}, and number of qubits in the final circuit.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -267,7 +269,9 @@ class CircuitTranspiler:
         circuit_router = CircuitRouter(topology, placer, router)
 
         circuit, final_layout = circuit_router.route(circuit, iterations)
-        logger.info(f"The physical qubits used for the execution will be: {final_layout}")
+        logger.info(
+            f"The mapping of {{Original logical qubits, Physical qubit where it ended after execution (Initial re-mapping + SWAPs)}}, will be: {final_layout}"
+        )
 
         return circuit.queue, final_layout, circuit.nqubits
 
