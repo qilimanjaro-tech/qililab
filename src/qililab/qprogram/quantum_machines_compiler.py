@@ -77,7 +77,7 @@ class _MeasurementCompilationInfo:
         self.stream_I: qua_dsl._ResultSource = stream_I
         self.stream_Q: qua_dsl._ResultSource = stream_Q
         self.stream_raw_adc: qua_dsl._ResultSource | None = stream_raw_adc
-        self.loop_info: list[LoopInfo] = []
+        self.loop_info_list: list[LoopInfo] = []
 
 
 class MeasurementInfo:
@@ -241,9 +241,9 @@ class QuantumMachinesCompiler:
 
             def _process_stream(stream: qua_dsl._ResultSource, save_as: str) -> None:
                 processing_stream: qua_dsl._ResultSource | qua_dsl._ResultStream = stream
-                for index, loop_info in enumerate(measurement.loop_info):
+                for index, loop_info in enumerate(measurement.loop_info_list):
                     if loop_info.is_average:
-                        if index < len(measurement.loop_info) - 1:
+                        if index < len(measurement.loop_info_list) - 1:
                             processing_stream = processing_stream.buffer(loop_info.iterations)
                             processing_stream = processing_stream.map(["average"])
                         else:
@@ -487,10 +487,10 @@ class QuantumMachinesCompiler:
         for block in reversed(self._qprogram_block_stack):
             if isinstance(block, ForLoop):
                 iterations = QuantumMachinesCompiler._calculate_iterations(block.start, block.stop, block.step)
-                measurement_info.loop_info.append(LoopInfo(is_average=False, iterations=iterations))
+                measurement_info.loop_info_list.append(LoopInfo(is_average=False, iterations=iterations))
             if isinstance(block, Loop):
                 iterations = len(block.values)
-                measurement_info.loop_info.append(LoopInfo(is_average=False, iterations=iterations))
+                measurement_info.loop_info_list.append(LoopInfo(is_average=False, iterations=iterations))
             if isinstance(block, Parallel):
                 iterations = min(
                     (
@@ -500,9 +500,9 @@ class QuantumMachinesCompiler:
                     )
                     for loop in block.loops
                 )
-                measurement_info.loop_info.append(LoopInfo(is_average=False, iterations=iterations))
+                measurement_info.loop_info_list.append(LoopInfo(is_average=False, iterations=iterations))
             if isinstance(block, Average):
-                measurement_info.loop_info.append(LoopInfo(is_average=True, iterations=block.shots))
+                measurement_info.loop_info_list.append(LoopInfo(is_average=True, iterations=block.shots))
 
         self._measurements.append(measurement_info)
 
