@@ -79,18 +79,18 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple [Circuit, dict[int, int]: routed circuit and final layout of the circuit {Original logical qubit: Physical qubit where it ended after execution}.
+            Circuit: Routed circuit.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
-            ValueError: If the final layout is not valid, i.e. a qubit is mapped to more than one physical qubit.
+            ValueError: If the final layout is not valid, i.e. a qubit is mapped to more than one physical qubit or names are not integers.
         """
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
-        best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(self.pipeline, circuit, iterations)
+        best_transp_circ, least_swaps = self._iterate_routing(self.pipeline, circuit, iterations)
 
-        if self._if_layout_is_not_valid(best_final_layout):
+        if self._if_layout_is_not_valid(best_transp_circ.wire_names):
             raise ValueError(
-                f"The final layout: {best_final_layout} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm."
+                f"The final layout: {best_transp_circ.wire_names} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm."
             )
 
         if least_swaps is not None:
@@ -98,12 +98,12 @@ class CircuitRouter:
         else:
             logger.info("No routing was done. Most probably due to routing iterations being 0.")
 
-        return best_transp_circ, best_final_layout
+        return best_transp_circ
 
     @staticmethod
     def _iterate_routing(
         routing_pipeline: Passes, circuit: Circuit, iterations: int = 10
-    ) -> tuple[Circuit, dict[int, int], int | None]:
+    ) -> tuple[Circuit, int | None]:
         """Iterates through the routing pipeline to retain the best stochastic result. Returns and/or logs the final qubit layout.
 
         Args:
@@ -112,14 +112,13 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple[Circuit, dict[int, int], int]: Best transpiled circuit, best final layout:
-                {Original logical qubit: Physical qubit where it ended after execution}, and least swaps.
+            tuple[Circuit, int]: Best transpiled circuit and least swaps.
         """
         # We repeat the routing pipeline a few times, to keep the best stochastic result:
         least_swaps: int | None = None
         for _ in range(iterations):
             # Call the routing pipeline on the circuit:
-            transpiled_circ, final_layout = routing_pipeline(circuit)
+            transpiled_circ, _ = routing_pipeline(circuit)
 
             # Get the number of swaps in the circuits:
             n_swaps = len(transpiled_circ.gates_of_type(gates.SWAP))
@@ -127,13 +126,13 @@ class CircuitRouter:
             # Checking which is the best transpilation:
             if least_swaps is None or n_swaps < least_swaps:
                 least_swaps = n_swaps
-                best_transpiled_circ, best_final_layout = transpiled_circ, final_layout
+                best_transpiled_circ = transpiled_circ
 
             # If a mapping needs no swaps, we are finished:
             if n_swaps == 0:
                 break
 
-        return best_transpiled_circ, best_final_layout, least_swaps
+        return best_transpiled_circ, least_swaps
 
     @staticmethod
     def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
@@ -165,23 +164,18 @@ class CircuitRouter:
         return max(dict(connectivity.degree()).items(), key=lambda x: x[1])[0]
 
     @staticmethod
-    def _if_layout_is_not_valid(layout: dict[int, int]) -> bool:
+    def _if_layout_is_not_valid(layout: list[int]) -> bool:
         """True if the layout is not valid.
 
         For example, if a qubit is mapped to more than one physical qubit. Or if the keys or values are not int.
 
         Args:
-            layout (dict[int, int]): Initial or final layout of the circuit.
+            layout (list[int]): Initial or final layout of the circuit.
 
         Returns:
             bool: True if the layout is not valid.
         """
-        return (
-            len(layout.values()) != len(set(layout.values()))
-            or len(layout.keys()) != len(set(layout.keys()))
-            or not all(np.issubdtype(type(value), np.integer) for value in layout.values())
-            or not all(np.issubdtype(type(keys), np.integer) for keys in layout)
-        )
+        return len(layout) != len(set(layout)) or not all(np.issubdtype(type(qubit), np.integer) for qubit in layout)
 
     @staticmethod
     def _build_router(router: Router | type[Router] | tuple[type[Router], dict], connectivity: nx.Graph) -> Router:
