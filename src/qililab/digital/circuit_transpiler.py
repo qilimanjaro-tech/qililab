@@ -162,8 +162,8 @@ class CircuitTranspiler:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[PulseSchedule, list[int]]: Pulse schedule and final layout of the circuit:
-                [Original logical qubit][Physical qubit where it ended after execution].
+            tuple[PulseSchedule, list[int]]: Pulse schedule and final layout of the circuit: mapping of
+                Physical qubit where it ended after execution [index] to Original logical qubit [value].
         """
         # Default values:
         if transpilation_config is None:
@@ -270,7 +270,7 @@ class CircuitTranspiler:
 
         circuit = circuit_router.route(circuit, iterations)
         logger.info(
-            f"The mapping of [Original logical qubits][Physical qubit where it ended after execution (Initial re-mapping + SWAPs)], will be: {circuit.wire_names}"
+            f"The mapping of Physical qubit where it ended after execution (Initial re-mapping + SWAPs) [index] to Original logical qubit [value], will be: {circuit.wire_names}"
         )
 
         return circuit.queue, circuit.nqubits

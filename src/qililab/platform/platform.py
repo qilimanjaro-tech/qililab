@@ -1102,7 +1102,8 @@ class Platform:
         Args:
             result (Result): Result obtained from the execution
             circuit (Circuit): qibo circuit being executed
-            final_layouts (list[int]): final layout of the qubits in the circuit [Original logical qubit][Physical qubit where it ended after execution].
+            final_layouts (list[int]): final layout of the qubits in the circuit: mapping of
+                Physical qubit where it ended after execution [index] to Original logical qubit [value].
 
         Returns:
             Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
@@ -1179,8 +1180,8 @@ class Platform:
 
         Returns:
             tuple[dict, list[int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
-                and the value is the assembly compilation (``list``)), and the final layout of the qubits in the circuit:
-                [Original logical qubit][Physical qubit where it ended after execution].
+                and the value is the assembly compilation (``list``)), and the final layout of the qubits in the circuit: mapping of
+                Physical qubit where it ended after execution [index] to Original logical qubit [value].
 
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
