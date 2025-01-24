@@ -16,22 +16,13 @@
 
 .. currentmodule:: qililab
 
-Classes
+Results Class
 ~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
     ~Results
-    ~result.Result
-
-Functions
-~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~stream_results
 """
 from .result import Result
 from .results import Results
