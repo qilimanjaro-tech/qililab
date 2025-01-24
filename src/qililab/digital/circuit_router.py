@@ -15,6 +15,7 @@
 """CircuitRouter class"""
 
 import contextlib
+from copy import deepcopy
 
 import networkx as nx
 import numpy as np
@@ -120,6 +121,9 @@ class CircuitRouter:
             # Call the routing pipeline on the circuit:
             transpiled_circ, _ = routing_pipeline(circuit)
 
+            # Remove redundant swaps at the start of the transpiled circuit:
+            transpiled_circ = CircuitRouter._remove_redundant_swaps(transpiled_circ)
+
             # Get the number of swaps in the circuits:
             n_swaps = len(transpiled_circ.gates_of_type(gates.SWAP))
 
@@ -133,6 +137,49 @@ class CircuitRouter:
                 break
 
         return best_transpiled_circ, least_swaps
+
+    def _remove_redundant_swaps(transpiled_circ: Circuit) -> Circuit:
+        """Removes redundant swaps at the start of the transpiled circuit, changing the final layout.
+
+        Args:
+            transpiled_circ (Circuit): Transpiled circuit.
+
+        Returns:
+            Circuit: Transpiled circuit without redundant gates and changed wire_names.
+        """
+
+        finished_qubits: list = []
+        queue = deepcopy(transpiled_circ.queue)
+        wire_names = deepcopy(transpiled_circ.wire_names)
+
+        for idx, gate in enumerate(queue):
+            # When all qubits have encountered a gate != SWAP, we stop:
+            if len(finished_qubits) == transpiled_circ.nqubits:
+                break
+
+            # If the gate is a SWAP, we check if both qubits have already encountered a gate != SWAP:
+            if isinstance(gate, gates.SWAP):
+                q0, q1 = gate.qubits
+                if q0 in finished_qubits or q1 in finished_qubits:
+                    continue
+                queue[idx] = None
+                wire_names[q0], wire_names[q1] = wire_names[q1], wire_names[q0]
+
+            elif gate is None:
+                continue
+
+            # The moment we find a non-swap gate, we stop for that qubit:
+            else:
+                for qubit in gate.qubits:
+                    finished_qubits.append(qubit)
+
+        queue = [x for x in queue if x is not None]
+
+        optimized_circuit = Circuit(transpiled_circ.nqubits)
+        optimized_circuit.add(queue)
+        optimized_circuit.wire_names = wire_names
+
+        return optimized_circuit
 
     @staticmethod
     def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
