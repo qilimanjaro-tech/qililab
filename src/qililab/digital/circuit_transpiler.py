@@ -174,8 +174,8 @@ class CircuitTranspiler:
 
         # Routing stage;
         if routing:
-            circuit_gates, nqubits = self.route_circuit(circuit, placer, router, routing_iterations)
-            final_layout = circuit.wire_names
+            circuit = self.route_circuit(circuit, placer, router, routing_iterations)
+            circuit_gates, final_layout, nqubits = circuit.queue, circuit.wire_names, circuit.nqubits
         else:
             circuit_gates, nqubits = circuit.queue, circuit.nqubits
             final_layout = list(range(nqubits))
@@ -206,7 +206,7 @@ class CircuitTranspiler:
         router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
         iterations: int = 10,
         coupling_map: Optional[tuple[int, int]] = None,
-    ) -> tuple[list[gates.Gate], int]:
+    ) -> Circuit:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         This process uses the provided `placer`, `router`, and `routing_iterations` parameters if they are passed; otherwise, default values are applied.
@@ -259,7 +259,7 @@ class CircuitTranspiler:
                 which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
 
         Returns:
-            tuple[list[Gate], int]: List of gates of the routed circuit and number of qubits in the final circuit.
+            Circuit: routed circuit
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -273,7 +273,7 @@ class CircuitTranspiler:
             f"The mapping of Physical qubit where it ended after execution (Initial re-mapping + SWAPs) [index] to Original logical qubit [value], will be: {circuit.wire_names}"
         )
 
-        return circuit.queue, circuit.nqubits
+        return circuit
 
     @staticmethod
     def optimize_gates(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
