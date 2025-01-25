@@ -670,7 +670,7 @@ class TestCircuitTranspiler:
         mock_circuit_gates = mock_circuit.queue
 
         # Mock layout for return values
-        mock_layout = {0: 0, 1: 2, 2: 1, 3: 3, 4: 4}
+        mock_layout = [0, 1, 2, 3, 4]
 
         # Mock schedule for return values
         mock_schedule = PulseSchedule()
@@ -725,15 +725,15 @@ class TestCircuitTranspiler:
         # Mock the return values
         mock_circuit = Circuit(5)
         mock_circuit.add(X(0))
-        mock_layout = {0: 0, 1: 2, 2: 1, 3: 3, 4: 4}
+        mock_layout = [0, 1, 2, 3, 4]
         mock_route.return_value = (mock_circuit, mock_layout)
 
         # Execute the function
-        circuit_gates, layout, nqubits = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        circuit_gates, nqubits, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
 
         # Asserts:
         mock_route.assert_called_once_with(mock_circuit, routing_iterations)
-        assert (circuit_gates, layout, nqubits) == (mock_circuit.queue, mock_layout, mock_circuit.nqubits)
+        assert (circuit_gates, nqubits, layout) == (mock_circuit.queue, mock_circuit.nqubits, mock_layout)
 
     @patch("qililab.digital.circuit_transpiler.nx.Graph")
     @patch("qililab.digital.circuit_transpiler.CircuitRouter")

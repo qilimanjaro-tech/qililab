@@ -82,7 +82,7 @@ class TestCircuitRouterIntegration:
         routed_circuit, final_layout = CircuitRouter(star_topology).route(linear_circuit)
 
         # Assert that the circuit was routed:
-        assert final_layout != {0:0, 1:1, 2:2, 3:3, 4:4}
+        assert final_layout != [0, 1, 2, 3, 4]
         assert routed_circuit.nqubits == linear_circuit.nqubits
         assert routed_circuit.depth > linear_circuit.depth
         assert [(gate.name, gate.qubits) for gate in routed_circuit.queue] != [(gate.name, gate.qubits)  for gate in linear_circuit.queue]
@@ -147,7 +147,7 @@ class TestCircuitRouterUnit:
         mock_qibo_routing.return_value = (circuit, layout)
 
         # Execute the iterate_routing:
-        routed_circuit, final_layout, least_swaps = self.circuit_router._iterate_routing(self.circuit_router.pipeline, linear_circuit, iterations)
+        routed_circuit, least_swaps, final_layout = self.circuit_router._iterate_routing(self.circuit_router.pipeline, linear_circuit, iterations)
 
         # Assert calls on the routing algorithm:
         if type == "with_swaps":
@@ -160,7 +160,7 @@ class TestCircuitRouterUnit:
             expected_least_swaps = iterations = 0 # Since there are no swaps, no iterations have been needed
 
         # Assert you return the correct outputs:
-        assert (routed_circuit, final_layout, least_swaps) == (circuit, layout, expected_least_swaps)
+        assert (routed_circuit, least_swaps, final_layout) == (circuit, expected_least_swaps, layout)
 
     def test_if_star_algorithms_for_nonstar_connectivity(self):
         """Test the routing of a circuit"""
