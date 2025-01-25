@@ -1091,7 +1091,7 @@ class Platform:
 
         return result
 
-    def _order_result(self, result: Result, circuit: Circuit, final_layout: Optional[dict[int, int]]) -> Result:
+    def _order_result(self, result: Result, circuit: Circuit, final_layout: list[int]) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1101,11 +1101,11 @@ class Platform:
 
         Args:
             result (Result): Result obtained from the execution
-            circuit (Circuit): qibo circuit being executed
-            final_layouts (dict[int, int]): final layout of the qubits in the circuit {Original logical qubit: Physical qubit where it ended after execution}.
+            circuit (Circuit): Qibo circuit being executed
+            final_layouts (list[int]): Final layout of the original logical qubits in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
 
         Returns:
-            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
+            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue.
         """
         if not isinstance(result, QbloxResult):
             raise NotImplementedError("Result ordering is only implemented for qblox results")
@@ -1134,31 +1134,10 @@ class Platform:
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             physical_qubit = qblox_result["qubit"]
-            original_logical_qubit = self._get_logical_qubit_from_physical(physical_qubit, final_layout)
+            original_logical_qubit = final_layout[physical_qubit]
             results[order[original_logical_qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
-
-    @staticmethod
-    def _get_logical_qubit_from_physical(physical_qubit: int, final_layout: Optional[dict[int, int]]) -> int:
-        """Get the logical qubit corresponding to a physical qubit.
-
-        Args:
-            physical_qubit (int): Physical qubit to get the corresponding logical qubit.
-            final_layout (dict[int, int]): final layout of the qubits in the circuit {Original logical qubit: Physical qubit where it ended after execution}.
-
-        Returns:
-            int: Logical qubit corresponding to the physical qubit.
-        """
-        if final_layout is None:
-            return physical_qubit
-
-        logical_qubit = [k for k, v in final_layout.items() if v == physical_qubit]
-        if len(logical_qubit) != 1:
-            raise ValueError(
-                f"Physical qubit {physical_qubit} is not uniquely mapped to a logical qubit, instead it's mapped to {logical_qubit}."
-            )
-        return logical_qubit[0]
 
     def compile(
         self,
@@ -1167,7 +1146,7 @@ class Platform:
         repetition_duration: int,
         num_bins: int,
         transpilation_config: Optional[DigitalTranspilationConfig] = None,
-    ) -> tuple[dict[str, list[QpySequence]], dict[int, int] | None]:
+    ) -> tuple[dict[str, list[QpySequence]], list[int]]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
@@ -1199,9 +1178,9 @@ class Platform:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[dict, dict[int, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
-                and the value is the assembly compilation (``list``)), and the final layout of the qubits in the circuit:
-                {Original logical qubit: Physical qubit where it ended after execution}.
+            tuple[dict, list[int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
+                and the value is the assembly compilation (``list``)), and its corresponding final layout of the original logical qubits
+                in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
 
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.

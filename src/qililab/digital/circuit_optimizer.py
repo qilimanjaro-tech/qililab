@@ -15,14 +15,17 @@
 """CircuitOptimizer class"""
 
 from copy import deepcopy
+from typing import Optional, TypeVar
 
 import numpy as np
-from qibo import gates
+from qibo import Circuit, gates
 
 from qililab import digital
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 from .native_gates import Drag, normalize_angle
+
+T_circuit = TypeVar("T_circuit", Circuit, list[gates.Gate])
 
 
 class CircuitOptimizer:
@@ -54,6 +57,7 @@ class CircuitOptimizer:
         # Add more future methods of optimizing gates here, like 2local optimizations, cliffords ...:
 
         circuit_gates = CircuitOptimizer.cancel_pairs_of_hermitian_gates(circuit_gates)
+        circuit_gates = CircuitOptimizer.remove_redundant_start_controlled_gates(circuit_gates)
         # circuit_gates = cls.2local_gate_optimization(circuit_gates) TODO:
         return circuit_gates
 
@@ -373,3 +377,59 @@ class CircuitOptimizer:
         if isinstance(gate_args, int):
             return [gate_args]
         return gate_args if len(gate_args) <= 2 else gate_args[:2]
+
+    @staticmethod
+    def remove_redundant_start_controlled_gates(
+        transpiled_circ: T_circuit, gates_to_remove: Optional[tuple[gates.Gate] | gates.Gate] = None
+    ) -> T_circuit:
+        """Removes redundant controlled gates at the start of the transpiled circuit.
+
+        Args:
+            transpiled_circ (Circuit): Transpiled circuit.
+            gates_to_remove (Optional[tuple[gates.Gate] | gates.Gate]): Tuple of gates to remove. Defaults to all controlled gates.
+
+        Returns:
+            Circuit | : Transpiled circuit without redundant gates.
+        """
+
+        finished_qubits: set = set()
+        is_circuit = isinstance(transpiled_circ, Circuit)
+
+        queue = deepcopy(transpiled_circ.queue) if is_circuit else deepcopy(transpiled_circ)  # type: ignore [attr-defined]
+
+        for idx, gate in enumerate(queue):
+            # When all qubits have encountered a gate != SWAP, we stop:
+            if is_circuit and len(finished_qubits) == transpiled_circ.nqubits:  # type: ignore [attr-defined]
+                break
+
+            # The condition will be, the gate is one of the given, or the gate has a control qubit.
+            if gates_to_remove is None:
+                check = len(gate.control_qubits) == 0
+            else:
+                check = isinstance(gate, gates_to_remove)
+
+            # If the gate is fulfilling the condition, we check if both qubits have already encountered a gate not fulfilling it:
+            if check:
+                qubits = gate.qubits
+                if any(qubit in finished_qubits for qubit in qubits):
+                    for qubit in qubits:
+                        finished_qubits.add(qubit)
+                    continue
+                queue[idx] = None
+
+            # The moment we find a non-swap gate, we stop for that qubit:
+            else:
+                for qubit in gate.qubits:
+                    finished_qubits.add(qubit)
+
+        queue = [x for x in queue if x is not None]
+
+        # If a circuit is originally passed, return a circuit
+        if is_circuit:
+            optimized_circuit = Circuit(transpiled_circ.nqubits)  # type: ignore [attr-defined]
+            optimized_circuit.add(queue)
+
+            return optimized_circuit
+
+        # If a queue was passed, return a list.
+        return queue

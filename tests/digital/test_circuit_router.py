@@ -71,7 +71,7 @@ class TestCircuitRouterIntegration:
         """Test the routing of a circuit"""
         routed_circuit, final_layout = CircuitRouter(linear_topology).route(linear_circuit)
 
-        assert final_layout == {0:0, 1:1, 2:2, 3:3, 4:4}
+        assert final_layout == [0, 1, 2, 3, 4]
         assert routed_circuit.nqubits == linear_circuit.nqubits
         assert routed_circuit.depth == linear_circuit.depth
         assert [(gate.name, gate.qubits) for gate in routed_circuit.queue] == [(gate.name, gate.qubits)  for gate in linear_circuit.queue]

@@ -15,6 +15,7 @@
 """CircuitRouter class"""
 
 import contextlib
+from typing import Optional
 
 import networkx as nx
 import numpy as np
@@ -25,6 +26,7 @@ from qibo.transpiler.placer import Placer, ReverseTraversal, StarConnectivityPla
 from qibo.transpiler.router import Router, Sabre, StarConnectivityRouter
 
 from qililab.config import logger
+from qililab.digital.circuit_optimizer import CircuitOptimizer
 
 
 class CircuitRouter:
@@ -69,7 +71,7 @@ class CircuitRouter:
         # 2) Routing stage, where the final_layout and swaps will be created.
         # 3) Layout stage, where the initial_layout will be created.
 
-    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict[int, int]]:
+    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, list[int]]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         Check public docstring in :meth:`.CircuitTranspiler.route_circuit()` for more information.
@@ -79,19 +81,15 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple [Circuit, dict[int, int]: routed circuit and final layout of the circuit {Original logical qubit: Physical qubit where it ended after execution}.
+            tuple [Circuit, list[int]: Routed circuit and its corresponding final layout of the original logical qubits
+                in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
             ValueError: If the final layout is not valid, i.e. a qubit is mapped to more than one physical qubit.
         """
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
-        best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(self.pipeline, circuit, iterations)
-
-        if self._if_layout_is_not_valid(best_final_layout):
-            raise ValueError(
-                f"The final layout: {best_final_layout} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm."
-            )
+        best_transp_circ, least_swaps, best_final_layout = self._iterate_routing(self.pipeline, circuit, iterations)
 
         if least_swaps is not None:
             logger.info(f"The best found routing, has {least_swaps} swaps.")
@@ -103,7 +101,7 @@ class CircuitRouter:
     @staticmethod
     def _iterate_routing(
         routing_pipeline: Passes, circuit: Circuit, iterations: int = 10
-    ) -> tuple[Circuit, dict[int, int], int | None]:
+    ) -> tuple[Circuit, Optional[int], list[int]]:
         """Iterates through the routing pipeline to retain the best stochastic result. Returns and/or logs the final qubit layout.
 
         Args:
@@ -112,14 +110,17 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple[Circuit, dict[int, int], int]: Best transpiled circuit, best final layout:
-                {Original logical qubit: Physical qubit where it ended after execution}, and least swaps.
+            tuple[Circuit, int, list[int]]: Best routed circuit, least number of swaps required, and the corresponding best final
+                layout of the original logical qubits in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
         """
         # We repeat the routing pipeline a few times, to keep the best stochastic result:
-        least_swaps: int | None = None
+        least_swaps: Optional[int] = None
         for _ in range(iterations):
             # Call the routing pipeline on the circuit:
             transpiled_circ, final_layout = routing_pipeline(circuit)
+
+            # Remove redundant swaps at the start of the transpiled circuit:
+            transpiled_circ = CircuitOptimizer.remove_redundant_start_controlled_gates(transpiled_circ, gates.SWAP)
 
             # Get the number of swaps in the circuits:
             n_swaps = len(transpiled_circ.gates_of_type(gates.SWAP))
@@ -133,7 +134,35 @@ class CircuitRouter:
             if n_swaps == 0:
                 break
 
-        return best_transpiled_circ, best_final_layout, least_swaps
+        best_final_layout = CircuitRouter._get_logical_qubit_of_each_wire(best_final_layout)
+
+        return best_transpiled_circ, least_swaps, best_final_layout
+
+    @staticmethod
+    def _get_logical_qubit_of_each_wire(final_layout: Optional[dict[int, int]]) -> list[int]:
+        """Transforms Qibo's format for the final_layout into a permutation in a list.
+
+        Args:
+            final_layout (dict[int, int]): Qibo's final layout of the original logical qubits in the physical circuit: {Original logical qubit: Physical qubit where it ended after execution}.
+
+        Returns:
+            final_layout (list[int]): Final layout of the original logical qubits in the physical circuit, in a list. Each index is a Physical qubit,
+                and its value the corresponding original logic qubit state its containing: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
+        """
+        if CircuitRouter._if_layout_is_not_valid(final_layout):
+            raise ValueError(
+                f"The final layout: {final_layout} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm."
+            )
+        new_layout = []
+        for physical_qubit in range(len(final_layout)):
+            logical_qubit = [k for k, v in final_layout.items() if v == physical_qubit]
+            if len(logical_qubit) != 1:
+                raise ValueError(
+                    f"Physical qubit {physical_qubit} is not uniquely mapped to a logical qubit, instead it's mapped to {logical_qubit}."
+                )
+            new_layout.append(logical_qubit[0])
+
+        return new_layout
 
     @staticmethod
     def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
