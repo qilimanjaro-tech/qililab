@@ -1,3 +1,4 @@
+from copy import deepcopy
 import re
 from unittest.mock import patch
 import numpy as np
@@ -6,6 +7,8 @@ import pytest
 
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.native_gates import Drag
+from tests.data import Galadriel
+from tests.test_utils import build_platform
 
 
 class TestCircuitOptimizerIntegration:
@@ -245,3 +248,108 @@ class TestCircuitOptimizerUnit:
             (np.pi, np.pi / 2),
             (np.pi, np.pi / 2),
         ]
+
+        ###########
+
+    @pytest.mark.parametrize(
+        "wire_names", [None, [0, 1]]
+    )
+    def test_make_gate_None_in_queue(self, wire_names):
+        """Test make gate None in queue."""
+        circuit = Circuit(2)
+        circuit.add(gates.SWAP(0, 1))
+        circuit.add(gates.X(0))
+
+        queue = circuit.queue
+        wire_names_was_None = not deepcopy(wire_names)
+
+        CircuitOptimizer._make_gate_None_in_queue(queue[0], 0, queue, wire_names)
+
+        assert queue[0] is None
+        if wire_names_was_None:
+            assert wire_names is None
+        else:
+            assert wire_names == [1, 0]
+
+
+
+    def test_make_gate_None_in_queue_no_wire_names(self):
+        """Test make gate None in queue."""
+        circuit = Circuit(2)
+        circuit.add(gates.SWAP(0, 1))
+        circuit.add(gates.X(0))
+
+        queue = circuit.queue
+        wire_names = None
+
+        CircuitOptimizer._make_gate_None_in_queue(queue[0], 0, queue, wire_names)
+
+        assert queue[0] is None
+        assert wire_names is None
+
+    def test_remove_redundant_start_controlled_gates(self):
+        """Test remove redundant start controlled gates."""
+        circuit = Circuit(3)
+        circuit.add(gates.CNOT(0, 1))
+        circuit.add(gates.CNOT(1, 2))
+        circuit.add(gates.H(0))
+        circuit.add(gates.CNOT(0, 1))
+
+        optimizer = CircuitOptimizer(None)
+        optimized_circuit = optimizer.remove_redundant_start_controlled_gates(circuit)
+
+        assert len(optimized_circuit.queue) == 2
+        assert [gate.name for gate in optimized_circuit.queue] == ["h", "cx"]
+
+    def test_create_circuit_from_gates(self):
+        """Test create circuit from gates."""
+        gates_list = [gates.X(0), gates.H(1)]
+        nqubits = 2
+        wire_names = [0, 1]
+
+        circuit = CircuitOptimizer._create_circuit_from_gates(gates_list, nqubits, wire_names)
+
+        assert len(circuit.queue) == 2
+        assert [gate.name for gate in circuit.queue] == ["x", "h"]
+        assert circuit.wire_names == [0, 1]
+
+    def test_add_phases_from_RZs_and_CZs_to_drags(self):
+        """Test add phases from RZs and CZs to drags."""
+        circuit = Circuit(2)
+        circuit.add(gates.RZ(0, theta=np.pi / 2))
+        circuit.add(gates.CZ(0, 1))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2)) # Should end up, with the phase cancelled by RZ and then a correction added by CZ.
+
+        platform = build_platform(runcard=Galadriel.runcard)
+        optimizer = CircuitOptimizer(platform.digital_compilation_settings)
+        optimized_gates = optimizer.add_phases_from_RZs_and_CZs_to_drags(circuit.queue, 2)
+
+        assert len(optimized_gates) == 2
+        assert isinstance(optimized_gates[1], Drag)
+        correction_from_CZ_in_qubit_0= platform.digital_compilation_settings.gates["CZ(0,1)"][0].pulse.options["q0_phase_correction"]
+        assert np.isclose(optimized_gates[1].parameters, (np.pi, -correction_from_CZ_in_qubit_0)).all
+
+    def test_optimize_transpiled_gates_all_cancels(self):
+        """Test optimize transpiled gates."""
+        circuit = Circuit(2)
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(1, theta=0, phase=np.pi / 2))
+
+        optimizer = CircuitOptimizer(None)
+        optimized_gates = optimizer.optimize_transpiled_gates(circuit.queue)
+
+        assert len(optimized_gates) == 0
+
+    def test_optimize_transpiled_gates(self):
+        """Test optimize transpiled gates."""
+        circuit = Circuit(2)
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi/2, phase=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
+
+        optimizer = CircuitOptimizer(None)
+        optimized_gates = optimizer.optimize_transpiled_gates(circuit.queue)
+
+        assert len(optimized_gates) == 2
+        assert [gate.parameters for gate in optimized_gates] == [(-np.pi /2, np.pi / 2), (np.pi, np.pi / 2)]

@@ -232,10 +232,10 @@ class CircuitOptimizer:
 
         Returns:
             list[gates.Gate]: list of gates of the transpiled circuit, with gates without amplitude deleted."""
-        for gate in circuit_gates:
+        for idx, gate in enumerate(circuit_gates):
             if isinstance(gate, Drag) and np.isclose(gate.parameters[0], 0):
-                circuit_gates.remove(gate)
-        return circuit_gates
+                circuit_gates[idx] = None
+        return [gate for gate in circuit_gates if gate]
 
     @staticmethod
     def normalize_angles_of_drags(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
