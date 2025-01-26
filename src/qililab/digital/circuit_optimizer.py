@@ -389,13 +389,14 @@ class CircuitOptimizer:
             gates_to_remove (Optional[tuple[gates.Gate] | gates.Gate]): Tuple of gates to remove. Defaults to all controlled gates.
 
         Returns:
-            Circuit | : Transpiled circuit without redundant gates.
+            Circuit | list[gates.Gate] : Transpiled circuit without redundant gates.
         """
 
         finished_qubits: set = set()
         is_circuit = isinstance(transpiled_circ, Circuit)
 
         queue: list[gates.Gate] = deepcopy(transpiled_circ.queue) if is_circuit else deepcopy(transpiled_circ)  # type: ignore [attr-defined]
+        wire_names = deepcopy(transpiled_circ.wire_names) if is_circuit else None  # type: ignore [attr-defined]
 
         for idx, gate in enumerate(queue):
             # When all qubits have finished, we stop:
@@ -408,52 +409,53 @@ class CircuitOptimizer:
             )
             # If  gate fulfills the condition, and has no gate before, we remove gate:
             if is_gate_to_remove_OR_has_control_q and all(qubit not in finished_qubits for qubit in gate.qubits):
-                CircuitOptimizer._make_gate_None_in_queue(gate, idx, queue, transpiled_circ)
+                CircuitOptimizer._make_gate_None_in_queue(gate, idx, queue, wire_names)
             # If gate not fulfills the condition, or has another non-removed gate before, we stop for that qubit:
             else:
                 finished_qubits.update(gate.qubits)
 
         queue = [x for x in queue if x is not None]
 
-        # If a circuit is originally passed, return a circuit
+        # If a circuit is originally passed, return a circuit with the wire_names updated:
         if is_circuit:
-            return CircuitOptimizer._create_circuit_from_gates(queue, transpiled_circ.nqubits)  # type: ignore [attr-defined]
-
+            return CircuitOptimizer._create_circuit_from_gates(queue, transpiled_circ.nqubits, wire_names)  # type: ignore [attr-defined]
         # If a queue was passed, return a list.
         return queue
 
     @staticmethod
-    def _create_circuit_from_gates(queue: list[gates.Gate], nqubits: int) -> Circuit:
+    def _create_circuit_from_gates(queue: list[gates.Gate], nqubits: int, wire_names: Optional[list[int]]) -> Circuit:
         """
         Creates a quantum circuit from a list of gate operations.
 
         Args:
             queue (list[gates.Gate]): A list of gate operations to be added to the circuit.
             nqubits (int): The number of qubits in the circuit.
+            wire_names (Optional[list[int]]): Wire names of the circuit to create.
 
         Returns:
             Circuit: The constructed quantum circuit with the specified gates and number of qubits.
         """
         optimized_circuit = Circuit(nqubits)
         optimized_circuit.add(queue)
+        optimized_circuit.wire_names = wire_names
 
         return optimized_circuit
 
     @staticmethod
-    def _make_gate_None_in_queue(gate: gates.Gate, idx: int, queue: list[gates.Gate], transpiled_circ: Circuit) -> None:
+    def _make_gate_None_in_queue(gate: gates.Gate, idx: int, queue: list[gates.Gate], wire_names: list[int]) -> None:
         """Removes a gate from the circuit queue and updates wire names if the gate is a SWAP gate.
 
         Args:
             gate (gates.Gate): The gate to be removed from the circuit.
             idx (int): The index of the gate in the queue.
             queue (list[gates.Gate]): The list representing the circuit queue.
-            transpiled_circ (Circuit): The transpiled circuit object containing wire names.
+            wire_names (list[int]): Wire names of the transpiled circuit.
 
         Returns:
             None
         """
         queue[idx] = None
         # If we remove a SWAP gate at the start, change wire names:
-        if isinstance(gate, gates.SWAP):
-            wire_names, qubits = transpiled_circ.wire_names, gate.qubits
+        if isinstance(gate, gates.SWAP) and wire_names:
+            qubits = gate.qubits
             wire_names[qubits[0]], wire_names[qubits[1]] = wire_names[qubits[1]], wire_names[qubits[0]]
