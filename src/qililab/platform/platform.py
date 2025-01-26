@@ -1180,8 +1180,8 @@ class Platform:
 
         Returns:
             tuple[dict, Optional[list[int]]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
-                and the value is the assembly compilation (``list``)), and its corresponding final layout of the original logical qubits
-                in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
+                and the value is the assembly compilation (``list``)), and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
 
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.

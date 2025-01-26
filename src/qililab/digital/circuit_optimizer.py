@@ -84,7 +84,7 @@ class CircuitOptimizer:
             new_gates_info = CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates(new_gates_info)
 
         # Create optimized circuit, from the obtained non-cancelled list:
-        return CircuitOptimizer._create_circuit_circuit_gates(new_gates_info)
+        return CircuitOptimizer._create_qibo_gates_from_gates_info(new_gates_info)
 
     def add_phases_from_RZs_and_CZs_to_drags(self, circuit_gates: list[gates.Gate], nqubits: int) -> list[gates.Gate]:
         """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
@@ -289,11 +289,11 @@ class CircuitOptimizer:
         )
 
     @staticmethod
-    def _create_circuit_circuit_gates(circuit_gates: list[tuple]) -> list[gates.Gate]:
-        """Converts a list of gates (name, qubits) into a qibo Circuit object.
+    def _create_qibo_gates_from_gates_info(circuit_gates: list[tuple]) -> list[gates.Gate]:
+        """Converts a list of gate info (name, qubits) into a list of Qibo gates.
 
         Args:
-            circuit_gates (list[tuple]): List of gates in the circuit. Where each gate is a tuple of ('name', 'init_args', 'initi_kwargs')
+            circuit_gates (list[tuple]): List of gates in the circuit. Where each gate is a tuple of ('name', 'init_args', 'init_kwargs')
             nqubits (int): Number of qubits in the circuit.
 
         Returns:
@@ -395,41 +395,65 @@ class CircuitOptimizer:
         finished_qubits: set = set()
         is_circuit = isinstance(transpiled_circ, Circuit)
 
-        queue = deepcopy(transpiled_circ.queue) if is_circuit else deepcopy(transpiled_circ)  # type: ignore [attr-defined]
+        queue: list[gates.Gate] = deepcopy(transpiled_circ.queue) if is_circuit else deepcopy(transpiled_circ)  # type: ignore [attr-defined]
 
         for idx, gate in enumerate(queue):
-            # When all qubits have encountered a gate != SWAP, we stop:
+            # When all qubits have finished, we stop:
             if is_circuit and len(finished_qubits) == transpiled_circ.nqubits:  # type: ignore [attr-defined]
                 break
 
             # The condition will be, the gate is one of the given, or the gate has a control qubit.
-            if gates_to_remove is None:
-                check = len(gate.control_qubits) == 0
+            is_gate_to_remove_OR_has_control_q = (
+                isinstance(gate, gates_to_remove) if gates_to_remove else len(gate.control_qubits) != 0
+            )
+            # If  gate fulfills the condition, and has no gate before, we remove gate:
+            if is_gate_to_remove_OR_has_control_q and all(qubit not in finished_qubits for qubit in gate.qubits):
+                CircuitOptimizer._make_gate_None_in_queue(gate, idx, queue, transpiled_circ)
+            # If gate not fulfills the condition, or has another non-removed gate before, we stop for that qubit:
             else:
-                check = isinstance(gate, gates_to_remove)
-
-            # If the gate is fulfilling the condition, we check if both qubits have already encountered a gate not fulfilling it:
-            if check:
-                qubits = gate.qubits
-                if any(qubit in finished_qubits for qubit in qubits):
-                    for qubit in qubits:
-                        finished_qubits.add(qubit)
-                    continue
-                queue[idx] = None
-
-            # The moment we find a non-swap gate, we stop for that qubit:
-            else:
-                for qubit in gate.qubits:
-                    finished_qubits.add(qubit)
+                finished_qubits.update(gate.qubits)
 
         queue = [x for x in queue if x is not None]
 
         # If a circuit is originally passed, return a circuit
         if is_circuit:
-            optimized_circuit = Circuit(transpiled_circ.nqubits)  # type: ignore [attr-defined]
-            optimized_circuit.add(queue)
-
-            return optimized_circuit
+            return CircuitOptimizer._create_circuit_from_gates(queue, transpiled_circ.nqubits)  # type: ignore [attr-defined]
 
         # If a queue was passed, return a list.
         return queue
+
+    @staticmethod
+    def _create_circuit_from_gates(queue: list[gates.Gate], nqubits: int) -> Circuit:
+        """
+        Creates a quantum circuit from a list of gate operations.
+
+        Args:
+            queue (list[gates.Gate]): A list of gate operations to be added to the circuit.
+            nqubits (int): The number of qubits in the circuit.
+
+        Returns:
+            Circuit: The constructed quantum circuit with the specified gates and number of qubits.
+        """
+        optimized_circuit = Circuit(nqubits)
+        optimized_circuit.add(queue)
+
+        return optimized_circuit
+
+    @staticmethod
+    def _make_gate_None_in_queue(gate: gates.Gate, idx: int, queue: list[gates.Gate], transpiled_circ: Circuit) -> None:
+        """Removes a gate from the circuit queue and updates wire names if the gate is a SWAP gate.
+
+        Args:
+            gate (gates.Gate): The gate to be removed from the circuit.
+            idx (int): The index of the gate in the queue.
+            queue (list[gates.Gate]): The list representing the circuit queue.
+            transpiled_circ (Circuit): The transpiled circuit object containing wire names.
+
+        Returns:
+            None
+        """
+        queue[idx] = None
+        # If we remove a SWAP gate at the start, change wire names:
+        if isinstance(gate, gates.SWAP):
+            wire_names, qubits = transpiled_circ.wire_names, gate.qubits
+            wire_names[qubits[0]], wire_names[qubits[1]] = wire_names[qubits[1]], wire_names[qubits[0]]

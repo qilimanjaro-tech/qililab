@@ -81,8 +81,8 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple [Circuit, list[int]: Routed circuit and its corresponding final layout of the original logical qubits
-                in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
+            tuple [Circuit, list[int]: Routed circuit and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...].
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -93,6 +93,12 @@ class CircuitRouter:
 
         if least_swaps is not None:
             logger.info(f"The best found routing, has {least_swaps} swaps.")
+            logger.info(
+                f"The Initial Re-mapping of the Original Logical Qubits (l_q), in the Physical Circuit: [l_q in wire 0, l_q in wire 1, ...], will be: {best_transp_circ.wire_names}"
+            )
+            logger.info(
+                f"The Final Remapping (Initial Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q), in the Physical Circuit: [l_q in wire 0, l_q in wire 1, ...], will be: {best_final_layout}"
+            )
         else:
             logger.info("No routing was done. Most probably due to routing iterations being 0.")
 
@@ -143,11 +149,12 @@ class CircuitRouter:
         """Transforms Qibo's format for the final_layout into a permutation in a list.
 
         Args:
-            final_layout (dict[int, int]): Qibo's final layout of the original logical qubits in the physical circuit: {Original logical qubit: Physical qubit where it ended after execution}.
+            final_layout (dict[int, int]): Qibo's final layout (Initial Re-mapping + SWAPs routing) of the
+                Original Logical Qubits (l_q) in the physical circuit (wire): {l_q: wire where it ended for execution}.
 
         Returns:
-            final_layout (list[int]): Final layout of the original logical qubits in the physical circuit, in a list. Each index is a Physical qubit,
-                and its value the corresponding original logic qubit state its containing: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
+            final_layout (list[int]): Final layout (Initial Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q) in the Physical Circuit (wire), in a list.
+                Each index is a physical qubit (wire), and its value the corresponding Original Logical Qubit (l_q) state its containing: [l_q in wire 0, l_q in wire 1, ...].
         """
         if CircuitRouter._if_layout_is_not_valid(final_layout):
             raise ValueError(
@@ -191,7 +198,7 @@ class CircuitRouter:
         For example, if a qubit is mapped to more than one physical qubit. Or if the keys or values are not int.
 
         Args:
-            layout (dict[int, int]): Initial or final layout of the circuit.
+            layout (dict[int, int]): Final layout of the circuit.
 
         Returns:
             bool: True if the layout is not valid.

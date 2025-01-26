@@ -120,7 +120,11 @@ class TestCircuitRouterUnit:
 
         # Assert that the logger is called properly
         if type == "good":
-            mock_logger_info.assert_called_once_with("The best found routing, has 0 swaps.")
+            mock_logger_info.assert_has_calls([
+                call("The best found routing, has 0 swaps."),
+                call(f"The Initial Re-mapping of the Original Logical Qubits (l_q), in the Physical Circuit: [l_q in wire 0, l_q in wire 1, ...], will be: {routed_circuit.wire_names}"),
+                call(f"The Final Remapping (Initial Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q), in the Physical Circuit: [l_q in wire 0, l_q in wire 1, ...], will be: {final_layout}"),
+            ])
         elif type == "none_swaps":
             mock_logger_info.assert_called_once_with("No routing was done. Most probably due to routing iterations being 0.")
 

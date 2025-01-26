@@ -21,7 +21,6 @@ from typing import TYPE_CHECKING
 
 import networkx as nx
 
-from qililab.config import logger
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.circuit_router import CircuitRouter
 from qililab.digital.circuit_to_pulses import CircuitToPulses
@@ -162,8 +161,8 @@ class CircuitTranspiler:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[PulseSchedule, Optional[list[int]]]: Pulse schedule and its corresponding final layout of the original logical qubits
-                in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
+            tuple[PulseSchedule, Optional[list[int]]]: Pulse schedule and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
         """
         # Default values:
         if transpilation_config is None:
@@ -258,8 +257,8 @@ class CircuitTranspiler:
                 which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
 
         Returns:
-            tuple[list[Gate], int, list[int]]: List of gates of the routed circuit, number of qubits in it, and its corresponding
-                final layout of the original logical qubits in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
+            tuple[list[Gate], int, list[int]]: List of gates of the routed circuit, number of qubits in it, and its corresponding final layout (Initial
+                Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...].
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -269,9 +268,6 @@ class CircuitTranspiler:
         circuit_router = CircuitRouter(topology, placer, router)
 
         circuit, final_layout = circuit_router.route(circuit, iterations)
-        logger.info(
-            f"The mapping of the original logical qubits in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...] (Initial re-mapping + SWAPs), will be: {final_layout}"
-        )
 
         return circuit.queue, circuit.nqubits, final_layout
 
