@@ -94,10 +94,10 @@ class CircuitRouter:
         if least_swaps is not None:
             logger.info(f"The best found routing, has {least_swaps} swaps.")
             logger.info(
-                f"The Initial Re-mapping of the Original Logical Qubits (l_q), in the Physical Circuit: [l_q in wire 0, l_q in wire 1, ...], will be: {best_transp_circ.wire_names}"
+                f"{best_transp_circ.wire_names}: Initial Re-mapping of the Original Logical Qubits (l_q), in the Physical Circuit: [l_q in wire 0, l_q in wire 1, ...]."
             )
             logger.info(
-                f"The Final Remapping (Initial Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q), in the Physical Circuit: [l_q in wire 0, l_q in wire 1, ...], will be: {best_final_layout}"
+                f"{best_final_layout}: Final Re-mapping (Initial + SWAPs routing) of the Original Logical Qubits (l_q), in the Physical Circuit: [l_q in wire 0, l_q in wire 1, ...]."
             )
         else:
             logger.info("No routing was done. Most probably due to routing iterations being 0.")
