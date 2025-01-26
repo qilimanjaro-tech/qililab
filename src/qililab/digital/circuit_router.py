@@ -153,16 +153,7 @@ class CircuitRouter:
             raise ValueError(
                 f"The final layout: {final_layout} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm."
             )
-        new_layout = []
-        for physical_qubit in range(len(final_layout)):
-            logical_qubit = [k for k, v in final_layout.items() if v == physical_qubit]
-            if len(logical_qubit) != 1:
-                raise ValueError(
-                    f"Physical qubit {physical_qubit} is not uniquely mapped to a logical qubit, instead it's mapped to {logical_qubit}."
-                )
-            new_layout.append(logical_qubit[0])
-
-        return new_layout
+        return [logical_q for logical_q, _ in sorted(final_layout.items(), key=lambda q_wire_in_1: q_wire_in_1[1])]
 
     @staticmethod
     def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
