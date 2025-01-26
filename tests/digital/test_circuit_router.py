@@ -31,10 +31,11 @@ circuit_test = Circuit(5)
 circuit_test.add(gates.H(0))
 # Tests circuit with SWAP
 circuit_w_swap_test = Circuit(5)
+circuit_test.add(gates.H(0))
 circuit_w_swap_test.add(gates.SWAP(0,1))
 # Tests layouts
-test_layout = {1:0}
-test_bad_layout = {0:0, 1:0}
+qibo_test_layout, test_layout = {1:0, 0:1}, [1, 0]
+qibo_test_bad_layout = {0:0, 1:0}
 
 #########################
 ### INTEGRATION TESTS ###
@@ -101,8 +102,7 @@ class TestCircuitRouterUnit:
         "type, circuit, layout, least_swaps",
         [
             ("good", circuit_test, test_layout, 0),
-            ("none_swaos", circuit_test, test_layout, None),
-            ("bad_layout", circuit_test, test_bad_layout, 0)
+            ("none_swaps", circuit_test, test_layout, None),
         ]
     )
     @patch("qililab.config.logger.info")
@@ -110,53 +110,62 @@ class TestCircuitRouterUnit:
     def test_route(self, mock_iterate, mock_logger_info, type, circuit, layout, least_swaps):
         """Test the routing of a circuit."""
         # Set the mock returns to the parametrized test values:
-        mock_iterate.return_value = (circuit, layout, least_swaps)
+        mock_iterate.return_value = (circuit, least_swaps, layout)
 
         # Execute the routing:
-        if type in ["good", "none_swaos"]:
+        if type in ["good", "none_swaps"]:
             routed_circuit, final_layout = self.circuit_router.route(linear_circuit)
             # Assert you return the same outputs as the mocked _iterate_routing
             assert (routed_circuit, final_layout) ==(circuit_test, test_layout)
-        elif type == "bad_layout":
-            with pytest.raises(ValueError, match=re.escape(f"The final layout: {test_bad_layout} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm.")):
-                _, _ = self.circuit_router.route(linear_circuit)
 
         # Assert that the logger is called properly
         if type == "good":
             mock_logger_info.assert_called_once_with("The best found routing, has 0 swaps.")
-        elif type == "none_swaos":
+        elif type == "none_swaps":
             mock_logger_info.assert_called_once_with("No routing was done. Most probably due to routing iterations being 0.")
-        elif type == "bad_layout":
-            mock_logger_info.assert_not_called()
 
         # Assert that the routing pipeline was called with the correct arguments
         mock_iterate.assert_called_once_with(self.circuit_router.pipeline, linear_circuit, 10)
 
+    @pytest.mark.parametrize("type, qibo_layout, layout", [("good", qibo_test_layout, test_layout), ("bad_layout", qibo_test_bad_layout, None)])
+    def test_get_logical_qubit_of_each_wire(self, type, qibo_layout, layout):
+        if type == "bad_layout":
+            with pytest.raises(ValueError, match=re.escape(f"The final layout: {qibo_test_bad_layout} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm.")):
+                _ = self.circuit_router._get_logical_qubit_of_each_wire(qibo_layout)
+
+        elif type == "good":
+            new_layout_format = self.circuit_router._get_logical_qubit_of_each_wire(qibo_layout)
+            assert new_layout_format == layout
+
     @pytest.mark.parametrize(
-        "type, circuit, layout, least_swaps, iterations",
+        "type, circuit, qibo_layout, layout, least_swaps, iterations",
         [
-            ("without_swaps", circuit_test, test_layout, None, 10),
-            ("with_swaps", circuit_w_swap_test, test_layout, 1, 7),
+            ("without_swaps", circuit_test, qibo_test_layout, test_layout, None, 10),
+            ("with_swaps", circuit_w_swap_test, qibo_test_layout, test_layout, 1, 7),
 
         ]
     )
+    @patch("qililab.digital.circuit_router.CircuitOptimizer.remove_redundant_start_controlled_gates")
     @patch("qililab.digital.circuit_router.Passes.__call__")
-    def test_iterate_routing_without_swaps(self, mock_qibo_routing, type, circuit, layout, least_swaps, iterations):
+    def test_iterate_routing_with_and_without_swaps(self, mock_qibo_routing, mock_removing_swaps, type, circuit, qibo_layout, layout, least_swaps, iterations):
         """ Test the iterate routing of a circuit, with and without swaps."""
         # Add the mock return value to the parametrized test values:
-        mock_qibo_routing.return_value = (circuit, layout)
+        mock_qibo_routing.return_value = (circuit, qibo_layout)
+        mock_removing_swaps.return_value = circuit
 
         # Execute the iterate_routing:
-        routed_circuit, least_swaps, final_layout = self.circuit_router._iterate_routing(self.circuit_router.pipeline, linear_circuit, iterations)
+        routed_circuit, least_swaps, final_layout = self.circuit_router._iterate_routing(self.circuit_router.pipeline, circuit, iterations)
 
         # Assert calls on the routing algorithm:
         if type == "with_swaps":
             # Assert called as many times as number of iterations, since there are swaps present:
-            mock_qibo_routing.assert_has_calls([call(linear_circuit)]*iterations)
+            mock_qibo_routing.assert_has_calls([call(circuit)]*iterations)
+            mock_removing_swaps.assert_has_calls([call(circuit, gates.SWAP)]*iterations)
             expected_least_swaps = 1
         elif type == "without_swaps":
             # Assert only called once, since there are no swaps:
-            mock_qibo_routing.assert_called_once_with(linear_circuit)
+            mock_qibo_routing.assert_called_once_with(circuit)
+            mock_removing_swaps.assert_called_once_with(circuit, gates.SWAP)
             expected_least_swaps = iterations = 0 # Since there are no swaps, no iterations have been needed
 
         # Assert you return the correct outputs:
@@ -189,10 +198,10 @@ class TestCircuitRouterUnit:
     def test_if_layout_is_not_valid(self):
         """Test the _if_layout_is_not_valid method."""
         # Test valid layout
-        assert not self.circuit_router._if_layout_is_not_valid(test_layout)
+        assert not self.circuit_router._if_layout_is_not_valid(qibo_test_layout)
 
         # Test invalid layout
-        assert self.circuit_router._if_layout_is_not_valid(test_bad_layout)
+        assert self.circuit_router._if_layout_is_not_valid(qibo_test_bad_layout)
 
     @patch("qililab.digital.circuit_router.CircuitRouter._check_ReverseTraversal_routing_connectivity")
     @patch("qililab.digital.circuit_router.logger.warning")

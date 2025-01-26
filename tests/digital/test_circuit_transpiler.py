@@ -658,10 +658,10 @@ class TestCircuitTranspiler:
     def test_transpile_circuit(self, mock_to_pulses, mock_to_native, mock_route, mock_opt_trans, mock_opt_circuit, mock_add_phases, optimize, digital_settings):
         """Test transpile_circuit method"""
         transpiler = CircuitTranspiler(settings=digital_settings)
+        routing=True
         placer = MagicMock()
         router = MagicMock()
         routing_iterations = 7
-        routing=True
         transpilation_config = DigitalTranspilationConfig(routing=routing, optimize=optimize, router=router, placer=placer, routing_iterations=routing_iterations)
 
         # Mock circuit for return values
@@ -676,7 +676,7 @@ class TestCircuitTranspiler:
         mock_schedule = PulseSchedule()
 
         # Mock the return values
-        mock_route.return_value = mock_circuit.queue, mock_layout, mock_circuit.nqubits
+        mock_route.return_value = mock_circuit.queue, mock_circuit.nqubits, mock_layout
         mock_opt_circuit.return_value = mock_circuit_gates
         mock_to_native.return_value = mock_circuit_gates
         mock_add_phases.return_value = mock_circuit_gates
