@@ -139,7 +139,7 @@ class CircuitRouter:
         return best_transpiled_circ, least_swaps, best_final_layout
 
     @staticmethod
-    def _get_logical_qubit_of_each_wire(final_layout: Optional[dict[int, int]]) -> list[int]:
+    def _get_logical_qubit_of_each_wire(final_layout: dict[int, int]) -> list[int]:
         """Transforms Qibo's format for the final_layout into a permutation in a list.
 
         Args:

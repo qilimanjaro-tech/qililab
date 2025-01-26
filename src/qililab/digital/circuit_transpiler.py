@@ -89,7 +89,7 @@ class CircuitTranspiler:
         self,
         circuit: Circuit,
         transpilation_config: Optional[DigitalTranspilationConfig] = None,
-    ) -> tuple[PulseSchedule, list[int]]:
+    ) -> tuple[PulseSchedule, Optional[list[int]]]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
         The process involves the following steps (by default only: **3.**, **4**., and **6.** run):
@@ -162,8 +162,8 @@ class CircuitTranspiler:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[PulseSchedule, list[int]]: Pulse schedule and its corresponding final layout of the original logical qubits
-                in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
+            tuple[PulseSchedule, Optional[list[int]]]: Pulse schedule and its corresponding final layout of the original logical qubits
+                in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
         """
         # Default values:
         if transpilation_config is None:
@@ -177,7 +177,7 @@ class CircuitTranspiler:
             circuit_gates, nqubits, final_layout = self.route_circuit(circuit, placer, router, routing_iterations)
         else:
             circuit_gates, nqubits = circuit.queue, circuit.nqubits
-            final_layout = list(range(nqubits))
+            final_layout = None  # Trivial mapping
 
         # Optimze qibo gates, cancelling redundant gates:
         if optimize:
