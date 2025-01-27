@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Exponential decay correction."""
-from copy import deepcopy
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -112,35 +112,3 @@ class ExponentialCorrection(PulseDistortion):
         # Filtered signal
         corr_envelope = signal.lfilter(b=[b_0, b_1], a=[1, a_1], x=envelope)
         return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
-
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "ExponentialCorrection":
-        """Loads ExponentialCorrection object from dictionary.
-
-        Args:
-            dictionary (dict): Dictionary object of the ExponentialCorrection object. It must include the name of the
-            correction, the tau exponential factor, the amplitude, the sampling rate, the normalization factor and
-            the auto normalization flag value.
-
-        Returns:
-            ExponentialCorrection: Loaded class.
-        """
-        local_dictionary = deepcopy(dictionary)
-        local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
-
-    def to_dict(self) -> dict:
-        """Returns dictionary representation of the distortion.
-
-        Returns:
-            dict: Dictionary representation including the name of the correction, the tau exponential factor, the
-            amplitude, the sampling rate, the normalization factor and the auto normalization flag value.
-        """
-        return {
-            "name": self.name.value,
-            "tau_exponential": self.tau_exponential,
-            "amp": self.amp,
-            "sampling_rate": self.sampling_rate,
-            "norm_factor": self.norm_factor,
-            "auto_norm": self.auto_norm,
-        }
