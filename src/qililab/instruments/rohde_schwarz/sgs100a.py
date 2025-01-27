@@ -119,9 +119,9 @@ class SGS100A(Instrument):
         raise ParameterNotFound(self, parameter)
 
     def set_alc_status(self, status: boolean = True):
-        parameter_status = False
-        if status:
-            parameter_status = "On"
+        parameter_status = True
+        if not status:
+            parameter_status = "Off"
         self.device.send_command(command=":SOUR:POW:ALC:STAT", arg=parameter_status)
 
     @check_device_initialized
