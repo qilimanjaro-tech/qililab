@@ -615,7 +615,7 @@ class QuantumMachinesCompiler:
         # Return weights names
         return A, B, C, D
 
-    def __add_waveform_to_configuration(self, waveform: Waveform, current_gain: Variable | None):
+    def __add_waveform_to_configuration(self, waveform: Waveform, current_gain: float | qua.QuaVariableType | None):
         waveform_name = QuantumMachinesCompiler.__hash_waveform(waveform)
         if waveform_name not in self._configuration["waveforms"]:
             self._configuration["waveforms"][waveform_name] = QuantumMachinesCompiler.__waveform_to_config(
@@ -635,7 +635,7 @@ class QuantumMachinesCompiler:
         return hash_result.hexdigest()[:8]
 
     @staticmethod
-    def __waveform_to_config(waveform: Waveform, current_gain: Variable | None):
+    def __waveform_to_config(waveform: Waveform, current_gain: float | qua.QuaVariableType | None):
         if isinstance(waveform, Square):
             amplitude = (
                 waveform.amplitude / QuantumMachinesCompiler.VOLTAGE_COEFF
