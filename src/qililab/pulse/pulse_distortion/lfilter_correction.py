@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """LFilter correction."""
-from copy import deepcopy
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -106,33 +106,3 @@ class LFilterCorrection(PulseDistortion):
         # Filtered signal
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
         return self.normalize_envelope(envelope=envelope, corr_envelope=corr_envelope)
-
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
-        """Loads LFilterCorrection object from dictionary.
-
-        Args:
-            dictionary (dict): Dictionary representation of the LFilterCorrection object. It must include the name of the
-            correction, the a and b parameters, the normalization factor and the auto normalization flag value.
-
-        Returns:
-            LFilterCorrection: Loaded class.
-        """
-        local_dictionary = deepcopy(dictionary)
-        local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
-
-    def to_dict(self) -> dict:
-        """Returns dictionary representation of the distortion.
-
-        Returns:
-            dict: Dictionary representation includes the name of the correction, the a and b parameters, the normalization
-            factor and the auto normalization flag value..
-        """
-        return {
-            "name": self.name.value,
-            "a": self.a,
-            "b": self.b,
-            "norm_factor": self.norm_factor,
-            "auto_norm": self.auto_norm,
-        }
