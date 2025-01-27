@@ -710,7 +710,7 @@ class TestMethods:
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
         test_waveforms_q0 = Waveforms()
-        test_waveforms_q0.add(array=[0.5, 1.0, 0.5, 0.0], index=0)
+        test_waveforms_q0.add(array=[0.2, 0.4, 0.2, 0.0], index=0)
         test_waveforms_q0.add(array=[0.0, 0.0, 0.0, 0.0], index=1)
 
         with (

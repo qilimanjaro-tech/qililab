@@ -789,10 +789,17 @@ class Platform:
             # Determine what should be the initial value of the markers for each bus.
             # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
+            voltage_coefficient = {}
             for bus in buses:
                 for instrument, channel in zip(bus.instruments, bus.channels):
                     if isinstance(instrument, QbloxModule):
                         sequencer = instrument.get_sequencer(sequencer_id=channel)
+                        # Define the voltage coefficient depending of the Qblox module
+                        if instrument.name == InstrumentName.QCMRF or instrument.name == InstrumentName.QBLOX_QCM:
+                            voltage_coefficient[bus.alias] = 2.5
+                        elif instrument.name == InstrumentName.QRMRF or instrument.name == InstrumentName.QBLOX_QRM:
+                            voltage_coefficient[bus.alias] = 0.5
+
                         if instrument.name == InstrumentName.QCMRF:
                             markers[bus.alias] = "".join(
                                 ["1" if i in [0, 1] and i in sequencer.outputs else "0" for i in range(4)]
@@ -811,6 +818,7 @@ class Platform:
                 times_of_flight=times_of_flight,
                 delays=delays,
                 markers=markers,
+                voltage_coefficient=voltage_coefficient,
             )
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
             if len(instruments) != 1:
