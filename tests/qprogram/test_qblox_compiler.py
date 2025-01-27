@@ -1342,7 +1342,6 @@ class TestQBloxCompiler:
         sequences, _ = compiler.compile(
             qprogram=play_square_waveforms_with_optimization,
             voltage_coefficient={"drive": 2.5},
-            optimize_square_waveforms=True,
         )
 
         assert len(sequences["drive"]._waveforms._waveforms) == 11

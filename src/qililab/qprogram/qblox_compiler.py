@@ -177,7 +177,6 @@ class QbloxCompiler:
             times_of_flight (dict[str, int] | None, optional): Optional time of flight of bus. Defaults to None.
             delays (dict[str, int] | None, optional): . Defaults to None.
             markers (dict[str, str] | None, optional): . Defaults to None.
-            optimize_square_waveforms (bool, optional): . Defaults to False.
 
         Returns:
             QbloxCompilationOutput:
