@@ -17,6 +17,7 @@ Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 
 from dataclasses import dataclass
+from xmlrpc.client import boolean
 
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
@@ -116,6 +117,12 @@ class SGS100A(Instrument):
         if parameter == Parameter.RF_ON:
             return self.settings.rf_on
         raise ParameterNotFound(self, parameter)
+
+    def set_alc_status(self, status: boolean = True):
+        parameter_status = False
+        if status:
+            parameter_status = "On"
+        self.device.send_command(command=":SOUR:POW:ALC:STAT", arg=parameter_status)
 
     @check_device_initialized
     def initial_setup(self):
