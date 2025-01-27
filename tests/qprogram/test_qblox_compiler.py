@@ -1,14 +1,14 @@
+import logging
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 import qpysequence as QPy
+from tests.test_utils import is_q1asm_equal
 
 from qililab import Calibration, Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
-from qililab.qprogram.blocks import ForLoop
-from tests.test_utils import is_q1asm_equal
 from qililab.config import logger
-import logging
+from qililab.qprogram.blocks import ForLoop
 
 
 def setup_q1asm(marker: str):
@@ -38,6 +38,7 @@ def fixture_play_named_operation() -> QProgram:
     qp.play(bus="drive", waveform=drag_wf)
 
     return qp
+
 
 @pytest.fixture(name="measurement_blocked_operation")
 def fixture_measurement_blocked_operation() -> QProgram:
@@ -357,6 +358,7 @@ def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
     qp.play(bus="drive", waveform=Gaussian(amplitude=1.0, duration=40, num_sigmas=4))
     return qp
 
+
 @pytest.fixture(name="play_square_waveforms_with_optimization")
 def fixture_lay_square_waveforms_with_optimization() -> QProgram:
     qp = QProgram()
@@ -370,6 +372,7 @@ def fixture_lay_square_waveforms_with_optimization() -> QProgram:
     qp.play(bus="drive", waveform=Square(0.5, duration=1234567))
     return qp
 
+
 @pytest.fixture(name="play_operation_with_variable_in_waveform")
 def fixture_play_operation_with_variable_in_waveform() -> QProgram:
     qp = QProgram()
@@ -382,7 +385,10 @@ class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
         output = compiler.compile(
-            qprogram=play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration
+            qprogram=play_named_operation,
+            voltage_coefficient={"drive_q0": 2.5},
+            bus_mapping={"drive": "drive_q0"},
+            calibration=calibration,
         )
 
         assert len(output.sequences) == 1
@@ -399,11 +405,11 @@ class TestQBloxCompiler:
 
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(
-            qprogram=measurement_blocked_operation
+            qprogram=measurement_blocked_operation, voltage_coefficient={"readout": 0.5, "drive": 2.5}
         )
 
         sequences_no_block, _ = compiler.compile(
-            qprogram=qp_no_block
+            qprogram=qp_no_block, voltage_coefficient={"readout": 0.5, "drive": 2.5}
         )
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -428,11 +434,18 @@ class TestQBloxCompiler:
         calibration = Calibration()
         compiler = QbloxCompiler()
         with pytest.raises(RuntimeError):
-            _ = compiler.compile(play_named_operation, bus_mapping={"drive": "drive_q0"}, calibration=calibration)
+            _ = compiler.compile(
+                play_named_operation,
+                voltage_coefficient={"drive": 2.5},
+                bus_mapping={"drive": "drive_q0"},
+                calibration=calibration,
+            )
 
     def test_no_loops_all_operations(self, no_loops_all_operations: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=no_loops_all_operations)
+        sequences, _ = compiler.compile(
+            qprogram=no_loops_all_operations, voltage_coefficient={"readout": 0.5, "drive": 2.5}
+        )
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -493,11 +506,11 @@ class TestQBloxCompiler:
     def test_set_offset_without_path_1_throws_exception(self, offset_no_path1: QProgram):
         with pytest.raises(ValueError, match="No offset has been given for path 1 inside set_offset."):
             compiler = QbloxCompiler()
-            _ = compiler.compile(qprogram=offset_no_path1)
+            _ = compiler.compile(qprogram=offset_no_path1, voltage_coefficient={"drive": 2.5})
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=dynamic_wait)
+        sequences, _ = compiler.compile(qprogram=dynamic_wait, voltage_coefficient={"readout": 0.5, "drive": 2.5})
 
         assert len(sequences) == 1
         assert "drive" in sequences
@@ -527,7 +540,10 @@ class TestQBloxCompiler:
         self, dynamic_wait_multiple_buses_with_disable_autosync: QProgram
     ):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=dynamic_wait_multiple_buses_with_disable_autosync)
+        sequences, _ = compiler.compile(
+            qprogram=dynamic_wait_multiple_buses_with_disable_autosync,
+            voltage_coefficient={"readout": 0.5, "drive": 2.5},
+        )
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -577,16 +593,20 @@ class TestQBloxCompiler:
     def test_dynamic_wait_multiple_buses_throws_exception(self, dynamic_wait_multiple_buses: QProgram):
         with pytest.raises(NotImplementedError, match="Dynamic syncing is not implemented yet."):
             compiler = QbloxCompiler()
-            _ = compiler.compile(qprogram=dynamic_wait_multiple_buses)
+            _ = compiler.compile(
+                qprogram=dynamic_wait_multiple_buses, voltage_coefficient={"readout": 0.5, "drive": 2.5}
+            )
 
     def test_sync_operation_with_dynamic_timings_throws_exception(self, sync_with_dynamic_wait: QProgram):
         with pytest.raises(NotImplementedError, match="Dynamic syncing is not implemented yet."):
             compiler = QbloxCompiler()
-            _ = compiler.compile(qprogram=sync_with_dynamic_wait)
+            _ = compiler.compile(qprogram=sync_with_dynamic_wait, voltage_coefficient={"readout": 0.5, "drive": 2.5})
 
     def test_average_with_long_wait(self, average_loop_long_wait: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=average_loop_long_wait)
+        sequences, _ = compiler.compile(
+            qprogram=average_loop_long_wait, voltage_coefficient={"readout": 0.5, "drive": 2.5}
+        )
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -646,7 +666,7 @@ class TestQBloxCompiler:
 
     def test_infinite_loop(self, infinite_loop: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=infinite_loop)
+        sequences, _ = compiler.compile(qprogram=infinite_loop, voltage_coefficient={"drive": 2.5})
 
         assert len(sequences) == 1
         assert "drive" in sequences
@@ -670,7 +690,7 @@ class TestQBloxCompiler:
 
     def test_average_loop(self, average_loop: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=average_loop)
+        sequences, _ = compiler.compile(qprogram=average_loop, voltage_coefficient={"readout": 0.5, "drive": 2.5})
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -730,7 +750,9 @@ class TestQBloxCompiler:
 
     def test_average_with_for_loop_variable_does_nothing(self, average_with_for_loop_nshots: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=average_with_for_loop_nshots)
+        sequences, _ = compiler.compile(
+            qprogram=average_with_for_loop_nshots, voltage_coefficient={"readout": 0.5, "drive": 2.5}
+        )
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -801,7 +823,9 @@ class TestQBloxCompiler:
 
     def test_average_with_for_loop(self, average_with_for_loop: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=average_with_for_loop)
+        sequences, _ = compiler.compile(
+            qprogram=average_with_for_loop, voltage_coefficient={"readout": 0.5, "drive": 2.5}
+        )
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -872,7 +896,7 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    def test_measure_calls_play_acquire(self, measure_program):
+    def test_measure_calls_play_acquire(self, measure_program: QProgram):
         compiler = QbloxCompiler()
 
         # Test measure with default time of flight
@@ -880,7 +904,7 @@ class TestQBloxCompiler:
             patch.object(QbloxCompiler, "_handle_play") as handle_play,
             patch.object(QbloxCompiler, "_handle_acquire") as handle_acquire,
         ):
-            compiler.compile(measure_program)
+            compiler.compile(measure_program, voltage_coefficient={"readout": 0.5})
 
             measure = measure_program.body.elements[0]
             assert handle_play.call_count == 1
@@ -896,7 +920,7 @@ class TestQBloxCompiler:
             patch.object(QbloxCompiler, "_handle_play") as handle_play,
             patch.object(QbloxCompiler, "_handle_acquire") as handle_acquire,
         ):
-            compiler.compile(measure_program, times_of_flight={"readout": 123})
+            compiler.compile(measure_program, voltage_coefficient={"readout": 0.5}, times_of_flight={"readout": 123})
 
             measure = measure_program.body.elements[0]
             assert handle_play.call_count == 1
@@ -911,7 +935,10 @@ class TestQBloxCompiler:
         self, acquire_loop_with_for_loop_with_weights_of_same_waveform: QProgram
     ):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=acquire_loop_with_for_loop_with_weights_of_same_waveform)
+        sequences, _ = compiler.compile(
+            qprogram=acquire_loop_with_for_loop_with_weights_of_same_waveform,
+            voltage_coefficient={"readout": 0.5, "drive": 2.5},
+        )
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -984,7 +1011,9 @@ class TestQBloxCompiler:
 
     def test_average_with_multiple_for_loops_and_acquires(self, average_with_multiple_for_loops_and_acquires: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=average_with_multiple_for_loops_and_acquires)
+        sequences, _ = compiler.compile(
+            qprogram=average_with_multiple_for_loops_and_acquires, voltage_coefficient={"readout": 0.5}
+        )
 
         assert len(sequences) == 1
         assert "readout" in sequences
@@ -1045,7 +1074,9 @@ class TestQBloxCompiler:
 
     def test_average_with_nested_for_loops(self, average_with_nested_for_loops: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=average_with_nested_for_loops)
+        sequences, _ = compiler.compile(
+            qprogram=average_with_nested_for_loops, voltage_coefficient={"readout": 0.5, "drive": 2.5}
+        )
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -1130,7 +1161,9 @@ class TestQBloxCompiler:
 
     def test_average_with_parallel_for_loops(self, average_with_parallel_for_loops: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=average_with_parallel_for_loops)
+        sequences, _ = compiler.compile(
+            qprogram=average_with_parallel_for_loops, voltage_coefficient={"readout": 0.5, "drive": 2.5}
+        )
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -1209,7 +1242,9 @@ class TestQBloxCompiler:
 
     def test_multiple_play_operations_with_same_waveform(self, multiple_play_operations_with_same_waveform: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=multiple_play_operations_with_same_waveform)
+        sequences, _ = compiler.compile(
+            qprogram=multiple_play_operations_with_same_waveform, voltage_coefficient={"drive": 2.5}
+        )
 
         assert len(sequences) == 1
         assert "drive" in sequences
@@ -1240,7 +1275,9 @@ class TestQBloxCompiler:
 
     def test_multiple_play_operations_with_no_Q_waveform(self, multiple_play_operations_with_no_Q_waveform: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=multiple_play_operations_with_no_Q_waveform)
+        sequences, _ = compiler.compile(
+            qprogram=multiple_play_operations_with_no_Q_waveform, voltage_coefficient={"drive": 2.5}
+        )
 
         assert len(sequences) == 1
         assert "drive" in sequences
@@ -1271,7 +1308,11 @@ class TestQBloxCompiler:
 
     def test_play_square_waveforms_with_optimization(self, play_square_waveforms_with_optimization: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=play_square_waveforms_with_optimization, optimize_square_waveforms=True)
+        sequences, _ = compiler.compile(
+            qprogram=play_square_waveforms_with_optimization,
+            voltage_coefficient={"drive": 2.5},
+            optimize_square_waveforms=True,
+        )
 
         assert len(sequences["drive"]._waveforms._waveforms) == 11
         assert sequences["drive"]._program._compiled
@@ -1320,14 +1361,17 @@ class TestQBloxCompiler:
     def test_play_operation_with_variable_in_waveform(self, caplog, play_operation_with_variable_in_waveform: QProgram):
         compiler = QbloxCompiler()
         with caplog.at_level(logging.ERROR):
-            _ = compiler.compile(qprogram=play_operation_with_variable_in_waveform)
+            _ = compiler.compile(qprogram=play_operation_with_variable_in_waveform, voltage_coefficient={"drive": 2.5})
 
         assert "Variables in waveforms are not supported in Qblox." in caplog.text
 
-
     def test_delay(self, average_with_for_loop_nshots: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=average_with_for_loop_nshots, delays={"drive": 20})
+        sequences, _ = compiler.compile(
+            qprogram=average_with_for_loop_nshots,
+            voltage_coefficient={"readout": 0.5, "drive": 2.5},
+            delays={"drive": 20},
+        )
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -1386,7 +1430,11 @@ class TestQBloxCompiler:
 
     def test_negative_delay(self, average_with_for_loop_nshots: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=average_with_for_loop_nshots, delays={"drive": -20})
+        sequences, _ = compiler.compile(
+            qprogram=average_with_for_loop_nshots,
+            voltage_coefficient={"readout": 0.5, "drive": 2.5},
+            delays={"drive": -20},
+        )
 
         assert len(sequences) == 2
         assert "drive" in sequences
