@@ -116,9 +116,10 @@ class QuantumMachinesCompiler:
     """A class for compiling QProgram to Quantum Machines hardware."""
 
     FREQUENCY_COEFF = 1
-    PHASE_COEFF = 2 * np.pi
-    WAIT_COEFF = 4
     MINIMUM_TIME = 4
+    PHASE_COEFF = 2 * np.pi
+    VOLTAGE_COEFF = 2
+    WAIT_COEFF = 4
 
     def __init__(self) -> None:
         # Handlers to map each operation to a corresponding handler function
@@ -389,19 +390,23 @@ class QuantumMachinesCompiler:
         self._buses[element.bus].current_gain = gain
 
     def _handle_play(self, element: Play):
-        waveform_I, waveform_Q = element.get_waveforms()
-        waveform_variables = element.get_waveform_variables()
-        duration = waveform_I.get_duration()
-
         gain = (
-            qua.amp(self._buses[element.bus].current_gain)  # type: ignore[arg-type]
+            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore[arg-type]
             if self._buses[element.bus].current_gain is not None
             else None
         )
 
+        waveform_I, waveform_Q = element.get_waveforms()
+        waveform_variables = element.get_waveform_variables()
+        duration = waveform_I.get_duration()
+
         if not waveform_variables:
-            waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
-            waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q) if waveform_Q else None
+            waveform_I_name = self.__add_waveform_to_configuration(waveform_I, self._buses[element.bus].current_gain)
+            waveform_Q_name = (
+                self.__add_waveform_to_configuration(waveform_Q, self._buses[element.bus].current_gain)
+                if waveform_Q
+                else None
+            )
             pulse_name = self.__add_or_update_control_pulse_to_configuration(waveform_I_name, waveform_Q_name, duration)
             operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
             pulse = operation_name * gain if gain is not None else operation_name
@@ -412,16 +417,17 @@ class QuantumMachinesCompiler:
         yield
 
     def _handle_measure(self, element: Measure):
-        waveform_I, waveform_Q = element.get_waveforms()
-
-        waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
-        waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q)
-
         gain = (
-            qua.amp(self._buses[element.bus].current_gain)  # type: ignore[arg-type]
+            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore[arg-type]
             if self._buses[element.bus].current_gain is not None
             else None
         )
+
+        waveform_I, waveform_Q = element.get_waveforms()
+
+        waveform_I_name = self.__add_waveform_to_configuration(waveform_I, self._buses[element.bus].current_gain)
+        waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q, self._buses[element.bus].current_gain)
+
         rotation = (
             element.rotation  # type: ignore
             if element.rotation is not None
@@ -596,10 +602,12 @@ class QuantumMachinesCompiler:
         # Return weights names
         return A, B, C, D
 
-    def __add_waveform_to_configuration(self, waveform: Waveform):
+    def __add_waveform_to_configuration(self, waveform: Waveform, current_gain: Variable | None):
         waveform_name = QuantumMachinesCompiler.__hash_waveform(waveform)
         if waveform_name not in self._configuration["waveforms"]:
-            self._configuration["waveforms"][waveform_name] = QuantumMachinesCompiler.__waveform_to_config(waveform)
+            self._configuration["waveforms"][waveform_name] = QuantumMachinesCompiler.__waveform_to_config(
+                waveform, current_gain
+            )
         return waveform_name
 
     @staticmethod
@@ -614,12 +622,20 @@ class QuantumMachinesCompiler:
         return hash_result.hexdigest()[:8]
 
     @staticmethod
-    def __waveform_to_config(waveform: Waveform):
+    def __waveform_to_config(waveform: Waveform, current_gain: Variable | None):
         if isinstance(waveform, Square):
-            amplitude = waveform.amplitude
+            amplitude = (
+                waveform.amplitude / QuantumMachinesCompiler.VOLTAGE_COEFF
+                if current_gain is not None
+                else waveform.amplitude
+            )
             return {"type": "constant", "sample": amplitude}
 
-        envelope = waveform.envelope()
+        envelope = (
+            waveform.envelope() / QuantumMachinesCompiler.VOLTAGE_COEFF
+            if current_gain is not None
+            else waveform.envelope()
+        )
         return {"type": "arbitrary", "samples": envelope.tolist()}
 
     @staticmethod

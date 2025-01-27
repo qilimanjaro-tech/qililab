@@ -155,25 +155,30 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
-        self._voltage_coefficient: dict[str, float] | None = None
+        self._voltage_coefficient: dict[str, float] = {}
 
     def compile(
         self,
         qprogram: QProgram,
+        voltage_coefficient: dict[str, float],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         times_of_flight: dict[str, int] | None = None,
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
         optimize_square_waveforms: bool = False,
-        voltage_coefficient: dict[str, float] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
+            voltage_coefficient (dict[str, float]): Coefficient of voltage that depends on the module type and its voltage limit, QRMs reach 1 Vpp and QCMs 5 Vpp.
             bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
+            calibration (Calibration | None, optional): . Defaults to None.
             times_of_flight (dict[str, int] | None, optional): Optional time of flight of bus. Defaults to None.
+            delays (dict[str, int] | None, optional): . Defaults to None.
+            markers (dict[str, str] | None, optional): . Defaults to None.
+            optimize_square_waveforms (bool, optional): . Defaults to False.
 
         Returns:
             QbloxCompilationOutput:
@@ -413,7 +418,7 @@ class QbloxCompiler:
             else convert(element.gain)
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetAwgGain(gain_0=gain // self._voltage_coefficient, gain_1=gain)
+            component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
         )
 
     def _handle_set_offset(self, element: SetOffset):
