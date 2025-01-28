@@ -27,6 +27,7 @@ from qibo.transpiler.router import Router, Sabre, StarConnectivityRouter
 
 from qililab.config import logger
 from qililab.digital.circuit_optimizer import CircuitOptimizer
+from qililab.digital.native_gates import _GateHandler
 
 
 class CircuitRouter:
@@ -125,6 +126,9 @@ class CircuitRouter:
             # Call the routing pipeline on the circuit:
             transpiled_circ, final_layout = routing_pipeline(circuit)
 
+            # Undo the initial remapping (wire_names), for executing in correct chips:
+            transpiled_circ = CircuitRouter._undo_initial_remap(transpiled_circ)
+
             # Remove redundant swaps at the start of the transpiled circuit:
             transpiled_circ = CircuitOptimizer.remove_redundant_start_controlled_gates(transpiled_circ, gates.SWAP)
 
@@ -143,6 +147,24 @@ class CircuitRouter:
         best_final_layout = CircuitRouter._get_logical_qubit_of_each_wire(best_final_layout)
 
         return best_transpiled_circ, least_swaps, best_final_layout
+
+    @staticmethod
+    def _undo_initial_remap(transpiled_circ: Circuit) -> Circuit:
+        """Undo the initial remapping of the circuit, to execute in the correct chips.
+
+        Args:
+            transpiled_circ (Circuit): Circuit with the initial remapping.
+
+        Returns:
+            Circuit: Circuit with the initial remapping undone.
+        """
+        new_queue = []
+        for gate in transpiled_circ.queue:
+            qubits = [transpiled_circ.wire_names.index(qubit) for qubit in gate.qubits]
+            gate = _GateHandler.create_gate(type(gate).__name__, qubits, gate.init_kwargs)
+            new_queue.append(gate)
+
+        return _GateHandler.create_circuit_from_gates(new_queue, transpiled_circ.nqubits, transpiled_circ.wire_names)
 
     @staticmethod
     def _get_logical_qubit_of_each_wire(final_layout: dict[int, int]) -> list[int]:
