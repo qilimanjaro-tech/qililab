@@ -127,7 +127,7 @@ class CircuitRouter:
             transpiled_circ, final_layout = routing_pipeline(circuit)
 
             # Undo the initial remapping (wire_names), for executing in correct chips:
-            transpiled_circ = CircuitRouter._undo_initial_remap(transpiled_circ)
+            transpiled_circ = CircuitRouter._apply_initial_remap(transpiled_circ)
 
             # Remove redundant swaps at the start of the transpiled circuit:
             transpiled_circ = CircuitOptimizer.remove_redundant_start_controlled_gates(transpiled_circ, gates.SWAP)
@@ -149,14 +149,14 @@ class CircuitRouter:
         return best_transpiled_circ, least_swaps, best_final_layout
 
     @staticmethod
-    def _undo_initial_remap(transpiled_circ: Circuit) -> Circuit:
-        """Undo the initial remapping of the circuit, to execute in the correct chips.
+    def _apply_initial_remap(transpiled_circ: Circuit) -> Circuit:
+        """Applies the initial remapping of the circuit (wire_names), to the qubits of all gates, so we can execute in the connected qubits.
 
         Args:
             transpiled_circ (Circuit): Circuit with the initial remapping.
 
         Returns:
-            Circuit: Circuit with the initial remapping undone.
+            Circuit: Circuit with the initial remapping applied to the gate qubits.
         """
         new_queue = []
         for gate in transpiled_circ.queue:
