@@ -149,15 +149,15 @@ class TestCircuitRouterUnit:
 
         ]
     )
-    @patch("qililab.digital.circuit_router.CircuitRouter._undo_initial_remap")
+    @patch("qililab.digital.circuit_router.CircuitRouter._apply_initial_remap")
     @patch("qililab.digital.circuit_router.CircuitOptimizer.remove_redundant_start_controlled_gates")
     @patch("qililab.digital.circuit_router.Passes.__call__")
-    def test_iterate_routing_with_and_without_swaps(self, mock_qibo_routing, mock_removing_swaps, mock_undo_initial_remap, type, circuit, qibo_layout, layout, least_swaps, iterations):
+    def test_iterate_routing_with_and_without_swaps(self, mock_qibo_routing, mock_removing_swaps, mock_apply_initial_remap, type, circuit, qibo_layout, layout, least_swaps, iterations):
         """ Test the iterate routing of a circuit, with and without swaps."""
         # Add the mock return value to the parametrized test values:
         mock_qibo_routing.return_value = (circuit, qibo_layout)
         mock_removing_swaps.return_value = circuit
-        mock_undo_initial_remap.return_value = circuit
+        mock_apply_initial_remap.return_value = circuit
 
         # Execute the iterate_routing:
         routed_circuit, least_swaps, final_layout = self.circuit_router._iterate_routing(self.circuit_router.pipeline, circuit, iterations)
