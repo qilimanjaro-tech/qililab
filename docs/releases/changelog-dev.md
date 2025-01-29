@@ -16,11 +16,13 @@
 - Enable square waveforms optimization for Qblox.
 [#874](https://github.com/qilimanjaro-tech/qililab/pull/874)
 
-
 ### Improvements
 
 - Updated qm-qua to stable version 1.2.1. And close other machines has been set to True as now it closes only stated ports.
   [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
+- Now the QM qprogram compiler is able to generate the correct stream_processing while the average loop is inside any other kind of loop, before it was only able to be located on the outermost loop due to the way qprogram generated the stream_processing.
+  [#880](https://github.com/qilimanjaro-tech/qililab/pull/880)
 
 ### Breaking changes
 

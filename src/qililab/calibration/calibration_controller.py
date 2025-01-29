@@ -364,14 +364,9 @@ class CalibrationController:
         q1_df, q2_df = self._create_empty_dataframes()
 
         for node in self.node_sequence.values():
-            qubit_list = node.node_id.split("_")
-            qubit = "_".join(
-                [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
-            ).replace("q", "-")[1:]
-
+            qubit = self._get_qubit_from_node(node)
             if len(qubit) == 1:
                 q1_df = self._fill_qubits_columns(node, qubit, q1_df)
-
             else:
                 q2_df = self._fill_qubits_columns(node, qubit, q2_df)
 
@@ -390,14 +385,9 @@ class CalibrationController:
         q1_idx, q1_col, q2_idx, q2_col = [], [], [], []  # type: ignore[var-annotated]
 
         for node in self.node_sequence.values():
-            qubit_list = node.node_id.split("_")
-            qubit = "_".join(
-                [i for i in qubit_list if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
-            ).replace("q", "-")[1:]
-
+            qubit = self._get_qubit_from_node(node)
             if len(qubit) == 1:
                 q1_idx, q1_col = self._get_idx_and_columns(node, qubit, q1_idx, q1_col)
-
             else:
                 q2_idx, q2_col = self._get_idx_and_columns(node, qubit, q2_idx, q2_col)
 
@@ -408,6 +398,21 @@ class CalibrationController:
         df_q2.index.name = "qubit"
 
         return df_q1, df_q2
+
+    @staticmethod
+    def _get_qubit_from_node(node) -> str:
+        """Retrieves the qubit from the node_id.
+
+        Args:
+            node (CalibrationNode): The node from which the qubit needs to be retrieved.
+
+        Returns:
+            str: The qubit corresponding to the node.
+        """
+        qubits: list = node.node_id.split("_")
+        return "_".join(
+            [i for i in qubits if any(char == "q" for char in i) and any(char.isdigit() for char in i)]
+        ).replace("q", "-")[1:]
 
     @staticmethod
     def _get_idx_and_columns(node: CalibrationNode, qubit: str, idx: list, col: list) -> tuple[list, list]:
@@ -433,9 +438,7 @@ class CalibrationController:
 
             if "platform_parameters" in node.output_parameters:
                 for param_name, _, bus_alias, _ in node.output_parameters["platform_parameters"]:
-                    bus_list = str(bus_alias).split("_")
-                    bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
-
+                    bus = CalibrationController._get_bus_name_from_alias(bus_alias)
                     if f"{param_name!s}_{bus}" not in col:
                         col.append(f"{param_name!s}_{bus}")
 
@@ -460,11 +463,23 @@ class CalibrationController:
 
             if "platform_parameters" in node.output_parameters:
                 for param_name, param_value, bus_alias, _ in node.output_parameters["platform_parameters"]:
-                    bus_list = str(bus_alias).split("_")
-                    bus = "_".join([x for x in bus_list if not any(char.isdigit() for char in x)])
+                    bus = CalibrationController._get_bus_name_from_alias(bus_alias)
                     df[f"{param_name!s}_{bus}"][qubit] = param_value
 
         return df
+
+    @staticmethod
+    def _get_bus_name_from_alias(bus_alias) -> str:
+        """Gets the bus name from the bus alias.
+
+        Args:
+            bus_alias (str): Bus alias to get the bus name from.
+
+        Returns:
+            str: The bus name.
+        """
+        buses: list = str(bus_alias).split("_")
+        return "_".join([x for x in buses if not any(char.isdigit() for char in x)])
 
     @staticmethod
     def _reorder_fidelities(df: pd.DataFrame) -> pd.DataFrame:
