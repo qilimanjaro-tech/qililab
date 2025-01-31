@@ -658,10 +658,10 @@ class TestCircuitTranspiler:
     def test_transpile_circuit(self, mock_to_pulses, mock_to_native, mock_route, mock_opt_trans, mock_opt_circuit, mock_add_phases, optimize, digital_settings):
         """Test transpile_circuit method"""
         transpiler = CircuitTranspiler(settings=digital_settings)
+        routing=True
         placer = MagicMock()
         router = MagicMock()
         routing_iterations = 7
-        routing=True
         transpilation_config = DigitalTranspilationConfig(routing=routing, optimize=optimize, router=router, placer=placer, routing_iterations=routing_iterations)
 
         # Mock circuit for return values
@@ -670,13 +670,13 @@ class TestCircuitTranspiler:
         mock_circuit_gates = mock_circuit.queue
 
         # Mock layout for return values
-        mock_layout = {"q0": 0, "q1": 2, "q2": 1, "q3": 3, "q4": 4}
+        mock_layout = [0, 1, 2, 3, 4]
 
         # Mock schedule for return values
         mock_schedule = PulseSchedule()
 
         # Mock the return values
-        mock_route.return_value = mock_circuit.queue, mock_layout, mock_circuit.nqubits
+        mock_route.return_value = mock_circuit.queue, mock_circuit.nqubits, mock_layout
         mock_opt_circuit.return_value = mock_circuit_gates
         mock_to_native.return_value = mock_circuit_gates
         mock_add_phases.return_value = mock_circuit_gates
@@ -725,15 +725,15 @@ class TestCircuitTranspiler:
         # Mock the return values
         mock_circuit = Circuit(5)
         mock_circuit.add(X(0))
-        mock_layout = {"q0": 0, "q1": 2, "q2": 1, "q3": 3, "q4": 4}
+        mock_layout = [0, 1, 2, 3, 4]
         mock_route.return_value = (mock_circuit, mock_layout)
 
         # Execute the function
-        circuit_gates, layout, nqubits = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        circuit_gates, nqubits, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
 
         # Asserts:
         mock_route.assert_called_once_with(mock_circuit, routing_iterations)
-        assert (circuit_gates, layout, nqubits) == (mock_circuit.queue, mock_layout, mock_circuit.nqubits)
+        assert (circuit_gates, nqubits, layout) == (mock_circuit.queue, mock_circuit.nqubits, mock_layout)
 
     @patch("qililab.digital.circuit_transpiler.nx.Graph")
     @patch("qililab.digital.circuit_transpiler.CircuitRouter")

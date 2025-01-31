@@ -15,9 +15,9 @@
 """CircuitRouter class"""
 
 import contextlib
-import re
 
 import networkx as nx
+import numpy as np
 from qibo import Circuit, gates
 from qibo.transpiler.optimizer import Preprocessing
 from qibo.transpiler.pipeline import Passes
@@ -25,6 +25,8 @@ from qibo.transpiler.placer import Placer, ReverseTraversal, StarConnectivityPla
 from qibo.transpiler.router import Router, Sabre, StarConnectivityRouter
 
 from qililab.config import logger
+from qililab.digital.circuit_optimizer import CircuitOptimizer
+from qililab.digital.native_gates import _GateHandler
 
 
 class CircuitRouter:
@@ -69,7 +71,7 @@ class CircuitRouter:
         # 2) Routing stage, where the final_layout and swaps will be created.
         # 3) Layout stage, where the initial_layout will be created.
 
-    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, dict[str, int]]:
+    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, list[int]]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         Check public docstring in :meth:`.CircuitTranspiler.route_circuit()` for more information.
@@ -79,22 +81,24 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple [Circuit, dict[str, int]: routed circuit and final layout of the circuit.
+            tuple [Circuit, list[int]: Routed circuit and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...].
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
             ValueError: If the final layout is not valid, i.e. a qubit is mapped to more than one physical qubit.
         """
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
-        best_transp_circ, best_final_layout, least_swaps = self._iterate_routing(self.pipeline, circuit, iterations)
-
-        if self._if_layout_is_not_valid(best_final_layout):
-            raise ValueError(
-                f"The final layout: {best_final_layout} is not valid. i.e. a qubit is mapped to more than one physical qubit. Try again, if the problem persists, try another placer/routing algorithm."
-            )
+        best_transp_circ, least_swaps, best_final_layout = self._iterate_routing(self.pipeline, circuit, iterations)
 
         if least_swaps is not None:
             logger.info(f"The best found routing, has {least_swaps} swaps.")
+            logger.info(
+                f"{best_transp_circ.wire_names}: Initial Re-mapping of the Original Logical Qubits (l_q), in the Physical Circuit: [l_q in wire 0, l_q in wire 1, ...]."
+            )
+            logger.info(
+                f"{best_final_layout}: Final Re-mapping (Initial + SWAPs routing) of the Original Logical Qubits (l_q), in the Physical Circuit: [l_q in wire 0, l_q in wire 1, ...]."
+            )
         else:
             logger.info("No routing was done. Most probably due to routing iterations being 0.")
 
@@ -103,7 +107,7 @@ class CircuitRouter:
     @staticmethod
     def _iterate_routing(
         routing_pipeline: Passes, circuit: Circuit, iterations: int = 10
-    ) -> tuple[Circuit, dict[str, int], int | None]:
+    ) -> tuple[Circuit, int | None, list[int]]:
         """Iterates through the routing pipeline to retain the best stochastic result. Returns and/or logs the final qubit layout.
 
         Args:
@@ -112,13 +116,20 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple[Circuit, dict[str, int], int]: Best transpiled circuit, best final layout and least swaps.
+            tuple[Circuit, int | None, list[int]]: Best routed circuit, least number of swaps required, and the corresponding best final
+                layout of the original logical qubits in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
         """
         # We repeat the routing pipeline a few times, to keep the best stochastic result:
         least_swaps: int | None = None
         for _ in range(iterations):
             # Call the routing pipeline on the circuit:
             transpiled_circ, final_layout = routing_pipeline(circuit)
+
+            # Undo the initial remapping (wire_names), for executing in correct chips:
+            transpiled_circ = CircuitRouter._apply_initial_remap(transpiled_circ)
+
+            # Remove redundant swaps at the start of the transpiled circuit:
+            transpiled_circ = CircuitOptimizer.remove_redundant_start_controlled_gates(transpiled_circ, gates.SWAP)
 
             # Get the number of swaps in the circuits:
             n_swaps = len(transpiled_circ.gates_of_type(gates.SWAP))
@@ -132,7 +143,45 @@ class CircuitRouter:
             if n_swaps == 0:
                 break
 
-        return best_transpiled_circ, best_final_layout, least_swaps
+        best_final_layout = CircuitRouter._get_logical_qubit_of_each_wire(best_final_layout)
+
+        return best_transpiled_circ, least_swaps, best_final_layout
+
+    @staticmethod
+    def _apply_initial_remap(transpiled_circ: Circuit) -> Circuit:
+        """Applies the initial remapping of the circuit (wire_names), to the qubits of all gates, so we can execute in the connected qubits.
+
+        Args:
+            transpiled_circ (Circuit): Circuit with the initial remapping.
+
+        Returns:
+            Circuit: Circuit with the initial remapping applied to the gate qubits.
+        """
+        new_queue = []
+        for gate in transpiled_circ.queue:
+            qubits = [transpiled_circ.wire_names.index(qubit) for qubit in gate.qubits]
+            gate = _GateHandler.create_gate(type(gate).__name__, qubits, gate.init_kwargs)
+            new_queue.append(gate)
+
+        return _GateHandler.create_circuit_from_gates(new_queue, transpiled_circ.nqubits, transpiled_circ.wire_names)
+
+    @staticmethod
+    def _get_logical_qubit_of_each_wire(final_layout: dict[int, int]) -> list[int]:
+        """Transforms Qibo's format for the final_layout into a permutation in a list.
+
+        Args:
+            final_layout (dict[int, int]): Qibo's final layout (Initial Re-mapping + SWAPs routing) of the
+                Original Logical Qubits (l_q) in the physical circuit (wire): {l_q: wire where it ended for execution}.
+
+        Returns:
+            final_layout (list[int]): Final layout (Initial Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q) in the Physical Circuit (wire), in a list.
+                Each index is a physical qubit (wire), and its value the corresponding Original Logical Qubit (l_q) state its containing: [l_q in wire 0, l_q in wire 1, ...].
+        """
+        if CircuitRouter._if_layout_is_not_valid(final_layout):
+            raise ValueError(
+                f"The final layout: {final_layout} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm."
+            )
+        return [logical_q for logical_q, _ in sorted(final_layout.items(), key=lambda q_wire_in_1: q_wire_in_1[1])]
 
     @staticmethod
     def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
@@ -164,21 +213,22 @@ class CircuitRouter:
         return max(dict(connectivity.degree()).items(), key=lambda x: x[1])[0]
 
     @staticmethod
-    def _if_layout_is_not_valid(layout: dict[str, int]) -> bool:
+    def _if_layout_is_not_valid(layout: dict[int, int]) -> bool:
         """True if the layout is not valid.
 
         For example, if a qubit is mapped to more than one physical qubit. Or if the keys or values are not int.
 
         Args:
-            layout (dict[str, int]): Initial or final layout of the circuit.
+            layout (dict[int, int]): Final layout of the circuit.
 
         Returns:
             bool: True if the layout is not valid.
         """
         return (
             len(layout.values()) != len(set(layout.values()))
-            or not all(isinstance(value, int) for value in layout.values())
-            or not all(isinstance(key, str) and re.match(r"^q\d+$", key) for key in layout)
+            or len(layout.keys()) != len(set(layout.keys()))
+            or not all(np.issubdtype(type(value), np.integer) for value in layout.values())
+            or not all(np.issubdtype(type(keys), np.integer) for keys in layout)
         )
 
     @staticmethod
@@ -197,7 +247,7 @@ class CircuitRouter:
         """
         # If router is None, we build default one:
         if router is None:
-            return Sabre(connectivity)
+            return Sabre(connectivity=connectivity)
 
         kwargs = {}
         if isinstance(router, tuple):
@@ -207,21 +257,14 @@ class CircuitRouter:
         if isinstance(router, Router):
             if kwargs:
                 logger.warning("Ignoring router kwargs, as the router is already an instance.")
-            if isinstance(router, StarConnectivityRouter):
-                # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
-                router.middle_qubit = CircuitRouter._highest_degree_node(connectivity)
-            else:
-                router.connectivity = connectivity
+            router.connectivity = connectivity
             logger.warning("Substituting the router connectivity by the transpiler/platform one.")
             return router
 
         # If the router is a Router subclass, we instantiate it:
         with contextlib.suppress(TypeError, ValueError):
             if issubclass(router, Router):
-                if issubclass(router, StarConnectivityRouter):
-                    # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
-                    kwargs["middle_qubit"] = CircuitRouter._highest_degree_node(connectivity)
-                return router(connectivity, **kwargs)
+                return router(connectivity=connectivity, **kwargs)
 
         raise TypeError(
             f"`router` arg ({type(router)}), must be a `Router` instance, subclass or tuple(subclass, kwargs), in `execute()`, `compile()`, `transpile_circuit()` or `route_circuit()`."
@@ -244,7 +287,7 @@ class CircuitRouter:
         """
         # If placer is None, we build default one:
         if placer is None:
-            return ReverseTraversal(connectivity, router)
+            return ReverseTraversal(connectivity=connectivity, routing_algorithm=router)
 
         kwargs = {}
         if isinstance(placer, tuple):
@@ -258,21 +301,14 @@ class CircuitRouter:
         if isinstance(placer, Placer):
             if kwargs:
                 logger.warning("Ignoring placer kwargs, as the placer is already an instance.")
-            if isinstance(placer, StarConnectivityPlacer):
-                # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
-                placer.middle_qubit = self._highest_degree_node(connectivity)
-            else:
-                placer.connectivity = connectivity
+            placer.connectivity = connectivity
             logger.warning("Substituting the placer connectivity by the transpiler/platform one.")
             return placer
 
         # If the placer is a Placer subclass, we instantiate it:
         with contextlib.suppress(TypeError, ValueError):
             if issubclass(placer, Placer):
-                if issubclass(placer, StarConnectivityPlacer):
-                    # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
-                    kwargs["middle_qubit"] = self._highest_degree_node(connectivity)
-                return placer(connectivity, **kwargs)
+                return placer(connectivity=connectivity, **kwargs)
 
         raise TypeError(
             f"`placer` arg ({type(placer)}), must be a `Placer` instance, subclass or tuple(subclass, kwargs), in `execute()`, `compile()`, `transpile_circuit()` or `route_circuit()`."

@@ -21,7 +21,6 @@ from typing import TYPE_CHECKING
 
 import networkx as nx
 
-from qililab.config import logger
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.circuit_router import CircuitRouter
 from qililab.digital.circuit_to_pulses import CircuitToPulses
@@ -29,8 +28,6 @@ from qililab.digital.circuit_to_pulses import CircuitToPulses
 from .gate_decompositions import translate_gates
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from qibo import Circuit, gates
     from qibo.transpiler.placer import Placer
     from qibo.transpiler.router import Router
@@ -46,11 +43,11 @@ class DigitalTranspilationConfig:
     routing: bool = False
     """(bool, optional): Whether to route the circuit. Defaults to False."""
 
-    placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None
+    placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None
     """(Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
         use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``."""
 
-    router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None
+    router: Router | type[Router] | tuple[type[Router], dict] | None = None
     """(Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to
         use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``."""
 
@@ -88,8 +85,8 @@ class CircuitTranspiler:
     def transpile_circuit(
         self,
         circuit: Circuit,
-        transpilation_config: Optional[DigitalTranspilationConfig] = None,
-    ) -> tuple[PulseSchedule, dict[str, int]]:
+        transpilation_config: DigitalTranspilationConfig | None = None,
+    ) -> tuple[PulseSchedule, list[int] | None]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
         The process involves the following steps (by default only: **3.**, **4**., and **6.** run):
@@ -162,7 +159,8 @@ class CircuitTranspiler:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[PulseSchedule, dict[str, int]]: Pulse schedule and final layouts of the qubits, in the circuit {"qI": J}.
+            tuple[PulseSchedule, list[int] | None]: Pulse schedule and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
         """
         # Default values:
         if transpilation_config is None:
@@ -173,10 +171,10 @@ class CircuitTranspiler:
 
         # Routing stage;
         if routing:
-            circuit_gates, final_layout, nqubits = self.route_circuit(circuit, placer, router, routing_iterations)
+            circuit_gates, nqubits, final_layout = self.route_circuit(circuit, placer, router, routing_iterations)
         else:
             circuit_gates, nqubits = circuit.queue, circuit.nqubits
-            final_layout = {f"q{i}": i for i in range(nqubits)}
+            final_layout = None  # Trivial mapping
 
         # Optimze qibo gates, cancelling redundant gates:
         if optimize:
@@ -200,11 +198,11 @@ class CircuitTranspiler:
     def route_circuit(
         self,
         circuit: Circuit,
-        placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None,
-        router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         iterations: int = 10,
-        coupling_map: Optional[list[tuple[int, int]]] = None,
-    ) -> tuple[list[gates.Gate], dict[str, int], int]:
+        coupling_map: tuple[int, int] | None = None,
+    ) -> tuple[list[gates.Gate], int, list[int]]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         This process uses the provided `placer`, `router`, and `routing_iterations` parameters if they are passed; otherwise, default values are applied.
@@ -253,11 +251,12 @@ class CircuitTranspiler:
             router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
                 use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-            coupling_map (list[tuple[int, int]], optional): coupling map of the chip to route. This topology will be the one that rules,
+            coupling_map (tuple[int, int], optional): coupling map of the chip to route. This topology will be the one that rules,
                 which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
 
         Returns:
-            tuple[list[Gate], dict[str, int], int]: List of gates of the routed circuit, final layout of the circuit {"qI": J}, and number of qubits in the final circuit.
+            tuple[list[Gate], int, list[int]]: List of gates of the routed circuit, number of qubits in it, and its corresponding final layout (Initial
+                Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...].
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -267,9 +266,8 @@ class CircuitTranspiler:
         circuit_router = CircuitRouter(topology, placer, router)
 
         circuit, final_layout = circuit_router.route(circuit, iterations)
-        logger.info(f"The physical qubits used for the execution will be: {final_layout}")
 
-        return circuit.queue, final_layout, circuit.nqubits
+        return circuit.queue, circuit.nqubits, final_layout
 
     @staticmethod
     def optimize_gates(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:

@@ -68,7 +68,6 @@ from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
     from queue import Queue
-    from typing import Optional
 
     from qpysequence import Sequence as QpySequence
 
@@ -439,7 +438,7 @@ class Platform:
         """Gets buses given their alias.
 
         Args:
-            alias (str | None, optional): Bus alias to identify it. Defaults to None.
+            alias (str, optional): Bus alias to identify it. Defaults to None.
 
         Returns:
             :class:`Bus`: Bus corresponding to the given alias. If none is found `None` is returned.
@@ -986,7 +985,7 @@ class Platform:
         repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
-        transpilation_config: Optional[DigitalTranspilationConfig] = None,
+        transpilation_config: DigitalTranspilationConfig | None = None,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -1091,7 +1090,8 @@ class Platform:
 
         return result
 
-    def _order_result(self, result: Result, circuit: Circuit, final_layout: dict[str, int] | None) -> Result:
+    @staticmethod
+    def _order_result(result: Result, circuit: Circuit, final_layout: list[int] | None) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1101,11 +1101,12 @@ class Platform:
 
         Args:
             result (Result): Result obtained from the execution
-            circuit (Circuit): qibo circuit being executed
-            final_layouts (dict[str, int]): final layout of the qubits in the circuit.
+            circuit (Circuit): Qibo circuit being executed
+            final_layouts (list[int], optional): Final layout of the original logical qubits in the physical circuit:
+                [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
 
         Returns:
-            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
+            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue.
         """
         if not isinstance(result, QbloxResult):
             raise NotImplementedError("Result ordering is only implemented for qblox results")
@@ -1124,13 +1125,18 @@ class Platform:
                 f"Number of measurements in the circuit {len(order)} does not match number of acquisitions {len(result.qblox_raw_results)}"
             )
 
+        # Tell users that the final layout is being undone:
+        logger.info(
+            "Undoing final physical qubit mapping, so you get back the original qubit order in your logical circuit."
+        )
+
         # allocate each measurement its corresponding index in the results list
         results = [None] * len(order)  # type: list | list[dict]
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
-            qubit = qblox_result["qubit"]
-            original_qubit = final_layout[f"q{qubit}"] if final_layout is not None else qubit
-            results[order[original_qubit, measurement]] = qblox_result
+            physical_qubit = qblox_result["qubit"]
+            original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
+            results[order[original_logical_qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
@@ -1140,8 +1146,8 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        transpilation_config: Optional[DigitalTranspilationConfig] = None,
-    ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
+        transpilation_config: DigitalTranspilationConfig | None = None,
+    ) -> tuple[dict[str, list[QpySequence]], list[int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
@@ -1173,7 +1179,9 @@ class Platform:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[dict, dict[str, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {"qX":Y}.
+            tuple[dict, list[int] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
+                and the value is the assembly compilation (``list``)), and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
 
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
