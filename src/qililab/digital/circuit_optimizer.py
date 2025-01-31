@@ -252,6 +252,18 @@ class CircuitOptimizer:
         return circuit_gates
 
     @staticmethod
+    def _normalize_angle(angle: float):
+        """Normalizes angle in range [-pi, pi].
+
+        Args:
+            angle (float): Normalized angle.
+        """
+        angle %= 2 * np.pi
+        if angle > np.pi:
+            angle -= 2 * np.pi
+        return angle
+
+    @staticmethod
     def _get_circuit_gates_info(circuit_gates: list[gates.Gate]) -> list[tuple]:
         """Get the gates of the circuit.
 
