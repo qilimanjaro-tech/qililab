@@ -68,7 +68,6 @@ from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
     from queue import Queue
-    from typing import Optional
 
     from qpysequence import Sequence as QpySequence
 
@@ -439,7 +438,7 @@ class Platform:
         """Gets buses given their alias.
 
         Args:
-            alias (str | None, optional): Bus alias to identify it. Defaults to None.
+            alias (str, optional): Bus alias to identify it. Defaults to None.
 
         Returns:
             :class:`Bus`: Bus corresponding to the given alias. If none is found `None` is returned.
@@ -986,7 +985,7 @@ class Platform:
         repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
-        transpilation_config: Optional[DigitalTranspilationConfig] = None,
+        transpilation_config: DigitalTranspilationConfig | None = None,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -1091,7 +1090,8 @@ class Platform:
 
         return result
 
-    def _order_result(self, result: Result, circuit: Circuit, final_layout: Optional[list[int]]) -> Result:
+    @staticmethod
+    def _order_result(result: Result, circuit: Circuit, final_layout: list[int] | None) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1102,7 +1102,7 @@ class Platform:
         Args:
             result (Result): Result obtained from the execution
             circuit (Circuit): Qibo circuit being executed
-            final_layouts (Optional[list[int]]): Final layout of the original logical qubits in the physical circuit:
+            final_layouts (list[int], optional): Final layout of the original logical qubits in the physical circuit:
                 [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
 
         Returns:
@@ -1146,8 +1146,8 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        transpilation_config: Optional[DigitalTranspilationConfig] = None,
-    ) -> tuple[dict[str, list[QpySequence]], Optional[list[int]]]:
+        transpilation_config: DigitalTranspilationConfig | None = None,
+    ) -> tuple[dict[str, list[QpySequence]], list[int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
@@ -1179,7 +1179,7 @@ class Platform:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[dict, Optional[list[int]]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
+            tuple[dict, list[int] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
                 and the value is the assembly compilation (``list``)), and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
                 the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
 

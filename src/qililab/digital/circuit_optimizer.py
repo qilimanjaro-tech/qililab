@@ -15,7 +15,7 @@
 """CircuitOptimizer class"""
 
 from copy import deepcopy
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 import numpy as np
 from qibo import Circuit, gates
@@ -316,13 +316,13 @@ class CircuitOptimizer:
 
     @staticmethod
     def remove_redundant_start_controlled_gates(
-        transpiled_circ: T_circuit, gates_to_remove: Optional[tuple[gates.Gate] | gates.Gate] = None
+        transpiled_circ: T_circuit, gates_to_remove: tuple[gates.Gate] | gates.Gate | None = None
     ) -> T_circuit:
         """Removes redundant controlled gates at the start of the transpiled circuit.
 
         Args:
             transpiled_circ (Circuit): Transpiled circuit.
-            gates_to_remove (Optional[tuple[gates.Gate] | gates.Gate]): Tuple of gates to remove. Defaults to all controlled gates.
+            gates_to_remove (tuple[gates.Gate] | gates.Gate, optional): Tuple of gates to remove. Defaults to all controlled gates.
 
         Returns:
             Circuit | list[gates.Gate] : Transpiled circuit without redundant gates.

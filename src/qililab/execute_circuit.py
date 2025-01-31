@@ -14,8 +14,6 @@
 
 """Execute function used to execute a qibo Circuit using the given runcard."""
 
-from typing import Optional
-
 from qibo.models import Circuit
 from tqdm.auto import tqdm
 
@@ -29,7 +27,7 @@ def execute(
     program: Circuit | list[Circuit],
     runcard: str | dict,
     nshots: int = 1,
-    transpilation_config: Optional[DigitalTranspilationConfig] = None,
+    transpilation_config: DigitalTranspilationConfig | None = None,
 ) -> Result | list[Result]:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 

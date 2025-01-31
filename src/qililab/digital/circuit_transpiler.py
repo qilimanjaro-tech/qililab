@@ -28,8 +28,6 @@ from qililab.digital.circuit_to_pulses import CircuitToPulses
 from .gate_decompositions import translate_gates
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     from qibo import Circuit, gates
     from qibo.transpiler.placer import Placer
     from qibo.transpiler.router import Router
@@ -45,11 +43,11 @@ class DigitalTranspilationConfig:
     routing: bool = False
     """(bool, optional): Whether to route the circuit. Defaults to False."""
 
-    placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None
+    placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None
     """(Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
         use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``."""
 
-    router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None
+    router: Router | type[Router] | tuple[type[Router], dict] | None = None
     """(Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to
         use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``."""
 
@@ -87,8 +85,8 @@ class CircuitTranspiler:
     def transpile_circuit(
         self,
         circuit: Circuit,
-        transpilation_config: Optional[DigitalTranspilationConfig] = None,
-    ) -> tuple[PulseSchedule, Optional[list[int]]]:
+        transpilation_config: DigitalTranspilationConfig | None = None,
+    ) -> tuple[PulseSchedule, list[int] | None]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
         The process involves the following steps (by default only: **3.**, **4**., and **6.** run):
@@ -161,7 +159,7 @@ class CircuitTranspiler:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[PulseSchedule, Optional[list[int]]]: Pulse schedule and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+            tuple[PulseSchedule, list[int] | None]: Pulse schedule and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
                 the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
         """
         # Default values:
@@ -200,10 +198,10 @@ class CircuitTranspiler:
     def route_circuit(
         self,
         circuit: Circuit,
-        placer: Optional[Placer | type[Placer] | tuple[type[Placer], dict]] = None,
-        router: Optional[Router | type[Router] | tuple[type[Router], dict]] = None,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         iterations: int = 10,
-        coupling_map: Optional[tuple[int, int]] = None,
+        coupling_map: tuple[int, int] | None = None,
     ) -> tuple[list[gates.Gate], int, list[int]]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 

@@ -14,8 +14,6 @@
 
 """File containing the supported native gates."""
 
-from typing import Optional
-
 import numpy as np
 from qibo import Circuit, gates
 from qibo.gates.abstract import ParametrizedGate
@@ -151,14 +149,14 @@ class _GateHandler:
         return output_gates
 
     @staticmethod
-    def create_circuit_from_gates(queue: list[gates.Gate], nqubits: int, wire_names: Optional[list[int]]) -> Circuit:
+    def create_circuit_from_gates(queue: list[gates.Gate], nqubits: int, wire_names: list[int] | None) -> Circuit:
         """
         Creates a quantum circuit from a list of gate operations.
 
         Args:
             queue (list[gates.Gate]): A list of gate operations to be added to the circuit.
             nqubits (int): The number of qubits in the circuit.
-            wire_names (Optional[list[int]]): Wire names of the circuit to create.
+            wire_names (list[int], optional): Wire names of the circuit to create.
 
         Returns:
             Circuit: The constructed quantum circuit with the specified gates and number of qubits.

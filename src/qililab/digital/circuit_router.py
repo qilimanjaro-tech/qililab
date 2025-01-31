@@ -15,7 +15,6 @@
 """CircuitRouter class"""
 
 import contextlib
-from typing import Optional
 
 import networkx as nx
 import numpy as np
@@ -108,7 +107,7 @@ class CircuitRouter:
     @staticmethod
     def _iterate_routing(
         routing_pipeline: Passes, circuit: Circuit, iterations: int = 10
-    ) -> tuple[Circuit, Optional[int], list[int]]:
+    ) -> tuple[Circuit, int | None, list[int]]:
         """Iterates through the routing pipeline to retain the best stochastic result. Returns and/or logs the final qubit layout.
 
         Args:
@@ -117,11 +116,11 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple[Circuit, int, list[int]]: Best routed circuit, least number of swaps required, and the corresponding best final
+            tuple[Circuit, int | None, list[int]]: Best routed circuit, least number of swaps required, and the corresponding best final
                 layout of the original logical qubits in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
         """
         # We repeat the routing pipeline a few times, to keep the best stochastic result:
-        least_swaps: Optional[int] = None
+        least_swaps: int | None = None
         for _ in range(iterations):
             # Call the routing pipeline on the circuit:
             transpiled_circ, final_layout = routing_pipeline(circuit)
