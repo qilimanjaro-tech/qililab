@@ -35,6 +35,9 @@
 
 ### Bug fixes
 
+- Fixed an issue where having nested loops would output wrong shape in QbloxMeasurementResult.
+  [#853](https://github.com/qilimanjaro-tech/qililab/pull/853)
+
 - Restore the vna driver as it was deleted.
   [#857](https://github.com/qilimanjaro-tech/qililab/pull/857)
 

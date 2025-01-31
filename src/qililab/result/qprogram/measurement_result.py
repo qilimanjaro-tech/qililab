@@ -26,8 +26,9 @@ class MeasurementResult(ABC):
 
     name: ResultName
 
-    def __init__(self, bus: str):
+    def __init__(self, bus: str, shape: tuple | None = None):
         self.bus: str = bus
+        self.shape = shape
 
     @property
     @abstractmethod
