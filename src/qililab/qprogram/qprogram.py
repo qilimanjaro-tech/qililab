@@ -410,7 +410,7 @@ class QProgram(StructuredProgram):
         If no buses are given, then the synchronization will involve all buses present in the QProgram.
 
         Args:
-            buses (list[str] | None, optional): List of unique identifiers of the buses. Defaults to None.
+            buses (list[str], optional): List of unique identifiers of the buses. Defaults to None.
         """
         operation = Sync(buses=buses)
         self._active_block.append(operation)

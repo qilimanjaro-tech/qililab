@@ -30,8 +30,8 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
     Args:
         I (np.ndarray): Data obtained from I stream.
         Q (np.ndarray): Data obtained from Q stream.
-        adc1 (np.ndarray, Optional): Data obtained from adc1 stream. Defaults to None.
-        adc2 (np.ndarray, Optional): Data obtained from adc2 stream. Defaults to None.
+        adc1 (np.ndarray, optional): Data obtained from adc1 stream. Defaults to None.
+        adc2 (np.ndarray, optional): Data obtained from adc2 stream. Defaults to None.
     """
 
     name = ResultName.QUANTUM_MACHINES_MEASUREMENT

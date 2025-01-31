@@ -169,8 +169,8 @@ class QbloxCompiler:
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
-            bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
-            times_of_flight (dict[str, int] | None, optional): Optional time of flight of bus. Defaults to None.
+            bus_mapping (dict[str, str], optional): Optional mapping of bus names. Defaults to None.
+            times_of_flight (dict[str, int], optional): Optional time of flight of bus. Defaults to None.
 
         Returns:
             QbloxCompilationOutput:
