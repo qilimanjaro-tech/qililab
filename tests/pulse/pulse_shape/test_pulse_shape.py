@@ -1,10 +1,12 @@
 """Tests for the PulseShape class."""
 import itertools
+import re
 
 import numpy as np
 import pytest
 
 from qililab.pulse.pulse_shape import Cosine, Drag, Gaussian, PulseShape, Rectangular
+from qililab.pulse.pulse_shape.snz import SNZ
 from qililab.utils import Factory
 
 from .helper_functions import return_envelope
@@ -81,6 +83,11 @@ class TestPulseShape:
             assert isinstance(shape, Factory.get(name=pulse_shape.name))
 
         assert pulse_shape == pulse_shape2 == pulse_shape3
+
+    def test_incorrect_from_dict(self, pulse_shape: PulseShape):
+        """Test for the from_dict method with incorrect dictionary."""
+        with pytest.raises(ValueError, match=re.escape(f"Class: {Rectangular.name.value} to instantiate, does not match the given dict name {SNZ.name.value}")):
+            Rectangular.from_dict({"name": SNZ.name.value})
 
     def test_to_dict_method(self, pulse_shape: PulseShape):
         """Test to_dict method"""

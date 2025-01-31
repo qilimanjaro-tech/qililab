@@ -187,6 +187,20 @@ def fixture_measure_operation_with_average() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="measure_operation_with_inner_loop_average")
+def fixture_measure_operation_with_inner_loop_averagee() -> QProgram:
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    weights = IQPair(I=Square(1.0, duration=200), Q=Square(1.0, duration=200))
+    qp = QProgram()
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
+        qp.set_gain(bus="readout", gain=gain)
+        with qp.average(shots=1000):
+            qp.measure(bus="readout", waveform=drag_wf, weights=weights)
+
+    return qp
+
+
 @pytest.fixture(name="measure_operation_in_for_loop")
 def fixture_measure_operation_in_for_loop() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
@@ -371,13 +385,9 @@ class TestQuantumMachinesCompiler:
         qp_no_block.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
 
         compiler = QuantumMachinesCompiler()
-        qua_program, configuration, _ = compiler.compile(
-            qprogram=measurement_blocked_operation
-        )
+        qua_program, configuration, _ = compiler.compile(qprogram=measurement_blocked_operation)
 
-        qua_program_no_block, _, _ = compiler.compile(
-            qprogram=qp_no_block
-        )
+        qua_program_no_block, _, _ = compiler.compile(qprogram=qp_no_block)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 4
@@ -419,7 +429,7 @@ class TestQuantumMachinesCompiler:
         play = statements[0].play
         assert play.qe.name == "drive"
         assert play.named_pulse.name in configuration["pulses"]
-        assert float(play.amp.v0.literal.value) == 0.5 * 2
+        assert float(play.amp.v0.literal.value) == 1
 
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QuantumMachinesCompiler()
@@ -628,6 +638,18 @@ class TestQuantumMachinesCompiler:
     def test_measure_operation_with_average(self, measure_operation_with_average: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, measurements = compiler.compile(measure_operation_with_average)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 1
+
+        assert len(measurements) == 1
+        assert len(measurements[0].result_handles) == 2
+        assert "I_0" in measurements[0].result_handles
+        assert "Q_0" in measurements[0].result_handles
+
+    def test_measure_operation_with_inner_loop_average(self, measure_operation_with_inner_loop_average: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, measurements = compiler.compile(measure_operation_with_inner_loop_average)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 1

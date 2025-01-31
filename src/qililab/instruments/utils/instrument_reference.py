@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Instrument Reference class. """
+"""Instrument Reference class."""
 
 from dataclasses import dataclass
 
@@ -49,4 +49,4 @@ class InstrumentReference:
         Args:
             settings (dict): an instrument reference from the settings file
         """
-        return InstrumentReference(**settings)
+        return cls(**settings)

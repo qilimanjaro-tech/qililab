@@ -14,7 +14,6 @@
 
 """Drag pulse shape."""
 
-from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
@@ -97,31 +96,3 @@ class Drag(PulseShape):
         drag_gaussian = (1 - 1j * self.drag_coefficient * (time - mu_) / sigma**2) * gaussian
 
         return drag_gaussian * norm / corr_norm if corr_norm != 0 else drag_gaussian
-
-    @classmethod
-    def from_dict(cls, dictionary: dict) -> "Drag":
-        """Loads Drag object/shape from dictionary.
-
-        Args:
-            dictionary (dict): Dictionary representation of the Drag object/shape containing the name of the pulse shape, the
-            number of sigmas and the drag coefficient.
-
-        Returns:
-            Drag: Loaded class.
-        """
-        local_dictionary = deepcopy(dictionary)
-        local_dictionary.pop("name", None)
-        return cls(**local_dictionary)
-
-    def to_dict(self) -> dict:
-        """Returns dictionary representation of the Drag object/shape.
-
-        Returns:
-            dict: Dictionary representing the Drag pulse shape. It contains the name of the pulse shape, the number of sigmas and
-            the drag coefficient.
-        """
-        return {
-            "name": self.name.value,  # type: ignore[operator]
-            "num_sigmas": self.num_sigmas,
-            "drag_coefficient": self.drag_coefficient,
-        }
