@@ -78,7 +78,7 @@ def deserialize(string: str, cls: type[T] | None = None) -> Any | T:
 
     Args:
         string (str): The YAML string to deserialize.
-        cls (type[T] | None, optional): The class type to cast the deserialized object to. Defaults to None.
+        cls (type[T], optional): The class type to cast the deserialized object to. Defaults to None.
 
     Raises:
         DeserializationError: If deserialization fails or the resulting object is not of the specified type.
@@ -109,7 +109,7 @@ def deserialize_from(file: str, cls: type[T] | None = None) -> Any | T:
 
     Args:
         file (str): The file path of the YAML file to deserialize.
-        cls (type[T] | None, optional): The class type to cast the deserialized object to. Defaults to None.
+        cls (type[T], optional): The class type to cast the deserialized object to. Defaults to None.
 
     Raises:
         DeserializationError: If deserialization fails or the resulting object is not of the specified type.

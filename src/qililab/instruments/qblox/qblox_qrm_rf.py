@@ -82,7 +82,7 @@ class QbloxQRMRF(QbloxQRM):
         Args:
             parameter (Parameter): Parameter name.
             value (float | str | bool): Value to set.
-            channel_id (int | None, optional): ID of the sequencer. Defaults to None.
+            channel_id (int, optional): ID of the sequencer. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
             parameter = Parameter.OUT0_IN0_LO_FREQ
@@ -108,7 +108,7 @@ class QbloxQRMRF(QbloxQRM):
         Args:
             parameter (Parameter): Parameter name.
             value (float | str | bool): Value to set.
-            channel_id (int | None, optional): ID of the sequencer. Defaults to None.
+            channel_id (int, optional): ID of the sequencer. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
             parameter = Parameter.OUT0_IN0_LO_FREQ

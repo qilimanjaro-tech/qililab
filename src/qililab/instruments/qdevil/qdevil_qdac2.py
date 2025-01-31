@@ -90,8 +90,13 @@ class QDevilQDac2(VoltageSource):
             self.settings.ramping_enabled[index] = ramping_enabled
             if self.is_device_active():
                 if ramping_enabled:
-                    if self.ramp_rate[index] < QDevilQDac2._MIN_RAMPING_RATE or self.ramp_rate[index] > QDevilQDac2._MAX_RAMPING_RATE:
-                        raise ValueError(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
+                    if (
+                        self.ramp_rate[index] < QDevilQDac2._MIN_RAMPING_RATE
+                        or self.ramp_rate[index] > QDevilQDac2._MAX_RAMPING_RATE
+                    ):
+                        raise ValueError(
+                            f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s."
+                        )
                     channel.dc_slew_rate_V_per_s(self.ramp_rate[index])
                 else:
                     channel.dc_slew_rate_V_per_s(2e7)
@@ -102,7 +107,9 @@ class QDevilQDac2(VoltageSource):
             ramping_enabled = self.ramping_enabled[index]
             if ramping_enabled and self.is_device_active():
                 if ramping_rate < QDevilQDac2._MIN_RAMPING_RATE or ramping_rate > QDevilQDac2._MAX_RAMPING_RATE:
-                    raise ValueError(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
+                    raise ValueError(
+                        f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s."
+                    )
                 channel.dc_slew_rate_V_per_s(ramping_rate)
             return
         if parameter == Parameter.LOW_PASS_FILTER:
@@ -151,7 +158,7 @@ class QDevilQDac2(VoltageSource):
         """Plays a waveform for a given channel id. If no channel id is given, plays all waveforms stored in the cache.
 
         Args:
-            channel_id (ChannelID | None, optional): Channel id to play a waveform through. Defaults to None.
+            channel_id (ChannelID, optional): Channel id to play a waveform through. Defaults to None.
             clear_after (bool): If True, clears cache. Defaults to True.
         """
         if channel_id is None:
@@ -190,7 +197,6 @@ class QDevilQDac2(VoltageSource):
         """Perform an initial setup."""
 
         for channel_id in self.dacs:
-
             self._validate_channel(channel_id=channel_id)
 
             index = self.dacs.index(channel_id)
@@ -200,8 +206,13 @@ class QDevilQDac2(VoltageSource):
             channel.output_filter(self.low_pass_filter[index])
 
             if self.ramping_enabled[index]:
-                if self.ramp_rate[index] < QDevilQDac2._MIN_RAMPING_RATE or self.ramp_rate[index] > QDevilQDac2._MAX_RAMPING_RATE:
-                    raise ValueError(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
+                if (
+                    self.ramp_rate[index] < QDevilQDac2._MIN_RAMPING_RATE
+                    or self.ramp_rate[index] > QDevilQDac2._MAX_RAMPING_RATE
+                ):
+                    raise ValueError(
+                        f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s."
+                    )
                 channel.dc_slew_rate_V_per_s(self.ramp_rate[index])
             else:
                 channel.dc_slew_rate_V_per_s(2e7)
