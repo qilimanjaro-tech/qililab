@@ -94,7 +94,7 @@ class DigitalCompilationSettings:
         Args:
             parameter (Parameter): Name of the parameter to get.
             value (float | str | bool): New value to set in the parameter.
-            channel_id (int | None, optional): Channel id. Defaults to None.
+            channel_id (int, optional): Channel id. Defaults to None.
             alias (str): String which specifies where the parameter can be found.
         """
         if parameter == Parameter.DELAY_BEFORE_READOUT:
@@ -120,7 +120,7 @@ class DigitalCompilationSettings:
 
         Args:
             parameter (Parameter): Name of the parameter to get.
-            channel_id (int | None, optional): Channel id. Defaults to None.
+            channel_id (int, optional): Channel id. Defaults to None.
             alias (str): String which specifies where the parameter can be found.
         """
         # if alias is None or alias == "platform":
