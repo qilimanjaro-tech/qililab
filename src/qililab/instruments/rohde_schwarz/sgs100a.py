@@ -122,10 +122,15 @@ class SGS100A(Instrument):
         """performs an initial setup"""
         self.device.power(self.power)
         self.device.frequency(self.frequency)
-        if self.rf_on:
-            self.device.on()
-        else:
-            self.device.off()
+        # if self.rf_on:
+        #     self.device.on()
+        # else:
+        #     self.device.off()
+        if self.is_device_active():
+            if self.rf_on:
+                self.turn_on()
+            else:
+                self.turn_off()
 
     @check_device_initialized
     def turn_on(self):
