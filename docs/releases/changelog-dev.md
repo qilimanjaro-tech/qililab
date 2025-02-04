@@ -16,11 +16,16 @@
 - Code to enable the IQ mixer feature already part of qcode in qililab for the rohde and schwarz SGS100a
 [#872](https://github.com/qilimanjaro-tech/qililab/pull/872)
 
+- Enable square waveforms optimization for Qblox.
+[#874](https://github.com/qilimanjaro-tech/qililab/pull/874)
 
 ### Improvements
 
 - Updated qm-qua to stable version 1.2.1. And close other machines has been set to True as now it closes only stated ports.
   [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
+- Now the QM qprogram compiler is able to generate the correct stream_processing while the average loop is inside any other kind of loop, before it was only able to be located on the outermost loop due to the way qprogram generated the stream_processing.
+  [#880](https://github.com/qilimanjaro-tech/qililab/pull/880)
 
 ### Breaking changes
 
@@ -32,6 +37,9 @@
 ### Documentation
 
 ### Bug fixes
+
+- Fixed an issue where having nested loops would output wrong shape in QbloxMeasurementResult.
+  [#853](https://github.com/qilimanjaro-tech/qililab/pull/853)
 
 - Restore the vna driver as it was deleted.
   [#857](https://github.com/qilimanjaro-tech/qililab/pull/857)

@@ -35,7 +35,7 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
         loops (dict): A dictionary containing all the loops used in an experiment. The keys are used to identify the
             loop and the values of the dictionary correspond to the values of the loop.
         data_path (str): Path to the main data directory.
-        name (str | None, optional): Name of the experiment. If given, the name is added to the name of the folder.
+        name (str, optional): Name of the experiment. If given, the name is added to the name of the folder.
             Defaults to None.
 
     Returns:
@@ -50,14 +50,14 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
             circuit.add(gates.X(0))
             circuit.add(gates.M(0))
 
-            results_list = []
+            results = []
             gain_values = np.arange(0, 1, step=0.01)
             for gain in gain_values:
                 platform.set_parameter(alias="drive_q0", parameter=ql.Parameter.GAIN, value=gain)
                 result = platform.execute(circuit, num_avg=1000, repetition_duration=200000)
                 results.append(result)
 
-            results = np.hstack(results_list)
+            results = np.hstack(results)
 
         You can then save the results by running:
 
