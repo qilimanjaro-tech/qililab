@@ -16,6 +16,8 @@
 - Code to enable the IQ mixer feature already part of qcode in qililab for the rohde and schwarz SGS100a
 [#872](https://github.com/qilimanjaro-tech/qililab/pull/872)
 
+- Oscillator simulator, plot the waveforms from the sequencer
+[#886](https://github.com/qilimanjaro-tech/qililab/pull/886)
 
 ### Improvements
 
