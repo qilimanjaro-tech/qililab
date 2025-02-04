@@ -717,7 +717,7 @@ class TestCircuitTranspiler:
 
 
     @patch("qililab.digital.circuit_router.CircuitRouter.route")
-    def test_route_circuit(self, mock_route, digital_settings):
+    def test_route_trivial_circuit(self, mock_route, digital_settings):
         """Test route_circuit method"""
         transpiler = CircuitTranspiler(settings=digital_settings)
         routing_iterations = 7
@@ -734,6 +734,104 @@ class TestCircuitTranspiler:
         # Asserts:
         mock_route.assert_called_once_with(mock_circuit, routing_iterations)
         assert (circuit_gates, nqubits, layout) == (mock_circuit.queue, mock_circuit.nqubits, mock_layout)
+
+    def test_route_circuit_only_needs_remapping_integration(self, digital_settings):
+        """Test route_circuit method"""
+        transpiler = CircuitTranspiler(settings=digital_settings)
+        routing_iterations = 10
+
+        # Mock the return values
+        mock_circuit = Circuit(5)
+        mock_circuit.add(gates.CNOT(1, 0))
+        mock_circuit.add(gates.CNOT(0, 1))
+        mock_circuit.add(gates.CNOT(3, 0))
+
+
+        # Execute the function
+        circuit_gates, nqubits, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        output_gates = [(gate.name, gate.qubits) for gate in circuit_gates]
+
+        # Asserts:
+        expected_layout = [2, 1, 0, 3, 4]
+        expected_gates = [('cx', (1, 2)), ('cx', (2, 1)), ('cx', (3, 2))]
+
+        assert (output_gates, nqubits, final_layout) == (expected_gates, mock_circuit.nqubits, expected_layout)
+
+    def test_route_circuit_swap_needed_integration(self, digital_settings):
+        """Test route_circuit method"""
+        transpiler = CircuitTranspiler(settings=digital_settings)
+        routing_iterations = 10
+
+        # Mock the return values
+        mock_circuit = Circuit(4)
+        mock_circuit.add(gates.CNOT(1, 0))
+        mock_circuit.add(gates.CNOT(3, 2))
+
+
+        # Execute the function
+        circuit_gates, nqubits, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        output_gates = [(gate.name, gate.qubits) for gate in circuit_gates]
+
+        # Asserts:
+        expected_gates_and_layout = [
+            ([('cx', (2, 0)), ('swap', (2, 3)), ('cx', (2, 1))], [0, 3, 1, 2, 4]),
+            ([('cx', (2, 0)), ('swap', (3, 2)), ('cx', (2, 1))], [0, 3, 1, 2, 4]),
+            ([('cx', (2, 0)), ('swap', (2, 1)), ('cx', (3, 2))], [0, 1, 2, 3, 4]),
+            ([('cx', (2, 0)), ('swap', (1, 2)), ('cx', (3, 2))], [0, 1, 2, 3, 4]),
+            ([('cx', (1, 2)), ('swap', (2, 0)), ('cx', (3, 2))], [0, 1, 2, 3, 4]),
+            ([('cx', (1, 2)), ('swap', (0, 2)), ('cx', (3, 2))], [0, 1, 2, 3, 4]),
+            ([('cx', (1, 2)), ('swap', (2, 3)), ('cx', (2, 0))], [2, 1, 3, 0, 4]),
+            ([('cx', (1, 2)), ('swap', (3, 2)), ('cx', (2, 0))], [2, 1, 3, 0, 4]),
+            ([('cx', (3, 2)), ('swap', (2, 0)), ('cx', (1, 2))], [2, 1, 0, 3, 4]),
+            ([('cx', (3, 2)), ('swap', (0, 2)), ('cx', (1, 2))], [2, 1, 0, 3, 4]),
+            ([('cx', (3, 2)), ('swap', (2, 1)), ('cx', (2, 0))], [0, 2, 1, 3, 4]),
+            ([('cx', (3, 2)), ('swap', (1, 2)), ('cx', (2, 0))], [0, 2, 1, 3, 4]),
+
+        ]
+
+        assert nqubits == 5 # The routing changes the size to fit that of the topology
+        # Test one of the possible routing has been achieved:
+        assert (output_gates, final_layout) in expected_gates_and_layout
+
+    def test_route_circuit_complex_integration(self, digital_settings):
+        """Test route_circuit method"""
+        transpiler = CircuitTranspiler(settings=digital_settings)
+        routing_iterations = 10
+
+        # Mock the return values
+        mock_circuit = Circuit(5)
+        mock_circuit.add(gates.CNOT(0, 1))
+        mock_circuit.add(gates.CNOT(1, 2))
+        mock_circuit.add(gates.CNOT(3, 0))
+        mock_circuit.add(gates.CNOT(1, 4))
+        mock_circuit.add(gates.CNOT(3, 4))
+        mock_circuit.add(gates.CNOT(1, 0))
+
+
+        # Execute the function
+        circuit_gates, _, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        output_gates = [[gate.name, gate.qubits] for gate in circuit_gates]
+
+        # Undo routing with SWAPS
+        for idx, gate in enumerate(output_gates):
+            if gate[0] == 'swap':
+                output_gates[idx] = None
+                mapping_to_do = {gate[1][0]: gate[1][1], gate[1][1]:gate[1][0]}
+                for idx_2, gate_2 in enumerate(output_gates[idx+1:]):
+                    qubit_1, qubit_2 = gate_2[1]
+                    output_gates[idx_2+idx+1][1] = (mapping_to_do.get(qubit_1, qubit_1), mapping_to_do.get(qubit_2, qubit_2))
+                # Change layout:
+                final_layout[gate[1][0]], final_layout[gate[1][1]] = final_layout[gate[1][1]], final_layout[gate[1][0]]
+
+        # Undo initial mapping
+        for idx, gate in enumerate(output_gates):
+            if gate is not None:
+                output_gates[idx] = gate[0], tuple(final_layout[q] for q in gate[1])
+
+        output_gates = [gate for gate in output_gates if gate is not None]
+
+        # Test you retrieve original circuit:
+        assert sorted(output_gates) == sorted([(gate.name, gate.qubits) for gate in mock_circuit.queue])
 
     @patch("qililab.digital.circuit_transpiler.nx.Graph")
     @patch("qililab.digital.circuit_transpiler.CircuitRouter")
