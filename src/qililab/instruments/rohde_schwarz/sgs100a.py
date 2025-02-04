@@ -140,7 +140,7 @@ class SGS100A(Instrument):
         """performs an initial setup"""
         self.device.power(self.power)
         self.device.frequency(self.frequency)
-        self.device.hardware_modulation(self.hardware_modulation)
+        self.device.IQ_state(self.hardware_modulation)
         if self.rf_on:
             self.device.on()
         else:
