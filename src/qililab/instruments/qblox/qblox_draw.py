@@ -1,15 +1,27 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import re
 
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from qililab.qprogram import QbloxCompilationOutput
-
 # TODO:
-    # binary conversion
-    # way to plot all methods at once
-    # add other methods
+# binary conversion
+# way to plot all methods at once
+# add other methods
 
 
 class QbloxDraw:
@@ -56,10 +68,10 @@ class QbloxDraw:
                 return int(x)
             if x in move_reg:
                 return int(move_reg[x])
+        return None
 
     def _parse_program(self, sequences):
         # sequences = QbloxCompilationOutput.sequences
-        print(vars(QbloxCompilationOutput))
         # make the Q1ASM data easier to read
         Q1ASM_ordered = {}
         for bus in sequences:  # Iterate through the dictionary
@@ -118,7 +130,7 @@ class QbloxDraw:
             # freq = {'freq':None}
             # index_label[bus] = {}
             index_label = 0
-            data = {bus: None}
+            # data = {bus: None}
             data_draw[bus] = [wf1, wf2]
             label_done = []  # list to keep track of the label once they have been looped over
 
@@ -133,7 +145,7 @@ class QbloxDraw:
             # get the index for the loop - might be replaced with a while loop, ie: while the label is still on keep doing that and then have a for loop inside
             for item in Q1ASM_ordered[bus]["program"]["main"]:
                 # for item in Q1ASM_ordered[bus]["program"]["main"]:
-                act, value, label, index = item
+                _, value, label, index = item
                 # print("top",value)
                 for l in label:
                     if l not in appearance:
@@ -156,7 +168,7 @@ class QbloxDraw:
                         while i < end:
                             item = Q1ASM_ordered[bus]["program"]["main"][i]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
-                            act, value, label, index = item
+                            _, value, label, _ = item
                             data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf)
                             data_draw[bus] = self._handle_wait_draw(data_draw[bus], item)
                             self._handle_add_draw(move_reg, item)
@@ -197,7 +209,7 @@ class QbloxDraw:
             # print(data)
 
         # Plot the waveforms with plotly
-        print()
+        # print()
         data_keys = list(data_draw.keys())
 
         # Create subplots
