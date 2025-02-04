@@ -216,8 +216,8 @@ class CircuitRouter:
             or not all(isinstance(key, str) and re.match(r"^q\d+$", key) for key in layout)
         )
 
-    @classmethod
-    def _build_router(cls, router: Router | type[Router] | tuple[type[Router], dict], connectivity: nx.Graph) -> Router:
+    @staticmethod
+    def _build_router(router: Router | type[Router] | tuple[type[Router], dict], connectivity: nx.Graph) -> Router:
         """Build a `Router` instance, given the pass router in whatever format and the connectivity graph.
 
         Args:
@@ -244,7 +244,7 @@ class CircuitRouter:
                 logger.warning("Ignoring router kwargs, as the router is already an instance.")
             if isinstance(router, StarConnectivityRouter):
                 # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
-                router.middle_qubit = cls._highest_degree_node(connectivity)
+                router.middle_qubit = CircuitRouter._highest_degree_node(connectivity)
             else:
                 router.connectivity = connectivity
             logger.warning("Substituting the router connectivity by the transpiler/platform one.")
@@ -255,7 +255,7 @@ class CircuitRouter:
             if issubclass(router, Router):
                 if issubclass(router, StarConnectivityRouter):
                     # For star-connectivity placers, we only care about which is the middle qubit (highest degree):
-                    kwargs["middle_qubit"] = cls._highest_degree_node(connectivity)
+                    kwargs["middle_qubit"] = CircuitRouter._highest_degree_node(connectivity)
                 return router(connectivity, **kwargs)
 
         raise TypeError(

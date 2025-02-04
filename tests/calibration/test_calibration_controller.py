@@ -648,6 +648,20 @@ class TestCalibrationController:
             assert third in result and second in result and first in result
             assert len(result) == 3
 
+    def test_get_qubit_from_node(self, controller):
+        """Test that the method ``get_qubit_from_node()`` returns the correct qubit index."""
+        for node in controller.node_sequence.values():
+            if isinstance(node.qubit_index, int):
+                assert controller._get_qubit_from_node(node) == str(node.qubit_index)
+            elif isinstance(node.qubit_index, list):
+                assert controller._get_qubit_from_node(node) == "-".join(map(str, node.qubit_index))
+
+    def test_get_bus_name_from_alias(self, controller):
+        """Test that the method ``get_bus_name_from_alias()`` returns the correct bus name."""
+        assert controller._get_bus_name_from_alias("test_bus_h56_gt") == "test_bus_gt"
+
+
+
 
 class TestStaticMethodsFromCalibrationController:
     """Test that the static methods of ``CalibrationController`` behave well."""
