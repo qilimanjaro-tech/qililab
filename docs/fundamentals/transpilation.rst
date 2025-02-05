@@ -75,7 +75,7 @@ Now, if we want more manual control instead, we can instantiate the ``CircuitTra
 
     from qibo import gates
     from qibo.models import Circuit
-    from qibo.transpiler.placer import ReverseTraversal, Trivial
+    from qibo.transpiler.placer import ReverseTraversal, Random
     from qibo.transpiler.router import Sabre
     from qililab import build_platform
     from qililab.digital import CircuitTranspiler
@@ -98,7 +98,17 @@ And now, transpile manually, like in the following examples:
     transpiled_circuit, final_layouts = transpiler.transpile_circuit(c)
 
     # Or another case, not doing optimization for some reason, and with Non-Default placer:
-    transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Trivial, optimize=False)
+    transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Random, optimize=False)
 
     # Or also specifying the `router` with kwargs:
     transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
+
+And even we could only do a single step of the transpilation manually, like in the following, where we will only route:
+
+.. code-block:: python
+
+    # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
+    transpiled_circuit, qubits, final_layouts = transpiler.route_circuit(c)
+
+    # Or another case with Non-Default placer:
+    transpiled_circuit, qubits, final_layout = transpiler.route_circuit(c, placer=Random)

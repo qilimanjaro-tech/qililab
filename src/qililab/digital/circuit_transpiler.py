@@ -120,7 +120,7 @@ class CircuitTranspiler:
 
             from qibo import gates
             from qibo.models import Circuit
-            from qibo.transpiler.placer import ReverseTraversal, Trivial
+            from qibo.transpiler.placer import ReverseTraversal, Random
             from qibo.transpiler.router import Sabre
             from qililab import build_platform
             from qililab.digital import CircuitTranspiler
@@ -143,7 +143,7 @@ class CircuitTranspiler:
             transpiled_circuit, final_layouts = transpiler.transpile_circuit(c)
 
             # Or another case, not doing optimization for some reason, and with Non-Default placer:
-            transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Trivial, optimize=False)
+            transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Random, optimize=False)
 
             # Or also specifying the `router` with kwargs:
             transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
@@ -174,7 +174,7 @@ class CircuitTranspiler:
             circuit_gates, nqubits, final_layout = self.route_circuit(circuit, placer, router, routing_iterations)
         else:
             circuit_gates, nqubits = circuit.queue, circuit.nqubits
-            final_layout = None  # Trivial mapping
+            final_layout = None  # Random mapping
 
         # Optimze qibo gates, cancelling redundant gates:
         if optimize:
@@ -215,7 +215,7 @@ class CircuitTranspiler:
 
             from qibo import gates
             from qibo.models import Circuit
-            from qibo.transpiler.placer import ReverseTraversal, Trivial
+            from qibo.transpiler.placer import ReverseTraversal, Random
             from qibo.transpiler.router import Sabre
             from qililab import build_platform
             from qililab.digital import CircuitTranspiler
@@ -236,13 +236,13 @@ class CircuitTranspiler:
         .. code-block:: python
 
             # Default Transpilation:
-            routed_circuit, final_layouts = transpiler.route_circuit([c])  # Defaults to ReverseTraversal, Sabre and platform connectivity
+            routed_circuit, qubits, final_layouts = transpiler.route_circuit(c)  # Defaults to ReverseTraversal, Sabre and platform connectivity
 
-            # Non-Default Trivial placer, and coupling_map specified:
-            routed_circuit, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=Sabre, coupling_map)
+            # Non-Default Random placer, and coupling_map specified:
+            routed_circuit, qubits, final_layouts = transpiler.route_circuit(c, placer=Random, router=Sabre, coupling_map)
 
             # Specifying one of the a kwargs:
-            routed_circuit, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=(Sabre, {"lookahead": 2}))
+            routed_circuit, qubits, final_layouts = transpiler.route_circuit(c, placer=Random, router=(Sabre, {"lookahead": 2}))
 
         Args:
             circuit (Circuit): circuit to route.

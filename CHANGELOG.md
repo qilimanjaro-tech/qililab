@@ -117,7 +117,7 @@
   ```python
   from qibo import gates
   from qibo.models import Circuit
-  from qibo.transpiler.placer import ReverseTraversal, Trivial
+  from qibo.transpiler.placer import ReverseTraversal, Random
   from qibo.transpiler.router import Sabre
   from qililab import build_platform
   from qililab.digital import CircuitTranspiler
@@ -128,8 +128,8 @@
 
   ### From execute_circuit:
   # With defaults (ReverseTraversal placer and Sabre routing):
-  probabilities = ql.execute(c, runcard="./runcards/galadriel.yml", placer= Trivial, router = Sabre, routing_iterations: int = 10,)
-  # Changing the placer to Trivial, and changing the number of iterations:
+  probabilities = ql.execute(c, runcard="./runcards/galadriel.yml", placer= Random, router = Sabre, routing_iterations: int = 10,)
+  # Changing the placer to Random, and changing the number of iterations:
   probabilities = ql.execute(c, runcard="./runcards/galadriel.yml",
 
   ### From the platform:
@@ -138,22 +138,22 @@
   # With defaults (ReverseTraversal placer, Sabre routing)
   probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000)
   # With non-defaults, and specifying the router with kwargs:
-  probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000,  placer= Trivial, router = (Sabre, {"lookahead": 2}), routing_iterations: int = 20))
+  probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000,  placer= Random, router = (Sabre, {"lookahead": 2}), routing_iterations: int = 20))
   # With a router instance:
   router = Sabre(connectivity=None, lookahead=1) # No connectivity needed, since it will be overwritten by the platform's one
-  probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000, placer=Trivial, router=router)
+  probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000, placer=Random, router=router)
 
   ### Using the transpiler directly:
   ### (If using the routing from this points of the stack, you can route with a different topology from the platform one)
   # Create transpiler:
   transpiler = CircuitTranspiler(platform)
   # Default Transpilation (ReverseTraversal, Sabre and Platform connectivity):
-  routed_circ, final_layouts = transpiler.route_circuit([c])
-  # With Non-Default Trivial placer, specifying the kwargs, for the router, and different coupling_map:
-  routed_circ, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=(Sabre, {"lookahead": 2}, coupling_map=<some_different_topology>))
+  routed_circ, qubits, final_layouts = transpiler.route_circuit(c)
+  # With Non-Default Random placer, specifying the kwargs, for the router, and different coupling_map:
+  routed_circ, qubits, final_layouts = transpiler.route_circuit(c, placer=Random, router=(Sabre, {"lookahead": 2}, coupling_map=<some_different_topology>))
   # Or finally, Routing with a concrete Routing instance:
   router = Sabre(connectivity=None, lookahead=1) # No connectivity needed, since it will be overwritten by the specified in the Transpiler:
-  routed_circ, final_layouts = transpiler.route_circuit([c], placer=Trivial, router=router, coupling_map=<connectivity_to_use>)
+  routed_circ, qubits, final_layouts = transpiler.route_circuit(c, placer=Random, router=router, coupling_map=<connectivity_to_use>)
   ```
 
 [#821](https://github.com/qilimanjaro-tech/qililab/pull/821)
