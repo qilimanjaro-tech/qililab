@@ -14,7 +14,7 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
-from qililab.digital.circuit_transpiler import DigitalTranspilationConfig
+from qililab.digital import DigitalTranspilationConfig
 from tests.data import Galadriel, SauronQuantumMachines
 from tests.test_utils import build_platform
 

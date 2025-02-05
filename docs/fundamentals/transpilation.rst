@@ -78,7 +78,7 @@ Now, if we want more manual control instead, we can instantiate the ``CircuitTra
     from qibo.transpiler.placer import ReverseTraversal, Trivial
     from qibo.transpiler.router import Sabre
     from qililab import build_platform
-    from qililab.circuit_transpiler import CircuitTranspiler
+    from qililab.digital import CircuitTranspiler
 
     # Create circuit:
     c = Circuit(5)

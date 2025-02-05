@@ -71,7 +71,7 @@ if TYPE_CHECKING:
 
     from qpysequence import Sequence as QpySequence
 
-    from qililab.digital.circuit_transpiler import DigitalTranspilationConfig
+    from qililab.digital import DigitalTranspilationConfig
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result

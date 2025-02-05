@@ -110,7 +110,7 @@
 - Added routing algorithms to `qililab` in function of the platform connectivity. This is done passing `Qibo` own `Routers` and `Placers` classes,
   and can be called from different points of the stack.
 
-  The most common way to route, will be automatically through `qililab.execute_circuit.execute()`, or also from `qililab.platform.execute/compile()`. Another way, would be doing the transpilation/routing directly from an instance of the Transpiler, with: `qililab.digital.circuit_transpiler.transpile/route_circuit()` (with this last one, you can route with a different topology from the platform one, if desired, defaults to platform)
+  The most common way to route, will be automatically through `qililab.execute_circuit.execute()`, or also from `qililab.platform.execute/compile()`. Another way, would be doing the transpilation/routing directly from an instance of the Transpiler, with: `qililab.digital.CircuitTranspiler.transpile/route_circuit()` (with this last one, you can route with a different topology from the platform one, if desired, defaults to platform)
 
   Example
 
@@ -120,7 +120,7 @@
   from qibo.transpiler.placer import ReverseTraversal, Trivial
   from qibo.transpiler.router import Sabre
   from qililab import build_platform
-  from qililab.circuit_transpiler import CircuitTranspiler
+  from qililab.digital import CircuitTranspiler
 
   # Create circuit:
   c = Circuit(5)
@@ -415,9 +415,7 @@
   platform = ql.build_platform("examples/runcards/galadriel.yml")
   anneal_program_dict = [...]  # same as in the above example
   # intialize annealing program class
-  anneal_program = ql.AnnealingProgram(
-      platform=platform, anneal_program=anneal_program_dict
-  )
+  anneal_program = ql.AnnealingProgram(platform=platform, anneal_program=anneal_program_dict)
   # transpile ising to flux, now flux values can be accessed same as ising coeff values
   # eg. for phix qubit 0 at t=1ns anneal_program.anneal_program[1]["qubit_0"]["phix"]
   anneal_program.transpile(lambda delta, epsilon: (delta, epsilon))
@@ -1555,9 +1553,7 @@
 
   ```python
   # Option 1 (Default)
-  figure = sample_experiment.draw(
-      real=True, imag=True, abs=False, modulation=True, linestyle="-"
-  )
+  figure = sample_experiment.draw(real=True, imag=True, abs=False, modulation=True, linestyle="-")
 
   # Option 2 (Equivalent to option 1)
   figure = sample_experiment.draw()
@@ -1679,9 +1675,7 @@
 - Added `pulse.pulse_distortion.lfilter_correction.py` module, which is another child class for the `pulse.pulse_distortion` package.
 
   ```python
-  distorted_envelope = LFilter(norm_factor=1.2, a=[0.7, 1.3], b=[0.5, 0.6]).apply(
-      original_envelopes
-  )
+  distorted_envelope = LFilter(norm_factor=1.2, a=[0.7, 1.3], b=[0.5, 0.6]).apply(original_envelopes)
   ```
 
   Also adds a phase property to `PulseEvent` and implements `Factory.get` directly in the `from_dict()` method of the parent class `PulseDistortion`.
