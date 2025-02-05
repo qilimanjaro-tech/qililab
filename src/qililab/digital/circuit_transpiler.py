@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 class DigitalTranspilationConfig:
     """Dataclass containing the digital transpilation configuration. Used in the :meth:`.CircuitTranspiler.transpile_circuit()` method"""
 
-    routing: bool = False
+    routing: bool = False  # TODO: Change to True, when user confirms it works well.
     """(bool, optional): Whether to route the circuit. Defaults to False."""
 
     placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None
@@ -54,7 +54,7 @@ class DigitalTranspilationConfig:
     routing_iterations: int = 10
     """(int, optional): Number of times to repeat the routing pipeline, to get the best stochastic result. Defaults to 10."""
 
-    optimize: bool = False
+    optimize: bool = False  # TODO: Maybe also change to True, when user confirms it works well.
     """(bool, optional): Whether to optimize the circuit and/or transpilation. Defaults to False."""
 
     @property
