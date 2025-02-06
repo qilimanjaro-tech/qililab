@@ -324,11 +324,11 @@ buses:
   - QRM-RF1
   channels:
   - 1
-- alias: readout_q2_bus
-  instruments:
-  - QRM-RF1
-  channels:
-  - 2
+# - alias: readout_q2_bus
+#   instruments:
+#   - QRM-RF1
+#   channels:
+#   - 2
 # - alias: readout_q3_bus
 #   instruments:
 #   - QRM-RF1

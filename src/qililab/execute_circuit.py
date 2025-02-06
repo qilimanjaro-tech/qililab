@@ -111,8 +111,7 @@ def execute(
             for circuit in tqdm(program, total=len(program))
         ]
         platform.disconnect()
-        # return results[0] if len(results) == 1 else results
-        return results
+        return results[0] if len(results) == 1 else results
     except Exception as e:
         platform.disconnect()
         raise e

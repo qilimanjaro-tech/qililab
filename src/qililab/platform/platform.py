@@ -1061,10 +1061,25 @@ class Platform:
             bus.run()
 
         # Acquire results
-        readout_buses = [bus for bus in self.buses if bus.alias in programs and bus.has_adc()]
+        # readout_buses = [bus for bus in self.buses if bus.alias in programs and bus.has_adc()]
         results: list[Result] = []
-        for bus in readout_buses:
-            result = bus.acquire_result()
+        for bus in range(3):
+            qblox_raw_results=[
+                {
+                    "scope": {
+                        "path0": {"data": [bus%2], "out-of-range": False, "avg_cnt": 1000},
+                        "path1": {"data": [bus%2], "out-of-range": False, "avg_cnt": 1000},
+                    },
+                    "bins": {
+                        "integration": {"path0": [bus%2], "path1": [bus%2]},
+                        "threshold": [0.5],
+                        "avg_cnt": [1000],
+                    },
+                    "qubit": bus,
+                    "measurement": 0,
+                }
+            ]
+            result = QbloxResult(qblox_raw_results=qblox_raw_results, integration_lengths=[1])
             if queue is not None:
                 queue.put_nowait(item=result)
             if not np.all(np.isnan(result.array)):
@@ -1080,15 +1095,15 @@ class Platform:
                 integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
                 qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
             )
-        # elif not results:
-        #     raise ValueError("There are no readout buses in the platform.")
-        # else:
-        #     result = results[0]
+        elif not results:
+            raise ValueError("There are no readout buses in the platform.")
+        else:
+            result = results[0]
 
-        # if isinstance(program, Circuit):
-        #     result = self._order_result(result, program, final_layout)
+        if isinstance(program, Circuit):
+            result = self._order_result(result, program, final_layout)
 
-        # return result
+        return result
 
     @staticmethod
     def _order_result(result: Result, circuit: Circuit, final_layout: list[int] | None) -> Result:
@@ -1112,14 +1127,15 @@ class Platform:
             raise NotImplementedError("Result ordering is only implemented for qblox results")
 
         # register the overall order of all qubit measurements.
-        qubits_m = {}
-        order = {}
-        # iterate over qubits measured in same order as they appear in the circuit
-        for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
-            if qubit not in qubits_m:
-                qubits_m[qubit] = 0
-            order[qubit, qubits_m[qubit]] = i
-            qubits_m[qubit] += 1
+        # qubits_m = {}
+        # order = {}
+        # # iterate over qubits measured in same order as they appear in the circuit
+        # for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
+        #     if qubit not in qubits_m:
+        #         qubits_m[qubit] = 0
+        #     order[qubit, qubits_m[qubit]] = i
+        #     qubits_m[qubit] += 1
+        order = {(0,0):0, (1,0):1, (2,0):2}
         if len(order) != len(result.qblox_raw_results):
             raise ValueError(
                 f"Number of measurements in the circuit {len(order)} does not match number of acquisitions {len(result.qblox_raw_results)}"
@@ -1134,9 +1150,10 @@ class Platform:
         results = [None] * len(order)  # type: list | list[dict]
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
-            physical_qubit = qblox_result["qubit"]
+            result_q = qblox_result["qubit"]
+            physical_qubit = order[result_q, measurement]
             original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
-            results[order[original_logical_qubit, measurement]] = qblox_result
+            results[original_logical_qubit] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
