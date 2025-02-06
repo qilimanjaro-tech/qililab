@@ -221,7 +221,7 @@ class CircuitOptimizer:
             return Drag(drag1.qubits[0], new_normalized_theta, drag1.parameters[1])
 
         # For opposite phi, we just need to subtract the theta parameters:
-        if np.isclose([drag1.parameters[0]] * 2, [drag2.parameters[0] + np.pi, drag2.parameters[0] - np.pi]).any():
+        if np.isclose(drag1.parameters[1], _GateHandler.normalize_angle(drag2.parameters[1] + np.pi)):
             new_normalized_theta = _GateHandler.normalize_angle(drag1.parameters[0] - drag2.parameters[0])
             return Drag(drag1.qubits[0], new_normalized_theta, drag1.parameters[1])
 
