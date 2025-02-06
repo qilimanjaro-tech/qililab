@@ -153,9 +153,9 @@ class CircuitOptimizer:
             list[gates.Gate]: list of gates of the transpiled circuit, optimized.
         """
         # Add more optimizations of the transpiled circuit here:
+        circuit_gates = CircuitOptimizer.normalize_angles_of_drags(circuit_gates)
         circuit_gates = CircuitOptimizer.bunch_drag_gates(circuit_gates)
         # TODO: Add bunching of Drag Gates for diff phis!
-        circuit_gates = CircuitOptimizer.normalize_angles_of_drags(circuit_gates)
         circuit_gates = CircuitOptimizer.delete_gates_with_no_amplitude(circuit_gates)
         return circuit_gates
 
@@ -217,7 +217,13 @@ class CircuitOptimizer:
 
         # For the same phi, we just need to add the theta parameters:
         if np.isclose(drag1.parameters[1], drag2.parameters[1]):
-            return Drag(drag1.qubits[0], drag1.parameters[0] + drag2.parameters[0], drag1.parameters[1])
+            new_normalized_theta = _GateHandler.normalize_angle(drag1.parameters[0] + drag2.parameters[0])
+            return Drag(drag1.qubits[0], new_normalized_theta, drag1.parameters[1])
+
+        # For opposite phi, we just need to subtract the theta parameters:
+        if np.isclose([drag1.parameters[0]] * 2, [drag2.parameters[0] + np.pi, drag2.parameters[0] - np.pi]).any():
+            new_normalized_theta = _GateHandler.normalize_angle(drag1.parameters[0] - drag2.parameters[0])
+            return Drag(drag1.qubits[0], new_normalized_theta, drag1.parameters[1])
 
         # TODO: ADD BUNCHING DRAG GATES FOR GENERAL DIFFERENT PHI's!
         return None  # This should return the merged Drag gate, for different phi's!
