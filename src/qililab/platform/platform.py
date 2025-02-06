@@ -1115,6 +1115,8 @@ class Platform:
         qubits_m = {}
         order = {}
         # iterate over qubits measured in same order as they appear in the circuit
+        # TODO: You need to check where each measurement is, since SWAPs can be after a measurement...
+        # FIXME: In the meanwhile do it asuming the Measurement is the last gate for each qubit
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
@@ -1134,13 +1136,12 @@ class Platform:
         results = [None] * len(order)  # type: list | list[dict]
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
-            result_q = qblox_result["qubit"]
+            physical_qubit = qblox_result["qubit"]
+            original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
 
             # TODO:Check this is correct, or how it works with multiple measurements per qubit:
-            physical_qubit = order[result_q, measurement]
-
-            original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
-            results[original_logical_qubit] = qblox_result
+            original_measure_num = order[original_logical_qubit, measurement]
+            results[original_measure_num] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
