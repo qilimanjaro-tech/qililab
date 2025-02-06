@@ -28,7 +28,7 @@ def execute(
     runcard: str | dict,
     nshots: int = 1,
     transpilation_config: DigitalTranspilationConfig | None = None,
-) -> Result | list[Result]:
+) -> Result | list[Result] | None:
     """Executes a Qibo circuit (or a list of circuits) with qililab and returns the results.
 
     The ``program`` argument is first translated into pulses using the transpilation settings of the runcard and the passed transpile
@@ -111,7 +111,8 @@ def execute(
             for circuit in tqdm(program, total=len(program))
         ]
         platform.disconnect()
-        return results[0] if len(results) == 1 else results
+        # return results[0] if len(results) == 1 else results
+        return results
     except Exception as e:
         platform.disconnect()
         raise e

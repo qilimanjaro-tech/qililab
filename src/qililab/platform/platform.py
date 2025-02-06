@@ -986,7 +986,7 @@ class Platform:
         num_bins: int = 1,
         queue: Queue | None = None,
         transpilation_config: DigitalTranspilationConfig | None = None,
-    ) -> Result | QbloxResult:
+    ) -> Result | None | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
@@ -1080,15 +1080,15 @@ class Platform:
                 integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
                 qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
             )
-        elif not results:
-            raise ValueError("There are no readout buses in the platform.")
-        else:
-            result = results[0]
+        # elif not results:
+        #     raise ValueError("There are no readout buses in the platform.")
+        # else:
+        #     result = results[0]
 
-        if isinstance(program, Circuit):
-            result = self._order_result(result, program, final_layout)
+        # if isinstance(program, Circuit):
+        #     result = self._order_result(result, program, final_layout)
 
-        return result
+        # return result
 
     @staticmethod
     def _order_result(result: Result, circuit: Circuit, final_layout: list[int] | None) -> Result:
