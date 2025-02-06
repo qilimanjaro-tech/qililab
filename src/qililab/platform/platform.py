@@ -1134,9 +1134,13 @@ class Platform:
         results = [None] * len(order)  # type: list | list[dict]
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
-            physical_qubit = qblox_result["qubit"]
+            result_q = qblox_result["qubit"]
+
+            # TODO:Check this is correct, or how it works with multiple measurements per qubit:
+            physical_qubit = order[result_q, measurement]
+
             original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
-            results[order[original_logical_qubit, measurement]] = qblox_result
+            results[original_logical_qubit] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
