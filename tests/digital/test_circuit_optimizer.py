@@ -171,10 +171,10 @@ class TestCircuitOptimizerUnit:
         assert len(gate_list) == 5
 
         assert isinstance(gate_list[0], Drag)
-        assert gate_list[0].parameters == (3 * np.pi, np.pi / 2)
+        assert gate_list[0].parameters == (np.pi, np.pi / 2)
 
         assert isinstance(gate_list[1], Drag)
-        assert gate_list[1].parameters == (2 * np.pi, np.pi / 2)
+        assert gate_list[1].parameters == (0, np.pi / 2)
 
         assert isinstance(gate_list[2], Drag)
         assert gate_list[2].parameters == (np.pi, np.pi)
