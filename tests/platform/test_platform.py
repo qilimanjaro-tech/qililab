@@ -880,13 +880,13 @@ class TestMethods:
                             result = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
 
             # check that the order of #measurement # qubit is the same as in the circuit
-            order_measurement_qubit = [(result["measurement"], result["qubit"]) for result in result.qblox_raw_results]  # type: ignore
+            order_measurement_qubit = [(result["qubit"], result["measurement"]) for result in result.qblox_raw_results]  # type: ignore
 
             # Change the qubit mappings, given the final_layout:
             assert (
-                order_measurement_qubit == [(0, 1), (0, 0), (1, 0), (1, 1)]
+                order_measurement_qubit == [(1, 0), (0, 0), (0, 1), (1, 1)]
                 if idx == 0
-                else [(0, 0), (0, 1), (1, 1), (1, 0)]
+                else [(0, 0), (1, 0), (1, 1), (0, 1)]
             )
 
     def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):
