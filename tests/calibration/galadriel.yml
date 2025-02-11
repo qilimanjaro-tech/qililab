@@ -267,7 +267,7 @@ instruments:
     power: 16
     frequency: 8.0726e+09
     rf_on: true
-    hardware_modulation: true
+    rohde_modulation: true
   - name: mini_circuits
     alias: attenuator
     attenuation: 32
