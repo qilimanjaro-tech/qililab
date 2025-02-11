@@ -17,6 +17,7 @@ Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 
 from dataclasses import dataclass
+from xmlrpc.client import boolean
 
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
@@ -48,8 +49,6 @@ class SGS100A(Instrument):
         power: float
         frequency: float
         rf_on: bool
-        iq_wideband: bool = True
-        alc: bool = True
 
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
@@ -80,22 +79,6 @@ class SGS100A(Instrument):
         """
         return self.settings.rf_on
 
-    @property
-    def iq_wideband(self):
-        """SignalGenerator "I/Q wideband" property.
-        Returns:
-            bool: settings.iq_wideband.
-        """
-        return self.settings.iq_wideband
-
-    @property
-    def alc(self):
-        """SignalGenerator "Automatic Level Control" property.
-        Returns:
-            bool: settings.alc.
-        """
-        return self.settings.alc
-
     def to_dict(self):
         """Return a dict representation of the SignalGenerator class."""
         return dict(super().to_dict().items())
@@ -124,31 +107,7 @@ class SGS100A(Instrument):
                 else:
                     self.turn_off()
             return
-        if parameter == Parameter.ALC:
-            self.settings.alc = bool(value)
-            if self.is_device_active():
-                status = "Table & On"
-                if not value:
-                    status = "Off"
-                self.device.send_command(command=":SOUR:POW:ALC:STAT", arg=status)
-            return
-        if parameter == Parameter.IQ_WIDEBAND:
-            self.settings.iq_wideband = bool(value)
-            if self.is_device_active():
-                status = 1
-                if not value:
-                    status = 0
-                self.device.send_command(command="SOUR:IQ:WBST", arg=status)
-            return
         raise ParameterNotFound(self, parameter)
-
-    def get_rs_options(self):
-        """Returns the options of the R&S
-
-        Returns:
-            str: The query returns a list of options. The options are returned at fixed positions in a comma-separated string. A zero is returned for options that are not installed.
-        """
-        return self.device.ask(command="*OPT?")
 
     def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
         if parameter == Parameter.POWER:
@@ -157,21 +116,19 @@ class SGS100A(Instrument):
             return self.settings.frequency
         if parameter == Parameter.RF_ON:
             return self.settings.rf_on
-        if parameter == Parameter.ALC:
-            return self.settings.alc
-        if parameter == Parameter.IQ_WIDEBAND:
-            return self.settings.iq_wideband
         raise ParameterNotFound(self, parameter)
+
+    def set_alc_status(self, status: boolean = True):
+        parameter_status = True
+        if not status:
+            parameter_status = "Off"
+        self.device.send_command(command=":SOUR:POW:ALC:STAT", arg=parameter_status)
 
     @check_device_initialized
     def initial_setup(self):
         """performs an initial setup"""
         self.device.power(self.power)
         self.device.frequency(self.frequency)
-        if not self.alc:
-            self.device.send_command(command=":SOUR:POW:ALC:STAT", arg="Off")
-        if not self.iq_wideband:
-            self.device.send_command(command="SOUR:IQ:WBST", arg=0)
         if self.rf_on:
             self.device.on()
         else:
