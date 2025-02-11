@@ -86,16 +86,18 @@ class TestSGS100A:
         sdg100a.device.power.assert_called_with(sdg100a.power)
         sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
         sdg100a.device.off.assert_called_once()
-
+    
+    def test_turn_on_method_rf_off(self, sdg100a_rf_off: SGS100A):
+        """Test initial method when the runcard sets rf_on as False"""
+        sdg100a_rf_off.turn_on()
+        assert sdg100a_rf_off.settings.rf_on is False
+        sdg100a_rf_off.device.on.assert_called_once()
+        
     def test_turn_on_method(self, sdg100a: SGS100A):
         """Test turn_on method"""
         sdg100a.turn_on()
         assert sdg100a.settings.rf_on is True
         sdg100a.device.on.assert_called_once()
-    
-    def test_turn_on_method_rf_off(self, sdg100a_rf_off: SGS100A):
-        """Test turn_on method when the runcard has False"""
-        assert sdg100a_rf_off.settings.rf_on is False
 
     def test_turn_off_method(self, sdg100a: SGS100A):
         """Test turn_off method"""
