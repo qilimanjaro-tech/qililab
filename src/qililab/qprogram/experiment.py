@@ -43,6 +43,7 @@ class Experiment(StructuredProgram):
             Parameter.OFFSET_OUT1: Domain.Voltage,
             Parameter.OFFSET_OUT2: Domain.Voltage,
             Parameter.OFFSET_OUT3: Domain.Voltage,
+            Parameter.FLUX: Domain.Flux,
             Parameter.DURATION: Domain.Time,
             Parameter.LO_FREQUENCY: Domain.Frequency,
             Parameter.IF: Domain.Frequency,

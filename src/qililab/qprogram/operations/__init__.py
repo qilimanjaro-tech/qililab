@@ -24,7 +24,6 @@ from .measure import (
 from .operation import Operation
 from .play import Play, PlayWithCalibratedWaveform
 from .reset_phase import ResetPhase
-from .set_crosstalk import SetCrosstalk
 from .set_frequency import SetFrequency
 from .set_gain import SetGain
 from .set_markers import SetMarkers
@@ -47,7 +46,6 @@ __all__ = [
     "Play",
     "PlayWithCalibratedWaveform",
     "ResetPhase",
-    "SetCrosstalk",
     "SetFrequency",
     "SetGain",
     "SetMarkers",
