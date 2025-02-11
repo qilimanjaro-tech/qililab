@@ -217,7 +217,8 @@ class FluxVector:
 
         for bus_1 in crosstalk.matrix.keys():
             self.crosstalk_vector[bus_1] = sum(
-                self.vector[bus_2] * crosstalk.matrix[bus_1][bus_2] for bus_2 in crosstalk.matrix[bus_1].keys()
+                self.vector[bus_2] * crosstalk.matrix[bus_1][bus_2] - crosstalk.flux_offsets[bus_2]
+                for bus_2 in crosstalk.matrix[bus_1].keys()
             )
 
         return self.crosstalk_vector
