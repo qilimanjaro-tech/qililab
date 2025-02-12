@@ -176,7 +176,7 @@ class Galadriel:
                         "phase": 1.5707963267948966,
                         "duration": 20,
                         "shape": {"name": "rectangular"},
-                        "options": {"q0_phase_correction": 0.1, "q2_phase_correction": 0.2},
+                        "options": {"q0_phase_correction": 0.1, "q1_phase_correction": 0.2},
                     },
                 }
             ],
@@ -189,6 +189,7 @@ class Galadriel:
                         "phase": 1.5707963267948966,
                         "duration": 20,
                         "shape": {"name": "rectangular"},
+                        "options": {"q0_phase_correction": 0.1, "q2_phase_correction": 0.2},
                     },
                 }
             ],
@@ -891,7 +892,7 @@ class SauronVNA:
         "alias": InstrumentName.AGILENT_E5071B.value,
         Parameter.POWER.value: -60.0,
     }
-    
+
     instruments = [keysight_e5080b, agilent_e5071b]
     instrument_controllers = [
         keysight_e5080b_controller,

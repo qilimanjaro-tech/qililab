@@ -62,16 +62,13 @@ class GateDecompositions:
         return [g.on_qubits(dict(enumerate(gate.qubits))) for g in decomposition]
 
 
-def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
+def translate_gates(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
     """Maps Qibo gates to a hardware native implementation (CZ, RZ, Drag, Wait and M (Measurement))
-    - CZ gates are our 2 qubit gates
-    - RZ gates are applied as virtual Z gates if optimize=True in the transpiler
-    - Drag gates are our single qubit gates
-    - Wait gates add wait time at a single qubit
-    - Measurement gates measure the circuit
+
+    Check public docstring in :meth:`.CircuitTranspiler.gates_to_native()` for more information.
 
     Args:
-        ngates (list[gates.Gate]): list of gates to be decomposed.
+        circuit_gates (list[gates.Gate]): list of gates to be decomposed.
 
     Returns:
         list[gates.Gate]: list of native gates corresponding to input gates
@@ -81,19 +78,21 @@ def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
     supported_gates = (*native_gates(), gates.RZ, gates.M)
 
     # check which gates are native gates and if not all of them are so, translate
-    to_translate = [not isinstance(gate, supported_gates) for gate in ngates]
-
+    to_translate = [not isinstance(gate, supported_gates) for gate in circuit_gates]
     new_gates = []
+
+    # If no more gates to translate, finish:
+    if sum(to_translate) == 0:
+        return circuit_gates
+
     # iterate through all gates
-    if sum(to_translate) != 0:
-        for gate, tt in zip(ngates, to_translate):
-            if not tt:
-                new_gates.append(gate)  # append already native gates
-            # distinguish 1 or 2 qubit gates
-            else:
-                new_gates += qili_dec(gate)
-        return translate_gates(new_gates)
-    return ngates
+    for gate, tt in zip(circuit_gates, to_translate):
+        if not tt:
+            new_gates.append(gate)  # append already native gates
+        # distinguish 1 or 2 qubit gates
+        else:
+            new_gates += qili_dec(gate)
+    return translate_gates(new_gates)
 
 
 def native_gates():
