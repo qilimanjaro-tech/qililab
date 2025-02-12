@@ -122,12 +122,8 @@ class _GateHandler:
         """
         # Solve Identity gate, argument int issue:
         gate_args = [gate_args] if isinstance(gate_args, int) else gate_args
-
-        return (
-            getattr(digital, gate_class)(*gate_args, **gate_kwargs)
-            if gate_class in {"Drag", "Wait"}
-            else getattr(gates, gate_class)(*gate_args, **gate_kwargs)
-        )
+        gate_type = digital if gate_class in {"Drag", "Wait"} else gates
+        return getattr(gate_type, gate_class)(**gate_args, **gate_kwargs)
 
     @staticmethod
     def create_qibo_gates_from_gates_info(circuit_gates: list[tuple]) -> list[gates.Gate]:
