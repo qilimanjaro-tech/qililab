@@ -22,7 +22,6 @@ def fixture_sdg100a() -> SGS100A:
     sdg100a.device = MagicMock()
     return sdg100a
 
-
 @pytest.fixture(name="sdg100a_iq")
 def fixture_sdg100a_iq() -> SGS100A:
     """Fixture that returns an instance of a dummy QDAC-II."""
@@ -37,7 +36,20 @@ def fixture_sdg100a_iq() -> SGS100A:
     )
     sdg100a_iq.device = MagicMock()
     return sdg100a_iq
-
+      
+@pytest.fixture(name="sdg100a_rf_off")
+def fixture_sdg100a_rf_off() -> SGS100A:
+    """Fixture that returns an instance of a dummy QDAC-II."""
+    sdg100a_rf_off = SGS100A(
+        {
+            "alias": "qdac",
+            "power": 100,
+            "frequency": 1e6,
+            "rf_on": False
+        }
+    )
+    sdg100a_rf_off.device = MagicMock()
+    return sdg100a_rf_off
 
 class TestSGS100A:
     """Unit tests checking the SGS100A attributes and methods"""
@@ -93,7 +105,13 @@ class TestSGS100A:
         sdg100a.device.power.assert_called_with(sdg100a.power)
         sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
         sdg100a.device.off.assert_called_once()
-
+    
+    def test_turn_on_method_rf_off(self, sdg100a_rf_off: SGS100A):
+        """Test initial method when the runcard sets rf_on as False"""
+        sdg100a_rf_off.turn_on()
+        assert sdg100a_rf_off.settings.rf_on is False
+        sdg100a_rf_off.device.off.assert_called_once()
+        
     def test_turn_on_method(self, sdg100a: SGS100A):
         """Test turn_on method"""
         sdg100a.turn_on()
