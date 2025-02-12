@@ -44,12 +44,11 @@ class SGS100A(Instrument):
             power (float): Power of the instrument. Value range is (-120, 25).
             frequency (float): Frequency of the instrument. Value range is (1e6, 20e9).
         """
-
         power: float
         frequency: float
-        rf_on: bool
         iq_modulation: bool
-
+        rf_on: bool
+        
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
 
