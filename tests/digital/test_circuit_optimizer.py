@@ -121,14 +121,25 @@ class TestCircuitOptimizerUnit:
 
     def test_merge_consecutive_drags_same_phis(self):
         """Test merge drag gates."""
-        drag_1 = Drag(0, theta=np.pi, phase=np.pi / 2)
-        drag_2 = Drag(0, theta=np.pi, phase=np.pi / 2)
+        drag_1 = Drag(0, theta=np.pi/2-0.1, phase=np.pi / 2)
+        drag_2 = Drag(0, theta=np.pi/2, phase=np.pi / 2)
 
         optimizer = CircuitOptimizer(None)
         final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2)
 
         assert isinstance(final_drag, Drag)
-        assert final_drag.parameters == (2 * np.pi, np.pi / 2)
+        assert final_drag.parameters == (np.pi-0.1, np.pi / 2)
+
+    def test_merge_consecutive_drags_opposite_phis(self):
+        """Test merge drag gates."""
+        drag_1 = Drag(0, theta=np.pi/2+0.1, phase=(np.pi / 2)+0.1)
+        drag_2 = Drag(0, theta=np.pi/2, phase=-(np.pi / 2)+0.1)
+
+        optimizer = CircuitOptimizer(None)
+        final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2)
+
+        assert isinstance(final_drag, Drag)
+        assert np.isclose(final_drag.parameters, (0.1, (np.pi / 2)+0.1)).all()
 
     def test_merge_consecutive_drags_diff_phis(self):
         """Test merge drag gates."""
@@ -160,10 +171,10 @@ class TestCircuitOptimizerUnit:
         assert len(gate_list) == 5
 
         assert isinstance(gate_list[0], Drag)
-        assert gate_list[0].parameters == (3 * np.pi, np.pi / 2)
+        assert gate_list[0].parameters == (np.pi, np.pi / 2)
 
         assert isinstance(gate_list[1], Drag)
-        assert gate_list[1].parameters == (2 * np.pi, np.pi / 2)
+        assert gate_list[1].parameters == (0, np.pi / 2)
 
         assert isinstance(gate_list[2], Drag)
         assert gate_list[2].parameters == (np.pi, np.pi)

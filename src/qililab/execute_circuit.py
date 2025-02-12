@@ -17,7 +17,7 @@
 from qibo.models import Circuit
 from tqdm.auto import tqdm
 
-from qililab.digital.circuit_transpiler import DigitalTranspilationConfig
+from qililab.digital import DigitalTranspilationConfig
 from qililab.result import Result
 
 from .data_management import build_platform

@@ -258,7 +258,7 @@ class CircuitRouter:
             if kwargs:
                 logger.warning("Ignoring router kwargs, as the router is already an instance.")
             router.connectivity = connectivity
-            logger.warning("Substituting the router connectivity by the transpiler/platform one.")
+            logger.warning("Substituting the router connectivity by the transpiler/platform/coupling_map one.")
             return router
 
         # If the router is a Router subclass, we instantiate it:
@@ -302,7 +302,7 @@ class CircuitRouter:
             if kwargs:
                 logger.warning("Ignoring placer kwargs, as the placer is already an instance.")
             placer.connectivity = connectivity
-            logger.warning("Substituting the placer connectivity by the transpiler/platform one.")
+            logger.warning("Substituting the placer connectivity by the transpiler/platform/coupling_map one.")
             return placer
 
         # If the placer is a Placer subclass, we instantiate it:
@@ -335,7 +335,9 @@ class CircuitRouter:
         # If the placer is a ReverseTraversal instance, we update the connectivity to the platform one:
         if isinstance(placer, ReverseTraversal):
             placer.routing_algorithm.connectivity = connectivity
-            logger.warning("Substituting the ReverseTraversal router connectivity, by the transpiler/platform one.")
+            logger.warning(
+                "Substituting the ReverseTraversal router connectivity, by the transpiler/platform/coupling_map one."
+            )
             return placer, kwargs
 
         # Else is placer is not an instance, we need to check the routing algorithm:
@@ -348,7 +350,7 @@ class CircuitRouter:
         # If the routing algorithm is a Router instance, we update the connectivity to the platform one:
         if isinstance(kwargs["routing_algorithm"], Router):
             logger.warning(
-                "Substituting the passed connectivity for the ReverseTraversal routing algorithm, by the platform connectivity",
+                "Substituting the passed connectivity for the routing algorithm, by the platform/transpiler/coupling_map connectivity",
             )
             kwargs["routing_algorithm"].connectivity = connectivity
             return placer, kwargs

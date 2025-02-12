@@ -251,8 +251,7 @@ class TestCircuitRouterUnit:
         assert isinstance(placer, ReverseTraversal)
         assert placer.connectivity == linear_topology
         assert hasattr(placer, "routing_algorithm") == True
-        # TODO: Solve Warning not appearing!
-        # TODO: mock_logger_warning.assert_has_calls([call("Substituting the placer connectivity by the transpiler/platform one.")])
+        # No call to warning, cause checking of Reverse is mocked.
 
         star_placer_instance = StarConnectivityPlacer(star_topology)
         mock_logger_warning.reset_mock()
@@ -261,21 +260,23 @@ class TestCircuitRouterUnit:
         assert placer.middle_qubit is None
         assert hasattr(placer, "routing_algorithm") is False
         assert hasattr(placer, "connectivity") == True
-        mock_logger_warning.assert_has_calls([call("Substituting the placer connectivity by the transpiler/platform one.")])
+        mock_logger_warning.assert_called_once_with("Substituting the placer connectivity by the transpiler/platform/coupling_map one.")
 
         reverse_traversal_instance = ReverseTraversal(self.circuit_router.router, connectivity=linear_topology)
         placer = self.circuit_router._build_placer(reverse_traversal_instance, self.circuit_router.router, linear_topology)
         assert isinstance(placer, ReverseTraversal)
         assert (placer.connectivity, placer.routing_algorithm) == (linear_topology, self.circuit_router.router)
 
-        # Test Router instance, with kwargs:
-        placer_instance = ReverseTraversal(self.circuit_router.router)
-        placer_kwargs = {"lookahead": 3}
+        # Test Placer instance, with kwargs:
+        placer_instance = StarConnectivityPlacer()
+        placer_kwargs = {"connectivity": 1}
         mock_logger_warning.reset_mock()
         router = self.circuit_router._build_placer((placer_instance,placer_kwargs),self.circuit_router.router, linear_topology)
         assert hasattr(router, "lookahead") == False
-        # TODO: # mock_logger_warning.assert_has_calls([call("Ignoring placer kwargs, as the placer is already an instance."),
-        #     call("Substituting the placer connectivity by the transpiler/platform one.")])
+        mock_logger_warning.assert_has_calls([
+            call("Ignoring placer kwargs, as the placer is already an instance."),
+            call("Substituting the placer connectivity by the transpiler/platform/coupling_map one.")
+        ])
 
     @patch("qililab.digital.circuit_router.logger.warning")
     def test_build_router(self, mock_logger_warning):
@@ -308,7 +309,7 @@ class TestCircuitRouterUnit:
         router = self.circuit_router._build_router(sabre_instance, linear_topology)
         assert isinstance(router, Sabre)
         assert router.connectivity == linear_topology
-        mock_logger_warning.assert_has_calls([call("Substituting the router connectivity by the transpiler/platform one.")])
+        mock_logger_warning.assert_has_calls([call("Substituting the router connectivity by the transpiler/platform/coupling_map one.")])
 
 
         star_router_instance = StarConnectivityRouter(star_topology)
@@ -317,7 +318,7 @@ class TestCircuitRouterUnit:
         assert isinstance(router, StarConnectivityRouter)
         assert router.middle_qubit is None
         assert router.connectivity == star_topology
-        mock_logger_warning.assert_has_calls([call("Substituting the router connectivity by the transpiler/platform one.")])
+        mock_logger_warning.assert_has_calls([call("Substituting the router connectivity by the transpiler/platform/coupling_map one.")])
 
         # Test Router instance, with kwargs:
         sabre_instance = Sabre(linear_topology, lookahead=2)
@@ -326,7 +327,7 @@ class TestCircuitRouterUnit:
         router = self.circuit_router._build_router((sabre_instance,router_kwargs), linear_topology)
         assert router.lookahead == 2
         mock_logger_warning.assert_has_calls([call("Ignoring router kwargs, as the router is already an instance."),
-            call("Substituting the router connectivity by the transpiler/platform one.")])
+            call("Substituting the router connectivity by the transpiler/platform/coupling_map one.")])
 
     def test_check_reverse_traversal_routing_connectivity(self):
         """Test the _check_ReverseTraversal_routing_connectivity method."""
