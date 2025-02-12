@@ -52,3 +52,6 @@
 
 - Fixed the shareable trigger in the runcard to make every controller shareable while close other machines is set to false (current default) for QM. Improved shareable for OPX1000 as now it only requires to specify the flag on the fem. Now Octave name inside runcard requires to be the same as the one inside the configuration (now it has the same behavior as the cluster and opx controller).
   [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
+- Ensured that turning on the instruments does not override the RF setting of the Rohde, which can be set to 'False' in the runcard.
+  [#888](https://github.com/qilimanjaro-tech/qililab/pull/888)
