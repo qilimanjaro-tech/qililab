@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from tests.qprogram.test_structured_program import TestStructuredProgram
 
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
@@ -9,9 +10,6 @@ from qililab.qprogram.variable import Domain
 from qililab.typings.enums import Parameter
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 from qililab.waveforms import IQPair, Square
-from tests.qprogram.test_structured_program import (
-    TestStructuredProgram,
-)
 
 
 class TestExperiment(TestStructuredProgram):
