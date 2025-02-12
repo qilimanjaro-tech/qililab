@@ -15,6 +15,7 @@
 """CircuitRouter class"""
 
 import contextlib
+from copy import deepcopy
 
 import networkx as nx
 import numpy as np
@@ -158,10 +159,13 @@ class CircuitRouter:
             Circuit: Circuit with the initial remapping applied to the gate qubits.
         """
         new_queue = []
+        wire_names = transpiled_circ.wire_names
         for gate in transpiled_circ.queue:
-            qubits = [transpiled_circ.wire_names.index(qubit) for qubit in gate.qubits]
-            gate = _GateHandler.create_gate(type(gate).__name__, qubits, gate.init_kwargs)
-            new_queue.append(gate)
+            gate_info = deepcopy(gate.raw)
+            gate_info["_control_qubits"] = tuple(wire_names.index(qubit) for qubit in gate_info["_control_qubits"])
+            gate_info["_target_qubits"] = tuple(wire_names.index(qubit) for qubit in gate_info["_target_qubits"])
+
+            new_queue.append(_GateHandler.create_gate(gate_info))
 
         return _GateHandler.create_circuit_from_gates(new_queue, transpiled_circ.nqubits, transpiled_circ.wire_names)
 
