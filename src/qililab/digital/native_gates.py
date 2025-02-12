@@ -52,14 +52,14 @@ class Drag(_Un_):
         trainable (bool): whether parameters are trainable (set to false)
     """
 
-    def __init__(self, q: int, theta: float, phi: float, trainable: bool = True):
+    def __init__(self, q: int, theta: float, phase: float, trainable: bool = True):
         super().__init__(q, trainable=trainable)
         self.name = "drag"
         self.nparams = 2
         self._theta, self._phi = None, None
-        self.init_kwargs = {"theta": theta, "phi": phi, "trainable": trainable}
+        self.init_kwargs = {"theta": theta, "phase": phase, "trainable": trainable}
         self.parameter_names = ["theta", "phase"]
-        self.parameters = theta, phi
+        self.parameters = theta, phase
 
     def raw(self):
         """Return the raw information of the gate."""

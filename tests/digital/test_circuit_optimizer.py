@@ -31,7 +31,7 @@ class TestCircuitOptimizerIntegration:
         # The 0-1 and 1-4 CNOTs shold cancel each other.
         circuit.add(gates.CNOT(1,4))
         circuit.add(gates.CNOT(0,1))
-        circuit.add(Drag(3, theta=2*np.pi, phi=np.pi)) # 3
+        circuit.add(Drag(3, theta=2*np.pi, phase=np.pi)) # 3
         circuit.add(gates.CNOT(0,1))
         circuit.add(gates.CNOT(1,4))
 
@@ -64,14 +64,14 @@ class TestCircuitOptimizerIntegration:
 class TestCircuitOptimizerUnit:
     """Tests for the circuit optimizer class, with Unit test."""
 
-    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer.cancel_pairs_of_hermitian_gates", return_value=[gates.CZ(0, 1), Drag(0, theta=np.pi, phi=np.pi / 2)])
-    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer.remove_redundant_start_controlled_gates", return_value=[Drag(0, theta=np.pi, phi=np.pi / 2)])
+    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer.cancel_pairs_of_hermitian_gates", return_value=[gates.CZ(0, 1), Drag(0, theta=np.pi, phase=np.pi / 2)])
+    @patch("qililab.digital.circuit_optimizer.CircuitOptimizer.remove_redundant_start_controlled_gates", return_value=[Drag(0, theta=np.pi, phase=np.pi / 2)])
     def test_run_gate_cancellations(self, mock_redundant_gates, mock_cancellation):
         """Test optimize transpilation."""
         circuit = Circuit(2)
         circuit.add(gates.RZ(0, theta=np.pi / 2))
         circuit.add(gates.CZ(0, 1))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
 
         optimizer = CircuitOptimizer(None)
         optimized_gates_complete = optimizer.optimize_gates(circuit.queue)
@@ -92,7 +92,7 @@ class TestCircuitOptimizerUnit:
         circuit = Circuit(2)
         circuit.add(gates.RZ(0, theta=np.pi / 2))
         circuit.add(gates.CZ(0, 1))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
 
         optimizer = CircuitOptimizer(None)
         _ = optimizer.cancel_pairs_of_hermitian_gates(circuit.queue)
@@ -112,8 +112,8 @@ class TestCircuitOptimizerUnit:
 
     def test_merge_consecutive_drags_diff_qubits(self):
         """Test merge drag gates, with incorrect input."""
-        drag_1 = Drag(0, theta=np.pi, phi=np.pi / 2)
-        drag_2 = Drag(1, theta=np.pi, phi=np.pi / 2)
+        drag_1 = Drag(0, theta=np.pi, phase=np.pi / 2)
+        drag_2 = Drag(1, theta=np.pi, phase=np.pi / 2)
 
         optimizer = CircuitOptimizer(None)
         with pytest.raises(ValueError, match=re.escape("Cannot merge Drag gates acting on different qubits.")):
@@ -121,8 +121,8 @@ class TestCircuitOptimizerUnit:
 
     def test_merge_consecutive_drags_same_phis(self):
         """Test merge drag gates."""
-        drag_1 = Drag(0, theta=np.pi/2-0.1, phi=np.pi / 2)
-        drag_2 = Drag(0, theta=np.pi/2, phi=np.pi / 2)
+        drag_1 = Drag(0, theta=np.pi/2-0.1, phase=np.pi / 2)
+        drag_2 = Drag(0, theta=np.pi/2, phase=np.pi / 2)
 
         optimizer = CircuitOptimizer(None)
         final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2)
@@ -132,8 +132,8 @@ class TestCircuitOptimizerUnit:
 
     def test_merge_consecutive_drags_opposite_phis(self):
         """Test merge drag gates."""
-        drag_1 = Drag(0, theta=np.pi/2+0.1, phi=(np.pi / 2)+0.1)
-        drag_2 = Drag(0, theta=np.pi/2, phi=-(np.pi / 2)+0.1)
+        drag_1 = Drag(0, theta=np.pi/2+0.1, phase=(np.pi / 2)+0.1)
+        drag_2 = Drag(0, theta=np.pi/2, phase=-(np.pi / 2)+0.1)
 
         optimizer = CircuitOptimizer(None)
         final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2)
@@ -143,8 +143,8 @@ class TestCircuitOptimizerUnit:
 
     def test_merge_consecutive_drags_diff_phis(self):
         """Test merge drag gates."""
-        drag_1 = Drag(0, theta=np.pi, phi=np.pi / 2)
-        drag_2 = Drag(0, theta=np.pi, phi=np.pi)
+        drag_1 = Drag(0, theta=np.pi, phase=np.pi / 2)
+        drag_2 = Drag(0, theta=np.pi, phase=np.pi)
 
         optimizer = CircuitOptimizer(None)
         final_drag = optimizer.merge_consecutive_drags(drag_1, drag_2)
@@ -155,14 +155,14 @@ class TestCircuitOptimizerUnit:
     def test_bunch_drag_gates_only_same_phis(self):
         """Test bunch drag gates."""
         circuit = Circuit(2)
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(1, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(1, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi))
         circuit.add(gates.RX(1, theta=np.pi / 2))
-        circuit.add(Drag(1, theta=np.pi, phi=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
 
 
         optimizer = CircuitOptimizer(None)
@@ -187,8 +187,8 @@ class TestCircuitOptimizerUnit:
     def test_bunch_drag_gates_diff_phis(self):
         """Test bunch drag gates."""
         circuit = Circuit(2)
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi))
 
         optimizer = CircuitOptimizer(None)
         gate_list = optimizer.bunch_drag_gates(circuit.queue)
@@ -198,8 +198,8 @@ class TestCircuitOptimizerUnit:
     def test_delete_gates_with_no_amplitude(self):
         """Test delete gates with no amplitude."""
         circuit = Circuit(2)
-        circuit.add(Drag(0, theta=0, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
+        circuit.add(Drag(0, theta=0, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
 
         gate_list = CircuitOptimizer.delete_gates_with_no_amplitude(circuit.queue)
 
@@ -210,12 +210,12 @@ class TestCircuitOptimizerUnit:
     def test_normalize_angles_of_drags(self):
         """Test normalize angles of drags."""
         circuit = Circuit(2)
-        circuit.add(Drag(0, theta=3 * np.pi, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=2 * np.pi, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=np.pi, phi=2*np.pi))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
+        circuit.add(Drag(0, theta=3 * np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=2 * np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=2*np.pi))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
 
         gate_list = CircuitOptimizer.normalize_angles_of_drags(circuit.queue)
 
@@ -285,7 +285,7 @@ class TestCircuitOptimizerUnit:
         circuit = Circuit(2)
         circuit.add(gates.RZ(0, theta=np.pi / 2))
         circuit.add(gates.CZ(0, 1))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2)) # Should end up, with the phase cancelled by RZ and then a correction added by CZ.
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2)) # Should end up, with the phase cancelled by RZ and then a correction added by CZ.
 
         platform = build_platform(runcard=Galadriel.runcard)
         optimizer = CircuitOptimizer(platform.digital_compilation_settings)
@@ -299,9 +299,9 @@ class TestCircuitOptimizerUnit:
     def test_optimize_transpiled_gates_all_cancels(self):
         """Test optimize transpiled gates."""
         circuit = Circuit(2)
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(1, theta=0, phi=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(1, theta=0, phase=np.pi / 2))
 
         optimizer = CircuitOptimizer(None)
         optimized_gates = optimizer.optimize_transpiled_gates(circuit.queue)
@@ -311,9 +311,9 @@ class TestCircuitOptimizerUnit:
     def test_optimize_transpiled_gates(self):
         """Test optimize transpiled gates."""
         circuit = Circuit(2)
-        circuit.add(Drag(0, theta=np.pi, phi=np.pi / 2))
-        circuit.add(Drag(0, theta=np.pi/2, phi=np.pi / 2))
-        circuit.add(Drag(1, theta=np.pi, phi=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi, phase=np.pi / 2))
+        circuit.add(Drag(0, theta=np.pi/2, phase=np.pi / 2))
+        circuit.add(Drag(1, theta=np.pi, phase=np.pi / 2))
 
         optimizer = CircuitOptimizer(None)
         optimized_gates = optimizer.optimize_transpiled_gates(circuit.queue)
