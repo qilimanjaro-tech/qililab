@@ -61,6 +61,11 @@ class Drag(_Un_):
         self.parameter_names = ["theta", "phase"]
         self.parameters = theta, phi
 
+    def raw(self):
+        """Return the raw information of the gate."""
+        encoded_simple = super().raw()
+        return encoded_simple | self.init_kwargs
+
 
 class Wait(ParametrizedGate):
     """The Wait gate.
@@ -79,6 +84,11 @@ class Wait(ParametrizedGate):
         self.parameters = t
         self.init_args = [q]
         self.init_kwargs = {"t": t}
+
+    def raw(self):
+        """Return the raw information of the gate."""
+        encoded_simple = super().raw()
+        return encoded_simple | self.init_kwargs
 
 
 class _GateHandler:
