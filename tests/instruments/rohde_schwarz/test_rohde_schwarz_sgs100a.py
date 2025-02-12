@@ -45,7 +45,8 @@ def fixture_sdg100a_rf_off() -> SGS100A:
             "alias": "qdac",
             "power": 100,
             "frequency": 1e6,
-            "rf_on": False
+            "rf_on": False,
+            "iq_modulation": True
         }
     )
     sdg100a_rf_off.device = MagicMock()
