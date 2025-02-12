@@ -453,7 +453,7 @@ class Galadriel:
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
-        Parameter.ROHDE_MODULATION.value: True,
+        Parameter.IQ_MODULATION.value: True,
     }
 
     rohde_schwarz_controller_1: dict[str, Any] = {
@@ -479,7 +479,7 @@ class Galadriel:
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 3.351e09,
         Parameter.RF_ON.value: True,
-        Parameter.ROHDE_MODULATION.value: True,
+        Parameter.IQ_MODULATION.value: True,
     }
 
     attenuator_controller_0: dict[str, Any] = {
@@ -623,7 +623,7 @@ class SauronYokogawa:
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
-        Parameter.ROHDE_MODULATION.value: True,
+        Parameter.IQ_MODULATION.value: True,
     }
 
     yokogawa_gs200_current_controller = {
@@ -712,7 +712,7 @@ class SauronSpiRack:
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
-        Parameter.ROHDE_MODULATION.value: True,
+        Parameter.IQ_MODULATION.value: True,
     }
 
     spi_rack_controller_usb = {
@@ -783,7 +783,7 @@ class SauronQDevil:
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
-        Parameter.ROHDE_MODULATION.value: True,
+        Parameter.IQ_MODULATION.value: True,
     }
 
     qdevil_qdac2_controller_ip = {
@@ -1281,7 +1281,7 @@ class SauronQuantumMachines:
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
         Parameter.RF_ON.value: True,
-        Parameter.ROHDE_MODULATION.value: True,
+        Parameter.IQ_MODULATION.value: True,
     }
 
     qmm_controller_wrong_module = {

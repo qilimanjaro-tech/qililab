@@ -48,7 +48,7 @@ class SGS100A(Instrument):
         power: float
         frequency: float
         rf_on: bool
-        rohde_modulation: bool
+        iq_modulation: bool
 
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
@@ -80,13 +80,13 @@ class SGS100A(Instrument):
         return self.settings.rf_on
 
     @property
-    def rohde_modulation(self):
+    def iq_modulation(self):
         """SignalGenerator 'IQ state' property.
 
         Returns:
-            bool: settings.rohde_modulation.
+            bool: settings.iq_modulation.
         """
-        return self.settings.rohde_modulation
+        return self.settings.iq_modulation
 
     def to_dict(self):
         """Return a dict representation of the SignalGenerator class."""
@@ -116,9 +116,9 @@ class SGS100A(Instrument):
                 else:
                     self.turn_off()
             return
-        if parameter == Parameter.ROHDE_MODULATION:
+        if parameter == Parameter.IQ_MODULATION:
             value = bool(value)
-            self.settings.rohde_modulation = value
+            self.settings.iq_modulation = value
             if self.is_device_active():
                 self.device.IQ_state(value)
             return
@@ -131,8 +131,8 @@ class SGS100A(Instrument):
             return self.settings.frequency
         if parameter == Parameter.RF_ON:
             return self.settings.rf_on
-        if parameter == Parameter.ROHDE_MODULATION:
-            return self.settings.rohde_modulation
+        if parameter == Parameter.IQ_MODULATION:
+            return self.settings.iq_modulation
         raise ParameterNotFound(self, parameter)
 
     @check_device_initialized
@@ -140,7 +140,7 @@ class SGS100A(Instrument):
         """performs an initial setup"""
         self.device.power(self.power)
         self.device.frequency(self.frequency)
-        self.device.IQ_state(self.rohde_modulation)
+        self.device.IQ_state(self.iq_modulation)
         if self.rf_on:
             self.device.on()
         else:

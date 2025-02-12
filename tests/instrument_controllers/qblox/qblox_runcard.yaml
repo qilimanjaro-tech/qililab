@@ -20,7 +20,7 @@ instruments:
     power: 15
     frequency: 7e9
     rf_on: True
-    rohde_modulation: True
+    iq_modulation: True
 
 instrument_controllers:
   - name: qblox_cluster
