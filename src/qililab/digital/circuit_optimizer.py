@@ -285,7 +285,7 @@ class CircuitOptimizer:
 
             # If gate is not hermitian (can't be cancelled), add it to the output circuit and continue:
             if gate_info["_class"] not in hermitian_gates:
-                output_circuit_gates.append((gate_info))
+                output_circuit_gates.append(gate_info)
                 continue
 
             subend = False
@@ -300,13 +300,13 @@ class CircuitOptimizer:
 
                 # Add gate, if there is no other gate that acts on the same qubits:
                 if i == len(circuit_gates) - 1:
-                    output_circuit_gates.append((gate_info))
+                    output_circuit_gates.append(gate_info)
                     break
 
                 # Add gate and leave comparison_gate loop, if we find a gate in common qubit, that prevents contraction:
                 for gate_qubit in gate_info["_control_qubits"] + gate_info["_target_qubits"]:
                     if gate_qubit in comp_info["_control_qubits"] + comp_info["_target_qubits"]:
-                        output_circuit_gates.append((gate_info))
+                        output_circuit_gates.append(gate_info)
                         subend = True
                         break
                 if subend:

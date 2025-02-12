@@ -48,7 +48,7 @@ class Drag(_Un_):
     Args:
         q (int): qubit where the gate is applied
         theta (float): theta angle of rotation in radians
-        phi (float): phase of  the Drag pulse
+        phase (float): phase of  the Drag pulse
         trainable (bool): whether parameters are trainable (set to false)
     """
 
@@ -56,15 +56,22 @@ class Drag(_Un_):
         super().__init__(q, trainable=trainable)
         self.name = "drag"
         self.nparams = 2
-        self._theta, self._phi = None, None
         self.init_kwargs = {"theta": theta, "phase": phase, "trainable": trainable}
         self.parameter_names = ["theta", "phase"]
         self.parameters = theta, phase
 
-    def raw(self):
-        """Return the raw information of the gate."""
-        encoded_simple = super().raw()
-        return encoded_simple | self.init_kwargs
+    @property
+    def raw(self) -> dict:
+        """Serialize to dictionary.
+
+        The values used in the serialization should be compatible with a
+        JSON dump (or any other one supporting a minimal set of scalar
+        types). Though the specific implementation is up to the specific
+        gate.
+        """
+        encoded_simple = super().raw
+        encoded_simple["init_kwargs"] |= self.init_kwargs
+        return encoded_simple
 
 
 class Wait(ParametrizedGate):
@@ -85,10 +92,18 @@ class Wait(ParametrizedGate):
         self.init_args = [q]
         self.init_kwargs = {"t": t}
 
-    def raw(self):
-        """Return the raw information of the gate."""
-        encoded_simple = super().raw()
-        return encoded_simple | self.init_kwargs
+    @property
+    def raw(self) -> dict:
+        """Serialize to dictionary.
+
+        The values used in the serialization should be compatible with a
+        JSON dump (or any other one supporting a minimal set of scalar
+        types). Though the specific implementation is up to the specific
+        gate.
+        """
+        encoded_simple = super().raw
+        encoded_simple["init_kwargs"] |= self.init_kwargs
+        return encoded_simple
 
 
 class _GateHandler:
