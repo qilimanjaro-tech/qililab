@@ -13,13 +13,12 @@
 # limitations under the License.
 
 import re
-
+import math
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 # TODO:
-#LOOP NOT WORKING
 # binary conversion
 # way to plot all methods at once
 # add other methods
@@ -32,19 +31,34 @@ class QbloxDraw:
     #     # self.sequences = sequences
     #     self._QbloxCompiler: QbloxCompiler
 
-    def _handle_play_draw(self, stored_data, act_play, diction):
+    def _handle_play_draw(self, stored_data, act_play, diction,move_reg,freq):
         if act_play[0] == "play":
             output_path1, output_path2, wait_play = map(int, act_play[1].split(','))
+            #retrieve the freq value
+            if freq['freq'] is not None:
+                freq_value = move_reg[freq['freq']]/4
+                print("freq value",freq_value)
+            else: freq_value= 1
+            
+            #math.cos(2*math.pi*freq_value)
+
             # retrieve the wavform data
             for waveform_key, waveform_value in diction:
+                
                 if waveform_value['index'] == output_path1:
-                    stored_data[0] = np.append(stored_data[0], np.array(waveform_value['data']))
+                    x = np.linspace(0,1,len(waveform_value['data']))
+                    carrier = np.cos(2 * np.pi * freq_value * x)
+                    stored_data[0] = np.append(stored_data[0], np.array(waveform_value['data'])*carrier)
                 elif waveform_value['index'] == output_path2:
-                    stored_data[1] = np.append(stored_data[1], np.array(waveform_value['data']))
-
-        #todo: add the wait if there is a measurement
-            # y_wait = np.linspace(0, 0, wait_play)
-            # stored_data = [np.append(stored_data[0], y_wait), np.append(stored_data[1], y_wait)]
+                    x = np.linspace(0,1,len(waveform_value['data']))
+                    carrier = np.cos(2 * np.pi * freq_value * x)
+                    stored_data[1] = np.append(stored_data[1], np.array(waveform_value['data'])*carrier)
+        return stored_data
+    
+    def _handle_acquire_draw(self, stored_data, act_play): #is it always 4ns, in one case it is 12ns ??????????????????????????
+        if act_play[0] == "acquire_weighed":
+            y_wait = np.linspace(0, 0, 4)
+            stored_data = [np.append(stored_data[0], y_wait), np.append(stored_data[1], y_wait)]
         return stored_data
 
     def _handle_wait_draw(self, stored_data, act_wait):
@@ -60,10 +74,11 @@ class QbloxDraw:
             move_reg[destination] = self._get_value(a, move_reg) + self._get_value(b, move_reg)
         return move_reg
 
-    # def _handle_freq_draw(self, freq, act_freq): data is latched  only updated under specific conditions
-    #     if act_freq[0] == "set_freq":
-    #         freq['freq'] = act_freq[1]
-    #     return freq
+    def _handle_freq_draw(self, freq, act_freq): #data is latched  only updated under specific conditions, handle case where more than 1 freq, and handle the case where no freq is given
+        if act_freq[0] == "set_freq":
+            freq['freq'] = act_freq[1]
+        print(freq)
+        return freq
 
     def _get_value(self, x, move_reg):
         if x is not None:
@@ -128,41 +143,6 @@ class QbloxDraw:
         # [1]: value
         # [2]: label of the loops
         # [3]: index
-        index_label = 0
-
-        # def remove_bigger_element(given_element, data_list, tuple_elements):
-        #     """ Removes elements from tuple_elements based on conditions while modifying in place. """
-
-        #     # Find the given element's data
-        #     element_data = next((item for item in data_list if item[0] == given_element), None)
-
-        #     if element_data:
-        #         given_value = element_data[1][0]  # The first number in the given element's list
-
-        #         # Iterate over a copy of the list to avoid modifying while iterating
-        #         elements_to_remove = []
-        #         for other_element in tuple_elements:
-        #             if other_element == given_element:
-        #                 continue  # Skip the given element itself
-
-        #             # Get the corresponding data for the other element
-        #             other_element_data = next((item for item in data_list if item[0] == other_element), None)
-
-        #             if other_element_data:
-        #                 other_value = other_element_data[1][0]  # First number of the other element
-        #                 # If given_value is smaller, mark other_element for removal
-        #                 if given_value < other_value:
-        #                     elements_to_remove.append(other_element)
-
-        #         # Remove elements in place safely
-        #         for element in elements_to_remove:
-        #             if element in tuple_elements:
-        #                 tuple_elements.remove(element)
-
-        #     print(f"After removal: {tuple_elements}")
-        #     return tuple_elements  # Returning the modified list
-
-
 
         for bus, bus_data in Q1ASM_ordered.items():
             print("BUS",bus)
@@ -170,9 +150,7 @@ class QbloxDraw:
             wf1 = []
             wf2 = []
             run_items = []
-            # freq = {'freq':None}
-            # index_label[bus] = {}
-            index_label = 0
+            freq = {'freq':None}
             # data = {bus: None}
             data_draw[bus] = [wf1, wf2]
             label_done = []  # list to keep track of the label once they have been looped over
@@ -206,201 +184,61 @@ class QbloxDraw:
                     print(label,start,end,value,move_reg[value])
                     # if there is in label done a label that has a start greater than the current label you should drop it from label label_done
                     #remove the necessary labels from label done:
-
-                        # result = next((element for element in sorted_labels if element[0] == y), None) #retrieve the start/end/variable of the new label
-
                     print("top level running")
-                                            # print("LABEL loop",label,type(label))
-                        #Should be able to accept >1 label
-                        # if len(label)>=2 and type(label) is tuple:
-                    top_index = move_reg[value]
-                    valuee = value
                     for x in range(move_reg[value], 0, -1):
-                    # while int(move_reg[valuee]) > 0:
-                        # move_reg[value] = x
-                        print("TOPPPPP",x,move_reg)
-                        # print("register",move_reg)
+                        print("TOPPPPP", x, move_reg)
                         current_idx = start
                         while current_idx <= end:
-                        # for idx in range(current_idx,end):
                             print("idx",current_idx,end,"x:",x)
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
                             _, value, label, _ = item
-                            # print("itt",item)
                             for la in label:
-                                # print("label",la,label)
-                                # print("label not done",label_done)
                                 if la not in label_done:
                                     new_label = la
                                     result = next((element for element in sorted_labels if element[0] == new_label), None) #retrieve the start/end/variable of the new label
-                                    # (new_label, [start, end, value]) = result
-                                    # label_done.append(new_label)
                                     print("going into the recursive with input",result)
                                     current_idx = process_loop(result,current_idx)
-                                    # idx = current_idx
-                                    # process_loop(result,i)
                                     print("exit the recursive")
-                                    print("label",label)
-                                    print(start,end)
-                                    print(value)
-                                    print(current_idx)
-                                    print(x)
-                                    print("---")
                                     label_index = {}
                                     #check if there is a nested loop, if yes need to remove it from label_dne, otherwise it wont loop over in the next iteration of the parent
                                     for a in label_done:
                                         element = next((e for e in sorted_labels if e[0] == a), None)[1][0]
-                                        # print(a,element)
                                         label_index[a]=int(element)
                                     max_value = max(label_index.values())
                                     max_keys = [key for key, value in label_index.items() if value == max_value]
-
                                     label_done.remove(max_keys[0])
 
                             print("label done",label_done)
-
-                                    # # Remove keys that do NOT have the max value from key_list
-                                    # label_done = [key for key in label_done if key in max_keys]
-                                    # for key in label_done[:]:  # Iterate over a copy to avoid modifying while iterating
-                                    #     if key not in max_keys:
-                                    #         label_done.remove(key)  # Remove in place
-
-                                    # print("label done antes",label_done)
-
-
-                                    # if type(label) is tuple:
-                                    #     for a in label:
-                                    #         if a != label:
-                                    #             # print("deb",a,sorted_labels)
-                                    #             e_ref = next((e for e in sorted_labels if e[0] == a), None)
-                                    # # elif len(label) ==1:
-                                    # else:
-                                    #     e_ref = next((e for e in sorted_labels if e[0] == label), None)
-                                    # # print("erf",e_ref)
-                                    # st_ref = e_ref[1][0]
-
-                                    # for y in label_done:
-                                    #     # print("y",y)
-                                    #     # remove_bigger_element(y, sorted_labels, label_done)
-                                    #     # if y != label:
-                                    #     print("DIFF",y,label)
-                                    #     element_data2 = next((ee for ee in sorted_labels if ee[0] == y), None)
-                                    #     print("yel",y,element_data2)
-                                    #     st = element_data2[1][0] #retrieves the start position
-                                    #     print("start pos",label,st_ref)
-                                    #     print("start pos2",y,st)
-                                    #     if st_ref<st:
-                                    #         label_done.remove(y)
-
-                                    #     # print("looping",start,end)
-                                    #     # print("loopingx:",x,current_idx,end)
-                                    #     print("label done post",label_done)
 
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
                             print("run item",item)
                             run_items.append(item[-1])
                             print(run_items)
-                            data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf)
+                            self._handle_freq_draw(freq,item)
+                            data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,freq)
+                            data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
                             data_draw[bus] = self._handle_wait_draw(data_draw[bus], item)
                             self._handle_add_draw(move_reg, item)
                             current_idx +=1
-                            # if current_idx == end-1:
-                            #     move_reg[valuee] = int(move_reg[valuee])-1
-                    # print("RETURNED IDX",current_idx)
-                        # move_reg[value] -=1
-                    # return current_idx+1
                     return current_idx
 
                 if item[2] and item[2][-1] not in label_done and item[-1] not in run_items:  # if there is a loop label
-
-                    index_label += 1
-                               # if label not in label_done:
-                    #     label_done.append(label)
-                    #     print(label)
-                    #     print("labels before loop",label_done)
-                    print("debug initial loop")
-                    print(item)
-                    # print(item[2])
-                    # print(item[-1])
-                    # print(run_items)
-
                     index=0
-                    print("running the initial loop")
-                    process_loop(sorted_labels[0],index)
+                    print("running the initial loop",item)
+                    process_loop(sorted_labels[0],index) #TO DO: the 0 might cause problems if some loops arent nested
 
                 elif item[-1] not in run_items: #ensure not running the ones that have already been ran
                     print("should not play this",item)
-                    data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf)
+                    self._handle_freq_draw(freq,item)
+                    data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,freq)
+                    data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
                     data_draw[bus] = self._handle_wait_draw(data_draw[bus], item)
                     self._handle_add_draw(move_reg, item)
-                    # self._handle_freq_draw(freq,item)
+                    
                 else:
                     pass
-
-                # def process_loop(start, end, value_init, current_label):
-                #     print(f"the function is starting with start {start}, end {end}, value init {value_init}, and current label {current_label}")
-                #     start = int(start)
-                #     end = int(end)
-                #     value = value_init
-                #     for x in range(move_reg[value_init], 0, -1):
-                #         print(f" the for loop over the register is starting with value init {value_init}, and move reg of value init is{move_reg[value_init]}, and current x is {x}")
-                #         move_reg[value] = x
-                #         for i in range(start,end):
-                #             print(f" the for loop over the actions is starting with i {i}, start {start}, and end is {end}")
-                #             item = Q1ASM_ordered[bus]["program"]["main"][i]
-                #             wf = Q1ASM_ordered[bus]['waveforms'].items()
-                #             _, value, label, _ = item
-                #             for la in label:
-                #                 print(f"loop through the labels, current label is {la} and all of them are {label}")
-                #                 if la not in label_done:
-
-                #                     new_label = la
-                #                     label_track.append(label)
-                #                     result = next((item for item in sorted_labels if item[0] == new_label), None)
-                #                     (new_label, [new_start, new_end, new_value]) = result
-                #                     (label, [start, end, value]) = result
-                #                     label_done.append(new_label)
-                #                     # current_label=new_label
-                #                     print(f"code is looping in the if to do a recursive fn with start {new_start}, end {new_end}, value to iterate {new_value} and label is {new_label}")
-
-                #                     # move_reg[value_init] = x-1 #otherwise the first loop of the parent doesnt count
-                #                     # process_loop(new_start, new_end, new_value, new_label)
-                #                     process_loop(start, end, value, label)
-                #                     print(f"getting out of recursive:,with start {new_start}, end {new_end}, value to iterate {new_value} and label is {new_label}, i {i} , x {x}")
-
-                #             item = Q1ASM_ordered[bus]["program"]["main"][i]
-                #             # print("rangeI,",start,end)
-                #             # print(item)
-                #             wf = Q1ASM_ordered[bus]['waveforms'].items()
-                #             print(f"wf are currently being appeded, the item in question is {item}")
-                #             data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf)
-                #             data_draw[bus] = self._handle_wait_draw(data_draw[bus], item)
-                #             self._handle_add_draw(move_reg, item)
-
-
-                # if item[2]:  # if there is a loop label
-                #     if index_label >= len(sorted_labels):
-                #         pass
-                #     else:
-                #         (label, [start, end, value]) = sorted_labels[index_label]
-                #         # print("sorted",bus, sorted_labels[index_label])
-                #         index_label += 1
-                #         current_label = label
-                #         if label not in label_done:
-                #             label_done.append(label)
-                #             # label_track.append(label)
-
-                #             # print("data",start, end, value, current_label)
-                #             # print("looped")
-                #             process_loop(start, end, value, current_label)
-                # else:
-                #     data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf)
-                #     data_draw[bus] = self._handle_wait_draw(data_draw[bus], item)
-                #     self._handle_add_draw(move_reg, item)
-                #     # self._handle_freq_draw(freq,item)
-
 
             # #data treatment
             # #frequency
