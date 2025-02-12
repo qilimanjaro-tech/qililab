@@ -159,8 +159,10 @@ class CircuitRouter:
         """
         new_queue = []
         for gate in transpiled_circ.queue:
-            qubits = [transpiled_circ.wire_names.index(qubit) for qubit in gate.qubits]
-            gate = _GateHandler.create_gate(type(gate).__name__, qubits, gate.init_kwargs)
+            gate_args = gate.__dict__
+            for idx, qubit in enumerate(gate.qubits):
+                gate_args[f"q{idx}"] = transpiled_circ.wire_names.index(qubit)
+            gate = _GateHandler.create_gate(type(gate).__name__, gate_args)
             new_queue.append(gate)
 
         return _GateHandler.create_circuit_from_gates(new_queue, transpiled_circ.nqubits, transpiled_circ.wire_names)

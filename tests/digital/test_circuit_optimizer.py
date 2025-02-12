@@ -55,10 +55,8 @@ class TestCircuitOptimizerIntegration:
         assert [type(gate).__name__ for gate in optimized_gates_hermitian_cancel] == ["CNOT", "H", "Drag", "H", "CNOT"]
         assert [type(gate).__name__ for gate in optimized_gates_complete] == ["H", "Drag", "H", "CNOT"]
         # Assert the initial arguments:
-        assert [gate.init_args for gate in optimized_gates_hermitian_cancel] == [[2,3], [3], [3], [3], [2,3]]
-        assert [gate.init_args for gate in optimized_gates_complete] == [[3], [3], [3], [2,3]]
-        assert [gate.init_kwargs for gate in optimized_gates_hermitian_cancel] == [{}, {}, {"theta": 2*np.pi, "phase": np.pi, "trainable": True}, {}, {}]
-        assert [gate.init_kwargs for gate in optimized_gates_complete] == [{}, {"theta": 2*np.pi, "phase": np.pi, "trainable": True}, {}, {}]
+        assert [gate.__dict__ for gate in optimized_gates_hermitian_cancel] == [{"q0": 2, "q1": 3}, {"q":3}, {"q": 3, "theta": 2*np.pi, "phase": np.pi, "trainable": True}, {"q":3}, {"q0": 2, "q1": 3}]
+        assert [gate.__dict__ for gate in optimized_gates_complete] == [{"q":3}, {"q":3, "theta": 2*np.pi, "phase": np.pi, "trainable": True}, {"q":3}, {"q0":2, "q1":3}]
 
 
 class TestCircuitOptimizerUnit:

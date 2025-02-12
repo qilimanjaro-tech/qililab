@@ -41,13 +41,13 @@ def test_get_circuit_gates_info():
 
     circuit_gates_info = _GateHandler.get_circuit_gates_info(circuit.queue)
 
-    assert circuit_gates_info == [("X", [0], {}), ("H", [1], {})]
+    assert circuit_gates_info == [("X", {"q": 0}), ("H", {"q": 1})]
 
 def test_create_gate():
     """Test create gate."""
-    gate = _GateHandler.create_gate("X", [0], {})
+    gate = _GateHandler.create_gate("X", {"q": 0})
     assert isinstance(gate, gates.X)
-    assert gate.init_args == [0]
+    assert gate.__dict__ == {"q": 0}
 
 def test_create_circuit():
     """Test create circuit."""

@@ -104,37 +104,32 @@ class _GateHandler:
             circuit_gates (list[gates.Gate]): list of native gates of the Qibo circuit.
 
         Returns:
-            list[tuple]: List of gates information in the circuit. Where each gate is a tuple of ('name', 'init_args', 'init_kwargs').
+            list[tuple]: List of gates information in the circuit. Where each gate is a tuple of ('name', 'init_args').
         """
-        return [(type(gate).__name__, gate.init_args, gate.init_kwargs) for gate in circuit_gates]
+        return [(type(gate).__name__, gate.__dict__) for gate in circuit_gates]
 
     @staticmethod
-    def create_gate(gate_class: str, gate_args: list | int, gate_kwargs: dict) -> gates.Gate:
+    def create_gate(gate_class: str, gate_args: dict) -> gates.Gate:
         """Converts a tuple representation of qibo gate (name, qubits) into a Gate object.
 
         Args:
             gate_class (str): The class name of the gate. Can be any Qibo or Qililab supported class.
-            gate_args (list | int): The qubits the gate acts on.
-            gate_kwargs (dict): The kwargs of the gate.
+            gate_args (dict): The kwargs of the gate {arg name: value for instance}
 
         Returns:
             gates.Gate: The qibo Gate object.
         """
         # Solve Identity gate, argument int issue:
         gate_args = [gate_args] if isinstance(gate_args, int) else gate_args
-
-        return (
-            getattr(digital, gate_class)(*gate_args, **gate_kwargs)
-            if gate_class in {"Drag", "Wait"}
-            else getattr(gates, gate_class)(*gate_args, **gate_kwargs)
-        )
+        gate_type = digital if gate_class in {"Drag", "Wait"} else gates
+        return getattr(gate_type, gate_class)(**gate_args)
 
     @staticmethod
     def create_qibo_gates_from_gates_info(circuit_gates: list[tuple]) -> list[gates.Gate]:
         """Converts a list of gate info (name, qubits) into a list of Qibo gates.
 
         Args:
-            circuit_gates (list[tuple]): List of gates in the circuit. Where each gate is a tuple of ('name', 'init_args', 'init_kwargs')
+            circuit_gates (list[tuple]): List of gates in the circuit. Where each gate is a tuple of ('name', 'initial args')
             nqubits (int): Number of qubits in the circuit.
 
         Returns:
@@ -142,8 +137,8 @@ class _GateHandler:
         """
         # Create optimized circuit, from the obtained non-cancelled list:
         output_gates = []
-        for gate, gate_args, gate_kwargs in circuit_gates:
-            qibo_gate = _GateHandler.create_gate(gate, gate_args, gate_kwargs)
+        for gate, gate_kwargs in circuit_gates:
+            qibo_gate = _GateHandler.create_gate(gate, gate_kwargs)
             output_gates.append(qibo_gate)
 
         return output_gates
@@ -168,16 +163,17 @@ class _GateHandler:
         return optimized_circuit
 
     @staticmethod
-    def extract_qubits_from_gate_args(gate_args: list | int) -> list:
+    def extract_qubits_from_gate_args(gate_args: dict) -> list:
         """Extract qubits from gate_args.
 
         Args:
-            gate_args (list | int): The arguments of the gate.
+            gate_args (dict): The arguments of the gate.
 
         Returns:
             list: The qubits of the gate in an iterable.
         """
-        # Assuming qubits are the first one or two args:
-        if isinstance(gate_args, int):
-            return [gate_args]
-        return gate_args if len(gate_args) <= 2 else gate_args[:2]
+        return (
+            [gate_args["q"]]
+            if "q" in gate_args
+            else [q for q_i, q in gate_args.items() if q_i.startswith("q") and q_i[1:].isdigit()]
+        )

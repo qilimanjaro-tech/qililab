@@ -265,10 +265,10 @@ class CircuitOptimizer:
         """Cancels adjacent gates in a circuit.
 
         Args:
-            circuit_gates (list[tuple]): List of gates in the circuit. Where each gate is a tuple of ('name', 'init_args', 'initi_kwargs')
+            circuit_gates (list[tuple]): List of gates in the circuit. Where each gate is a tuple of ('name', 'initial args')
 
         Returns:
-            list[tuple]: List of gates in the circuit, after cancelling adjacent gates. Where each gate is a tuple of ('name', 'init_args', 'initi_kwargs')
+            list[tuple]: List of gates in the circuit, after cancelling adjacent gates. Where each gate is a tuple of ('name', 'initial args')
         """
         # List of gates, that are available for cancellation:
         hermitian_gates: list = ["H", "X", "Y", "Z", "CNOT", "CZ", "SWAP"]
@@ -281,38 +281,34 @@ class CircuitOptimizer:
                 break
 
             # Gate of the original circuit, to find a match for:
-            gate, gate_args, gate_kwargs = circuit_gates.pop(0)
-            gate_qubits = _GateHandler.extract_qubits_from_gate_args(
-                gate_args
-            )  # Assuming qubits are the first two args
+            gate, gate_kwargs = circuit_gates.pop(0)
+            gate_qubits = _GateHandler.extract_qubits_from_gate_args(gate_kwargs)
 
             # If gate is not hermitian (can't be cancelled), add it to the output circuit and continue:
             if gate not in hermitian_gates:
-                output_circuit_gates.append((gate, gate_args, gate_kwargs))
+                output_circuit_gates.append((gate, gate_kwargs))
                 continue
 
             subend = False
             for i in range(len(circuit_gates)):
                 # Next gates, to compare the original with:
-                comp_gate, comp_args, comp_kwargs = circuit_gates[i]
-                comp_qubits = _GateHandler.extract_qubits_from_gate_args(
-                    comp_args
-                )  # Assuming qubits are the first two args
+                comp_gate, comp_kwargs = circuit_gates[i]
+                comp_qubits = _GateHandler.extract_qubits_from_gate_args(comp_kwargs)
 
                 # Simplify duplication, if same gate and qubits found, without any other in between:
-                if gate == comp_gate and gate_args == comp_args and gate_kwargs == comp_kwargs:
+                if gate == comp_gate and gate_kwargs == comp_kwargs:
                     circuit_gates.pop(i)
                     break
 
                 # Add gate, if there is no other gate that acts on the same qubits:
                 if i == len(circuit_gates) - 1:
-                    output_circuit_gates.append((gate, gate_args, gate_kwargs))
+                    output_circuit_gates.append((gate, gate_kwargs))
                     break
 
                 # Add gate and leave comparison_gate loop, if we find a gate in common qubit, that prevents contraction:
                 for gate_qubit in gate_qubits:
                     if gate_qubit in comp_qubits:
-                        output_circuit_gates.append((gate, gate_args, gate_kwargs))
+                        output_circuit_gates.append((gate, gate_kwargs))
                         subend = True
                         break
                 if subend:
