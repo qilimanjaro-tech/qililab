@@ -164,6 +164,12 @@ class CircuitRouter:
             gate_info = deepcopy(gate.raw)
             gate_info["_control_qubits"] = tuple(wire_names.index(qubit) for qubit in gate_info["_control_qubits"])
             gate_info["_target_qubits"] = tuple(wire_names.index(qubit) for qubit in gate_info["_target_qubits"])
+            qubits = list(gate_info["_control_qubits"] + gate_info["_target_qubits"])
+            if len(qubits) != len(gate_info["init_args"]):
+                raise ValueError(
+                    f"Gate {gate_info['_class']} has a different number of qubits than the number of init_args, which shouldn't happen with qibo gates."
+                )
+            gate_info["init_args"] = qubits
 
             new_queue.append(_GateHandler.create_gate(gate_info))
 
