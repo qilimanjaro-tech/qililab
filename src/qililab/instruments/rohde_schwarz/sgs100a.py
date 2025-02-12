@@ -130,7 +130,7 @@ class SGS100A(Instrument):
                 status = "Table & On"
                 if not value:
                     status = "Off"
-                self.device.send_command(command=":SOUR:POW:ALC:STAT", arg=status)
+                self.device.write(f":SOUR:POW:ALC:STAT {status}")
             return
         if parameter == Parameter.IQ_WIDEBAND:
             self.settings.iq_wideband = bool(value)
@@ -138,7 +138,7 @@ class SGS100A(Instrument):
                 status = 1
                 if not value:
                     status = 0
-                self.device.send_command(command="SOUR:IQ:WBST", arg=status)
+                self.device.write(f"SOUR:IQ:WBST {status}")
             return
         raise ParameterNotFound(self, parameter)
 
@@ -168,9 +168,9 @@ class SGS100A(Instrument):
         self.device.power(self.power)
         self.device.frequency(self.frequency)
         if not self.alc:
-            self.device.send_command(command=":SOUR:POW:ALC:STAT", arg="Off")
+            self.device.write(":SOUR:POW:ALC:STAT Off")
         if not self.iq_wideband:
-            self.device.send_command(command="SOUR:IQ:WBST", arg=0)
+            self.device.write("SOUR:IQ:WBST 0")
         if self.rf_on:
             self.device.on()
         else:
