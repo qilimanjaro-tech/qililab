@@ -13,6 +13,9 @@
 - Raises an error when the inputed value for the QDAC is outside of the bounds provided by QM. Done in 3 ways, runcard, set_parameter RAMPING_ENABLED and set_parameter RAMPING_RATE.
 [#865](https://github.com/qilimanjaro-tech/qililab/pull/865)
 
+- Code to enable the IQ mixer feature already part of qcode in qililab for the rohde and schwarz SGS100a
+[#872](https://github.com/qilimanjaro-tech/qililab/pull/872)
+
 - Enable square waveforms optimization for Qblox.
 [#874](https://github.com/qilimanjaro-tech/qililab/pull/874)
 
