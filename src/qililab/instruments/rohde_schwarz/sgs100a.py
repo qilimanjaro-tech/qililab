@@ -49,8 +49,9 @@ class SGS100A(Instrument):
         power: float
         frequency: float
         rf_on: bool
-        iq_wideband: bool = True
         alc: bool = True
+        iq_modulation: bool = False
+        iq_wideband: bool = True
 
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
@@ -82,20 +83,28 @@ class SGS100A(Instrument):
         return self.settings.rf_on
 
     @property
-    def iq_wideband(self):
-        """SignalGenerator "I/Q wideband" property.
-        Returns:
-            bool: settings.iq_wideband.
-        """
-        return self.settings.iq_wideband
-
-    @property
     def alc(self):
         """SignalGenerator "Automatic Level Control" property.
         Returns:
             bool: settings.alc.
         """
         return self.settings.alc
+
+    @property
+    def iq_modulation(self):
+        """SignalGenerator 'IQ state' property.
+        Returns:
+            bool: settings.iq_modulation.
+        """
+        return self.settings.iq_modulation
+
+    @property
+    def iq_wideband(self):
+        """SignalGenerator "I/Q wideband" property.
+        Returns:
+            bool: settings.iq_wideband.
+        """
+        return self.settings.iq_wideband
 
     def to_dict(self):
         """Return a dict representation of the SignalGenerator class."""
@@ -141,6 +150,12 @@ class SGS100A(Instrument):
                     status = 0
                 self.device.write(f"SOUR:IQ:WBST {status}")
             return
+        if parameter == Parameter.IQ_MODULATION:
+            value = bool(value)
+            self.settings.iq_modulation = value
+            if self.is_device_active():
+                self.device.IQ_state(value)
+            return
         raise ParameterNotFound(self, parameter)
 
     def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
@@ -154,6 +169,8 @@ class SGS100A(Instrument):
             return self.settings.alc
         if parameter == Parameter.IQ_WIDEBAND:
             return self.settings.iq_wideband
+        if parameter == Parameter.IQ_MODULATION:
+            return self.settings.iq_modulation
         raise ParameterNotFound(self, parameter)
 
     @check_device_initialized
@@ -173,7 +190,8 @@ class SGS100A(Instrument):
             self.device.write(":SOUR:POW:ALC:STAT OFF")
 
         device_mixer = self.get_rs_options().split(",")[-1]
-        if device_mixer == "SGS-B112V" and ugioer:
+        if device_mixer == "SGS-B112V" and self.iq_modulation:
+            self.device.IQ_state(self.iq_modulation)
             if self.iq_wideband:
                 if self.frequency < 2.5e9:
                     warnings.warn(
