@@ -16,6 +16,7 @@
 Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 
+import warnings
 from dataclasses import dataclass
 
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
@@ -155,12 +156,13 @@ class SGS100A(Instrument):
             return self.settings.iq_wideband
         raise ParameterNotFound(self, parameter)
 
+    @check_device_initialized
     def get_rs_options(self):
         """Returns the options of the R&S
         Returns:
             str: The query returns a list of options. The options are returned at fixed positions in a comma-separated string. A zero is returned for options that are not installed.
         """
-        return self.device.ask(command="*OPT?")
+        return self.device.ask("*OPT?")
 
     @check_device_initialized
     def initial_setup(self):
@@ -169,8 +171,25 @@ class SGS100A(Instrument):
         self.device.frequency(self.frequency)
         if not self.alc:
             self.device.write(":SOUR:POW:ALC:STAT OFF")
-        if not self.iq_wideband:
-            self.device.write("SOUR:IQ:WBST 0")
+
+        device_mixer = self.get_rs_options().split(",")[-1]
+        if device_mixer == "SGS-B112V" and ugioer:
+            if self.iq_wideband:
+                if self.frequency < 2.5e9:
+                    warnings.warn(
+                        f"LO frequency bellow 2.5GHz only allows for IF sweeps of ±{self.frequency*0.2:,.2e}Hz",
+                        ResourceWarning,
+                    )
+            else:
+                if self.frequency < 1e9:
+                    freq = self.frequency * 0.05
+                    warnings.warn(
+                        f"Deactivated wideband & LO frequency bellow 1GHz allows for IF sweeps of ±{freq:,.2e}Hz",
+                        ResourceWarning,
+                    )
+                else:
+                    warnings.warn(f"Deactivated wideband allows for IF sweeps of ±50Hz", ResourceWarning)
+                self.device.write("SOUR:IQ:WBST 0")
         if self.rf_on:
             self.device.on()
         else:
