@@ -46,7 +46,7 @@ class SGS100A(Instrument):
         """
         power: float
         frequency: float
-        iq_modulation: bool
+        iq_modulation: bool = False
         rf_on: bool = True
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
