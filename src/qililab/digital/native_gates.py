@@ -105,7 +105,6 @@ class Wait(ParametrizedGate):
         encoded_simple["init_kwargs"] |= self.init_kwargs
         return encoded_simple
 
-
 class _GateHandler:
     """Class to handle the native gates of the Qibo circuit."""
 
