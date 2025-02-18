@@ -17,43 +17,42 @@ import math
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from .qblox_module import QbloxModule
+# from qililab.platform import Platform
 
 # TODO:
-# binary conversion
 # way to plot all methods at once
-# add other methods
-
+# add other methods offered by qblox for the q1asm - ask experimentalists if they ever use anythg else, have a list of the ones you can plot
 
 class QbloxDraw:
-    # def __init__(self,sequences):
-    #     self.sequences = sequences
-    # def __init__(self):
-    #     # self.sequences = sequences
-    #     self._QbloxCompiler: QbloxCompiler
 
-    def _handle_play_draw(self, stored_data, act_play, diction,move_reg,freq):
+    def get_value_from_metadata(self,metadata, move_reg, key, division_factor=None):
+        if key in metadata:
+            if metadata[key] in move_reg.keys():
+                if division_factor:
+                    return int(move_reg[metadata[key]]) / division_factor
+                else:
+                    return int(move_reg[metadata[key]])
+            else:
+                return metadata[key]
+        return None
+
+    def _handle_play_draw(self, stored_data, act_play, diction, move_reg, metadata):
         if act_play[0] == "play":
             output_path1, output_path2, wait_play = map(int, act_play[1].split(','))
-            #retrieve the freq value
-            if freq['freq'] is not None:
-                freq_value = move_reg[freq['freq']]/4
-                # print("freq value",freq_value)
-            else: freq_value= 1
-            
-            #math.cos(2*math.pi*freq_value)
+            freq_value = self.get_value_from_metadata(metadata, move_reg, 'intermediate_frequency', division_factor=4)
 
             # retrieve the wavform data
             for waveform_key, waveform_value in diction:
-                
-                if waveform_value['index'] == output_path1:
+                if freq_value is not None:
                     x = np.linspace(0,1,len(waveform_value['data']))
                     carrier = np.cos(2 * np.pi * freq_value * x)
-                    # carrier=1
+                else:
+                    carrier = 1
+                if waveform_value['index'] == output_path1:
                     stored_data[0] = np.append(stored_data[0], np.array(waveform_value['data'])*carrier)
                 elif waveform_value['index'] == output_path2:
                     x = np.linspace(0,1,len(waveform_value['data']))
-                    carrier = np.cos(2 * np.pi * freq_value * x)
-                    # carrier=1
                     stored_data[1] = np.append(stored_data[1], np.array(waveform_value['data'])*carrier)
         return stored_data
     
@@ -70,17 +69,40 @@ class QbloxDraw:
             stored_data[1] = np.append(stored_data[1], y_wait)
         return stored_data
 
+    def _handle_offset_gain(self, move_reg, metadata, diction):#should only be ran once at the beginning of the bus or if the line has offset
+    #     if act_wait[0] == "wait":
+        gain_i = self.get_value_from_metadata(metadata, move_reg, 'gain_i', division_factor=32_767)
+        gain_q = self.get_value_from_metadata(metadata, move_reg, 'gain_q', division_factor=32_767)
+        gains = [gain_i,gain_q]
+        print(gains)
+        for idx, (_, waveform_value) in enumerate(diction):
+            print(idx)
+            print(diction)
+            print(enumerate(diction))
+            if gains[idx] is not None:
+                waveform_value['data'] = [x * gains[idx] for x in waveform_value['data']]
+        return diction
+    
+    def _handle_offset_draw(self, move_reg, metadata, diction): #should only be ran once at the beginning of the bus or if the line has offset
+        # if act_wait[0] == "wait":
+        offset_i = self.get_value_from_metadata(metadata, move_reg, 'offset_i', division_factor=32_767)
+        offset_q = self.get_value_from_metadata(metadata, move_reg, 'offset_q', division_factor=32_767)
+        offsets = [offset_i,offset_q]
+        for idx, (_, waveform_value) in enumerate(diction):
+            if offsets[idx] is not None: 
+                waveform_value['data'] = [x + offsets[idx] for x in waveform_value['data']]
+        return diction
+
     def _handle_add_draw(self, move_reg, act_add):
         if act_add[0] == "add":
             a, b, destination = act_add[1].split(", ")
             move_reg[destination] = self._get_value(a, move_reg) + self._get_value(b, move_reg)
         return move_reg
 
-    def _handle_freq_draw(self, freq, act_freq): #data is latched  only updated under specific conditions, handle case where more than 1 freq, and handle the case where no freq is given
+    def _handle_freq_draw(self, metadata, act_freq): #data is latched  only updated under specific conditions, handle case where more than 1 freq, and handle the case where no freq is given
         if act_freq[0] == "set_freq":
-            freq['freq'] = act_freq[1]
-        # print(freq)
-        return freq
+            metadata["intermediate_frequency"] = act_freq[1] #overwrite the if if given in the qprogram
+        return metadata
 
     def _get_value(self, x, move_reg):
         if x is not None:
@@ -133,27 +155,24 @@ class QbloxDraw:
                             sub_label = tuple(l for l in sub_label if l != la)
                 dict_bus["program"] = command_dict
             Q1ASM_ordered[bus] = dict_bus  # Store structured result
+        print("q1asm",Q1ASM_ordered)
         return Q1ASM_ordered
 
-
-
-
-    def draw_data(self, result):
+    def draw_oscilloscope(self, result, runcard_data = None):
         Q1ASM_ordered = self._parse_program(result.sequences.copy())
         data_draw = {}
         # [0]: action to be taken
         # [1]: value
         # [2]: label of the loops
         # [3]: index
-
-        for bus, bus_data in Q1ASM_ordered.items():
-            # print("BUS",bus)
-            # bus="drive"
+        for bus,_ in Q1ASM_ordered.items():
+            if runcard_data is not None:
+                runcard = {key: runcard_data[bus][key] for key in runcard_data[bus]}
+            else:
+                runcard = {}
             wf1 = []
             wf2 = []
             run_items = []
-            freq = {'freq':None}
-            # data = {bus: None}
             data_draw[bus] = [wf1, wf2]
             label_done = []  # list to keep track of the label once they have been looped over
 
@@ -175,23 +194,18 @@ class QbloxDraw:
                         appearance[l][1] = index  # Update last appearance
                         appearance[l][2] = value.split(",")[0]
                 sorted_labels = sorted(appearance.items(), key=lambda x: x[1][0])
-
+            wf = Q1ASM_ordered[bus]['waveforms'].items()
+            # self._handle_offset_gain(move_reg, runcard, wf)
+            # self._handle_offset_draw(move_reg, runcard, wf)
+            
             for item in Q1ASM_ordered[bus]["program"]["main"]:
-                wf = Q1ASM_ordered[bus]['waveforms'].items()
-
                 def process_loop(recursive_input,i):
                     (label, [start, end, value]) = recursive_input
                     if label not in label_done:
                         label_done.append(label)
-                    # print(label,start,end,value,move_reg[value])
-                    # if there is in label done a label that has a start greater than the current label you should drop it from label label_done
-                    #remove the necessary labels from label done:
-                    # print("top level running")
                     for x in range(move_reg[value], 0, -1):
-                        # print("TOPPPPP", x, move_reg)
                         current_idx = start
                         while current_idx <= end:
-                            # print("idx",current_idx,end,"x:",x)
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
                             _, value, label, _ = item
@@ -199,9 +213,7 @@ class QbloxDraw:
                                 if la not in label_done:
                                     new_label = la
                                     result = next((element for element in sorted_labels if element[0] == new_label), None) #retrieve the start/end/variable of the new label
-                                    # print("going into the recursive with input",result)
                                     current_idx = process_loop(result,current_idx)
-                                    # print("exit the recursive")
                                     label_index = {}
                                     #check if there is a nested loop, if yes need to remove it from label_dne, otherwise it wont loop over in the next iteration of the parent
                                     for a in label_done:
@@ -209,17 +221,15 @@ class QbloxDraw:
                                         label_index[a]=int(element)
                                     max_value = max(label_index.values())
                                     max_keys = [key for key, value in label_index.items() if value == max_value]
+                                    print("label done",label_done)
                                     label_done.remove(max_keys[0])
-
-                            # print("label done",label_done)
+                                    print("label done",label_done)
 
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
-                            # print("run item",item)
                             run_items.append(item[-1])
-                            # print(run_items)
-                            self._handle_freq_draw(freq,item)
-                            data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,freq)
+                            self._handle_freq_draw(runcard, item)
+                            data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg, runcard)
                             data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
                             data_draw[bus] = self._handle_wait_draw(data_draw[bus], item)
                             self._handle_add_draw(move_reg, item)
@@ -228,30 +238,30 @@ class QbloxDraw:
 
                 if item[2] and item[2][-1] not in label_done and item[-1] not in run_items:  # if there is a loop label
                     index=0
-                    # print("running the initial loop",item)
-                    process_loop(sorted_labels[0],index) #TO DO: the 0 might cause problems if some loops arent nested
+                    print("sorted",sorted_labels)
+                    print("initial if",label_done)
+                    process_loop(sorted_labels[0],index)
+
+                    print("sorted",sorted_labels)
+                    print(item[2][-1])
+                    print(item)
+                    print(label_done)
+                    # for x in sorted_labels:
+                    #     if x not in label_done:
+                            # process_loop(x,index) #TO DO: the 0 might cause problems if some loops arent nested
+                        
 
                 elif item[-1] not in run_items: #ensure not running the ones that have already been ran
-                    # print("should not play this",item)
-                    self._handle_freq_draw(freq,item)
-                    data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,freq)
+                    self._handle_freq_draw(runcard,item)
+                    data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,runcard)
                     data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
                     data_draw[bus] = self._handle_wait_draw(data_draw[bus], item)
                     self._handle_add_draw(move_reg, item)
-                    
                 else:
                     pass
 
-            # #data treatment
-            # #frequency
-            # data[bus] = {'frequency':self._get_value(freq['freq'],move_reg)}
-            # print(data)
-
         # Plot the waveforms with plotly
-        # print()
         data_keys = list(data_draw.keys())
-        # print("data_keys",data_keys)
-
         # Create subplots
         fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
         legend_IQ = ["I","Q"]

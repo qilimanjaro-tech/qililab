@@ -65,6 +65,7 @@ from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
+from qililab.instruments.qblox.qblox_draw import QbloxDraw
 
 if TYPE_CHECKING:
     from queue import Queue
@@ -311,6 +312,9 @@ class Platform:
         self.buses = Buses(
             elements=[Bus(settings=asdict(bus), platform_instruments=self.instruments) for bus in runcard.buses]
         )
+
+        self.alias = [x["alias"] for x in map(asdict, runcard.buses)]
+
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
         self.digital_compilation_settings = runcard.digital
@@ -362,6 +366,24 @@ class Platform:
             raise AttributeError("Can not do initial_setup without being connected to the instruments.")
         self.instrument_controllers.initial_setup()
         logger.info("Initial setup applied to the instruments")
+
+    # def draw_oscilloscope_data(self):
+    #     """Sets the values of the cache of the :class:`.Platform` object to the connected instruments.
+
+    #     If called after a ``ql.build_platform()``, where the :class:`.Platform` object is built with the provided runcard,
+    #     this function sets the values of the :ref:`runcard <runcards>` into the connected instruments.
+
+    #     It is recommended to use this function after a ``ql.build_platform()`` + ``platform.connect()`` to ensure that no parameter
+    #     differs from the current runcard settings.
+
+    #     If a `platform.set_parameter()` is called between platform building and initial setup, the value set in the instruments
+    #     will be the new "set" value, as the cache values of the :class:`.Platform` object are modified.
+    #     """
+    #     # if not self._connected_to_instruments:
+    #     #     raise AttributeError("Can not do initial_setup without being connected to the instruments.")
+    #     self.instrument_controllers.draw_oscilloscope_data()
+    #     print("draw log",self.instrument_controllers.draw_oscilloscope_data())
+    #     # logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
         """Turns on the signal output for the generator instruments (RF, voltage sources and current sources).
@@ -464,6 +486,20 @@ class Platform:
             )
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
+
+    def data_draw_oscilloscope(self):
+        param = [Parameter.IF, Parameter.GAIN_I, Parameter.GAIN_Q, Parameter.OFFSET_I, Parameter.OFFSET_Q]
+        data_osci = {}
+        data_oscillocope = {}
+        for x in self.alias:
+            data_osci[x] = {}
+            for p in param:
+                val = self.get_parameter(x,p)
+                data_osci[x][p] = val
+        for key, sub_dict in data_osci.items():
+            data_oscillocope[key] = {
+                param.value: value for param, value in sub_dict.items()}
+        return data_oscillocope
 
     def set_parameter(
         self,
@@ -772,6 +808,7 @@ class Platform:
     def compile_qprogram(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
     ) -> QbloxCompilationOutput | QuantumMachinesCompilationOutput:
+        print("sequencer",sequencer)
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]
         instruments = {
@@ -1216,3 +1253,21 @@ class Platform:
         )
 
         return compiled_programs, final_layout
+
+    def draw_oscilloscope_platform(self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None):
+
+        #figure out which method to use
+
+        # #if non qblox say it is not supported
+        # data = self.data_draw_oscilloscope()
+        # draw = QbloxDraw()
+        # results= self.compile_qprogram(qprogram)
+        # draw.draw_oscilloscope(results,data)
+
+
+         #if non qblox say it is not supported
+        data = self.data_draw_oscilloscope()
+        draw = QbloxDraw()
+        compiler = QbloxCompiler()
+        results = compiler.compile(qprogram)
+        draw.draw_oscilloscope(results,data)
