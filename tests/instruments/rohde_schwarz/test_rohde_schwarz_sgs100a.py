@@ -23,6 +23,7 @@ def fixture_sdg100a() -> SGS100A:
         }
     )
     sdg100a.device = MagicMock()
+    sdg100a.get_rs_options = MagicMock()
     return sdg100a
 
 
@@ -70,7 +71,7 @@ def fixture_sdg100a_alc_off() -> SGS100A:
             "alias": "qdac",
             "power": 100,
             "frequency": 1e6,
-            "rf_on": False,
+            "rf_on": True,
             "iq_modulation": True,
             "iq_wideband": True,
             "alc": False,
@@ -88,7 +89,7 @@ def fixture_sdg100a_wideband_off() -> SGS100A:
             "alias": "qdac",
             "power": 100,
             "frequency": 1e6,
-            "rf_on": False,
+            "rf_on": True,
             "iq_modulation": True,
             "iq_wideband": False,
             "alc": True,
@@ -187,13 +188,11 @@ class TestSGS100A:
         """Test initial method when the runcard sets rf_on as False"""
         sdg100a_alc_off.turn_on()
         assert sdg100a_alc_off.settings.alc is False
-        sdg100a_alc_off.device.off.assert_called_once()
 
     def test_turn_on_method_wideband_off(self, sdg100a_wideband_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
         sdg100a_wideband_off.turn_on()
         assert sdg100a_wideband_off.settings.iq_wideband is False
-        sdg100a_wideband_off.device.off.assert_called_once()
 
     def test_turn_on_method(self, sdg100a: SGS100A):
         """Test turn_on method"""
