@@ -23,7 +23,6 @@ def fixture_sdg100a() -> SGS100A:
         }
     )
     sdg100a.device = MagicMock()
-    sdg100a.get_rs_options = MagicMock()
     return sdg100a
 
 
@@ -96,7 +95,6 @@ def fixture_sdg100a_wideband_off() -> SGS100A:
         }
     )
     sdg100a_wideband_off.device = MagicMock()
-    sdg100a_wideband_off.get_rs_options = MagicMock()
     return sdg100a_wideband_off
 
 
@@ -166,8 +164,10 @@ class TestSGS100A:
         with pytest.raises(ParameterNotFound):
             sdg100a.get_parameter(parameter=Parameter.BUS_FREQUENCY)
 
-    def test_initial_setup_method(self, sdg100a: SGS100A):
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method(self, mock_get_rs_options, sdg100a: SGS100A):
         """Test initial setup method"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
         sdg100a.initial_setup()
         sdg100a.device.power.assert_called_with(sdg100a.power)
         sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
@@ -188,9 +188,7 @@ class TestSGS100A:
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
     def test_initial_setup_method_wideband_off(self, mock_get_rs_options, sdg100a_wideband_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
-
         mock_get_rs_options.return_value = "Some,other,SGS-B112V"
-
         sdg100a_wideband_off.initial_setup()
         assert sdg100a_wideband_off.settings.iq_wideband is False
         assert sdg100a_wideband_off.iq_wideband is False
