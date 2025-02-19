@@ -179,24 +179,24 @@ class TestSGS100A:
         sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
         sdg100a.device.off.assert_called_once()
 
+    def test_initial_setup_method_alc_off(self, sdg100a_alc_off: SGS100A):
+        """Test initial method when the runcard sets rf_on as False"""
+        sdg100a_alc_off.initial_setup()
+        assert sdg100a_alc_off.settings.alc is False
+        assert sdg100a_alc_off.alc is False
+
+    def test_initial_setup_method_wideband_off(self, sdg100a_wideband_off: SGS100A):
+        """Test initial method when the runcard sets rf_on as False"""
+        sdg100a_wideband_off.initial_setup()
+        assert sdg100a_wideband_off.settings.iq_wideband is False
+        assert sdg100a_wideband_off.iq_wideband is False
+        assert sdg100a_wideband_off.iq_modulation is True
+
     def test_turn_on_method_rf_off(self, sdg100a_rf_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
         sdg100a_rf_off.turn_on()
         assert sdg100a_rf_off.settings.rf_on is False
         sdg100a_rf_off.device.off.assert_called_once()
-
-    def test_turn_on_method_alc_off(self, sdg100a_alc_off: SGS100A):
-        """Test initial method when the runcard sets rf_on as False"""
-        sdg100a_alc_off.turn_on()
-        assert sdg100a_alc_off.settings.alc is False
-        assert sdg100a_alc_off.alc is False
-
-    def test_turn_on_method_wideband_off(self, sdg100a_wideband_off: SGS100A):
-        """Test initial method when the runcard sets rf_on as False"""
-        sdg100a_wideband_off.turn_on()
-        assert sdg100a_wideband_off.settings.iq_wideband is False
-        assert sdg100a_wideband_off.iq_wideband is False
-        assert sdg100a_wideband_off.iq_modulation is True
 
     def test_turn_on_method(self, sdg100a: SGS100A):
         """Test turn_on method"""
