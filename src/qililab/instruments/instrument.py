@@ -109,7 +109,7 @@ class Instrument(BusElement, ABC):
 
         Args:
             parameter (Parameter): Name of the parameter to get.
-            channel_id (int | None, optional): Instrument channel, if multiple. Defaults to None.
+            channel_id (int, optional): Instrument channel, if multiple. Defaults to None.
 
         Returns:
             str | int | float | bool: Parameter value.
@@ -123,7 +123,7 @@ class Instrument(BusElement, ABC):
         Args:
             parameter (Parameter): parameter settings of the instrument to update
             value (float | str | bool): value to update
-            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+            channel_id (int, optional): instrument channel to update, if multiple. Defaults to None.
 
         Returns:
             bool: True if the parameter is set correctly, False otherwise

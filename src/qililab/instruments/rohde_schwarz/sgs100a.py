@@ -216,8 +216,10 @@ class SGS100A(Instrument):
     @check_device_initialized
     def turn_on(self):
         """Start generating microwaves."""
-        self.settings.rf_on = True
-        self.device.on()
+        if not self.settings.rf_on:
+            self.device.off()
+        else:
+            self.device.on()
 
     @check_device_initialized
     def turn_off(self):

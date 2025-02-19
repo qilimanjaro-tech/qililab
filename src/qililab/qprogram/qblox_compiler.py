@@ -52,6 +52,7 @@ class AcquisitionData:
 
     bus: str
     save_adc: bool
+    shape: tuple
 
 
 Sequences = dict[str, QPy.Sequence]
@@ -169,8 +170,8 @@ class QbloxCompiler:
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
-            bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
-            times_of_flight (dict[str, int] | None, optional): Optional time of flight of bus. Defaults to None.
+            bus_mapping (dict[str, str], optional): Optional mapping of bus names. Defaults to None.
+            times_of_flight (dict[str, int], optional): Optional time of flight of bus. Defaults to None.
 
         Returns:
             QbloxCompilationOutput:
@@ -533,6 +534,7 @@ class QbloxCompiler:
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
             if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
+        shape = tuple(loop[1].iterations for loop in loops)
         num_bins = math.prod(loop[1].iterations for loop in loops)
         acquisition_name = f"acquisition_{self._buses[element.bus].next_acquisition_index}"
         self._buses[element.bus].qpy_sequence._acquisitions.add(
@@ -541,7 +543,7 @@ class QbloxCompiler:
             index=self._buses[element.bus].next_acquisition_index,
         )
         self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
-            bus=element.bus, save_adc=element.save_adc
+            bus=element.bus, save_adc=element.save_adc, shape=shape
         )
 
         index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)

@@ -35,7 +35,7 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
         loops (dict): A dictionary containing all the loops used in an experiment. The keys are used to identify the
             loop and the values of the dictionary correspond to the values of the loop.
         data_path (str): Path to the main data directory.
-        name (str | None, optional): Name of the experiment. If given, the name is added to the name of the folder.
+        name (str, optional): Name of the experiment. If given, the name is added to the name of the folder.
             Defaults to None.
 
     Returns:
