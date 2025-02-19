@@ -1,6 +1,6 @@
 """Tests for the SGS100A class."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -185,8 +185,12 @@ class TestSGS100A:
         assert sdg100a_alc_off.settings.alc is False
         assert sdg100a_alc_off.alc is False
 
-    def test_initial_setup_method_wideband_off(self, sdg100a_wideband_off: SGS100A):
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method_wideband_off(self, mock_get_rs_options, sdg100a_wideband_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
+
+        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
+
         sdg100a_wideband_off.initial_setup()
         assert sdg100a_wideband_off.settings.iq_wideband is False
         assert sdg100a_wideband_off.iq_wideband is False
