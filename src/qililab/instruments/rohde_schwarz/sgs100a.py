@@ -48,7 +48,7 @@ class SGS100A(Instrument):
 
         power: float
         frequency: float
-        rf_on: bool
+        rf_on: bool = True
         alc: bool = True
         iq_modulation: bool = False
         iq_wideband: bool = True
@@ -195,7 +195,7 @@ class SGS100A(Instrument):
             if self.iq_wideband:
                 if self.frequency < 2.5e9:
                     warnings.warn(
-                        f"LO frequency bellow 2.5GHz only allows for IF sweeps of ±{self.frequency*0.2:,.2e}Hz",
+                        f"LO frequency bellow 2.5GHz only allows for IF sweeps of ±{self.frequency * 0.2:,.2e}Hz",
                         ResourceWarning,
                     )
             else:
@@ -206,7 +206,7 @@ class SGS100A(Instrument):
                         ResourceWarning,
                     )
                 else:
-                    warnings.warn(f"Deactivated wideband allows for IF sweeps of ±50Hz", ResourceWarning)
+                    warnings.warn("Deactivated wideband allows for IF sweeps of ±50Hz", ResourceWarning)
                 self.device.write("SOUR:IQ:WBST 0")
         if self.rf_on:
             self.device.on()

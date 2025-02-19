@@ -260,6 +260,7 @@ class Parameter(str, Enum):
 
     ALC = "alc"
     IQ_WIDEBAND = "iq_wideband"
+    IQ_MODULATION = "iq_modulation"
     BUS_FREQUENCY = "bus_frequency"
     LO_FREQUENCY = "frequency"
     GAIN = "gain"
