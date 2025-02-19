@@ -16,6 +16,9 @@
 - Enable square waveforms optimization for Qblox.
   [#874](https://github.com/qilimanjaro-tech/qililab/pull/874)
 
+- Implemented ALC, IQ wideband and a function to see the RS models inside the drivers for SGS100a.
+  [#894](https://github.com/qilimanjaro-tech/qililab/pull/894)
+
 ### Improvements
 
 - Updated qm-qua to stable version 1.2.1. And close other machines has been set to True as now it closes only stated ports.
