@@ -145,9 +145,9 @@ class SGS100A(Instrument):
         if parameter == Parameter.IQ_WIDEBAND:
             self.settings.iq_wideband = bool(value)
             if self.is_device_active():
-                status = 1
+                status = str(1)
                 if not value:
-                    status = 0
+                    status = str(0)
                 self.device.write(f"SOUR:IQ:WBST {status}")
             return
         if parameter == Parameter.IQ_MODULATION:
