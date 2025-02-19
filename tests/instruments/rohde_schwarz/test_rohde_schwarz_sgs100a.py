@@ -1,5 +1,6 @@
 """Tests for the SGS100A class."""
 
+import warnings
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -98,6 +99,24 @@ def fixture_sdg100a_wideband_off() -> SGS100A:
     return sdg100a_wideband_off
 
 
+@pytest.fixture(name="sdg100a_wideband_off_large_freq")
+def fixture_sdg100a_wideband_off_large_freq() -> SGS100A:
+    """Fixture that returns an instance of a dummy QDAC-II."""
+    sdg100a_wideband_off_large_freq = SGS100A(
+        {
+            "alias": "qdac",
+            "power": 100,
+            "frequency": 5e9,
+            "rf_on": True,
+            "iq_modulation": True,
+            "iq_wideband": False,
+            "alc": True,
+        }
+    )
+    sdg100a_wideband_off_large_freq.device = MagicMock()
+    return sdg100a_wideband_off_large_freq
+
+
 class TestSGS100A:
     """Unit tests checking the SGS100A attributes and methods"""
 
@@ -164,8 +183,9 @@ class TestSGS100A:
         with pytest.raises(ParameterNotFound):
             sdg100a.get_parameter(parameter=Parameter.BUS_FREQUENCY)
 
+    @patch("warnings.warn")
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
-    def test_initial_setup_method(self, mock_get_rs_options, sdg100a: SGS100A):
+    def test_initial_setup_method(self, mock_get_rs_options, mock_warn, sdg100a: SGS100A):
         """Test initial setup method"""
         mock_get_rs_options.return_value = "Some,other,SGS-B112V"
         sdg100a.initial_setup()
@@ -179,20 +199,43 @@ class TestSGS100A:
         sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
         sdg100a.device.off.assert_called_once()
 
+        mock_warn.assert_any_call(
+            "LO frequency bellow 2.5GHz only allows for IF sweeps of ±2.00e+05 Hz", ResourceWarning
+        )
+
     def test_initial_setup_method_alc_off(self, sdg100a_alc_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
         sdg100a_alc_off.initial_setup()
         assert sdg100a_alc_off.settings.alc is False
         assert sdg100a_alc_off.alc is False
 
+    @patch("warnings.warn")
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
-    def test_initial_setup_method_wideband_off(self, mock_get_rs_options, sdg100a_wideband_off: SGS100A):
+    def test_initial_setup_method_wideband_off(self, mock_get_rs_options, mock_warn, sdg100a_wideband_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
         mock_get_rs_options.return_value = "Some,other,SGS-B112V"
         sdg100a_wideband_off.initial_setup()
         assert sdg100a_wideband_off.settings.iq_wideband is False
         assert sdg100a_wideband_off.iq_wideband is False
         assert sdg100a_wideband_off.iq_modulation is True
+
+        mock_warn.assert_any_call(
+            "Deactivated wideband & LO frequency bellow 1GHz allows for IF sweeps of ±5.00e+04 Hz", ResourceWarning
+        )
+
+    @patch("warnings.warn")
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method_wideband_off_large_freq(
+        self, mock_get_rs_options, mock_warn, sdg100a_wideband_off_large_freq: SGS100A
+    ):
+        """Test initial method when the runcard sets rf_on as False"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
+        sdg100a_wideband_off_large_freq.initial_setup()
+        assert sdg100a_wideband_off_large_freq.settings.iq_wideband is False
+        assert sdg100a_wideband_off_large_freq.iq_wideband is False
+        assert sdg100a_wideband_off_large_freq.iq_modulation is True
+
+        mock_warn.assert_any_call("Deactivated wideband allows for IF sweeps of ±50e6 Hz", ResourceWarning)
 
     def test_turn_on_method_rf_off(self, sdg100a_rf_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
