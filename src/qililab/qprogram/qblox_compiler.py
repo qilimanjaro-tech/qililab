@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
 import math
 from collections import deque
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Callable
 
