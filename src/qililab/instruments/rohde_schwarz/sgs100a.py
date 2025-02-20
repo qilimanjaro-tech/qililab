@@ -151,10 +151,9 @@ class SGS100A(Instrument):
                 self.device.write(f"SOUR:IQ:WBST {status}")
             return
         if parameter == Parameter.IQ_MODULATION:
-            value = bool(value)
-            self.settings.iq_modulation = value
+            self.settings.iq_modulation = bool(value)
             if self.is_device_active():
-                self.device.IQ_state(value)
+                self.device.IQ_state(self.iq_modulation)
             return
         raise ParameterNotFound(self, parameter)
 
@@ -186,7 +185,9 @@ class SGS100A(Instrument):
         """performs an initial setup"""
         self.device.power(self.power)
         self.device.frequency(self.frequency)
-        if not self.alc:
+        if self.alc:
+            self.device.write(":SOUR:POW:ALC:STAT ONT")
+        else:
             self.device.write(":SOUR:POW:ALC:STAT OFF")
 
         device_mixer = self.get_rs_options().split(",")[-1]
@@ -195,19 +196,22 @@ class SGS100A(Instrument):
             if self.iq_wideband:
                 if self.frequency < 2.5e9:
                     warnings.warn(
-                        f"LO frequency bellow 2.5GHz only allows for IF sweeps of ±{self.frequency * 0.2:,.2e} Hz",
+                        f"LO frequency below 2.5GHz only allows for IF sweeps of ±{self.frequency * 0.2:,.2e} Hz",
                         ResourceWarning,
                     )
+                self.device.write("SOUR:IQ:WBST 1")
             else:
                 if self.frequency < 1e9:
                     freq = self.frequency * 0.05
                     warnings.warn(
-                        f"Deactivated wideband & LO frequency bellow 1GHz allows for IF sweeps of ±{freq:,.2e} Hz",
+                        f"Deactivated wideband & LO frequency below 1GHz allows for IF sweeps of ±{freq:,.2e} Hz",
                         ResourceWarning,
                     )
                 else:
                     warnings.warn("Deactivated wideband allows for IF sweeps of ±50e6 Hz", ResourceWarning)
                 self.device.write("SOUR:IQ:WBST 0")
+        elif not self.iq_modulation:
+            self.device.IQ_state(self.iq_modulation)
         if self.rf_on:
             self.device.on()
         else:
