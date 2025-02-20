@@ -16,6 +16,7 @@
 Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 
+import warnings
 from dataclasses import dataclass
 
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
@@ -48,6 +49,9 @@ class SGS100A(Instrument):
         power: float
         frequency: float
         rf_on: bool = True
+        alc: bool = True
+        iq_modulation: bool = False
+        iq_wideband: bool = True
 
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
@@ -78,6 +82,30 @@ class SGS100A(Instrument):
         """
         return self.settings.rf_on
 
+    @property
+    def alc(self):
+        """SignalGenerator "Automatic Level Control" property.
+        Returns:
+            bool: settings.alc.
+        """
+        return self.settings.alc
+
+    @property
+    def iq_modulation(self):
+        """SignalGenerator 'IQ state' property.
+        Returns:
+            bool: settings.iq_modulation.
+        """
+        return self.settings.iq_modulation
+
+    @property
+    def iq_wideband(self):
+        """SignalGenerator "I/Q wideband" property.
+        Returns:
+            bool: settings.iq_wideband.
+        """
+        return self.settings.iq_wideband
+
     def to_dict(self):
         """Return a dict representation of the SignalGenerator class."""
         return dict(super().to_dict().items())
@@ -106,6 +134,27 @@ class SGS100A(Instrument):
                 else:
                     self.turn_off()
             return
+        if parameter == Parameter.ALC:
+            self.settings.alc = bool(value)
+            if self.is_device_active():
+                status = "ONT"
+                if not value:
+                    status = "OFF"
+                self.device.write(f":SOUR:POW:ALC:STAT {status}")
+            return
+        if parameter == Parameter.IQ_WIDEBAND:
+            self.settings.iq_wideband = bool(value)
+            if self.is_device_active():
+                status = str(1)
+                if not value:
+                    status = str(0)
+                self.device.write(f"SOUR:IQ:WBST {status}")
+            return
+        if parameter == Parameter.IQ_MODULATION:
+            self.settings.iq_modulation = bool(value)
+            if self.is_device_active():
+                self.device.IQ_state(self.iq_modulation)
+            return
         raise ParameterNotFound(self, parameter)
 
     def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
@@ -115,13 +164,54 @@ class SGS100A(Instrument):
             return self.settings.frequency
         if parameter == Parameter.RF_ON:
             return self.settings.rf_on
+        if parameter == Parameter.ALC:
+            return self.settings.alc
+        if parameter == Parameter.IQ_WIDEBAND:
+            return self.settings.iq_wideband
+        if parameter == Parameter.IQ_MODULATION:
+            return self.settings.iq_modulation
         raise ParameterNotFound(self, parameter)
+
+    @check_device_initialized
+    def get_rs_options(self):
+        """Returns the options of the R&S
+        Returns:
+            str: The query returns a list of options. The options are returned at fixed positions in a comma-separated string. A zero is returned for options that are not installed.
+        """
+        return self.device.ask("*OPT?")
 
     @check_device_initialized
     def initial_setup(self):
         """performs an initial setup"""
         self.device.power(self.power)
         self.device.frequency(self.frequency)
+        if self.alc:
+            self.device.write(":SOUR:POW:ALC:STAT ONT")
+        else:
+            self.device.write(":SOUR:POW:ALC:STAT OFF")
+
+        device_mixer = self.get_rs_options().split(",")[-1]
+        if device_mixer == "SGS-B112V" and self.iq_modulation:
+            self.device.IQ_state(self.iq_modulation)
+            if self.iq_wideband:
+                if self.frequency < 2.5e9:
+                    warnings.warn(
+                        f"LO frequency below 2.5GHz only allows for IF sweeps of ±{self.frequency * 0.2:,.2e} Hz",
+                        ResourceWarning,
+                    )
+                self.device.write("SOUR:IQ:WBST 1")
+            else:
+                if self.frequency < 1e9:
+                    freq = self.frequency * 0.05
+                    warnings.warn(
+                        f"Deactivated wideband & LO frequency below 1GHz allows for IF sweeps of ±{freq:,.2e} Hz",
+                        ResourceWarning,
+                    )
+                else:
+                    warnings.warn("Deactivated wideband allows for IF sweeps of ±50e6 Hz", ResourceWarning)
+                self.device.write("SOUR:IQ:WBST 0")
+        elif not self.iq_modulation:
+            self.device.IQ_state(self.iq_modulation)
         if self.rf_on:
             self.device.on()
         else:
