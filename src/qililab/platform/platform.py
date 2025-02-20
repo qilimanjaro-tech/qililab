@@ -808,7 +808,6 @@ class Platform:
     def compile_qprogram(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
     ) -> QbloxCompilationOutput | QuantumMachinesCompilationOutput:
-        print("sequencer",sequencer)
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]
         instruments = {
@@ -1014,6 +1013,7 @@ class Platform:
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+        print("output",output)
         return self.execute_compilation_output(output=output, debug=debug)
 
     def execute(
@@ -1258,16 +1258,16 @@ class Platform:
 
         #figure out which method to use
 
-        # #if non qblox say it is not supported
-        # data = self.data_draw_oscilloscope()
-        # draw = QbloxDraw()
-        # results= self.compile_qprogram(qprogram)
-        # draw.draw_oscilloscope(results,data)
-
-
-         #if non qblox say it is not supported
+        #if non qblox say it is not supported
         data = self.data_draw_oscilloscope()
         draw = QbloxDraw()
-        compiler = QbloxCompiler()
-        results = compiler.compile(qprogram)
+        results= self.compile_qprogram(qprogram)
         draw.draw_oscilloscope(results,data)
+
+
+        #  #if non qblox say it is not supported
+        # data = self.data_draw_oscilloscope()
+        # draw = QbloxDraw()
+        # compiler = QbloxCompiler()
+        # results = compiler.compile(qprogram)
+        # draw.draw_oscilloscope(results,data)

@@ -30,11 +30,11 @@ class QbloxDraw:
         if key in metadata:
             if metadata[key] in move_reg.keys():
                 if division_factor:
-                    return int(move_reg[metadata[key]]) / division_factor
+                    return float(float(move_reg[metadata[key]]) / float(division_factor))
                 else:
-                    return int(move_reg[metadata[key]])
+                    return float(move_reg[metadata[key]])
             else:
-                return metadata[key]
+                return float(metadata[key])
         return None
 
     def _handle_play_draw(self, stored_data, act_play, diction, move_reg, metadata):
@@ -74,11 +74,7 @@ class QbloxDraw:
         gain_i = self.get_value_from_metadata(metadata, move_reg, 'gain_i', division_factor=32_767)
         gain_q = self.get_value_from_metadata(metadata, move_reg, 'gain_q', division_factor=32_767)
         gains = [gain_i,gain_q]
-        print(gains)
         for idx, (_, waveform_value) in enumerate(diction):
-            print(idx)
-            print(diction)
-            print(enumerate(diction))
             if gains[idx] is not None:
                 waveform_value['data'] = [x * gains[idx] for x in waveform_value['data']]
         return diction
@@ -155,7 +151,7 @@ class QbloxDraw:
                             sub_label = tuple(l for l in sub_label if l != la)
                 dict_bus["program"] = command_dict
             Q1ASM_ordered[bus] = dict_bus  # Store structured result
-        print("q1asm",Q1ASM_ordered)
+        # print("q1asm",Q1ASM_ordered)
         return Q1ASM_ordered
 
     def draw_oscilloscope(self, result, runcard_data = None):
@@ -175,7 +171,6 @@ class QbloxDraw:
             run_items = []
             data_draw[bus] = [wf1, wf2]
             label_done = []  # list to keep track of the label once they have been looped over
-
             # create a dict to get all the variables assigned to a registery through move
             move_reg = {}
             for action in Q1ASM_ordered[bus]["program"]["main"]:
@@ -221,9 +216,7 @@ class QbloxDraw:
                                         label_index[a]=int(element)
                                     max_value = max(label_index.values())
                                     max_keys = [key for key, value in label_index.items() if value == max_value]
-                                    print("label done",label_done)
                                     label_done.remove(max_keys[0])
-                                    print("label done",label_done)
 
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
@@ -236,19 +229,26 @@ class QbloxDraw:
                             current_idx +=1
                     return current_idx
 
-                if item[2] and item[2][-1] not in label_done and item[-1] not in run_items:  # if there is a loop label
+                # if item[2] and item[2][-1] not in label_done and item[-1] not in run_items:  # if there is a loop label
+                if item[2] and item[-1] not in run_items:  # if there is a loop label
                     index=0
-                    print("sorted",sorted_labels)
-                    print("initial if",label_done)
-                    process_loop(sorted_labels[0],index)
+                    # input = next(x for x in sorted_labels if x[0] == item[2][0])
+                    for x in sorted_labels:
+                        if x[0] == item[2][0]: #should only ever have to deal with the first tuple element if more than 1, then it is nested and done in the recursive function
+                            input = x
+                            break  # Stop as soon as the first match is found
+                    # print("",label_done)
+                    process_loop(input,index)
 
-                    print("sorted",sorted_labels)
-                    print(item[2][-1])
-                    print(item)
-                    print(label_done)
+                    # print("sorted",sorted_labels)
+                    # print(item[2][-1])
+                    # print(item)
+                    # print(label_done)
+                    # print(label_done)
                     # for x in sorted_labels:
                     #     if x not in label_done:
-                            # process_loop(x,index) #TO DO: the 0 might cause problems if some loops arent nested
+                    #         process_loop(x,index) #TO DO: the 0 might cause problems if some loops arent nested
+
                         
 
                 elif item[-1] not in run_items: #ensure not running the ones that have already been ran
