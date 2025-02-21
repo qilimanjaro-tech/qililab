@@ -497,7 +497,7 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
             _ = compiler.compile(qprogram=offset_no_path1)
-        assert "Qblox requires an offset for the two paths, the offset of the second path has been set to 0." in caplog.text
+        assert "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path." in caplog.text
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
         compiler = QbloxCompiler()
