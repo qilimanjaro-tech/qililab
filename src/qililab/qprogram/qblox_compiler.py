@@ -420,7 +420,7 @@ class QbloxCompiler:
             else convert(element.offset_path0)
         )
         if element.offset_path1 is None:
-            offset_1 = element.offset_path0
+            offset_1 = offset_0
             logger.warning("Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path.")
         else:
             offset_1 = (
