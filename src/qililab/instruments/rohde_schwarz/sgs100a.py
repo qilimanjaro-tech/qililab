@@ -201,7 +201,6 @@ class SGS100A(Instrument):
     def initial_setup(self):
         """performs an initial setup"""
         self.device_initialized = True
-
         device_mixer = self.get_rs_options().split(",")[-1]
         if device_mixer == "SGS-B112" or device_mixer == "SGS-B112V":
             self.freq_top_limit = 12.75e9
