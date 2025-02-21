@@ -50,6 +50,9 @@
 - The user is now able to only put one value when setting the offset of the bus when using Qblox in the qprogram. Qblox requires two values hence if only 1 value is given, the second will be set to 0, a warning will be given to the user.
   [#896](https://github.com/qilimanjaro-tech/qililab/pull/896)
 
+- Now the Rohde & Schwarz will return an error after a limit of frequency or power is reached based on the machine's version.
+  [#897](https://github.com/qilimanjaro-tech/qililab/pull/897)
+
 ### Breaking changes
 
 ### Deprecations / Removals
