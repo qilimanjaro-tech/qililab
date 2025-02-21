@@ -343,6 +343,10 @@ class TestSGS100A:
         assert sdg100a.freq_top_limit == 6e9
         assert sdg100a.freq_bot_limit == 80e6
 
+    def test_get_rs_options(self, sdg100a: SGS100A):
+        sdg100a.get_rs_options()
+        sdg100a.device.ask.assert_called_once()
+
     def test_turn_on_method_rf_off(self, sdg100a_rf_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
         sdg100a_rf_off.turn_on()
