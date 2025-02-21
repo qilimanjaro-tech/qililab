@@ -47,6 +47,9 @@
 - Now the QM qprogram compiler is able to generate the correct stream_processing while the average loop is inside any other kind of loop, before it was only able to be located on the outermost loop due to the way qprogram generated the stream_processing.
   [#880](https://github.com/qilimanjaro-tech/qililab/pull/880)
 
+- The user is now able to only put one value when setting the offset of the bus when using Qblox in the qprogram. Qblox requires two values hence if only 1 value is given, the second will be set to 0, a warning will be given to the user.
+  [#896](https://github.com/qilimanjaro-tech/qililab/pull/896)
+
 ### Breaking changes
 
 ### Deprecations / Removals
