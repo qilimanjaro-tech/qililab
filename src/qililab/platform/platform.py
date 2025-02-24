@@ -488,7 +488,7 @@ class Platform:
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
 
     def data_draw_oscilloscope(self):
-        param = [Parameter.IF, Parameter.GAIN_I, Parameter.GAIN_Q, Parameter.OFFSET_I, Parameter.OFFSET_Q]
+        param = [Parameter.IF, Parameter.GAIN_I, Parameter.GAIN_Q, Parameter.OFFSET_I, Parameter.OFFSET_Q, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3, Parameter.HARDWARE_MODULATION]#Need to add the other type of offset as well
         data_osci = {}
         data_oscillocope = {}
         for x in self.alias:

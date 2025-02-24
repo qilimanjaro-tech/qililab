@@ -27,8 +27,8 @@ from .qblox_module import QbloxModule
 class QbloxDraw:
 
     def get_value_from_metadata(self,metadata, move_reg, key, division_factor=None):
-        if key in metadata:
-            if metadata[key] in move_reg.keys():
+        if key in metadata: #metadata is the runcard
+            if metadata[key] in move_reg.keys():#check if it's in the register
                 if division_factor:
                     return float(float(move_reg[metadata[key]]) / float(division_factor))
                 else:
@@ -37,23 +37,65 @@ class QbloxDraw:
                 return float(metadata[key])
         return None
 
-    def _handle_play_draw(self, stored_data, act_play, diction, move_reg, metadata):
+    def _handle_play_draw(self, stored_data, act_play, diction, move_reg, parameters):
         if act_play[0] == "play":
-            output_path1, output_path2, wait_play = map(int, act_play[1].split(','))
-            freq_value = self.get_value_from_metadata(metadata, move_reg, 'intermediate_frequency', division_factor=4)
+            output_path1, output_path2, _ = map(int, act_play[1].split(','))
+            freq_value = self.get_value_from_metadata(parameters, move_reg, 'intermediate_frequency', division_factor=4)
+            freq_value = None
 
+            #dynamic offset
+            off_i = parameters.get("offset_i", 0)
+            off_q = parameters.get("offset_q", 0)
+
+            #static offset
+            offset_out0 = parameters.get("offset_out0", 0)
+            offset_out1 = parameters.get("offset_out1", 0)
+            
+            #gains
+            gain_i = parameters.get("gain_i", 0)
+            gain_q = parameters.get("gain_q", 0)
+            
             # retrieve the wavform data
             for waveform_key, waveform_value in diction:
-                if freq_value is not None:
-                    x = np.linspace(0,1,len(waveform_value['data']))
-                    carrier = np.cos(2 * np.pi * freq_value * x)
-                else:
-                    carrier = 1
                 if waveform_value['index'] == output_path1:
-                    stored_data[0] = np.append(stored_data[0], np.array(waveform_value['data'])*carrier)
+                    if freq_value is not None:
+                        x = np.linspace(0,1,len(waveform_value['data']))
+                        carrier = np.cos(2 * np.pi * freq_value * x)
+                    else:
+                        carrier = 1
+                    print(parameters["hardware_modulation"])
+                    if parameters["hardware_modulation"] and off_i==0 and offset_out0 ==0:
+                        scaling_factor = 1.8
+                        max_voltage = 1.8
+                    elif not parameters["hardware_modulation"]:
+                        scaling_factor = 2.5
+                        max_voltage = 2.5
+                    else: #hardware mod on but there are some offsets applied
+                        scaling_factor = 1.8
+                        max_voltage = 2.5
+                    print("factor",scaling_factor,max_voltage)
+                    scaled_array = np.array(waveform_value['data']) * scaling_factor
+                    print(scaled_array)
+                    off_i_scaled = off_i * scaling_factor
+                    stored_data[0] = np.clip((np.append(stored_data[0], ((scaled_array)*gain_i + off_i_scaled + offset_out0)*carrier)),None,max_voltage)
                 elif waveform_value['index'] == output_path2:
-                    x = np.linspace(0,1,len(waveform_value['data']))
-                    stored_data[1] = np.append(stored_data[1], np.array(waveform_value['data'])*carrier)
+                    if freq_value is not None:
+                        x = np.linspace(0,1,len(waveform_value['data']))
+                        carrier = np.sin(2 * np.pi * freq_value * x)
+                    else:
+                        carrier = 1
+                    if parameters["hardware_modulation"] and off_i==0 and offset_out0 ==0:
+                        scaling_factor = 1.8
+                        max_voltage = 1.8
+                    elif not parameters["hardware_modulation"]:
+                        scaling_factor = 2.5
+                        max_voltage = 2.5
+                    else: #hardware mod on but there are some offsets applied
+                        scaling_factor = 1.8
+                        max_voltage = 2.5
+                    scaled_array = np.array(waveform_value['data']) * scaling_factor
+                    off_q_scaled = off_q * scaling_factor
+                    stored_data[1] = np.clip(np.append(stored_data[1], ((scaled_array)*gain_q + off_q_scaled + offset_out1)*carrier),None,max_voltage)
         return stored_data
     
     def _handle_acquire_draw(self, stored_data, act_play): #is it always 4ns, in one case it is 12ns ??????????????????????????
@@ -62,32 +104,63 @@ class QbloxDraw:
             stored_data = [np.append(stored_data[0], y_wait), np.append(stored_data[1], y_wait)]
         return stored_data
 
-    def _handle_wait_draw(self, stored_data, act_wait):
+    def _handle_wait_draw(self, stored_data, act_wait, parameters):
         if act_wait[0] == "wait":
+             #dynamic offset
+            off_i = parameters.get("offset_i", 0)
+            off_q = parameters.get("offset_q", 0)
+
+            #static offset
+            offset_out0 = parameters.get("offset_out0", 0)
+            offset_out1 = parameters.get("offset_out1", 0)
+            if parameters["hardware_modulation"] and off_i==0 and offset_out0 ==0:
+                scaling_factori = 1.8
+                max_voltagei = 1.8
+            elif not parameters["hardware_modulation"]:
+                scaling_factori = 2.5
+                max_voltagei = 2.5
+            else: #hardware mod on but there are some offsets applied
+                scaling_factori = 1.8
+                max_voltagei = 2.5
+            
+            if parameters["hardware_modulation"] and off_q==0 and offset_out1 ==0:
+                scaling_factorq = 1.8
+                max_voltagei = 1.8
+            elif not parameters["hardware_modulation"]:
+                scaling_factorq = 2.5
+                max_voltageq = 2.5
+            else: #hardware mod on but there are some offsets applied
+                scaling_factorq = 1.8
+                max_voltageq = 2.5
+
+            off_i_scaled = off_i * scaling_factori
+            off_q_scaled = off_q * scaling_factorq
+            #dynamic offset
+
+
+            #static offset
+            offset_out0 = parameters.get("offset_out0", 0)
+            offset_out1 = parameters.get("offset_out1", 0)
             y_wait = np.linspace(0, 0, int(act_wait[1]))
-            stored_data[0] = np.append(stored_data[0], y_wait)
-            stored_data[1] = np.append(stored_data[1], y_wait)
+            stored_data[0] = np.clip(np.append(stored_data[0], y_wait + off_i_scaled + offset_out0),None,max_voltagei)
+            stored_data[1] = np.clip(np.append(stored_data[1], y_wait + off_q_scaled + offset_out1),None,max_voltageq)
         return stored_data
 
-    def _handle_offset_gain(self, move_reg, metadata, diction):#should only be ran once at the beginning of the bus or if the line has offset
-    #     if act_wait[0] == "wait":
-        gain_i = self.get_value_from_metadata(metadata, move_reg, 'gain_i', division_factor=32_767)
-        gain_q = self.get_value_from_metadata(metadata, move_reg, 'gain_q', division_factor=32_767)
-        gains = [gain_i,gain_q]
-        for idx, (_, waveform_value) in enumerate(diction):
-            if gains[idx] is not None:
-                waveform_value['data'] = [x * gains[idx] for x in waveform_value['data']]
-        return diction
+    def _handle_gain_draw(self, item, parameters):
+        if item[0] == "set_awg_gain":
+           gain_i, gain_q =  map(lambda x: float(x) / 32767, item[1].split(','))
+           gain = [gain_i,gain_q]
+           gains = [x if x is not None else 0 for x in gain]
+           parameters["gain_i"],parameters["gain_q"] = gains
+        return parameters
     
-    def _handle_offset_draw(self, move_reg, metadata, diction): #should only be ran once at the beginning of the bus or if the line has offset
-        # if act_wait[0] == "wait":
-        offset_i = self.get_value_from_metadata(metadata, move_reg, 'offset_i', division_factor=32_767)
-        offset_q = self.get_value_from_metadata(metadata, move_reg, 'offset_q', division_factor=32_767)
-        offsets = [offset_i,offset_q]
-        for idx, (_, waveform_value) in enumerate(diction):
-            if offsets[idx] is not None: 
-                waveform_value['data'] = [x + offsets[idx] for x in waveform_value['data']]
-        return diction
+    def _handle_offset_draw(self, item, parameters):
+        if item[0] == "set_awg_offs":
+            offset_i, offset_q =  map(lambda x: float(x) / 32767, item[1].split(','))
+            off = [offset_i,offset_q]
+            offsets = [x if x is not None else 0 for x in off]
+            parameters["offset_i"],parameters["offset_q"] = offsets
+        return parameters
 
     def _handle_add_draw(self, move_reg, act_add):
         if act_add[0] == "add":
@@ -109,8 +182,6 @@ class QbloxDraw:
         return None
 
     def _parse_program(self, sequences):
-        # sequences = QbloxCompilationOutput.sequences
-        # make the Q1ASM data easier to read
         Q1ASM_ordered = {}
         for bus in sequences:  # Iterate through the dictionary
             content_dict = sequences[bus].todict()
@@ -163,9 +234,9 @@ class QbloxDraw:
         # [3]: index
         for bus,_ in Q1ASM_ordered.items():
             if runcard_data is not None:
-                runcard = {key: runcard_data[bus][key] for key in runcard_data[bus]}
+                parameters= {key: runcard_data[bus][key] for key in runcard_data[bus]}
             else:
-                runcard = {}
+                parameters = {}
             wf1 = []
             wf2 = []
             run_items = []
@@ -190,8 +261,7 @@ class QbloxDraw:
                         appearance[l][2] = value.split(",")[0]
                 sorted_labels = sorted(appearance.items(), key=lambda x: x[1][0])
             wf = Q1ASM_ordered[bus]['waveforms'].items()
-            # self._handle_offset_gain(move_reg, runcard, wf)
-            # self._handle_offset_draw(move_reg, runcard, wf)
+
             
             for item in Q1ASM_ordered[bus]["program"]["main"]:
                 def process_loop(recursive_input,i):
@@ -221,10 +291,10 @@ class QbloxDraw:
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
                             run_items.append(item[-1])
-                            self._handle_freq_draw(runcard, item)
-                            data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg, runcard)
+                            self._handle_offset_draw(item, parameters)
+                            data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg, parameters)
                             data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
-                            data_draw[bus] = self._handle_wait_draw(data_draw[bus], item)
+                            data_draw[bus] = self._handle_wait_draw(data_draw[bus], item, parameters)
                             self._handle_add_draw(move_reg, item)
                             current_idx +=1
                     return current_idx
@@ -237,25 +307,13 @@ class QbloxDraw:
                         if x[0] == item[2][0]: #should only ever have to deal with the first tuple element if more than 1, then it is nested and done in the recursive function
                             input = x
                             break  # Stop as soon as the first match is found
-                    # print("",label_done)
                     process_loop(input,index)
-
-                    # print("sorted",sorted_labels)
-                    # print(item[2][-1])
-                    # print(item)
-                    # print(label_done)
-                    # print(label_done)
-                    # for x in sorted_labels:
-                    #     if x not in label_done:
-                    #         process_loop(x,index) #TO DO: the 0 might cause problems if some loops arent nested
-
-                        
-
                 elif item[-1] not in run_items: #ensure not running the ones that have already been ran
-                    self._handle_freq_draw(runcard,item)
-                    data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,runcard)
+                    # self._handle_freq_draw(runcard,item)
+                    self._handle_offset_draw(item, parameters)
+                    data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,parameters)
                     data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
-                    data_draw[bus] = self._handle_wait_draw(data_draw[bus], item)
+                    data_draw[bus] = self._handle_wait_draw(data_draw[bus], item, parameters)
                     self._handle_add_draw(move_reg, item)
                 else:
                     pass
