@@ -59,6 +59,7 @@ from qililab.qprogram import (
     QuantumMachinesCompilationOutput,
     QuantumMachinesCompiler,
 )
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -471,6 +472,7 @@ class Platform:
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
+        crosstalk: CrosstalkMatrix | None = None,
     ):
         """Set a parameter for a platform element.
 
@@ -497,6 +499,11 @@ class Platform:
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+
+    def _process_crosstalk(self, crosstalk: CrosstalkMatrix | None):
+        """Calculates the Current/Voltage of the set parameter based on the value of the flux and the crosstalk matrix"""
+        value = crosstalk
+        return value
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiates all instrument classes from their respective dictionaries.
