@@ -51,9 +51,10 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
         self.adc2 = adc2
         self._classification_threshold = None
 
-    def set_classification_threshold(self, classification_threshold):
+    def set_classification_threshold(self, classification_threshold, classification_threshold_rotation):
         """Sets the `_classification_threshold` of the class."""
         self._classification_threshold = classification_threshold
+        self._classification_threshold_rotation = classification_threshold_rotation
 
     @property
     def array(self) -> np.ndarray:
@@ -75,8 +76,16 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
         if self._classification_threshold is None:
             warn("Classification threshold is not specified, returning a `np.zeros` array.", stacklevel=2)
 
+        radians_rotation = self._classification_threshold_rotation * np.pi / 180.0
+        rotation_matrix = np.array(
+            [
+                [np.cos(radians_rotation), -np.sin(radians_rotation)],
+                [np.sin(radians_rotation), np.cos(radians_rotation)],
+            ]
+        )
+        rotated_iq = np.matmul(rotation_matrix, np.array([self.I, self.Q]))
         return (
-            np.where(self._classification_threshold <= self.I, 1.0, 0.0)
+            np.where(self._classification_threshold <= rotated_iq[0], 1.0, 0.0)
             if self._classification_threshold is not None
             else np.zeros(self.I.shape)
         )

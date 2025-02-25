@@ -928,7 +928,7 @@ class Platform:
                     measurement.bus,
                     *[acquisitions[handle] for handle in measurement.result_handles],
                 )
-                measurement_result.set_classification_threshold(measurement.threshold)
+                measurement_result.set_classification_threshold(measurement.threshold, measurement.threshold_rotation)
                 results.append_result(bus=measurement.bus, result=measurement_result)
 
             return results

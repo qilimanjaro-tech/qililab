@@ -83,10 +83,11 @@ class _MeasurementCompilationInfo:
 class MeasurementInfo:
     """Class representing information about the measurements taking place."""
 
-    def __init__(self, bus: str, result_handles: list[str], threshold: float = 0.0):
+    def __init__(self, bus: str, result_handles: list[str], threshold: float = 0.0, threshold_rotation: float = 0.0):
         self.bus: str = bus
         self.result_handles: list[str] = result_handles
         self.threshold: float = threshold
+        self.threshold_rotation: float = threshold_rotation
 
 
 class QuantumMachinesCompilationOutput:
@@ -266,6 +267,7 @@ class QuantumMachinesCompiler:
                 bus=measurement.bus,
                 result_handles=_process_measurement(measurement=measurement, index=i),
                 threshold=self._buses[measurement.bus].threshold or 0.0,
+                threshold_rotation=self._buses[measurement.bus].threshold_rotation or 0.0,
             )
             for i, measurement in enumerate(self._measurements)
         ]
