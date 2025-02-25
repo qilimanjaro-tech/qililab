@@ -63,7 +63,6 @@ class QbloxDraw:
                         carrier = np.cos(2 * np.pi * freq_value * x)
                     else:
                         carrier = 1
-                    print(parameters["hardware_modulation"])
                     if parameters["hardware_modulation"] and off_i==0 and offset_out0 ==0:
                         scaling_factor = 1.8
                         max_voltage = 1.8
@@ -73,18 +72,18 @@ class QbloxDraw:
                     else: #hardware mod on but there are some offsets applied
                         scaling_factor = 1.8
                         max_voltage = 2.5
-                    print("factor",scaling_factor,max_voltage)
                     scaled_array = np.array(waveform_value['data']) * scaling_factor
-                    print(scaled_array)
                     off_i_scaled = off_i * scaling_factor
-                    stored_data[0] = np.clip((np.append(stored_data[0], ((scaled_array)*gain_i + off_i_scaled + offset_out0)*carrier)),None,max_voltage)
+                    # stored_data[0] = np.clip((np.append(stored_data[0], ((scaled_array)*gain_i + off_i_scaled + offset_out0)*carrier)),None,max_voltage)
+                    stored_data[0] = np.append(stored_data[0],np.clip((((scaled_array)*gain_i + off_i_scaled + offset_out0)*carrier),None,max_voltage))
+                    print("max",max_voltage)
                 elif waveform_value['index'] == output_path2:
                     if freq_value is not None:
                         x = np.linspace(0,1,len(waveform_value['data']))
                         carrier = np.sin(2 * np.pi * freq_value * x)
                     else:
                         carrier = 1
-                    if parameters["hardware_modulation"] and off_i==0 and offset_out0 ==0:
+                    if parameters["hardware_modulation"] and off_q==0 and offset_out1 ==0:
                         scaling_factor = 1.8
                         max_voltage = 1.8
                     elif not parameters["hardware_modulation"]:
@@ -95,7 +94,9 @@ class QbloxDraw:
                         max_voltage = 2.5
                     scaled_array = np.array(waveform_value['data']) * scaling_factor
                     off_q_scaled = off_q * scaling_factor
-                    stored_data[1] = np.clip(np.append(stored_data[1], ((scaled_array)*gain_q + off_q_scaled + offset_out1)*carrier),None,max_voltage)
+                    # stored_data[1] = np.clip(np.append(stored_data[1], ((scaled_array)*gain_q + off_q_scaled + offset_out1)*carrier),None,max_voltage)
+                    stored_data[1] = np.append(stored_data[1],np.clip((((scaled_array)*gain_q + off_q_scaled + offset_out1)*carrier),None,max_voltage))
+                    print("max",max_voltage)
         return stored_data
     
     def _handle_acquire_draw(self, stored_data, act_play): #is it always 4ns, in one case it is 12ns ??????????????????????????
@@ -113,6 +114,7 @@ class QbloxDraw:
             #static offset
             offset_out0 = parameters.get("offset_out0", 0)
             offset_out1 = parameters.get("offset_out1", 0)
+            
             if parameters["hardware_modulation"] and off_i==0 and offset_out0 ==0:
                 scaling_factori = 1.8
                 max_voltagei = 1.8
@@ -125,7 +127,7 @@ class QbloxDraw:
             
             if parameters["hardware_modulation"] and off_q==0 and offset_out1 ==0:
                 scaling_factorq = 1.8
-                max_voltagei = 1.8
+                max_voltageq = 1.8
             elif not parameters["hardware_modulation"]:
                 scaling_factorq = 2.5
                 max_voltageq = 2.5
@@ -142,8 +144,10 @@ class QbloxDraw:
             offset_out0 = parameters.get("offset_out0", 0)
             offset_out1 = parameters.get("offset_out1", 0)
             y_wait = np.linspace(0, 0, int(act_wait[1]))
-            stored_data[0] = np.clip(np.append(stored_data[0], y_wait + off_i_scaled + offset_out0),None,max_voltagei)
-            stored_data[1] = np.clip(np.append(stored_data[1], y_wait + off_q_scaled + offset_out1),None,max_voltageq)
+            # stored_data[0] = np.clip(np.append(stored_data[0], y_wait + off_i_scaled + offset_out0),None,max_voltagei)
+            # stored_data[1] = np.clip(np.append(stored_data[1], y_wait + off_q_scaled + offset_out1),None,max_voltageq)
+            stored_data[0] = np.append(stored_data[0], np.clip((y_wait + off_i_scaled + offset_out0),None,max_voltagei))
+            stored_data[1] = np.append(stored_data[1], np.clip((y_wait + off_q_scaled + offset_out1),None,max_voltageq))
         return stored_data
 
     def _handle_gain_draw(self, item, parameters):
@@ -222,7 +226,6 @@ class QbloxDraw:
                             sub_label = tuple(l for l in sub_label if l != la)
                 dict_bus["program"] = command_dict
             Q1ASM_ordered[bus] = dict_bus  # Store structured result
-        # print("q1asm",Q1ASM_ordered)
         return Q1ASM_ordered
 
     def draw_oscilloscope(self, result, runcard_data = None):
@@ -241,6 +244,11 @@ class QbloxDraw:
             wf2 = []
             run_items = []
             data_draw[bus] = [wf1, wf2]
+            # if parameters["hardware_modulation"]:
+            #     data_draw[bus] = [wf1, wf2]
+            # else:
+            #     data_draw[bus] = [wf1]
+
             label_done = []  # list to keep track of the label once they have been looped over
             # create a dict to get all the variables assigned to a registery through move
             move_reg = {}
@@ -322,11 +330,18 @@ class QbloxDraw:
         data_keys = list(data_draw.keys())
         # Create subplots
         fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
-        legend_IQ = ["I","Q"]
+
         # Add traces
         for idx, key in enumerate(data_keys):
+            if runcard_data[key]["hardware_modulation"]:
+                legend = ["I","Q"]
+            else:
+                legend = ["flux"]
+
             for i, arr in enumerate(data_draw[key]):
-                fig.add_trace(go.Scatter(y=arr, mode='lines', name=f'{key} {legend_IQ[i]}',legendgroup=idx), row=idx + 1, col=1)
+                if not runcard_data[key]["hardware_modulation"] and i>0:
+                    break #don't plot the Q if hadware modulation is disabled
+                fig.add_trace(go.Scatter(y=arr, mode='lines', name=f'{key} {legend[i]}',legendgroup=idx), row=idx + 1, col=1)
 
         # Add axis titles
         for i, key in enumerate(data_keys):
