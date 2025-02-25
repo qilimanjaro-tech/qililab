@@ -76,7 +76,7 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
         if self._classification_threshold is None:
             warn("Classification threshold is not specified, returning a `np.zeros` array.", stacklevel=2)
 
-        radians_rotation = self._classification_threshold_rotation * np.pi / 180.0
+        radians_rotation = -self._classification_threshold_rotation * np.pi / 180.0
         rotation_matrix = np.array(
             [
                 [np.cos(radians_rotation), -np.sin(radians_rotation)],
