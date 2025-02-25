@@ -443,23 +443,25 @@ class QbloxCompiler:
         if isinstance(element.duration, Variable):
             duration = self._buses[element.bus].variable_to_register[element.duration]
             self._buses[element.bus].dynamic_durations.append(element.duration)
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.Wait(wait_time=duration))
-
-            if duration > 8:
+            # self._buses[element.bus].qpy_block_stack[-1].append_component(
+            # component=QPyInstructions.Wait(wait_time=duration))
+            print(duration)
+            print(duration.number)
+            print(int(duration.number))
+            if duration.number > 8:
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.UpdParam(4)
             )
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Wait(wait_time=(duration-4))
                 )
-            elif duration == 4:
+            elif duration.number == 4:
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.UpdParam(4)
             )
             else:
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.UpdParam(12-duration)
+                component=QPyInstructions.UpdParam(12-duration.number)
             )
             
         else:
