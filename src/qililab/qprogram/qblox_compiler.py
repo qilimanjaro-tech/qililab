@@ -420,8 +420,10 @@ class QbloxCompiler:
             else convert(element.offset_path0)
         )
         if element.offset_path1 is None:
-            raise ValueError("No offset has been given for path 1 inside set_offset.")
-        offset_1 = (
+            offset_1 = offset_0
+            logger.warning("Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path.")
+        else:
+            offset_1 = (
             self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
             if isinstance(element.offset_path1, Variable)
             else convert(element.offset_path1)
