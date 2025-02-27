@@ -421,13 +421,15 @@ class QbloxCompiler:
         )
         if element.offset_path1 is None:
             offset_1 = offset_0
-            logger.warning("Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path.")
+            logger.warning(
+                "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
+            )
         else:
             offset_1 = (
-            self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
-            if isinstance(element.offset_path1, Variable)
-            else convert(element.offset_path1)
-        )
+                self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
+                if isinstance(element.offset_path1, Variable)
+                else convert(element.offset_path1)
+            )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
         )
@@ -443,27 +445,10 @@ class QbloxCompiler:
         if isinstance(element.duration, Variable):
             duration = self._buses[element.bus].variable_to_register[element.duration]
             self._buses[element.bus].dynamic_durations.append(element.duration)
-            # self._buses[element.bus].qpy_block_stack[-1].append_component(
-            # component=QPyInstructions.Wait(wait_time=duration))
-            print(duration)
-            print(duration.number)
-            print(int(duration.number))
-            if duration.number > 8:
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.UpdParam(4)
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Wait(wait_time=duration)
             )
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Wait(wait_time=(duration-4))
-                )
-            elif duration.number == 4:
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.UpdParam(4)
-            )
-            else:
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.UpdParam(12-duration.number)
-            )
-            
+
         else:
             convert = QbloxCompiler._convert_value(element)
             duration = convert(element.duration)
@@ -482,9 +467,8 @@ class QbloxCompiler:
             duration (int): duration to wait in ns
         """
         if duration > INST_MAX_WAIT:
-            self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.UpdParam(4))
-            duration = duration - 4 #Remove the 4 ns that have been added with the UpdParam
+            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
+            duration = duration - 4  # Remove the 4 ns that have been added with the UpdParam
             for _ in range(duration // INST_MAX_WAIT):
                 self._buses[bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
@@ -495,23 +479,18 @@ class QbloxCompiler:
             )
         else:
             if duration > 8:
+                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
                 self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.UpdParam(4)
-            )
-                self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Wait(wait_time=(duration-4))
+                    component=QPyInstructions.Wait(wait_time=(duration - 4))
                 )
-            elif duration == 4:
-                self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.UpdParam(4)
-            )
-            else:
-                self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.UpdParam(12-duration)
-            ) 
+            elif duration == 4:  # replace the wait with an update parameter of 4 ns
+                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
 
+            elif duration < 4:
+                pass
 
-                
+            else:  # 4<duration<=8 increase the min wait time of the update parameter
+                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
 
     def _handle_sync(self, element: Sync, delay: bool = False):
         # Get the buses involved in the sync operation.
