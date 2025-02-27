@@ -478,7 +478,7 @@ class QbloxCompiler:
                 component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
             )
         else:
-            if duration > 8:
+            if duration >= 8:
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
                 self._buses[bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Wait(wait_time=(duration - 4))
@@ -486,10 +486,7 @@ class QbloxCompiler:
             elif duration == 4:  # replace the wait with an update parameter of 4 ns
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
 
-            elif duration < 4:
-                pass  # duration should not be below 4ns
-
-            else:  # 4<duration<=8 increase the min wait time of the update parameter
+            elif 4 <= duration < 8:  # increase the min wait time of the update parameter and remove the wait
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
 
     def _handle_sync(self, element: Sync, delay: bool = False):
