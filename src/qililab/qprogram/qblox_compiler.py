@@ -421,15 +421,13 @@ class QbloxCompiler:
         )
         if element.offset_path1 is None:
             offset_1 = offset_0
-            logger.warning(
-                "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
-            )
+            logger.warning("Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path.")
         else:
             offset_1 = (
-                self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
-                if isinstance(element.offset_path1, Variable)
-                else convert(element.offset_path1)
-            )
+            self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
+            if isinstance(element.offset_path1, Variable)
+            else convert(element.offset_path1)
+        )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
         )
@@ -448,7 +446,6 @@ class QbloxCompiler:
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.Wait(wait_time=duration)
             )
-
         else:
             convert = QbloxCompiler._convert_value(element)
             duration = convert(element.duration)
