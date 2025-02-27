@@ -377,15 +377,20 @@ def fixture_play_operation_with_variable_in_waveform() -> QProgram:
     qp.play(bus="drive", waveform=Square(amplitude=amplitude, duration=100))
     return qp
 
-@pytest.fixture(name="wait_below_8ns")
-def wait_below_8ns() -> QProgram:
+@pytest.fixture(name="update_latched_param")
+def update_latched_param() -> QProgram:
     qp = QProgram()
+    qp.set_offset("drive",1)
+    qp.wait(bus="drive", duration=0)
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=100))
+    qp.set_phase("drive",1)
     qp.wait(bus="drive", duration=4)
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=100))
-    qp.wait(bus="drive", duration=5)
+    qp.set_gain("drive",1)
+    qp.wait(bus="drive", duration=100)
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=100))
-    qp.wait(bus="drive", duration=3)
+    qp.set_frequency("drive",1e6)
+    qp.wait(bus="drive", duration=10000)
     return qp
 
 class TestQBloxCompiler:
@@ -488,10 +493,8 @@ class TestQBloxCompiler:
                             upd_param        4              
 
             main:
-                            upd_param        4
-                            wait             36
-                            upd_param        4             
-                            wait             96            
+                            wait             40         
+                            wait             100            
                             move             10, R0         
             square_0:
                             play             0, 1, 100      
@@ -631,11 +634,9 @@ class TestQBloxCompiler:
                             move             1000, R0
             avg_0:
                             play             0, 1, 40
-                            upd_param        4
                             wait             65532
-                            wait             34464
-                            upd_param        4
-                            wait             1996
+                            wait             34468
+                            wait             2000
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -651,9 +652,8 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0       
             avg_0:
-                            upd_param        4
                             wait             65532     
-                            wait             34504          
+                            wait             34508          
                             move             10, R1         
             square_0:
                             play             0, 1, 100      
@@ -717,8 +717,7 @@ class TestQBloxCompiler:
                             move             1000, R0
             avg_0:
                             play             0, 1, 40
-                            upd_param        4
-                            wait             2096
+                            wait             2100
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -741,10 +740,8 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            upd_param        4
-                            wait             36
-                            upd_param        4
-                            wait             96
+                            wait             40
+                            wait             100
                             move             10, R1
             square_0:
                             play             0, 1, 100      
@@ -792,8 +789,7 @@ class TestQBloxCompiler:
                             move             0, R2
             loop_0:
                             play             0, 1, 40
-                            upd_param        4
-                            wait             2956
+                            wait             2960
                             add              R2, 1, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
@@ -867,8 +863,7 @@ class TestQBloxCompiler:
                             move             0, R2
             loop_0:
                             play             0, 1, 40
-                            upd_param        4
-                            wait             2956
+                            wait             2960
                             add              R2, 3276, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
@@ -981,8 +976,7 @@ class TestQBloxCompiler:
                             move             0, R2
             loop_0:
                             play             0, 1, 40
-                            upd_param        4
-                            wait             1956
+                            wait             1960
                             add              R2, 3276, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
@@ -1129,8 +1123,7 @@ class TestQBloxCompiler:
                             move             0, R4
             loop_1:
                             play             0, 1, 40
-                            upd_param        4
-                            wait             2996
+                            wait             3000
                             add              R4, 40, R4
                             loop             R3, @loop_1
                             add              R2, 3276, R2
@@ -1159,8 +1152,7 @@ class TestQBloxCompiler:
                             move             51, R6         
                             move             0, R7          
             loop_1:
-                            upd_param        4
-                            wait             36             
+                            wait             40             
                             set_freq         R7             
                             move             10, R8         
             square_0:
@@ -1217,8 +1209,7 @@ class TestQBloxCompiler:
             loop_0:
                             set_awg_gain     R3, R3
                             play             0, 1, 40
-                            upd_param        4
-                            wait             2996
+                            wait             3000
                             add              R2, 40, R2
                             add              R3, 3276, R3
                             loop             R1, @loop_0
@@ -1244,9 +1235,8 @@ class TestQBloxCompiler:
                             move             400, R5        
                             move             0, R6          
             loop_0:
-                            set_freq         R5
-                            upd_param        4             
-                            wait             36             
+                            set_freq         R5           
+                            wait             40             
                             move             10, R7         
             square_0:
                             play             0, 1, 100      
@@ -1402,11 +1392,9 @@ class TestQBloxCompiler:
                             move             3, R1
                             move             0, R2
             loop_0:
-                            upd_param        4
-                            wait             16
+                            wait             20
                             play             0, 1, 40
-                            upd_param        4
-                            wait             2956
+                            wait             2960
                             add              R2, 1, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
@@ -1434,9 +1422,8 @@ class TestQBloxCompiler:
                             play             0, 1, 100      
                             loop             R6, @square_0  
                             acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3
-                            upd_param        4      
-                            wait             16             
+                            add              R3, 1, R3     
+                            wait             20             
                             add              R5, 1, R5      
                             loop             R4, @loop_0    
                             loop             R0, @avg_0     
@@ -1468,8 +1455,7 @@ class TestQBloxCompiler:
                             move             0, R2
             loop_0:
                             play             0, 1, 40
-                            upd_param        4
-                            wait             2976
+                            wait             2980
                             add              R2, 1, R2
                             loop             R1, @loop_0
                             loop             R0, @avg_0
@@ -1492,8 +1478,7 @@ class TestQBloxCompiler:
                             move             3, R4          
                             move             0, R5          
             loop_0:
-                            upd_param        4
-                            wait             16             
+                            wait             20             
                             move             10, R6         
             square_0:
                             play             0, 1, 100      
@@ -1522,9 +1507,9 @@ class TestQBloxCompiler:
         with pytest.raises(ValueError, match="Step value cannot be zero"):
             QbloxCompiler._calculate_iterations(100, 200, 0)
 
-    def test_update_latched_param_before_wait(self, wait_below_8ns: QProgram):
+    def test_update_latched_param_before_wait(self, update_latched_param: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=wait_below_8ns)
+        sequences, _ = compiler.compile(qprogram=update_latched_param)
 
         assert len(sequences) == 1
         assert "drive" in sequences
@@ -1544,24 +1529,31 @@ class TestQBloxCompiler:
                             upd_param        4              
 
             main:
+                            set_awg_offs     32767, 32767   
+                            upd_param        4              
                             move             1, R0          
             square_0:
                             play             0, 1, 100      
                             loop             R0, @square_0  
+                            set_ph           159154943      
                             upd_param        4              
                             move             1, R1          
             square_1:
                             play             0, 1, 100      
                             loop             R1, @square_1  
-                            upd_param        5              
+                            set_awg_gain     32767, 32767   
+                            upd_param        4              
+                            wait             96             
                             move             1, R2          
             square_2:
                             play             0, 1, 100      
                             loop             R2, @square_2  
+                            set_freq         4000000        
                             upd_param        4              
+                            wait             9996           
                             set_mrk          0              
                             upd_param        4              
-                            stop     
+                            stop                                  
         """
         
         assert is_q1asm_equal(sequences["drive"], drive_str)
