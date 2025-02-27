@@ -21,7 +21,7 @@ from .about import about
 from .config import __version__, logger
 from .data_management import build_platform, load_results, save_platform, save_results
 from .execute_circuit import execute
-from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
+from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment, Tracker
 from .result import ExperimentResults, stream_results
 from .typings import Parameter
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
@@ -52,6 +52,7 @@ __all__ = [
     "QuantumMachinesCompiler",
     "Ramp",
     "Square",
+    "Tracker",
     "Wait",
     "Waveform",
     "__version__",
