@@ -41,7 +41,9 @@ class QbloxDraw:
         if act_play[0] == "play":
             output_path1, output_path2, _ = map(int, act_play[1].split(','))
             freq_value = self.get_value_from_metadata(parameters, move_reg, 'intermediate_frequency', division_factor=4)
-            freq_value = None
+            print("freq",freq_value)
+            print(move_reg)
+            # freq_value = None
 
             #dynamic offset
             off_i = parameters.get("offset_i", 0)
@@ -54,12 +56,15 @@ class QbloxDraw:
             #gains
             gain_i = parameters.get("gain_i", 0)
             gain_q = parameters.get("gain_q", 0)
-            
+            # sample_rate=1/(2e9)
+            # sample_rate=5e-5
+            sample_rate = float(0.0005)
             # retrieve the wavform data
             for waveform_key, waveform_value in diction:
                 if waveform_value['index'] == output_path1:
                     if freq_value is not None:
-                        x = np.linspace(0,1,len(waveform_value['data']))
+                        # x = np.linspace(0,1,len(waveform_value['data']),(1/sample_rate))
+                        x = np.arange(0,1,len(waveform_value['data']),sample_rate)
                         carrier = np.cos(2 * np.pi * freq_value * x)
                     else:
                         carrier = 1
@@ -79,7 +84,8 @@ class QbloxDraw:
                     print("max",max_voltage)
                 elif waveform_value['index'] == output_path2:
                     if freq_value is not None:
-                        x = np.linspace(0,1,len(waveform_value['data']))
+                        # x = np.linspace(0,1,len(waveform_value['data']))
+                        x = np.arange(0,1,len(waveform_value['data']),sample_rate)
                         carrier = np.sin(2 * np.pi * freq_value * x)
                     else:
                         carrier = 1
@@ -172,11 +178,10 @@ class QbloxDraw:
             move_reg[destination] = self._get_value(a, move_reg) + self._get_value(b, move_reg)
         return move_reg
 
-    def _handle_freq_draw(self, metadata, act_freq): #data is latched  only updated under specific conditions, handle case where more than 1 freq, and handle the case where no freq is given
-        if act_freq[0] == "set_freq":
-            metadata["intermediate_frequency"] = act_freq[1] #overwrite the if if given in the qprogram
-        return metadata
-
+    def _handle_freq_draw(self, item, parameters): #data is latched  only updated under specific conditions, handle case where more than 1 freq, and handle the case where no freq is given
+        if item[0] == "set_freq":
+            parameters["intermediate_frequency"] = item[1] #overwrite the if if given in the qprogram
+        return parameters
     def _get_value(self, x, move_reg):
         if x is not None:
             if x.isdigit():
@@ -299,6 +304,7 @@ class QbloxDraw:
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
                             run_items.append(item[-1])
+                            self._handle_freq_draw(item, parameters)
                             self._handle_offset_draw(item, parameters)
                             data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg, parameters)
                             data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
@@ -317,7 +323,7 @@ class QbloxDraw:
                             break  # Stop as soon as the first match is found
                     process_loop(input,index)
                 elif item[-1] not in run_items: #ensure not running the ones that have already been ran
-                    # self._handle_freq_draw(runcard,item)
+                    self._handle_freq_draw(item, parameters)
                     self._handle_offset_draw(item, parameters)
                     data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,parameters)
                     data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
