@@ -391,6 +391,9 @@ def update_latched_param() -> QProgram:
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=5))
     qp.set_frequency("drive",1e6)
     qp.wait(bus="drive", duration=100000)
+    qp.play(bus="drive", waveform=Square(amplitude=1, duration=5))
+    qp.set_gain("drive",1)
+    qp.wait(bus="drive", duration=4)
     return qp
 
 class TestQBloxCompiler:
@@ -1550,6 +1553,9 @@ class TestQBloxCompiler:
                             upd_param        4              
                             wait             65532          
                             wait             34464          
+                            play             2, 3, 5        
+                            set_awg_gain     32767, 32767   
+                            upd_param        4              
                             set_mrk          0              
                             upd_param        4              
                             stop                            
