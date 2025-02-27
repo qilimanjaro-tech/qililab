@@ -403,7 +403,7 @@ class QbloxCompiler:
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.SetPh(phase=phase))
         self._buses[element.bus].upd_param_instruction_pending = True
-        
+
     def _handle_reset_phase(self, element: ResetPhase):
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
