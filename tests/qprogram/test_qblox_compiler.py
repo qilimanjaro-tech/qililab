@@ -377,6 +377,21 @@ def fixture_play_operation_with_variable_in_waveform() -> QProgram:
     qp.play(bus="drive", waveform=Square(amplitude=amplitude, duration=100))
     return qp
 
+@pytest.fixture(name="update_latched_param")
+def update_latched_param() -> QProgram:
+    qp = QProgram()
+    qp.set_offset("drive",1)
+    qp.wait(bus="drive", duration=0)
+    qp.play(bus="drive", waveform=Square(amplitude=1, duration=100))
+    qp.set_phase("drive",1)
+    qp.wait(bus="drive", duration=4)
+    qp.play(bus="drive", waveform=Square(amplitude=1, duration=100))
+    qp.set_gain("drive",1)
+    qp.wait(bus="drive", duration=100)
+    qp.play(bus="drive", waveform=Square(amplitude=1, duration=100))
+    qp.set_frequency("drive",1e6)
+    qp.wait(bus="drive", duration=10000)
+    return qp
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -478,7 +493,7 @@ class TestQBloxCompiler:
                             upd_param        4              
 
             main:
-                            wait             40             
+                            wait             40         
                             wait             100            
                             move             10, R0         
             square_0:
@@ -637,7 +652,7 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0       
             avg_0:
-                            wait             65532          
+                            wait             65532     
                             wait             34508          
                             move             10, R1         
             square_0:
@@ -1220,7 +1235,7 @@ class TestQBloxCompiler:
                             move             400, R5        
                             move             0, R6          
             loop_0:
-                            set_freq         R5             
+                            set_freq         R5           
                             wait             40             
                             move             10, R7         
             square_0:
@@ -1407,7 +1422,7 @@ class TestQBloxCompiler:
                             play             0, 1, 100      
                             loop             R6, @square_0  
                             acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3      
+                            add              R3, 1, R3     
                             wait             20             
                             add              R5, 1, R5      
                             loop             R4, @loop_0    
@@ -1491,3 +1506,54 @@ class TestQBloxCompiler:
     def test_calculate_iterations_with_zero_step_throws_error(self):
         with pytest.raises(ValueError, match="Step value cannot be zero"):
             QbloxCompiler._calculate_iterations(100, 200, 0)
+
+    def test_update_latched_param_before_wait(self, update_latched_param: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=update_latched_param)
+
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        assert len(sequences["drive"]._waveforms._waveforms) == 2
+        assert len(sequences["drive"]._acquisitions._acquisitions) == 0
+        assert len(sequences["drive"]._weights._weights) == 0
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            set_awg_offs     32767, 32767   
+                            upd_param        4              
+                            move             1, R0          
+            square_0:
+                            play             0, 1, 100      
+                            loop             R0, @square_0  
+                            set_ph           159154943      
+                            upd_param        4              
+                            move             1, R1          
+            square_1:
+                            play             0, 1, 100      
+                            loop             R1, @square_1  
+                            set_awg_gain     32767, 32767   
+                            upd_param        4              
+                            wait             96             
+                            move             1, R2          
+            square_2:
+                            play             0, 1, 100      
+                            loop             R2, @square_2  
+                            set_freq         4000000        
+                            upd_param        4              
+                            wait             9996           
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                                  
+        """
+        
+        assert is_q1asm_equal(sequences["drive"], drive_str)
