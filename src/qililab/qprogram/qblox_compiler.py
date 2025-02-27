@@ -125,7 +125,7 @@ class BusCompilationInfo:
         # Delay. Defaults 0 delay and is updated if delays parameter is provided within the runcard.
         self.delay = 0
 
-        #Latched Paramter flag
+        # Latched Paramter flag
         self.upd_param_instruction_pending: bool
 
 
@@ -403,6 +403,7 @@ class QbloxCompiler:
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.SetPh(phase=phase))
         self._buses[element.bus].upd_param_instruction_pending = True
+        
     def _handle_reset_phase(self, element: ResetPhase):
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
