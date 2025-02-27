@@ -380,7 +380,7 @@ def fixture_play_operation_with_variable_in_waveform() -> QProgram:
 @pytest.fixture(name="update_latched_param")
 def update_latched_param() -> QProgram:
     qp = QProgram()
-    qp.set_offset("drive",1)
+    qp.set_offset("drive",1,0)
     qp.wait(bus="drive", duration=0)
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=100))
     qp.set_phase("drive",1)
@@ -394,6 +394,9 @@ def update_latched_param() -> QProgram:
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=5))
     qp.set_gain("drive",1)
     qp.wait(bus="drive", duration=4)
+    qp.play(bus="drive", waveform=Square(amplitude=1, duration=5))
+    qp.set_offset("drive",1,0)
+    qp.wait(bus="drive", duration=6)
     return qp
 
 class TestQBloxCompiler:
@@ -1533,7 +1536,7 @@ class TestQBloxCompiler:
                             upd_param        4              
 
             main:
-                            set_awg_offs     32767, 32767   
+                            set_awg_offs     32767, 0       
                             upd_param        4              
                             move             1, R0          
             square_0:
@@ -1556,6 +1559,9 @@ class TestQBloxCompiler:
                             play             2, 3, 5        
                             set_awg_gain     32767, 32767   
                             upd_param        4              
+                            play             2, 3, 5        
+                            set_awg_offs     32767, 0       
+                            upd_param        6              
                             set_mrk          0              
                             upd_param        4              
                             stop                            
