@@ -487,7 +487,7 @@ class QbloxCompiler:
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
 
             elif duration < 4:
-                pass
+                pass  # duration should not be below 4ns
 
             else:  # 4<duration<=8 increase the min wait time of the update parameter
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
