@@ -126,7 +126,7 @@ class BusCompilationInfo:
         self.delay = 0
 
         # Latched Paramter flag
-        self.upd_param_instruction_pending: bool
+        self.upd_param_instruction_pending: bool = False
 
 
 class QbloxCompiler:
@@ -241,7 +241,6 @@ class QbloxCompiler:
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
             self._buses[bus].static_duration += 4
-            self._buses[bus].upd_param_instruction_pending = False
 
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
