@@ -58,14 +58,20 @@ class QbloxDraw:
             gain_q = parameters.get("gain_q", 0)
             # sample_rate=1/(2e9)
             # sample_rate=5e-5
-            sample_rate = float(0.0005)
+            # sample_rate = float(0.0005)
             # retrieve the wavform data
             for waveform_key, waveform_value in diction:
                 if waveform_value['index'] == output_path1:
                     if freq_value is not None:
                         # x = np.linspace(0,1,len(waveform_value['data']),(1/sample_rate))
-                        x = np.arange(0,1,len(waveform_value['data']),sample_rate)
+                        x = np.arange(0,1,len(waveform_value['data']))
+
                         carrier = np.cos(2 * np.pi * freq_value * x)
+                        carrier = 1
+                        # signal = np.cos(2*np.pi*freq_value)*np.array(waveform_value['data'])
+                        # print(np.array(waveform_value['data']))
+                        # print("signal",signal)
+
                     else:
                         carrier = 1
                     if parameters["hardware_modulation"] and off_i==0 and offset_out0 ==0:
@@ -81,12 +87,14 @@ class QbloxDraw:
                     off_i_scaled = off_i * scaling_factor
                     # stored_data[0] = np.clip((np.append(stored_data[0], ((scaled_array)*gain_i + off_i_scaled + offset_out0)*carrier)),None,max_voltage)
                     stored_data[0] = np.append(stored_data[0],np.clip((((scaled_array)*gain_i + off_i_scaled + offset_out0)*carrier),None,max_voltage))
+                    # stored_data[0] = np.append(stored_data[0],signal)
                     print("max",max_voltage)
                 elif waveform_value['index'] == output_path2:
                     if freq_value is not None:
                         # x = np.linspace(0,1,len(waveform_value['data']))
-                        x = np.arange(0,1,len(waveform_value['data']),sample_rate)
-                        carrier = np.sin(2 * np.pi * freq_value * x)
+                        # x = np.arange(0,1,len(waveform_value['data']),sample_rate)
+                        # carrier = np.sin(2 * np.pi * freq_value * x)
+                        carrier = 1
                     else:
                         carrier = 1
                     if parameters["hardware_modulation"] and off_q==0 and offset_out1 ==0:
@@ -100,8 +108,8 @@ class QbloxDraw:
                         max_voltage = 2.5
                     scaled_array = np.array(waveform_value['data']) * scaling_factor
                     off_q_scaled = off_q * scaling_factor
-                    # stored_data[1] = np.clip(np.append(stored_data[1], ((scaled_array)*gain_q + off_q_scaled + offset_out1)*carrier),None,max_voltage)
-                    stored_data[1] = np.append(stored_data[1],np.clip((((scaled_array)*gain_q + off_q_scaled + offset_out1)*carrier),None,max_voltage))
+                    stored_data[1] = np.clip(np.append(stored_data[1], ((scaled_array)*gain_q + off_q_scaled + offset_out1)*carrier),None,max_voltage)
+                    # stored_data[1] = np.append(stored_data[1],np.clip((((scaled_array)*gain_q + off_q_scaled + offset_out1)*carrier),None,max_voltage))
                     print("max",max_voltage)
         return stored_data
     
@@ -331,30 +339,94 @@ class QbloxDraw:
                     self._handle_add_draw(move_reg, item)
                 else:
                     pass
+        
+        # arr2 = np.cos(2*np.pi*10000000)*np.array(data_draw["drive"][0])
+        # print("array",arr2)
+        # x = list(range(1, len(arr2) + 1))
 
+        # import plotly.graph_objects as go
+
+
+        # Create the plot
+        # fig = go.Figure(data=go.Scatter(x=x, y=arr2, mode='lines+markers'))
+
+
+
+        # # Show the plot
+        # fig.show()
         # Plot the waveforms with plotly
         data_keys = list(data_draw.keys())
-        # Create subplots
-        fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
-
+        # # Create subplots
+        # fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
         # Add traces
-        for idx, key in enumerate(data_keys):
-            if runcard_data[key]["hardware_modulation"]:
-                legend = ["I","Q"]
-            else:
-                legend = ["flux"]
+        # for idx, key in enumerate(data_keys):
+        #     if runcard_data[key]["hardware_modulation"]:
+        #         legend = ["I","Q"]
+        #     else:
+        #         legend = ["flux"]
+        x = np.arange(0,len(wf1))
+        fs = 1e9  # Sampling frequency (1 GHz)
+        print(len(wf1))
+        
+        wf1,wf2 = data_draw["drive"][0],data_draw["drive"][1]
+        t = np.arange(0, len(wf1)) / fs
+        a = (np.cos(2 * np.pi * 10000000*t))
+        b = np.sin(2 * np.pi * 10000000*x)
+        # path0 = np.array(wf1)*a-np.array(wf2)*np.sin(2 * np.pi * 10000000*x)
+        # path1 = np.array(wf1)*(np.sin(2 * np.pi * 10000000*x))+np.array(wf2)*a
+        path0 = np.array(wf1)*a
+        path1 = np.array(wf2)*a
+        import plotly.graph_objects as go
+        from plotly.subplots import make_subplots
 
-            for i, arr in enumerate(data_draw[key]):
-                if not runcard_data[key]["hardware_modulation"] and i>0:
-                    break #don't plot the Q if hadware modulation is disabled
-                fig.add_trace(go.Scatter(y=arr, mode='lines', name=f'{key} {legend[i]}',legendgroup=idx), row=idx + 1, col=1)
+        # Create a subplot figure with 2 y-axes
+        # fig = make_subplots(rows=1, cols=2, subplot_titles=("Line Chart"))
+        fig = go.Figure()
+        # Add line chart
+        fig.add_trace(go.Scatter(x=t, y=path0, mode='lines', name='Line Plot'))
 
-        # Add axis titles
-        for i, key in enumerate(data_keys):
-            fig.update_xaxes(title_text="Time (ns)", row=i + 1, col=1)  # X-axis title at the bottom
-            fig.update_yaxes(title_text="Amplitude", row=i + 1, col=1)  # Y-axis title for each subplot
+        # Add bar chart
+        # fig.add_trace(go.Scatter(x=x_values, y=y_values, mode='lines+markers', name='Line Plot'))
 
-        # Update layout
-        fig.update_layout(height=300 * len(data_keys), width=1100, legend_tracegroupgap = 180, title_text="Oscillator simulation")
+        # # Update layout
+        # fig.update_layout(title_text="Dual Graphs with Plotly", showlegend=True)
+
+        # Show figure
+        fig.show()
+    #     for i, arr in enumerate(data_draw[key]):
+    #         if not runcard_data[key]["hardware_modulation"] and i > 0:
+    #             break #don't plot the Q if hadware modulation is disabled
+    #         print("arr",arr)
+    #         if i ==0:
+    #             x = np.arange(0,len(arr))
+    #             arr2 = np.array(arr)*(np.cos(2 * np.pi * 10000000*x)*(1/np.sqrt(2)))
+    #             print("mod",arr)
+    #             DEBUG = np.cos(2 * np.pi * 10000000*x)
+    #             # print()
+    #             fig.add_trace(go.Scatter(y=arr2, mode='lines', name=f'{key} {legend[i]}',legendgroup=idx), row=idx + 1, col=1)
+    #         if i ==1:
+    #             x = np.arange(0,len(arr))
+    #             arr2 = np.array(arr)*(np.sin(2 * np.pi * 10000000*x)*(1/np.sqrt(2)))
+    #             print("mod",arr)
+    #             DEBUG = np.cos(2 * np.pi * 10000000*x)
+    #             # print()
+    #             fig.add_trace(go.Scatter(y=arr2, mode='lines', name=f'{key} {legend[i]}',legendgroup=idx), row=idx + 1, col=1)
+    #         # elif i ==1:
+    #         #     x = np.arange(0,len(arr))
+    #         #     arr2 = np.array(arr)*np.sin(2 * np.pi * 10000000*x)*(1/np.sqrt(2))
+    #         #     print("mod",arr)
+    #         #     DEBUG = np.cos(2 * np.pi * 10000000*x)
+    #         #     print()
+    #         #     fig.add_trace(go.Scatter(y=arr2, mode='lines', name=f'{key} {legend[i]}',legendgroup=idx), row=idx + 1, col=1)
+    #         # else:
+    #         #     fig.add_trace(go.Scatter(y=arr, mode='lines', name=f'{key} {legend[i]}',legendgroup=idx), row=idx + 1, col=1)
+
+    # # Add axis titles
+    # for i, key in enumerate(data_keys):
+    #     fig.update_xaxes(title_text="Time (ns)", row=i + 1, col=1)  # X-axis title at the bottom
+    #     fig.update_yaxes(title_text="Amplitude", row=i + 1, col=1)  # Y-axis title for each subplot
+
+    # # Update layout
+    # fig.update_layout(height=300 * len(data_keys), width=1100, legend_tracegroupgap = 180, title_text="Oscillator simulation")
         fig.show()
         return data_draw
