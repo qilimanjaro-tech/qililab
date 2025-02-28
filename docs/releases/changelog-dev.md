@@ -50,6 +50,9 @@
 - The user is now able to only put one value when setting the offset of the bus when using Qblox in the qprogram. Qblox requires two values hence if only 1 value is given, the second will be set to 0, a warning will be given to the user.
   [#896](https://github.com/qilimanjaro-tech/qililab/pull/896)
 
+- For Qblox compiler, all latched parameters are updated before a wait is applied. The update parameter has a minimum wait of 4 ns, which is removed from the wait. If the wait is below 8ns it is entirely replaced with the update parameter.
+  [#898](https://github.com/qilimanjaro-tech/qililab/pull/898)
+
 ### Breaking changes
 
 ### Deprecations / Removals
