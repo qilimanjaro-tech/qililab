@@ -86,7 +86,7 @@ Qililab Documentation
    code/pulse
    code/qprogram
    code/result
-   code/transpiler
+   code/digital
    code/waveforms
 
 .. toctree::
