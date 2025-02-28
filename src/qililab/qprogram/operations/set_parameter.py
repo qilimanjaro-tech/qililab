@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations.operation import Operation
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
@@ -21,10 +22,18 @@ from qililab.yaml import yaml
 @yaml.register_class
 class SetParameter(Operation):
     def __init__(
-        self, alias: str, parameter: Parameter, value: int | float | bool, channel_id: int | None = None
+        self,
+        alias: str,
+        parameter: Parameter,
+        value: int | float | bool,
+        channel_id: int | None = None,
+        crosstalk: CrosstalkMatrix | None = None,
+        flux_list: list[str] | None = None,
     ) -> None:
         super().__init__()
         self.alias: str = alias
         self.parameter: Parameter = parameter
         self.value: int | float | bool = value
         self.channel_id: int | None = channel_id
+        self.crosstalk: CrosstalkMatrix | None = crosstalk
+        self.flux_list: list[str] | None = flux_list

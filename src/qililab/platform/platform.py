@@ -21,6 +21,7 @@ import ast
 import io
 import re
 import tempfile
+import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -59,7 +60,7 @@ from qililab.qprogram import (
     QuantumMachinesCompilationOutput,
     QuantumMachinesCompiler,
 )
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -332,6 +333,12 @@ class Platform:
         self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
         """Format of the experiment results path."""
 
+        self.crosstalk: CrosstalkMatrix | None = None
+        """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
+
+        self.flux_vector: FluxVector | None = None
+        """Flux vector information, defaults to None (only used on FLUX parameters)"""
+
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
 
@@ -473,6 +480,7 @@ class Platform:
         value: ParameterValue,
         channel_id: ChannelID | None = None,
         crosstalk: CrosstalkMatrix | None = None,
+        flux_list: list[str] | None = None,
     ):
         """Set a parameter for a platform element.
 
@@ -497,13 +505,99 @@ class Platform:
                 alias=alias, parameter=parameter, value=value, channel_id=channel_id
             )
             return
+
         element = self.get_element(alias=alias)
+
+        if parameter == Parameter.FLUX:
+            if crosstalk:
+                self.crosstalk = crosstalk
+            self._process_crosstalk(alias, value, flux_list)
+            bias = [
+                instrument
+                for instrument in element.instruments
+                if instrument.name
+                in {"QCM", "QRM", "QRM-RF", "QCM-RF", "D5a", "S4g", "quantum_machines_cluster", "qdevil_qdac2"}
+            ]
+
+            if len(bias) == 0:
+                raise ReferenceError(
+                    "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+                )
+            if len(bias) > 1:
+                raise NotImplementedError(
+                    "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+                )
+            if bias[0].name in {"QCM", "QRM", "QRM-RF", "QCM-RF", "quantum_machines_cluster"}:
+                parameter = Parameter.GAIN
+            if bias[0].name in {"D5a", "qdevil_qdac2"}:
+                parameter = Parameter.VOLTAGE
+            if bias[0].name in {"S4g"}:
+                parameter = Parameter.CURRENT
+            for flux_alias, flux_value in self.flux_vector.items():
+                flux_element = self.get_element(alias=flux_alias)
+                flux_element.set_parameter(parameter=parameter, value=flux_value)
+            return
+
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
-    def _process_crosstalk(self, crosstalk: CrosstalkMatrix | None):
+    def _process_crosstalk(self, alias: str, value, flux_list: list[str] | None):
         """Calculates the Current/Voltage of the set parameter based on the value of the flux and the crosstalk matrix"""
-        value = crosstalk
-        return value
+        if not self.crosstalk:
+            if not flux_list:
+                flux_list = [alias]
+            self.crosstalk = CrosstalkMatrix.from_array(flux_list, np.eye(len(flux_list)))
+            warnings.warn(f"Crosstalk not given, using identity as crosstalk\n{self.crosstalk}")
+        elif not flux_list:
+            flux_list = list(self.crosstalk.matrix.keys())
+            warnings.warn(
+                f"Flux list not given, using all the flux buses given inside the crosstalk matrix\n{self.crosstalk}"
+            )
+
+        if not self.flux_vector:
+            self.flux_vector = FluxVector()
+            for flux in flux_list:
+                self.flux_vector[flux] = 0
+
+        if alias not in self.crosstalk.matrix.keys():
+            for key in list(self.crosstalk.matrix.keys()):
+                self.crosstalk[alias] = {key: 0.0}
+                self.crosstalk[key] = {alias: 0.0}
+            self.crosstalk[alias] = {alias: 1.0}
+            warnings.warn(f"{alias} not inside crosstalk matrix, adding it with identity values\n{self.crosstalk}")
+
+        if not self.flux_vector.crosstalk or self.crosstalk != self.flux_vector.crosstalk:
+            self.flux_vector.set_crosstalk(self.crosstalk)
+
+        self.flux_vector[alias] = value
+
+    def add_crosstalk(self, crosstalk: CrosstalkMatrix | None = None, calibration: Calibration | None = None):
+        """_summary_
+
+        Args:
+            crosstalk (CrosstalkMatrix | None): _description_
+            calibration (Calibration | None): _description_
+        """
+        if crosstalk:
+            self.crosstalk = crosstalk
+        elif calibration:
+            self.crosstalk = calibration.crosstalk_matrix
+        else:
+            raise ValueError("add_crosstalk must have either Calibration with crosstalk or CrosstalkMatrix")
+
+    def set_flux_to_zero(self, flux_list: list[str] | None = None):
+        """_summary_
+
+        Args:
+            flux_list (list[str] | None, optional): _description_. Defaults to None.
+        """
+        if not self.crosstalk:
+            raise ValueError("Crosstalk matrix has not been set")
+
+        if not flux_list:
+            flux_list = list(self.crosstalk.matrix.keys())
+
+        for flux_alias in flux_list:
+            self.set_parameter(alias=flux_alias, parameter=Parameter.FLUX, value=0)
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiates all instrument classes from their respective dictionaries.
@@ -740,7 +834,7 @@ class Platform:
         )
         return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
-    def execute_experiment(self, experiment: Experiment) -> str:
+    def execute_experiment(self, experiment: Experiment, calibration: Calibration) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
@@ -773,7 +867,7 @@ class Platform:
             - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment)
+        executor = ExperimentExecutor(platform=self, experiment=experiment, calibration=calibration)
         return executor.execute()
 
     def compile_qprogram(

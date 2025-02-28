@@ -79,6 +79,9 @@ class CrosstalkMatrix:
             for bus in value.keys():
                 self.matrix[key][bus] = value[bus]
 
+        if key not in self.flux_offsets:
+            self.flux_offsets[key] = 0.0
+
     def __repr__(self) -> str:
         """Returns a string representation of the CrosstalkMatrix.
 
@@ -172,8 +175,8 @@ class FluxVector:
     """Class to represent a flux vector. This is a dictionary of bus[flux] values"""
 
     def __init__(self) -> None:
-        self.vector: dict[str, float] = {}
-        self.crosstalk_vector: dict[str, float] = {}
+        self.flux_vector: dict[str, float] = {}
+        self.voltage_vector: dict[str, float] = {}
         self.crosstalk: CrosstalkMatrix | None = None
 
     def __getitem__(self, bus: str) -> float:
@@ -185,9 +188,9 @@ class FluxVector:
         Returns:
             float: Flux value for the given bus
         """
-        if self.crosstalk_vector:
-            return self.crosstalk_vector[bus]
-        return self.vector[bus]
+        if self.voltage_vector:
+            return self.voltage_vector[bus]
+        return self.flux_vector[bus]
 
     def __setitem__(self, key: str, flux: float) -> None:
         """Given a bus, sets a new flux
@@ -198,7 +201,7 @@ class FluxVector:
 
         """
 
-        self.vector[key] = flux
+        self.flux_vector[key] = flux
         if self.crosstalk:
             self.set_crosstalk(self.crosstalk)
 
@@ -213,15 +216,15 @@ class FluxVector:
         """
         self.crosstalk = crosstalk
 
-        self.crosstalk_vector = self.vector.copy()
+        self.voltage_vector = self.flux_vector.copy()
 
         for bus_1 in crosstalk.matrix.keys():
-            self.crosstalk_vector[bus_1] = sum(
-                self.vector[bus_2] * crosstalk.matrix[bus_1][bus_2] - crosstalk.flux_offsets[bus_2]
+            self.voltage_vector[bus_1] = sum(
+                (self.flux_vector[bus_2] + crosstalk.flux_offsets[bus_2]) * crosstalk.matrix[bus_1][bus_2]
                 for bus_2 in crosstalk.matrix[bus_1].keys()
             )
 
-        return self.crosstalk_vector
+        return self.voltage_vector
 
     def set_crosstalk_from_bias(self, crosstalk: CrosstalkMatrix):
         """Set the crosstalk compensation on the existing flux vector. This function does the matrix product to calculate the correct flux
@@ -234,14 +237,14 @@ class FluxVector:
         """
         self.crosstalk = crosstalk
 
-        self.crosstalk_vector = self.vector.copy()
+        self.voltage_vector = self.flux_vector.copy()
 
         for bus_1 in crosstalk.matrix.keys():
-            self.crosstalk_vector[bus_1] = sum(
-                self.vector[bus_2] * crosstalk.matrix[bus_1][bus_2] for bus_2 in crosstalk.matrix[bus_1].keys()
+            self.voltage_vector[bus_1] = sum(
+                self.flux_vector[bus_2] * crosstalk.matrix[bus_1][bus_2] for bus_2 in crosstalk.matrix[bus_1].keys()
             )
 
-        return self.crosstalk_vector
+        return self.voltage_vector
 
     def to_dict(self):
         """To dictionary method, returns the vector's dictionary
@@ -249,9 +252,9 @@ class FluxVector:
         Returns:
             dict[str, float]: Flux vector dictionary
         """
-        if self.crosstalk_vector:
-            return self.crosstalk_vector
-        return self.vector
+        if self.voltage_vector:
+            return self.voltage_vector
+        return self.flux_vector
 
     @classmethod
     def from_dict(cls, flux_dict: dict[str, float]) -> "FluxVector":
@@ -264,5 +267,5 @@ class FluxVector:
             FluxVector: FluxVector instance
         """
         instance = cls()
-        instance.vector = flux_dict
+        instance.flux_vector = flux_dict
         return instance

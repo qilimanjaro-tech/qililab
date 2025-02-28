@@ -11,10 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import warnings
 from types import MappingProxyType
 from typing import Callable
 
+import numpy as np
+
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.structured_program import StructuredProgram
@@ -60,6 +64,7 @@ class Experiment(StructuredProgram):
 
     def __init__(self, label: str) -> None:
         super().__init__()
+        self.crosstalk_data: CrosstalkMatrix | None = None
         self.label: str = label
 
     def get_parameter(self, alias: str, parameter: Parameter, channel_id: int | None = None):
@@ -81,7 +86,14 @@ class Experiment(StructuredProgram):
         self._active_block.append(operation)
         return variable
 
-    def set_parameter(self, alias: str, parameter: Parameter, value: int | float | int, channel_id: int | None = None):
+    def set_parameter(
+        self,
+        alias: str,
+        parameter: Parameter,
+        value: int | float | int,
+        channel_id: int | None = None,
+        flux_list: list[str] | None = None,
+    ):
         """Set a platform parameter.
 
         Appends a SetParameter operation to the active block of the experiment.
@@ -91,6 +103,23 @@ class Experiment(StructuredProgram):
             parameter (Parameter): The parameter to set.
             value (int | float): The value to set for the parameter.
         """
+        if parameter == Parameter.FLUX:
+            if not self.get_crosstalk and not self.crosstalk_data:
+                if not flux_list:
+                    flux_list = [alias]
+                self.crosstalk_data = CrosstalkMatrix.from_array(flux_list, np.eye(len(flux_list)))
+                warnings.warn(f"Crosstalk not given, using identity as crosstalk\n{self.crosstalk_data}")
+            elif self.get_crosstalk:
+                self.crosstalk_data = self.get_crosstalk
+            if alias not in self.crosstalk_data.matrix.keys():
+                for key in list(self.crosstalk_data.matrix.keys()):
+                    self.crosstalk_data[alias] = {key: 0.0}
+                    self.crosstalk_data[key] = {alias: 0.0}
+                self.crosstalk_data[alias] = {alias: 1.0}
+                warnings.warn(
+                    f"{alias} not inside crosstalk matrix, adding it with identity values\n{self.crosstalk_data}"
+                )
+
         operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
         self._active_block.append(operation)
 
