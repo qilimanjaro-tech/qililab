@@ -506,10 +506,14 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    def test_set_offset_without_path_1_throws_exception(self, offset_no_path1: QProgram):
-        with pytest.raises(ValueError, match="No offset has been given for path 1 inside set_offset."):
-            compiler = QbloxCompiler()
+    def test_set_offset_without_path_1_throws_exception(self, caplog, offset_no_path1: QProgram):
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
             _ = compiler.compile(qprogram=offset_no_path1, voltage_coefficient={"drive": 2.5})
+        assert (
+            "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
+            in caplog.text
+        )
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
         compiler = QbloxCompiler()
