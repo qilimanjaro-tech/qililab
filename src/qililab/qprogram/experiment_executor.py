@@ -29,7 +29,6 @@ import numpy as np
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
-from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.variable import Variable
@@ -105,10 +104,9 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment, calibration: Calibration | None = None):
+    def __init__(self, platform: "Platform", experiment: Experiment):
         self.platform = platform
         self.experiment = experiment
-        self.calibration = calibration
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -331,10 +329,7 @@ class ExperimentExecutor:
                     )
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
-                    if self.calibration:
-                        crosstalk = self.calibration.crosstalk_matrix
-                    else:
-                        crosstalk = self.experiment.get_crosstalk
+                    crosstalk = self.experiment.get_crosstalk
                     if isinstance(element.value, Variable):
                         if current_value_of_variable[element.value.uuid] is None:
                             # Variable has no value and it will get it from a `GetOperation` in the future. Thus, don't bind `value` in lambda.
@@ -409,7 +404,7 @@ class ExperimentExecutor:
                                         }
                                     ),  # type: ignore
                                     bus_mapping=operation.bus_mapping,
-                                    calibration=self.calibration,
+                                    calibration=operation.calibration,
                                     debug=operation.debug,
                                 ),
                                 qprogram_index,
@@ -422,7 +417,7 @@ class ExperimentExecutor:
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram,
                                     bus_mapping=operation.bus_mapping,
-                                    calibration=self.calibration,
+                                    calibration=operation.calibration,
                                     debug=operation.debug,
                                 ),
                                 qprogram_index,

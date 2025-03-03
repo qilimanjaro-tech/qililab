@@ -62,10 +62,14 @@ class Experiment(StructuredProgram):
         {Parameter.DRAG_COEFFICIENT: float, Parameter.THRESHOLD: float, Parameter.THRESHOLD_ROTATION: float}
     )
 
-    def __init__(self, label: str) -> None:
+    def __init__(self, label: str, calibration: Calibration | None = None) -> None:
         super().__init__()
-        self.crosstalk_data: CrosstalkMatrix | None = None
+
         self.label: str = label
+        self.calibration: Calibration | None = calibration
+        self.crosstalk_data: CrosstalkMatrix | None = None
+        if self.calibration:
+            self.crosstalk_data = self.calibration.crosstalk_matrix
 
     def get_parameter(self, alias: str, parameter: Parameter, channel_id: int | None = None):
         """Set a platform parameter.
@@ -127,7 +131,6 @@ class Experiment(StructuredProgram):
         self,
         qprogram: QProgram | Callable[..., QProgram],  # type: ignore
         bus_mapping: dict[str, str] | None = None,
-        calibration: Calibration | None = None,
         debug: bool = False,
     ):
         """Execute a quantum program within the experiment.
@@ -137,5 +140,7 @@ class Experiment(StructuredProgram):
         Args:
             qprogram (QProgram): The quantum program to be executed.
         """
-        operation = ExecuteQProgram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug)
+        operation = ExecuteQProgram(
+            qprogram=qprogram, bus_mapping=bus_mapping, calibration=self.calibration, debug=debug
+        )
         self._active_block.append(operation)
