@@ -339,6 +339,9 @@ class Platform:
         self.flux_vector: FluxVector | None = None
         """Flux vector information, defaults to None (only used on FLUX parameters)"""
 
+        self.flux_parameter: dict[str, float] = {}
+        """Flux dictionary with information for the get parameter (only used on FLUX parameters)"""
+
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
 
@@ -470,6 +473,10 @@ class Platform:
             return self.digital_compilation_settings.get_parameter(
                 alias=alias, parameter=parameter, channel_id=channel_id
             )
+        if parameter == Parameter.FLUX:
+            if alias not in self.flux_parameter:
+                self.flux_parameter[alias] = 0.0
+            return self.flux_parameter[alias]
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
 
@@ -509,6 +516,7 @@ class Platform:
         element = self.get_element(alias=alias)
 
         if parameter == Parameter.FLUX:
+            self.flux_parameter[alias] = value
             if crosstalk:
                 self.crosstalk = crosstalk
             self._process_crosstalk(alias, value, flux_list)
@@ -527,14 +535,24 @@ class Platform:
                 raise NotImplementedError(
                     "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
                 )
-            if bias[0].name in {"QCM", "QRM", "QRM-RF", "QCM-RF", "quantum_machines_cluster"}:
-                parameter = Parameter.GAIN
+            if bias[0].name in {"quantum_machines_cluster"}:
+                parameter = Parameter.DC_OFFSET
             if bias[0].name in {"D5a", "qdevil_qdac2"}:
                 parameter = Parameter.VOLTAGE
             if bias[0].name in {"S4g"}:
                 parameter = Parameter.CURRENT
-            for flux_alias, flux_value in self.flux_vector.items():
+            for flux_alias, flux_value in self.flux_vector.voltage_vector.items():
                 flux_element = self.get_element(alias=flux_alias)
+                if bias[0].name in {"QCM", "QRM", "QRM-RF", "QCM-RF"}:
+                    offset_channel = flux_element.instruments[0].awg_sequencers[flux_element.channels[0]].outputs[0]
+                    if offset_channel == 0:
+                        parameter = Parameter.OFFSET_OUT0
+                    if offset_channel == 1:
+                        parameter = Parameter.OFFSET_OUT1
+                    if offset_channel == 2:
+                        parameter = Parameter.OFFSET_OUT2
+                    if offset_channel == 3:
+                        parameter = Parameter.OFFSET_OUT3
                 flux_element.set_parameter(parameter=parameter, value=flux_value)
             return
 
