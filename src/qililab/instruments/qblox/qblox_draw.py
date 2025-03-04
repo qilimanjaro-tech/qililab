@@ -21,6 +21,7 @@ from .qblox_module import QbloxModule
 # from qililab.platform import Platform
 
 # TODO:
+#scaling done wrong, should be done after freq applied not before - scaling the same always if HM is on, only subtelty is the offset that can go higher up but try to ignotr that and c.heck maybe works even when nthg done to the offset
 
 #should it identify other instruments? like qcm rf and qrm and qrm rf upstairs
 #add the phase
