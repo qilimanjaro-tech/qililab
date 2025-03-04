@@ -716,7 +716,7 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-    def draw_oscilloscope_platform(self):
+    def draw_oscilloscope(self):
         from qililab.qprogram.qblox_compiler import QbloxCompiler
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
         #if non qblox say it is not supported

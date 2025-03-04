@@ -21,8 +21,15 @@ from .qblox_module import QbloxModule
 # from qililab.platform import Platform
 
 # TODO:
-# way to plot all methods at once
-# add other methods offered by qblox for the q1asm - ask experimentalists if they ever use anythg else, have a list of the ones you can plot
+
+#should it identify other instruments? like qcm rf and qrm and qrm rf upstairs
+#add the phase
+#if you end with a set freq you have 1 too many
+
+
+#test on HW - change the fs to see the difference, check the freq, check the clipping (might need to add a flag)
+#when 3plots, the legends get a bit essy
+#clean up the code
 
 class QbloxDraw:
 
@@ -37,80 +44,69 @@ class QbloxDraw:
                 return float(metadata[key])
         return None
 
-    def _handle_play_draw(self, stored_data, act_play, diction, move_reg, parameters):
+    def _handle_play_draw(self, stored_data, act_play, diction, move_reg, param):
         if act_play[0] == "play":
             output_path1, output_path2, _ = map(int, act_play[1].split(','))
-            freq_value = self.get_value_from_metadata(parameters, move_reg, 'intermediate_frequency', division_factor=4)
-            print("freq",freq_value)
-            print(move_reg)
-            # freq_value = None
+            # freq_value = self.get_value_from_metadata(parameters, move_reg, 'intermediate_frequency', division_factor=4
 
             #dynamic offset
-            off_i = parameters.get("offset_i", 0)
-            off_q = parameters.get("offset_q", 0)
+            off_i = param.get("offset_i", 0)
+            off_q = param.get("offset_q", 0)
 
             #static offset
-            offset_out0 = parameters.get("offset_out0", 0)
-            offset_out1 = parameters.get("offset_out1", 0)
+            offset_out0 = param.get("offset_out0", 0)
+            offset_out1 = param.get("offset_out1", 0)
             
             #gains
-            gain_i = parameters.get("gain_i", 0)
-            gain_q = parameters.get("gain_q", 0)
-            # sample_rate=1/(2e9)
-            # sample_rate=5e-5
-            # sample_rate = float(0.0005)
+            gain_i = param.get("gain_i", 1)
+            gain_q = param.get("gain_q", 1)
+
             # retrieve the wavform data
             for waveform_key, waveform_value in diction:
                 if waveform_value['index'] == output_path1:
-                    if freq_value is not None:
-                        # x = np.linspace(0,1,len(waveform_value['data']),(1/sample_rate))
-                        x = np.arange(0,1,len(waveform_value['data']))
-
-                        carrier = np.cos(2 * np.pi * freq_value * x)
-                        carrier = 1
-                        # signal = np.cos(2*np.pi*freq_value)*np.array(waveform_value['data'])
-                        # print(np.array(waveform_value['data']))
-                        # print("signal",signal)
-
-                    else:
-                        carrier = 1
-                    if parameters["hardware_modulation"] and off_i==0 and offset_out0 ==0:
-                        scaling_factor = 1.8
-                        max_voltage = 1.8
-                    elif not parameters["hardware_modulation"]:
+                    if param["hardware_modulation"]:
+                        if off_i==0 and offset_out0 ==0:
+                            scaling_factor = 1.8
+                            max_voltage = 1.8
+                        else:
+                            scaling_factor = 2.5
+                            max_voltage = 2.5
+                    elif not param["hardware_modulation"]:
                         scaling_factor = 2.5
                         max_voltage = 2.5
+                        # scaling_factor = 1.8
+                        # max_voltage = 1.8
                     else: #hardware mod on but there are some offsets applied
                         scaling_factor = 1.8
                         max_voltage = 2.5
+                        # scaling_factor = 1.8
+                        # max_voltage = 1.8
                     scaled_array = np.array(waveform_value['data']) * scaling_factor
                     off_i_scaled = off_i * scaling_factor
-                    # stored_data[0] = np.clip((np.append(stored_data[0], ((scaled_array)*gain_i + off_i_scaled + offset_out0)*carrier)),None,max_voltage)
-                    stored_data[0] = np.append(stored_data[0],np.clip((((scaled_array)*gain_i + off_i_scaled + offset_out0)*carrier),None,max_voltage))
-                    # stored_data[0] = np.append(stored_data[0],signal)
-                    print("max",max_voltage)
+                    stored_data[0] = np.append(stored_data[0],np.clip((((scaled_array)*gain_i + off_i_scaled + offset_out0)),None,max_voltage))
+
                 elif waveform_value['index'] == output_path2:
-                    if freq_value is not None:
-                        # x = np.linspace(0,1,len(waveform_value['data']))
-                        # x = np.arange(0,1,len(waveform_value['data']),sample_rate)
-                        # carrier = np.sin(2 * np.pi * freq_value * x)
-                        carrier = 1
-                    else:
-                        carrier = 1
-                    if parameters["hardware_modulation"] and off_q==0 and offset_out1 ==0:
+                    if param["hardware_modulation"] and off_q==0 and offset_out1 ==0:
                         scaling_factor = 1.8
                         max_voltage = 1.8
-                    elif not parameters["hardware_modulation"]:
-                        scaling_factor = 2.5
-                        max_voltage = 2.5
-                    else: #hardware mod on but there are some offsets applied
+                    elif not param["hardware_modulation"]:
+                        # scaling_factor = 2.5
+                        # max_voltage = 2.5
                         scaling_factor = 1.8
-                        max_voltage = 2.5
+                        max_voltage = 1.8
+                    else: #hardware mod on but there are some offsets applied
+                        # scaling_factor = 1.8
+                        # max_voltage = 2.5
+                        scaling_factor = 1.8
+                        max_voltage = 1.8
                     scaled_array = np.array(waveform_value['data']) * scaling_factor
                     off_q_scaled = off_q * scaling_factor
-                    stored_data[1] = np.clip(np.append(stored_data[1], ((scaled_array)*gain_q + off_q_scaled + offset_out1)*carrier),None,max_voltage)
-                    # stored_data[1] = np.append(stored_data[1],np.clip((((scaled_array)*gain_q + off_q_scaled + offset_out1)*carrier),None,max_voltage))
-                    print("max",max_voltage)
+                    stored_data[1] = np.clip(np.append(stored_data[1], ((scaled_array)*gain_q + off_q_scaled + offset_out1)),None,max_voltage)
+            if param.get('intermediate_frequency_new',False) is True:
+                param['intermediate_frequency'].extend([param['intermediate_frequency'][-1]] * (len(scaled_array)-1))
+                param['intermediate_frequency_new'] = False
+            else:
+                param['intermediate_frequency'].extend([param['intermediate_frequency'][-1]] * (len(scaled_array)))
         return stored_data
     
     def _handle_acquire_draw(self, stored_data, act_play): #is it always 4ns, in one case it is 12ns ??????????????????????????
@@ -119,30 +115,30 @@ class QbloxDraw:
             stored_data = [np.append(stored_data[0], y_wait), np.append(stored_data[1], y_wait)]
         return stored_data
 
-    def _handle_wait_draw(self, stored_data, act_wait, parameters):
+    def _handle_wait_draw(self, stored_data, act_wait, param):
         if act_wait[0] == "wait":
              #dynamic offset
-            off_i = parameters.get("offset_i", 0)
-            off_q = parameters.get("offset_q", 0)
+            off_i = param.get("offset_i", 0)
+            off_q = param.get("offset_q", 0)
 
             #static offset
-            offset_out0 = parameters.get("offset_out0", 0)
-            offset_out1 = parameters.get("offset_out1", 0)
+            offset_out0 = param.get("offset_out0", 0)
+            offset_out1 = param.get("offset_out1", 0)
             
-            if parameters["hardware_modulation"] and off_i==0 and offset_out0 ==0:
+            if param["hardware_modulation"] and off_i==0 and offset_out0 ==0:
                 scaling_factori = 1.8
                 max_voltagei = 1.8
-            elif not parameters["hardware_modulation"]:
+            elif not param["hardware_modulation"]:
                 scaling_factori = 2.5
                 max_voltagei = 2.5
             else: #hardware mod on but there are some offsets applied
                 scaling_factori = 1.8
                 max_voltagei = 2.5
             
-            if parameters["hardware_modulation"] and off_q==0 and offset_out1 ==0:
+            if param["hardware_modulation"] and off_q==0 and offset_out1 ==0:
                 scaling_factorq = 1.8
                 max_voltageq = 1.8
-            elif not parameters["hardware_modulation"]:
+            elif not param["hardware_modulation"]:
                 scaling_factorq = 2.5
                 max_voltageq = 2.5
             else: #hardware mod on but there are some offsets applied
@@ -155,30 +151,33 @@ class QbloxDraw:
 
 
             #static offset
-            offset_out0 = parameters.get("offset_out0", 0)
-            offset_out1 = parameters.get("offset_out1", 0)
+            offset_out0 = param.get("offset_out0", 0)
+            offset_out1 = param.get("offset_out1", 0)
             y_wait = np.linspace(0, 0, int(act_wait[1]))
-            # stored_data[0] = np.clip(np.append(stored_data[0], y_wait + off_i_scaled + offset_out0),None,max_voltagei)
-            # stored_data[1] = np.clip(np.append(stored_data[1], y_wait + off_q_scaled + offset_out1),None,max_voltageq)
             stored_data[0] = np.append(stored_data[0], np.clip((y_wait + off_i_scaled + offset_out0),None,max_voltagei))
             stored_data[1] = np.append(stored_data[1], np.clip((y_wait + off_q_scaled + offset_out1),None,max_voltageq))
+            if param.get('intermediate_frequency_new',False) is True:
+                param['intermediate_frequency'].extend([param['intermediate_frequency'][-1]] * (len(y_wait)-1))
+                param['intermediate_frequency_new'] = False
+            else:
+                param['intermediate_frequency'].extend([param['intermediate_frequency'][-1]] * (len(y_wait)))
         return stored_data
 
-    def _handle_gain_draw(self, item, parameters):
+    def _handle_gain_draw(self, item, param):
         if item[0] == "set_awg_gain":
            gain_i, gain_q =  map(lambda x: float(x) / 32767, item[1].split(','))
            gain = [gain_i,gain_q]
-           gains = [x if x is not None else 0 for x in gain]
-           parameters["gain_i"],parameters["gain_q"] = gains
-        return parameters
+           gains = [x if x is not None else 1 for x in gain]
+           param["gain_i"],param["gain_q"] = gains
+        return param
     
-    def _handle_offset_draw(self, item, parameters):
+    def _handle_offset_draw(self, item, param):
         if item[0] == "set_awg_offs":
             offset_i, offset_q =  map(lambda x: float(x) / 32767, item[1].split(','))
             off = [offset_i,offset_q]
             offsets = [x if x is not None else 0 for x in off]
-            parameters["offset_i"],parameters["offset_q"] = offsets
-        return parameters
+            param["offset_i"],param["offset_q"] = offsets
+        return param
 
     def _handle_add_draw(self, move_reg, act_add):
         if act_add[0] == "add":
@@ -186,16 +185,23 @@ class QbloxDraw:
             move_reg[destination] = self._get_value(a, move_reg) + self._get_value(b, move_reg)
         return move_reg
 
-    def _handle_freq_draw(self, item, parameters): #data is latched  only updated under specific conditions, handle case where more than 1 freq, and handle the case where no freq is given
+    def _handle_freq_draw(self, item, param, move_reg): #data is latched  only updated under specific conditions, handle case where more than 1 freq, and handle the case where no freq is given
         if item[0] == "set_freq":
-            parameters["intermediate_frequency"] = item[1] #overwrite the if if given in the qprogram
-        return parameters
+            if param['intermediate_frequency_new']:
+                param['intermediate_frequency'][-1] = self._get_value(item[1],move_reg)
+            else:   
+            #parameters["intermediate_frequency"] = item[1] #overwrite the if if given in the qprogram
+                param['intermediate_frequency'].append(self._get_value(item[1],move_reg))
+
+            param['intermediate_frequency_new'] = True
+        return param
+    
     def _get_value(self, x, move_reg):
         if x is not None:
             if x.isdigit():
-                return int(x)
+                return float(x)
             if x in move_reg:
-                return int(move_reg[x])
+                return float(move_reg[x])
         return None
 
     def _parse_program(self, sequences):
@@ -208,6 +214,8 @@ class QbloxDraw:
                 stripped_line = line.strip()
                 if stripped_line.startswith("nop"):
                     processed_lines.append("nop             2")
+                elif stripped_line.startswith("reset_ph"):
+                    processed_lines.append("reset_ph             2")
                 else:
                     processed_lines.append(stripped_line)
             content_dict["program"] = "\n".join(processed_lines)  # Update mutable dictionary
@@ -248,20 +256,24 @@ class QbloxDraw:
         # [1]: value
         # [2]: label of the loops
         # [3]: index
+        parameters = {}
         for bus,_ in Q1ASM_ordered.items():
             if runcard_data is not None:
-                parameters= {key: runcard_data[bus][key] for key in runcard_data[bus]}
+                # parameters[bus] = {bus: {key: runcard_data[bus][key] for key in runcard_data[bus]}}
+                parameters[bus] = {key: runcard_data[bus][key] for key in runcard_data[bus]}
+                # parameters = {key: runcard_data[bus][key] for key in runcard_data[bus]}
+                parameters[bus]['intermediate_frequency'] = [parameters[bus]['intermediate_frequency']]
+                parameters[bus]['intermediate_frequency_new'] = True
             else:
-                parameters = {}
+                parameters[bus] = {}
+                parameters[bus]['intermediate_frequency'] = [0]
+                parameters[bus]['intermediate_frequency_new'] = True
+                parameters[bus]['hardware_modulation'] = True # if plotting directly from qp, plot i and q
             wf1 = []
             wf2 = []
+            param = parameters[bus]
             run_items = []
             data_draw[bus] = [wf1, wf2]
-            # if parameters["hardware_modulation"]:
-            #     data_draw[bus] = [wf1, wf2]
-            # else:
-            #     data_draw[bus] = [wf1]
-
             label_done = []  # list to keep track of the label once they have been looped over
             # create a dict to get all the variables assigned to a registery through move
             move_reg = {}
@@ -282,7 +294,6 @@ class QbloxDraw:
                         appearance[l][2] = value.split(",")[0]
                 sorted_labels = sorted(appearance.items(), key=lambda x: x[1][0])
             wf = Q1ASM_ordered[bus]['waveforms'].items()
-
             
             for item in Q1ASM_ordered[bus]["program"]["main"]:
                 def process_loop(recursive_input,i):
@@ -312,11 +323,11 @@ class QbloxDraw:
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
                             run_items.append(item[-1])
-                            self._handle_freq_draw(item, parameters)
-                            self._handle_offset_draw(item, parameters)
-                            data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg, parameters)
+                            self._handle_freq_draw(item, param, move_reg)
+                            self._handle_offset_draw(item, param)
+                            data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg, param)
                             data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
-                            data_draw[bus] = self._handle_wait_draw(data_draw[bus], item, parameters)
+                            data_draw[bus] = self._handle_wait_draw(data_draw[bus], item, param)
                             self._handle_add_draw(move_reg, item)
                             current_idx +=1
                     return current_idx
@@ -331,102 +342,58 @@ class QbloxDraw:
                             break  # Stop as soon as the first match is found
                     process_loop(input,index)
                 elif item[-1] not in run_items: #ensure not running the ones that have already been ran
-                    self._handle_freq_draw(item, parameters)
-                    self._handle_offset_draw(item, parameters)
-                    data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,parameters)
+                    self._handle_freq_draw(item, param, move_reg)
+                    self._handle_offset_draw(item, param)
+                    data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,param)
                     data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
-                    data_draw[bus] = self._handle_wait_draw(data_draw[bus], item, parameters)
+                    data_draw[bus] = self._handle_wait_draw(data_draw[bus], item, param)
                     self._handle_add_draw(move_reg, item)
                 else:
                     pass
-        
-        # arr2 = np.cos(2*np.pi*10000000)*np.array(data_draw["drive"][0])
-        # print("array",arr2)
-        # x = list(range(1, len(arr2) + 1))
+            if param['intermediate_frequency_new']:
+                param['intermediate_frequency'].pop()
+            parameters[bus] = param
 
-        # import plotly.graph_objects as go
-
-
-        # Create the plot
-        # fig = go.Figure(data=go.Scatter(x=x, y=arr2, mode='lines+markers'))
-
-
-
-        # # Show the plot
-        # fig.show()
-        # Plot the waveforms with plotly
+        # Plot the waveforms
         data_keys = list(data_draw.keys())
-        # # Create subplots
-        # fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
-        # Add traces
-        # for idx, key in enumerate(data_keys):
-        #     if runcard_data[key]["hardware_modulation"]:
-        #         legend = ["I","Q"]
-        #     else:
-        #         legend = ["flux"]
-        x = np.arange(0,len(wf1))
-        fs = 1e9  # Sampling frequency (1 GHz)
-        print(len(wf1))
+        fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
         
-        wf1,wf2 = data_draw["drive"][0],data_draw["drive"][1]
-        t = np.arange(0, len(wf1)) / fs
-        a = (np.cos(2 * np.pi * 10000000*t))
-        b = np.sin(2 * np.pi * 10000000*x)
-        # path0 = np.array(wf1)*a-np.array(wf2)*np.sin(2 * np.pi * 10000000*x)
-        # path1 = np.array(wf1)*(np.sin(2 * np.pi * 10000000*x))+np.array(wf2)*a
-        path0 = np.array(wf1)*a
-        path1 = np.array(wf2)*a
-        import plotly.graph_objects as go
-        from plotly.subplots import make_subplots
+        for idx, key in enumerate(data_keys):
+            print(key)
+            if not parameters[key]["hardware_modulation"]: #if hardware modulation is disabled, do not plot Q
+                fig.add_trace(go.Scatter(y=np.array(data_draw[key][0]), mode='lines', name='Flux'), row=idx+1, col=1)
+                # break
 
-        # Create a subplot figure with 2 y-axes
-        # fig = make_subplots(rows=1, cols=2, subplot_titles=("Line Chart"))
-        fig = go.Figure()
-        # Add line chart
-        fig.add_trace(go.Scatter(x=t, y=path0, mode='lines', name='Line Plot'))
+            else:
+                
+                wf1,wf2 = data_draw[key][0],data_draw[key][1]
+                fs = 1e9
+                t = np.arange(0, len(wf1)) / fs
+                # t=np.array(len(wf1)/fs)
+                freq = np.array(parameters[key]["intermediate_frequency"])/4
+                print(len(freq))
+                print(len(wf1))
+                # complex_signal = wf1 + 1j * wf2
+                # rotation = np.exp(1j * 2 * np.pi * freq * t)
+                # rotated_signal = complex_signal * rotation
+                # path0 = np.real(rotated_signal)
+                # path1 = np.imag(rotated_signal)
 
-        # Add bar chart
-        # fig.add_trace(go.Scatter(x=x_values, y=y_values, mode='lines+markers', name='Line Plot'))
+                cos_term = np.cos(2 * np.pi * freq *t)
+                sin_term = np.sin(2 * np.pi * freq *t)
 
-        # # Update layout
-        # fig.update_layout(title_text="Dual Graphs with Plotly", showlegend=True)
+                path0 = (1/(np.sqrt(2)))*(cos_term * np.array(wf1) - sin_term * np.array(wf2))
+                path1 = (1/(np.sqrt(2)))*(sin_term * np.array(wf1) + cos_term * np.array(wf2))
+                
+                fig.add_trace(go.Scatter(y=path0, mode='lines', name=f'{key} I', legendgroup=idx), row=idx+1, col=1)
+                fig.add_trace(go.Scatter(y=path1, mode='lines', name=f'{key} Q', legendgroup=idx), row=idx+1, col=1)
 
-        # Show figure
-        fig.show()
-    #     for i, arr in enumerate(data_draw[key]):
-    #         if not runcard_data[key]["hardware_modulation"] and i > 0:
-    #             break #don't plot the Q if hadware modulation is disabled
-    #         print("arr",arr)
-    #         if i ==0:
-    #             x = np.arange(0,len(arr))
-    #             arr2 = np.array(arr)*(np.cos(2 * np.pi * 10000000*x)*(1/np.sqrt(2)))
-    #             print("mod",arr)
-    #             DEBUG = np.cos(2 * np.pi * 10000000*x)
-    #             # print()
-    #             fig.add_trace(go.Scatter(y=arr2, mode='lines', name=f'{key} {legend[i]}',legendgroup=idx), row=idx + 1, col=1)
-    #         if i ==1:
-    #             x = np.arange(0,len(arr))
-    #             arr2 = np.array(arr)*(np.sin(2 * np.pi * 10000000*x)*(1/np.sqrt(2)))
-    #             print("mod",arr)
-    #             DEBUG = np.cos(2 * np.pi * 10000000*x)
-    #             # print()
-    #             fig.add_trace(go.Scatter(y=arr2, mode='lines', name=f'{key} {legend[i]}',legendgroup=idx), row=idx + 1, col=1)
-    #         # elif i ==1:
-    #         #     x = np.arange(0,len(arr))
-    #         #     arr2 = np.array(arr)*np.sin(2 * np.pi * 10000000*x)*(1/np.sqrt(2))
-    #         #     print("mod",arr)
-    #         #     DEBUG = np.cos(2 * np.pi * 10000000*x)
-    #         #     print()
-    #         #     fig.add_trace(go.Scatter(y=arr2, mode='lines', name=f'{key} {legend[i]}',legendgroup=idx), row=idx + 1, col=1)
-    #         # else:
-    #         #     fig.add_trace(go.Scatter(y=arr, mode='lines', name=f'{key} {legend[i]}',legendgroup=idx), row=idx + 1, col=1)
+        # Add axis titles
+        for i, key in enumerate(data_keys):
+            fig.update_xaxes(title_text="Time [ns]", row=i + 1, col=1)
+            fig.update_yaxes(title_text="Voltage [V]", row=i + 1, col=1)
 
-    # # Add axis titles
-    # for i, key in enumerate(data_keys):
-    #     fig.update_xaxes(title_text="Time (ns)", row=i + 1, col=1)  # X-axis title at the bottom
-    #     fig.update_yaxes(title_text="Amplitude", row=i + 1, col=1)  # Y-axis title for each subplot
-
-    # # Update layout
-    # fig.update_layout(height=300 * len(data_keys), width=1100, legend_tracegroupgap = 180, title_text="Oscillator simulation")
+        # Update layout
+        fig.update_layout(height=300 * len(data_keys), width=1100, legend_tracegroupgap = 180, title_text="Oscillator simulation", showlegend = True)
         fig.show()
         return data_draw
