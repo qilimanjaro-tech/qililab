@@ -31,7 +31,7 @@ from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedCo
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
-from qililab.qprogram.variable import Variable
+from qililab.qprogram.variable import Domain, Variable
 from qililab.result.experiment_results_writer import (
     ExperimentMetadata,
     ExperimentResultsWriter,
@@ -116,6 +116,10 @@ class ExperimentExecutor:
 
         # Mapping from each ExecuteQProgram operation to its execution index (order of execution)
         self._qprogram_execution_indices: dict[ExecuteQProgram, int] = {}
+
+        # Variables that uses flux for further processing and saving the right bias
+        # TODO: implement a way to save the bias based on the same principle as HW loops Xtalk
+        self._flux_variables: dict[str, np.ndarray] = {}
 
         # Stack to keep track of variables in the experiment context (outside QPrograms)
         self._experiment_variables_stack: list[list[VariableInfo]] = []
@@ -230,6 +234,7 @@ class ExperimentExecutor:
         self._metadata = ExperimentMetadata(
             platform=serialize(self.platform.to_dict()),
             experiment=serialize(self.experiment),
+            crosstalk=serialize(self.experiment.get_crosstalk.matrix if self.experiment.get_crosstalk else None),
             executed_at=executed_at,
             execution_time=0.0,
             qprograms={},

@@ -22,7 +22,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import Domain
+from qililab.qprogram.variable import Domain, Variable
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
@@ -68,6 +68,7 @@ class Experiment(StructuredProgram):
         self.label: str = label
         self.calibration: Calibration | None = calibration
         self.crosstalk_data: CrosstalkMatrix | None = None
+        self.value_flux_list: dict = {}
         if self.calibration:
             self.crosstalk_data = self.calibration.crosstalk_matrix
 
@@ -94,7 +95,7 @@ class Experiment(StructuredProgram):
         self,
         alias: str,
         parameter: Parameter,
-        value: int | float | int,
+        value: int | float | Variable,
         channel_id: int | None = None,
         flux_list: list[str] | None = None,
     ):
@@ -123,6 +124,8 @@ class Experiment(StructuredProgram):
                 warnings.warn(
                     f"{alias} not inside crosstalk matrix, adding it with identity values\n{self.crosstalk_data}"
                 )
+            if isinstance(value, Variable):
+                self.value_flux_list[value.label] = alias
 
         operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
         self._active_block.append(operation)
