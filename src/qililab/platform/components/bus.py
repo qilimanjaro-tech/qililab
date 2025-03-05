@@ -159,7 +159,7 @@ class Bus:
         Args:
             parameter (Parameter): parameter settings of the instrument to update
             value (int | float | str | bool): value to update
-            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+            channel_id (int, optional): instrument channel to update, if multiple. Defaults to None.
         """
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
@@ -176,7 +176,7 @@ class Bus:
         Args:
             parameter (Parameter): parameter settings of the instrument to update
             value (int | float | str | bool): value to update
-            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+            channel_id (int, optional): instrument channel to update, if multiple. Defaults to None.
         """
         if parameter == Parameter.DELAY:
             return self.settings.delay
@@ -243,7 +243,7 @@ class Bus:
 
         Returns:
             list[Result]: Acquired results in chronological order
-            channel_id (int | None, optional): instrument channel of QRM. Defaults to None.
+            channel_id (int, optional): instrument channel of QRM. Defaults to None.
         """
         # TODO: Support acquisition from multiple instruments
         total_results: list[list[MeasurementResult]] = []
