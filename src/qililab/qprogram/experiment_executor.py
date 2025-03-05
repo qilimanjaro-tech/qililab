@@ -31,7 +31,7 @@ from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedCo
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
-from qililab.qprogram.variable import Domain, Variable
+from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
     ExperimentMetadata,
     ExperimentResultsWriter,
