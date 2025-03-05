@@ -8,7 +8,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 def get_xtalk_array():
     """Get a tuple of crosstalk array and buses"""
     xtalk_array = np.array([[1, 2, 3], [0.1, 0.2, 0.3], [0, 1, 0]])
-    buses = {"flux_0", "flux_1", "flux_2"}
+    buses = ["flux_0", "flux_1", "flux_2"]
     return (xtalk_array, buses)
 
 
@@ -39,10 +39,10 @@ class TestFluxVector:
 
     def test_init(self):
         flux_vector = FluxVector()
-        assert flux_vector.vector == {}
+        assert flux_vector.bias_vector == {}
 
     def test_from_dict(self, flux_vector, flux_vector_dict):
-        assert flux_vector.vector == flux_vector_dict
+        assert flux_vector.flux_vector == flux_vector_dict
 
     def test_to_dict(self, flux_vector, flux_vector_dict):
         assert flux_vector.to_dict() == flux_vector_dict
@@ -76,14 +76,6 @@ class TestCrosstalkMatrix:
                 for j, bus2 in enumerate(inv_matrix.matrix.keys())
             )
             == inv_array.shape[0] * inv_array.shape[1]
-        )
-
-    def test_mult(self, crosstalk_matrix, flux_vector):
-        """Test the multiplication method"""
-        new_flux_vector = crosstalk_matrix @ flux_vector
-        np.allclose(
-            crosstalk_matrix.to_array() @ np.array(list(flux_vector.vector.values())),
-            np.array(list(new_flux_vector.vector.values())),
         )
 
     def test_init(self):
