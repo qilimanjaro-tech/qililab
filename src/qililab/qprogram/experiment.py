@@ -116,11 +116,11 @@ class Experiment(StructuredProgram):
                 warnings.warn(f"Crosstalk not given, using identity as crosstalk\n{self.crosstalk_data}")
             elif self.get_crosstalk:
                 self.crosstalk_data = self.get_crosstalk
-            if alias not in self.crosstalk_data.matrix.keys():
-                for key in list(self.crosstalk_data.matrix.keys()):
-                    self.crosstalk_data[alias] = {key: 0.0}
-                    self.crosstalk_data[key] = {alias: 0.0}
-                self.crosstalk_data[alias] = {alias: 1.0}
+            if alias not in self.crosstalk_data.matrix.keys():  # type: ignore[union-attr]
+                for key in list(self.crosstalk_data.matrix.keys()):  # type: ignore[union-attr]
+                    self.crosstalk_data[alias] = {key: 0.0}  # type: ignore[index]
+                    self.crosstalk_data[key] = {alias: 0.0}  # type: ignore[index]
+                self.crosstalk_data[alias] = {alias: 1.0}  # type: ignore[index]
                 warnings.warn(
                     f"{alias} not inside crosstalk matrix, adding it with identity values\n{self.crosstalk_data}"
                 )

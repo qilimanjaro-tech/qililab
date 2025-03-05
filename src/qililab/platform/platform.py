@@ -541,7 +541,7 @@ class Platform:
                 parameter = Parameter.VOLTAGE
             if bias[0].name in {"S4g"}:
                 parameter = Parameter.CURRENT
-            for flux_alias, flux_value in self.flux_vector.bias_vector.items():
+            for flux_alias, flux_value in self.flux_vector.bias_vector.items():  # type: ignore[union-attr]
                 flux_element = self.get_element(alias=flux_alias)
                 if bias[0].name in {"QCM", "QRM", "QRM-RF", "QCM-RF"}:
                     offset_channel = flux_element.instruments[0].awg_sequencers[flux_element.channels[0]].outputs[0]
