@@ -19,6 +19,7 @@ from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import SGS100A
@@ -312,6 +313,13 @@ class TestPlatform:
         mock_logger.info.assert_called_once_with("Already connected to the instruments")
 
     def test_disconnect_logger(self, platform: Platform):
+        platform._connected_to_instruments = True
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.disconnect()
+        mock_logger.info.assert_called_once_with("Disconnected from instruments")
+
+    def test_disconnect_fail_logger(self, platform: Platform):
         platform._connected_to_instruments = False
         platform.instrument_controllers = MagicMock()
         with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
@@ -526,9 +534,9 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
-    def test_compile_circuit(self, platform: Platform):
+    @pytest.mark.parametrize("optimize", [True, False])
+    def test_compile_circuit(self, optimize: bool, platform: Platform):
         """Test the compilation of a qibo Circuit."""
-
         circuit = Circuit(3)
         circuit.add(gates.X(0))
         circuit.add(gates.X(1))
@@ -536,7 +544,7 @@ class TestMethods:
         circuit.add(gates.Y(1))
         circuit.add(gates.M(0, 1, 2))
 
-        self._compile_and_assert(platform, circuit, 6)
+        self._compile_and_assert(platform, circuit, 6, optimize=optimize)
 
     def test_compile_circuit_raises_error_if_digital_settings_missing(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
@@ -566,10 +574,21 @@ class TestMethods:
 
         self._compile_and_assert(platform, pulse_schedule, 2)
 
-    def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int):
-        sequences_w_alias, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
+    def _compile_and_assert(
+        self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize: bool = False
+    ):
+        sequences_w_alias, _ = platform.compile(
+            program=program,
+            num_avg=1000,
+            repetition_duration=200_000,
+            num_bins=1,
+            transpilation_config=DigitalTranspilationConfig(optimize=optimize),
+        )
         assert isinstance(sequences_w_alias, dict)
-        assert len(sequences_w_alias) == len_sequences
+        if not optimize:
+            assert len(sequences_w_alias) == len_sequences
+        else:
+            assert len(sequences_w_alias) < len_sequences
         for alias, sequences in sequences_w_alias.items():
             assert alias in {bus.alias for bus in platform.buses}
             assert isinstance(sequences, list)
@@ -863,7 +882,7 @@ class TestMethods:
         c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
         # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
-        for idx, final_layout in enumerate([{"q0": 0, "q1": 1}, {"q0": 1, "q1": 0}]):
+        for idx, final_layout in enumerate([{0: 0, 1: 1}, {0: 1, 1: 0}]):
             platform.compile = MagicMock()  # type: ignore # don't care about compilation
             platform.compile.return_value = {"feedline_input_output_bus": None}, final_layout
             with patch.object(Bus, "upload"):
@@ -876,13 +895,13 @@ class TestMethods:
                             result = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
 
             # check that the order of #measurement # qubit is the same as in the circuit
-            order_measurement_qubit = [(result["measurement"], result["qubit"]) for result in result.qblox_raw_results]  # type: ignore
+            order_measurement_qubit = [(result["qubit"], result["measurement"]) for result in result.qblox_raw_results]  # type: ignore
 
             # Change the qubit mappings, given the final_layout:
             assert (
-                order_measurement_qubit == [(0, 1), (0, 0), (1, 0), (1, 1)]
+                order_measurement_qubit == [(1, 0), (0, 0), (0, 1), (1, 1)]
                 if idx == 0
-                else [(0, 0), (0, 1), (1, 1), (1, 0)]
+                else [(0, 0), (1, 0), (1, 1), (0, 1)]
             )
 
     def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):

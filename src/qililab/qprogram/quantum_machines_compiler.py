@@ -168,7 +168,7 @@ class QuantumMachinesCompiler:
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
-            bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
+            bus_mapping (dict[str, str], optional): Optional mapping of bus names. Defaults to None.
 
         Returns:
             tuple[qua.Program, dict, list[MeasurementInfo]]: A tuple consisting of the generated QUA program, the generated configuration and a list of measurements' information.

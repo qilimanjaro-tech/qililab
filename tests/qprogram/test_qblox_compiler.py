@@ -465,7 +465,7 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-        assert len(sequences["readout"]._waveforms._waveforms) == 2
+        assert len(sequences["readout"]._waveforms._waveforms) == 4
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
         assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 1
         assert len(sequences["readout"]._weights._weights) == 2
@@ -485,7 +485,7 @@ class TestQBloxCompiler:
                             play             0, 1, 100      
                             loop             R0, @square_0  
                             set_mrk          7              
-                            play             0, 1, 4        
+                            play             2, 3, 4        
                             acquire_weighed  0, 0, 0, 1, 2000
                             set_mrk          0              
                             upd_param        4              
@@ -493,10 +493,11 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    def test_set_offset_without_path_1_throws_exception(self, offset_no_path1: QProgram):
-        with pytest.raises(ValueError, match="No offset has been given for path 1 inside set_offset."):
-            compiler = QbloxCompiler()
+    def test_set_offset_without_path_1_throws_exception(self, caplog, offset_no_path1: QProgram):
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
             _ = compiler.compile(qprogram=offset_no_path1)
+        assert "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path." in caplog.text
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
         compiler = QbloxCompiler()
@@ -1053,7 +1054,7 @@ class TestQBloxCompiler:
                             nop                             
             loop_1:
                             set_awg_gain     R11, R11       
-                            move             1, R12         
+                            move             10, R12         
             square_1:
                             play             0, 1, 100      
                             loop             R12, @square_1 

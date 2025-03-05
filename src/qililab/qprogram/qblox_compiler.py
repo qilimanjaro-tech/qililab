@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import math
 from collections import deque
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -52,6 +52,7 @@ class AcquisitionData:
 
     bus: str
     save_adc: bool
+    shape: tuple
 
 
 Sequences = dict[str, QPy.Sequence]
@@ -169,8 +170,8 @@ class QbloxCompiler:
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
-            bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
-            times_of_flight (dict[str, int] | None, optional): Optional time of flight of bus. Defaults to None.
+            bus_mapping (dict[str, str], optional): Optional mapping of bus names. Defaults to None.
+            times_of_flight (dict[str, int], optional): Optional time of flight of bus. Defaults to None.
 
         Returns:
             QbloxCompilationOutput:
@@ -419,8 +420,10 @@ class QbloxCompiler:
             else convert(element.offset_path0)
         )
         if element.offset_path1 is None:
-            raise ValueError("No offset has been given for path 1 inside set_offset.")
-        offset_1 = (
+            offset_1 = offset_0
+            logger.warning("Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path.")
+        else:
+            offset_1 = (
             self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
             if isinstance(element.offset_path1, Variable)
             else convert(element.offset_path1)
@@ -533,6 +536,7 @@ class QbloxCompiler:
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
             if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
+        shape = tuple(loop[1].iterations for loop in loops)
         num_bins = math.prod(loop[1].iterations for loop in loops)
         acquisition_name = f"acquisition_{self._buses[element.bus].next_acquisition_index}"
         self._buses[element.bus].qpy_sequence._acquisitions.add(
@@ -541,7 +545,7 @@ class QbloxCompiler:
             index=self._buses[element.bus].next_acquisition_index,
         )
         self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
-            bus=element.bus, save_adc=element.save_adc
+            bus=element.bus, save_adc=element.save_adc, shape=shape
         )
 
         index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
@@ -611,15 +615,17 @@ class QbloxCompiler:
             and (waveform_Q is None or isinstance(waveform_Q, Square))
             and (waveform_I.duration >= 100)
         ):
-            duration = waveform_I.duration
+            copied_waveform_I: Square = deepcopy(waveform_I)
+            copied_waveform_Q: Square | None = deepcopy(waveform_Q)
+            duration = copied_waveform_I.duration
             chunk_duration, iterations, remainder = QbloxCompiler.calculate_square_waveform_optimization_values(
                 duration
             )
-            waveform_I.duration = chunk_duration
-            if isinstance(waveform_Q, Square):
-                waveform_Q.duration = chunk_duration
+            copied_waveform_I.duration = chunk_duration
+            if isinstance(copied_waveform_Q, Square):
+                copied_waveform_Q.duration = chunk_duration
             index_I, index_Q, _ = self._append_to_waveforms_of_bus(
-                bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
+                bus=element.bus, waveform_I=copied_waveform_I, waveform_Q=copied_waveform_Q
             )
             loop = QPyProgram.IterativeLoop(
                 name=f"square_{self._buses[element.bus].square_optimization_counter}", iterations=iterations
@@ -627,11 +633,11 @@ class QbloxCompiler:
             loop.append_component(component=QPyInstructions.Play(index_I, index_Q, wait_time=chunk_duration))
             self._buses[element.bus].qpy_block_stack[-1].append_component(component=loop)
             if remainder != 0:
-                waveform_I.duration = remainder
-                if isinstance(waveform_Q, Square):
-                    waveform_Q.duration = remainder
+                copied_waveform_I.duration = remainder
+                if isinstance(copied_waveform_Q, Square):
+                    copied_waveform_Q.duration = remainder
                 index_I, index_Q, _ = self._append_to_waveforms_of_bus(
-                    bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
+                    bus=element.bus, waveform_I=copied_waveform_I, waveform_Q=copied_waveform_Q
                 )
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Play(index_I, index_Q, wait_time=remainder)
