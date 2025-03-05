@@ -338,7 +338,7 @@ class Platform:
         self.flux_vector: FluxVector | None = None
         """Flux vector information, defaults to None (only used on FLUX parameters)"""
 
-        self.flux_parameter: dict[str, float] = {}
+        self.flux_parameter: dict[str, int | float | bool | str] = {}
         """Flux dictionary with information for the get parameter (only used on FLUX parameters)"""
 
     def connect(self):
@@ -516,7 +516,7 @@ class Platform:
         element = self.get_element(alias=alias)
 
         if parameter == Parameter.FLUX:
-            self.flux_parameter[alias] = value
+            self.flux_parameter[alias] = float(value)
             if crosstalk:
                 self.crosstalk = crosstalk
             self._process_crosstalk(alias, value, flux_list)

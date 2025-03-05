@@ -127,7 +127,7 @@ class Experiment(StructuredProgram):
             if isinstance(value, Variable):
                 self.value_flux_list[value.label] = alias
 
-        operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+        operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)  # type: ignore[arg-type]
         self._active_block.append(operation)
 
     def execute_qprogram(
