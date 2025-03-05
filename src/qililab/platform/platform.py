@@ -488,14 +488,17 @@ class Platform:
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
 
     def data_draw_oscilloscope(self):
-        param = [Parameter.IF, Parameter.GAIN_I, Parameter.GAIN_Q, Parameter.OFFSET_I, Parameter.OFFSET_Q, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3, Parameter.HARDWARE_MODULATION]#Need to add the other type of offset as well
+        param = [Parameter.IF, Parameter.GAIN_I, Parameter.GAIN_Q, Parameter.OFFSET_I, Parameter.OFFSET_Q, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3, Parameter.HARDWARE_MODULATION, Parameter.PHASE]#Need to add the other type of offset as well
         data_osci = {}
         data_oscillocope = {}
         for x in self.alias:
             data_osci[x] = {}
             for p in param:
-                val = self.get_parameter(x,p)
-                data_osci[x][p] = val
+                try:
+                    val = self.get_parameter(x,p)
+                    data_osci[x][p] = val
+                except Exception:
+                    continue
         for key, sub_dict in data_osci.items():
             data_oscillocope[key] = {
                 param.value: value for param, value in sub_dict.items()}

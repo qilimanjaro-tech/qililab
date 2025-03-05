@@ -21,11 +21,10 @@ from .qblox_module import QbloxModule
 # from qililab.platform import Platform
 
 # TODO:
-#scaling done wrong, should be done after freq applied not before - scaling the same always if HM is on, only subtelty is the offset that can go higher up but try to ignotr that and c.heck maybe works even when nthg done to the offset
 
 #should it identify other instruments? like qcm rf and qrm and qrm rf upstairs
-#add the phase
-#if you end with a set freq you have 1 too many
+#add the phase - steps on the tablet, debug why just adding isnt working - chatgpt initially gave a more complex formula, try adding some reset phases - could be my pbm
+#what is the gain and phase imbalance, any way to statically determine the phase like we have for gain and offsets
 
 
 #test on HW - change the fs to see the difference, check the freq, check the clipping (might need to add a flag)
@@ -70,7 +69,7 @@ class QbloxDraw:
                             scaling_factor = 1.8
                             max_voltage = 1.8
                         else:
-                            scaling_factor = 2.5
+                            scaling_factor = 1.8
                             max_voltage = 2.5
                     elif not param["hardware_modulation"]:
                         scaling_factor = 2.5
@@ -80,34 +79,46 @@ class QbloxDraw:
                     else: #hardware mod on but there are some offsets applied
                         scaling_factor = 1.8
                         max_voltage = 2.5
-                        # scaling_factor = 1.8
-                        # max_voltage = 1.8
+                        scaling_factor = 1.8
+                        max_voltage = 1.8
                     scaled_array = np.array(waveform_value['data']) * scaling_factor
                     off_i_scaled = off_i * scaling_factor
                     stored_data[0] = np.append(stored_data[0],np.clip((((scaled_array)*gain_i + off_i_scaled + offset_out0)),None,max_voltage))
 
                 elif waveform_value['index'] == output_path2:
-                    if param["hardware_modulation"] and off_q==0 and offset_out1 ==0:
-                        scaling_factor = 1.8
-                        max_voltage = 1.8
+                    if param["hardware_modulation"]:
+                        if off_i==0 and offset_out0 ==0:
+                            scaling_factor = 1.8
+                            max_voltage = 1.8
+                        else:
+                            scaling_factor = 1.8
+                            max_voltage = 2.5
                     elif not param["hardware_modulation"]:
-                        # scaling_factor = 2.5
-                        # max_voltage = 2.5
-                        scaling_factor = 1.8
-                        max_voltage = 1.8
-                    else: #hardware mod on but there are some offsets applied
+                        scaling_factor = 2.5
+                        max_voltage = 2.5
                         # scaling_factor = 1.8
-                        # max_voltage = 2.5
+                        # max_voltage = 1.8
+                    else: #hardware mod on but there are some offsets applied
+                        scaling_factor = 1.8
+                        max_voltage = 2.5
                         scaling_factor = 1.8
                         max_voltage = 1.8
                     scaled_array = np.array(waveform_value['data']) * scaling_factor
                     off_q_scaled = off_q * scaling_factor
                     stored_data[1] = np.clip(np.append(stored_data[1], ((scaled_array)*gain_q + off_q_scaled + offset_out1)),None,max_voltage)
+                    # stored_data[1] = np.append(stored_data[1], (scaled_array)*gain_q + off_q_scaled + offset_out1)
+
             if param.get('intermediate_frequency_new',False) is True:
                 param['intermediate_frequency'].extend([param['intermediate_frequency'][-1]] * (len(scaled_array)-1))
                 param['intermediate_frequency_new'] = False
             else:
                 param['intermediate_frequency'].extend([param['intermediate_frequency'][-1]] * (len(scaled_array)))
+
+            if param.get('phase_new',False) is True:
+                param['phase'].extend([param['phase'][-1]] * (len(scaled_array)-1))
+                param['phase_new'] = False
+            else:
+                param['phase'].extend([param['phase'][-1]] * (len(scaled_array)))
         return stored_data
     
     def _handle_acquire_draw(self, stored_data, act_play): #is it always 4ns, in one case it is 12ns ??????????????????????????
@@ -155,13 +166,19 @@ class QbloxDraw:
             offset_out0 = param.get("offset_out0", 0)
             offset_out1 = param.get("offset_out1", 0)
             y_wait = np.linspace(0, 0, int(act_wait[1]))
-            stored_data[0] = np.append(stored_data[0], np.clip((y_wait + off_i_scaled + offset_out0),None,max_voltagei))
-            stored_data[1] = np.append(stored_data[1], np.clip((y_wait + off_q_scaled + offset_out1),None,max_voltageq))
+            stored_data[0] = np.append(stored_data[0], (y_wait + off_i_scaled + offset_out0))
+            stored_data[1] = np.append(stored_data[1], (y_wait + off_q_scaled + offset_out1))
             if param.get('intermediate_frequency_new',False) is True:
                 param['intermediate_frequency'].extend([param['intermediate_frequency'][-1]] * (len(y_wait)-1))
                 param['intermediate_frequency_new'] = False
             else:
                 param['intermediate_frequency'].extend([param['intermediate_frequency'][-1]] * (len(y_wait)))
+
+            if param.get('phase_new',False) is True:
+                param['phase'].extend([param['phase'][-1]] * (len(y_wait)-1))
+                param['phase_new'] = False
+            else:
+                param['phase'].extend([param['phase'][-1]] * (len(y_wait)))
         return stored_data
 
     def _handle_gain_draw(self, item, param):
@@ -196,7 +213,26 @@ class QbloxDraw:
 
             param['intermediate_frequency_new'] = True
         return param
-    
+
+    def _handle_phase_draw(self, item, param, move_reg): #data is latched  only updated under specific conditions, handle case where more than 1 freq, and handle the case where no freq is given
+        if item[0] == "set_ph":
+            if param['phase_new']:
+                param['phase'][-1] = self._get_value(item[1],move_reg)
+            else:   
+            #parameters["intermediate_frequency"] = item[1] #overwrite the if if given in the qprogram
+                param['phase'].append(self._get_value(item[1],move_reg))
+
+            param['phase_new'] = True
+
+        if item[0] == "reset_ph":
+            if param['phase_new']:
+                param['phase'][-1] = 0
+            else:   
+            #parameters["intermediate_frequency"] = item[1] #overwrite the if if given in the qprogram
+                param['phase'].append(0)
+            param['phase_new'] = True
+        return param
+
     def _get_value(self, x, move_reg):
         if x is not None:
             if x.isdigit():
@@ -265,11 +301,13 @@ class QbloxDraw:
                 # parameters = {key: runcard_data[bus][key] for key in runcard_data[bus]}
                 parameters[bus]['intermediate_frequency'] = [parameters[bus]['intermediate_frequency']]
                 parameters[bus]['intermediate_frequency_new'] = True
-            else:
+            else:   
                 parameters[bus] = {}
                 parameters[bus]['intermediate_frequency'] = [0]
                 parameters[bus]['intermediate_frequency_new'] = True
                 parameters[bus]['hardware_modulation'] = True # if plotting directly from qp, plot i and q
+            parameters[bus]['phase'] = [0]
+            parameters[bus]['phase_new'] = True
             wf1 = []
             wf2 = []
             param = parameters[bus]
@@ -325,6 +363,7 @@ class QbloxDraw:
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
                             run_items.append(item[-1])
                             self._handle_freq_draw(item, param, move_reg)
+                            self._handle_phase_draw(item, param, move_reg)
                             self._handle_offset_draw(item, param)
                             data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg, param)
                             data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
@@ -344,6 +383,7 @@ class QbloxDraw:
                     process_loop(input,index)
                 elif item[-1] not in run_items: #ensure not running the ones that have already been ran
                     self._handle_freq_draw(item, param, move_reg)
+                    self._handle_phase_draw(item, param, move_reg)
                     self._handle_offset_draw(item, param)
                     data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,param)
                     data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
@@ -353,6 +393,10 @@ class QbloxDraw:
                     pass
             if param['intermediate_frequency_new']:
                 param['intermediate_frequency'].pop()
+            parameters[bus] = param
+
+            if param['phase_new']:
+                param['phase'].pop()
             parameters[bus] = param
 
         # Plot the waveforms
@@ -372,19 +416,21 @@ class QbloxDraw:
                 t = np.arange(0, len(wf1)) / fs
                 # t=np.array(len(wf1)/fs)
                 freq = np.array(parameters[key]["intermediate_frequency"])/4
+                phase = np.array(parameters[key]["phase"])*(2*np.pi/1e9)
                 print(len(freq))
                 print(len(wf1))
+                # phase = 0.5
                 # complex_signal = wf1 + 1j * wf2
                 # rotation = np.exp(1j * 2 * np.pi * freq * t)
                 # rotated_signal = complex_signal * rotation
                 # path0 = np.real(rotated_signal)
                 # path1 = np.imag(rotated_signal)
 
-                cos_term = np.cos(2 * np.pi * freq *t)
-                sin_term = np.sin(2 * np.pi * freq *t)
-
-                path0 = (1/(np.sqrt(2)))*(cos_term * np.array(wf1) - sin_term * np.array(wf2))
-                path1 = (1/(np.sqrt(2)))*(sin_term * np.array(wf1) + cos_term * np.array(wf2))
+                cos_term = np.cos(2 * np.pi * freq *t + phase)
+                sin_term = np.sin(2 * np.pi * freq *t + phase)
+                #(1/(np.sqrt(2)))*
+                path0 = (cos_term * np.array(wf1) - sin_term * np.array(wf2))
+                path1 = (sin_term * np.array(wf1) + cos_term * np.array(wf2))
                 
                 fig.add_trace(go.Scatter(y=path0, mode='lines', name=f'{key} I', legendgroup=idx), row=idx+1, col=1)
                 fig.add_trace(go.Scatter(y=path1, mode='lines', name=f'{key} Q', legendgroup=idx), row=idx+1, col=1)
