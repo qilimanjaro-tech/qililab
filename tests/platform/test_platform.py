@@ -284,6 +284,9 @@ class TestPlatform:
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14, channel_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14
 
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
+
     @pytest.mark.parametrize(
         "bus, parameter, value",
         [
@@ -294,6 +297,7 @@ class TestPlatform:
             ("readout_q0_rf", Parameter.IF, 16e6),
             ("readout_q0_rf", Parameter.GAIN, 0.002),
             ("drive_q0", Parameter.IF, 13e6),
+            ("flux_q0", Parameter.FLUX, 0.5),
         ],
     )
     def test_set_parameter_no_instrument_connection_QM(self, bus: str, parameter: Parameter, value: float | str | bool):
@@ -1048,6 +1052,12 @@ class TestMethods:
     def test_get_parameter_of_platform(self, parameter, platform: Platform):
         """Test the ``get_parameter`` method with platform parameters."""
         value = platform.get_parameter(parameter=parameter, alias="platform")
+        assert value == 0
+
+    @pytest.mark.parametrize("parameter", [Parameter.FLUX])
+    def test_get_flux_parameter(self, parameter, platform: Platform):
+        """Test the ``get_parameter`` method with platform flux parameters. The default as 0 is created"""
+        value = platform.get_parameter(parameter=parameter, alias="flux_line_phix_q0")
         assert value == 0
 
     def test_get_parameter_with_delay(self, platform: Platform):
