@@ -24,28 +24,32 @@ from .qblox_module import QbloxModule
 #should it identify other instruments? like qcm rf and qrm and qrm rf upstairs
 #what is the gain and phase imbalance, any way to statically determine the phase like we have for gain and offsets
 #when 3plots, the legends get a bit essy
+#in a way that only the 1st aveergae plots by default and have the option to show them if wanted
 #clean up the code
 class QbloxDraw:
 
-    def _call_handlers(self, action, param, move_reg, data_draw, bus):
+    def _call_handlers(self, action, param, move_reg, data_draw,wf):
         action_type = action[0]
         if action_type == "set_freq":
-            param = self._handle_freq_draw(action, param, move_reg)
+            param = self._handle_freq_phase_draw(action, param, move_reg,"intermediate_frequency")
         elif action_type == "set_ph":
-            param = self._handle_phase_draw(action, param, move_reg)
+            param = self._handle_freq_phase_draw(action, param, move_reg,"phase")
         elif action_type == "reset_ph":
-            param = self._handle_freq_draw(action, param, move_reg)
+            param = self._handle_reset_phase_draw(param)
         elif action_type == "set_awg_offs":
-            param = self._handle_offset_draw(action, param)
+            param = self._handle_gain_off_draw(action, param,"offset",0)
+        elif action_type == "set_awg_gain":
+            param = self._handle_gain_off_draw(action, param,"gain",1)
         elif action_type == "play":
-            data_draw[bus] = self._handle_play_draw(data_draw[bus], action, move_reg, param)
+            data_draw = self._handle_play_draw(data_draw, action, wf, move_reg, param)
         elif action_type == "acquire":
-            data_draw[bus] = self._handle_acquire_draw(data_draw[bus], action)
+            data_draw = self._handle_acquire_draw(data_draw, action)
         elif action_type == "wait":
-            data_draw[bus] = self._handle_wait_draw(data_draw[bus], action, param)
+            data_draw = self._handle_wait_draw(data_draw, action, param)
         elif action_type == "add":
             self._handle_add_draw(move_reg, action)
-        return param, move_reg, data_draw[bus]
+
+        return param, move_reg, data_draw
 
     def calculate_scaling_and_offsets(self, param, i_or_q):
         if i_or_q == "I":  # i
@@ -68,123 +72,92 @@ class QbloxDraw:
     def get_value_from_metadata(self,metadata, move_reg, key, division_factor=None):
         if key in metadata: #metadata is the runcard
             if metadata[key] in move_reg.keys():#check if it's in the register
-                if division_factor:
-                    return float(float(move_reg[metadata[key]]) / float(division_factor))
-                else:
-                    return float(move_reg[metadata[key]])
+                return float(move_reg[metadata[key]]) / float(division_factor) if division_factor else float(move_reg[metadata[key]])
             else:
                 return float(metadata[key])
         return None
 
     def _handle_play_draw(self, stored_data, act_play, diction, move_reg, param):
-        if act_play[0] == "play":
-            output_path1, output_path2, _ = map(int, act_play[1].split(','))
+        output_path1, output_path2, _ = map(int, act_play[1].split(','))
+        # modify and store the wf data
+        for waveform_key, waveform_value in diction:
+            index = waveform_value['index']
+            if index in [output_path1, output_path2]:
+                iq = "I" if index == output_path1 else "Q"
+                scaling_factor, max_voltage, gain, offset_scaled, offset_out = self.calculate_scaling_and_offsets(param, iq)
+                scaled_array = np.array(waveform_value['data']) * scaling_factor
+                modified_waveform = np.clip(scaled_array * gain + offset_scaled + offset_out, None, max_voltage)
+                stored_data[0 if index == output_path1 else 1] = np.append(stored_data[0 if index == output_path1 else 1], modified_waveform)
 
-            # modify and store the wf data
-            for waveform_key, waveform_value in diction:
-                index = waveform_value['index']
-
-                if index in [output_path1, output_path2]:
-                    iq = "I" if index == output_path1 else "Q"
-                    scaling_factor, max_voltage, gain, offset_scaled, offset_out = self.calculate_scaling_and_offsets(param, iq)
-                    scaled_array = np.array(waveform_value['data']) * scaling_factor
-                    modified_waveform = np.clip(scaled_array * gain + offset_scaled + offset_out, None, max_voltage)
-                    stored_data[0 if index == output_path1 else 1] = np.append(stored_data[0 if index == output_path1 else 1], modified_waveform)
-
-            #extend the IF and phase by the length of the wf
-            for key in ['intermediate_frequency', 'phase']:
-                if param.get(f"{key}_new", False) is True:
-                    param[key].extend([param[key][-1]] * (len(scaled_array) - 1))
-                    param[f"{key}_new"] = False
-                else:
-                    param[key].extend([param[key][-1]] * len(scaled_array))
+        #extend the IF and phase by the length of the wf
+        for key in ['intermediate_frequency', 'phase']:
+            if param.get(f"{key}_new", False) is True:
+                param[key].extend([param[key][-1]] * (len(scaled_array) - 1))
+                param[f"{key}_new"] = False
+            else:
+                param[key].extend([param[key][-1]] * len(scaled_array))
         return stored_data
     
     def _handle_acquire_draw(self, stored_data, act_play): #is it always 4ns, in one case it is 12ns ??????????????????????????
-        if act_play[0] == "acquire_weighed":
-            y_wait = np.linspace(0, 0, 4)
-            stored_data = [np.append(stored_data[0], y_wait), np.append(stored_data[1], y_wait)]
+        y_wait = np.linspace(0, 0, 4)
+        stored_data = [np.append(stored_data[0], y_wait), np.append(stored_data[1], y_wait)]
         return stored_data
 
     def _handle_wait_draw(self, stored_data, act_wait, param):
-        if act_wait[0] == "wait":
+        # Dynamic offsets
+        off_i, off_q = param.get("offset_i", 0), param.get("offset_q", 0)
 
-            # Dynamic offsets
-            off_i, off_q = param.get("offset_i", 0), param.get("offset_q", 0)
+        # Static offsets
+        offset_out0, offset_out1 = param.get("offset_out0", 0), param.get("offset_out1", 0)
 
-            # Static offsets
-            offset_out0, offset_out1 = param.get("offset_out0", 0), param.get("offset_out1", 0)
+        scaling_factori,_ = self._get_scaling_factors(param, off_i, offset_out0)
+        scaling_factorq,_= self._get_scaling_factors(param, off_q, offset_out1)
 
-            scaling_factori,_ = self._get_scaling_factors(param, off_i, offset_out0)
-            scaling_factorq,_= self._get_scaling_factors(param, off_q, offset_out1)
+        #dynamic offset
+        off_i_scaled = off_i * scaling_factori
+        off_q_scaled = off_q * scaling_factorq
+        
+        #static offset
+        offset_out0 = param.get("offset_out0", 0)
+        offset_out1 = param.get("offset_out1", 0)
+        y_wait = np.linspace(0, 0, int(act_wait[1]))
+        stored_data[0] = np.append(stored_data[0], (y_wait + off_i_scaled + offset_out0))
+        stored_data[1] = np.append(stored_data[1], (y_wait + off_q_scaled + offset_out1))
 
-            #dynamic offset
-            off_i_scaled = off_i * scaling_factori
-            off_q_scaled = off_q * scaling_factorq
-            
-            #static offset
-            offset_out0 = param.get("offset_out0", 0)
-            offset_out1 = param.get("offset_out1", 0)
-            y_wait = np.linspace(0, 0, int(act_wait[1]))
-            stored_data[0] = np.append(stored_data[0], (y_wait + off_i_scaled + offset_out0))
-            stored_data[1] = np.append(stored_data[1], (y_wait + off_q_scaled + offset_out1))
-
-            #extend the IF and phase by the length of the wf
-            for key in ['intermediate_frequency', 'phase']:
-                if param.get(f"{key}_new", False) is True:
-                    param[key].extend([param[key][-1]] * (len(y_wait) - 1))
-                    param[f"{key}_new"] = False
-                else:
-                    param[key].extend([param[key][-1]] * len(y_wait))
+        #extend the IF and phase by the length of the wf
+        for key in ['intermediate_frequency', 'phase']:
+            if param.get(f"{key}_new", False) is True:
+                param[key].extend([param[key][-1]] * (len(y_wait) - 1))
+                param[f"{key}_new"] = False
+            else:
+                param[key].extend([param[key][-1]] * len(y_wait))
         return stored_data
-
-    def _handle_gain_draw(self, item, param):
-        if item[0] == "set_awg_gain":
-           gain_i, gain_q =  map(lambda x: float(x) / 32767, item[1].split(','))
-           gain = [gain_i,gain_q]
-           gains = [x if x is not None else 1 for x in gain]
-           param["gain_i"],param["gain_q"] = gains
+    
+    def _handle_gain_off_draw(self, item, param, key, default):
+        i_val, q_val = map(lambda x: float(x) / 32767, item[1].split(','))
+        param[f"{key}_i"], param[f"{key}_q"] = i_val or default, q_val or default
         return param
     
-    def _handle_offset_draw(self, item, param):
-        if item[0] == "set_awg_offs":
-            offset_i, offset_q =  map(lambda x: float(x) / 32767, item[1].split(','))
-            off = [offset_i,offset_q]
-            offsets = [x if x is not None else 0 for x in off]
-            param["offset_i"],param["offset_q"] = offsets
-        return param
-    
-    def _handle_freq_draw(self, item, param, move_reg):
-        if item[0] == "set_freq":
-            if param['intermediate_frequency_new']:
-                param['intermediate_frequency'][-1] = self._get_value(item[1],move_reg)
-            else:
-                param['intermediate_frequency'].append(self._get_value(item[1],move_reg))
-            param['intermediate_frequency_new'] = True
+    def _handle_freq_phase_draw(self, item, param, move_reg, key):
+        new_key = f"{key}_new"
+        if param[new_key]:
+            param[key][-1] = self._get_value(item[1], move_reg)
+        else:
+            param[key].append(self._get_value(item[1], move_reg))
+        param[new_key] = True
         return param
 
-    def _handle_phase_draw(self, item, param, move_reg):
-        if item[0] == "set_ph":
-            if param['phase_new']:
-                param['phase'][-1] = self._get_value(item[1],move_reg)
-            else:
-                param['phase'].append(self._get_value(item[1],move_reg))
-            param['phase_new'] = True
-        return param
-
-    def _handle_reset_phase_draw(self, item, param):
-        if item[0] == "reset_ph":
-            if param['phase_new']:
-                param['phase'][-1] = 0
-            else:
-                param['phase'].append(0)
-            param['phase_new'] = True
+    def _handle_reset_phase_draw(self, param):
+        if param['phase_new']:
+            param['phase'][-1] = 0
+        else:
+            param['phase'].append(0)
+        param['phase_new'] = True
         return param
     
     def _handle_add_draw(self, move_reg, act_add):
-        if act_add[0] == "add":
-            a, b, destination = act_add[1].split(", ")
-            move_reg[destination] = self._get_value(a, move_reg) + self._get_value(b, move_reg)
+        a, b, destination = act_add[1].split(", ")
+        move_reg[destination] = self._get_value(a, move_reg) + self._get_value(b, move_reg)
         return move_reg
 
     def _get_value(self, x, move_reg):
@@ -314,13 +287,7 @@ class QbloxDraw:
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
                             run_items.append(item[-1])
-                            self._handle_freq_draw(item, param, move_reg)
-                            self._handle_phase_draw(item, param, move_reg)
-                            self._handle_offset_draw(item, param)
-                            data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg, param)
-                            data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
-                            data_draw[bus] = self._handle_wait_draw(data_draw[bus], item, param)
-                            self._handle_add_draw(move_reg, item)
+                            self._call_handlers(item, param, move_reg, data_draw[bus], wf)
                             current_idx +=1
                     return current_idx
 
@@ -334,13 +301,7 @@ class QbloxDraw:
                             break  # Stop as soon as the first match is found
                     process_loop(input,index)
                 elif item[-1] not in run_items: #ensure not running the ones that have already been ran
-                    self._handle_freq_draw(item, param, move_reg)
-                    self._handle_phase_draw(item, param, move_reg)
-                    self._handle_offset_draw(item, param)
-                    data_draw[bus] = self._handle_play_draw(data_draw[bus], item, wf, move_reg,param)
-                    data_draw[bus] = self._handle_acquire_draw(data_draw[bus], item)
-                    data_draw[bus] = self._handle_wait_draw(data_draw[bus], item, param)
-                    self._handle_add_draw(move_reg, item)
+                    self._call_handlers(item, param, move_reg, data_draw[bus], wf)
                 else:
                     pass
             if param['intermediate_frequency_new']:
