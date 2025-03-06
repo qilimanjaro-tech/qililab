@@ -26,6 +26,8 @@ from .qblox_module import QbloxModule
 #when 3plots, the legends get a bit essy
 #in a way that only the 1st aveergae plots by default and have the option to show them if wanted
 #clean up the code
+#if you do smthg like that qp.play(bus="flux1",waveform=Square(amplitude=1, duration=5))
+# qp.wait("flux1",5) - at what pointdoes the waveform starts going down
 class QbloxDraw:
 
     def _call_handlers(self, action, param, move_reg, data_draw,wf):
@@ -48,7 +50,6 @@ class QbloxDraw:
             data_draw = self._handle_wait_draw(data_draw, action, param)
         elif action_type == "add":
             self._handle_add_draw(move_reg, action)
-
         return param, move_reg, data_draw
 
     def calculate_scaling_and_offsets(self, param, i_or_q):
@@ -169,12 +170,14 @@ class QbloxDraw:
         return None
 
     def _parse_program(self, sequences):
-        Q1ASM_ordered = {}
-        for bus in sequences:  # Iterate through the dictionary
-            content_dict = sequences[bus].todict()
-            lines = content_dict["program"].split("\n")
+        seq_parsed_program = {}
+        for bus in sequences:  # Iterate through the bus of the sequences
+            sequence = sequences[bus].todict()
+            program_line = sequence["program"].split("\n")
             processed_lines = []
-            for line in lines:
+
+            #parse all lines of qprogram and deal with special cases of nop and reset phase
+            for line in program_line:
                 stripped_line = line.strip()
                 if stripped_line.startswith("nop"):
                     processed_lines.append("nop             2")
@@ -182,36 +185,34 @@ class QbloxDraw:
                     processed_lines.append("reset_ph             2")
                 else:
                     processed_lines.append(stripped_line)
-            content_dict["program"] = "\n".join(processed_lines)  # Update mutable dictionary
-            sequences[bus] = content_dict
+            line_data = "\n".join(processed_lines)
+            pattern = r'(\w+):|(\w+)(?:\s+([^\n]*))?'
+            matches = re.findall(pattern, line_data) #(section/loop, instruction, numerical value)
 
-        for bus in sequences:
-            Q1ASM_ordered[bus] = None  # Initialize
-            dict_bus = sequences[bus]
-            pattern = r'(\w+):|(\w+)(?:\s+([^\n]*))?'  # Captures labels and commands
-            matches = re.findall(pattern, dict_bus["program"])
-            command_dict = {"setup": [], "main": []}  # Sections with ordered lists
-            current_section = "setup"  # Default to setup
+            program_parsed = {"setup": [], "main": []} #each section is a list of tuples (instruction, numerical value, (tuple of loop label), index)
             index = 0  # Track execution order
             # Create a list of the program section made of tuples (command, args, index)
-            sub_label = ()
-            for label, command, arguments in matches:
-                if label:
-                    if label == "main":
-                        current_section = label  # Switch to new section (e.g., "main")
+            loop_label = ()
+            for section, instruction, numerical_value in matches:
+                if section:
+                    if section == "setup":
+                        current_section = section
                         index = 0
-                    elif label != "setup" and label != "main":
-                        sub_label += (label,)
-                elif command:
-                    args = arguments if arguments else ""
-                    command_dict[current_section].append((command, args, sub_label, index))  # Store index
+                    if section == "main":
+                        current_section = section
+                        index = 0
+                    elif section not in ["setup","main"]:
+                        loop_label += (section,) #add the label of the loop
+                elif instruction:
+                    numerical_value = numerical_value if numerical_value else ""
+                    program_parsed[current_section].append((instruction, numerical_value, loop_label, index))  # Store index
                     index += 1  # Increment order index
-                    for la in sub_label:
-                        if ("@" + la) in args:
-                            sub_label = tuple(l for l in sub_label if l != la)
-                dict_bus["program"] = command_dict
-            Q1ASM_ordered[bus] = dict_bus  # Store structured result
-        return Q1ASM_ordered
+                    for la in loop_label: #remove the @, eg: Q1ASM has @loop_0 and we want loop_0
+                        if ("@" + la) in numerical_value:
+                            loop_label = tuple(l for l in loop_label if l != la)
+                sequence["program"] = program_parsed
+            seq_parsed_program[bus] = sequence
+        return seq_parsed_program
 
     def draw_oscilloscope(self, result, runcard_data = None):
         Q1ASM_ordered = self._parse_program(result.sequences.copy())
@@ -229,10 +230,10 @@ class QbloxDraw:
             else:   
                 parameters[bus] = {}
                 parameters[bus]['intermediate_frequency'] = [0]
-                parameters[bus]['intermediate_frequency_new'] = True
                 parameters[bus]['hardware_modulation'] = True # if plotting directly from qp, plot i and q
             parameters[bus]['phase'] = [0]
             parameters[bus]['phase_new'] = True
+            parameters[bus]['intermediate_frequency_new'] = True
             wf1 = []
             wf2 = []
             param = parameters[bus]
