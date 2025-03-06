@@ -1,7 +1,11 @@
 import os
+import warnings
+from unittest.mock import patch
 
 import pytest
+from tests.qprogram.test_structured_program import TestStructuredProgram
 
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
 from qililab.qprogram.qprogram import QProgram
@@ -9,9 +13,6 @@ from qililab.qprogram.variable import Domain
 from qililab.typings.enums import Parameter
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 from qililab.waveforms import IQPair, Square
-from tests.qprogram.test_structured_program import (
-    TestStructuredProgram,
-)
 
 
 class TestExperiment(TestStructuredProgram):
@@ -31,6 +32,32 @@ class TestExperiment(TestStructuredProgram):
         assert instance._body.elements[0].alias == "flux_bus"
         assert instance._body.elements[0].parameter == Parameter.VOLTAGE
         assert instance._body.elements[0].value == 0.5
+
+    @patch("warnings.warn")
+    def test_set_parameter_flux_warnings_no_crosstalk(self, mock_warn, instance: Experiment):
+        """Test set_awg_gain method"""
+        instance.set_parameter(alias="flux_bus", parameter=Parameter.FLUX, value=0.5)
+        mock_warn.assert_any_call(f"Crosstalk not given, using identity as crosstalk\n{instance.crosstalk_data}")
+
+    @patch("warnings.warn")
+    def test_set_parameter_flux_warnings_no_bus_in_crosstalk(self, mock_warn, instance: Experiment):
+        """Test set_awg_gain method"""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(
+            buses={"flux_z": {"flux_x": 0.1, "flux_z": 1.0}, "flux_x": {"flux_x": 1.0, "flux_z": 0.5}}
+        )
+        instance.crosstalk(crosstalk_matrix)
+        instance.set_parameter(alias="flux_bus", parameter=Parameter.FLUX, value=0.5)
+        mock_warn.assert_any_call(
+            f"flux_bus not inside crosstalk matrix, adding it with identity values\n{instance.crosstalk_data}"
+        )
+
+    def test_set_parameter_flux_save_variable(self, instance: Experiment):
+        """Test set_awg_gain method"""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"flux_bus": {"flux_bus": 0.1}})
+        value = instance.variable(label="flux", domain=Domain.Flux)
+        instance.crosstalk(crosstalk_matrix)
+        instance.set_parameter(alias="flux_bus", parameter=Parameter.FLUX, value=value)
+        assert instance.value_flux_list == {value.label: "flux_bus"}
 
     def test_execute_qprogram(self, instance: Experiment):
         """Test set_awg_gain method"""

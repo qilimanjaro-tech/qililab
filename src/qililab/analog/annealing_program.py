@@ -128,8 +128,12 @@ class AnnealingProgram:
             bus_flux_dict = FluxVector.from_dict(
                 {flux_to_bus_map[flux_line]: value for flux_line, value in annealing_step.items()}
             )
-            corrected_flux = crosstalk_matrix @ bus_flux_dict if crosstalk_matrix is not None else bus_flux_dict
-            for bus, value in corrected_flux.vector.items():
+            flux_dict = (
+                bus_flux_dict.set_crosstalk(crosstalk_matrix)
+                if crosstalk_matrix is not None
+                else bus_flux_dict.flux_vector
+            )
+            for bus, value in flux_dict.items():
                 annealing_waveforms[bus].append(value)
 
         return {key: Arbitrary(np.array(value)) for key, value in annealing_waveforms.items()}
