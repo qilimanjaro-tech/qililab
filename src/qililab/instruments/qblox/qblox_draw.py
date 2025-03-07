@@ -13,52 +13,41 @@
 # limitations under the License.
 
 import re
-import math
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from .qblox_module import QbloxModule
 
-# TODO:
-#start at 447 lines of code
-#should it identify other instruments? like qcm rf and qrm and qrm rf upstairs
-#what is the gain and phase imbalance, any way to statically determine the phase like we have for gain and offsets
-#when 3plots, the legends get a bit essy
-#in a way that only the 1st aveergae plots by default and have the option to show them if wanted
-#clean up the code
-#if you do smthg like that qp.play(bus="flux1",waveform=Square(amplitude=1, duration=5))
-# qp.wait("flux1",5) - at what pointdoes the waveform starts going down
 class QbloxDraw:
 
-    def _call_handlers(self, action, param, move_reg, data_draw,wf):
-        action_type = action[0]
+    def _call_handlers(self, program_line, param, register, data_draw,wf):
+        action_type = program_line[0]
         if action_type == "set_freq":
-            param = self._handle_freq_phase_draw(action, param, move_reg,"intermediate_frequency")
+            param = self._handle_freq_phase_draw(program_line, param, register,"intermediate_frequency")
         elif action_type == "set_ph":
-            param = self._handle_freq_phase_draw(action, param, move_reg,"phase")
+            param = self._handle_freq_phase_draw(program_line, param, register,"phase")
         elif action_type == "reset_ph":
             param = self._handle_reset_phase_draw(param)
         elif action_type == "set_awg_offs":
-            param = self._handle_gain_off_draw(action, param,"offset",0)
+            param = self._handle_gain_off_draw(program_line, param,"offset",0)
         elif action_type == "set_awg_gain":
-            param = self._handle_gain_off_draw(action, param,"gain",1)
+            param = self._handle_gain_off_draw(program_line, param,"gain",1)
         elif action_type == "play":
-            data_draw = self._handle_play_draw(data_draw, action, wf, move_reg, param)
+            data_draw = self._handle_play_draw(data_draw, program_line, wf, register, param)
         elif action_type == "acquire":
-            data_draw = self._handle_acquire_draw(data_draw, action)
+            data_draw = self._handle_acquire_draw(data_draw, program_line)
         elif action_type == "wait":
-            data_draw = self._handle_wait_draw(data_draw, action, param)
+            data_draw = self._handle_wait_draw(data_draw, program_line, param)
         elif action_type == "add":
-            self._handle_add_draw(move_reg, action)
-        return param, move_reg, data_draw
+            self._handle_add_draw(register, program_line)
+        return param, register, data_draw
 
     def calculate_scaling_and_offsets(self, param, i_or_q):
-        if i_or_q == "I":  # i
+        if i_or_q == "I":
             scaling_factor, max_voltage = self._get_scaling_factors(param, param.get("offset_i", 0), param.get("offset_out0", 0))
             gain = param.get("gain_i", 1)
             offset_scaled = param.get("offset_i", 0) * scaling_factor
             offset_out = param.get("offset_out0", 0)
-        elif i_or_q == "Q":  # q
+        elif i_or_q == "Q":
             scaling_factor, max_voltage = self._get_scaling_factors(param, param.get("offset_q", 0), param.get("offset_out1", 0))
             gain = param.get("gain_q", 1)
             offset_scaled = param.get("offset_q", 0) * scaling_factor
@@ -70,15 +59,15 @@ class QbloxDraw:
             return (1.8, 1.8) if static_off == 0 and dynamic_off == 0 else (1.8, 2.5)
         return (2.5, 2.5)  # (scaling factor, max voltage)
 
-    def get_value_from_metadata(self,metadata, move_reg, key, division_factor=None):
+    def get_value_from_metadata(self,metadata, register, key, division_factor=None):
         if key in metadata: #metadata is the runcard
-            if metadata[key] in move_reg.keys():#check if it's in the register
-                return float(move_reg[metadata[key]]) / float(division_factor) if division_factor else float(move_reg[metadata[key]])
+            if metadata[key] in register.keys():#check if it's in the register
+                return float(register[metadata[key]]) / float(division_factor) if division_factor else float(register[metadata[key]])
             else:
                 return float(metadata[key])
         return None
 
-    def _handle_play_draw(self, stored_data, act_play, diction, move_reg, param):
+    def _handle_play_draw(self, stored_data, act_play, diction, register, param):
         output_path1, output_path2, _ = map(int, act_play[1].split(','))
         # modify and store the wf data
         for waveform_key, waveform_value in diction:
@@ -139,12 +128,12 @@ class QbloxDraw:
         param[f"{key}_i"], param[f"{key}_q"] = i_val or default, q_val or default
         return param
     
-    def _handle_freq_phase_draw(self, item, param, move_reg, key):
+    def _handle_freq_phase_draw(self, item, param, register, key):
         new_key = f"{key}_new"
         if param[new_key]:
-            param[key][-1] = self._get_value(item[1], move_reg)
+            param[key][-1] = self._get_value(item[1], register)
         else:
-            param[key].append(self._get_value(item[1], move_reg))
+            param[key].append(self._get_value(item[1], register))
         param[new_key] = True
         return param
 
@@ -156,17 +145,17 @@ class QbloxDraw:
         param['phase_new'] = True
         return param
     
-    def _handle_add_draw(self, move_reg, act_add):
+    def _handle_add_draw(self, register, act_add):
         a, b, destination = act_add[1].split(", ")
-        move_reg[destination] = self._get_value(a, move_reg) + self._get_value(b, move_reg)
-        return move_reg
+        register[destination] = self._get_value(a, register) + self._get_value(b, register)
+        return register
 
-    def _get_value(self, x, move_reg):
+    def _get_value(self, x, register):
         if x is not None:
             if x.isdigit():
                 return float(x)
-            if x in move_reg:
-                return float(move_reg[x])
+            if x in register:
+                return float(register[x])
         return None
 
     def _parse_program(self, sequences):
@@ -214,65 +203,68 @@ class QbloxDraw:
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
-    def draw_oscilloscope(self, result, runcard_data = None):
-        Q1ASM_ordered = self._parse_program(result.sequences.copy())
+    def draw_oscilloscope(self, result, runcard_data = None, averages_displayed = False):
+        Q1ASM_ordered = self._parse_program(result.sequences.copy()) # (instruction, value, label of the loops, index)
         data_draw = {}
-        # [0]: action to be taken
-        # [1]: value
-        # [2]: label of the loops
-        # [3]: index
         parameters = {}
         for bus,_ in Q1ASM_ordered.items():
+            #Load data from the runcard or create the keys of the dict containing all paraemters (frequency, phase, offsets, gains, etc...)
             if runcard_data is not None:
-                parameters[bus] = {key: runcard_data[bus][key] for key in runcard_data[bus]}
+                parameters[bus] = {key: runcard_data[bus][key] for key in runcard_data[bus]} #retrieve runcard data if the qblox draw is called when a platform has been built
                 parameters[bus]['intermediate_frequency'] = [parameters[bus]['intermediate_frequency']]
-                parameters[bus]['intermediate_frequency_new'] = True
-            else:   
+            else:
                 parameters[bus] = {}
                 parameters[bus]['intermediate_frequency'] = [0]
                 parameters[bus]['hardware_modulation'] = True # if plotting directly from qp, plot i and q
             parameters[bus]['phase'] = [0]
+
+            #flags to determine if the phase or freq has been updated
             parameters[bus]['phase_new'] = True
             parameters[bus]['intermediate_frequency_new'] = True
+
             wf1 = []
             wf2 = []
             param = parameters[bus]
-            run_items = []
+            instructions_ran = [] #keep track of the instructions that have been done
             data_draw[bus] = [wf1, wf2]
             label_done = []  # list to keep track of the label once they have been looped over
-            # create a dict to get all the variables assigned to a registery through move
-            move_reg = {}
-            for action in Q1ASM_ordered[bus]["program"]["main"]:
-                if action[0] == "move":
-                    reg = action[1].split(",")[1].strip()
-                    value = action[1].split(",")[0].strip()
-                    move_reg[reg] = int(value)
-            appearance = {}
-            # get the index for the loop - might be replaced with a while loop, ie: while the label is still on keep doing that and then have a for loop inside
-            for item in Q1ASM_ordered[bus]["program"]["main"]:
-                _, value, label, index = item
-                for l in label:
-                    if l not in appearance:
-                        appearance[l] = [index, index, None]  # First and last index, plus second arg in a list
-                    else:
-                        appearance[l][1] = index  # Update last appearance
-                        appearance[l][2] = value.split(",")[0]
-                sorted_labels = sorted(appearance.items(), key=lambda x: x[1][0])
             wf = Q1ASM_ordered[bus]['waveforms'].items()
+
+            #Loop through the program to store the register and have the information on the loops
+            register = {}
+            register["avg_no_loop"] = 1
+            loop_info = {}
+            for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
+                if Q1ASM_line[0] == "move":
+                    reg = Q1ASM_line[1].split(",")[1].strip()
+                    value = Q1ASM_line[1].split(",")[0].strip()
+                    register[reg] = int(value)
+
+                #sorted labels (label, [start index, end index, register key])
+                _, value, label, index = Q1ASM_line
+                for l in label:
+                    if l not in loop_info:
+                        loop_info[l] = [index, index, None]
+                    else:
+                        loop_info[l][1] = index
+                        loop_info[l][2] = value.split(",")[0]
+                        if l.startswith("avg") and not averages_displayed:
+                            loop_info[l][2] = "avg_no_loop"
+                sorted_labels = sorted(loop_info.items(), key=lambda x: x[1][0])
             
-            for item in Q1ASM_ordered[bus]["program"]["main"]:
+            for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
                 def process_loop(recursive_input,i):
                     (label, [start, end, value]) = recursive_input
                     if label not in label_done:
                         label_done.append(label)
-                    for x in range(move_reg[value], 0, -1):
+                    for x in range(register[value], 0, -1):
                         current_idx = start
                         while current_idx <= end:
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
                             _, value, label, _ = item
                             for la in label:
-                                if la not in label_done:
+                                if la not in label_done: #nested loop
                                     new_label = la
                                     result = next((element for element in sorted_labels if element[0] == new_label), None) #retrieve the start/end/variable of the new label
                                     current_idx = process_loop(result,current_idx)
@@ -287,24 +279,26 @@ class QbloxDraw:
 
                             item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                             wf = Q1ASM_ordered[bus]['waveforms'].items()
-                            run_items.append(item[-1])
-                            self._call_handlers(item, param, move_reg, data_draw[bus], wf)
+                            instructions_ran.append(item[-1])
+                            self._call_handlers(item, param, register, data_draw[bus], wf)
                             current_idx +=1
                     return current_idx
 
-                # if item[2] and item[2][-1] not in label_done and item[-1] not in run_items:  # if there is a loop label
-                if item[2] and item[-1] not in run_items:  # if there is a loop label
+                if Q1ASM_line[2] and Q1ASM_line[-1] not in instructions_ran: # if there is a loop label and if the index has not been ran before
                     index=0
-                    # input = next(x for x in sorted_labels if x[0] == item[2][0])
                     for x in sorted_labels:
-                        if x[0] == item[2][0]: #should only ever have to deal with the first tuple element if more than 1, then it is nested and done in the recursive function
-                            input = x
+                        if x[0] == Q1ASM_line[2][0]:
+                            input_recursive = x
                             break  # Stop as soon as the first match is found
-                    process_loop(input,index)
-                elif item[-1] not in run_items: #ensure not running the ones that have already been ran
-                    self._call_handlers(item, param, move_reg, data_draw[bus], wf)
+                    process_loop(input_recursive,index)
+
+                elif Q1ASM_line[-1] not in instructions_ran: #run if no loop label
+                    self._call_handlers(Q1ASM_line, param, register, data_draw[bus], wf)
+
                 else:
                     pass
+
+            #remove the latest freq and phase data points if nothing played after
             if param['intermediate_frequency_new']:
                 param['intermediate_frequency'].pop()
             parameters[bus] = param
@@ -313,26 +307,29 @@ class QbloxDraw:
                 param['phase'].pop()
             parameters[bus] = param
 
-        # Plot the waveforms
+        self._oscilloscope_plotting(data_draw,parameters)
+
+        return data_draw
+
+    def _oscilloscope_plotting(self,data_draw,parameters):
         data_keys = list(data_draw.keys())
         fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
         
         for idx, key in enumerate(data_keys):
             if not parameters[key]["hardware_modulation"]: #if hardware modulation is disabled, do not plot Q
-                fig.add_trace(go.Scatter(y=np.array(data_draw[key][0]), mode='lines', name='Flux'), row=idx+1, col=1)
+                fig.add_trace(go.Scatter(y=np.array(data_draw[key][0]), mode='lines', name='Flux', legendgroup=idx), row=idx+1, col=1)
             else:
                 wf1,wf2 = data_draw[key][0],data_draw[key][1]
-                fs = 1e9
+                fs = 1e9 #sampling frequency of the qblox
                 t = np.arange(0, len(wf1)) / fs
                 freq = np.array(parameters[key]["intermediate_frequency"])/4
                 phase = np.array(parameters[key]["phase"])*(2*np.pi/1e9)
 
                 cos_term = np.cos(2 * np.pi * freq *t + phase)
                 sin_term = np.sin(2 * np.pi * freq *t + phase)
-
                 path0 = (cos_term * np.array(wf1) - sin_term * np.array(wf2))
                 path1 = (sin_term * np.array(wf1) + cos_term * np.array(wf2))
-                
+            
                 fig.add_trace(go.Scatter(y=path0, mode='lines', name=f'{key} I', legendgroup=idx), row=idx+1, col=1)
                 fig.add_trace(go.Scatter(y=path1, mode='lines', name=f'{key} Q', legendgroup=idx), row=idx+1, col=1)
 
@@ -342,6 +339,5 @@ class QbloxDraw:
             fig.update_yaxes(title_text="Voltage [V]", row=i + 1, col=1)
 
         # Update layout
-        fig.update_layout(height=300 * len(data_keys), width=1100, legend_tracegroupgap = 180, title_text="Oscillator simulation", showlegend = True)
+        fig.update_layout(height=260 * len(data_keys), width=1100, legend_tracegroupgap = 210, title_text="Oscillator simulation", showlegend = True)
         fig.show()
-        return data_draw

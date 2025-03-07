@@ -716,11 +716,17 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-    def draw_oscilloscope(self):
+    def draw_oscilloscope(self, averages_displayed = False):
+        """Draw the QProgram using QBlox Compiler
+
+        Args:
+            averages_displayed (bool): Plot the entiretey of the Q1ASM (True) or plot only once the loops named avg_i. Defaults to False.
+        """
+
         from qililab.qprogram.qblox_compiler import QbloxCompiler
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
-        #if non qblox say it is not supported
+        
         draw = QbloxDraw()
         compiler = QbloxCompiler()
         results = compiler.compile(self)
-        draw.draw_oscilloscope(results)
+        draw.draw_oscilloscope(result = results, averages_displayed=averages_displayed)

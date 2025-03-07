@@ -312,10 +312,10 @@ class Platform:
         self.buses = Buses(
             elements=[Bus(settings=asdict(bus), platform_instruments=self.instruments) for bus in runcard.buses]
         )
+        """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
         self.alias = [x["alias"] for x in map(asdict, runcard.buses)]
-
-        """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
+        """All the aliases of the platform in a list"""
 
         self.digital_compilation_settings = runcard.digital
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
@@ -366,24 +366,6 @@ class Platform:
             raise AttributeError("Can not do initial_setup without being connected to the instruments.")
         self.instrument_controllers.initial_setup()
         logger.info("Initial setup applied to the instruments")
-
-    # def draw_oscilloscope_data(self):
-    #     """Sets the values of the cache of the :class:`.Platform` object to the connected instruments.
-
-    #     If called after a ``ql.build_platform()``, where the :class:`.Platform` object is built with the provided runcard,
-    #     this function sets the values of the :ref:`runcard <runcards>` into the connected instruments.
-
-    #     It is recommended to use this function after a ``ql.build_platform()`` + ``platform.connect()`` to ensure that no parameter
-    #     differs from the current runcard settings.
-
-    #     If a `platform.set_parameter()` is called between platform building and initial setup, the value set in the instruments
-    #     will be the new "set" value, as the cache values of the :class:`.Platform` object are modified.
-    #     """
-    #     # if not self._connected_to_instruments:
-    #     #     raise AttributeError("Can not do initial_setup without being connected to the instruments.")
-    #     self.instrument_controllers.draw_oscilloscope_data()
-    #     print("draw log",self.instrument_controllers.draw_oscilloscope_data())
-    #     # logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
         """Turns on the signal output for the generator instruments (RF, voltage sources and current sources).
@@ -488,7 +470,10 @@ class Platform:
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
 
     def data_draw_oscilloscope(self):
-        param = [Parameter.IF, Parameter.GAIN_I, Parameter.GAIN_Q, Parameter.OFFSET_I, Parameter.OFFSET_Q, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3, Parameter.HARDWARE_MODULATION, Parameter.PHASE]#Need to add the other type of offset as well
+        """From the runcard retrieve the parameters necessary to draw the qprogram.
+        """
+
+        param = [Parameter.IF, Parameter.GAIN_I, Parameter.GAIN_Q, Parameter.OFFSET_I, Parameter.OFFSET_Q, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3, Parameter.HARDWARE_MODULATION, Parameter.PHASE]
         data_osci = {}
         data_oscillocope = {}
         for x in self.alias:
@@ -1257,20 +1242,22 @@ class Platform:
 
         return compiled_programs, final_layout
 
-    def draw_oscilloscope_platform(self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None):
+    def draw_oscilloscope_platform(self, qprogram: QProgram, averages_displayed: bool = False):
+        """Draw the QProgram using QBlox Compiler
 
-        #figure out which method to use
+        Args:
+            averages_displayed (bool): Plot the entiretey of the Q1ASM (True) or plot only once the loops named avg_i. Defaults to False.
+        """
 
         #if non qblox say it is not supported
-        data = self.data_draw_oscilloscope()
+        runcard_data = self.data_draw_oscilloscope()
         draw = QbloxDraw()
         results= self.compile_qprogram(qprogram)
-        draw.draw_oscilloscope(results,data)
+        draw.draw_oscilloscope(results, runcard_data, averages_displayed)
 
-
-        #  #if non qblox say it is not supported
-        # data = self.data_draw_oscilloscope()
-        # draw = QbloxDraw()
+        # #  #if non qblox say it is not supported
+        # # data = self.data_draw_oscilloscope()
+        # # draw = QbloxDraw()
         # compiler = QbloxCompiler()
         # results = compiler.compile(qprogram)
-        # draw.draw_oscilloscope(results,data)
+        # # draw.draw_oscilloscope(results,data)
