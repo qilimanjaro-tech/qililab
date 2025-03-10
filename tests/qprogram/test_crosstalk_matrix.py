@@ -47,6 +47,22 @@ class TestFluxVector:
     def test_to_dict(self, flux_vector, flux_vector_dict):
         assert flux_vector.to_dict() == flux_vector_dict
 
+    def test_get(self, flux_vector):
+        assert flux_vector["flux_0"] == 0.5
+
+    def test_set_crosstalk_from_bias(self, flux_vector, crosstalk_matrix):
+        bias_vector = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
+        assert flux_vector.crosstalk == crosstalk_matrix
+        assert flux_vector.bias_vector == bias_vector
+
+    def test_to_dict_with_crosstalk(self, flux_vector, crosstalk_matrix):
+        bias_vector = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
+        assert flux_vector.to_dict() == bias_vector
+
+    def test_get_with_crosstalk(self, flux_vector, crosstalk_matrix):
+        bias_vector = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
+        assert flux_vector["flux_0"] == bias_vector["flux_0"]
+
 
 class TestCrosstalkMatrix:
     """Unit tests checking the Calibration attributes and methods."""

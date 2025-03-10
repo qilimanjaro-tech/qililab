@@ -531,7 +531,7 @@ class Platform:
                 raise ReferenceError(
                     "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
                 )
-            if len(bias) > 1:
+            elif len(bias) > 1:
                 raise NotImplementedError(
                     "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
                 )

@@ -15,7 +15,7 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
-from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack
+from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
 from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
@@ -59,6 +59,11 @@ def fixture_platform_spi():
 @pytest.fixture(name="platform_qdevil")
 def fixture_platform_qdevil():
     return build_platform(runcard=SauronQDevil.runcard)
+
+
+@pytest.fixture(name="platform_yokogawa")
+def fixture_platform_yokogawa():
+    return build_platform(runcard=SauronYokogawa.runcard)
 
 
 @pytest.fixture(name="runcard")
@@ -318,6 +323,19 @@ class TestPlatform:
     def test_set_flux_parameter_with_crosstalk(self, mock_warn, platform: Platform):
         """Test platform set FLUX parameter when crosstalk is given."""
         crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        platform.set_parameter(
+            alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0, crosstalk=crosstalk_matrix
+        )
+        mock_warn.assert_any_call(
+            f"Flux list not given, using all the flux buses given inside the crosstalk matrix\n{platform.crosstalk}"
+        )
+        assert crosstalk_matrix == platform.crosstalk
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
+
+    @patch("warnings.warn")
+    def test_set_flux_parameter_with_add_crosstalk(self, mock_warn, platform: Platform):
+        """Test platform set FLUX parameter when crosstalk is given through add_crosstalk."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
         platform.add_crosstalk(crosstalk_matrix)
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
         mock_warn.assert_any_call(
@@ -325,6 +343,36 @@ class TestPlatform:
         )
         assert crosstalk_matrix == platform.crosstalk
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
+
+    def test_set_flux_parameter_without_instruments_raises_error(self, platform_yokogawa: Platform):
+        """Test error raised when the instruments do not match the flux parameter"""
+        error_string = "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+        with pytest.raises(ReferenceError, match=error_string):
+            crosstalk_matrix = CrosstalkMatrix.from_buses(
+                buses={"yokogawa_gs200_current_bus": {"yokogawa_gs200_current_bus": 0.1}}
+            )
+            platform_yokogawa.set_parameter(
+                alias="yokogawa_gs200_current_bus",
+                parameter=Parameter.FLUX,
+                value=0.14,
+                channel_id=0,
+                crosstalk=crosstalk_matrix,
+            )
+
+    def test_set_flux_parameter_too_many_instruments_raises_error(self, platform: Platform):
+        """Test error raised when there is more than one instrument affected by the flux"""
+        error_string = "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+        with pytest.raises(NotImplementedError, match=error_string):
+            crosstalk_matrix = CrosstalkMatrix.from_buses(
+                buses={"flux_line_too_many_instr": {"flux_line_too_many_instr": 0.1}}
+            )
+            platform.set_parameter(
+                alias="flux_line_too_many_instr",
+                parameter=Parameter.FLUX,
+                value=0.14,
+                channel_id=0,
+                crosstalk=crosstalk_matrix,
+            )
 
     def test_add_crosstalk_with_calibration(self, platform: Platform):
         """Test platform set FLUX parameter when crosstalk is given through calibration file."""

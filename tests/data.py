@@ -626,6 +626,11 @@ class Galadriel:
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             RUNCARD.CHANNELS: [4, None],
         },
+        {
+            RUNCARD.ALIAS: "flux_line_too_many_instr",
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, InstrumentName.QBLOX_QCM.value],
+            RUNCARD.CHANNELS: [1, 4],
+        },
     ]
 
     runcard: dict[str, Any] = {
