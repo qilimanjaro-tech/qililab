@@ -18,6 +18,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+
 class QbloxDraw:
     def _call_handlers(self, program_line, param, register, data_draw, wf):
         action_type = program_line[0]

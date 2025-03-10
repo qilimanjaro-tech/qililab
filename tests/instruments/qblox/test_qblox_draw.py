@@ -30,12 +30,16 @@ def qp_draw() -> QProgram:
     FREQ_START = 100e6
     FREQ_STOP = 200e6
     FREQ_STEP = 50e6
+    qp.set_offset("drive",1)
+    qp.set_gain("drive",1)
     with qp.for_loop(frequency, FREQ_START, FREQ_STOP, FREQ_STEP):
         with qp.average(2):
             qp.reset_phase("drive")
             qp.set_frequency(bus="drive", frequency=frequency)
-            qp.play(bus="drive", waveform=Square(amplitude=1, duration=10))
-            qp.wait("drive", 10)
+            qp.play(bus="drive", waveform= Square(amplitude=1, duration=10))
+            qp.set_frequency(bus="drive", frequency=frequency)
+            qp.wait("drive",10)
+    qp.set_frequency(bus="drive", frequency=frequency)
     return qp
 
 
@@ -76,130 +80,15 @@ class TestQBloxDraw:
 
     def test_qp_draw(self, qp_draw: QProgram):
         data_draw = qp_draw.draw_oscilloscope()
-        expected_data_draw_i = [
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            1.8,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ]
-        expected_data_draw_q = [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ]
+        expected_data_draw_i = [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 1.8, 1.8, 1.8,
+       1.8, 1.8, 1.8, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5,
+       1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5,
+       2.5, 2.5, 2.5, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8]
+        expected_data_draw_q = [1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8,
+       1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8,
+       1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8,
+       1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8]
+        
         compiler = QbloxCompiler()
         draw = QbloxDraw()
         results = compiler.compile(qp_draw)

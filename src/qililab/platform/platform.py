@@ -471,30 +471,50 @@ class Platform:
 
     def data_draw_oscilloscope(self):
         """From the runcard retrieve the parameters necessary to draw the qprogram."""
-
-        param = [
-            Parameter.IF,
-            Parameter.GAIN_I,
-            Parameter.GAIN_Q,
-            Parameter.OFFSET_I,
-            Parameter.OFFSET_Q,
-            Parameter.OFFSET_OUT0,
-            Parameter.OFFSET_OUT1,
-            Parameter.OFFSET_OUT2,
-            Parameter.OFFSET_OUT3,
-            Parameter.HARDWARE_MODULATION,
-            Parameter.PHASE,
-        ]
         data_osci = {}
+        buses = [self.buses.get(alias=xx) for xx in self.alias]
+        instruments = {
+            instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
+        }
+        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            for bus in buses:
+                for instrument, _ in zip(bus.instruments, bus.channels):
+                    if isinstance(instrument, QbloxModule):
+                        if instrument.name == InstrumentName.QBLOX_QCM:
+                            param = [
+                                Parameter.IF,
+                                Parameter.GAIN_I,
+                                Parameter.GAIN_Q,
+                                Parameter.OFFSET_I,
+                                Parameter.OFFSET_Q,
+                                Parameter.OFFSET_OUT0,
+                                Parameter.OFFSET_OUT1,
+                                Parameter.OFFSET_OUT2,
+                                Parameter.OFFSET_OUT3,
+                                Parameter.HARDWARE_MODULATION,
+                            ]
+                        else:
+                            param = [
+                                Parameter.IF,
+                                Parameter.GAIN_I,
+                                Parameter.GAIN_Q,
+                                Parameter.OFFSET_I,
+                                Parameter.OFFSET_Q,
+                                Parameter.HARDWARE_MODULATION,
+                            ]
+
+                        # for x in self.alias:
+                        data_osci[bus.alias] = {}
+                        for p in param:
+                            print(bus.alias, instrument)
+                            print("p", p)
+                            print(param)
+                            try:
+                                val = self.get_parameter(bus.alias, p)
+                                data_osci[bus.alias][p] = val
+                            except (KeyError, ValueError, AttributeError) as e:
+                                pass
         data_oscillocope = {}
-        for x in self.alias:
-            data_osci[x] = {}
-            for p in param:
-                try:
-                    val = self.get_parameter(x, p)
-                    data_osci[x][p] = val
-                except Exception:
-                    continue
         for key, sub_dict in data_osci.items():
             data_oscillocope[key] = {param.value: value for param, value in sub_dict.items()}
         return data_oscillocope

@@ -14,32 +14,23 @@
 from copy import deepcopy
 from typing import overload
 
+from qililab.config import logger
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.decorators import requires_domain
-from qililab.qprogram.operations import (
-    Acquire,
-    AcquireWithCalibratedWeights,
-    Measure,
-    MeasureWithCalibratedWaveform,
-    MeasureWithCalibratedWaveformWeights,
-    MeasureWithCalibratedWeights,
-    Play,
-    PlayWithCalibratedWaveform,
-    ResetPhase,
-    SetFrequency,
-    SetGain,
-    SetMarkers,
-    SetOffset,
-    SetPhase,
-    Sync,
-    Wait,
-)
+from qililab.qprogram.operations import (Acquire, AcquireWithCalibratedWeights,
+                                         Measure,
+                                         MeasureWithCalibratedWaveform,
+                                         MeasureWithCalibratedWaveformWeights,
+                                         MeasureWithCalibratedWeights, Play,
+                                         PlayWithCalibratedWaveform,
+                                         ResetPhase, SetFrequency, SetGain,
+                                         SetMarkers, SetOffset, SetPhase, Sync,
+                                         Wait)
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import Domain
 from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
-from qililab.config import logger
 
 
 @yaml.register_class
@@ -725,8 +716,8 @@ class QProgram(StructuredProgram):
             averages_displayed (bool): Plot the entiretey of the Q1ASM (True) or plot only once the loops named avg_i. Defaults to False.
         """
 
-        from qililab.qprogram.qblox_compiler import QbloxCompiler
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
+        from qililab.qprogram.qblox_compiler import QbloxCompiler
 
         draw = QbloxDraw()
         compiler = QbloxCompiler()
