@@ -506,13 +506,10 @@ class Platform:
                         # for x in self.alias:
                         data_osci[bus.alias] = {}
                         for p in param:
-                            print(bus.alias, instrument)
-                            print("p", p)
-                            print(param)
                             try:
                                 val = self.get_parameter(bus.alias, p)
                                 data_osci[bus.alias][p] = val
-                            except (KeyError, ValueError, AttributeError) as e:
+                            except (KeyError, ValueError, AttributeError):
                                 pass
         data_oscillocope = {}
         for key, sub_dict in data_osci.items():
