@@ -312,7 +312,10 @@ class Platform:
             elements=[Bus(settings=asdict(bus), platform_instruments=self.instruments) for bus in runcard.buses]
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
-
+        
+        self.alias = [x["alias"] for x in map(asdict, runcard.buses)]
+        """All the aliases of the platform in a list"""
+        
         self.digital_compilation_settings = runcard.digital
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
 
@@ -1257,16 +1260,8 @@ class Platform:
             averages_displayed (bool): Plot the entiretey of the Q1ASM (True) or plot only once the loops named avg_i. Defaults to False.
         """
 
-        #if non qblox say it is not supported
         runcard_data = self.data_draw_oscilloscope()
         draw = QbloxDraw()
         results= self.compile_qprogram(qprogram)
         draw.draw_oscilloscope(results, runcard_data, averages_displayed)
-
-        # #  #if non qblox say it is not supported
-        # # data = self.data_draw_oscilloscope()
-        # # draw = QbloxDraw()
-        # compiler = QbloxCompiler()
-        # results = compiler.compile(qprogram)
-        # # draw.draw_oscilloscope(results,data)
-
+        logger.warning("The drawing feature is currently only supported for QBlox.")

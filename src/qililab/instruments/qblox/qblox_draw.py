@@ -33,8 +33,6 @@ class QbloxDraw:
             param = self._handle_gain_off_draw(program_line, param,"gain",1)
         elif action_type == "play":
             data_draw = self._handle_play_draw(data_draw, program_line, wf, register, param)
-        elif action_type == "acquire":
-            data_draw = self._handle_acquire_draw(data_draw, program_line)
         elif action_type == "wait":
             data_draw = self._handle_wait_draw(data_draw, program_line, param)
         elif action_type == "add":
@@ -86,11 +84,6 @@ class QbloxDraw:
                 param[f"{key}_new"] = False
             else:
                 param[key].extend([param[key][-1]] * len(scaled_array))
-        return stored_data
-    
-    def _handle_acquire_draw(self, stored_data, act_play): #is it always 4ns, in one case it is 12ns ??????????????????????????
-        y_wait = np.linspace(0, 0, 4)
-        stored_data = [np.append(stored_data[0], y_wait), np.append(stored_data[1], y_wait)]
         return stored_data
 
     def _handle_wait_draw(self, stored_data, act_wait, param):
@@ -205,6 +198,7 @@ class QbloxDraw:
 
     def draw_oscilloscope(self, result, runcard_data = None, averages_displayed = False):
         Q1ASM_ordered = self._parse_program(result.sequences.copy()) # (instruction, value, label of the loops, index)
+        print(Q1ASM_ordered["drive"]["program"]["main"])
         data_draw = {}
         parameters = {}
         for bus,_ in Q1ASM_ordered.items():

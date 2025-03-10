@@ -39,6 +39,7 @@ from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import Domain
 from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
+from qililab.config import logger
 
 @yaml.register_class
 class QProgram(StructuredProgram):
@@ -730,3 +731,4 @@ class QProgram(StructuredProgram):
         compiler = QbloxCompiler()
         results = compiler.compile(self)
         draw.draw_oscilloscope(result = results, averages_displayed=averages_displayed)
+        logger.warning("The drawing feature is currently only supported for QBlox.")
