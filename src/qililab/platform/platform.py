@@ -42,6 +42,7 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
@@ -312,6 +313,9 @@ class Platform:
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
+        self.alias = [x["alias"] for x in map(asdict, runcard.buses)]
+        """All the aliases of the platform in a list"""
+
         self.digital_compilation_settings = runcard.digital
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
 
@@ -464,6 +468,53 @@ class Platform:
             )
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
+
+    def data_draw_oscilloscope(self):
+        """From the runcard retrieve the parameters necessary to draw the qprogram."""
+        data_osci = {}
+        buses = [self.buses.get(alias=xx) for xx in self.alias]
+        instruments = {
+            instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
+        }
+        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            for bus in buses:
+                for instrument, _ in zip(bus.instruments, bus.channels):
+                    if isinstance(instrument, QbloxModule):
+                        if instrument.name == InstrumentName.QBLOX_QCM:
+                            param = [
+                                Parameter.IF,
+                                Parameter.GAIN_I,
+                                Parameter.GAIN_Q,
+                                Parameter.OFFSET_I,
+                                Parameter.OFFSET_Q,
+                                Parameter.OFFSET_OUT0,
+                                Parameter.OFFSET_OUT1,
+                                Parameter.OFFSET_OUT2,
+                                Parameter.OFFSET_OUT3,
+                                Parameter.HARDWARE_MODULATION,
+                            ]
+                        else:
+                            param = [
+                                Parameter.IF,
+                                Parameter.GAIN_I,
+                                Parameter.GAIN_Q,
+                                Parameter.OFFSET_I,
+                                Parameter.OFFSET_Q,
+                                Parameter.HARDWARE_MODULATION,
+                            ]
+
+                        # for x in self.alias:
+                        data_osci[bus.alias] = {}
+                        for p in param:
+                            try:
+                                val = self.get_parameter(bus.alias, p)
+                                data_osci[bus.alias][p] = val
+                            except (KeyError, ValueError, AttributeError):
+                                pass
+        data_oscillocope = {}
+        for key, sub_dict in data_osci.items():
+            data_oscillocope[key] = {param.value: value for param, value in sub_dict.items()}
+        return data_oscillocope
 
     def set_parameter(
         self,
@@ -1228,3 +1279,16 @@ class Platform:
         )
 
         return compiled_programs, final_layout
+
+    def draw_oscilloscope_platform(self, qprogram: QProgram, averages_displayed: bool = False):
+        """Draw the QProgram using QBlox Compiler
+
+        Args:
+            averages_displayed (bool): Plot the entiretey of the Q1ASM (True) or plot only once the loops named avg_i. Defaults to False.
+        """
+
+        runcard_data = self.data_draw_oscilloscope()
+        draw = QbloxDraw()
+        results = self.compile_qprogram(qprogram)
+        draw.draw_oscilloscope(results, runcard_data, averages_displayed)
+        logger.warning("The drawing feature is currently only supported for QBlox.")
