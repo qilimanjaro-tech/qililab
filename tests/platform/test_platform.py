@@ -3,6 +3,7 @@
 import copy
 import io
 import re
+import warnings
 from pathlib import Path
 from queue import Queue
 from types import MethodType
@@ -14,7 +15,7 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
-from tests.data import Galadriel, SauronQuantumMachines
+from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack
 from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
@@ -29,6 +30,7 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -47,6 +49,16 @@ def fixture_platform():
 @pytest.fixture(name="platform_quantum_machines")
 def fixture_platform_quantum_machines():
     return build_platform(runcard=SauronQuantumMachines.runcard)
+
+
+@pytest.fixture(name="platform_spi")
+def fixture_platform_spi():
+    return build_platform(runcard=SauronSpiRack.runcard)
+
+
+@pytest.fixture(name="platform_qdevil")
+def fixture_platform_qdevil():
+    return build_platform(runcard=SauronQDevil.runcard)
 
 
 @pytest.fixture(name="runcard")
@@ -277,6 +289,70 @@ class TestPlatform:
             AttributeError, match="Can not do initial_setup without being connected to the instruments."
         ):
             platform.initial_setup()
+
+    @patch("qililab.typings.Parameter")
+    def test_set_flux_parameter_qblox_channel0(self, mock_parameter, platform: Platform):
+        """Test platform raises and error if no instrument connection."""
+        platform.set_parameter(alias="flux_line_q0_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.OFFSET_OUT0.called_once()
+        platform.set_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.OFFSET_OUT1.called_once()
+        platform.set_parameter(alias="flux_line_q2_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.OFFSET_OUT2.called_once()
+        platform.set_parameter(alias="flux_line_q3_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.OFFSET_OUT3.called_once()
+
+    @patch("qililab.typings.Parameter")
+    def test_set_flux_parameter_spi(self, mock_parameter, platform_spi: Platform):
+        """Test platform raises and error if no instrument connection."""
+        platform_spi.set_parameter(alias="spi_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.CURRENT.called_once()
+
+    @patch("qililab.typings.Parameter")
+    def test_set_flux_parameter_qdevil(self, mock_parameter, platform_qdevil: Platform):
+        """Test platform raises and error if no instrument connection."""
+        platform_qdevil.set_parameter(alias="qdac_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.VOLTAGE.called_once()
+
+    @patch("warnings.warn")
+    def test_set_flux_parameter_with_crosstalk(self, mock_warn, platform: Platform):
+        """Test platform set FLUX parameter when crosstalk is given."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        platform.add_crosstalk(crosstalk_matrix)
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
+        mock_warn.assert_any_call(
+            f"Flux list not given, using all the flux buses given inside the crosstalk matrix\n{platform.crosstalk}"
+        )
+        assert crosstalk_matrix == platform.crosstalk
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
+
+    def test_add_crosstalk_with_calibration(self, platform: Platform):
+        """Test platform set FLUX parameter when crosstalk is given through calibration file."""
+        calibration = Calibration()
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        calibration.crosstalk_matrix = crosstalk_matrix
+        platform.add_crosstalk(calibration)
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
+        assert calibration.crosstalk_matrix == platform.crosstalk
+
+    def test_empty_add_crosstalk_raises_error(self, platform: Platform):
+        """Test that if flux to bus topology is not specified an error is raised"""
+        error_string = "add_crosstalk must have either Calibration with crosstalk or CrosstalkMatrix"
+        with pytest.raises(ValueError, match=error_string):
+            platform.add_crosstalk(None)
+
+    def test_set_flux_to_zero(self, platform: Platform):
+        """Test set_flux_to_zero function."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        platform.add_crosstalk(crosstalk_matrix)
+        platform.set_flux_to_zero()
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.0
+
+    def test_set_flux_to_zero_without_crosstalk_raises_error(self, platform: Platform):
+        """Test set_flux_to_zero function error without crosstalk."""
+        error_string = "Crosstalk matrix has not been set"
+        with pytest.raises(ValueError, match=error_string):
+            platform.set_flux_to_zero()
 
     def test_set_parameter_no_instrument_connection_QBLOX(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""

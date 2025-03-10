@@ -100,6 +100,19 @@ class TestCrosstalkMatrix:
         assert len(crosstalk_matrix["bus2"]) == 1
         assert crosstalk_matrix["bus2"]["bus1"] == 0.1
 
+    def test_set_offset(self):
+        """Test set_offset function"""
+        crosstalk_matrix = CrosstalkMatrix()
+        crosstalk_matrix["bus1"]["bus1"] = 1
+        crosstalk_matrix["bus1"]["bus2"] = 0.5
+        crosstalk_matrix["bus2"]["bus1"] = 0.7
+        crosstalk_matrix["bus2"]["bus2"] = 1
+
+        crosstalk_matrix.set_offset(offset={"bus1": -1.0, "bus2": 0.5})
+
+        assert isinstance(crosstalk_matrix.flux_offsets, dict)
+        assert crosstalk_matrix.flux_offsets == {"bus1": -1.0, "bus2": 0.5}
+
     def test_str_method(self):
         """Test __str__ method"""
         crosstalk_matrix = CrosstalkMatrix()

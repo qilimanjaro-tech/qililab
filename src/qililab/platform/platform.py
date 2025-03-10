@@ -588,17 +588,17 @@ class Platform:
 
         self.flux_vector[alias] = value
 
-    def add_crosstalk(self, crosstalk: CrosstalkMatrix | None = None, calibration: Calibration | None = None):
+    def add_crosstalk(self, crosstalk: CrosstalkMatrix | Calibration):
         """_summary_
 
         Args:
             crosstalk (CrosstalkMatrix | None): _description_
             calibration (Calibration | None): _description_
         """
-        if crosstalk:
+        if isinstance(crosstalk, CrosstalkMatrix):
             self.crosstalk = crosstalk
-        elif calibration:
-            self.crosstalk = calibration.crosstalk_matrix
+        elif isinstance(crosstalk, Calibration):
+            self.crosstalk = crosstalk.crosstalk_matrix
         else:
             raise ValueError("add_crosstalk must have either Calibration with crosstalk or CrosstalkMatrix")
 

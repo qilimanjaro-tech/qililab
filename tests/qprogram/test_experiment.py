@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 from tests.qprogram.test_structured_program import TestStructuredProgram
 
+from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
@@ -22,6 +23,12 @@ class TestExperiment(TestStructuredProgram):
     def instance(self):
         return Experiment(label="experiment")
 
+    @pytest.fixture
+    def instance_calibration(self):
+        calibration = Calibration()
+        calibration.crosstalk_matrix = CrosstalkMatrix.from_buses({"flux_bus": {"flux_bus": 1.0}})
+        return Experiment(label="experiment", calibration=calibration)
+
     def test_set_parameter(self, instance: Experiment):
         """Test set_awg_gain method"""
         instance.set_parameter(alias="flux_bus", parameter=Parameter.VOLTAGE, value=0.5)
@@ -32,6 +39,17 @@ class TestExperiment(TestStructuredProgram):
         assert instance._body.elements[0].alias == "flux_bus"
         assert instance._body.elements[0].parameter == Parameter.VOLTAGE
         assert instance._body.elements[0].value == 0.5
+
+    def test_set_parameter_flux_calibration(self, instance_calibration: Experiment):
+        """Test set_awg_gain method"""
+        instance_calibration.set_parameter(alias="flux_bus", parameter=Parameter.FLUX, value=0.5)
+
+        assert len(instance_calibration._active_block.elements) == 1
+        assert len(instance_calibration._body.elements) == 1
+        assert isinstance(instance_calibration._body.elements[0], SetParameter)
+        assert instance_calibration._body.elements[0].alias == "flux_bus"
+        assert instance_calibration._body.elements[0].parameter == Parameter.FLUX
+        assert instance_calibration._body.elements[0].value == 0.5
 
     @patch("warnings.warn")
     def test_set_parameter_flux_warnings_no_crosstalk(self, mock_warn, instance: Experiment):
