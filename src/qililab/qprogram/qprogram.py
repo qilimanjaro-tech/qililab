@@ -18,15 +18,24 @@ from qililab.config import logger
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.decorators import requires_domain
-from qililab.qprogram.operations import (Acquire, AcquireWithCalibratedWeights,
-                                         Measure,
-                                         MeasureWithCalibratedWaveform,
-                                         MeasureWithCalibratedWaveformWeights,
-                                         MeasureWithCalibratedWeights, Play,
-                                         PlayWithCalibratedWaveform,
-                                         ResetPhase, SetFrequency, SetGain,
-                                         SetMarkers, SetOffset, SetPhase, Sync,
-                                         Wait)
+from qililab.qprogram.operations import (
+    Acquire,
+    AcquireWithCalibratedWeights,
+    Measure,
+    MeasureWithCalibratedWaveform,
+    MeasureWithCalibratedWaveformWeights,
+    MeasureWithCalibratedWeights,
+    Play,
+    PlayWithCalibratedWaveform,
+    ResetPhase,
+    SetFrequency,
+    SetGain,
+    SetMarkers,
+    SetOffset,
+    SetPhase,
+    Sync,
+    Wait,
+)
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import Domain
 from qililab.waveforms import IQPair, Waveform

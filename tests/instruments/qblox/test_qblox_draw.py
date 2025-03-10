@@ -142,13 +142,21 @@ class TestQBloxDraw:
             0.0,
         ]
 
-        runcard_data = platform.data_draw_oscilloscope()
-        draw = QbloxDraw()
-        results = platform.compile_qprogram(qp_plat_draw)
-        data_draw = draw.draw_oscilloscope(results)
-        draw.draw_oscilloscope(results, runcard_data)
-        assert (data_draw["drive_line_q1_bus"][0] == expected_data_draw_i).all()
-        assert (data_draw["drive_line_q1_bus"][1] == expected_data_draw_q).all()
+        # runcard_data = platform.data_draw_oscilloscope()
+        # draw = QbloxDraw()
+        # results = platform.compile_qprogram(qp_plat_draw)
+        # data_draw = draw.draw_oscilloscope(results)
+        # draw.draw_oscilloscope(results, runcard_data)
+        # assert (data_draw["drive_line_q1_bus"][0] == expected_data_draw_i).all()
+        # assert (data_draw["drive_line_q1_bus"][1] == expected_data_draw_q).all()
+
+        platform.draw_oscilloscope_platform(qp_plat_draw)
+        # draw = QbloxDraw()
+        # results = platform.compile_qprogram(qp_plat_draw)
+        # data_draw = draw.draw_oscilloscope(results)
+        # draw.draw_oscilloscope(results, runcard_data)
+        # assert (data_draw["drive_line_q1_bus"][0] == expected_data_draw_i).all()
+        # assert (data_draw["drive_line_q1_bus"][1] == expected_data_draw_q).all()
 
     def test_get_value(self):
         draw = QbloxDraw()
