@@ -1,28 +1,11 @@
 """Tests for the QbloxDraw class."""
-from unittest.mock import MagicMock
 
 import pytest
-from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
-
-from qililab.instruments.instrument import ParameterNotFound
-from qililab.instruments.qblox import QbloxQCM
-from qililab.platform import Platform
 from qililab.data_management import build_platform
-from qililab.typings import Parameter
-from typing import cast
-from qblox_instruments.qcodes_drivers.sequencer import Sequencer
-from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
-from unittest.mock import patch
-
-import numpy as np
-import pytest
-import qpysequence as QPy
-
-from qililab import Calibration, Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
-from qililab.qprogram.blocks import ForLoop
-from tests.test_utils import is_q1asm_equal
-from qililab.config import logger
+from tests.data import Galadriel
+from qililab import Domain, QbloxCompiler, QProgram, Square
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
+from qililab.platform import Platform
 
 
 @pytest.fixture(name="parsing")
@@ -54,7 +37,16 @@ def qp_draw() -> QProgram:
             qp.wait("drive",10)
     return qp
 
+@pytest.fixture(name="qp_plat_draw")
+def qp_plat_draw() -> QProgram:
+    qp = QProgram()
+    qp.play(bus="drive_line_q1_bus", waveform= Square(amplitude=1, duration=10))
+    qp.wait("drive_line_q1_bus",10)
+    return qp
 
+@pytest.fixture(name="platform")
+def fixture_platform():
+    return build_platform(runcard=Galadriel.runcard)
 
 class TestQBloxDraw:
     def test_parsing(self, parsing: QProgram):
@@ -94,6 +86,28 @@ class TestQBloxDraw:
         assert (data_draw["drive"][0] == expected_data_draw_i).all()
         assert (data_draw["drive"][1] == expected_data_draw_q).all()
 
+    def test_platform_draw(self, qp_plat_draw: QProgram, platform: Platform):
+        expected_data_draw_i = [1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 0. , 0. , 0. ,
+                                0. , 0. , 0. , 0. , 0. , 0. , 0. ]
+        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                 0., 0., 0.]
+    
+        runcard_data = platform.data_draw_oscilloscope()
+        draw = QbloxDraw()
+        results = platform.compile_qprogram(qp_plat_draw)
+        data_draw = draw.draw_oscilloscope(results)
+        draw.draw_oscilloscope(results, runcard_data)
+        assert (data_draw["drive_line_q1_bus"][0] == expected_data_draw_i).all()
+        assert (data_draw["drive_line_q1_bus"][1] == expected_data_draw_q).all()
+
+    def test_get_value(self):
+        draw = QbloxDraw()
+        register = {}
+        register["avg_no_loop"] = 1
+        assert draw._get_value(None, register) is None  
+
+
+        
     # def test_parsing_nop(self):
     #     q1asm = """
     #         main:
