@@ -125,6 +125,9 @@ class BusCompilationInfo:
         # Delay. Defaults 0 delay and is updated if delays parameter is provided within the runcard.
         self.delay = 0
 
+        # Latched Paramter flag
+        self.upd_param_instruction_pending: bool = False
+
 
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
@@ -388,6 +391,7 @@ class QbloxCompiler:
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetFreq(frequency=frequency)
         )
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_phase(self, element: SetPhase):
         convert = QbloxCompiler._convert_value(element)
@@ -397,9 +401,11 @@ class QbloxCompiler:
             else convert(element.phase)
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.SetPh(phase=phase))
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_reset_phase(self, element: ResetPhase):
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_gain(self, element: SetGain):
         convert = QbloxCompiler._convert_value(element)
@@ -411,6 +417,7 @@ class QbloxCompiler:
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
         )
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset):
         convert = QbloxCompiler._convert_value(element)
@@ -421,22 +428,26 @@ class QbloxCompiler:
         )
         if element.offset_path1 is None:
             offset_1 = offset_0
-            logger.warning("Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path.")
+            logger.warning(
+                "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
+            )
         else:
             offset_1 = (
-            self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
-            if isinstance(element.offset_path1, Variable)
-            else convert(element.offset_path1)
-        )
+                self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
+                if isinstance(element.offset_path1, Variable)
+                else convert(element.offset_path1)
+            )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
         )
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_markers(self, element: SetMarkers):
         marker_outputs = int(element.mask, 2)
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetMrk(marker_outputs=marker_outputs)
         )
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_wait(self, element: Wait, delay: bool = False):
         duration: QPyProgram.Register | int
@@ -463,15 +474,33 @@ class QbloxCompiler:
             element (Wait): wait element
             duration (int): duration to wait in ns
         """
-        if duration > INST_MAX_WAIT:
-            for _ in range(duration // INST_MAX_WAIT):
-                self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
-                )
-        # add the remaining wait time (or all of it if the above conditional is false)
-        self._buses[bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
-        )
+
+        if self._buses[bus].upd_param_instruction_pending:
+            if 4 < duration < 8:  # you cannot play an update param and then a wait bc both have a minimum of 4
+                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
+            else:
+                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
+                duration -= 4
+                if duration > INST_MAX_WAIT:
+                    for _ in range(duration // INST_MAX_WAIT):
+                        self._buses[bus].qpy_block_stack[-1].append_component(
+                            component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                        )
+                if duration >= 4:
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
+                    )
+            self._buses[bus].upd_param_instruction_pending = False
+
+        else:  # no instructions pending
+            if duration > INST_MAX_WAIT:
+                for _ in range(duration // INST_MAX_WAIT):
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                    )
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
+            )
 
     def _handle_sync(self, element: Sync, delay: bool = False):
         # Get the buses involved in the sync operation.
@@ -593,6 +622,7 @@ class QbloxCompiler:
         self._buses[element.bus].next_bin_index = 0  # maybe this counter can be removed completely
         self._buses[element.bus].next_acquisition_index += 1
         self._buses[element.bus].marked_for_sync = True
+        self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()
@@ -652,6 +682,7 @@ class QbloxCompiler:
             )
         self._buses[element.bus].static_duration += duration
         self._buses[element.bus].marked_for_sync = True
+        self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_block(self, element: Block):
         pass
