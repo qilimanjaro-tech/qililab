@@ -65,13 +65,15 @@ from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
+from qililab.instruments.qblox.qblox_draw import QbloxDraw
 
 if TYPE_CHECKING:
     from queue import Queue
 
+    from qibo.transpiler.placer import Placer
+    from qibo.transpiler.router import Router
     from qpysequence import Sequence as QpySequence
 
-    from qililab.digital import DigitalTranspilationConfig
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result
@@ -312,6 +314,9 @@ class Platform:
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
+        self.alias = [x["alias"] for x in map(asdict, runcard.buses)]
+        """All the aliases of the platform in a list"""
+
         self.digital_compilation_settings = runcard.digital
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
 
@@ -439,7 +444,7 @@ class Platform:
         """Gets buses given their alias.
 
         Args:
-            alias (str, optional): Bus alias to identify it. Defaults to None.
+            alias (str | None, optional): Bus alias to identify it. Defaults to None.
 
         Returns:
             :class:`Bus`: Bus corresponding to the given alias. If none is found `None` is returned.
@@ -464,6 +469,26 @@ class Platform:
             )
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
+
+    def data_draw_oscilloscope(self):
+        """From the runcard retrieve the parameters necessary to draw the qprogram.
+        """
+
+        param = [Parameter.IF, Parameter.GAIN_I, Parameter.GAIN_Q, Parameter.OFFSET_I, Parameter.OFFSET_Q, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3, Parameter.HARDWARE_MODULATION, Parameter.PHASE]
+        data_osci = {}
+        data_oscillocope = {}
+        for x in self.alias:
+            data_osci[x] = {}
+            for p in param:
+                try:
+                    val = self.get_parameter(x,p)
+                    data_osci[x][p] = val
+                except Exception:
+                    continue
+        for key, sub_dict in data_osci.items():
+            data_oscillocope[key] = {
+                param.value: value for param, value in sub_dict.items()}
+        return data_oscillocope
 
     def set_parameter(
         self,
@@ -977,6 +1002,7 @@ class Platform:
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+        print("output",output)
         return self.execute_compilation_output(output=output, debug=debug)
 
     def execute(
@@ -986,36 +1012,45 @@ class Platform:
         repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
-        transpilation_config: DigitalTranspilationConfig | None = None,
+        routing: bool = False,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        routing_iterations: int = 10,
+        optimize: bool = True,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
-        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
-        settings of the platform and the passed transpile onfiguration. Then the pulse schedules will be compiled into the assembly programs and executed.
+        If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
+        settings of the platform and the passed placer and router. Then the pulse schedules will be compiled into the assembly programs and executed.
 
         To compile to assembly programs, the ``platform.compile()`` method is called; check its documentation for more information.
 
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
+        The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
 
-        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
+        1. Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters if provided; otherwise, default values are applied.
+        2. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+        3. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
 
-        .. note ::
+        |
 
-            Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
+        If `optimize=True` (default behavior), the following optimizations are also performed:
 
-            To do Step **1.** set routing=True in transpilation_config (default behavior skips it).
-
-            To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
+        - Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
+        - Applying virtual Z gates and phase corrections by combining multiple pulses into a single one and commuting them with virtual Z gates.
 
         Args:
-            program (``PulseSchedule`` | ``Circuit``): Circuit or pulse schedule to execute.
+            program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution. Defaults to 200_000.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
-                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
-                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
+            routing (bool, optional): whether to route the circuits. Defaults to False.
+            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
@@ -1025,31 +1060,11 @@ class Platform:
                     path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
 
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
-
-        |
-
-        Example Usage:
-
-        .. code-block:: python
-
-            from qibo import gates, Circuit
-            from qibo.transpiler import ReverseTraversal, Sabre
-            from qililab import build_platform
-            from qililab.digital import DigitalTranspilationConfig
-
-            # Create circuit:
-            c = Circuit(5)
-            c.add(gates.CNOT(1, 0))
-
-            # Create platform:
-            platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
-
-            # Execute with automatic transpilation:
-            result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
         """
         # Compile pulse schedule
-        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpilation_config)
+        programs, final_layout = self.compile(
+            program, num_avg, repetition_duration, num_bins, routing, placer, router, routing_iterations, optimize
+        )
 
         # Upload pulse schedule
         for bus_alias in programs:
@@ -1077,22 +1092,22 @@ class Platform:
 
         # Flatten results if more than one readout bus was used for a qblox module
         if len(results) > 1:
-            result = QbloxResult(
-                integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
-                qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
-            )
-        elif not results:
+            results = [
+                QbloxResult(
+                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
+                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
+                )
+            ]
+        if not results:
             raise ValueError("There are no readout buses in the platform.")
-        else:
-            result = results[0]
 
         if isinstance(program, Circuit):
-            result = self._order_result(result, program, final_layout)
+            results = [self._order_result(results[0], program, final_layout)]
 
-        return result
+        # FIXME: return result instead of results[0]
+        return results[0]
 
-    @staticmethod
-    def _order_result(result: Result, circuit: Circuit, final_layout: list[int] | None) -> Result:
+    def _order_result(self, result: Result, circuit: Circuit, final_layout: dict[str, int] | None) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1102,12 +1117,11 @@ class Platform:
 
         Args:
             result (Result): Result obtained from the execution
-            circuit (Circuit): Qibo circuit being executed
-            final_layouts (list[int], optional): Final layout of the original logical qubits in the physical circuit:
-                [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
+            circuit (Circuit): qibo circuit being executed
+            final_layouts (dict[str, int]): final layout of the qubits in the circuit.
 
         Returns:
-            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue.
+            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
         """
         if not isinstance(result, QbloxResult):
             raise NotImplementedError("Result ordering is only implemented for qblox results")
@@ -1116,8 +1130,6 @@ class Platform:
         qubits_m = {}
         order = {}
         # iterate over qubits measured in same order as they appear in the circuit
-        # TODO: You need to check where each measurement is, since SWAPs can be after a measurement...
-        # FIXME: In the meanwhile do it asuming the Measurement is the last gate for each qubit
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
@@ -1128,21 +1140,13 @@ class Platform:
                 f"Number of measurements in the circuit {len(order)} does not match number of acquisitions {len(result.qblox_raw_results)}"
             )
 
-        # Tell users that the final layout is being undone:
-        logger.info(
-            "Undoing final physical qubit mapping, so you get back the original qubit order in your logical circuit."
-        )
-
         # allocate each measurement its corresponding index in the results list
         results = [None] * len(order)  # type: list | list[dict]
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
-            physical_qubit = qblox_result["qubit"]
-            original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
-
-            # TODO:Check this is correct, or how it works with multiple measurements per qubit:
-            original_measure_num = order[original_logical_qubit, measurement]
-            results[original_measure_num] = qblox_result
+            qubit = qblox_result["qubit"]
+            original_qubit = final_layout[f"q{qubit}"] if final_layout is not None else qubit
+            results[order[original_qubit, measurement]] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
@@ -1152,42 +1156,48 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        transpilation_config: DigitalTranspilationConfig | None = None,
-    ) -> tuple[dict[str, list[QpySequence]], list[int] | None]:
+        routing: bool = False,
+        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
+        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
+        routing_iterations: int = 10,
+        optimize: bool = True,
+    ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
-        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
-        settings of the platform and passed  transpile configuration. Then the pulse schedules will be compiled into the assembly programs.
+        If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
+        settings of the platform and passed placer and router. Then the pulse schedules will be compiled into the assembly programs.
+
+        The transpilation is performed using the :class:`CircuitTranspiler` and its ``transpile_circuits()`` method. Refer to the method's documentation for more detailed information. The main stages of this process are:
+
+        1. Routing and Placement: Routes and places the circuit's logical qubits onto the chip's physical qubits. The final qubit layout is returned and logged. This step uses the `placer`, `router`, and `routing_iterations` parameters if provided; otherwise, default values are applied.
+        2. Native Gate Translation: Translates the circuit into the chip's native gate set (CZ, RZ, Drag, Wait, and M (Measurement)).
+        3. Pulse Schedule Conversion: Converts the native gate circuit into a pulse schedule using calibrated settings from the runcard.
+
+        |
+
+        If `optimize=True` (default behavior), the following optimizations are also performed:
+
+        - Canceling adjacent pairs of Hermitian gates (H, X, Y, Z, CNOT, CZ, and SWAPs).
+        - Applying virtual Z gates and phase corrections by combining multiple pulses into a single one and commuting them with virtual Z gates.
 
         .. note::
-
-            Compile is called during ``platform.execute()``, check its documentation for more information.
-
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
-
-        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
-
-        .. note ::
-
-            Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
-
-            To do Step **1.** set routing=True in transpilation_config (default behavior skips it).
-
-            To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
+            This method is called during the ``platform.execute()`` method, check its documentation for more information.
 
         Args:
-            program (PulseSchedule | Circuit): Circuit or pulse schedule to compile.
+            program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to compile.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
-                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
-                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
+            routing (bool, optional): whether to route the circuits. Defaults to False.
+            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
+            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
+            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
 
         Returns:
-            tuple[dict, list[int] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
-                and the value is the assembly compilation (``list``)), and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
-                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
+            tuple[dict, dict[str, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {"qX":Y}.
 
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
@@ -1198,7 +1208,11 @@ class Platform:
 
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
-            pulse_schedule, final_layout = transpiler.transpile_circuit(program, transpilation_config)
+
+            transpiled_circuits, final_layouts = transpiler.transpile_circuits(
+                [program], routing, placer, router, routing_iterations, optimize
+            )
+            pulse_schedule, final_layout = transpiled_circuits[0], final_layouts[0]
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
@@ -1228,3 +1242,23 @@ class Platform:
         )
 
         return compiled_programs, final_layout
+
+    def draw_oscilloscope_platform(self, qprogram: QProgram, averages_displayed: bool = False):
+        """Draw the QProgram using QBlox Compiler
+
+        Args:
+            averages_displayed (bool): Plot the entiretey of the Q1ASM (True) or plot only once the loops named avg_i. Defaults to False.
+        """
+
+        #if non qblox say it is not supported
+        runcard_data = self.data_draw_oscilloscope()
+        draw = QbloxDraw()
+        results= self.compile_qprogram(qprogram)
+        draw.draw_oscilloscope(results, runcard_data, averages_displayed)
+
+        # #  #if non qblox say it is not supported
+        # # data = self.data_draw_oscilloscope()
+        # # draw = QbloxDraw()
+        # compiler = QbloxCompiler()
+        # results = compiler.compile(qprogram)
+        # # draw.draw_oscilloscope(results,data)
