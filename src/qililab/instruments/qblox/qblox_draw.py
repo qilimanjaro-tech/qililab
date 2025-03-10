@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import re
+
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
 
 class QbloxDraw:
     def _call_handlers(self, program_line, param, register, data_draw, wf):
@@ -69,7 +69,6 @@ class QbloxDraw:
                     if division_factor
                     else float(register[metadata[key]])
                 )
-            else:
                 return float(metadata[key])
         return None
 
@@ -129,7 +128,7 @@ class QbloxDraw:
         return stored_data
 
     def _handle_gain_off_draw(self, item, param, key, default):
-        i_val, q_val = map(lambda x: float(x) / 32767, item[1].split(","))
+        i_val, q_val = (float(x) / 32767 for x in item[1].split(","))
         param[f"{key}_i"], param[f"{key}_q"] = i_val or default, q_val or default
         return param
 
@@ -325,7 +324,6 @@ class QbloxDraw:
             parameters[bus] = param
 
         self._oscilloscope_plotting(data_draw, parameters)
-        print("ata_draw", data_draw)
         return data_draw
 
     def _oscilloscope_plotting(self, data_draw, parameters):

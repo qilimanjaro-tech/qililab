@@ -16,6 +16,7 @@
 
 from .qblox_adc_sequencer import QbloxADCSequencer
 from .qblox_d5a import QbloxD5a
+from .qblox_draw import QbloxDraw
 from .qblox_module import QbloxModule
 from .qblox_qcm import QbloxQCM
 from .qblox_qcm_rf import QbloxQCMRF
@@ -23,11 +24,11 @@ from .qblox_qrm import QbloxQRM
 from .qblox_qrm_rf import QbloxQRMRF
 from .qblox_s4g import QbloxS4g
 from .qblox_sequencer import QbloxSequencer
-from .qblox_draw import QbloxDraw
 
 __all__ = [
     "QbloxADCSequencer",
     "QbloxD5a",
+    "QbloxDraw",
     "QbloxModule",
     "QbloxQCM",
     "QbloxQCMRF",
@@ -35,5 +36,4 @@ __all__ = [
     "QbloxQRMRF",
     "QbloxS4g",
     "QbloxSequencer",
-    "QbloxDraw",
 ]
