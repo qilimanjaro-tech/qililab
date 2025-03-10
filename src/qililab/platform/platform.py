@@ -392,6 +392,7 @@ class Platform:
             return
         self.instrument_controllers.disconnect()
         self._connected_to_instruments = False
+        self._qpy_sequence_cache = {}
         logger.info("Disconnected from instruments")
 
     def get_element(self, alias: str):

@@ -9,6 +9,7 @@
 
   Each chunk duration is restricted to the range (\[100, 500\]) ns, ensuring that chunks are neither too small (leading to excessive repetitions) nor too large (risking out-of-memory issues). If no duration within (\[100, 500\]) ns meets these remainder constraints, the compiler defaults to using the original waveform in its entirety.
   [#861](https://github.com/qilimanjaro-tech/qililab/pull/861)
+  [#895](https://github.com/qilimanjaro-tech/qililab/pull/895)
 
 - Raises an error when the inputed value for the QDAC is outside of the bounds provided by QM. Done in 3 ways, runcard, set_parameter RAMPING_ENABLED and set_parameter RAMPING_RATE.
 [#865](https://github.com/qilimanjaro-tech/qililab/pull/865)
@@ -23,6 +24,12 @@
 
 - Now the QM qprogram compiler is able to generate the correct stream_processing while the average loop is inside any other kind of loop, before it was only able to be located on the outermost loop due to the way qprogram generated the stream_processing.
   [#880](https://github.com/qilimanjaro-tech/qililab/pull/880)
+
+- The user is now able to only put one value when setting the offset of the bus when using Qblox in the qprogram. Qblox requires two values hence if only 1 value is given, the second will be set to 0, a warning will be given to the user.
+  [#896](https://github.com/qilimanjaro-tech/qililab/pull/896)
+
+- For Qblox compiler, all latched parameters are updated before a wait is applied. The update parameter has a minimum wait of 4 ns, which is removed from the wait. If the wait is below 8ns it is entirely replaced with the update parameter.
+  [#898](https://github.com/qilimanjaro-tech/qililab/pull/898)
 
 ### Breaking changes
 
