@@ -21,6 +21,7 @@ import ast
 import io
 import re
 import tempfile
+import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -59,6 +60,7 @@ from qililab.qprogram import (
     QuantumMachinesCompilationOutput,
     QuantumMachinesCompiler,
 )
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -330,6 +332,15 @@ class Platform:
         self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
         """Format of the experiment results path."""
 
+        self.crosstalk: CrosstalkMatrix | None = None
+        """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
+
+        self.flux_vector: FluxVector | None = None
+        """Flux vector information, defaults to None (only used on FLUX parameters)"""
+
+        self.flux_parameter: dict[str, int | float | bool | str] = {}
+        """Flux dictionary with information for the get parameter (only used on FLUX parameters)"""
+
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
 
@@ -462,6 +473,10 @@ class Platform:
             return self.digital_compilation_settings.get_parameter(
                 alias=alias, parameter=parameter, channel_id=channel_id
             )
+        if parameter == Parameter.FLUX:
+            if alias not in self.flux_parameter:
+                self.flux_parameter[alias] = 0.0
+            return self.flux_parameter[alias]
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
 
@@ -471,6 +486,8 @@ class Platform:
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
+        crosstalk: CrosstalkMatrix | None = None,
+        flux_list: list[str] | None = None,
     ):
         """Set a parameter for a platform element.
 
@@ -495,8 +512,110 @@ class Platform:
                 alias=alias, parameter=parameter, value=value, channel_id=channel_id
             )
             return
+
         element = self.get_element(alias=alias)
+
+        if parameter == Parameter.FLUX:
+            self.flux_parameter[alias] = float(value)
+            if crosstalk:
+                self.crosstalk = crosstalk
+            self._process_crosstalk(alias, value, flux_list)
+            bias = [
+                instrument
+                for instrument in element.instruments
+                if instrument.name
+                in {"QCM", "QRM", "QRM-RF", "QCM-RF", "D5a", "S4g", "quantum_machines_cluster", "qdevil_qdac2"}
+            ]
+
+            if len(bias) == 0:
+                raise ReferenceError(
+                    "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+                )
+            if len(bias) > 1:
+                raise NotImplementedError(
+                    "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+                )
+            if bias[0].name in {"quantum_machines_cluster"}:
+                parameter = Parameter.DC_OFFSET
+            if bias[0].name in {"D5a", "qdevil_qdac2"}:
+                parameter = Parameter.VOLTAGE
+            if bias[0].name in {"S4g"}:
+                parameter = Parameter.CURRENT
+            for flux_alias, flux_value in self.flux_vector.bias_vector.items():  # type: ignore[union-attr]
+                flux_element = self.get_element(alias=flux_alias)
+                if bias[0].name in {"QCM", "QRM", "QRM-RF", "QCM-RF"}:
+                    offset_channel = flux_element.instruments[0].awg_sequencers[flux_element.channels[0]].outputs[0]
+                    if offset_channel == 0:
+                        parameter = Parameter.OFFSET_OUT0
+                    if offset_channel == 1:
+                        parameter = Parameter.OFFSET_OUT1
+                    if offset_channel == 2:
+                        parameter = Parameter.OFFSET_OUT2
+                    if offset_channel == 3:
+                        parameter = Parameter.OFFSET_OUT3
+                flux_element.set_parameter(parameter=parameter, value=flux_value)
+            return
+
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+
+    def _process_crosstalk(self, alias: str, value, flux_list: list[str] | None):
+        """Calculates the Current/Voltage of the set parameter based on the value of the flux and the crosstalk matrix"""
+        if not self.crosstalk:
+            if not flux_list:
+                flux_list = [alias]
+            self.crosstalk = CrosstalkMatrix.from_array(flux_list, np.eye(len(flux_list)))
+            warnings.warn(f"Crosstalk not given, using identity as crosstalk\n{self.crosstalk}")
+        elif not flux_list:
+            flux_list = list(self.crosstalk.matrix.keys())
+            warnings.warn(
+                f"Flux list not given, using all the flux buses given inside the crosstalk matrix\n{self.crosstalk}"
+            )
+
+        if not self.flux_vector:
+            self.flux_vector = FluxVector()
+            for flux in flux_list:
+                self.flux_vector[flux] = 0
+
+        if alias not in self.crosstalk.matrix.keys():
+            for key in list(self.crosstalk.matrix.keys()):
+                self.crosstalk[alias] = {key: 0.0}
+                self.crosstalk[key] = {alias: 0.0}
+            self.crosstalk[alias] = {alias: 1.0}
+            warnings.warn(f"{alias} not inside crosstalk matrix, adding it with identity values\n{self.crosstalk}")
+
+        if not self.flux_vector.crosstalk or self.crosstalk != self.flux_vector.crosstalk:
+            self.flux_vector.set_crosstalk(self.crosstalk)
+
+        self.flux_vector[alias] = value
+
+    def add_crosstalk(self, crosstalk: CrosstalkMatrix | Calibration):
+        """_summary_
+
+        Args:
+            crosstalk (CrosstalkMatrix | None): _description_
+            calibration (Calibration | None): _description_
+        """
+        if isinstance(crosstalk, CrosstalkMatrix):
+            self.crosstalk = crosstalk
+        elif isinstance(crosstalk, Calibration):
+            self.crosstalk = crosstalk.crosstalk_matrix
+        else:
+            raise ValueError("add_crosstalk must have either Calibration with crosstalk or CrosstalkMatrix")
+
+    def set_flux_to_zero(self, flux_list: list[str] | None = None):
+        """_summary_
+
+        Args:
+            flux_list (list[str] | None, optional): _description_. Defaults to None.
+        """
+        if not self.crosstalk:
+            raise ValueError("Crosstalk matrix has not been set")
+
+        if not flux_list:
+            flux_list = list(self.crosstalk.matrix.keys())
+
+        for flux_alias in flux_list:
+            self.set_parameter(alias=flux_alias, parameter=Parameter.FLUX, value=0)
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiates all instrument classes from their respective dictionaries.

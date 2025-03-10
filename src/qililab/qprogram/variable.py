@@ -29,6 +29,7 @@ class Domain(Enum):
     Frequency = 2
     Phase = 3
     Voltage = 4
+    Flux = 5
 
     @classmethod
     def to_yaml(cls, representer, node):

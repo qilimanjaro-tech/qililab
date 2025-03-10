@@ -17,6 +17,7 @@ import numpy as np
 
 from qililab.exceptions.variable_allocated import VariableAllocated
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
 from qililab.yaml import yaml
 
@@ -46,6 +47,7 @@ class StructuredProgram:
         self._block_stack: deque[Block] = deque([self._body])
         self._variables: dict[Variable, VariableInfo] = {}
         self._buses: set[str] = set()
+        self._crosstalk: CrosstalkMatrix | None = None
 
     def _append_to_block_stack(self, block: Block):
         """Appends a block to the internal block stack.
@@ -98,6 +100,15 @@ class StructuredProgram:
             list[Variable]: A list of variables
         """
         return list(self._variables)
+
+    @property
+    def get_crosstalk(self) -> CrosstalkMatrix | None:
+        """Get the crosstalk.
+
+        Returns:
+            CrosstalkMatrix | None: Crosstalk matrix and metadata
+        """
+        return self._crosstalk
 
     def insert_block(self, block: Block):
         self._active_block.append(block)
@@ -250,9 +261,17 @@ class StructuredProgram:
 
         if domain == Domain.Time:
             return _int_variable(label, domain)
-        if domain in [Domain.Frequency, Domain.Phase, Domain.Voltage]:
+        if domain in [Domain.Frequency, Domain.Phase, Domain.Voltage, Domain.Flux]:
             return _float_variable(label, domain)
         raise NotImplementedError
+
+    def crosstalk(self, crosstalk: CrosstalkMatrix):
+        """Declare Crosstalk matrix and offsets
+
+        Args:
+            crosstalk (CrosstalkMatrix): Crosstalk class including all necessary information
+        """
+        self._crosstalk = crosstalk
 
     class _BlockContext:
         def __init__(self, program: "StructuredProgram"):
