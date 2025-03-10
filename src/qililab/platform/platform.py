@@ -312,10 +312,10 @@ class Platform:
             elements=[Bus(settings=asdict(bus), platform_instruments=self.instruments) for bus in runcard.buses]
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
-        
+
         self.alias = [x["alias"] for x in map(asdict, runcard.buses)]
         """All the aliases of the platform in a list"""
-        
+
         self.digital_compilation_settings = runcard.digital
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
 
@@ -468,27 +468,37 @@ class Platform:
             )
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
-        
-    def data_draw_oscilloscope(self):
-        """From the runcard retrieve the parameters necessary to draw the qprogram.
-        """
 
-        param = [Parameter.IF, Parameter.GAIN_I, Parameter.GAIN_Q, Parameter.OFFSET_I, Parameter.OFFSET_Q, Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3, Parameter.HARDWARE_MODULATION, Parameter.PHASE]
+    def data_draw_oscilloscope(self):
+        """From the runcard retrieve the parameters necessary to draw the qprogram."""
+
+        param = [
+            Parameter.IF,
+            Parameter.GAIN_I,
+            Parameter.GAIN_Q,
+            Parameter.OFFSET_I,
+            Parameter.OFFSET_Q,
+            Parameter.OFFSET_OUT0,
+            Parameter.OFFSET_OUT1,
+            Parameter.OFFSET_OUT2,
+            Parameter.OFFSET_OUT3,
+            Parameter.HARDWARE_MODULATION,
+            Parameter.PHASE,
+        ]
         data_osci = {}
         data_oscillocope = {}
         for x in self.alias:
             data_osci[x] = {}
             for p in param:
                 try:
-                    val = self.get_parameter(x,p)
+                    val = self.get_parameter(x, p)
                     data_osci[x][p] = val
                 except Exception:
                     continue
         for key, sub_dict in data_osci.items():
-            data_oscillocope[key] = {
-                param.value: value for param, value in sub_dict.items()}
+            data_oscillocope[key] = {param.value: value for param, value in sub_dict.items()}
         return data_oscillocope
-        
+
     def set_parameter(
         self,
         alias: str,
@@ -1262,6 +1272,6 @@ class Platform:
 
         runcard_data = self.data_draw_oscilloscope()
         draw = QbloxDraw()
-        results= self.compile_qprogram(qprogram)
+        results = self.compile_qprogram(qprogram)
         draw.draw_oscilloscope(results, runcard_data, averages_displayed)
         logger.warning("The drawing feature is currently only supported for QBlox.")

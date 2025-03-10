@@ -41,6 +41,7 @@ from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
 from qililab.config import logger
 
+
 @yaml.register_class
 class QProgram(StructuredProgram):
     """QProgram is a hardware-agnostic pulse-level programming interface for describing quantum programs.
@@ -717,7 +718,7 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-    def draw_oscilloscope(self, averages_displayed = False):
+    def draw_oscilloscope(self, averages_displayed=False):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -726,9 +727,9 @@ class QProgram(StructuredProgram):
 
         from qililab.qprogram.qblox_compiler import QbloxCompiler
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
-        
+
         draw = QbloxDraw()
         compiler = QbloxCompiler()
         results = compiler.compile(self)
-        draw.draw_oscilloscope(result = results, averages_displayed=averages_displayed)
+        draw.draw_oscilloscope(result=results, averages_displayed=averages_displayed)
         logger.warning("The drawing feature is currently only supported for QBlox.")
