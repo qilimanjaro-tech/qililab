@@ -198,7 +198,6 @@ class QbloxDraw:
 
     def draw_oscilloscope(self, result, runcard_data = None, averages_displayed = False):
         Q1ASM_ordered = self._parse_program(result.sequences.copy()) # (instruction, value, label of the loops, index)
-        print(Q1ASM_ordered["drive"]["program"]["main"])
         data_draw = {}
         parameters = {}
         for bus,_ in Q1ASM_ordered.items():
@@ -302,7 +301,7 @@ class QbloxDraw:
             parameters[bus] = param
 
         self._oscilloscope_plotting(data_draw,parameters)
-
+        print("ata_draw",data_draw)
         return data_draw
 
     def _oscilloscope_plotting(self,data_draw,parameters):
