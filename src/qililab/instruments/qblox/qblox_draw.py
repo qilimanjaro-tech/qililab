@@ -20,7 +20,17 @@ from plotly.subplots import make_subplots
 
 
 class QbloxDraw:
-    def _call_handlers(self, program_line, param, register, data_draw, wf):
+    def _call_handlers(self, program_line, param, register, data_draw, waveform_seq):
+        """Calls the handlers.
+
+        Args:
+            program_line (tuple): line of the Q1ASM program parsed.
+            param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            register (dictionary): registers of the Q1ASM.
+            data_draw (list): nested list for each waveform, data points until current time.
+            waveform_seq (Dict items): waveform data as provided by the sequencer
+        """
+
         action_type = program_line[0]
         if action_type == "set_freq":
             param = self._handle_freq_phase_draw(program_line, param, register, "intermediate_frequency")
@@ -33,14 +43,14 @@ class QbloxDraw:
         elif action_type == "set_awg_gain":
             param = self._handle_gain_off_draw(program_line, param, "gain", 1)
         elif action_type == "play":
-            data_draw = self._handle_play_draw(data_draw, program_line, wf, register, param)
+            data_draw = self._handle_play_draw(data_draw, program_line, waveform_seq, param)
         elif action_type == "wait":
             data_draw = self._handle_wait_draw(data_draw, program_line, param)
         elif action_type == "add":
             self._handle_add_draw(register, program_line)
         return param, register, data_draw
 
-    def calculate_scaling_and_offsets(self, param, i_or_q):
+    def _calculate_scaling_and_offsets(self, param, i_or_q):
         if i_or_q == "I":
             scaling_factor, max_voltage = self._get_scaling_factors(
                 param, param.get("offset_i", 0), param.get("offset_out0", 0)
@@ -62,31 +72,32 @@ class QbloxDraw:
             return (1.8, 1.8) if static_off == 0 and dynamic_off == 0 else (1.8, 2.5)
         return (2.5, 2.5)  # (scaling factor, max voltage)
 
-    def get_value_from_metadata(self, metadata, register, key, division_factor=None):
-        if key in metadata:  # metadata is the runcard
-            if metadata[key] in register.keys():  # check if it's in the register
-                return (
-                    float(register[metadata[key]]) / float(division_factor)
-                    if division_factor
-                    else float(register[metadata[key]])
-                )
-                return float(metadata[key])
-        return None
+    def _handle_play_draw(self, data_draw, program_line, waveform_seq, param):
+        """Play a waveform by appending the stored data list.
 
-    def _handle_play_draw(self, stored_data, act_play, diction, register, param):
-        output_path1, output_path2, _ = map(int, act_play[1].split(","))
+        Args:
+            data_draw (list): nested list for each waveform, data points until current time.
+            program_line (tuple): line of the Q1ASM program parsed with a play instruction.
+            waveform_seq (Dict items): waveform data as provided by the sequencer
+            param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+
+        Returns:
+            Appended data_draw considering the play, the gain and the offset.
+            And appended the IF and phase keys of the param dictionary. Each of these is a np array where 1 data point represents 1 ns (same as the waveforms).
+        """
+        output_path1, output_path2, _ = map(int, program_line[1].split(","))
         # modify and store the wf data
-        for waveform_key, waveform_value in diction:
+        for _, waveform_value in waveform_seq:
             index = waveform_value["index"]
             if index in [output_path1, output_path2]:
                 iq = "I" if index == output_path1 else "Q"
-                scaling_factor, max_voltage, gain, offset_scaled, offset_out = self.calculate_scaling_and_offsets(
+                scaling_factor, max_voltage, gain, offset_scaled, offset_out = self._calculate_scaling_and_offsets(
                     param, iq
                 )
                 scaled_array = np.array(waveform_value["data"]) * scaling_factor
                 modified_waveform = np.clip(scaled_array * gain + offset_scaled + offset_out, None, max_voltage)
-                stored_data[0 if index == output_path1 else 1] = np.append(
-                    stored_data[0 if index == output_path1 else 1], modified_waveform
+                data_draw[0 if index == output_path1 else 1] = np.append(
+                    data_draw[0 if index == output_path1 else 1], modified_waveform
                 )
 
         # extend the IF and phase by the length of the wf
@@ -96,9 +107,20 @@ class QbloxDraw:
                 param[f"{key}_new"] = False
             else:
                 param[key].extend([param[key][-1]] * len(scaled_array))
-        return stored_data
+        return data_draw
 
-    def _handle_wait_draw(self, stored_data, act_wait, param):
+    def _handle_wait_draw(self, data_draw, program_line, param):
+        """Play a wwait by appending the stored data list.
+
+        Args:
+            data_draw (list): nested list for each waveform, data points until current time.
+            program_line (tuple): line of the Q1ASM program parsed with a wait instruction.
+            param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+
+        Returns:
+            Appended data_draw considering the wait and the offset.
+            And appended the IF and phase keys of the param dictionary. Each of these is a np array where 1 data point represents 1 ns (same as the waveforms).
+        """
         # Dynamic offsets
         off_i, off_q = param.get("offset_i", 0), param.get("offset_q", 0)
 
@@ -115,9 +137,9 @@ class QbloxDraw:
         # static offset
         offset_out0 = param.get("offset_out0", 0)
         offset_out1 = param.get("offset_out1", 0)
-        y_wait = np.linspace(0, 0, int(act_wait[1]))
-        stored_data[0] = np.append(stored_data[0], (y_wait + off_i_scaled + offset_out0))
-        stored_data[1] = np.append(stored_data[1], (y_wait + off_q_scaled + offset_out1))
+        y_wait = np.linspace(0, 0, int(program_line[1]))
+        data_draw[0] = np.append(data_draw[0], (y_wait + off_i_scaled + offset_out0))
+        data_draw[1] = np.append(data_draw[1], (y_wait + off_q_scaled + offset_out1))
 
         # extend the IF and phase by the length of the wf
         for key in ["intermediate_frequency", "phase"]:
@@ -126,23 +148,54 @@ class QbloxDraw:
                 param[f"{key}_new"] = False
             else:
                 param[key].extend([param[key][-1]] * len(y_wait))
-        return stored_data
+        return data_draw
 
-    def _handle_gain_off_draw(self, item, param, key, default):
-        i_val, q_val = (float(x) / 32767 for x in item[1].split(","))
+    def _handle_gain_off_draw(self, program_line, param, key, default):
+        """Updates the param dictionary when a gain or an offset is set in the program
+
+        Args:
+            data_draw (list): nested list for each waveform, data points until current time.
+            program_line (tuple): line of the Q1ASM program parsed with a gain or offset instruction.
+            param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            key (string): the key is gain or offset.
+            default (int): default value.
+
+        Returns:
+            Appends the param dictionary
+        """
+        i_val, q_val = (float(x) / 32767 for x in program_line[1].split(","))
         param[f"{key}_i"], param[f"{key}_q"] = i_val or default, q_val or default
         return param
 
-    def _handle_freq_phase_draw(self, item, param, register, key):
+    def _handle_freq_phase_draw(self, program_line, param, register, key):
+        """Updates the param dictionary when a freq or phase is set in the program
+
+        Args:
+            data_draw (list): nested list for each waveform, data points until current time.
+            program_line (tuple): line of the Q1ASM program parsed with a freq or phase instruction.
+            param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            key (string): the key is freq or phase.
+
+        Returns:
+            Appends the param dictionary.
+        """
         new_key = f"{key}_new"
         if param[new_key]:
-            param[key][-1] = self._get_value(item[1], register)
+            param[key][-1] = self._get_value(program_line[1], register)
         else:
-            param[key].append(self._get_value(item[1], register))
+            param[key].append(self._get_value(program_line[1], register))
         param[new_key] = True
         return param
 
     def _handle_reset_phase_draw(self, param):
+        """Handles a reset phase
+
+        Args:
+            param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+
+        Returns:
+            Sets the phase as 0 in the param dictionary.
+        """
         if param["phase_new"]:
             param["phase"][-1] = 0
         else:
@@ -150,12 +203,29 @@ class QbloxDraw:
         param["phase_new"] = True
         return param
 
-    def _handle_add_draw(self, register, act_add):
-        a, b, destination = act_add[1].split(", ")
+    def _handle_add_draw(self, register, program_line):
+        """Updates the register dictionary when a line of the parsed program has a move command.
+
+        Args:
+            register (dictionary): registers of the Q1ASM.
+            program_line (tuple): line of the Q1ASM program parsed with a freq or phase instruction.
+
+        Returns:
+            Updated register.
+        """
+        a, b, destination = program_line[1].split(", ")
         register[destination] = self._get_value(a, register) + self._get_value(b, register)
         return register
 
     def _get_value(self, x, register):
+        """
+        Args:
+            x (string|int|float): desired value or variable.
+            register (dictionary): registers of the Q1ASM.
+
+        Returns:
+            If the input is a number it returns a float; if the input is a key of the registery it returns th evalue as a float
+        """
         if x is not None:
             if x.isdigit():
                 return float(x)
@@ -164,6 +234,18 @@ class QbloxDraw:
         return None
 
     def _parse_program(self, sequences):
+        """ Parses the program dictionary of the sequence.
+        Args:
+            sequences (dictionary): for each bus, it is made up of nested dictionaries (waveforms,weights,acquisitions and program)
+
+        Returns:
+            Returns seq_parsed_program with each section (setup/main) as a list of tuple (instruction, numerical value, (tuple of loop label), index)
+            Example: Q1ASM has play 0,1,30 -  the equivalent seq_parsed_program is (play,'0,1,30', (),1)
+                where 1 is the index and () is a tuple of the loop labels
+                ie: ("avg_0", "loop_0") meaning the current isntruction is part of 2 loops, avg_0 as top and loop_0 as nested.
+            
+        """
+        print(sequences)
         seq_parsed_program = {}
         for bus in sequences:  # Iterate through the bus of the sequences
             sequence = sequences[bus].todict()
@@ -214,6 +296,19 @@ class QbloxDraw:
         return seq_parsed_program
 
     def draw_oscilloscope(self, result, runcard_data=None, averages_displayed=False):
+        """ Parses the program dictionary of the sequence.
+        Args:
+            result: compilation of the qprogram, this is done either at the platform or qprogram level
+            runcard_data (dictionary): parameters of the bus (IF, phase, offset, hardware modulation) retrieved from the runcard if using the platform
+                                        This gets renamed as param to overwrite/add values from the sequencer.
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg_ will only loop once, and True shows all iterations.
+                                        The default is False.
+
+
+        Returns:
+            Plots the waveforms and returns data_draw (all data points used to plot the waveforms)
+            
+        """
         Q1ASM_ordered = self._parse_program(result.sequences.copy())  # (instruction, value, label of the loops, index)
         data_draw = {}
         parameters = {}
@@ -324,10 +419,20 @@ class QbloxDraw:
                 param["phase"].pop()
             parameters[bus] = param
 
-        self._oscilloscope_plotting(data_draw, parameters)
+        data_draw = self._oscilloscope_plotting(data_draw, parameters)
         return data_draw
 
     def _oscilloscope_plotting(self, data_draw, parameters):
+        """ Plots the waveform data and applies the phase and frequency np array to the data
+        Args:
+            parameters (dictionary): parameters of all buses (IF, phase, offset, hardware modulation).
+            data_draw (list): nested list for each waveform, all data points.
+
+
+        Returns:
+            Plots the waveforms and returns data_draw (all data points used to plot the waveforms)
+            
+        """
         data_keys = list(data_draw.keys())
         fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
 
@@ -367,3 +472,5 @@ class QbloxDraw:
             showlegend=True,
         )
         fig.show()
+
+        return data_draw

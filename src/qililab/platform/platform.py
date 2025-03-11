@@ -1284,11 +1284,13 @@ class Platform:
         """Draw the QProgram using QBlox Compiler
 
         Args:
-            averages_displayed (bool): Plot the entiretey of the Q1ASM (True) or plot only once the loops named avg_i. Defaults to False.
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg_ will only loop once, and True shows all iterations.
+                                        The default is False.
         """
 
         runcard_data = self.data_draw_oscilloscope()
         draw = QbloxDraw()
         results = self.compile_qprogram(qprogram)
-        draw.draw_oscilloscope(results, runcard_data, averages_displayed)
+        result = draw.draw_oscilloscope(results, runcard_data, averages_displayed)
         logger.warning("The drawing feature is currently only supported for QBlox.")
+        return result
