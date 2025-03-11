@@ -1281,7 +1281,7 @@ class Platform:
         """Draw the QProgram using QBlox Compiler
 
         Args:
-            averages_displayed (bool): False means that all loops on the sequencer starting with avg_ will only loop once, and True shows all iterations.
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
                                         The default is False.
         """
 
