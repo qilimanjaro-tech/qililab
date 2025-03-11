@@ -506,11 +506,8 @@ class Platform:
                         # for x in self.alias:
                         data_osci[bus.alias] = {}
                         for p in param:
-                            try:
-                                val = self.get_parameter(bus.alias, p)
-                                data_osci[bus.alias][p] = val
-                            except (KeyError, ValueError, AttributeError):
-                                pass
+                            val = self.get_parameter(bus.alias, p)
+                            data_osci[bus.alias][p] = val
         data_oscillocope = {}
         for key, sub_dict in data_osci.items():
             data_oscillocope[key] = {param.value: value for param, value in sub_dict.items()}

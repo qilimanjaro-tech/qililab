@@ -245,19 +245,18 @@ class QbloxDraw:
                 ie: ("avg_0", "loop_0") meaning the current isntruction is part of 2 loops, avg_0 as top and loop_0 as nested.
             
         """
-        print("seqq",sequences)
+        print(sequences)
+        print(type(sequences))
         seq_parsed_program = {}
         for bus in sequences:  # Iterate through the bus of the sequences
             sequence = sequences[bus].todict()
             program_line = sequence["program"].split("\n")
             processed_lines = []
 
-            # parse all lines of qprogram and deal with special cases of nop and reset phase
+            # parse all lines of qprogram and deal with special case of reset phase
             for line in program_line:
                 stripped_line = line.strip()
-                if stripped_line.startswith("nop"):
-                    processed_lines.append("nop             2")
-                elif stripped_line.startswith("reset_ph"):
+                if stripped_line.startswith("reset_ph"):
                     processed_lines.append("reset_ph             2")
                 else:
                     processed_lines.append(stripped_line)
