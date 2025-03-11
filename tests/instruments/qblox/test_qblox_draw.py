@@ -44,8 +44,8 @@ def qp_draw() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="qp_plat_draw")
-def qp_plat_draw() -> QProgram:
+@pytest.fixture(name="qp_plat_draw_qrmrf")
+def qp_plat_draw_qrmrf() -> QProgram:
     qp = QProgram()
     qp.set_phase("drive_line_q1_bus",0.5)
     qp.set_frequency("drive_line_q1_bus",100e6)
@@ -54,6 +54,15 @@ def qp_plat_draw() -> QProgram:
     qp.set_phase("drive_line_q1_bus",0)
     return qp
 
+@pytest.fixture(name="qp_plat_draw_qcm")
+def qp_plat_draw_qcm() -> QProgram:
+    qp = QProgram()
+    qp.set_phase("drive_line_q0_bus",0.5)
+    qp.set_frequency("drive_line_q0_bus",100e6)
+    qp.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=10))
+    qp.wait("drive_line_q0_bus", 10)
+    qp.set_phase("drive_line_q0_bus",0)
+    return qp
 
 @pytest.fixture(name="platform")
 def fixture_platform():
@@ -100,30 +109,26 @@ class TestQBloxDraw:
         assert (data_draw["drive"][0] == expected_data_draw_i).all()
         assert (data_draw["drive"][1] == expected_data_draw_q).all()
 
-    def test_platform_draw(self, qp_plat_draw: QProgram, platform: Platform):
+    def test_platform_draw_qrmrf(self, qp_plat_draw_qrmrf: QProgram, platform: Platform):
         expected_data_draw_i = [0.0018, 0.0018, 0.0018, 0.0018, 0.0018, 0.0018, 0.0018, 0.0018,
        0.0018, 0.0018, 0.    , 0.    , 0.    , 0.    , 0.    , 0.    ,
        0.    , 0.    , 0.    , 0.    ]
         expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
        0., 0., 0.]
 
-        # runcard_data = platform.data_draw_oscilloscope()
-        # draw = QbloxDraw()
-        # results = platform.compile_qprogram(qp_plat_draw)
-        # data_draw = draw.draw_oscilloscope(results)
-        # draw.draw_oscilloscope(results, runcard_data)
-        # assert (data_draw["drive_line_q1_bus"][0] == expected_data_draw_i).all()
-        # assert (data_draw["drive_line_q1_bus"][1] == expected_data_draw_q).all()
-
-        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw)
-        # draw = QbloxDraw()
-        # results = platform.compile_qprogram(qp_plat_draw)
-        # data_draw = draw.draw_oscilloscope(results)
-        # draw.draw_oscilloscope(results, runcard_data)
+        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qrmrf)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-9, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q, rtol=1e-9, atol=1e-12)
-        # assert (data_draw["drive_line_q1_bus"][0] == expected_data_draw_i).all()
-        # assert (data_draw["drive_line_q1_bus"][1] == expected_data_draw_q).all()
+
+    def test_platform_draw_qcm(self, qp_plat_draw_qcm: QProgram, platform: Platform):
+        expected_data_draw_i = [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 0. , 0. , 0. ,
+       0. , 0. , 0. , 0. , 0. , 0. , 0. ]
+        expected_data_draw_q = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+       0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+
+        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcm)
+        np.testing.assert_allclose(data_draw["drive_line_q0_bus"][0], expected_data_draw_i, rtol=1e-9, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive_line_q0_bus"][1], expected_data_draw_q, rtol=1e-9, atol=1e-12)
 
     def test_get_value(self):
         draw = QbloxDraw()
@@ -132,9 +137,5 @@ class TestQBloxDraw:
         assert draw._get_value(None, register) is None
 
     # def test_parsing_nop(self):
-    #     q1asm = """
-    #         main:
-    #                         wait             50
-    #                         nop
-    #                         wait             50
-    #     """
+    #     sequencer =  {'drive': {'waveforms': {'waveform_0': {'data': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], 'index': 0}, 'waveform_1': {'data': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'index': 1}}, 'weights': {}, 'acquisitions': {}, 'program': 'setup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                play             0, 1, 10       \n                wait             20             \n                nop            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n'}}
+

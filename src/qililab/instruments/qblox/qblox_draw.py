@@ -245,7 +245,7 @@ class QbloxDraw:
                 ie: ("avg_0", "loop_0") meaning the current isntruction is part of 2 loops, avg_0 as top and loop_0 as nested.
             
         """
-        print(sequences)
+        print("seqq",sequences)
         seq_parsed_program = {}
         for bus in sequences:  # Iterate through the bus of the sequences
             sequence = sequences[bus].todict()
