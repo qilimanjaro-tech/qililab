@@ -496,13 +496,12 @@ class QuantumMachinesCluster(Instrument):
             raise ValueError("The QM `config` dictionary does not exist. Please run `initial_setup()` first.")
 
         merged_configuration = merge_dictionaries(dict(self._config), configuration)
-        if self._config != merged_configuration:
-            self._config = cast("DictQuaConfig", merged_configuration)
-            # If we are already connected, reopen the connection with the new configuration
-            if self._is_connected_to_qm:
-                self._qm.close()
-                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
-                self._compiled_program_cache = {}
+        self._config = cast("DictQuaConfig", merged_configuration)
+        # If we are already connected, reopen the connection with the new configuration
+        if self._is_connected_to_qm:
+            self._qm.close()
+            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
+            self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
         """Run calibration procedure for the buses with octaves, if any."""
@@ -867,9 +866,8 @@ class QuantumMachinesCluster(Instrument):
             str: A unique identifier (hash) for the compiled QUA program. This identifier can be used to retrieve the compiled program from the cache, or run it  with `run_compiled_program` method.
         """
         qua_program_hash = hash_qua_program(program=program)
-        # if qua_program_hash not in self._compiled_program_cache:
-        #     self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
-        self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
+        if qua_program_hash not in self._compiled_program_cache:
+            self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
         return self._compiled_program_cache[qua_program_hash]
 
     def run_compiled_program(self, compiled_program_id: str) -> QmJob | JobApi:
