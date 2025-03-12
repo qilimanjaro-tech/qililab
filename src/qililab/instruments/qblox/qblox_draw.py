@@ -334,6 +334,8 @@ class QbloxDraw:
                 parameters[bus]["intermediate_frequency"] = [0]
                 parameters[bus]["offset_i"] = [0]
                 parameters[bus]["offset_q"] = [0]
+                parameters[bus]["static_offset_i"] = [0]
+                parameters[bus]["static_offset_q"] = [0]
                 parameters[bus]["hardware_modulation"] = True  # if plotting directly from qp, plot i and q
             parameters[bus]["phase"] = [0]
 
@@ -450,8 +452,9 @@ class QbloxDraw:
         for idx, key in enumerate(data_keys):
             off_i = np.array(parameters[key]["offset_i"])
             off_q = np.array(parameters[key]["offset_q"])
+            static_offset_i, static_offset_q = parameters[key]["static_offset_i"], parameters[key]["static_offset_q"]
             if not parameters[key]["hardware_modulation"]:  # if hardware modulation is disabled, do not plot Q
-                waveform_flux = np.clip((np.array(data_draw[key][0]) + off_i), None, 2.5)
+                waveform_flux = np.clip((np.array(data_draw[key][0]) + off_i + static_offset_i), None, 2.5)
                 data_draw[key][0] = waveform_flux
                 data_draw[key][1] = None
                 fig.add_trace(
@@ -468,9 +471,9 @@ class QbloxDraw:
                 cos_term = np.cos(2 * np.pi * freq * t + phase)
                 sin_term = np.sin(2 * np.pi * freq * t + phase)
                 path0 = cos_term * np.array(wf1) - sin_term * np.array(wf2)
-                path1 = sin_term * np.array(wf1) + cos_term * np.array(wf2)
-                path0_off = np.clip((path0 + off_i), None, 2.5)
-                path1_off = np.clip((path1 + off_q), None, 2.5)
+                path1 = sin_term * np.array(wf1) + cos_term * np.array(wf2)                
+                path0_off = np.clip((path0 + off_i + static_offset_i), None, 2.5)
+                path1_off = np.clip((path1 + off_q + static_offset_q), None, 2.5)
 
                 data_draw[key][0], data_draw[key][1] = path0_off, path1_off
 

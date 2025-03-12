@@ -480,35 +480,36 @@ class Platform:
             for bus in buses:
                 for instrument, _ in zip(bus.instruments, bus.channels):
                     if isinstance(instrument, QbloxModule):
-                        if instrument.name == InstrumentName.QBLOX_QCM:
-                            param = [
-                                Parameter.IF,
-                                Parameter.GAIN_I,
-                                Parameter.GAIN_Q,
-                                Parameter.OFFSET_I,
-                                Parameter.OFFSET_Q,
-                                Parameter.OFFSET_OUT0,
-                                Parameter.OFFSET_OUT1,
-                                Parameter.OFFSET_OUT2,
-                                Parameter.OFFSET_OUT3,
-                                Parameter.HARDWARE_MODULATION,
-                            ]
-                        else:
-                            param = [
-                                Parameter.IF,
-                                Parameter.GAIN_I,
-                                Parameter.GAIN_Q,
-                                Parameter.OFFSET_I,
-                                Parameter.OFFSET_Q,
-                                Parameter.HARDWARE_MODULATION,
-                            ]
-
-                        # for x in self.alias:
                         data_osci[bus.alias] = {}
+                        static_offset_i = 0
+                        static_offset_q = 0
+                        param = [
+                                Parameter.IF,
+                                Parameter.GAIN_I,
+                                Parameter.GAIN_Q,
+                                Parameter.OFFSET_I,
+                                Parameter.OFFSET_Q,
+                                Parameter.HARDWARE_MODULATION,
+                            ]
                         for p in param:
                             val = self.get_parameter(bus.alias, p)
                             data_osci[bus.alias][p] = val
+
                         data_osci[bus.alias]["instrument name"] = instrument.name.value
+
+                        if instrument.name == InstrumentName.QBLOX_QCM:
+                            #retrieve the set offset and assign it to the bus
+                            identifier = bus.channels
+                            for awg in instrument.awg_sequencers:
+                                if awg.identifier == identifier[0]:
+                                    for idx, out in enumerate(awg.outputs):
+                                        if idx == 0:
+                                            static_offset_i = instrument.out_offsets[out]
+                                        elif idx == 1:
+                                            static_offset_q = instrument.out_offsets[out]
+                            data_osci[bus.alias]["static_offset_i"] = static_offset_i
+                            data_osci[bus.alias]["static_offset_q"] = static_offset_q
+
         data_oscillocope = {}
         for bus, bus_param in data_osci.items():
             data_oscillocope[bus] = {}
@@ -518,10 +519,7 @@ class Platform:
 
                 except AttributeError:
                     data_oscillocope[bus][param] = value
-            # try:
-            # data_oscillocope[bus] = {param.value: value for param, value in bus_param.items()}
-            # except AttributeError:
-            #     data_oscillocope[key] = sub_dict
+
         return data_oscillocope
 
     def set_parameter(
