@@ -38,7 +38,8 @@ class TestExperiment(TestStructuredProgram):
         """Test set_flux with calibration"""
         calibration = Calibration()
         calibration.crosstalk_matrix = CrosstalkMatrix.from_buses({"flux_bus": {"flux_bus": 1.0}})
-        instance.set_parameter(alias="flux_bus", parameter=Parameter.FLUX, value=0.5, calibration=calibration)
+        instance.crosstalk(calibration=calibration)
+        instance.set_parameter(alias="flux_bus", parameter=Parameter.FLUX, value=0.5)
 
         assert len(instance._active_block.elements) == 1
         assert len(instance._body.elements) == 1
