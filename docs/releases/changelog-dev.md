@@ -36,14 +36,15 @@ with experiment.for_loop(variable=flux_x, start=0, stop=0.4, step=0.01):
         experiment.execute_qprogram(qp)
 ```
 
-With `Calibration` the code does not need to call for `experiment.crosstalk`:
+With `Calibration`, `experiment.crosstalk` requires the calibration file:
 
 ```
-experiment = ql.Experiment(label="liveplot_test", calibration=calibration)
+experiment = ql.Experiment(label="liveplot_test")
 
 flux_x = experiment.variable("flux_x", ql.Domain.Flux)
 flux_z = experiment.variable("flux_z", ql.Domain.Flux)
 
+experiment.crosstalk(calibration=calibration)
 with experiment.for_loop(variable=flux_x, start=0, stop=0.4, step=0.01):
     with experiment.for_loop(variable=flux_z, start=0, stop=0.4, step=0.01):
         experiment.set_parameter(alias="flux_x1", parameter=ql.Parameter.FLUX, value=flux_x)

@@ -95,7 +95,6 @@ class Experiment(StructuredProgram):
         value: int | float | Variable,
         channel_id: int | None = None,
         flux_list: list[str] | None = None,
-        calibration: Calibration | None = None,
     ):
         """Set a platform parameter.
 
@@ -107,15 +106,12 @@ class Experiment(StructuredProgram):
             value (int | float): The value to set for the parameter.
         """
         if parameter == Parameter.FLUX:
-            if calibration:
-                self.crosstalk_data = calibration.crosstalk_matrix
-            if not self.get_crosstalk and not self.crosstalk_data:
+            self.crosstalk_data = self.get_crosstalk
+            if not self.crosstalk_data:
                 if not flux_list:
                     flux_list = [alias]
                 self.crosstalk_data = CrosstalkMatrix.from_array(flux_list, np.eye(len(flux_list)))
                 warnings.warn(f"Crosstalk not given, using identity as crosstalk\n{self.crosstalk_data}")
-            elif self.get_crosstalk:
-                self.crosstalk_data = self.get_crosstalk
             if alias not in self.crosstalk_data.matrix.keys():  # type: ignore[union-attr]
                 for key in list(self.crosstalk_data.matrix.keys()):  # type: ignore[union-attr]
                     self.crosstalk_data[alias] = {key: 0.0}  # type: ignore[index]
