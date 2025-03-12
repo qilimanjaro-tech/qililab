@@ -178,6 +178,7 @@ class FluxVector:
         self.flux_vector: dict[str, float] = {}
         self.bias_vector: dict[str, float] = {}
         self.crosstalk: CrosstalkMatrix | None = None
+        self.crosstalk_inverse: CrosstalkMatrix | None = None
 
     def __getitem__(self, bus: str) -> float:
         """Given a bus, returns its corresponding flux
@@ -215,13 +216,15 @@ class FluxVector:
             _type_: _description_
         """
         self.crosstalk = crosstalk
+        self.crosstalk_inverse = crosstalk.inverse()
 
         self.bias_vector = self.flux_vector.copy()
 
-        for bus_1 in crosstalk.matrix.keys():
+        for bus_1 in self.crosstalk_inverse.matrix.keys():
             self.bias_vector[bus_1] = sum(
-                (self.flux_vector[bus_2] + crosstalk.flux_offsets[bus_2]) * crosstalk.matrix[bus_1][bus_2]
-                for bus_2 in crosstalk.matrix[bus_1].keys()
+                (self.flux_vector[bus_2] + self.crosstalk_inverse.flux_offsets[bus_2])
+                * self.crosstalk_inverse.matrix[bus_1][bus_2]
+                for bus_2 in self.crosstalk_inverse.matrix[bus_1].keys()
             )
 
         return self.bias_vector
@@ -232,16 +235,16 @@ class FluxVector:
         Args:
             crosstalk (CrosstalkMatrix): _description_
 
-        Returns:
-            _type_: _description_
         """
         self.crosstalk = crosstalk
+        self.crosstalk_inverse = crosstalk.inverse()
 
         self.bias_vector = self.flux_vector.copy()
 
-        for bus_1 in crosstalk.matrix.keys():
+        for bus_1 in self.crosstalk_inverse.matrix.keys():
             self.bias_vector[bus_1] = sum(
-                self.flux_vector[bus_2] * crosstalk.matrix[bus_1][bus_2] for bus_2 in crosstalk.matrix[bus_1].keys()
+                self.flux_vector[bus_2] * self.crosstalk_inverse.matrix[bus_1][bus_2]
+                for bus_2 in self.crosstalk_inverse.matrix[bus_1].keys()
             )
 
         return self.bias_vector
