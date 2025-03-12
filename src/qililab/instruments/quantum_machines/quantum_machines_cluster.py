@@ -867,8 +867,9 @@ class QuantumMachinesCluster(Instrument):
             str: A unique identifier (hash) for the compiled QUA program. This identifier can be used to retrieve the compiled program from the cache, or run it  with `run_compiled_program` method.
         """
         qua_program_hash = hash_qua_program(program=program)
-        if qua_program_hash not in self._compiled_program_cache:
-            self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
+        # if qua_program_hash not in self._compiled_program_cache:
+        #     self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
+        self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
         return self._compiled_program_cache[qua_program_hash]
 
     def run_compiled_program(self, compiled_program_id: str) -> QmJob | JobApi:
