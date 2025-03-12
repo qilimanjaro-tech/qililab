@@ -508,9 +508,20 @@ class Platform:
                         for p in param:
                             val = self.get_parameter(bus.alias, p)
                             data_osci[bus.alias][p] = val
+                        data_osci[bus.alias]["instrument name"] = instrument.name.value
         data_oscillocope = {}
-        for key, sub_dict in data_osci.items():
-            data_oscillocope[key] = {param.value: value for param, value in sub_dict.items()}
+        for bus, bus_param in data_osci.items():
+            data_oscillocope[bus] = {}
+            for param, value in bus_param.items():
+                try:
+                    data_oscillocope[bus][param.value] = value
+
+                except AttributeError:
+                    data_oscillocope[bus][param] = value
+            # try:
+            # data_oscillocope[bus] = {param.value: value for param, value in bus_param.items()}
+            # except AttributeError:
+            #     data_oscillocope[key] = sub_dict
         return data_oscillocope
 
     def set_parameter(

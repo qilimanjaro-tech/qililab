@@ -39,9 +39,9 @@ class QbloxDraw:
         elif action_type == "reset_ph":
             param = self._handle_reset_phase_draw(param)
         elif action_type == "set_awg_offs":
-            param = self._handle_gain_off_draw(program_line, param, "offset", 0)
+            param = self._handle_gain_offset(program_line, param)
         elif action_type == "set_awg_gain":
-            param = self._handle_gain_off_draw(program_line, param, "gain", 1)
+            param = self._handle_gain_draw(program_line, param, "gain", 1)
         elif action_type == "play":
             data_draw = self._handle_play_draw(data_draw, program_line, waveform_seq, param)
         elif action_type == "wait":
@@ -56,16 +56,12 @@ class QbloxDraw:
                 param, param.get("offset_i", 0), param.get("offset_out0", 0)
             )
             gain = param.get("gain_i", 1)
-            offset_scaled = param.get("offset_i", 0) * scaling_factor
-            offset_out = param.get("offset_out0", 0)
         elif i_or_q == "Q":
             scaling_factor, max_voltage = self._get_scaling_factors(
                 param, param.get("offset_q", 0), param.get("offset_out1", 0)
             )
             gain = param.get("gain_q", 1)
-            offset_scaled = param.get("offset_q", 0) * scaling_factor
-            offset_out = param.get("offset_out1", 0)
-        return scaling_factor, max_voltage, gain, offset_scaled, offset_out
+        return scaling_factor, max_voltage, gain
 
     def _get_scaling_factors(self, param, static_off, dynamic_off):
         if param["hardware_modulation"]:
@@ -91,17 +87,17 @@ class QbloxDraw:
             index = waveform_value["index"]
             if index in [output_path1, output_path2]:
                 iq = "I" if index == output_path1 else "Q"
-                scaling_factor, max_voltage, gain, offset_scaled, offset_out = self._calculate_scaling_and_offsets(
+                scaling_factor, max_voltage, gain= self._calculate_scaling_and_offsets(
                     param, iq
                 )
                 scaled_array = np.array(waveform_value["data"]) * scaling_factor
-                modified_waveform = np.clip(scaled_array * gain + offset_scaled + offset_out, None, max_voltage)
+                modified_waveform = np.clip(scaled_array * gain, None, max_voltage)
                 data_draw[0 if index == output_path1 else 1] = np.append(
                     data_draw[0 if index == output_path1 else 1], modified_waveform
                 )
 
         # extend the IF and phase by the length of the wf
-        for key in ["intermediate_frequency", "phase"]:
+        for key in ["intermediate_frequency", "phase","offset_i","offset_q"]:
             if param.get(f"{key}_new", False) is True:
                 param[key].extend([param[key][-1]] * (len(scaled_array) - 1))
                 param[f"{key}_new"] = False
@@ -121,28 +117,13 @@ class QbloxDraw:
             Appended data_draw considering the wait and the offset.
             And appended the IF and phase keys of the param dictionary. Each of these is a np array where 1 data point represents 1 ns (same as the waveforms).
         """
-        # Dynamic offsets
-        off_i, off_q = param.get("offset_i", 0), param.get("offset_q", 0)
 
-        # Static offsets
-        offset_out0, offset_out1 = param.get("offset_out0", 0), param.get("offset_out1", 0)
-
-        scaling_factori, _ = self._get_scaling_factors(param, off_i, offset_out0)
-        scaling_factorq, _ = self._get_scaling_factors(param, off_q, offset_out1)
-
-        # dynamic offset
-        off_i_scaled = off_i * scaling_factori
-        off_q_scaled = off_q * scaling_factorq
-
-        # static offset
-        offset_out0 = param.get("offset_out0", 0)
-        offset_out1 = param.get("offset_out1", 0)
         y_wait = np.linspace(0, 0, int(program_line[1]))
-        data_draw[0] = np.append(data_draw[0], (y_wait + off_i_scaled + offset_out0))
-        data_draw[1] = np.append(data_draw[1], (y_wait + off_q_scaled + offset_out1))
+        data_draw[0] = np.append(data_draw[0], (y_wait))
+        data_draw[1] = np.append(data_draw[1], (y_wait))
 
         # extend the IF and phase by the length of the wf
-        for key in ["intermediate_frequency", "phase"]:
+        for key in ["intermediate_frequency", "phase", "offset_i", "offset_q"]:
             if param.get(f"{key}_new", False) is True:
                 param[key].extend([param[key][-1]] * (len(y_wait) - 1))
                 param[f"{key}_new"] = False
@@ -150,8 +131,8 @@ class QbloxDraw:
                 param[key].extend([param[key][-1]] * len(y_wait))
         return data_draw
 
-    def _handle_gain_off_draw(self, program_line, param, key, default):
-        """Updates the param dictionary when a gain or an offset is set in the program
+    def _handle_gain_draw(self, program_line, param, key, default):
+        """Updates the param dictionary when a gain is set in the program
 
         Args:
             data_draw (list): nested list for each waveform, data points until current time.
@@ -165,6 +146,35 @@ class QbloxDraw:
         """
         i_val, q_val = (float(x) / 32767 for x in program_line[1].split(","))
         param[f"{key}_i"], param[f"{key}_q"] = i_val or default, q_val or default
+        return param
+
+    def _handle_gain_offset(self, program_line, param):
+        """Updates the param dictionary when an offset is set in the program
+
+        Args:
+            data_draw (list): nested list for each waveform, data points until current time.
+            program_line (tuple): line of the Q1ASM program parsed with a gain or offset instruction.
+            param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            key (string): the key is gain      or offset.
+            default (int): default value.
+
+        Returns:
+            Appends the param dictionary
+        """
+        offi, offq = map(int, program_line[1].split(","))
+    
+        if param["hardware_modulation"]:
+            scaling_offset = 1.8
+        elif param["hardware_modulation"]:
+            scaling_offset = 2.5
+
+        for x, off in zip(["offset_i", "offset_q"], [offi, offq]):
+            new_key = f"{x}_new"
+            if param[new_key]:
+                param[x][-1] = off * scaling_offset / 32767
+            else:
+                param[x].append(off*scaling_offset / 32767)
+            param[new_key] = True
         return param
 
     def _handle_freq_phase_draw(self, program_line, param, register, key):
@@ -245,8 +255,6 @@ class QbloxDraw:
                 ie: (avg_0, loop_0) meaning the current isntruction is part of 2 loops, avg_0 as top and loop_0 as nested.
             
         """
-        print(sequences)
-        print(type(sequences))
         seq_parsed_program = {}
         for bus in sequences:  # Iterate through the bus of the sequences
             sequence = sequences[bus].todict()
@@ -317,16 +325,23 @@ class QbloxDraw:
                 parameters[bus] = {
                     key: runcard_data[bus][key] for key in runcard_data[bus]
                 }  # retrieve runcard data if the qblox draw is called when a platform has been built
-                parameters[bus]["intermediate_frequency"] = [parameters[bus]["intermediate_frequency"]]
+                IF = parameters[bus]["intermediate_frequency"] * 4
+                parameters[bus]["intermediate_frequency"] = [IF]
+                parameters[bus]["offset_i"] = [parameters[bus]["offset_i"]]
+                parameters[bus]["offset_q"] = [parameters[bus]["offset_q"]]
             else:
                 parameters[bus] = {}
                 parameters[bus]["intermediate_frequency"] = [0]
+                parameters[bus]["offset_i"] = [0]
+                parameters[bus]["offset_q"] = [0]
                 parameters[bus]["hardware_modulation"] = True  # if plotting directly from qp, plot i and q
             parameters[bus]["phase"] = [0]
 
             # flags to determine if the phase or freq has been updated
             parameters[bus]["phase_new"] = True
             parameters[bus]["intermediate_frequency_new"] = True
+            parameters[bus]["offset_i_new"] = True
+            parameters[bus]["offset_q_new"] = True
 
             wf1 = []
             wf2 = []
@@ -409,13 +424,10 @@ class QbloxDraw:
                 else:
                     pass
 
-            # remove the latest freq and phase data points if nothing played after
-            if param["intermediate_frequency_new"]:
-                param["intermediate_frequency"].pop()
-            parameters[bus] = param
-
-            if param["phase_new"]:
-                param["phase"].pop()
+            # remove the latest freq, phase and offset data points if nothing played after
+            for key in ["intermediate_frequency", "phase", "offset_i", "offset_q"]:
+                if param[f"{key}_new"]:
+                    param[key].pop()
             parameters[bus] = param
 
         data_draw = self._oscilloscope_plotting(data_draw, parameters)
@@ -436,9 +448,14 @@ class QbloxDraw:
         fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
 
         for idx, key in enumerate(data_keys):
+            off_i = np.array(parameters[key]["offset_i"])
+            off_q = np.array(parameters[key]["offset_q"])
             if not parameters[key]["hardware_modulation"]:  # if hardware modulation is disabled, do not plot Q
+                waveform_flux = np.clip((np.array(data_draw[key][0]) + off_i), None, 2.5)
+                data_draw[key][0] = waveform_flux
+                data_draw[key][1] = None
                 fig.add_trace(
-                    go.Scatter(y=np.array(data_draw[key][0]), mode="lines", name="Flux", legendgroup=idx),
+                    go.Scatter(y = waveform_flux, mode="lines", name="Flux", legendgroup=idx),
                     row=idx + 1,
                     col=1,
                 )
@@ -447,15 +464,18 @@ class QbloxDraw:
                 fs = 1e9  # sampling frequency of the qblox
                 t = np.arange(0, len(wf1)) / fs
                 freq = np.array(parameters[key]["intermediate_frequency"]) / 4
-                phase = np.array(parameters[key]["phase"]) * (2 * np.pi / 1e9)
-
+                phase = np.array(parameters[key]["phase"])* (2 * np.pi / 1e9)
                 cos_term = np.cos(2 * np.pi * freq * t + phase)
                 sin_term = np.sin(2 * np.pi * freq * t + phase)
                 path0 = cos_term * np.array(wf1) - sin_term * np.array(wf2)
                 path1 = sin_term * np.array(wf1) + cos_term * np.array(wf2)
+                path0_off = np.clip((path0 + off_i), None, 2.5)
+                path1_off = np.clip((path1 + off_q), None, 2.5)
 
-                fig.add_trace(go.Scatter(y=path0, mode="lines", name=f"{key} I", legendgroup=idx), row=idx + 1, col=1)
-                fig.add_trace(go.Scatter(y=path1, mode="lines", name=f"{key} Q", legendgroup=idx), row=idx + 1, col=1)
+                data_draw[key][0], data_draw[key][1] = path0_off, path1_off
+
+                fig.add_trace(go.Scatter(y = path0_off , mode="lines", name=f"{key} I", legendgroup=idx), row=idx + 1, col=1)
+                fig.add_trace(go.Scatter(y = path1_off , mode="lines", name=f"{key} Q", legendgroup=idx), row=idx + 1, col=1)
 
         # Add axis titles
         for i, key in enumerate(data_keys):
