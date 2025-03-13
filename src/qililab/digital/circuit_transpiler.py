@@ -67,7 +67,7 @@ class CircuitTranspiler:
     """Handles circuit transpilation. It has 3 accessible methods:
 
     - ``circuit_to_native``: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
-    - ``circuit_to_pulses``: transpiles a native gate circuit to a `PulseSchedule`
+    - ``circuit_to_pulses``: transpiles a native gate circuit to a ``PulseSchedule``
     - ``transpile_circuit``: runs both of the methods above sequentially
 
     Args:
@@ -205,7 +205,7 @@ class CircuitTranspiler:
     ) -> tuple[list[gates.Gate], int, list[int]]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
-        This process uses the provided `placer`, `router`, and `routing_iterations` parameters if they are passed; otherwise, default values are applied.
+        This process uses the provided ``placer``, ``router``, and ``routing_iterations`` parameters if they are passed; otherwise, default values are applied.
 
         **Examples:**
 
@@ -246,10 +246,10 @@ class CircuitTranspiler:
 
         Args:
             circuit (Circuit): circuit to route.
-            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer` instance, or subclass ``type[Placer]`` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
+            router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to
+                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
             coupling_map (tuple[int, int], optional): coupling map of the chip to route. This topology will be the one that rules,
                 which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
@@ -364,7 +364,7 @@ class CircuitTranspiler:
         will be looked up and will be applied in sync. Note that thus a circuit gate for M(0,1,2) is different from the circuit sequence
         M(0)M(1)M(2) since the later will not be necessarily applied at the same time for all the qubits involved.
 
-        Times for each qubit are kept track of with the dictionary `time`.
+        Times for each qubit are kept track of with the dictionary ``time``.
 
         The times at which each pulse is applied are padded if they are not multiples of the minimum clock time. This means that if min clock
         time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
