@@ -21,6 +21,8 @@ from typing import Any, cast
 import numpy as np
 from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig
 from qm.api.v2.job_api import JobApi
+from qm.api.v2.qm_api import QmApi
+from qm.api.v2.qm_api_old import QmApiWithDeprecations
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
 from qm.program import Program
@@ -415,7 +417,9 @@ class QuantumMachinesCluster(Instrument):
     settings: QuantumMachinesClusterSettings
     device: QMMDriver
     _qmm: QuantumMachinesManager
-    _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
+    # if OPX1000:
+    _qm: QmApi
+    # _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
@@ -496,12 +500,12 @@ class QuantumMachinesCluster(Instrument):
             raise ValueError("The QM `config` dictionary does not exist. Please run `initial_setup()` first.")
 
         merged_configuration = merge_dictionaries(dict(self._config), configuration)
-        self._config = cast("DictQuaConfig", merged_configuration)
-        # If we are already connected, reopen the connection with the new configuration
-        if self._is_connected_to_qm:
-            self._qm.close()
-            self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
-            self._compiled_program_cache = {}
+        if self._config != merged_configuration:
+            self._config = cast("DictQuaConfig", merged_configuration)
+            # If we are already connected, reopen the connection with the new configuration
+            if self._is_connected_to_qm:
+                self._qm.update_config(self._config)
+                self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
         """Run calibration procedure for the buses with octaves, if any."""
