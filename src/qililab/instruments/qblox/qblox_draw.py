@@ -53,19 +53,19 @@ class QbloxDraw:
     def _calculate_scaling_and_offsets(self, param, i_or_q):
         if i_or_q == "I":
             scaling_factor, max_voltage = self._get_scaling_factors(
-                param, param.get("offset_i", 0), param.get("offset_out0", 0)
+                param, param.get("offset_i", 0), param.get("static_offset_i", 0)
             )
             gain = param.get("gain_i", 1)
         elif i_or_q == "Q":
             scaling_factor, max_voltage = self._get_scaling_factors(
-                param, param.get("offset_q", 0), param.get("offset_out1", 0)
+                param, param.get("offset_q", 0), param.get("static_offset_q", 0)
             )
             gain = param.get("gain_q", 1)
         return scaling_factor, max_voltage, gain
 
-    def _get_scaling_factors(self, param, static_off, dynamic_off):
+    def _get_scaling_factors(self, param, dynamic_off, static_off):
         if param["hardware_modulation"]:
-            return (1.8, 1.8) if static_off == 0 and dynamic_off == 0 else (1.8, 2.5)
+            return (1.8, 1.8) if dynamic_off == 0 and static_off == 0 else (1.8, 2.5)
         return (2.5, 2.5)  # (scaling factor, max voltage)
 
     def _handle_play_draw(self, data_draw, program_line, waveform_seq, param):
@@ -163,7 +163,7 @@ class QbloxDraw:
 
         if param["hardware_modulation"]:
             scaling_offset = 1.8
-        elif param["hardware_modulation"]:
+        else:
             scaling_offset = 2.5
 
         for x, off in zip(["offset_i", "offset_q"], [offi, offq]):

@@ -54,7 +54,6 @@ def qp_plat_draw_qrmrf_offset() -> QProgram:
     qp.set_offset("drive_line_q1_bus", 0)
     return qp
 
-
 @pytest.fixture(name="qp_plat_draw_qrmrf")
 def qp_plat_draw_qrmrf() -> QProgram:
     qp = QProgram()
@@ -76,6 +75,15 @@ def qp_plat_draw_qcm() -> QProgram:
     qp.set_phase("drive_line_q0_bus", 0)
     return qp
 
+@pytest.fixture(name="qp_plat_draw_qcm_offset")
+def qp_plat_draw_qcm_offset() -> QProgram:
+    qp = QProgram()
+    qp.set_offset("drive_line_q0_bus", 0.5)
+    qp.set_frequency("drive_line_q0_bus", 100e6)
+    qp.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=10))
+    qp.wait("drive_line_q0_bus", 10)
+    qp.set_offset("drive_line_q0_bus", 0)
+    return qp
 
 @pytest.fixture(name="platform")
 def fixture_platform():
@@ -370,6 +378,16 @@ class TestQBloxDraw:
 
         data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcm)
         np.testing.assert_allclose(data_draw["drive_line_q0_bus"][0], expected_data_draw_i, rtol=1e-9, atol=1e-12)
+        assert data_draw["drive_line_q0_bus"][1] is None
+
+    def test_platform_draw_qcm_offset(self, qp_plat_draw_qcm_offset: QProgram, platform: Platform):
+        expected_data_draw_i = [2.5       , 2.5       , 2.5       , 2.5       , 2.5       ,
+       2.5       , 2.5       , 2.5       , 2.5       , 2.5       ,
+       1.24996185, 1.24996185, 1.24996185, 1.24996185, 1.24996185,
+       1.24996185, 1.24996185, 1.24996185, 1.24996185, 1.24996185]
+
+        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcm_offset)
+        np.testing.assert_allclose(data_draw["drive_line_q0_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         assert data_draw["drive_line_q0_bus"][1] is None
 
     def test_get_value(self):
