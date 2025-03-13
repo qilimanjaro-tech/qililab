@@ -484,13 +484,13 @@ class Platform:
                         static_offset_i = 0
                         static_offset_q = 0
                         param = [
-                                Parameter.IF,
-                                Parameter.GAIN_I,
-                                Parameter.GAIN_Q,
-                                Parameter.OFFSET_I,
-                                Parameter.OFFSET_Q,
-                                Parameter.HARDWARE_MODULATION,
-                            ]
+                            Parameter.IF,
+                            Parameter.GAIN_I,
+                            Parameter.GAIN_Q,
+                            Parameter.OFFSET_I,
+                            Parameter.OFFSET_Q,
+                            Parameter.HARDWARE_MODULATION,
+                        ]
                         for p in param:
                             val = self.get_parameter(bus.alias, p)
                             data_osci[bus.alias][p] = val
@@ -498,7 +498,7 @@ class Platform:
                         data_osci[bus.alias]["instrument name"] = instrument.name.value
 
                         if instrument.name == InstrumentName.QBLOX_QCM:
-                            #retrieve the set offset and assign it to the bus
+                            # retrieve the set offset and assign it to the bus
                             identifier = bus.channels
                             for awg in instrument.awg_sequencers:
                                 if awg.identifier == identifier[0]:
@@ -509,6 +509,9 @@ class Platform:
                                             static_offset_q = instrument.out_offsets[out]
                             data_osci[bus.alias]["static_offset_i"] = static_offset_i
                             data_osci[bus.alias]["static_offset_q"] = static_offset_q
+                        else:
+                            data_osci[bus.alias]["static_offset_i"] = 0
+                            data_osci[bus.alias]["static_offset_q"] = 0
 
         data_oscillocope = {}
         for bus, bus_param in data_osci.items():

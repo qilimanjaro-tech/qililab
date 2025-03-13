@@ -87,9 +87,7 @@ class QbloxDraw:
             index = waveform_value["index"]
             if index in [output_path1, output_path2]:
                 iq = "I" if index == output_path1 else "Q"
-                scaling_factor, max_voltage, gain= self._calculate_scaling_and_offsets(
-                    param, iq
-                )
+                scaling_factor, max_voltage, gain = self._calculate_scaling_and_offsets(param, iq)
                 scaled_array = np.array(waveform_value["data"]) * scaling_factor
                 modified_waveform = np.clip(scaled_array * gain, None, max_voltage)
                 data_draw[0 if index == output_path1 else 1] = np.append(
@@ -97,7 +95,7 @@ class QbloxDraw:
                 )
 
         # extend the IF and phase by the length of the wf
-        for key in ["intermediate_frequency", "phase","offset_i","offset_q"]:
+        for key in ["intermediate_frequency", "phase", "offset_i", "offset_q"]:
             if param.get(f"{key}_new", False) is True:
                 param[key].extend([param[key][-1]] * (len(scaled_array) - 1))
                 param[f"{key}_new"] = False
@@ -162,7 +160,7 @@ class QbloxDraw:
             Appends the param dictionary
         """
         offi, offq = map(int, program_line[1].split(","))
-    
+
         if param["hardware_modulation"]:
             scaling_offset = 1.8
         elif param["hardware_modulation"]:
@@ -173,7 +171,7 @@ class QbloxDraw:
             if param[new_key]:
                 param[x][-1] = off * scaling_offset / 32767
             else:
-                param[x].append(off*scaling_offset / 32767)
+                param[x].append(off * scaling_offset / 32767)
             param[new_key] = True
         return param
 
@@ -244,7 +242,7 @@ class QbloxDraw:
         return None
 
     def _parse_program(self, sequences):
-        """ Parses the program dictionary of the sequence.
+        """Parses the program dictionary of the sequence.
         Args:
             sequences (dictionary): for each bus, it is made up of nested dictionaries (waveforms,weights,acquisitions and program)
 
@@ -253,7 +251,7 @@ class QbloxDraw:
             Example: Q1ASM has play 0,1,30 -  the equivalent seq_parsed_program is (play,'0,1,30', (),1)
                 where 1 is the index and () is a tuple of the loop labels
                 ie: (avg_0, loop_0) meaning the current isntruction is part of 2 loops, avg_0 as top and loop_0 as nested.
-            
+
         """
         seq_parsed_program = {}
         for bus in sequences:  # Iterate through the bus of the sequences
@@ -303,7 +301,7 @@ class QbloxDraw:
         return seq_parsed_program
 
     def draw_oscilloscope(self, result, runcard_data=None, averages_displayed=False):
-        """ Parses the program dictionary of the sequence.
+        """Parses the program dictionary of the sequence.
         Args:
             result: compilation of the qprogram, this is done either at the platform or qprogram level
             runcard_data (dictionary): parameters of the bus (IF, phase, offset, hardware modulation) retrieved from the runcard if using the platform
@@ -314,7 +312,7 @@ class QbloxDraw:
 
         Returns:
             Plots the waveforms and returns data_draw (all data points used to plot the waveforms)
-            
+
         """
         Q1ASM_ordered = self._parse_program(result.sequences.copy())  # (instruction, value, label of the loops, index)
         data_draw = {}
@@ -436,7 +434,7 @@ class QbloxDraw:
         return data_draw
 
     def _oscilloscope_plotting(self, data_draw, parameters):
-        """ Plots the waveform data and applies the phase and frequency np array to the data
+        """Plots the waveform data and applies the phase and frequency np array to the data
         Args:
             parameters (dictionary): parameters of all buses (IF, phase, offset, hardware modulation).
             data_draw (list): nested list for each waveform, all data points.
@@ -444,7 +442,7 @@ class QbloxDraw:
 
         Returns:
             Plots the waveforms and returns data_draw (all data points used to plot the waveforms)
-            
+
         """
         data_keys = list(data_draw.keys())
         fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
@@ -458,7 +456,7 @@ class QbloxDraw:
                 data_draw[key][0] = waveform_flux
                 data_draw[key][1] = None
                 fig.add_trace(
-                    go.Scatter(y = waveform_flux, mode="lines", name="Flux", legendgroup=idx),
+                    go.Scatter(y=waveform_flux, mode="lines", name="Flux", legendgroup=idx),
                     row=idx + 1,
                     col=1,
                 )
@@ -467,18 +465,22 @@ class QbloxDraw:
                 fs = 1e9  # sampling frequency of the qblox
                 t = np.arange(0, len(wf1)) / fs
                 freq = np.array(parameters[key]["intermediate_frequency"]) / 4
-                phase = np.array(parameters[key]["phase"])* (2 * np.pi / 1e9)
+                phase = np.array(parameters[key]["phase"]) * (2 * np.pi / 1e9)
                 cos_term = np.cos(2 * np.pi * freq * t + phase)
                 sin_term = np.sin(2 * np.pi * freq * t + phase)
                 path0 = cos_term * np.array(wf1) - sin_term * np.array(wf2)
-                path1 = sin_term * np.array(wf1) + cos_term * np.array(wf2)                
+                path1 = sin_term * np.array(wf1) + cos_term * np.array(wf2)
                 path0_off = np.clip((path0 + off_i + static_offset_i), None, 2.5)
                 path1_off = np.clip((path1 + off_q + static_offset_q), None, 2.5)
 
                 data_draw[key][0], data_draw[key][1] = path0_off, path1_off
 
-                fig.add_trace(go.Scatter(y = path0_off , mode="lines", name=f"{key} I", legendgroup=idx), row=idx + 1, col=1)
-                fig.add_trace(go.Scatter(y = path1_off , mode="lines", name=f"{key} Q", legendgroup=idx), row=idx + 1, col=1)
+                fig.add_trace(
+                    go.Scatter(y=path0_off, mode="lines", name=f"{key} I", legendgroup=idx), row=idx + 1, col=1
+                )
+                fig.add_trace(
+                    go.Scatter(y=path1_off, mode="lines", name=f"{key} Q", legendgroup=idx), row=idx + 1, col=1
+                )
 
         # Add axis titles
         for i, key in enumerate(data_keys):
