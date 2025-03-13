@@ -567,13 +567,15 @@ class Platform:
             warnings.warn(f"Crosstalk not given, using identity as crosstalk\n{self.crosstalk}")
         elif not flux_list:
             flux_list = list(self.crosstalk.matrix.keys())
-            warnings.warn(
-                f"Flux list not given, using all the flux buses given inside the crosstalk matrix\n{self.crosstalk}"
-            )
+            # warnings.warn(
+            #     f"Flux list not given, using all the flux buses given inside the crosstalk matrix\n{self.crosstalk}"
+            # )
 
         if not self.flux_vector:
             self.flux_vector = FluxVector()
-            for flux in flux_list:
+
+        for flux in flux_list:
+            if flux not in self.flux_vector.flux_vector.keys():
                 self.flux_vector[flux] = 0
 
         if alias not in self.crosstalk.matrix.keys():

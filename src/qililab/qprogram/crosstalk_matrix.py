@@ -217,6 +217,7 @@ class FluxVector:
         """
         self.crosstalk = crosstalk
         self.crosstalk_inverse = crosstalk.inverse()
+        self.crosstalk_inverse.flux_offsets = self.crosstalk.flux_offsets
 
         self.bias_vector = self.flux_vector.copy()
 
