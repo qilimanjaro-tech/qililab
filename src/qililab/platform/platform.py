@@ -495,7 +495,7 @@ class Platform:
                             val = self.get_parameter(bus.alias, p)
                             data_osci[bus.alias][p] = val
 
-                        data_osci[bus.alias]["instrument name"] = instrument.name.value
+                        data_osci[bus.alias]["instrument_name"] = instrument.name.value
 
                         if instrument.name == InstrumentName.QBLOX_QCM:
                             # retrieve the set offset and assign it to the bus

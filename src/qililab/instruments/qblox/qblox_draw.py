@@ -46,6 +46,8 @@ class QbloxDraw:
             data_draw = self._handle_play_draw(data_draw, program_line, waveform_seq, param)
         elif action_type == "wait":
             data_draw = self._handle_wait_draw(data_draw, program_line, param)
+        elif action_type == "upd_param":
+            data_draw = self._handle_wait_draw(data_draw, program_line, param)
         elif action_type == "add":
             self._handle_add_draw(register, program_line)
         return param, register, data_draw
@@ -65,8 +67,12 @@ class QbloxDraw:
 
     def _get_scaling_factors(self, param, dynamic_off, static_off):
         if param["hardware_modulation"]:
-            return (1.8, 1.8) if dynamic_off == 0 and static_off == 0 else (1.8, 2.5)
-        return (2.5, 2.5)  # (scaling factor, max voltage)
+            return (
+                (param["max_voltage"] / (np.sqrt(2)), param["max_voltage"] / (np.sqrt(2)))
+                if dynamic_off == 0 and static_off == 0
+                else (param["max_voltage"] / (np.sqrt(2)), param["max_voltage"])
+            )
+        return (param["max_voltage"], param["max_voltage"])  # (scaling factor, max voltage)
 
     def _handle_play_draw(self, data_draw, program_line, waveform_seq, param):
         """Play a waveform by appending the stored data list.
@@ -162,9 +168,9 @@ class QbloxDraw:
         offi, offq = map(int, program_line[1].split(","))
 
         if param["hardware_modulation"]:
-            scaling_offset = 1.8
+            scaling_offset = param["max_voltage"] / np.sqrt(2)
         else:
-            scaling_offset = 2.5
+            scaling_offset = param["max_voltage"]
 
         for x, off in zip(["offset_i", "offset_q"], [offi, offq]):
             new_key = f"{x}_new"
@@ -327,7 +333,13 @@ class QbloxDraw:
                 parameters[bus]["intermediate_frequency"] = [IF]
                 parameters[bus]["offset_i"] = [parameters[bus]["offset_i"]]
                 parameters[bus]["offset_q"] = [parameters[bus]["offset_q"]]
-            else:
+                if parameters[bus]["instrument_name"] == "QCM":
+                    parameters[bus]["max_voltage"] = 2.5
+                elif parameters[bus]["instrument_name"] == "QRM":
+                    parameters[bus]["max_voltage"] = 0.5
+                else:
+                    parameters[bus]["max_voltage"] = 1
+            else: #no runcard uploaded- running qp directly
                 parameters[bus] = {}
                 parameters[bus]["intermediate_frequency"] = [0]
                 parameters[bus]["offset_i"] = [0]
@@ -335,6 +347,8 @@ class QbloxDraw:
                 parameters[bus]["static_offset_i"] = [0]
                 parameters[bus]["static_offset_q"] = [0]
                 parameters[bus]["hardware_modulation"] = True  # if plotting directly from qp, plot i and q
+                parameters[bus]["max_voltage"] = 1
+                parameters[bus]["instrument_name"] = "QProgram"
             parameters[bus]["phase"] = [0]
 
             # flags to determine if the phase or freq has been updated
@@ -445,14 +459,19 @@ class QbloxDraw:
 
         """
         data_keys = list(data_draw.keys())
-        fig = make_subplots(rows=len(data_keys), cols=1, subplot_titles=data_keys)
+        fig = make_subplots(
+            rows=len(data_keys), cols=1, subplot_titles=["temp_subtitle" for date in np.arange(len(data_draw))]
+        )
 
         for idx, key in enumerate(data_keys):
             off_i = np.array(parameters[key]["offset_i"])
             off_q = np.array(parameters[key]["offset_q"])
+            volt_bounds = parameters[key]["max_voltage"]
             static_offset_i, static_offset_q = parameters[key]["static_offset_i"], parameters[key]["static_offset_q"]
             if not parameters[key]["hardware_modulation"]:  # if hardware modulation is disabled, do not plot Q
-                waveform_flux = np.clip((np.array(data_draw[key][0]) + off_i + static_offset_i), -2.5, 2.5)
+                waveform_flux = np.clip(
+                    (np.array(data_draw[key][0]) + off_i + static_offset_i), -volt_bounds, volt_bounds
+                )
                 data_draw[key][0] = waveform_flux
                 data_draw[key][1] = None
                 fig.add_trace(
@@ -472,15 +491,15 @@ class QbloxDraw:
                 cos_term = np.cos(2 * np.pi * freq * t + phase)
                 sin_term = np.sin(2 * np.pi * freq * t + phase)
 
-                # Add the offsets to the waveforms and ensure it is in the 2.5 V range
-                wf1_offsetted = np.clip((np.array(wf1) + off_i + static_offset_i), -2.5, 2.5)
-                wf2_offsetted = np.clip((np.array(wf2) + off_q + static_offset_q), -2.5, 2.5)
+                # Add the offsets to the waveforms and ensure it is in the voltage range of the instrument
+                wf1_offsetted = np.clip((np.array(wf1) + off_i + static_offset_i), -volt_bounds, volt_bounds)
+                wf2_offsetted = np.clip((np.array(wf2) + off_q + static_offset_q), -volt_bounds, volt_bounds)
                 path0 = cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted)
                 path1 = sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted)
 
                 # clip the final signal
-                path0_clipped = np.clip(path0, -2.5, 2.5)
-                path1_clipped = np.clip(path1, -2.5, 2.5)
+                path0_clipped = np.clip(path0, -volt_bounds, volt_bounds)
+                path1_clipped = np.clip(path1, -volt_bounds, volt_bounds)
 
                 data_draw[key][0], data_draw[key][1] = path0_clipped, path1_clipped
 
@@ -490,6 +509,11 @@ class QbloxDraw:
                 fig.add_trace(
                     go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q", legendgroup=idx), row=idx + 1, col=1
                 )
+
+            # Update the subplot title
+            name = parameters[key]["instrument_name"]
+            title = f"{name} {key}"
+            fig.layout.annotations[idx]["text"] = title
 
         # Add axis titles
         for i, key in enumerate(data_keys):
@@ -501,7 +525,7 @@ class QbloxDraw:
             height=260 * len(data_keys),
             width=1100,
             legend_tracegroupgap=210,
-            title_text="Oscillator simulation",
+            title_text="QBlox Oscillator simulation",
             showlegend=True,
         )
         fig.show()
