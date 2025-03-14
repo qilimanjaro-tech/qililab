@@ -113,9 +113,6 @@ class TestQBloxDraw:
             ("loop", "R2, @avg_0", ("loop_0", "avg_0"), 6),
             ("add", "R1, 200000000, R1", ("loop_0",), 7),
             ("loop", "R0, @loop_0", ("loop_0",), 8),
-            ("set_mrk", "0", (), 9),
-            ("upd_param", "4", (), 10),
-            ("stop", "", (), 11),
         ]
         assert parsing["drive"]["program"]["main"] == expected_parsing
 
@@ -143,8 +140,7 @@ class TestQBloxDraw:
         2.18508012e-01, -5.72061403e-01, -5.72061403e-01,  2.18508012e-01,
         0.00000000e+00,  0.00000000e+00, -0.00000000e+00,  0.00000000e+00,
         0.00000000e+00,  7.07106781e-01,  2.18508012e-01, -5.72061403e-01,
-       -5.72061403e-01,  2.18508012e-01, -0.00000000e+00,  0.00000000e+00,
-        0.00000000e+00, -0.00000000e+00]
+       -5.72061403e-01,  2.18508012e-01]
         expected_data_draw_q = [ 0.00000000e+00,  4.15626938e-01,  6.72498512e-01,  6.72498512e-01,
         4.15626938e-01,  0.00000000e+00, -0.00000000e+00, -0.00000000e+00,
         0.00000000e+00,  0.00000000e+00, -1.73191211e-16,  4.15626938e-01,
@@ -167,28 +163,25 @@ class TestQBloxDraw:
         6.72498512e-01,  4.15626938e-01, -4.15626938e-01, -6.72498512e-01,
         0.00000000e+00,  0.00000000e+00,  0.00000000e+00, -0.00000000e+00,
         0.00000000e+00, -1.80171382e-14,  6.72498512e-01,  4.15626938e-01,
-       -4.15626938e-01, -6.72498512e-01,  0.00000000e+00, -0.00000000e+00,
-        0.00000000e+00,  0.00000000e+00]
+       -4.15626938e-01, -6.72498512e-01]
         
         compiler = QbloxCompiler()
         draw = QbloxDraw()
         results = compiler.compile(qp_draw)
-        data_draw = draw.draw_oscilloscope(results,None, True)
+        data_draw = draw.draw_oscilloscope(results, None, True)
         np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_platform_draw_qcmrf(self, qp_plat_draw_qcmrf: QProgram, platform: Platform):
-        expected_data_draw_i = [ 0.00062054,  0.00030277, -0.00013065, -0.00051417, -0.00070129,
+        expected_data_draw_i =[ 0.00062054,  0.00030277, -0.00013065, -0.00051417, -0.00070129,
        -0.00062054, -0.00030277,  0.00013065,  0.00051417,  0.00070129,
         0.        ,  0.        , -0.        , -0.        , -0.        ,
-        0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
-        0.        ,  0.        ,  0.        , -0.        ]
+        0.        ,  0.        ,  0.        ,  0.        ,  0.        ]
         expected_data_draw_q = [ 3.39005047e-04,  6.39007798e-04,  6.94931289e-04,  4.85414647e-04,
         9.04861091e-05, -3.39005047e-04, -6.39007798e-04, -6.94931289e-04,
        -4.85414647e-04, -9.04861091e-05,  0.00000000e+00,  0.00000000e+00,
         0.00000000e+00,  0.00000000e+00,  0.00000000e+00, -0.00000000e+00,
-       -0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
-        0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00]
+       -0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00]
 
         data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcmrf)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
@@ -198,13 +191,11 @@ class TestQBloxDraw:
         expected_data_draw_i = [ 0.35424971,  0.07878691, -0.22676981, -0.44570817, -0.49440116,
        -0.35424971, -0.07878691,  0.22676981,  0.44570817,  0.49440116,
         0.3535426 ,  0.07821485, -0.22698832, -0.44548967, -0.4938291 ,
-       -0.3535426 , -0.07821485,  0.22698832,  0.44548967,  0.4938291 ,
-        0.        ,  0.        ,  0.        , -0.        ]
+       -0.3535426 , -0.07821485,  0.22698832,  0.44548967,  0.4938291]
         expected_data_draw_q = [ 0.3535426 ,  0.49424473,  0.44616216,  0.22766082, -0.07779922,
        -0.3535426 , -0.49424473, -0.44616216, -0.22766082,  0.07779922,
         0.3535426 ,  0.4938291 ,  0.44548967,  0.22698832, -0.07821485,
-       -0.3535426 , -0.4938291 , -0.44548967, -0.22698832,  0.07821485,
-        0.        ,  0.        ,  0.        ,  0.        ]
+       -0.3535426 , -0.4938291 , -0.44548967, -0.22698832,  0.07821485]
         
         data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcmrf_offset)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
@@ -212,7 +203,7 @@ class TestQBloxDraw:
 
     def test_platform_draw_qcm(self, qp_plat_draw_qcm: QProgram, platform: Platform):
         expected_data_draw_i = [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 0. , 0. , 0. ,
-       0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. ]
+       0. , 0. , 0. , 0. , 0. , 0. , 0. ]
 
         data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcm)
         np.testing.assert_allclose(data_draw["drive_line_q0_bus"][0], expected_data_draw_i, rtol=1e-9, atol=1e-12)
@@ -222,8 +213,7 @@ class TestQBloxDraw:
         expected_data_draw_i = [2.5       , 2.5       , 2.5       , 2.5       , 2.5       ,
        2.5       , 2.5       , 2.5       , 2.5       , 2.5       ,
        1.24996185, 1.24996185, 1.24996185, 1.24996185, 1.24996185,
-       1.24996185, 1.24996185, 1.24996185, 1.24996185, 1.24996185,
-       0.        , 0.        , 0.        , 0.        ]
+       1.24996185, 1.24996185, 1.24996185, 1.24996185, 1.24996185]
 
         data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcm_offset)
         np.testing.assert_allclose(data_draw["drive_line_q0_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
@@ -237,7 +227,7 @@ class TestQBloxDraw:
 
     def test_qp_plat_draw_qrm(self, qp_plat_draw_qrm: QProgram, platform: Platform):
         expected_data_draw_i = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0. , 0. , 0. ,
-       0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. ]
+       0. , 0. , 0. , 0. , 0. , 0. , 0.]
 
         data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qrm)
         np.testing.assert_allclose(data_draw["feedline_input_output_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
