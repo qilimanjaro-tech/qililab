@@ -392,7 +392,7 @@ class QbloxCompiler:
             component=QPyInstructions.SetFreq(frequency=frequency)
         )
 
-        #set the frequency a second time - because of a qblox bug where the first frequency in a hardware loop is false (same is done for the gain).
+        # #set the frequency a second time - because of a qblox bug where the first frequency in a hardware loop is false (same is done for the gain).
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetFreq(frequency=frequency)
         )
@@ -422,7 +422,7 @@ class QbloxCompiler:
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
         )
-        #set the gain a second time - because of a qblox bug where the first gain in a hardware loop is false (same is done for the frequency).
+        # #set the gain a second time - because of a qblox bug where the first gain in a hardware loop is false (same is done for the frequency).
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
         )
