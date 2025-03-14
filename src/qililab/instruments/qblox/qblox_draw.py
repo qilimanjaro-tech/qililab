@@ -339,7 +339,7 @@ class QbloxDraw:
                     parameters[bus]["max_voltage"] = 0.5
                 else:
                     parameters[bus]["max_voltage"] = 1
-            else: #no runcard uploaded- running qp directly
+            else:  # no runcard uploaded- running qp directly
                 parameters[bus] = {}
                 parameters[bus]["intermediate_frequency"] = [0]
                 parameters[bus]["offset_i"] = [0]

@@ -44,8 +44,8 @@ def qp_draw() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="qp_plat_draw_qrmrf_offset")
-def qp_plat_draw_qrmrf_offset() -> QProgram:
+@pytest.fixture(name="qp_plat_draw_qcmrf_offset")
+def qp_plat_draw_qcmrf_offset() -> QProgram:
     qp = QProgram()
     qp.set_offset("drive_line_q1_bus", 0.5)
     qp.set_frequency("drive_line_q1_bus", 100e6)
@@ -54,8 +54,8 @@ def qp_plat_draw_qrmrf_offset() -> QProgram:
     qp.set_offset("drive_line_q1_bus", 0)
     return qp
 
-@pytest.fixture(name="qp_plat_draw_qrmrf")
-def qp_plat_draw_qrmrf() -> QProgram:
+@pytest.fixture(name="qp_plat_draw_qcmrf")
+def qp_plat_draw_qcmrf() -> QProgram:
     qp = QProgram()
     qp.set_phase("drive_line_q1_bus", 0.5)
     qp.set_frequency("drive_line_q1_bus", 100e6)
@@ -83,6 +83,13 @@ def qp_plat_draw_qcm_offset() -> QProgram:
     qp.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=10))
     qp.wait("drive_line_q0_bus", 10)
     qp.set_offset("drive_line_q0_bus", 0)
+    return qp
+
+@pytest.fixture(name="qp_plat_draw_qrm")
+def qp_plat_draw_qrm() -> QProgram:
+    qp = QProgram()
+    qp.play(bus="feedline_input_output_bus", waveform=Square(amplitude=1, duration=10))
+    qp.wait("feedline_input_output_bus", 10)
     return qp
 
 @pytest.fixture(name="platform")
@@ -113,6 +120,7 @@ class TestQBloxDraw:
         assert parsing["drive"]["program"]["main"] == expected_parsing
 
     def test_qp_draw(self, qp_draw: QProgram):
+        data_draw = qp_draw.draw_oscilloscope(True)
         expected_data_draw_i = [ 7.07106781e-01,  5.72061403e-01,  2.18508012e-01, -2.18508012e-01,
        -5.72061403e-01, -0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
         0.00000000e+00,  0.00000000e+00,  7.07106781e-01,  5.72061403e-01,
@@ -169,7 +177,7 @@ class TestQBloxDraw:
         np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
-    def test_platform_draw_qrmrf(self, qp_plat_draw_qrmrf: QProgram, platform: Platform):
+    def test_platform_draw_qcmrf(self, qp_plat_draw_qcmrf: QProgram, platform: Platform):
         expected_data_draw_i = [ 0.00062054,  0.00030277, -0.00013065, -0.00051417, -0.00070129,
        -0.00062054, -0.00030277,  0.00013065,  0.00051417,  0.00070129,
         0.        ,  0.        , -0.        , -0.        , -0.        ,
@@ -182,11 +190,11 @@ class TestQBloxDraw:
        -0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
         0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00]
 
-        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qrmrf)
+        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcmrf)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
-    def test_platform_draw_qrmrf_offset(self, qp_plat_draw_qrmrf_offset: QProgram, platform: Platform):
+    def test_platform_draw_qcmrf_offset(self, qp_plat_draw_qcmrf_offset: QProgram, platform: Platform):
         expected_data_draw_i = [ 0.35424971,  0.07878691, -0.22676981, -0.44570817, -0.49440116,
        -0.35424971, -0.07878691,  0.22676981,  0.44570817,  0.49440116,
         0.3535426 ,  0.07821485, -0.22698832, -0.44548967, -0.4938291 ,
@@ -198,7 +206,7 @@ class TestQBloxDraw:
        -0.3535426 , -0.4938291 , -0.44548967, -0.22698832,  0.07821485,
         0.        ,  0.        ,  0.        ,  0.        ]
         
-        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qrmrf_offset)
+        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcmrf_offset)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
@@ -226,3 +234,12 @@ class TestQBloxDraw:
         register = {}
         register["avg_no_loop"] = 1
         assert draw._get_value(None, register) is None
+
+    def test_qp_plat_draw_qrm(self, qp_plat_draw_qrm: QProgram, platform: Platform):
+        expected_data_draw_i = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0. , 0. , 0. ,
+       0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. ]
+
+        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qrm)
+        np.testing.assert_allclose(data_draw["feedline_input_output_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        assert data_draw["feedline_input_output_bus"][1] is None
+
