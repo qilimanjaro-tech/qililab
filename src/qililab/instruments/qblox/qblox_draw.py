@@ -303,6 +303,7 @@ class QbloxDraw:
                         if ("@" + la) in numerical_value:
                             loop_label = tuple(l for l in loop_label if l != la)
                 sequence["program"] = program_parsed
+            del sequence["program"]["main"][-3:]  #delete the last 3 lines of the Q1ASM that are always hardcoded - tempers with the _new flag later on if not removed here
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
@@ -437,7 +438,7 @@ class QbloxDraw:
 
                 else:
                     pass
-
+            print(param)
             # remove the latest freq, phase and offset data points if nothing played after
             for key in ["intermediate_frequency", "phase", "offset_i", "offset_q"]:
                 if param[f"{key}_new"]:

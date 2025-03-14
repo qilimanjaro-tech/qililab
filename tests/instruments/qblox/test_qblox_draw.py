@@ -120,7 +120,7 @@ class TestQBloxDraw:
         assert parsing["drive"]["program"]["main"] == expected_parsing
 
     def test_qp_draw(self, qp_draw: QProgram):
-        data_draw = qp_draw.draw_oscilloscope(True)
+        data_draw = qp_draw.draw_oscilloscope()
         expected_data_draw_i = [ 7.07106781e-01,  5.72061403e-01,  2.18508012e-01, -2.18508012e-01,
        -5.72061403e-01, -0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
         0.00000000e+00,  0.00000000e+00,  7.07106781e-01,  5.72061403e-01,
