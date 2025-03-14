@@ -465,21 +465,20 @@ class QbloxDraw:
                 fs = 1e9  # sampling frequency of the qblox
                 t = np.arange(0, len(wf1)) / fs
 
-                #make freq and phase np arrays and convert from qblox values
+                # make freq and phase np arrays and convert from qblox values
                 freq = np.array(parameters[key]["intermediate_frequency"]) / 4
                 phase = np.array(parameters[key]["phase"]) * (2 * np.pi / 1e9)
-
 
                 cos_term = np.cos(2 * np.pi * freq * t + phase)
                 sin_term = np.sin(2 * np.pi * freq * t + phase)
 
-                #Add the offsets to the waveforms and ensure it is in the 2.5 V range
+                # Add the offsets to the waveforms and ensure it is in the 2.5 V range
                 wf1_offsetted = np.clip((np.array(wf1) + off_i + static_offset_i), -2.5, 2.5)
                 wf2_offsetted = np.clip((np.array(wf2) + off_q + static_offset_q), -2.5, 2.5)
                 path0 = cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted)
                 path1 = sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted)
 
-                #clip the final signal
+                # clip the final signal
                 path0_clipped = np.clip(path0, -2.5, 2.5)
                 path1_clipped = np.clip(path1, -2.5, 2.5)
 
