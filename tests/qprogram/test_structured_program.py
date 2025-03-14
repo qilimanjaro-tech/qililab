@@ -202,3 +202,9 @@ class TestStructuredProgram:
             ValueError, match="When declaring a variable of a specific domain, its type is inferred by its domain."
         ):
             instance.variable(label="error", domain=Domain.Frequency, type=int)
+
+    def test_crosstalk_method_raises_error_if_no_crosstalk_is_given(self, instance: StructuredProgram):
+        with pytest.raises(
+            ValueError, match="crosstalk must have either Calibration with crosstalk or CrosstalkMatrix"
+        ):
+            instance.crosstalk()
