@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 from qpysequence import Sequence
-from qpysequence.utils.constants import AWG_MAX_GAIN
+from qpysequence.constants import AWG_MAX_GAIN
 
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseSchedule, QbloxCompiler, Rectangular
@@ -515,7 +515,7 @@ class TestQbloxCompiler:
                         set_ph           191690305
                         play             0, 1, 4
                         wait             220
-                        acquire_weighed  0, R3, R0, R1, 4
+                        acquire          0, R3, 4
         long_wait_1:
                         move             3, R4
         long_wait_1_loop:
@@ -527,7 +527,7 @@ class TestQbloxCompiler:
                         set_ph           191690305
                         play             0, 1, 4
                         wait             220
-                        acquire_weighed  1, R3, R0, R1, 4
+                        acquire          1, R3, 4
         long_wait_2:
                         move             3, R5
         long_wait_2_loop:

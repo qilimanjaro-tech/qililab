@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, TypedDict
 import numpy as np
 from qpysequence import Acquisitions, Program, Waveforms
 from qpysequence import Sequence as QpySequence
+from qpysequence.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
 from qpysequence.program.instructions import (
@@ -33,7 +34,6 @@ from qpysequence.program.instructions import (
     UpdParam,
     Wait,
 )
-from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config import logger
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
@@ -157,7 +157,7 @@ class QbloxCompiler:
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions(pulse_bus_schedule=pulse_bus_schedule)
         program = self._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms)
-        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=[])
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions)
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
