@@ -23,7 +23,6 @@ from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
 from qpysequence.program.instructions import (
     Acquire,
-    AcquireWeighed,
     Move,
     Play,
     ResetPh,
