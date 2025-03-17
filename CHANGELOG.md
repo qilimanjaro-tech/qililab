@@ -70,6 +70,9 @@
 
 ### Bug fixes
 
+- Addressed a known bug in the qblox where the first frequency and gain settings in a hardware loop are incorrect. The code now includes a workaround to set these parameters a second time to ensure proper functionality. This is a temporary fix awaiting for QBlox to resolve it.
+  [#903](https://github.com/qilimanjaro-tech/qililab/pull/898)
+
 - Fixed an issue where having nested loops would output wrong shape in QbloxMeasurementResult.
   [#853](https://github.com/qilimanjaro-tech/qililab/pull/853)
 
