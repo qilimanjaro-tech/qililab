@@ -54,6 +54,9 @@
 - For Qblox compiler, all latched parameters are updated before a wait is applied. The update parameter has a minimum wait of 4 ns, which is removed from the wait. If the wait is below 8ns it is entirely replaced with the update parameter.
   [#898](https://github.com/qilimanjaro-tech/qililab/pull/898)
 
+- The changes addresses a known bug in the qblox where the first frequency and gain settings in a hardware loop are incorrect. The code now includes a workaround to set these parameters a second time to ensure proper functionality. This is a temporary fix awaiting for QBlox to resolve it.
+  [#903](https://github.com/qilimanjaro-tech/qililab/pull/898)
+
 ### Breaking changes
 
 ### Deprecations / Removals
