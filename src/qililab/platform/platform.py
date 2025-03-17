@@ -979,7 +979,7 @@ class Platform:
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
         return self.execute_compilation_output(output=output, debug=debug)
     
-    def execute_qprogram_parallel(
+    def execute_qprograms_parallel(
         self,
         qprograms: list[QProgram],
         bus_mapping: dict[str, str] | None = None,
