@@ -418,7 +418,7 @@ class QuantumMachinesCluster(Instrument):
     device: QMMDriver
     _qmm: QuantumMachinesManager
     # if OPX1000:
-    _qm: QmApi
+    _qm: QmApiWithDeprecations
     # _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
@@ -888,10 +888,10 @@ class QuantumMachinesCluster(Instrument):
             RunningQmJob: An object representing the running job. This object provides methods and properties to check the status of the job, retrieve results upon completion, and manage or investigate the job's execution.
         """
         # TODO: qm.queue.add_compiled() -> qm.add_compiled()
-        pending_job = self._qm.queue.add_compiled(compiled_program_id)
+        job = self._qm.queue.add_compiled(compiled_program_id)
 
         # TODO: job.wait_for_execution() is deprecated and will be removed in the future. Please use job.wait_until("Running") instead.
-        job = pending_job.wait_for_execution()  # type: ignore[return-value, union-attr]
+        job.wait_until("Done", 900)  # !!!! Check timeout and optimize this
         if self._pending_set_intermediate_frequency:
             for bus, intermediate_frequency in self._pending_set_intermediate_frequency.items():
                 job.set_intermediate_frequency(element=bus, freq=intermediate_frequency)  # type: ignore[union-attr]
@@ -900,7 +900,7 @@ class QuantumMachinesCluster(Instrument):
 
         return job
 
-    def run(self, program: Program) -> RunningQmJob:
+    def run(self, program: Program) -> JobApi:
         """Runs the QUA Program.
 
         Creates, for every execution, an instance of a QuantumMachine class and executes the QUA program on it.
