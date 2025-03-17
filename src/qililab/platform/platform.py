@@ -313,11 +313,11 @@ class Platform:
         )
         """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
 
-        self.alias = [x["alias"] for x in map(asdict, runcard.buses)]
-        """All the aliases of the platform in a list"""
-
         self.digital_compilation_settings = runcard.digital
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
+
+        self.alias = [a["alias"] for a in map(asdict, runcard.buses)]
+        """All the aliases of the platform in a list"""
 
         self.analog_compilation_settings = runcard.analog
         """Flux to bus mapping for analog control"""
@@ -472,7 +472,7 @@ class Platform:
     def data_draw_oscilloscope(self):
         """From the runcard retrieve the parameters necessary to draw the qprogram."""
         data_osci = {}
-        buses = [self.buses.get(alias=xx) for xx in self.alias]
+        buses = [self.buses.get(alias=a) for a in self.alias]
         instruments = {
             instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
         }
