@@ -58,6 +58,9 @@
 
 ### Deprecations / Removals
 
+- Removed weighted acquisitions for circuits.
+  [#904](https://github.com/qilimanjaro-tech/qililab/pull/904)
+
 - Removed quick fix for the timeout error while running with QM as it has been fixed.
   [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
 
