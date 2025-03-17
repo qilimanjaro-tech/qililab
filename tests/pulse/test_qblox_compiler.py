@@ -12,9 +12,9 @@ from qpysequence.utils.constants import AWG_MAX_GAIN
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseSchedule, QbloxCompiler, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
-from qililab.typings import Parameter, AcquireTriggerMode, IntegrationMode
-from qililab.typings.enums import Line
 from qililab.settings.digital.digital_compilation_bus_settings import DigitalCompilationBusSettings
+from qililab.typings import AcquireTriggerMode, IntegrationMode, Parameter
+from qililab.typings.enums import Line
 
 
 class DummyQCM(QbloxQCM):
@@ -200,9 +200,6 @@ def fixture_buses() -> dict[str, DigitalCompilationBusSettings]:
         "readout_q0": DigitalCompilationBusSettings(
             line=Line.READOUT,
             qubits=[0],
-            weights_i=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-            weights_q=[1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-            weighed_acq_enabled=True,
         ),
         "readout_q1": DigitalCompilationBusSettings(
             line=Line.READOUT,
