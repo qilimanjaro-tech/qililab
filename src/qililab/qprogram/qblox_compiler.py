@@ -22,7 +22,7 @@ import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
-from qpysequence.utils.constants import INST_MAX_WAIT
+from qpysequence.constants import INST_MAX_WAIT
 
 from qililab.config import logger
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel

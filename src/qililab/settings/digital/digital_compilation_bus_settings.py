@@ -39,9 +39,6 @@ class DigitalCompilationBusSettings:
     qubits: list[int]
     delay: int = 0
     distortions: list[PulseDistortion] = field(default_factory=list)
-    weights_i: list[float] = field(default_factory=list)
-    weights_q: list[float] = field(default_factory=list)
-    weighed_acq_enabled: bool = False
 
     def __post_init__(self):
         cast_enum_fields(obj=self)
@@ -50,20 +47,10 @@ class DigitalCompilationBusSettings:
             for distortion in self.distortions
             if isinstance(distortion, dict)  # type: ignore[arg-type]
         ]
-        self._verify_weights()
 
     def is_readout(self):
         """Return true if bus is readout."""
         return self.line == Line.READOUT
-
-    def _verify_weights(self):
-        """Verifies that the length of weights_i and weights_q are equal.
-
-        Raises:
-            IndexError: The length of weights_i and weights_q must be equal.
-        """
-        if len(self.weights_i) != len(self.weights_q):
-            raise IndexError("The length of weights_i and weights_q must be equal.")
 
     def to_dict(self):
         return asdict(self) | {"distortions": [distortion.to_dict() for distortion in self.distortions]}
