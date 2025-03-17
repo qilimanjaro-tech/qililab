@@ -27,8 +27,6 @@ class SetParameter(Operation):
         parameter: Parameter,
         value: int | float | bool,
         channel_id: int | None = None,
-        crosstalk: CrosstalkMatrix | None = None,
-        flux_list: list[str] | None = None,
     ) -> None:
         super().__init__()
         self.alias: str = alias

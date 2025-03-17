@@ -103,7 +103,7 @@ class StructuredProgram:
         return list(self._variables)
 
     @property
-    def get_crosstalk(self) -> CrosstalkMatrix | None:
+    def crosstalk(self) -> CrosstalkMatrix | None:
         """Get the crosstalk.
 
         Returns:
@@ -266,7 +266,7 @@ class StructuredProgram:
             return _float_variable(label, domain)
         raise NotImplementedError
 
-    def crosstalk(self, crosstalk: CrosstalkMatrix | None = None, calibration: Calibration | None = None):
+    def set_crosstalk(self, crosstalk: CrosstalkMatrix | None = None, calibration: Calibration | None = None):
         """Declare Crosstalk matrix and offsets
 
         Args:
