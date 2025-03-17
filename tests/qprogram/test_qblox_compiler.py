@@ -475,8 +475,10 @@ class TestQBloxCompiler:
 
             main:
                             set_freq         1200
+                            set_freq         1200
                             set_ph           250000000
                             reset_ph
+                            set_awg_gain     16383, 16383
                             set_awg_gain     16383, 16383
                             set_awg_offs     16383, 16383
                             play             0, 1, 40
@@ -892,6 +894,7 @@ class TestQBloxCompiler:
                             move             11, R4         
                             move             0, R5          
             loop_0:
+                            set_awg_gain     R5, R5
                             set_awg_gain     R5, R5         
                             move             10, R6         
             square_0:
@@ -1005,6 +1008,7 @@ class TestQBloxCompiler:
                             move             11, R4         
                             move             0, R5          
             loop_0:
+                            set_awg_gain     R5, R5
                             set_awg_gain     R5, R5         
                             move             10, R6         
             square_0:
@@ -1060,6 +1064,7 @@ class TestQBloxCompiler:
                             move             0, R8          
             loop_0:
                             set_freq         R8             
+                            set_freq         R8
                             move             10, R9         
             square_0:
                             play             0, 1, 100      
@@ -1074,6 +1079,7 @@ class TestQBloxCompiler:
                             move             0, R11         
                             nop                             
             loop_1:
+                            set_awg_gain     R11, R11
                             set_awg_gain     R11, R11       
                             move             10, R12         
             square_1:
@@ -1125,6 +1131,7 @@ class TestQBloxCompiler:
                             move             0, R2
             loop_0:
                             set_awg_gain     R2, R2
+                            set_awg_gain     R2, R2
                             move             51, R3
                             move             0, R4
             loop_1:
@@ -1159,6 +1166,7 @@ class TestQBloxCompiler:
                             move             0, R7          
             loop_1:
                             wait             40             
+                            set_freq         R7
                             set_freq         R7             
                             move             10, R8         
             square_0:
@@ -1214,6 +1222,7 @@ class TestQBloxCompiler:
                             move             0, R3
             loop_0:
                             set_awg_gain     R3, R3
+                            set_awg_gain     R3, R3
                             play             0, 1, 40
                             wait             3000
                             add              R2, 40, R2
@@ -1242,6 +1251,7 @@ class TestQBloxCompiler:
                             move             0, R6          
             loop_0:
                             set_freq         R5
+set_freq         R5                            
                             upd_param        4           
                             wait             36             
                             move             10, R7         
@@ -1548,15 +1558,18 @@ class TestQBloxCompiler:
             square_1:
                             play             0, 1, 100      
                             loop             R1, @square_1  
+                            set_awg_gain     32767, 32767
                             set_awg_gain     32767, 32767   
                             upd_param        4              
                             wait             96             
                             play             2, 3, 5        
+                            set_freq         4000000
                             set_freq         4000000        
                             upd_param        4              
                             wait             65532          
                             wait             34464          
                             play             2, 3, 5        
+                            set_awg_gain     32767, 32767
                             set_awg_gain     32767, 32767   
                             upd_param        4              
                             play             2, 3, 5        
