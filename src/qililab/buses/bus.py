@@ -79,6 +79,9 @@ class Bus:
             self._instruments.append(instrument)
             self._channels.append(channel)
 
+            if not hasattr(self, instrument_alias):
+                setattr(self, instrument_alias, instrument)
+
         self._attach_aggregated_parameters()
 
     def _attach_aggregated_parameters(self):
