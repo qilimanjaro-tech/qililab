@@ -129,7 +129,7 @@ class TestExperimentExecutor:
 
     def test_execute(self, platform, experiment, qprogram):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        executor = ExperimentExecutor(platform=platform, experiment=experiment)
+        executor = ExperimentExecutor(platform=platform, experiment=experiment, calibration=None)
         resuls_path = executor.execute()
 
         # Check if the correct file path is returned
@@ -140,34 +140,17 @@ class TestExperimentExecutor:
         expected_calls = [
             call.to_dict(),
             call.set_parameter(
-                alias="drive_q0",
-                parameter=Parameter.VOLTAGE,
-                value=0.0,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None, crosstalk=None
             ),
             call.set_parameter(
-                alias="drive_q1",
-                parameter=Parameter.VOLTAGE,
-                value=0.5,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None, crosstalk=None
             ),
             call.set_parameter(
-                alias="drive_q2",
-                parameter=Parameter.VOLTAGE,
-                value=1.0,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="drive_q2", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None, crosstalk=None
             ),
             # Check that get_parameter returns a variable that can be reused
             call.get_parameter(alias="flux_q0", parameter=Parameter.GAIN, channel_id=None),
-            call.set_parameter(
-                alias="flux_q1", parameter=Parameter.GAIN, value=1.23, channel_id=None, crosstalk=None, flux_list=None
-            ),
+            call.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=1.23, channel_id=None, crosstalk=None),
             call.execute_qprogram(
                 qprogram=get_qprogram_gain_by_get_parameter(gain=1.23, qprogram=qprogram),
                 bus_mapping=None,
@@ -176,134 +159,59 @@ class TestExperimentExecutor:
             ),
             # Start of nested loops
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.VOLTAGE,
-                value=0.0,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None, crosstalk=None
             ),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.LO_FREQUENCY,
-                value=2e9,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, crosstalk=None
             ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.LO_FREQUENCY,
-                value=3e9,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, crosstalk=None
             ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.VOLTAGE,
-                value=0.5,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None, crosstalk=None
             ),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.LO_FREQUENCY,
-                value=2e9,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, crosstalk=None
             ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.LO_FREQUENCY,
-                value=3e9,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, crosstalk=None
             ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.VOLTAGE,
-                value=1.0,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None, crosstalk=None
             ),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.LO_FREQUENCY,
-                value=2e9,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, crosstalk=None
             ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.LO_FREQUENCY,
-                value=3e9,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, crosstalk=None
             ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             # End of nested loops
             # Start of parallel loop
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.VOLTAGE,
-                value=0.0,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None, crosstalk=None
             ),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.LO_FREQUENCY,
-                value=2e9,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, crosstalk=None
             ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.VOLTAGE,
-                value=0.5,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None, crosstalk=None
             ),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.LO_FREQUENCY,
-                value=3e9,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, crosstalk=None
             ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.VOLTAGE,
-                value=1.0,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None, crosstalk=None
             ),
             call.set_parameter(
-                alias="readout_bus",
-                parameter=Parameter.LO_FREQUENCY,
-                value=4e9,
-                channel_id=None,
-                crosstalk=None,
-                flux_list=None,
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=4e9, channel_id=None, crosstalk=None
             ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             # End of parallel loop

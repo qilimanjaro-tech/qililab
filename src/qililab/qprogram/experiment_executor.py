@@ -29,6 +29,7 @@ import numpy as np
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
+from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.variable import Variable
@@ -44,6 +45,7 @@ from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform.platform import Platform
+    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 
 
 @dataclass
@@ -104,9 +106,15 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment):
+    def __init__(self, platform: "Platform", experiment: Experiment, calibration: Calibration | None):
         self.platform = platform
         self.experiment = experiment
+
+        self.crosstalk: CrosstalkMatrix | None
+        if calibration and calibration.crosstalk_matrix:
+            self.crosstalk = calibration.crosstalk_matrix
+        else:
+            self.crosstalk = self.experiment.crosstalk
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -234,7 +242,7 @@ class ExperimentExecutor:
         self._metadata = ExperimentMetadata(
             platform=serialize(self.platform.to_dict()),
             experiment=serialize(self.experiment),
-            crosstalk=serialize(self.experiment.get_crosstalk.matrix if self.experiment.get_crosstalk else None),
+            crosstalk=serialize(self.crosstalk.matrix if self.crosstalk else None),
             executed_at=executed_at,
             execution_time=0.0,
             qprograms={},
@@ -334,7 +342,6 @@ class ExperimentExecutor:
                     )
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
-                    crosstalk = self.experiment.get_crosstalk
                     if isinstance(element.value, Variable):
                         if current_value_of_variable[element.value.uuid] is None:
                             # Variable has no value and it will get it from a `GetOperation` in the future. Thus, don't bind `value` in lambda.
@@ -344,8 +351,7 @@ class ExperimentExecutor:
                                     parameter=operation.parameter,
                                     value=current_value_of_variable[operation.value.uuid],
                                     channel_id=operation.channel_id,
-                                    crosstalk=crosstalk,
-                                    flux_list=operation.flux_list,
+                                    crosstalk=self.crosstalk,
                                 )
                             )
                         else:
@@ -358,8 +364,7 @@ class ExperimentExecutor:
                                     parameter=operation.parameter,
                                     value=value,
                                     channel_id=operation.channel_id,
-                                    crosstalk=crosstalk,
-                                    flux_list=operation.flux_list,
+                                    crosstalk=self.crosstalk,
                                 )
                             )
                     else:
@@ -370,8 +375,7 @@ class ExperimentExecutor:
                                 parameter=operation.parameter,
                                 value=operation.value,
                                 channel_id=operation.channel_id,
-                                crosstalk=crosstalk,
-                                flux_list=operation.flux_list,
+                                crosstalk=self.crosstalk,
                             )
                         )
 

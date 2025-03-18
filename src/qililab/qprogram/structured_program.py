@@ -17,7 +17,6 @@ import numpy as np
 
 from qililab.exceptions.variable_allocated import VariableAllocated
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
-from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
 from qililab.yaml import yaml
@@ -266,16 +265,12 @@ class StructuredProgram:
             return _float_variable(label, domain)
         raise NotImplementedError
 
-    def set_crosstalk(self, crosstalk: CrosstalkMatrix | None = None, calibration: Calibration | None = None):
+    def set_crosstalk(self, crosstalk: CrosstalkMatrix):
         """Declare Crosstalk matrix and offsets
 
         Args:
             crosstalk (CrosstalkMatrix): Crosstalk class including all necessary information
         """
-        if calibration:
-            crosstalk = calibration.crosstalk_matrix
-        if not crosstalk:
-            raise ValueError("crosstalk must have either Calibration with crosstalk or CrosstalkMatrix")
         self._crosstalk = crosstalk
 
     class _BlockContext:

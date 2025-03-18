@@ -298,49 +298,38 @@ class TestPlatform:
     @patch("qililab.typings.Parameter")
     def test_set_flux_parameter_qblox_channel0(self, mock_parameter, platform: Platform):
         """Test platform raises and error if no instrument connection."""
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q0_bus": {"flux_line_q0_bus": 0.1}}))
         platform.set_parameter(alias="flux_line_q0_bus", parameter=Parameter.FLUX, value=0.14)
         assert mock_parameter.OFFSET_OUT0.called_once()
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q1_bus": {"flux_line_q1_bus": 0.1}}))
         platform.set_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX, value=0.14)
         assert mock_parameter.OFFSET_OUT1.called_once()
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q2_bus": {"flux_line_q2_bus": 0.1}}))
         platform.set_parameter(alias="flux_line_q2_bus", parameter=Parameter.FLUX, value=0.14)
         assert mock_parameter.OFFSET_OUT2.called_once()
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q3_bus": {"flux_line_q3_bus": 0.1}}))
         platform.set_parameter(alias="flux_line_q3_bus", parameter=Parameter.FLUX, value=0.14)
         assert mock_parameter.OFFSET_OUT3.called_once()
 
     @patch("qililab.typings.Parameter")
     def test_set_flux_parameter_spi(self, mock_parameter, platform_spi: Platform):
         """Test platform raises and error if no instrument connection."""
+        platform_spi.set_crosstalk(CrosstalkMatrix.from_buses(buses={"spi_bus": {"spi_bus": 0.1}}))
         platform_spi.set_parameter(alias="spi_bus", parameter=Parameter.FLUX, value=0.14)
         assert mock_parameter.CURRENT.called_once()
 
     @patch("qililab.typings.Parameter")
     def test_set_flux_parameter_qdevil(self, mock_parameter, platform_qdevil: Platform):
         """Test platform raises and error if no instrument connection."""
+        platform_qdevil.set_crosstalk(CrosstalkMatrix.from_buses(buses={"qdac_bus": {"qdac_bus": 0.1}}))
         platform_qdevil.set_parameter(alias="qdac_bus", parameter=Parameter.FLUX, value=0.14)
         assert mock_parameter.VOLTAGE.called_once()
 
-    @patch("warnings.warn")
-    def test_set_flux_parameter_with_crosstalk(self, mock_warn, platform: Platform):
+    def test_set_flux_parameter_with_set_crosstalk(self, platform: Platform):
         """Test platform set FLUX parameter when crosstalk is given."""
         crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
-        platform.set_parameter(
-            alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0, crosstalk=crosstalk_matrix
-        )
-        mock_warn.assert_any_call(
-            f"Flux list not given, using all the flux buses given inside the crosstalk matrix\n{platform.crosstalk}"
-        )
-        assert crosstalk_matrix == platform.crosstalk
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
-
-    @patch("warnings.warn")
-    def test_set_flux_parameter_with_add_crosstalk(self, mock_warn, platform: Platform):
-        """Test platform set FLUX parameter when crosstalk is given through add_crosstalk."""
-        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
-        platform.add_crosstalk(crosstalk_matrix)
+        platform.set_crosstalk(crosstalk_matrix)
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
-        mock_warn.assert_any_call(
-            f"Flux list not given, using all the flux buses given inside the crosstalk matrix\n{platform.crosstalk}"
-        )
         assert crosstalk_matrix == platform.crosstalk
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
 
@@ -374,25 +363,10 @@ class TestPlatform:
                 crosstalk=crosstalk_matrix,
             )
 
-    def test_add_crosstalk_with_calibration(self, platform: Platform):
-        """Test platform set FLUX parameter when crosstalk is given through calibration file."""
-        calibration = Calibration()
-        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
-        calibration.crosstalk_matrix = crosstalk_matrix
-        platform.add_crosstalk(calibration)
-        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
-        assert calibration.crosstalk_matrix == platform.crosstalk
-
-    def test_empty_add_crosstalk_raises_error(self, platform: Platform):
-        """Test that if flux to bus topology is not specified an error is raised"""
-        error_string = "add_crosstalk must have either Calibration with crosstalk or CrosstalkMatrix"
-        with pytest.raises(ValueError, match=error_string):
-            platform.add_crosstalk(None)
-
     def test_set_flux_to_zero(self, platform: Platform):
         """Test set_flux_to_zero function."""
         crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
-        platform.add_crosstalk(crosstalk_matrix)
+        platform.set_crosstalk(crosstalk_matrix)
         platform.set_flux_to_zero()
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.0
 
@@ -408,6 +382,7 @@ class TestPlatform:
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14, channel_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14
 
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}}))
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
 
@@ -430,6 +405,7 @@ class TestPlatform:
         platform = build_platform(runcard=SauronQuantumMachines.runcard)
         platform._connected_to_instruments = False
 
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={bus: {bus: 1}}))
         platform.set_parameter(alias=bus, parameter=parameter, value=value)
         assert platform.get_parameter(alias=bus, parameter=parameter) == value
 
@@ -783,8 +759,9 @@ class TestMethods:
         # Manually set the execute_experiment method to the real one
         platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
 
-        # Create an autospec of the Experiment class
+        # Create an autospec of the Experiment class and Calibration class
         mock_experiment = create_autospec(Experiment)
+        mock_calibration = create_autospec(Calibration)
 
         expected_results_path = "mock/results/path/data.h5"
 
@@ -794,10 +771,12 @@ class TestMethods:
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
-            results_path = platform.execute_experiment(experiment=mock_experiment)
+            results_path = platform.execute_experiment(experiment=mock_experiment, calibration=mock_calibration)
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
-            MockExecutor.assert_called_once_with(platform=platform, experiment=mock_experiment)
+            MockExecutor.assert_called_once_with(
+                platform=platform, experiment=mock_experiment, calibration=mock_calibration
+            )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
             mock_executor_instance.execute.assert_called_once()
