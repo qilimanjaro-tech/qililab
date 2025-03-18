@@ -524,7 +524,7 @@ class Platform:
 
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
-    def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):
+    def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
         """Sets the right parameter depending on the instrument defined inside the element.
         This is used in the crosstalk correction.
         The instruments included in this function are: QM, QBlox, SPI and QDevil.
