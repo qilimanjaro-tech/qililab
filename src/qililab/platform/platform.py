@@ -978,7 +978,7 @@ class Platform:
         """
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
         return self.execute_compilation_output(output=output, debug=debug)
-    
+
     def execute_qprograms_parallel(
         self,
         qprograms: list[QProgram],
@@ -995,7 +995,7 @@ class Platform:
         if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
             raise ValueError("Parallel execution is not supported in Quantum Machines.")
         return self.execute_compilation_outputs_parallel(outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug)
-    
+
     def execute_compilation_outputs_parallel(
         self,
         outputs: list[QbloxCompilationOutput],
@@ -1004,14 +1004,14 @@ class Platform:
         sequences_per_qprogram = [output.sequences for output in outputs]
         aquisitions_per_qprogram = [output.acquisitions for output in outputs]
         buses_per_qprogram = [{bus_alias: self.buses.get(alias=bus_alias) for sequences in sequences_per_qprogram for bus_alias in sequences}]
-        
+
         for qprogram_idx, buses in enumerate(buses_per_qprogram):
             for bus_alias, bus in buses.items():
                 if bus.distortions:
                     for distortion in bus.distortions:
                         for waveform in sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms._waveforms:
                             sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
-        
+
         if debug:
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                 for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
