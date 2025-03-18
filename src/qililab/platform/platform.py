@@ -1003,8 +1003,10 @@ class Platform:
     ):
         sequences_per_qprogram = [output.sequences for output in outputs]
         aquisitions_per_qprogram = [output.acquisitions for output in outputs]
-        buses_per_qprogram = [{bus_alias: self.buses.get(alias=bus_alias) for sequences in sequences_per_qprogram for bus_alias in sequences}]
-
+        buses_per_qprogram = [
+            {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
+            for sequences in sequences_per_qprogram
+        ]
         for qprogram_idx, buses in enumerate(buses_per_qprogram):
             for bus_alias, bus in buses.items():
                 if bus.distortions:
