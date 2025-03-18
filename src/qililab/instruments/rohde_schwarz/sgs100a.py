@@ -67,7 +67,7 @@ class SGS100A(Instrument):
             float: settings.power.
         """
         if self.device_initialized:
-            if self.settings.power > 25 or self.settings.power < -120:
+            if not -120 <= self.settings.power <= 25:
                 raise ValueError(
                     f"Value set for power is outside of the allowed range [-120,25]: {self.settings.power}"
                 )
@@ -81,13 +81,9 @@ class SGS100A(Instrument):
             float: settings.frequency.
         """
         if self.device_initialized:
-            if self.settings.frequency > self.freq_top_limit:
+            if not self.freq_bot_limit <= self.settings.frequency <= self.freq_top_limit:
                 raise ValueError(
-                    f"Value set for frequency is higher than the allowed {self.freq_top_limit}: {self.settings.frequency}"
-                )
-            if self.settings.frequency < self.freq_bot_limit:
-                raise ValueError(
-                    f"Value set for frequency is lower than the allowed {self.freq_bot_limit}: {self.settings.frequency}"
+                    f"Value set for frequency is outside of the allowed range [{self.freq_bot_limit}, {self.freq_top_limit}]: {self.settings.frequency}"
                 )
         return self.settings.frequency
 

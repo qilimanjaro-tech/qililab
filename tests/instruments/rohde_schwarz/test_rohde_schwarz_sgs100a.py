@@ -154,10 +154,10 @@ def fixture_sdg100a_wrong_power() -> SGS100A:
     return sdg100a_wrong_power
 
 
-@pytest.fixture(name="sdg100a_wrong_freq_high")
-def fixture_sdg100a_wrong_freq_high() -> SGS100A:
+@pytest.fixture(name="sdg100a_wrong_freq")
+def fixture_sdg100a_wrong_freq() -> SGS100A:
     """Fixture that returns an instance of a dummy QDAC-II."""
-    sdg100a_wrong_freq_high = SGS100A(
+    sdg100a_wrong_freq= SGS100A(
         {
             "alias": "qdac",
             "power": 10,
@@ -168,26 +168,8 @@ def fixture_sdg100a_wrong_freq_high() -> SGS100A:
             "alc": True,
         }
     )
-    sdg100a_wrong_freq_high.device = MagicMock()
-    return sdg100a_wrong_freq_high
-
-
-@pytest.fixture(name="sdg100a_wrong_freq_low")
-def fixture_sdg100a_wrong_freq_low() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
-    sdg100a_wrong_freq_low = SGS100A(
-        {
-            "alias": "qdac",
-            "power": 10,
-            "frequency": 1,
-            "rf_on": True,
-            "iq_modulation": True,
-            "iq_wideband": True,
-            "alc": True,
-        }
-    )
-    sdg100a_wrong_freq_low.device = MagicMock()
-    return sdg100a_wrong_freq_low
+    sdg100a_wrong_freq.device = MagicMock()
+    return sdg100a_wrong_freq
 
 
 class TestSGS100A:
@@ -377,15 +359,8 @@ class TestSGS100A:
             sdg100a_wrong_power.initial_setup()
 
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
-    def test_raise_error_freq_too_low(self, mock_get_rs_options, sdg100a_wrong_freq_low: SGS100A):
+    def test_raise_error_freq_out_of_range(self, mock_get_rs_options, sdg100a_wrong_freq: SGS100A):
         mock_get_rs_options.return_value = "Some,other,SGS-B112V"
-        error_string = "Value set for frequency is lower than the allowed 80000000.0: 1"
+        error_string = "Value set for frequency is outside of the allowed range [80000000.0, 12750000000.0]: 1"
         with pytest.raises(ValueError, match=error_string):
-            sdg100a_wrong_freq_low.initial_setup()
-
-    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
-    def test_raise_error_freq_too_high(self, mock_get_rs_options, sdg100a_wrong_freq_high: SGS100A):
-        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
-        error_string = "Value set for frequency is higher than the allowed 12750000000.0: 13000000000.0"
-        with pytest.raises(ValueError, match=error_string):
-            sdg100a_wrong_freq_high.initial_setup()
+            sdg100a_wrong_freq.initial_setup()
