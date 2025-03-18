@@ -361,6 +361,6 @@ class TestSGS100A:
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
     def test_raise_error_freq_out_of_range(self, mock_get_rs_options, sdg100a_wrong_freq: SGS100A):
         mock_get_rs_options.return_value = "Some,other,SGS-B112V"
-        error_string = "Value set for frequency is outside of the allowed range [80000000.0, 12750000000.0]: 1"
+        error_string = "Value set for frequency is outside of the allowed range [80000000.0, 12750000000.0]: 13000000000.0"
         with pytest.raises(ValueError, match=error_string):
             sdg100a_wrong_freq.initial_setup()
