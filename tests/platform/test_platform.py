@@ -14,12 +14,10 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
-from qililab.digital import DigitalTranspilationConfig
-from tests.data import Galadriel, SauronQuantumMachines
-from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import SGS100A
@@ -37,6 +35,8 @@ from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
+from tests.data import Galadriel, SauronQuantumMachines
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
@@ -313,6 +313,13 @@ class TestPlatform:
         mock_logger.info.assert_called_once_with("Already connected to the instruments")
 
     def test_disconnect_logger(self, platform: Platform):
+        platform._connected_to_instruments = True
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.disconnect()
+        mock_logger.info.assert_called_once_with("Disconnected from instruments")
+
+    def test_disconnect_fail_logger(self, platform: Platform):
         platform._connected_to_instruments = False
         platform.instrument_controllers = MagicMock()
         with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
@@ -567,8 +574,16 @@ class TestMethods:
 
         self._compile_and_assert(platform, pulse_schedule, 2)
 
-    def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize:bool = False):
-        sequences_w_alias, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1, transpilation_config=DigitalTranspilationConfig(optimize=optimize))
+    def _compile_and_assert(
+        self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize: bool = False
+    ):
+        sequences_w_alias, _ = platform.compile(
+            program=program,
+            num_avg=1000,
+            repetition_duration=200_000,
+            num_bins=1,
+            transpilation_config=DigitalTranspilationConfig(optimize=optimize),
+        )
         assert isinstance(sequences_w_alias, dict)
         if not optimize:
             assert len(sequences_w_alias) == len_sequences
