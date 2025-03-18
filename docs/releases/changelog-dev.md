@@ -52,6 +52,9 @@ platform.set_flux_to_zero()
 
 ### Improvements
 
+- Now the Rohde & Schwarz will return an error after a limit of frequency or power is reached based on the machine's version.
+  [#897](https://github.com/qilimanjaro-tech/qililab/pull/897)
+
 - Modified the `CrosstalkMatrix` and `FluxVector` classes to fit for the crosstalk matrix implementation inside `Experiment` and `Platform`. Now both classes update following the specifications and needs of experimentalists.
 [#899](https://github.com/qilimanjaro-tech/qililab/pull/899)
 
