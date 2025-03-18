@@ -22,7 +22,7 @@ import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
-from qpysequence.utils.constants import INST_MAX_WAIT
+from qpysequence.constants import INST_MAX_WAIT
 
 from qililab.config import logger
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
@@ -391,6 +391,11 @@ class QbloxCompiler:
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetFreq(frequency=frequency)
         )
+
+        # set the frequency a second time - because of a qblox bug where the first frequency in a hardware loop is false (same is done for the gain).
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetFreq(frequency=frequency)
+        )
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_phase(self, element: SetPhase):
@@ -414,6 +419,10 @@ class QbloxCompiler:
             if isinstance(element.gain, Variable)
             else convert(element.gain)
         )
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
+        )
+        # set the gain a second time - because of a qblox bug where the first gain in a hardware loop is false (same is done for the frequency).
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
         )
