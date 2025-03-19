@@ -1090,3 +1090,73 @@ class TestMethods:
                 for flux_bus in platform.analog_compilation_settings.flux_control_topology
                 if flux_bus.flux == flux
             )
+    
+    
+    def  test_parallelisation_same_bus_raises_error(self, platform: Platform):
+        """Test that if parallelisation is attempted on qprograms using at least one bus in common, an error will be raised"""
+        error_string = "QPrograms cannot be executed in parallel."
+        qp1 = QProgram()
+        qp2 = QProgram()
+        qp3 = QProgram()
+        qp1.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=5))
+        qp2.play(bus="drive_line_q1_bus", waveform=Square(amplitude=1, duration=25))
+        qp2.play(bus="drive_line_q0_bus", waveform=Square(amplitude=0.5, duration=35))
+        qp3.play(bus="feedline_input_output_bus_1", waveform=Square(amplitude=0.5, duration=15))
+        
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+        ):
+            qp_list = [qp1,qp2,qp3]
+            with pytest.raises(ValueError, match=error_string):
+                platform.execute_qprograms_parallel(qp_list)
+
+
+
+
+    def test_parallelisation_execute(self, platform: Platform, qblox_results: list[dict]):
+        """Test that the execute parallelisation returns the same result per qprogram as the regular excute method"""
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        drive_wf2 = IQPair(I=Square(amplitude=1.0, duration=80), Q=Square(amplitude=0.0, duration=80))
+        readout_wf2 = IQPair(I=Square(amplitude=1.0, duration=150), Q=Square(amplitude=0.0, duration=150))
+        weights_wf2 = IQPair(I=Square(amplitude=1.0, duration=2200), Q=Square(amplitude=0.0, duration=2200))
+
+        qprogram1 = QProgram()
+        qprogram1.play(bus="drive_line_q0_bus", waveform=drive_wf)
+        qprogram1.play(bus="drive_line_q1_bus", waveform=drive_wf)
+        qprogram1.sync()
+        qprogram1.play(bus="feedline_input_output_bus", waveform=readout_wf)
+        qprogram1.play(bus="feedline_input_output_bus_1", waveform=readout_wf)
+        qprogram1.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+
+        qprogram2 = QProgram()
+        qprogram2.play(bus="flux_line_q0_bus", waveform=drive_wf2)
+        qprogram2.sync()
+        qprogram2.play(bus="feedline_input_output_bus_2", waveform=readout_wf2)
+        qprogram2.qblox.acquire(bus="feedline_input_output_bus_2", weights=weights_wf2)
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1)
+            non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2)
+
+            qp_list = [qprogram1,qprogram2]
+            result_parallel = platform.execute_qprograms_parallel(qp_list)
+
+            #check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
+            assert result_parallel[0].results==non_parallel_results1.results
+            assert result_parallel[1].results==non_parallel_results2.results
