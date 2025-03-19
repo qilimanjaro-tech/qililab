@@ -1009,10 +1009,15 @@ class Platform:
         unique_buses = len(set.union(*buses_per_qprogram))
         if total_buses != unique_buses:
             raise ValueError("QPrograms cannot be executed in parallel.")
-        outputs = [self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration) for qprogram in qprograms]
+        outputs = [
+            self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+            for qprogram in qprograms
+        ]
         if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
             raise ValueError("Parallel execution is not supported in Quantum Machines.")
-        return self.execute_compilation_outputs_parallel(outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug)
+        return self.execute_compilation_outputs_parallel(
+            outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug
+        )
 
     def execute_compilation_outputs_parallel(
         self,
@@ -1055,7 +1060,9 @@ class Platform:
                 if bus.distortions:
                     for distortion in bus.distortions:
                         for waveform in sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms._waveforms:
-                            sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
+                            sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms.modify(
+                                waveform.name, distortion.apply(waveform.data)
+                            )
 
         if debug:
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
@@ -1074,7 +1081,10 @@ class Platform:
                     buses_per_qprogram[qprogram_idx][bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
                     self._qpy_sequence_cache[bus_alias] = sequence_hash
                 # sync all relevant sequences
-                for instrument, channel in zip(buses_per_qprogram[qprogram_idx][bus_alias].instruments, buses_per_qprogram[qprogram_idx][bus_alias].channels):
+                for instrument, channel in zip(
+                    buses_per_qprogram[qprogram_idx][bus_alias].instruments,
+                    buses_per_qprogram[qprogram_idx][bus_alias].channels,
+                ):
                     if isinstance(instrument, QbloxModule):
                         instrument.sync_sequencer(sequencer_id=int(channel))
 
@@ -1099,7 +1109,10 @@ class Platform:
         # Reset instrument settings
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
             for bus_alias in sequences:
-                for instrument, channel in zip(buses_per_qprogram[qprogram_idx][bus_alias].instruments, buses_per_qprogram[qprogram_idx][bus_alias].channels):
+                for instrument, channel in zip(
+                    buses_per_qprogram[qprogram_idx][bus_alias].instruments,
+                    buses_per_qprogram[qprogram_idx][bus_alias].channels,
+                ):
                     if isinstance(instrument, QbloxModule):
                         instrument.desync_sequencer(sequencer_id=int(channel))
 
