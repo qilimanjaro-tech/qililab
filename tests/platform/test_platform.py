@@ -1113,18 +1113,17 @@ class TestMethods:
         ):
             qp_list = [qp1,qp2,qp3]
             with pytest.raises(ValueError, match=error_string):
-                platform.execute_qprograms_parallel(qp_list)
+                platform.execute_qprograms_parallel(qp_list, debug=True)
 
 
     def test_parallelisation_execute_quantum_machine(self, platform_quantum_machines: Platform):
-        error_string = "QPrograms cannot be executed in parallel."
+        error_string = "Parallel execution is not supported in Quantum Machines."
         qp1 = QProgram()
         qp2 = QProgram()
         qp3 = QProgram()
-        qp1.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=5))
-        qp2.play(bus="drive_line_q1_bus", waveform=Square(amplitude=1, duration=25))
-        qp2.play(bus="drive_line_q0_bus", waveform=Square(amplitude=0.5, duration=35))
-        qp3.play(bus="feedline_input_output_bus_1", waveform=Square(amplitude=0.5, duration=15))
+        qp1.play(bus="drive_q0", waveform=Square(amplitude=1, duration=5))
+        qp2.play(bus="flux_q0", waveform=Square(amplitude=1, duration=25))
+
         
         with (
             patch("builtins.open") as patched_open,
