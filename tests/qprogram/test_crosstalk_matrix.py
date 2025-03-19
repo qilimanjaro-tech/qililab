@@ -112,7 +112,7 @@ class TestCrosstalkMatrix:
         assert crosstalk_matrix["bus1"]["bus2"] == 0.5
 
         # Reshape a given key
-        crosstalk_matrix["bus1"]["bus2"] = 0.6
+        crosstalk_matrix["bus1"] = {"bus2": 0.6}
         assert isinstance(crosstalk_matrix["bus1"], dict)
         assert len(crosstalk_matrix["bus1"]) == 1
         assert crosstalk_matrix["bus1"]["bus2"] == 0.6
