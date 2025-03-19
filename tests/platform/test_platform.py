@@ -1116,7 +1116,7 @@ class TestMethods:
                 platform.execute_qprograms_parallel(qp_list, debug=True)
 
 
-    def test_parallelisation_execute_quantum_machine(self, platform_quantum_machines: Platform):
+    def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
         error_string = "Parallel execution is not supported in Quantum Machines."
         qp1 = QProgram()
         qp2 = QProgram()
