@@ -989,7 +989,7 @@ class Platform:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
         It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
 
-        **The execution can be done for (buses associated to) Qblox only. And it can only be done for qprograms that do not share buses.
+        **The execution can be done for (buses associated to) Qblox only. And it can only be done for qprograms that do not share buses.**
 
         Args:
             qprograms (QProgram): A list of the :class:`.QProgram` to execute.
@@ -1037,7 +1037,7 @@ class Platform:
 
         |
 
-        **The execution can be done for (buses associated to) Qblox only.
+        **The execution can be done for (buses associated to) Qblox only.**
 
         Args:
             outputs: A list of the compiled qprograms.
