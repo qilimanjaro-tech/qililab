@@ -986,6 +986,24 @@ class Platform:
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> list[QProgramResults]:
+        """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
+        It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
+
+        **The execution can be done for (buses associated to) Qblox only. And it can only be done for qprograms that do not share buses.
+
+        Args:
+            qprograms (QProgram): A list of the :class:`.QProgram` to execute.
+            bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
+                It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
+            calibration (Calibration, optional): :class:`.Calibration` instance containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
+            debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
+                Defaults to False.
+
+        Returns:
+            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.
+            Each element of the list corresponds to a sequencer.
+            The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+        """
         buses_per_qprogram = [qprogram.buses for qprogram in qprograms]
         total_buses = sum(len(s) for s in buses_per_qprogram)
         unique_buses = len(set.union(*buses_per_qprogram))
@@ -1001,6 +1019,31 @@ class Platform:
         outputs: list[QbloxCompilationOutput],
         debug: bool = False,
     ):
+        """Execute compiled qprograms in parallel.
+        It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
+
+        |
+
+        **The execution is done in the following steps:**
+
+        1. Upload all sequences.
+        2. Execute all sequences.
+        3. Acquire the results.
+
+        |
+
+        **The execution can be done for (buses associated to) Qblox only.
+
+        Args:
+            outputs: A list of the compiled qprograms.
+            debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
+                Defaults to False.
+
+        Returns:
+            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.
+            Each element of the list corresponds to a sequencer.
+            The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+        """
         sequences_per_qprogram = [output.sequences for output in outputs]
         aquisitions_per_qprogram = [output.acquisitions for output in outputs]
         buses_per_qprogram = [

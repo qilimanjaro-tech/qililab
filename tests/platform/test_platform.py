@@ -1171,7 +1171,7 @@ class TestMethods:
         ):
             acquire_qprogram_results.return_value = [123]
             qp_list = [qprogram1,qprogram2]
-            result_parallel = platform.execute_qprograms_parallel(qp_list)
+            result_parallel = platform.execute_qprograms_parallel(qp_list, debug=True)
             non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1, debug=True)
             non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2, debug=True)
 
