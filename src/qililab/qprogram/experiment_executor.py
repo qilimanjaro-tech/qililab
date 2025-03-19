@@ -29,6 +29,7 @@ import numpy as np
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
+from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.variable import Variable
@@ -44,6 +45,7 @@ from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform.platform import Platform
+    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 
 
 @dataclass
@@ -104,9 +106,15 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment):
+    def __init__(self, platform: "Platform", experiment: Experiment, calibration: Calibration | None):
         self.platform = platform
         self.experiment = experiment
+
+        self.crosstalk: CrosstalkMatrix | None
+        if calibration and calibration.crosstalk_matrix:
+            self.crosstalk = calibration.crosstalk_matrix
+        else:
+            self.crosstalk = self.experiment.crosstalk
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -116,6 +124,10 @@ class ExperimentExecutor:
 
         # Mapping from each ExecuteQProgram operation to its execution index (order of execution)
         self._qprogram_execution_indices: dict[ExecuteQProgram, int] = {}
+
+        # Variables that uses flux for further processing and saving the right bias
+        # TODO: implement a way to save the bias based on the same principle as HW loops Xtalk
+        self._flux_variables: dict[str, np.ndarray] = {}
 
         # Stack to keep track of variables in the experiment context (outside QPrograms)
         self._experiment_variables_stack: list[list[VariableInfo]] = []
@@ -230,6 +242,7 @@ class ExperimentExecutor:
         self._metadata = ExperimentMetadata(
             platform=serialize(self.platform.to_dict()),
             experiment=serialize(self.experiment),
+            crosstalk=serialize(self.crosstalk.matrix if self.crosstalk else None),
             executed_at=executed_at,
             execution_time=0.0,
             qprograms={},
@@ -338,17 +351,20 @@ class ExperimentExecutor:
                                     parameter=operation.parameter,
                                     value=current_value_of_variable[operation.value.uuid],
                                     channel_id=operation.channel_id,
+                                    crosstalk=self.crosstalk,
                                 )
                             )
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element,
-                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
+                                lambda operation=element, value=current_value_of_variable[
+                                    element.value.uuid
+                                ]: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     value=value,
                                     channel_id=operation.channel_id,
+                                    crosstalk=self.crosstalk,
                                 )
                             )
                     else:
@@ -359,6 +375,7 @@ class ExperimentExecutor:
                                 parameter=operation.parameter,
                                 value=operation.value,
                                 channel_id=operation.channel_id,
+                                crosstalk=self.crosstalk,
                             )
                         )
 
@@ -384,9 +401,7 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element,
-                            call_parameters=call_parameters,
-                            qprogram_index=qprogram_index: store_results(
+                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram(
                                         **{
@@ -576,14 +591,13 @@ class ExperimentExecutor:
                     operations = self._prepare_operations(self.experiment.body, progress)
                     self._execute_operations(operations, progress)
 
-            # Signal that the execution has completed
-            execution_completed.set()
+                # Signal that the execution has completed
+                execution_completed.set()
 
-            # Retrieve the execution time from the Future
-            execution_time = execution_time_future.result()
+                # Retrieve the execution time from the Future
+                execution_time = execution_time_future.result()
 
-            # Now write the execution time to the results writer
-            with self._results_writer:
+                # Now write the execution time to the results writer
                 self._results_writer.execution_time = execution_time
 
         return results_path

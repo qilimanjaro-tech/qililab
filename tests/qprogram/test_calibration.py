@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import pytest
 
 from qililab.qprogram import QProgram
@@ -258,6 +259,64 @@ class TestCalibration:
             yaml.dump(data=square, stream=stream)
 
         with pytest.raises(TypeError):
+            _ = Calibration.load_from(file="calibration.yml")
+
+        os.remove(path="calibration.yml")
+
+    def test_load_crosstalk_from_array(self):
+        """Test dump and load methods"""
+        matrix = [[1.47046905, 0.12276261], [-0.55322207, 1.58247856]]
+        flux_offsets = [0.0, 0.1]
+        bus_list = ["flux_0", "flux_1"]
+        calibration = Calibration()
+        calibration.crosstalk_matrix = CrosstalkMatrix()
+        calibration.crosstalk_matrix.matrix = matrix
+        calibration.crosstalk_matrix.flux_offsets = flux_offsets
+        calibration.crosstalk_matrix.bus_list = bus_list
+
+        calibration.save_to(file="calibration.yml")
+        loaded_calibration = Calibration.load_from(file="calibration.yml")
+
+        crosstalk_dict = CrosstalkMatrix.from_array(
+            buses=["flux_0", "flux_1"], matrix_array=np.array([[1.47046905, 0.12276261], [-0.55322207, 1.58247856]])
+        )
+        crosstalk_dict.set_offset({"flux_0": 0.0, "flux_1": 0.1})
+
+        assert loaded_calibration.crosstalk_matrix.matrix.matrix == crosstalk_dict.matrix
+        assert loaded_calibration.crosstalk_matrix.flux_offsets == crosstalk_dict.flux_offsets
+        assert loaded_calibration.crosstalk_matrix.bus_list == bus_list
+
+        os.remove(path="calibration.yml")
+
+        # Test that having an empty bus_list causes an error
+        error_string = "Bus list is empty or has the wrong dimensions"
+
+        matrix = [[1.47046905, 0.12276261], [-0.55322207, 1.58247856]]
+        flux_offsets = {"flux_0": 0.0, "flux_1": 0.1}
+        bus_list = []
+        calibration = Calibration()
+        calibration.crosstalk_matrix = CrosstalkMatrix()
+        calibration.crosstalk_matrix.matrix = matrix
+        calibration.crosstalk_matrix.flux_offsets = flux_offsets
+        calibration.crosstalk_matrix.bus_list = bus_list
+
+        calibration.save_to(file="calibration.yml")
+        with pytest.raises(ValueError, match=error_string):
+            _ = Calibration.load_from(file="calibration.yml")
+
+        os.remove(path="calibration.yml")
+
+        matrix = crosstalk_dict.matrix
+        flux_offsets = [0.0, 0.1]
+        bus_list = []
+        calibration = Calibration()
+        calibration.crosstalk_matrix = CrosstalkMatrix()
+        calibration.crosstalk_matrix.matrix = matrix
+        calibration.crosstalk_matrix.flux_offsets = flux_offsets
+        calibration.crosstalk_matrix.bus_list = bus_list
+
+        calibration.save_to(file="calibration.yml")
+        with pytest.raises(ValueError, match=error_string):
             _ = Calibration.load_from(file="calibration.yml")
 
         os.remove(path="calibration.yml")

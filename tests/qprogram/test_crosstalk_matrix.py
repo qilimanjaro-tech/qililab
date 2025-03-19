@@ -8,7 +8,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 def get_xtalk_array():
     """Get a tuple of crosstalk array and buses"""
     xtalk_array = np.array([[1, 2, 3], [0.1, 0.2, 0.3], [0, 1, 0]])
-    buses = {"flux_0", "flux_1", "flux_2"}
+    buses = ["flux_0", "flux_1", "flux_2"]
     return (xtalk_array, buses)
 
 
@@ -39,13 +39,29 @@ class TestFluxVector:
 
     def test_init(self):
         flux_vector = FluxVector()
-        assert flux_vector.vector == {}
+        assert flux_vector.bias_vector == {}
 
     def test_from_dict(self, flux_vector, flux_vector_dict):
-        assert flux_vector.vector == flux_vector_dict
+        assert flux_vector.flux_vector == flux_vector_dict
 
     def test_to_dict(self, flux_vector, flux_vector_dict):
         assert flux_vector.to_dict() == flux_vector_dict
+
+    def test_get(self, flux_vector):
+        assert flux_vector["flux_0"] == 0.5
+
+    def test_set_crosstalk_from_bias(self, flux_vector, crosstalk_matrix):
+        bias_vector = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
+        assert flux_vector.crosstalk == crosstalk_matrix
+        assert flux_vector.bias_vector == bias_vector
+
+    def test_to_dict_with_crosstalk(self, flux_vector, crosstalk_matrix):
+        bias_vector = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
+        assert flux_vector.to_dict() == bias_vector
+
+    def test_get_with_crosstalk(self, flux_vector, crosstalk_matrix):
+        bias_vector = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
+        assert flux_vector["flux_0"] == bias_vector["flux_0"]
 
 
 class TestCrosstalkMatrix:
@@ -78,14 +94,6 @@ class TestCrosstalkMatrix:
             == inv_array.shape[0] * inv_array.shape[1]
         )
 
-    def test_mult(self, crosstalk_matrix, flux_vector):
-        """Test the multiplication method"""
-        new_flux_vector = crosstalk_matrix @ flux_vector
-        np.allclose(
-            crosstalk_matrix.to_array() @ np.array(list(flux_vector.vector.values())),
-            np.array(list(new_flux_vector.vector.values())),
-        )
-
     def test_init(self):
         """Test init method"""
         crosstalk_matrix = CrosstalkMatrix()
@@ -95,7 +103,7 @@ class TestCrosstalkMatrix:
         assert len(crosstalk_matrix.matrix) == 0
 
     def test_set_get_methods(self):
-        """Test __set_item__ and __get_item__ methods"""
+        """Test __setitem__ and __getitem__ methods"""
         crosstalk_matrix = CrosstalkMatrix()
         crosstalk_matrix["bus1"]["bus2"] = 0.5
 
@@ -103,10 +111,30 @@ class TestCrosstalkMatrix:
         assert len(crosstalk_matrix["bus1"]) == 1
         assert crosstalk_matrix["bus1"]["bus2"] == 0.5
 
+        # Reshape a given key
+        crosstalk_matrix["bus1"] = {"bus2": 0.6}
+        assert isinstance(crosstalk_matrix["bus1"], dict)
+        assert len(crosstalk_matrix["bus1"]) == 1
+        assert crosstalk_matrix["bus1"]["bus2"] == 0.6
+
+        # New key
         crosstalk_matrix["bus2"] = {"bus1": 0.1}
         assert isinstance(crosstalk_matrix["bus2"], dict)
         assert len(crosstalk_matrix["bus2"]) == 1
         assert crosstalk_matrix["bus2"]["bus1"] == 0.1
+
+    def test_set_offset(self):
+        """Test set_offset function"""
+        crosstalk_matrix = CrosstalkMatrix()
+        crosstalk_matrix["bus1"]["bus1"] = 1
+        crosstalk_matrix["bus1"]["bus2"] = 0.5
+        crosstalk_matrix["bus2"]["bus1"] = 0.7
+        crosstalk_matrix["bus2"]["bus2"] = 1
+
+        crosstalk_matrix.set_offset(offset={"bus1": -1.0, "bus2": 0.5})
+
+        assert isinstance(crosstalk_matrix.flux_offsets, dict)
+        assert crosstalk_matrix.flux_offsets == {"bus1": -1.0, "bus2": 0.5}
 
     def test_str_method(self):
         """Test __str__ method"""

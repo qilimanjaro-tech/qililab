@@ -7,6 +7,8 @@ import pytest
 
 from qililab.platform.platform import Platform
 from qililab.qprogram.blocks import ForLoop, Loop
+from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import Domain, QProgram
@@ -129,7 +131,7 @@ class TestExperimentExecutor:
 
     def test_execute(self, platform, experiment, qprogram):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        executor = ExperimentExecutor(platform=platform, experiment=experiment)
+        executor = ExperimentExecutor(platform=platform, experiment=experiment, calibration=None)
         resuls_path = executor.execute()
 
         # Check if the correct file path is returned
@@ -138,12 +140,19 @@ class TestExperimentExecutor:
 
         # Check that platform methods were called in the correct order
         expected_calls = [
-            call.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
-            call.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
-            call.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None),
+            call.to_dict(),
+            call.set_parameter(
+                alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None, crosstalk=None
+            ),
+            call.set_parameter(
+                alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None, crosstalk=None
+            ),
+            call.set_parameter(
+                alias="drive_q2", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None, crosstalk=None
+            ),
             # Check that get_parameter returns a variable that can be reused
             call.get_parameter(alias="flux_q0", parameter=Parameter.GAIN, channel_id=None),
-            call.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=1.23, channel_id=None),
+            call.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=1.23, channel_id=None, crosstalk=None),
             call.execute_qprogram(
                 qprogram=get_qprogram_gain_by_get_parameter(gain=1.23, qprogram=qprogram),
                 bus_mapping=None,
@@ -151,31 +160,61 @@ class TestExperimentExecutor:
                 debug=False,
             ),
             # Start of nested loops
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None, crosstalk=None
+            ),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, crosstalk=None
+            ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, crosstalk=None
+            ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None, crosstalk=None
+            ),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, crosstalk=None
+            ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, crosstalk=None
+            ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None, crosstalk=None
+            ),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, crosstalk=None
+            ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, crosstalk=None
+            ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             # End of nested loops
             # Start of parallel loop
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None, crosstalk=None
+            ),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, crosstalk=None
+            ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None, crosstalk=None
+            ),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, crosstalk=None
+            ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=4e9, channel_id=None),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None, crosstalk=None
+            ),
+            call.set_parameter(
+                alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=4e9, channel_id=None, crosstalk=None
+            ),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             # End of parallel loop
             # Start of nshots loop with lambda execution
@@ -222,3 +261,19 @@ class TestExperimentExecutor:
 
         # If you want to ensure the exact sequence across all calls
         platform.assert_has_calls(expected_calls, any_order=False)
+
+    def test_execute_with_calibration(self, platform, experiment):
+        """Test the execute method to ensure the experiment is executed correctly and results are stored while using calibration."""
+
+        buses = {
+            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
+            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+        }
+        calibration = Calibration()
+        calibration.crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+
+        executor = ExperimentExecutor(platform=platform, experiment=experiment, calibration=calibration)
+        _ = executor.execute()
+
+        # Check if the correct matrix is given
+        assert executor.crosstalk.matrix == buses

@@ -18,7 +18,7 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import Domain
+from qililab.qprogram.variable import Domain, Variable
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
@@ -43,6 +43,7 @@ class Experiment(StructuredProgram):
             Parameter.OFFSET_OUT1: Domain.Voltage,
             Parameter.OFFSET_OUT2: Domain.Voltage,
             Parameter.OFFSET_OUT3: Domain.Voltage,
+            Parameter.FLUX: Domain.Flux,
             Parameter.DURATION: Domain.Time,
             Parameter.LO_FREQUENCY: Domain.Frequency,
             Parameter.IF: Domain.Frequency,
@@ -59,6 +60,7 @@ class Experiment(StructuredProgram):
 
     def __init__(self, label: str) -> None:
         super().__init__()
+
         self.label: str = label
 
     def get_parameter(self, alias: str, parameter: Parameter, channel_id: int | None = None):
@@ -80,7 +82,13 @@ class Experiment(StructuredProgram):
         self._active_block.append(operation)
         return variable
 
-    def set_parameter(self, alias: str, parameter: Parameter, value: int | float | int, channel_id: int | None = None):
+    def set_parameter(
+        self,
+        alias: str,
+        parameter: Parameter,
+        value: int | float | Variable,
+        channel_id: int | None = None,
+    ):
         """Set a platform parameter.
 
         Appends a SetParameter operation to the active block of the experiment.
@@ -90,15 +98,15 @@ class Experiment(StructuredProgram):
             parameter (Parameter): The parameter to set.
             value (int | float): The value to set for the parameter.
         """
-        operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+        operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)  # type: ignore[arg-type]
         self._active_block.append(operation)
 
     def execute_qprogram(
         self,
         qprogram: QProgram | Callable[..., QProgram],  # type: ignore
         bus_mapping: dict[str, str] | None = None,
-        calibration: Calibration | None = None,
         debug: bool = False,
+        calibration: Calibration | None = None,
     ):
         """Execute a quantum program within the experiment.
 

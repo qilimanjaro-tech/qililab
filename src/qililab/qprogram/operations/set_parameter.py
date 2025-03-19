@@ -21,7 +21,11 @@ from qililab.yaml import yaml
 @yaml.register_class
 class SetParameter(Operation):
     def __init__(
-        self, alias: str, parameter: Parameter, value: int | float | bool, channel_id: int | None = None
+        self,
+        alias: str,
+        parameter: Parameter,
+        value: int | float | bool,
+        channel_id: int | None = None,
     ) -> None:
         super().__init__()
         self.alias: str = alias
