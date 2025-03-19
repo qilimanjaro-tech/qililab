@@ -15,6 +15,8 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
+from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
+from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -37,8 +39,6 @@ from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
-from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
@@ -333,6 +333,21 @@ class TestPlatform:
         assert crosstalk_matrix == platform.crosstalk
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
 
+    def test_set_flux_parameter_with_wrong_bus_raises_error(self, platform: Platform):
+        """Test error raising when platform set FLUX alias is the wrong bus."""
+        alias = "drive_line_q1_bus"
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        error_string = f"{alias} not inside crosstalk matrix\n{crosstalk_matrix}"
+        platform.set_crosstalk(crosstalk_matrix)
+        with pytest.raises(ValueError, match=error_string):
+            platform.set_parameter(alias=alias, parameter=Parameter.FLUX, value=0.14, channel_id=0)
+
+    def test_set_flux_parameter_without_crosstalk_matrix_raises_error(self, platform: Platform):
+        """Test error raised when the crostalk is not set"""
+        error_string = "Crosstalk matrix has not been set"
+        with pytest.raises(ValueError, match=error_string):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
+
     def test_set_flux_parameter_without_instruments_raises_error(self, platform_yokogawa: Platform):
         """Test error raised when the instruments do not match the flux parameter"""
         error_string = "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
@@ -375,6 +390,19 @@ class TestPlatform:
         error_string = "Crosstalk matrix has not been set"
         with pytest.raises(ValueError, match=error_string):
             platform.set_flux_to_zero()
+
+    def test_set_bias_to_zero(self, platform: Platform):
+        """Test set_bias_to_zero function."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        platform.set_crosstalk(crosstalk_matrix)
+        platform.set_bias_to_zero()
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
+
+    def test_set_bias_to_zero_without_crosstalk_raises_error(self, platform: Platform):
+        """Test set_bias_to_zero function error without crosstalk."""
+        error_string = "Neither crosstalk matrix nor bus_list has been set"
+        with pytest.raises(ValueError, match=error_string):
+            platform.set_bias_to_zero()
 
     def test_set_parameter_no_instrument_connection_QBLOX(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""

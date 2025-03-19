@@ -535,7 +535,7 @@ class Platform:
         """
         bias = [
             instrument
-            for instrument in element.instruments
+            for instrument in element.instruments  # type: ignore[union-attr]
             if instrument.name
             in {"QCM", "QRM", "QRM-RF", "QCM-RF", "D5a", "S4g", "quantum_machines_cluster", "qdevil_qdac2"}
         ]
@@ -578,7 +578,6 @@ class Platform:
 
         if not self.flux_vector:
             self.flux_vector = FluxVector()
-
         for flux in bus_list:
             if flux not in self.flux_vector.flux_vector.keys():
                 self.flux_vector[flux] = 0
@@ -625,6 +624,12 @@ class Platform:
             if not self.crosstalk:
                 raise ValueError("Neither crosstalk matrix nor bus_list has been set")
             bus_list = list(self.crosstalk.matrix.keys())
+
+        if not self.flux_vector:
+            self.flux_vector = FluxVector()
+        for flux in bus_list:
+            if flux not in self.flux_vector.flux_vector.keys():
+                self.flux_vector[flux] = 0
 
         for flux_alias in bus_list:
             element = self.get_element(alias=flux_alias)

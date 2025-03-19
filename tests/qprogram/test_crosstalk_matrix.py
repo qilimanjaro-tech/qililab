@@ -103,7 +103,7 @@ class TestCrosstalkMatrix:
         assert len(crosstalk_matrix.matrix) == 0
 
     def test_set_get_methods(self):
-        """Test __set_item__ and __get_item__ methods"""
+        """Test __setitem__ and __getitem__ methods"""
         crosstalk_matrix = CrosstalkMatrix()
         crosstalk_matrix["bus1"]["bus2"] = 0.5
 
@@ -111,6 +111,13 @@ class TestCrosstalkMatrix:
         assert len(crosstalk_matrix["bus1"]) == 1
         assert crosstalk_matrix["bus1"]["bus2"] == 0.5
 
+        # Reshape a given key
+        crosstalk_matrix["bus1"]["bus2"] = 0.6
+        assert isinstance(crosstalk_matrix["bus1"], dict)
+        assert len(crosstalk_matrix["bus1"]) == 1
+        assert crosstalk_matrix["bus1"]["bus2"] == 0.6
+
+        # New key
         crosstalk_matrix["bus2"] = {"bus1": 0.1}
         assert isinstance(crosstalk_matrix["bus2"], dict)
         assert len(crosstalk_matrix["bus2"]) == 1
