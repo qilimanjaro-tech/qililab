@@ -1092,7 +1092,7 @@ class TestMethods:
             )
     
     
-    def  test_parallelisation_same_bus_raises_error(self, platform: Platform):
+    def  test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
         """Test that if parallelisation is attempted on qprograms using at least one bus in common, an error will be raised"""
         error_string = "QPrograms cannot be executed in parallel."
         qp1 = QProgram()
@@ -1116,9 +1116,29 @@ class TestMethods:
                 platform.execute_qprograms_parallel(qp_list)
 
 
+    def test_parallelisation_execute_quantum_machine(self, platform_quantum_machines: Platform):
+        error_string = "QPrograms cannot be executed in parallel."
+        qp1 = QProgram()
+        qp2 = QProgram()
+        qp3 = QProgram()
+        qp1.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=5))
+        qp2.play(bus="drive_line_q1_bus", waveform=Square(amplitude=1, duration=25))
+        qp2.play(bus="drive_line_q0_bus", waveform=Square(amplitude=0.5, duration=35))
+        qp3.play(bus="feedline_input_output_bus_1", waveform=Square(amplitude=0.5, duration=15))
+        
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+        ):
+            qp_list = [qp1,qp2,qp3]
+            with pytest.raises(ValueError, match=error_string):
+                platform_quantum_machines.execute_qprograms_parallel(qp_list)
 
-
-    def test_parallelisation_execute(self, platform: Platform, qblox_results: list[dict]):
+    def test_parallelisation_execute_qblox(self, platform: Platform):
         """Test that the execute parallelisation returns the same result per qprogram as the regular excute method"""
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1151,11 +1171,11 @@ class TestMethods:
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
             acquire_qprogram_results.return_value = [123]
-            non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1)
-            non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2)
-
             qp_list = [qprogram1,qprogram2]
             result_parallel = platform.execute_qprograms_parallel(qp_list)
+            non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1, debug=True)
+            non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2, debug=True)
+
 
             #check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
             assert result_parallel[0].results==non_parallel_results1.results
