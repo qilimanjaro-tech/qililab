@@ -55,12 +55,12 @@ class QbloxDraw:
     def _calculate_scaling_and_offsets(self, param, i_or_q):
         if i_or_q == "I":
             scaling_factor, max_voltage = self._get_scaling_factors(
-                param, param.get("offset_i", 0), param.get("static_offset_i", 0)
+                param, param.get("q1asm_offset_i", 0), param.get("static_offset_i", 0)
             )
             gain = param.get("gain_i", 1)
         elif i_or_q == "Q":
             scaling_factor, max_voltage = self._get_scaling_factors(
-                param, param.get("offset_q", 0), param.get("static_offset_q", 0)
+                param, param.get("q1asm_offset_q", 0), param.get("static_offset_q", 0)
             )
             gain = param.get("gain_q", 1)
         return scaling_factor, max_voltage, gain
@@ -101,7 +101,7 @@ class QbloxDraw:
                 )
 
         # extend the IF and phase by the length of the wf
-        for key in ["intermediate_frequency", "phase", "offset_i", "offset_q"]:
+        for key in ["intermediate_frequency", "phase", "q1asm_offset_i", "q1asm_offset_q"]:
             if param.get(f"{key}_new", False) is True:
                 param[key].extend([param[key][-1]] * (len(scaled_array) - 1))
                 param[f"{key}_new"] = False
@@ -127,7 +127,7 @@ class QbloxDraw:
         data_draw[1] = np.append(data_draw[1], (y_wait))
 
         # extend the IF and phase by the length of the wf
-        for key in ["intermediate_frequency", "phase", "offset_i", "offset_q"]:
+        for key in ["intermediate_frequency", "phase", "q1asm_offset_i", "q1asm_offset_q"]:
             if param.get(f"{key}_new", False) is True:
                 param[key].extend([param[key][-1]] * (len(y_wait) - 1))
                 param[f"{key}_new"] = False
@@ -175,7 +175,7 @@ class QbloxDraw:
         else:
             scaling_offset = param["max_voltage"]
 
-        for x, off in zip(["offset_i", "offset_q"], [offi, offq]):
+        for x, off in zip(["q1asm_offset_i", "q1asm_offset_q"], [offi, offq]):
             new_key = f"{x}_new"
             if param[new_key]:
                 param[x][-1] = off * scaling_offset / 32767
@@ -335,10 +335,16 @@ class QbloxDraw:
                 }  # retrieve runcard data if the qblox draw is called when a platform has been built
                 IF = parameters[bus]["intermediate_frequency"] * 4
                 parameters[bus]["intermediate_frequency"] = [IF]
-                parameters[bus]["offset_i"] = [parameters[bus]["offset_i"]]
-                parameters[bus]["offset_q"] = [parameters[bus]["offset_q"]]
+                parameters[bus]["static_offset_i"] = parameters[bus]["offset_i"]
+                parameters[bus]["static_offset_q"] = parameters[bus]["offset_q"]
                 if parameters[bus]["instrument_name"] == "QCM":
                     parameters[bus]["max_voltage"] = 2.5
+                    for offset in ["static_offset_i","static_offset_q"]:
+                        if parameters[bus]["hardware_modulation"]:
+                            parameters[bus][offset] = parameters[bus][offset]*1.8
+                        else:
+                            parameters[bus][offset] = parameters[bus][offset]*2.5
+
                 elif parameters[bus]["instrument_name"] == "QRM":
                     parameters[bus]["max_voltage"] = 0.5
                 else:
@@ -346,20 +352,22 @@ class QbloxDraw:
             else:  # no runcard uploaded- running qp directly
                 parameters[bus] = {}
                 parameters[bus]["intermediate_frequency"] = [0]
-                parameters[bus]["offset_i"] = [0]
-                parameters[bus]["offset_q"] = [0]
                 parameters[bus]["static_offset_i"] = [0]
                 parameters[bus]["static_offset_q"] = [0]
+                parameters[bus]["dac_offset_i"] = [0]
+                parameters[bus]["dac_offset_q"] = [0]
                 parameters[bus]["hardware_modulation"] = True  # if plotting directly from qp, plot i and q
                 parameters[bus]["max_voltage"] = 1
                 parameters[bus]["instrument_name"] = "QProgram"
+            parameters[bus]["q1asm_offset_i"] = [0]
+            parameters[bus]["q1asm_offset_q"] = [0]
             parameters[bus]["phase"] = [0]
 
             # flags to determine if the phase or freq has been updated
             parameters[bus]["phase_new"] = True
             parameters[bus]["intermediate_frequency_new"] = True
-            parameters[bus]["offset_i_new"] = True
-            parameters[bus]["offset_q_new"] = True
+            parameters[bus]["q1asm_offset_i_new"] = True
+            parameters[bus]["q1asm_offset_q_new"] = True
 
             wf1 = []
             wf2 = []
@@ -443,7 +451,7 @@ class QbloxDraw:
                     pass
 
             # remove the latest freq, phase and offset data points if nothing played after
-            for key in ["intermediate_frequency", "phase", "offset_i", "offset_q"]:
+            for key in ["intermediate_frequency", "phase", "q1asm_offset_i", "q1asm_offset_q"]:
                 if param[f"{key}_new"]:
                     param[key].pop()
             parameters[bus] = param
@@ -468,13 +476,14 @@ class QbloxDraw:
         )
 
         for idx, key in enumerate(data_keys):
-            off_i = np.array(parameters[key]["offset_i"])
-            off_q = np.array(parameters[key]["offset_q"])
+            q1asm_offset_i = np.array(parameters[key]["q1asm_offset_i"])
+            q1asm_offset_q = np.array(parameters[key]["q1asm_offset_q"])
             volt_bounds = parameters[key]["max_voltage"]
+            dac_offset_i, dac_offset_q = parameters[key]["dac_offset_i"], parameters[key]["dac_offset_q"]
             static_offset_i, static_offset_q = parameters[key]["static_offset_i"], parameters[key]["static_offset_q"]
             if not parameters[key]["hardware_modulation"]:  # if hardware modulation is disabled, do not plot Q
                 waveform_flux = np.clip(
-                    (np.array(data_draw[key][0]) + off_i + static_offset_i), -volt_bounds, volt_bounds
+                    (np.array(data_draw[key][0]) + q1asm_offset_i + static_offset_i + dac_offset_i), -volt_bounds, volt_bounds
                 )
                 data_draw[key][0] = waveform_flux
                 data_draw[key][1] = None
@@ -496,10 +505,10 @@ class QbloxDraw:
                 sin_term = np.sin(2 * np.pi * freq * t + phase)
 
                 # Add the offsets to the waveforms and ensure it is in the voltage range of the instrument
-                wf1_offsetted = np.clip((np.array(wf1) + off_i + static_offset_i), -volt_bounds, volt_bounds)
-                wf2_offsetted = np.clip((np.array(wf2) + off_q + static_offset_q), -volt_bounds, volt_bounds)
-                path0 = cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted)
-                path1 = sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted)
+                wf1_offsetted = np.clip((np.array(wf1) + q1asm_offset_i), -volt_bounds, volt_bounds)
+                wf2_offsetted = np.clip((np.array(wf2) + q1asm_offset_q), -volt_bounds, volt_bounds)
+                path0 = (cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted)) + dac_offset_i + static_offset_i
+                path1 = (sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted)) + dac_offset_q + static_offset_q
 
                 # clip the final signal
                 path0_clipped = np.clip(path0, -volt_bounds, volt_bounds)

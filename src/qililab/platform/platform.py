@@ -469,7 +469,7 @@ class Platform:
     def _data_draw_oscilloscope(self):
         """From the runcard retrieve the parameters necessary to draw the qprogram."""
         data_oscilloscope = {}
-        buses = [bus for bus in self.buses]
+        buses = list(self.buses)
         instruments = {
             instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
         }
@@ -478,8 +478,8 @@ class Platform:
                 for instrument, _ in zip(bus.instruments, bus.channels):
                     if isinstance(instrument, QbloxModule):
                         data_oscilloscope[bus.alias] = {}
-                        static_offset_i = 0
-                        static_offset_q = 0
+                        dac_offset_i = 0
+                        dac_offset_q = 0
                         parameters = [
                             Parameter.IF,
                             Parameter.GAIN_I,
@@ -491,7 +491,7 @@ class Platform:
                         for parameter in parameters:
                             val = self.get_parameter(bus.alias, parameter)
                             data_oscilloscope[bus.alias][parameter.value] = val
-
+                    
                         data_oscilloscope[bus.alias]["instrument_name"] = instrument.name.value
 
                         if instrument.name == InstrumentName.QBLOX_QCM:
@@ -501,14 +501,14 @@ class Platform:
                                 if awg.identifier == identifier[0]:
                                     for idx, out in enumerate(awg.outputs):
                                         if idx == 0:
-                                            static_offset_i = instrument.out_offsets[out]
+                                            dac_offset_i = instrument.out_offsets[out]
                                         elif idx == 1:
-                                            static_offset_q = instrument.out_offsets[out]
-                            data_oscilloscope[bus.alias]["static_offset_i"] = static_offset_i
-                            data_oscilloscope[bus.alias]["static_offset_q"] = static_offset_q
+                                            dac_offset_q = instrument.out_offsets[out]
+                            data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
+                            data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
                         else:
-                            data_oscilloscope[bus.alias]["static_offset_i"] = 0
-                            data_oscilloscope[bus.alias]["static_offset_q"] = 0
+                            data_oscilloscope[bus.alias]["dac_offset_i"] = 0
+                            data_oscilloscope[bus.alias]["dac_offset_q"] = 0
         else:
             raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
 
