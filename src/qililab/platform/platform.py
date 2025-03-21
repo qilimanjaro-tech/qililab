@@ -472,7 +472,7 @@ class Platform:
     def data_draw_oscilloscope(self):
         """From the runcard retrieve the parameters necessary to draw the qprogram."""
         data_osci = {}
-        #All the aliases of the platform in a list
+        # All the aliases of the platform in a list
         alias = [a["alias"] for a in map(asdict, self.runcard.buses)]
         buses = [self.buses.get(alias=a) for a in alias]
         instruments = {
