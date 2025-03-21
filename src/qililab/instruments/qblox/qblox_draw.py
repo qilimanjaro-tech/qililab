@@ -482,9 +482,12 @@ class QbloxDraw:
             q1asm_offset_q = np.array(parameters[key]["q1asm_offset_q"])
             volt_bounds = parameters[key]["max_voltage"]
             dac_offset_i, dac_offset_q = parameters[key]["dac_offset_i"], parameters[key]["dac_offset_q"]
-            static_offset_i, static_offset_q = parameters[key]["static_offset_i"]*volt_bounds/np.sqrt(2), parameters[key]["static_offset_q"]*volt_bounds/np.sqrt(2)
+            static_offset_i, static_offset_q = (
+                parameters[key]["static_offset_i"] * volt_bounds / np.sqrt(2),
+                parameters[key]["static_offset_q"] * volt_bounds / np.sqrt(2),
+            )
             if not parameters[key]["hardware_modulation"]:  # if hardware modulation is disabled, do not plot Q
-                static_offset_i = static_offset_i*volt_bounds
+                static_offset_i = static_offset_i * volt_bounds
                 waveform_flux = np.clip(
                     (np.array(data_draw[key][0]) + q1asm_offset_i + static_offset_i + dac_offset_i),
                     -volt_bounds,
@@ -498,7 +501,10 @@ class QbloxDraw:
                     col=1,
                 )
             else:
-                static_offset_i, static_offset_q = static_offset_i*volt_bounds/np.sqrt(2), static_offset_q*volt_bounds/np.sqrt(2)
+                static_offset_i, static_offset_q = (
+                    static_offset_i * volt_bounds / np.sqrt(2),
+                    static_offset_q * volt_bounds / np.sqrt(2),
+                )
                 wf1, wf2 = data_draw[key][0], data_draw[key][1]
                 fs = 1e9  # sampling frequency of the qblox
                 t = np.arange(0, len(wf1)) / fs
