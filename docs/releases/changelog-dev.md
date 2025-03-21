@@ -2,6 +2,10 @@
 
 ### New features since last release
 
+- An oscilloscope simulator has been implement for QBlox. It takes the sequencer as an input and plots it as if using an oscilloscope.
+  Qblox Draw can either be called through the platform (adding the knowledge of the runcard) or qprogram directly.
+  [#899](https://github.com/qilimanjaro-tech/qililab/pull/899)
+
 ### Improvements
 
 - Now the Rohde & Schwarz will return an error after a limit of frequency or power is reached based on the machine's version.
