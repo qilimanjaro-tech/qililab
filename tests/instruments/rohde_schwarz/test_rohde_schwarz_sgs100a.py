@@ -1,5 +1,6 @@
 """Tests for the SGS100A class."""
 
+import re
 import warnings
 from unittest.mock import MagicMock, patch
 
@@ -15,8 +16,8 @@ def fixture_sdg100a() -> SGS100A:
     sdg100a = SGS100A(
         {
             "alias": "qdac",
-            "power": 100,
-            "frequency": 1e6,
+            "power": 10,
+            "frequency": 80e6,
             "rf_on": True,
             "iq_modulation": True,
             "iq_wideband": True,
@@ -33,8 +34,8 @@ def fixture_sdg100a_iq() -> SGS100A:
     sdg100a_iq = SGS100A(
         {
             "alias": "qdac",
-            "power": 100,
-            "frequency": 1e6,
+            "power": 10,
+            "frequency": 80e6,
             "rf_on": True,
             "iq_modulation": True,
             "iq_wideband": True,
@@ -51,8 +52,8 @@ def fixture_sdg100a_rf_off() -> SGS100A:
     sdg100a_rf_off = SGS100A(
         {
             "alias": "qdac",
-            "power": 100,
-            "frequency": 1e6,
+            "power": 10,
+            "frequency": 80e6,
             "rf_on": False,
             "iq_modulation": True,
             "iq_wideband": True,
@@ -69,8 +70,8 @@ def fixture_sdg100a_alc_off() -> SGS100A:
     sdg100a_alc_off = SGS100A(
         {
             "alias": "qdac",
-            "power": 100,
-            "frequency": 1e6,
+            "power": 10,
+            "frequency": 80e6,
             "rf_on": True,
             "iq_modulation": True,
             "iq_wideband": True,
@@ -87,8 +88,8 @@ def fixture_sdg100a_iq_mod_off() -> SGS100A:
     sdg100a_iq_mod_off = SGS100A(
         {
             "alias": "qdac",
-            "power": 100,
-            "frequency": 1e6,
+            "power": 10,
+            "frequency": 80e6,
             "rf_on": True,
             "iq_modulation": False,
             "iq_wideband": True,
@@ -105,8 +106,8 @@ def fixture_sdg100a_wideband_off() -> SGS100A:
     sdg100a_wideband_off = SGS100A(
         {
             "alias": "qdac",
-            "power": 100,
-            "frequency": 1e6,
+            "power": 10,
+            "frequency": 80e6,
             "rf_on": True,
             "iq_modulation": True,
             "iq_wideband": False,
@@ -123,7 +124,7 @@ def fixture_sdg100a_wideband_off_large_freq() -> SGS100A:
     sdg100a_wideband_off_large_freq = SGS100A(
         {
             "alias": "qdac",
-            "power": 100,
+            "power": 10,
             "frequency": 5e9,
             "rf_on": True,
             "iq_modulation": True,
@@ -133,6 +134,42 @@ def fixture_sdg100a_wideband_off_large_freq() -> SGS100A:
     )
     sdg100a_wideband_off_large_freq.device = MagicMock()
     return sdg100a_wideband_off_large_freq
+
+
+@pytest.fixture(name="sdg100a_wrong_power")
+def fixture_sdg100a_wrong_power() -> SGS100A:
+    """Fixture that returns an instance of a dummy QDAC-II."""
+    sdg100a_wrong_power = SGS100A(
+        {
+            "alias": "qdac",
+            "power": 100,
+            "frequency": 80e6,
+            "rf_on": True,
+            "iq_modulation": True,
+            "iq_wideband": True,
+            "alc": True,
+        }
+    )
+    sdg100a_wrong_power.device = MagicMock()
+    return sdg100a_wrong_power
+
+
+@pytest.fixture(name="sdg100a_wrong_freq")
+def fixture_sdg100a_wrong_freq() -> SGS100A:
+    """Fixture that returns an instance of a dummy QDAC-II."""
+    sdg100a_wrong_freq= SGS100A(
+        {
+            "alias": "qdac",
+            "power": 10,
+            "frequency": 13e9,
+            "rf_on": True,
+            "iq_modulation": True,
+            "iq_wideband": True,
+            "alc": True,
+        }
+    )
+    sdg100a_wrong_freq.device = MagicMock()
+    return sdg100a_wrong_freq
 
 
 class TestSGS100A:
@@ -178,8 +215,8 @@ class TestSGS100A:
     @pytest.mark.parametrize(
         "parameter, expected_value",
         [
-            (Parameter.POWER, 100),
-            (Parameter.LO_FREQUENCY, 1e6),
+            (Parameter.POWER, 10),
+            (Parameter.LO_FREQUENCY, 80e6),
             (Parameter.RF_ON, True),
             (Parameter.IQ_MODULATION, True),
             (Parameter.ALC, True),
@@ -218,17 +255,21 @@ class TestSGS100A:
         sdg100a.device.off.assert_called_once()
 
         mock_warn.assert_any_call(
-            "LO frequency below 2.5GHz only allows for IF sweeps of ±2.00e+05 Hz", ResourceWarning
+            "LO frequency below 2.5GHz only allows for IF sweeps of ±1.60e+07 Hz", ResourceWarning
         )
 
-    def test_initial_setup_method_iq_mod_off(self, sdg100a_iq_mod_off: SGS100A):
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method_iq_mod_off(self, mock_get_rs_options, sdg100a_iq_mod_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
         sdg100a_iq_mod_off.initial_setup()
         assert sdg100a_iq_mod_off.settings.iq_modulation is False
         assert sdg100a_iq_mod_off.iq_modulation is False
 
-    def test_initial_setup_method_alc_off(self, sdg100a_alc_off: SGS100A):
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method_alc_off(self, mock_get_rs_options, sdg100a_alc_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
         sdg100a_alc_off.initial_setup()
         assert sdg100a_alc_off.settings.alc is False
         assert sdg100a_alc_off.alc is False
@@ -244,7 +285,7 @@ class TestSGS100A:
         assert sdg100a_wideband_off.iq_modulation is True
 
         mock_warn.assert_any_call(
-            "Deactivated wideband & LO frequency below 1GHz allows for IF sweeps of ±5.00e+04 Hz", ResourceWarning
+            "Deactivated wideband & LO frequency below 1GHz allows for IF sweeps of ±4.00e+06 Hz", ResourceWarning
         )
 
     @patch("warnings.warn")
@@ -260,6 +301,33 @@ class TestSGS100A:
         assert sdg100a_wideband_off_large_freq.iq_modulation is True
 
         mock_warn.assert_any_call("Deactivated wideband allows for IF sweeps of ±50e6 Hz", ResourceWarning)
+
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_sets_correct_freq_range(self, mock_get_rs_options, sdg100a: SGS100A):
+        """Test initial setup method"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B112"
+        sdg100a.initial_setup()
+        assert sdg100a.freq_top_limit == 12.75e9
+        assert sdg100a.freq_bot_limit == 1e6
+
+        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
+        sdg100a.initial_setup()
+        assert sdg100a.freq_top_limit == 12.75e9
+        assert sdg100a.freq_bot_limit == 80e6
+
+        mock_get_rs_options.return_value = "Some,other,SGS-B106"
+        sdg100a.initial_setup()
+        assert sdg100a.freq_top_limit == 6e9
+        assert sdg100a.freq_bot_limit == 1e6
+
+        mock_get_rs_options.return_value = "Some,other,SGS-B106V"
+        sdg100a.initial_setup()
+        assert sdg100a.freq_top_limit == 6e9
+        assert sdg100a.freq_bot_limit == 80e6
+
+    def test_get_rs_options(self, sdg100a: SGS100A):
+        sdg100a.get_rs_options()
+        sdg100a.device.ask.assert_called_once()
 
     def test_turn_on_method_rf_off(self, sdg100a_rf_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
@@ -282,3 +350,17 @@ class TestSGS100A:
     def test_reset_method(self, sdg100a: SGS100A):
         """Test reset method"""
         sdg100a.reset()
+
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_raise_error_power_out_of_range(self, mock_get_rs_options, sdg100a_wrong_power: SGS100A):
+        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
+        error_string = "Value set for power is outside of the allowed range [-120,25]: 100"
+        with pytest.raises(ValueError, match=re.escape(error_string)):
+            sdg100a_wrong_power.initial_setup()
+
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_raise_error_freq_out_of_range(self, mock_get_rs_options, sdg100a_wrong_freq: SGS100A):
+        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
+        error_string = "Value set for frequency is outside of the allowed range [80000000.0, 12750000000.0]: 13000000000.0"
+        with pytest.raises(ValueError, match=re.escape(error_string)):
+            sdg100a_wrong_freq.initial_setup()

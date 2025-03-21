@@ -6,7 +6,7 @@ qcodes_contrib_drivers==0.18.0
 PyVISA-py==0.7.1
 tqdm==4.64.1
 urllib3==1.26.12
-qpysequence==0.10.4
+qpysequence==0.10.7
 h5py==3.11.0
 papermill==2.4.0
 qm-qua==1.2.1
