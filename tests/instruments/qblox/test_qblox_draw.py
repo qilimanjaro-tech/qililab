@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 from qililab.data_management import build_platform
-from tests.data import Galadriel
+from tests.data import Galadriel, SauronQuantumMachines
 from qililab import Domain, QbloxCompiler, QProgram, Square
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.platform import Platform
@@ -92,11 +92,20 @@ def qp_plat_draw_qrm() -> QProgram:
     qp.wait("feedline_input_output_bus", 10)
     return qp
 
+@pytest.fixture(name="qp_quantum_machine")
+def qp_quantum_machine() -> QProgram:
+    qp = QProgram()
+    qp.play(bus="drive_q0", waveform=Square(amplitude=1, duration=10))
+    qp.wait("drive_q0", 10)
+    return qp
+
 @pytest.fixture(name="platform")
 def fixture_platform():
     return build_platform(runcard=Galadriel.runcard)
 
-
+@pytest.fixture(name="platform_quantum_machines")
+def fixture_platform_quantum_machines():
+    return build_platform(runcard=SauronQuantumMachines.runcard)
 class TestQBloxDraw:
     def test_parsing(self, parsing: QProgram):
         compiler = QbloxCompiler()
@@ -108,11 +117,12 @@ class TestQBloxDraw:
             ("move", "400000000, R1", (), 1),
             ("move", "2, R2", ("loop_0",), 2),
             ("set_freq", "R1", ("loop_0", "avg_0"), 3),
-            ("play", "0, 1, 10", ("loop_0", "avg_0"), 4),
-            ("wait", "10", ("loop_0", "avg_0"), 5),
-            ("loop", "R2, @avg_0", ("loop_0", "avg_0"), 6),
-            ("add", "R1, 200000000, R1", ("loop_0",), 7),
-            ("loop", "R0, @loop_0", ("loop_0",), 8),
+            ("set_freq", "R1", ("loop_0", "avg_0"), 4),
+            ("play", "0, 1, 10", ("loop_0", "avg_0"), 5),
+            ("wait", "10", ("loop_0", "avg_0"), 6),
+            ("loop", "R2, @avg_0", ("loop_0", "avg_0"), 7),
+            ("add", "R1, 200000000, R1", ("loop_0",), 8),
+            ("loop", "R0, @loop_0", ("loop_0",), 9),
         ]
         assert parsing["drive"]["program"]["main"] == expected_parsing
 
@@ -233,3 +243,8 @@ class TestQBloxDraw:
         np.testing.assert_allclose(data_draw["feedline_input_output_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         assert data_draw["feedline_input_output_bus"][1] is None
 
+    def platform_draw_quantum_machine_raises_error(self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform):
+        with pytest.raises(
+            NotImplementedError("The drawing feature is currently only supported for QBlox.")
+        ):
+            platform_quantum_machines.draw_oscilloscope_platform(qp_quantum_machine)

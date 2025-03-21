@@ -300,6 +300,9 @@ class Platform:
         self.name = runcard.name
         """Name of the platform (``str``) """
 
+        self.runcard = runcard
+        """All runcard data"""
+
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
         """All the instruments of the platform and their necessary settings (``dataclass``). Each individual instrument is contained in a list within the dataclass."""
 
@@ -315,9 +318,6 @@ class Platform:
 
         self.digital_compilation_settings = runcard.digital
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
-
-        self.alias = [a["alias"] for a in map(asdict, runcard.buses)]
-        """All the aliases of the platform in a list"""
 
         self.analog_compilation_settings = runcard.analog
         """Flux to bus mapping for analog control"""
@@ -472,7 +472,9 @@ class Platform:
     def data_draw_oscilloscope(self):
         """From the runcard retrieve the parameters necessary to draw the qprogram."""
         data_osci = {}
-        buses = [self.buses.get(alias=a) for a in self.alias]
+        #All the aliases of the platform in a list
+        alias = [a["alias"] for a in map(asdict, self.runcard.buses)]
+        buses = [self.buses.get(alias=a) for a in alias]
         instruments = {
             instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
         }
@@ -512,6 +514,8 @@ class Platform:
                         else:
                             data_osci[bus.alias]["static_offset_i"] = 0
                             data_osci[bus.alias]["static_offset_q"] = 0
+        else:
+            raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
 
         data_oscillocope = {}
         for bus, bus_param in data_osci.items():
@@ -1301,5 +1305,4 @@ class Platform:
         draw = QbloxDraw()
         results = self.compile_qprogram(qprogram)
         result = draw.draw_oscilloscope(results, runcard_data, averages_displayed)
-        logger.warning("The drawing feature is currently only supported for QBlox.")
         return result
