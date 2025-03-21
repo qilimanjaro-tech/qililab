@@ -308,7 +308,13 @@ class QbloxDraw:
                         if ("@" + la) in numerical_value:
                             loop_label = tuple(l for l in loop_label if l != la)
                 sequence["program"] = program_parsed
-            del sequence["program"]["main"][-3:]  # delete the last 3 lines of the Q1ASM that are always hardcoded - tempers with the _new flag later on if not removed here
+            del sequence[
+                "program"
+            ][
+                "main"
+            ][
+                -3:
+            ]  # delete the last 3 lines of the Q1ASM that are always hardcoded - tempers with the _new flag later on if not removed here
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
@@ -341,11 +347,11 @@ class QbloxDraw:
                 parameters[bus]["static_offset_q"] = parameters[bus]["offset_q"]
                 if parameters[bus]["instrument_name"] == "QCM":
                     parameters[bus]["max_voltage"] = 2.5
-                    for offset in ["static_offset_i","static_offset_q"]:
+                    for offset in ["static_offset_i", "static_offset_q"]:
                         if parameters[bus]["hardware_modulation"]:
-                            parameters[bus][offset] = parameters[bus][offset]*1.8
+                            parameters[bus][offset] = parameters[bus][offset] * 1.8
                         else:
-                            parameters[bus][offset] = parameters[bus][offset]*2.5
+                            parameters[bus][offset] = parameters[bus][offset] * 2.5
 
                 elif parameters[bus]["instrument_name"] == "QRM":
                     parameters[bus]["max_voltage"] = 0.5
@@ -485,7 +491,9 @@ class QbloxDraw:
             static_offset_i, static_offset_q = parameters[key]["static_offset_i"], parameters[key]["static_offset_q"]
             if not parameters[key]["hardware_modulation"]:  # if hardware modulation is disabled, do not plot Q
                 waveform_flux = np.clip(
-                    (np.array(data_draw[key][0]) + q1asm_offset_i + static_offset_i + dac_offset_i), -volt_bounds, volt_bounds
+                    (np.array(data_draw[key][0]) + q1asm_offset_i + static_offset_i + dac_offset_i),
+                    -volt_bounds,
+                    volt_bounds,
                 )
                 data_draw[key][0] = waveform_flux
                 data_draw[key][1] = None
@@ -509,8 +517,16 @@ class QbloxDraw:
                 # Add the offsets to the waveforms and ensure it is in the voltage range of the instrument
                 wf1_offsetted = np.clip((np.array(wf1) + q1asm_offset_i), -volt_bounds, volt_bounds)
                 wf2_offsetted = np.clip((np.array(wf2) + q1asm_offset_q), -volt_bounds, volt_bounds)
-                path0 = (cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted)) + dac_offset_i + static_offset_i
-                path1 = (sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted)) + dac_offset_q + static_offset_q
+                path0 = (
+                    (cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted))
+                    + dac_offset_i
+                    + static_offset_i
+                )
+                path1 = (
+                    (sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted))
+                    + dac_offset_q
+                    + static_offset_q
+                )
 
                 # clip the final signal
                 path0_clipped = np.clip(path0, -volt_bounds, volt_bounds)
