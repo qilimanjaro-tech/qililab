@@ -1,0 +1,278 @@
+name: QD_qinu
+
+buses:
+  - alias: drive
+    instruments: [QCM1]
+    channels: [1]
+
+  - alias: flux1
+    instruments: [QCM1]
+    channels: [2]
+
+  - alias: readoutB
+    instruments: [QCM1]
+    channels: [3]
+
+  - alias: drive2
+    instruments: [QCM1]
+    channels: [4]
+
+  - alias: readout
+    instruments: [QRM1]
+    channels: [5]
+
+  # - alias: readoutC
+  #   instruments: [QRM-RF1]
+  #   channels: [2]
+
+  # - alias: flux_ax
+  #   instruments: [qdac2]
+  #   channels: [None]
+
+  # - alias: flux_az
+  #   instruments: [qdac2]
+  #   channels: [None]
+
+  # - alias: flux_bx
+  #   instruments: [qdac2]
+  #   channels: [None]
+
+  # - alias: flux_bz
+  #   instruments: [qdac2]
+  #   channels: [None]
+
+  # - alias: flux_cx
+  #   instruments: [qdac2]
+  #   channels: [None]
+
+  # - alias: flux_cz
+  #   instruments: [qdac2]
+  #   channels: [None]
+
+instruments:
+- name: QCM
+  alias: QCM1
+  out_offsets:
+  - 0
+  - 0
+  - 0
+  - 0
+  awg_sequencers:
+  - identifier: 1
+    outputs: [0,1]
+    intermediate_frequency: 0
+    gain_imbalance: 1
+    phase_imbalance: 0
+    hardware_modulation: true
+    gain_i: 1
+    gain_q: 1.0
+    offset_i: 0
+    offset_q: 0
+
+  - identifier: 2
+    outputs: [2]
+    intermediate_frequency: 0
+    gain_imbalance: 1.0
+    phase_imbalance: 0.0
+    hardware_modulation: true
+    gain_i: 1
+    gain_q: 1.0
+    offset_i: 0
+    offset_q: 0
+
+  - identifier: 3
+    outputs: [3]
+    intermediate_frequency: 0
+    gain_imbalance: 1.0
+    phase_imbalance: 0.0
+    hardware_modulation: true
+    gain_i: 1
+    gain_q: 1.0
+    offset_i: 0
+    offset_q: 0
+
+  - identifier: 4
+    outputs: [0,1]
+    intermediate_frequency: 0
+    gain_imbalance: 0.5
+    phase_imbalance: -45
+    hardware_modulation: true
+    gain_i: 1
+    gain_q: 1.0
+    offset_i: 0
+    offset_q: 0
+
+- name: QRM
+  alias: QRM1
+  out_offsets:
+  - 0
+  - 0
+  awg_sequencers:
+  - identifier: 5
+    outputs:
+    - 0
+    intermediate_frequency: 0
+    gain_imbalance: 1.0
+    phase_imbalance: 0.0
+    hardware_modulation: true
+    gain_i: 1.0
+    gain_q: 1.0
+    offset_i: 0.0
+    offset_q: 0.0
+    scope_acquire_trigger_mode: sequencer
+    scope_hardware_averaging: true
+    sampling_rate: 1000000000.0
+    hardware_demodulation: true
+    integration_length: 1100
+    integration_mode: ssb
+    sequence_timeout: 60
+    acquisition_timeout: 60
+    scope_store_enabled: false
+    threshold: 0.00019330455351026057
+    threshold_rotation: 5.201538252600354
+    time_of_flight: 200
+    
+# - name: QRMRF
+#   alias: QRMRF
+#   out0_in0_lo_freq: 6.4e+9
+#   out0_in0_lo_en: true
+#   out0_att: 26
+#   in0_att: 0
+#   out0_offset_path0: 0.0
+#   out0_offset_path1: 0.0
+#   awg_sequencers:
+#   - identifier: 10
+    # outputs:
+    # - [0,1]
+    # intermediate_frequency: -79.965916e6
+    # gain_imbalance: 1.0
+    # phase_imbalance: 0.0
+    # hardware_modulation: true
+    # gain_i: 1.0
+    # gain_q: 1.0
+    # offset_i: 0.0
+    # offset_q: 0.0
+    # scope_acquire_trigger_mode: sequencer
+    # scope_hardware_averaging: true
+    # sampling_rate: 1000000000.0
+    # hardware_demodulation: true
+    # integration_length: 2100
+    # integration_mode: ssb
+    # sequence_timeout: 60
+    # acquisition_timeout: 60
+    # scope_store_enabled: false
+    # threshold: 0.004857990128730904
+    # threshold_rotation: 70.81499971416426
+    # time_of_flight: 252
+
+#   - identifier: 1
+#     outputs:
+#     - 0
+#     intermediate_frequency: 121e+06
+#     gain_imbalance: 1.0
+#     phase_imbalance: 0.0
+#     hardware_modulation: true
+#     gain_i: 1.0
+#     gain_q: 1.0
+#     offset_i: 0.0
+#     offset_q: 0.0
+#     scope_acquire_trigger_mode: sequencer
+#     scope_hardware_averaging: true
+#     sampling_rate: 1000000000.0
+#     hardware_demodulation: true
+#     integration_length: 2100
+#     integration_mode: ssb
+#     sequence_timeout: 60
+#     acquisition_timeout: 60
+#     scope_store_enabled: false
+#     threshold: 0.004857990128730904
+#     threshold_rotation: 70.81499971416426
+#     time_of_flight: 252
+
+#   - identifier: 2
+#     outputs:
+#     - 0
+#     intermediate_frequency: 246e+06
+#     gain_imbalance: 1.0
+#     phase_imbalance: 0.0
+#     hardware_modulation: true
+#     gain_i: 1.0
+#     gain_q: 1.0
+#     offset_i: 0.0
+#     offset_q: 0.0
+#     scope_acquire_trigger_mode: sequencer
+#     scope_hardware_averaging: true
+#     sampling_rate: 1000000000.0
+#     hardware_demodulation: true
+#     integration_length: 2100
+#     integration_mode: ssb
+#     sequence_timeout: 60
+#     acquisition_timeout: 60
+#     scope_store_enabled: false
+#     threshold: 0.004857990128730904
+#     threshold_rotation: 70.81499971416426
+#     time_of_flight: 252
+
+# - name: qdevil_qdac2
+#   alias: qdac2
+#   voltage: [0.0, 0.0]             # in V, [flux X, flux Z]
+#   ramping_enabled: [True, True]   # True/False
+#   ramp_rate: [2e5, 2e5] # in V/s
+#   span: [high, high]  # can be either low or high
+#   low_pass_filter: [dc, dc ] # can be dc, low or high
+#   dacs: [5,6,17,19]
+
+# - name: rohde_schwarz
+#   alias: rs_1
+#   firmware: 4.2.76.0-4.30.046.295
+#   power: 13
+#   frequency: 7e9
+#   rf_on: False
+
+instrument_controllers:
+- name: qblox_cluster
+  alias: cluster_controller_0
+  connection:
+    name: tcp_ip
+    address: 192.168.1.50
+  modules:
+  # - alias: QRM-RF1
+  #   slot_id: 2
+  - alias: QCM1
+    slot_id: 7
+  - alias: QRM1
+    slot_id: 10
+  reset: true
+  reference_clock: internal
+
+# - name: qdevil_qdac2
+#   alias: qdac2_controller
+#   reset: false
+#   connection:
+#     name: tcp_ip #Maybe try:   name: usb
+#     address: xx #    address: ttyUSB2  # Can change if you reconnect the QDAC to the server
+#   modules:
+#     - alias: qdac2
+#       slot_id: 0
+
+# - name: rohde_schwarz
+#   alias: rohde_schwarz_controller_1
+#   connection:
+#     name: tcp_ip
+#     address: 192.168.1.11
+#   modules:
+#   - alias: rs_1
+#     slot_id: 0
+#   reset: true
+#   reference_clock: int
+
+# - name: rohde_schwarz
+#   alias: rohde_schwarz_controller
+#   connection:
+#     name: tcp_ip
+#     address: 192.168.1.15
+#   modules:
+#   - alias: rs_1
+#     slot_id: 0
+#   reset: true
+#   reference_clock: int
