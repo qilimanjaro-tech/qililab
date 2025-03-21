@@ -193,7 +193,7 @@ class TestQBloxDraw:
         0.00000000e+00,  0.00000000e+00,  0.00000000e+00, -0.00000000e+00,
        -0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00]
 
-        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcmrf)
+        data_draw = platform.draw_oscilloscope(qp_plat_draw_qcmrf)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
@@ -207,7 +207,7 @@ class TestQBloxDraw:
         0.3535426 ,  0.4938291 ,  0.44548967,  0.22698832, -0.07821485,
        -0.3535426 , -0.4938291 , -0.44548967, -0.22698832,  0.07821485]
         
-        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcmrf_offset)
+        data_draw = platform.draw_oscilloscope(qp_plat_draw_qcmrf_offset)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
@@ -215,7 +215,7 @@ class TestQBloxDraw:
         expected_data_draw_i = [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 0. , 0. , 0. ,
        0. , 0. , 0. , 0. , 0. , 0. , 0. ]
 
-        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcm)
+        data_draw = platform.draw_oscilloscope(qp_plat_draw_qcm)
         np.testing.assert_allclose(data_draw["drive_line_q0_bus"][0], expected_data_draw_i, rtol=1e-9, atol=1e-12)
         assert data_draw["drive_line_q0_bus"][1] is None
 
@@ -225,7 +225,7 @@ class TestQBloxDraw:
        1.24996185, 1.24996185, 1.24996185, 1.24996185, 1.24996185,
        1.24996185, 1.24996185, 1.24996185, 1.24996185, 1.24996185]
 
-        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qcm_offset)
+        data_draw = platform.draw_oscilloscope(qp_plat_draw_qcm_offset)
         np.testing.assert_allclose(data_draw["drive_line_q0_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         assert data_draw["drive_line_q0_bus"][1] is None
 
@@ -239,7 +239,7 @@ class TestQBloxDraw:
         expected_data_draw_i = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0. , 0. , 0. ,
        0. , 0. , 0. , 0. , 0. , 0. , 0.]
 
-        data_draw = platform.draw_oscilloscope_platform(qp_plat_draw_qrm)
+        data_draw = platform.draw_oscilloscope(qp_plat_draw_qrm)
         np.testing.assert_allclose(data_draw["feedline_input_output_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         assert data_draw["feedline_input_output_bus"][1] is None
 
@@ -247,4 +247,4 @@ class TestQBloxDraw:
         with pytest.raises(
             NotImplementedError("The drawing feature is currently only supported for QBlox.")
         ):
-            platform_quantum_machines.draw_oscilloscope_platform(qp_quantum_machine)
+            platform_quantum_machines.draw_oscilloscope(qp_quantum_machine)

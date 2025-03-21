@@ -300,9 +300,6 @@ class Platform:
         self.name = runcard.name
         """Name of the platform (``str``) """
 
-        self.runcard = runcard
-        """All runcard data"""
-
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
         """All the instruments of the platform and their necessary settings (``dataclass``). Each individual instrument is contained in a list within the dataclass."""
 
@@ -469,12 +466,10 @@ class Platform:
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
 
-    def data_draw_oscilloscope(self):
+    def _data_draw_oscilloscope(self):
         """From the runcard retrieve the parameters necessary to draw the qprogram."""
-        data_osci = {}
-        # All the aliases of the platform in a list
-        alias = [a["alias"] for a in map(asdict, self.runcard.buses)]
-        buses = [self.buses.get(alias=a) for a in alias]
+        data_oscilloscope = {}
+        buses = [bus for bus in self.buses]
         instruments = {
             instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
         }
@@ -482,10 +477,10 @@ class Platform:
             for bus in buses:
                 for instrument, _ in zip(bus.instruments, bus.channels):
                     if isinstance(instrument, QbloxModule):
-                        data_osci[bus.alias] = {}
+                        data_oscilloscope[bus.alias] = {}
                         static_offset_i = 0
                         static_offset_q = 0
-                        param = [
+                        parameters = [
                             Parameter.IF,
                             Parameter.GAIN_I,
                             Parameter.GAIN_Q,
@@ -493,11 +488,11 @@ class Platform:
                             Parameter.OFFSET_Q,
                             Parameter.HARDWARE_MODULATION,
                         ]
-                        for p in param:
-                            val = self.get_parameter(bus.alias, p)
-                            data_osci[bus.alias][p] = val
+                        for parameter in parameters:
+                            val = self.get_parameter(bus.alias, parameter)
+                            data_oscilloscope[bus.alias][parameter.value] = val
 
-                        data_osci[bus.alias]["instrument_name"] = instrument.name.value
+                        data_oscilloscope[bus.alias]["instrument_name"] = instrument.name.value
 
                         if instrument.name == InstrumentName.QBLOX_QCM:
                             # retrieve the set offset and assign it to the bus
@@ -509,25 +504,15 @@ class Platform:
                                             static_offset_i = instrument.out_offsets[out]
                                         elif idx == 1:
                                             static_offset_q = instrument.out_offsets[out]
-                            data_osci[bus.alias]["static_offset_i"] = static_offset_i
-                            data_osci[bus.alias]["static_offset_q"] = static_offset_q
+                            data_oscilloscope[bus.alias]["static_offset_i"] = static_offset_i
+                            data_oscilloscope[bus.alias]["static_offset_q"] = static_offset_q
                         else:
-                            data_osci[bus.alias]["static_offset_i"] = 0
-                            data_osci[bus.alias]["static_offset_q"] = 0
+                            data_oscilloscope[bus.alias]["static_offset_i"] = 0
+                            data_oscilloscope[bus.alias]["static_offset_q"] = 0
         else:
             raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
 
-        data_oscillocope = {}
-        for bus, bus_param in data_osci.items():
-            data_oscillocope[bus] = {}
-            for param, value in bus_param.items():
-                try:
-                    data_oscillocope[bus][param.value] = value
-
-                except AttributeError:
-                    data_oscillocope[bus][param] = value
-
-        return data_oscillocope
+        return data_oscilloscope
 
     def set_parameter(
         self,
@@ -1432,7 +1417,7 @@ class Platform:
 
         return compiled_programs, final_layout
 
-    def draw_oscilloscope_platform(self, qprogram: QProgram, averages_displayed: bool = False):
+    def draw_oscilloscope(self, qprogram: QProgram, averages_displayed: bool = False):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -1440,7 +1425,7 @@ class Platform:
                                         The default is False.
         """
 
-        runcard_data = self.data_draw_oscilloscope()
+        runcard_data = self._data_draw_oscilloscope()
         draw = QbloxDraw()
         results = self.compile_qprogram(qprogram)
         result = draw.draw_oscilloscope(results, runcard_data, averages_displayed)

@@ -41,7 +41,7 @@ class QbloxDraw:
         elif action_type == "set_awg_offs":
             param = self._handle_gain_offset(program_line, param)
         elif action_type == "set_awg_gain":
-            param = self._handle_gain_draw(program_line, param, "gain", 1)
+            param = self._handle_gain_draw(program_line, param, 1, register)
         elif action_type == "play":
             data_draw = self._handle_play_draw(data_draw, program_line, waveform_seq, param)
         elif action_type == "wait":
@@ -135,7 +135,7 @@ class QbloxDraw:
                 param[key].extend([param[key][-1]] * len(y_wait))
         return data_draw
 
-    def _handle_gain_draw(self, program_line, param, key, default):
+    def _handle_gain_draw(self, program_line, param, default, register):
         """Updates the param dictionary when a gain is set in the program
 
         Args:
@@ -148,8 +148,11 @@ class QbloxDraw:
         Returns:
             Appends the param dictionary
         """
-        i_val, q_val = (float(x) / 32767 for x in program_line[1].split(","))
-        param[f"{key}_i"], param[f"{key}_q"] = i_val or default, q_val or default
+        i_val, q_val = program_line[1].split(", ")
+        i_val = float(self._get_value(i_val, register)) / 32767
+        q_val = float(self._get_value(q_val, register)) / 32767
+
+        param["gain_i"], param["gain_q"] = i_val or default, q_val or default
         return param
 
     def _handle_gain_offset(self, program_line, param):
