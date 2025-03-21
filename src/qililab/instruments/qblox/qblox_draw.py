@@ -273,6 +273,8 @@ class QbloxDraw:
                 stripped_line = line.strip()
                 if stripped_line.startswith("reset_ph"):
                     processed_lines.append("reset_ph             2")
+                elif stripped_line.startswith("nop"):
+                    processed_lines.append("nop             2")
                 else:
                     processed_lines.append(stripped_line)
             line_data = "\n".join(processed_lines)
@@ -310,7 +312,7 @@ class QbloxDraw:
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
-    def draw_oscilloscope(self, result, runcard_data=None, averages_displayed=False):
+    def draw(self, result, runcard_data=None, averages_displayed=False):
         """Parses the program dictionary of the sequence.
         Args:
             result: compilation of the qprogram, this is done either at the platform or qprogram level

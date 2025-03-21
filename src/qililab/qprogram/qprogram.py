@@ -718,7 +718,7 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-    def draw_oscilloscope(self, averages_displayed=False):
+    def draw(self, averages_displayed=False):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -729,9 +729,9 @@ class QProgram(StructuredProgram):
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
         from qililab.qprogram.qblox_compiler import QbloxCompiler
 
-        draw = QbloxDraw()
+        qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         results = compiler.compile(self)
-        result_draw = draw.draw_oscilloscope(result=results, averages_displayed=averages_displayed)
+        result_draw = qblox_draw.draw(result=results, averages_displayed=averages_displayed)
         logger.warning("The drawing feature is currently only supported for QBlox.")
         return result_draw

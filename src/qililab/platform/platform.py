@@ -466,7 +466,7 @@ class Platform:
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
 
-    def _data_draw_oscilloscope(self):
+    def _data_draw(self):
         """From the runcard retrieve the parameters necessary to draw the qprogram."""
         data_oscilloscope = {}
         buses = list(self.buses)
@@ -489,13 +489,12 @@ class Platform:
                             Parameter.HARDWARE_MODULATION,
                         ]
                         for parameter in parameters:
-                            val = self.get_parameter(bus.alias, parameter)
-                            data_oscilloscope[bus.alias][parameter.value] = val
-                    
+                            data_oscilloscope[bus.alias][parameter.value] = self.get_parameter(bus.alias, parameter)
+
                         data_oscilloscope[bus.alias]["instrument_name"] = instrument.name.value
 
-                        if instrument.name == InstrumentName.QBLOX_QCM:
-                            # retrieve the set offset and assign it to the bus
+                        if instrument.name == InstrumentName.QBLOX_QCM or instrument.name == InstrumentName.QBLOX_QRM:
+                            # retrieve the dac offset and assign it to the bus
                             identifier = bus.channels
                             for awg in instrument.awg_sequencers:
                                 if awg.identifier == identifier[0]:
@@ -1417,7 +1416,7 @@ class Platform:
 
         return compiled_programs, final_layout
 
-    def draw_oscilloscope(self, qprogram: QProgram, averages_displayed: bool = False):
+    def draw(self, qprogram: QProgram, averages_displayed: bool = False):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -1425,8 +1424,8 @@ class Platform:
                                         The default is False.
         """
 
-        runcard_data = self._data_draw_oscilloscope()
-        draw = QbloxDraw()
+        runcard_data = self._data_draw()
+        qblox_draw = QbloxDraw()
         results = self.compile_qprogram(qprogram)
-        result = draw.draw_oscilloscope(results, runcard_data, averages_displayed)
+        result = qblox_draw.draw(results, runcard_data, averages_displayed)
         return result
