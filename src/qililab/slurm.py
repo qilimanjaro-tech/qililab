@@ -105,12 +105,15 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     executable_code = "\n".join([*import_lines, cell])
 
     # Create the executor that will be used to queue the SLURM job
+    slurm_additional_parameters = {"begin": begin_time, "nice": nice_factor}
+    if gres:
+        slurm_additional_parameters |= {"gres": f"{gres}:1"}
     executor = AutoExecutor(folder=folder_path, cluster=execution_env)
     executor.update_parameters(
         slurm_partition=partition,
         name=job_name,
         timeout_min=time_limit,
-        slurm_additional_parameters={"begin": begin_time, "nice": nice_factor, "gres": f"{gres}:1"},
+        slurm_additional_parameters=slurm_additional_parameters,
     )
 
     # Compile the code defined above
