@@ -1,0 +1,3307 @@
+name: contralto_saruman
+instruments:
+- type: qcm
+  settings:
+    alias: QCM1
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      hardware_modulation: false
+      intermediate_frequency:
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 0.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 2
+      outputs:
+      - 2
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 3
+      outputs:
+      - 3
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    outputs:
+    - port: 0
+      offset: 0.8723305525481191
+    - port: 1
+      offset: -0.23927553445523486
+    - port: 2
+      offset: -0.6919012423743078
+    - port: 3
+      offset: 1.0578429791427564
+- type: qcm
+  settings:
+    alias: QCM2
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 2
+      outputs:
+      - 2
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 3
+      outputs:
+      - 3
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    outputs:
+    - port: 0
+      offset: -1.5678903511073448
+    - port: 1
+      offset: 2.446543
+    - port: 2
+      offset: 0.379771
+    - port: 3
+      offset: 0.0
+- type: qcm
+  settings:
+    alias: QCM3
+    channels:
+      - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 2
+      outputs:
+      - 2
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 3
+      outputs:
+      - 3
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    outputs:
+      - port: 0
+        offset: 0.3557149778820273
+      - port: 1
+        offset: 0.21593124215235268
+      - port: 2
+        offset: 0.504451934233825
+      - port: 3
+        offset: -0.1816897785220797
+- type: QCM
+  settings:
+    alias: QCM4
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 2
+      outputs:
+      - 2
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 3
+      outputs:
+      - 3
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    outputs:
+      - port: 0
+        offset: 0.0
+      - port: 1
+        offset: 0.0
+      - port: 2
+        offset: 0.40942744120976376
+      - port: 3
+        offset: -0.2585562448525053
+- type: qcm
+  settings:
+    alias: QCM5
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 2
+      outputs:
+      - 2
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 3
+      outputs:
+      - 3
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    outputs:
+      - port: 0
+        offset: 0.0
+      - port: 1
+        offset: 0.9806181454217391
+      - port: 2
+        offset: -0.501854
+      - port: 3
+        offset: 0.7079800112988209
+- type: qcm
+  settings:
+    alias: QCM6
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 2
+      outputs:
+      - 2
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 3
+      outputs:
+      - 3
+      intermediate_frequency: 0.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    outputs:
+      - port: 0
+        offset: 1.5961911978842231
+      - port: 1
+        offset: -0.9622527933124186
+      - port: 2
+        offset: 2.053303250555467
+      - port: 3
+        offset: -0.5380783449006947
+- type: qrm-rf
+  settings:
+    alias: QRM-RF1
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -326702576.87
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1600
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.001800585186613372
+      threshold_rotation: 18.373050212610966
+      time_of_flight: 200
+    - id: 1
+      outputs:
+      - 0
+      intermediate_frequency: -51014461.34
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1700
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: -0.000531509267670735
+      threshold_rotation: 295.62713611610974
+      time_of_flight: 200
+    - id: 2
+      outputs:
+      - 0
+      intermediate_frequency: 64643849.52
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1600
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 2.6351944862766687e-05
+      threshold_rotation: 359.4679883469768
+      time_of_flight: 200
+    - id: 3
+      outputs:
+      - 0
+      intermediate_frequency: -179762074.62
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1700
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.0012136004669460387
+      threshold_rotation: 49.1391225480589
+      time_of_flight: 200
+    - id: 4
+      outputs:
+      - 0
+      intermediate_frequency: 235085434.26
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1700
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.00016161870619842914
+      threshold_rotation: 82.94101246385948
+      time_of_flight: 200
+    - id: 5
+      outputs:
+      - 0
+      intermediate_frequency: 315664217.36
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1700
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: -0.0011499031627041326
+      threshold_rotation: 191.90388212944188
+      time_of_flight: 200
+    out0_in0_lo_freq: 7440000000.0
+    out0_in0_lo_en: true
+    out0_att: 30
+    in0_att: 0
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+- type: qrm-rf
+  settings:
+    alias: QRM-RF2
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -318506213.07
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1600
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.001374498549143406
+      threshold_rotation: 115.12594812788697
+      time_of_flight: 200
+    - id: 1
+      outputs:
+      - 0
+      intermediate_frequency: -69099782.51
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1500
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: -0.0017995186956001603
+      threshold_rotation: 253.420214650581
+      time_of_flight: 200
+    - id: 2
+      outputs:
+      - 0
+      intermediate_frequency: 36850000.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1700
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.0014124108535328288
+      threshold_rotation: 130.7827695111619
+      time_of_flight: 200
+    - id: 3
+      outputs:
+      - 0
+      intermediate_frequency: 244735469.51
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1600
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: -0.000752669257084718
+      threshold_rotation: 166.63552012962637
+      time_of_flight: 200
+    - id: 4
+      outputs:
+      - 0
+      intermediate_frequency: 184307136.49
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 900
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.0015446297012196434
+      threshold_rotation: 189.19688236004728
+      time_of_flight: 200
+    out0_in0_lo_freq: 7500000000.0
+    out0_in0_lo_en: true
+    out0_att: 30
+    in0_att: 0
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+- type: qrm-rf
+  settings:
+    alias: QRM-RF3
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -279007541.92
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1400
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.0013098005766577624
+      threshold_rotation: 44.910679526758855
+      time_of_flight: 200
+    - id: 1
+      outputs:
+      - 0
+      intermediate_frequency: -15085158.72
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1500
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.0016640558635503434
+      threshold_rotation: 17.509798292130263
+      time_of_flight: 200
+    - id: 2
+      outputs:
+      - 0
+      intermediate_frequency: 97066629.32
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1200
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 1.9996246472495187e-05
+      threshold_rotation: 281.88378456464324
+      time_of_flight: 200
+    - id: 3
+      outputs:
+      - 0
+      intermediate_frequency: -160822274.17
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1400
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.0010282866964665272
+      threshold_rotation: 284.1175204213955
+      time_of_flight: 200
+    - id: 4
+      outputs:
+      - 0
+      intermediate_frequency: 208846056.38
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1400
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: -0.0018764598137670763
+      threshold_rotation: 298.6136456506812
+      time_of_flight: 200
+    out0_in0_lo_freq: 7420000000.0
+    out0_in0_lo_en: true
+    out0_att: 30
+    in0_att: 0
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+- type: QRM-RF
+  settings:
+    alias: QRM-RF4
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -345628132.75
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1700
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.0016429886766260757
+      threshold_rotation: 133.25205017558469
+      time_of_flight: 200
+    - id: 1
+      outputs:
+      - 0
+      intermediate_frequency: -92533674.65
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1700
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: -0.0011420386270748813
+      threshold_rotation: 287.78666587425965
+      time_of_flight: 200
+    - id: 2
+      outputs:
+      - 0
+      intermediate_frequency: 40420141.87
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1500
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: -0.001024752146826025
+      threshold_rotation: 115.9154540336284
+      time_of_flight: 200
+    - id: 3
+      outputs:
+      - 0
+      intermediate_frequency: 251444917.67
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1600
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: -0.0005733194146672606
+      threshold_rotation: 356.73855583260985
+      time_of_flight: 200
+    - id: 4
+      outputs:
+      - 0
+      intermediate_frequency: 181070739.81
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      scope_acquire_trigger_mode: sequencer
+      scope_hardware_averaging: true
+      sampling_rate: 1000000000.0
+      hardware_demodulation: true
+      integration_length: 1700
+      integration_mode: ssb
+      sequence_timeout: 60
+      acquisition_timeout: 60
+      scope_store_enabled: false
+      threshold: 0.0008286625473954384
+      threshold_rotation: 30.134215450410117
+      time_of_flight: 200
+    out0_in0_lo_freq: 7446500000.0
+    out0_in0_lo_en: true
+    out0_att: 30
+    in0_att: 0
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+- type: qcm-rf
+  settings:
+    alias: QCM-RF1
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -103705864.00499077
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: -92950268.81723359
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_freq: 5543000000.0
+    out0_lo_en: true
+    out0_att: 10
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_freq: 6340000000.0
+    out1_lo_en: true
+    out1_att: 8
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
+- type: qcm-rf
+  settings:
+    alias: QCM-RF2
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -133240384.61538379
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: -90668956.04395755
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_freq: 6200000000.0
+    out0_lo_en: true
+    out0_att: 6
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_freq: 5457000000.0
+    out1_lo_en: true
+    out1_att: 10
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
+- type: qcm-rf
+  settings:
+    alias: QCM-RF3
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -107035523.56628385
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: -149183890.57750812
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_freq: 6250000000.0
+    out0_lo_en: true
+    out0_att: 6
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_freq: 6940000000.0
+    out1_lo_en: true
+    out1_att: 6
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
+- type: qcm-rf
+  settings:
+    alias: QCM-RF4
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -43525467.19837336
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: -121196721.31147507
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_freq: 5506000000.0
+    out0_lo_en: true
+    out0_att: 10
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_freq: 6300000000.0
+    out1_lo_en: true
+    out1_att: 0
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
+- type: qcm-rf
+  settings:
+    alias: QCM-RF5
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -100000000.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: -159756157.635468
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_freq: 6229000000.0
+    out0_lo_en: true
+    out0_att: 10
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_freq: 6913000000.0
+    out1_lo_en: true
+    out1_att: 4
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
+- type: qcm-rf
+  settings:
+    alias: QCM-RF6
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -102459159.5676094
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: -69367521.36752135
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_freq: 6226000000.0
+    out0_lo_en: true
+    out0_att: 0
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_freq: 5536000000.0
+    out1_lo_en: true
+    out1_att: 10
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
+- type: qcm-rf
+  settings:
+    alias: QCM-RF7
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -94072549.70352067
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: -74368995.63318779
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_freq: 6248000000.0
+    out0_lo_en: true
+    out0_att: 10
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_freq: 6147000000.0
+    out1_lo_en: true
+    out1_att: 10
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
+- type: qcm-rf
+  settings:
+    alias: QCM-RF8
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -42006246.63618866
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: -100664222.87390019
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_freq: 5524000000.0
+    out0_lo_en: true
+    out0_att: 10
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_freq: 6175000000.0
+    out1_lo_en: true
+    out1_att: 18
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
+- type: qcm-rf
+  settings:
+    alias: QCM-RF9
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -44500000.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: -99507874.42312863
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_freq: 5455000000.0
+    out0_lo_en: true
+    out0_att: 18
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_freq: 6163000000.0
+    out1_lo_en: true
+    out1_att: 18
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
+- name: qcm-rf
+  settings:
+    alias: QCM-RF10
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      intermediate_frequency: -85122722.72995462
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      intermediate_frequency: -154255319.14893618
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 2
+      outputs:
+      - 0
+      intermediate_frequency: -100000000.0
+      gain_imbalance: 1.0
+      phase_imbalance: 0.0
+      hardware_modulation: true
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    out0_lo_freq: 6148000000.0
+    out0_lo_en: true
+    out0_att: 24
+    out0_offset_path0: 0.0
+    out0_offset_path1: 0.0
+    out1_lo_freq: 6953000000.0
+    out1_lo_en: true
+    out1_att: 12
+    out1_offset_path0: 0.0
+    out1_offset_path1: 0.0
+instrument_controllers:
+- type: qblox_cluster_controller
+  settings:
+    alias: cluster_controller_0
+    connection:
+      type: tcp_ip
+      address: 192.168.4.24
+    modules:
+    - alias: QRM-RF1
+      slot: 1
+    - alias: QRM-RF2
+      slot: 2
+    - alias: QRM-RF3
+      slot: 3
+    - alias: QRM-RF4
+      slot: 4
+    - alias: QCM1
+      slot: 5
+    - alias: QCM2
+      slot: 6
+    - alias: QCM3
+      slot: 7
+    - alias: QCM4
+      slot: 8
+    - alias: QCM5
+      slot: 9
+    - alias: QCM6
+      slot: 10
+    - alias: QCM-RF1
+      slot_id: 11
+    - alias: QCM-RF2
+      slot_id: 12
+    - alias: QCM-RF3
+      slot_id: 13
+    - alias: QCM-RF4
+      slot_id: 14
+    - alias: QCM-RF5
+      slot_id: 15
+    - alias: QCM-RF6
+      slot_id: 16
+    - alias: QCM-RF7
+      slot_id: 17
+    - alias: QCM-RF8
+      slot_id: 18
+    - alias: QCM-RF9
+      slot_id: 19
+    - alias: QCM-RF10
+      slot_id: 20
+    reset: false
+    reference_clock: internal  
+buses:
+- alias: readout_q0_bus
+  instruments:
+  - QRM-RF1
+  channels:
+  - 0
+- alias: readout_q1_bus
+  instruments:
+  - QRM-RF1
+  channels:
+  - 1
+- alias: readout_q2_bus
+  instruments:
+  - QRM-RF1
+  channels:
+  - 2
+- alias: readout_q3_bus
+  instruments:
+  - QRM-RF1
+  channels:
+  - 3
+- alias: readout_q4_bus
+  instruments:
+  - QRM-RF1
+  channels:
+  - 4
+- alias: readout_q5_bus
+  instruments:
+  - QRM-RF1
+  channels:
+  - 5
+- alias: readout_q6_bus
+  instruments:
+  - QRM-RF2
+  channels:
+  - 0
+- alias: readout_q7_bus
+  instruments:
+  - QRM-RF2
+  channels:
+  - 1
+- alias: readout_q8_bus
+  instruments:
+  - QRM-RF2
+  channels:
+  - 2
+- alias: readout_q9_bus
+  instruments:
+  - QRM-RF2
+  channels:
+  - 3
+- alias: readout_q10_bus
+  instruments:
+  - QRM-RF2
+  channels:
+  - 4
+- alias: readout_q11_bus
+  instruments:
+  - QRM-RF3
+  channels:
+  - 0
+- alias: readout_q12_bus
+  instruments:
+  - QRM-RF3
+  channels:
+  - 1
+- alias: readout_q13_bus
+  instruments:
+  - QRM-RF3
+  channels:
+  - 2
+- alias: readout_q14_bus
+  instruments:
+  - QRM-RF3
+  channels:
+  - 3
+- alias: readout_q15_bus
+  instruments:
+  - QRM-RF3
+  channels:
+  - 4
+- alias: readout_q16_bus
+  instruments:
+  - QRM-RF4
+  channels:
+  - 0
+- alias: readout_q17_bus
+  instruments:
+  - QRM-RF4
+  channels:
+  - 1
+- alias: readout_q18_bus
+  instruments:
+  - QRM-RF4
+  channels:
+  - 2
+- alias: readout_q19_bus
+  instruments:
+  - QRM-RF4
+  channels:
+  - 3
+- alias: readout_q20_bus
+  instruments:
+  - QRM-RF4
+  channels:
+  - 4
+- alias: drive_q0_bus
+  instruments:
+  - QCM-RF1
+  channels:
+  - 0
+- alias: drive_q1_bus
+  instruments:
+  - QCM-RF1
+  channels:
+  - 1
+- alias: drive_q2_bus
+  instruments:
+  - QCM-RF2
+  channels:
+  - 0
+- alias: drive_q3_bus
+  instruments:
+  - QCM-RF2
+  channels:
+  - 1
+- alias: drive_q4_bus
+  instruments:
+  - QCM-RF3
+  channels:
+  - 0
+- alias: drive_q5_bus
+  instruments:
+  - QCM-RF3
+  channels:
+  - 1
+- alias: drive_q6_bus
+  instruments:
+  - QCM-RF4
+  channels:
+  - 0
+- alias: drive_q7_bus
+  instruments:
+  - QCM-RF4
+  channels:
+  - 1
+- alias: drive_q8_bus
+  instruments:
+  - QCM-RF5
+  channels:
+  - 0
+- alias: drive_q9_bus
+  instruments:
+  - QCM-RF5
+  channels:
+  - 1
+- alias: drive_q10_bus
+  instruments:
+  - QCM-RF6
+  channels:
+  - 0
+- alias: drive_q11_bus
+  instruments:
+  - QCM-RF6
+  channels:
+  - 1
+- alias: drive_q12_bus
+  instruments:
+  - QCM-RF7
+  channels:
+  - 0
+- alias: drive_q13_bus
+  instruments:
+  - QCM-RF7
+  channels:
+  - 1
+- alias: drive_q14_bus
+  instruments:
+  - QCM-RF8
+  channels:
+  - 0
+- alias: drive_q15_bus
+  instruments:
+  - QCM-RF8
+  channels:
+  - 1
+- alias: drive_q16_bus
+  instruments:
+  - QCM-RF9
+  channels:
+  - 0
+- alias: drive_q17_bus
+  instruments:
+  - QCM-RF9
+  channels:
+  - 1
+- alias: drive_q18_bus
+  instruments:
+  - QCM-RF10
+  channels:
+  - 0
+- alias: drive_q19_bus
+  instruments:
+  - QCM-RF10
+  channels:
+  - 1
+- alias: drive_q20_bus
+  instruments:
+  - QCM-RF10
+  channels:
+  - 2
+- alias: flux_q0_bus
+  instruments:
+  - QCM1
+  channels:
+  - 0
+- alias: flux_q1_bus
+  instruments:
+  - QCM3
+  channels:
+  - 0
+- alias: flux_q2_bus
+  instruments:
+  - QCM3
+  channels:
+  - 1
+- alias: flux_q3_bus
+  instruments:
+  - QCM3
+  channels:
+  - 2
+- alias: flux_q4_bus
+  instruments:
+  - QCM3
+  channels:
+  - 3
+- alias: flux_q5_bus
+  instruments:
+  - QCM4
+  channels:
+  - 2
+- alias: flux_q6_bus
+  instruments:
+  - QCM1
+  channels:
+  - 1
+- alias: flux_q7_bus
+  instruments:
+  - QCM4
+  channels:
+  - 3
+- alias: flux_q8_bus
+  instruments:
+  - QCM5
+  channels:
+  - 0
+- alias: flux_q9_bus
+  instruments:
+  - QCM5
+  channels:
+  - 1
+- alias: flux_q10_bus
+  instruments:
+  - QCM1
+  channels:
+  - 2
+- alias: flux_q11_bus
+  instruments:
+  - QCM1
+  channels:
+  - 3
+- alias: flux_q12_bus
+  instruments:
+  - QCM5
+  channels:
+  - 2
+- alias: flux_q13_bus
+  instruments:
+  - QCM5
+  channels:
+  - 3
+- alias: flux_q14_bus
+  instruments:
+  - QCM2
+  channels:
+  - 0
+- alias: flux_q15_bus
+  instruments:
+  - QCM6
+  channels:
+  - 0
+- alias: flux_q16_bus
+  instruments:
+  - QCM2
+  channels:
+  - 1
+- alias: flux_q17_bus
+  instruments:
+  - QCM6
+  channels:
+  - 1
+- alias: flux_q18_bus
+  instruments:
+  - QCM6
+  channels:
+  - 2
+- alias: flux_q19_bus
+  instruments:
+  - QCM6
+  channels:
+  - 3
+- alias: flux_q20_bus
+  instruments:
+  - QCM2
+  channels:
+  - 2
+digital:
+  minimum_clock_time: 4
+  delay_before_readout: 4
+  topology:
+  - - 0
+    - 2
+  - - 1
+    - 2
+  gates:
+    M(0):
+    - bus: readout_q0_bus
+      pulse:
+        amplitude: 0.15025
+        phase: 0
+        duration: 1600
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(0):
+    - bus: drive_q0_bus
+      pulse:
+        amplitude: 0.18667335492653378
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -1.3488853177150024
+        options:
+      wait_time: 0
+    M(1):
+    - bus: readout_q1_bus
+      pulse:
+        amplitude: 0.05075
+        phase: 0
+        duration: 1700
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(1):
+    - bus: drive_q1_bus
+      pulse:
+        amplitude: 0.24643161043229908
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 1.0027469781713736
+        options:
+      wait_time: 0
+    M(2):
+    - bus: readout_q2_bus
+      pulse:
+        amplitude: 0.060700000000000004
+        phase: 0
+        duration: 1600.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(2):
+    - bus: drive_q2_bus
+      pulse:
+        amplitude: 0.28007525975917213
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 1.1064471675121275
+        options:
+      wait_time: 0
+    M(3):
+    - bus: readout_q3_bus
+      pulse:
+        amplitude: 0.055725000000000004
+        phase: 0
+        duration: 1700.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(3):
+    - bus: drive_q3_bus
+      pulse:
+        amplitude: 0.2469224081990914
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -0.36283305762630497
+        options:
+      wait_time: 0
+    M(4):
+    - bus: readout_q4_bus
+      pulse:
+        amplitude: 0.045775
+        phase: 0
+        duration: 1700.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(4):
+    - bus: drive_q4_bus
+      pulse:
+        amplitude: 0.21575786936154795
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -1.9960510382886811
+        options:
+      wait_time: 0
+    M(5):
+    - bus: readout_q5_bus
+      pulse:
+        amplitude: 0.1945
+        phase: 0
+        duration: 1600
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(5):
+    - bus: drive_q5_bus
+      pulse:
+        amplitude: 0.2676444563211964
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -0.28977543387827026
+        options:
+      wait_time: 0
+    M(6):
+    - bus: readout_q6_bus
+      pulse:
+        amplitude: 0.16675
+        phase: 0
+        duration: 1600.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(6):
+    - bus: drive_q6_bus
+      pulse:
+        amplitude: 0.20599679746146077
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -1.1951527033487592
+        options:
+      wait_time: 0
+    M(7):
+    - bus: readout_q7_bus
+      pulse:
+        amplitude: 0.12875
+        phase: 0
+        duration: 1500.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(7):
+    - bus: drive_q7_bus
+      pulse:
+        amplitude: 0.2065582011491013
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0.05133157119230443
+        options:
+      wait_time: 0
+    M(8):
+    - bus: readout_q8_bus
+      pulse:
+        amplitude: 0.04
+        phase: 0
+        duration: 1500
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(8):
+    - bus: drive_q8_bus
+      pulse:
+        amplitude: 0.19904731624318345
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0.0
+        options:
+      wait_time: 0
+    M(9):
+    - bus: readout_q9_bus
+      pulse:
+        amplitude: 0.1905
+        phase: 0
+        duration: 1600.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(9):
+    - bus: drive_q9_bus
+      pulse:
+        amplitude: 0.2578307126513714
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0.10376039657733864
+        options:
+      wait_time: 0
+    M(10):
+    - bus: readout_q10_bus
+      pulse:
+        amplitude: 0.17625000000000002
+        phase: 0
+        duration: 900.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(10):
+    - bus: drive_q10_bus
+      pulse:
+        amplitude: 0.23592415022821464
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -2.0591021590116974
+        options:
+      wait_time: 0
+    M(11):
+    - bus: readout_q11_bus
+      pulse:
+        amplitude: 0.1905
+        phase: 0
+        duration: 1400.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(11):
+    - bus: drive_q11_bus
+      pulse:
+        amplitude: 0.18579217308469267
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -0.3406916067596289
+        options:
+      wait_time: 0
+    M(12):
+    - bus: readout_q12_bus
+      pulse:
+        amplitude: 0.16675
+        phase: 0
+        duration: 1500.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(12):
+    - bus: drive_q12_bus
+      pulse:
+        amplitude: 0.1795596286750011
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0.9101431724147949
+        options:
+      wait_time: 0
+    M(13):
+    - bus: readout_q13_bus
+      pulse:
+        amplitude: 0.2
+        phase: 0
+        duration: 1200.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(13):
+    - bus: drive_q13_bus
+      pulse:
+        amplitude: 0.22459126663784404
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -0.7071344345751883
+        options:
+      wait_time: 0
+    M(14):
+    - bus: readout_q14_bus
+      pulse:
+        amplitude: 0.162
+        phase: 0
+        duration: 1400.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(14):
+    - bus: drive_q14_bus
+      pulse:
+        amplitude: 0.19974454013830278
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -4.584864196587471
+        options:
+      wait_time: 0
+    M(15):
+    - bus: readout_q15_bus
+      pulse:
+        amplitude: 0.2
+        phase: 0
+        duration: 1400.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(15):
+    - bus: drive_q15_bus
+      pulse:
+        amplitude: 0.20191529555577575
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -1.0931706096123555
+        options:
+      wait_time: 0
+    M(16):
+    - bus: readout_q16_bus
+      pulse:
+        amplitude: 0.07175
+        phase: 0
+        duration: 1700.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(16):
+    - bus: drive_q16_bus
+      pulse:
+        amplitude: 0.1851386807889578
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0.1810712725608929
+        options:
+      wait_time: 0
+    M(17):
+    - bus: readout_q17_bus
+      pulse:
+        amplitude: 0.06225
+        phase: 0
+        duration: 1700.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(17):
+    - bus: drive_q17_bus
+      pulse:
+        amplitude: 0.21513420071004302
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: -0.7788759643297503
+        options:
+      wait_time: 0
+    M(18):
+    - bus: readout_q18_bus
+      pulse:
+        amplitude: 0.028999999999999998
+        phase: 0
+        duration: 1500.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(18):
+    - bus: drive_q18_bus
+      pulse:
+        amplitude: 0.19970030645047684
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 7.541231165987718
+        options:
+      wait_time: 0
+    M(19):
+    - bus: readout_q19_bus
+      pulse:
+        amplitude: 0.08124999999999999
+        phase: 0
+        duration: 1600.0
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(19):
+    - bus: drive_q19_bus
+      pulse:
+        amplitude: 0.1812753593252634
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0.02328441552620343
+        options:
+      wait_time: 0
+    M(20):
+    - bus: readout_q20_bus
+      pulse:
+        amplitude: 0.04
+        phase: 0
+        duration: 1200
+        shape:
+          name: rectangular
+        options:
+      wait_time: 0
+    Drag(20):
+    - bus: drive_q20_bus
+      pulse:
+        amplitude: 0.23
+        phase: 0
+        duration: 40
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 0.0
+        options:
+      wait_time: 0
+    CZ(0,1):
+    - bus: flux_q1_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q0_phase_correction: 0.0
+          q1_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q3_bus
+      pulse:
+        amplitude: -0.12
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(0,2):
+    - bus: flux_q2_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q0_phase_correction: 0.0
+          q2_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q3_bus
+      pulse:
+        amplitude: -0.12
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(0,20):
+    - bus: flux_q20_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q0_phase_correction: 0.0
+          q20_phase_correction: 0.0
+      wait_time: 0
+    CZ(10,9):
+    - bus: flux_q9_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q10_phase_correction: 0.0
+          q9_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q7_bus
+      pulse:
+        amplitude: 0.11
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q8_bus
+      pulse:
+        amplitude: 0.2
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q13_bus
+      pulse:
+        amplitude: -0.11
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(11,10):
+    - bus: flux_q10_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q10_phase_correction: 0.0
+          q11_phase_correction: 0.0
+      wait_time: 0
+    CZ(11,12):
+    - bus: flux_q12_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q11_phase_correction: 0.0
+          q12_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q14_bus
+      pulse:
+        amplitude: 0.32
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(11,13):
+    - bus: flux_q13_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q11_phase_correction: 0.0
+          q13_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q14_bus
+      pulse:
+        amplitude: 0.32
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(13,5):
+    - bus: flux_q5_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q13_phase_correction: 0.0
+          q5_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q2_bus
+      pulse:
+        amplitude: -0.1166
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q8_bus
+      pulse:
+        amplitude: 0.2
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q18_bus
+      pulse:
+        amplitude: -0.1175
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(13,9):
+    - bus: flux_q9_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q13_phase_correction: 0.0
+          q9_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q7_bus
+      pulse:
+        amplitude: 0.1167
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q8_bus
+      pulse:
+        amplitude: 0.2
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q10_bus
+      pulse:
+        amplitude: 0.221056
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(14,12):
+    - bus: flux_q12_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q12_phase_correction: 0.0
+          q14_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q11_bus
+      pulse:
+        amplitude: -0.269810
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(14,13):
+    - bus: flux_q13_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q13_phase_correction: 0.0
+          q14_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q11_bus
+      pulse:
+        amplitude: -0.269810
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(14,15):
+    - bus: flux_q15_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q14_phase_correction: 0.0
+          q15_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q16_bus
+      pulse:
+        amplitude: -0.3
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(14,18):
+    - bus: flux_q18_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q14_phase_correction: 0.0
+          q18_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q16_bus
+      pulse:
+        amplitude: -0.3
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(16,15):
+    - bus: flux_q15_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q15_phase_correction: 0.0
+          q16_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q14_bus
+      pulse:
+        amplitude: 0.319337
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(16,17):
+    - bus: flux_q17_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q16_phase_correction: 0.0
+          q17_phase_correction: 0.0
+      wait_time: 0
+    CZ(16,18):
+    - bus: flux_q18_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q16_phase_correction: 0.0
+          q18_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q14_bus
+      pulse:
+        amplitude: 0.319337
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(17,19):
+    - bus: flux_q19_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q17_phase_correction: 0.0
+          q19_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q2_bus
+      pulse:
+        amplitude: -0.116486
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q18_bus
+      pulse:
+        amplitude: -0.117541
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q20_bus
+      pulse:
+        amplitude: -0.25
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(18,19):
+    - bus: flux_q19_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q18_phase_correction: 0.0
+          q19_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q2_bus
+      pulse:
+        amplitude: -0.116486
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q17_bus
+      pulse:
+        amplitude: 0.122552
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q20_bus
+      pulse:
+        amplitude: -0.25
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(18,5):
+    - bus: flux_q5_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q18_phase_correction: 0.0
+          q5_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q2_bus
+      pulse:
+        amplitude: -0.116486
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q8_bus
+      pulse:
+        amplitude: 0.2
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q13_bus
+      pulse:
+        amplitude: -0.115797
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(2,19):
+    - bus: flux_q19_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q19_phase_correction: 0.0
+          q2_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q17_bus
+      pulse:
+        amplitude: 0.122552
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q18_bus
+      pulse:
+        amplitude: -0.117541
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q20_bus
+      pulse:
+        amplitude: -0.25
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(2,5):
+    - bus: flux_q5_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q2_phase_correction: 0.0
+          q5_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q8_bus
+      pulse:
+        amplitude: 0.2
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q13_bus
+      pulse:
+        amplitude: -0.115797
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q18_bus
+      pulse:
+        amplitude: -0.117541
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(20,19):
+    - bus: flux_q19_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q19_phase_correction: 0.0
+          q20_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q2_bus
+      pulse:
+        amplitude: -0.116486
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q17_bus
+      pulse:
+        amplitude: 0.122552
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q18_bus
+      pulse:
+        amplitude: -0.117541
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(3,1):
+    - bus: flux_q1_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q1_phase_correction: 0.0
+          q3_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q0_bus
+      pulse:
+        amplitude: -0.395556
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(3,2):
+    - bus: flux_q2_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q2_phase_correction: 0.0
+          q3_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q0_bus
+      pulse:
+        amplitude: -0.395556
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(3,4):
+    - bus: flux_q4_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q3_phase_correction: 0.0
+          q4_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q6_bus
+      pulse:
+        amplitude: 0.475980
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(3,8):
+    - bus: flux_q8_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q3_phase_correction: 0.0
+          q8_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q6_bus
+      pulse:
+        amplitude: 0.475980
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(6,4):
+    - bus: flux_q4_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q4_phase_correction: 0.0
+          q6_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q3_bus
+      pulse:
+        amplitude: -0.12548
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(6,7):
+    - bus: flux_q7_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q6_phase_correction: 0.0
+          q7_phase_correction: 0.0
+      wait_time: 0
+    CZ(6,8):
+    - bus: flux_q8_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q6_phase_correction: 0.0
+          q8_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q3_bus
+      pulse:
+        amplitude: -0.12548
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(7,9):
+    - bus: flux_q9_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q7_phase_correction: 0.0
+          q9_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q8_bus
+      pulse:
+        amplitude: 0.2
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q10_bus
+      pulse:
+        amplitude: 0.221056
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q13_bus
+      pulse:
+        amplitude: -0.115797
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(8,5):
+    - bus: flux_q5_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q5_phase_correction: 0.0
+          q8_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q2_bus
+      pulse:
+        amplitude: -0.116486
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q13_bus
+      pulse:
+        amplitude: -0.115797
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q18_bus
+      pulse:
+        amplitude: -0.117541
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    CZ(8,9):
+    - bus: flux_q9_bus
+      pulse:
+        amplitude: -0.5
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options:
+          q8_phase_correction: 0.0
+          q9_phase_correction: 0.0
+      wait_time: 0
+    - bus: flux_q7_bus
+      pulse:
+        amplitude: 0.1167
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q10_bus
+      pulse:
+        amplitude: 0.221056
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+    - bus: flux_q13_bus
+      pulse:
+        amplitude: -0.115797
+        phase: 0
+        duration: 120
+        shape:
+          name: rectangular
+        options: {}
+      wait_time: 0
+  buses:
+    readout_q0_bus:
+      line: readout
+      qubits:
+      - 0
+      delay: 0
+      distortions: []
+    readout_q1_bus:
+      line: readout
+      qubits:
+      - 1
+      delay: 0
+      distortions: []
+    readout_q2_bus:
+      line: readout
+      qubits:
+      - 2
+      delay: 0
+      distortions: []
+    readout_q3_bus:
+      line: readout
+      qubits:
+      - 3
+      delay: 0
+      distortions: []
+    readout_q4_bus:
+      line: readout
+      qubits:
+      - 4
+      delay: 0
+      distortions: []
+    readout_q5_bus:
+      line: readout
+      qubits:
+      - 5
+      delay: 0
+      distortions: []
+    readout_q6_bus:
+      line: readout
+      qubits:
+      - 6
+      delay: 0
+      distortions: []
+    readout_q7_bus:
+      line: readout
+      qubits:
+      - 7
+      delay: 0
+      distortions: []
+    readout_q8_bus:
+      line: readout
+      qubits:
+      - 8
+      delay: 0
+      distortions: []
+    readout_q9_bus:
+      line: readout
+      qubits:
+      - 9
+      delay: 0
+      distortions: []
+    readout_q10_bus:
+      line: readout
+      qubits:
+      - 10
+      delay: 0
+      distortions: []
+    readout_q11_bus:
+      line: readout
+      qubits:
+      - 11
+      delay: 0
+      distortions: []
+    readout_q12_bus:
+      line: readout
+      qubits:
+      - 12
+      delay: 0
+      distortions: []
+    readout_q13_bus:
+      line: readout
+      qubits:
+      - 13
+      delay: 0
+      distortions: []
+    readout_q14_bus:
+      line: readout
+      qubits:
+      - 14
+      delay: 0
+      distortions: []
+    readout_q15_bus:
+      line: readout
+      qubits:
+      - 15
+      delay: 0
+      distortions: []
+    readout_q16_bus:
+      line: readout
+      qubits:
+      - 16
+      delay: 0
+      distortions: []
+    readout_q17_bus:
+      line: readout
+      qubits:
+      - 17
+      delay: 0
+      distortions: []
+    readout_q18_bus:
+      line: readout
+      qubits:
+      - 18
+      delay: 0
+      distortions: []
+    readout_q19_bus:
+      line: readout
+      qubits:
+      - 19
+      delay: 0
+      distortions: []
+    readout_q20_bus:
+      line: readout
+      qubits:
+      - 20
+      delay: 0
+      distortions: []
+    drive_q0_bus:
+      line: drive
+      qubits:
+      - 0
+      delay: 0
+      distortions: []
+    drive_q1_bus:
+      line: drive
+      qubits:
+      - 1
+      delay: 0
+      distortions: []
+    drive_q2_bus:
+      line: drive
+      qubits:
+      - 2
+      delay: 0
+      distortions: []
+    drive_q3_bus:
+      line: drive
+      qubits:
+      - 3
+      delay: 0
+      distortions: []
+    drive_q4_bus:
+      line: drive
+      qubits:
+      - 4
+      delay: 0
+      distortions: []
+    drive_q5_bus:
+      line: drive
+      qubits:
+      - 5
+      delay: 0
+      distortions: []
+    drive_q6_bus:
+      line: drive
+      qubits:
+      - 6
+      delay: 0
+      distortions: []
+    drive_q7_bus:
+      line: drive
+      qubits:
+      - 7
+      delay: 0
+      distortions: []
+    drive_q8_bus:
+      line: drive
+      qubits:
+      - 8
+      delay: 0
+      distortions: []
+    drive_q9_bus:
+      line: drive
+      qubits:
+      - 9
+      delay: 0
+      distortions: []
+    drive_q10_bus:
+      line: drive
+      qubits:
+      - 10
+      delay: 0
+      distortions: []
+    drive_q11_bus:
+      line: drive
+      qubits:
+      - 11
+      delay: 0
+      distortions: []
+    drive_q12_bus:
+      line: drive
+      qubits:
+      - 12
+      delay: 0
+      distortions: []
+    drive_q13_bus:
+      line: drive
+      qubits:
+      - 13
+      delay: 0
+      distortions: []
+    drive_q14_bus:
+      line: drive
+      qubits:
+      - 14
+      delay: 0
+      distortions: []
+    drive_q15_bus:
+      line: drive
+      qubits:
+      - 15
+      delay: 0
+      distortions: []
+    drive_q16_bus:
+      line: drive
+      qubits:
+      - 16
+      delay: 0
+      distortions: []
+    drive_q17_bus:
+      line: drive
+      qubits:
+      - 17
+      delay: 0
+      distortions: []
+    drive_q18_bus:
+      line: drive
+      qubits:
+      - 18
+      delay: 0
+      distortions: []
+    drive_q19_bus:
+      line: drive
+      qubits:
+      - 19
+      delay: 0
+      distortions: []
+    drive_q20_bus:
+      line: drive
+      qubits:
+      - 20
+      delay: 0
+      distortions: []
+    flux_q0_bus:
+      line: flux
+      qubits:
+      - 0
+      delay: 0
+      distortions: []
+    flux_q1_bus:
+      line: flux
+      qubits:
+      - 1
+      delay: 0
+      distortions: []
+    flux_q2_bus:
+      line: flux
+      qubits:
+      - 2
+      delay: 0
+      distortions: []
+    flux_q3_bus:
+      line: flux
+      qubits:
+      - 3
+      delay: 0
+      distortions: []
+    flux_q4_bus:
+      line: flux
+      qubits:
+      - 4
+      delay: 0
+      distortions: []
+    flux_q5_bus:
+      line: flux
+      qubits:
+      - 5
+      delay: 0
+      distortions: []
+    flux_q6_bus:
+      line: flux
+      qubits:
+      - 6
+      delay: 0
+      distortions: []
+    flux_q7_bus:
+      line: flux
+      qubits:
+      - 7
+      delay: 0
+      distortions: []
+    flux_q8_bus:
+      line: flux
+      qubits:
+      - 8
+      delay: 0
+      distortions: []
+    flux_q9_bus:
+      line: flux
+      qubits:
+      - 9
+      delay: 0
+      distortions: []
+    flux_q10_bus:
+      line: flux
+      qubits:
+      - 10
+      delay: 0
+      distortions: []
+    flux_q11_bus:
+      line: flux
+      qubits:
+      - 11
+      delay: 0
+      distortions: []
+    flux_q12_bus:
+      line: flux
+      qubits:
+      - 12
+      delay: 0
+      distortions: []
+    flux_q13_bus:
+      line: flux
+      qubits:
+      - 13
+      delay: 0
+      distortions: []
+    flux_q14_bus:
+      line: flux
+      qubits:
+      - 14
+      delay: 0
+      distortions: []
+    flux_q15_bus:
+      line: flux
+      qubits:
+      - 15
+      delay: 0
+      distortions: []
+    flux_q16_bus:
+      line: flux
+      qubits:
+      - 16
+      delay: 0
+      distortions: []
+    flux_q17_bus:
+      line: flux
+      qubits:
+      - 17
+      delay: 0
+      distortions: []
+    flux_q18_bus:
+      line: flux
+      qubits:
+      - 18
+      delay: 0
+      distortions: []
+    flux_q19_bus:
+      line: flux
+      qubits:
+      - 19
+      delay: 0
+      distortions: []
+    flux_q20_bus:
+      line: flux
+      qubits:
+      - 20
+      delay: 0
+      distortions: []
+analog:
