@@ -294,6 +294,18 @@ class Galadriel:
                 "offset_q": 0,
                 "hardware_modulation": True,
             },
+            {
+                "identifier": 1,
+                "outputs": [0,1],
+                "intermediate_frequency": 20000000,
+                "gain_i": 0.001,
+                "gain_q": 0.02,
+                "gain_imbalance": 1,
+                "phase_imbalance": 0,
+                "offset_i": 0,
+                "offset_q": 0,
+                "hardware_modulation": True,
+            },
         ],
     }
 
@@ -546,6 +558,7 @@ class Galadriel:
             ],
         },
         {RUNCARD.ALIAS: "drive_line_q1_bus", RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value], RUNCARD.CHANNELS: [0]},
+        {RUNCARD.ALIAS: "drive_line_q2_bus", RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value], RUNCARD.CHANNELS: [0,1]},
         {
             "alias": "feedline_input_output_bus",
             RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],

@@ -50,6 +50,7 @@ def qp_plat_draw_qcmrf_offset() -> QProgram:
     qp.set_frequency("drive_line_q1_bus", 100e6)
     qp.play(bus="drive_line_q1_bus", waveform=Square(amplitude=1, duration=10))
     qp.wait("drive_line_q1_bus", 10)
+    qp.wait("drive_line_q2_bus", 10)
     qp.set_offset("drive_line_q1_bus", 0)
     return qp
 
@@ -196,18 +197,22 @@ class TestQBloxDraw:
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_platform_draw_qcmrf_offset(self, qp_plat_draw_qcmrf_offset: QProgram, platform: Platform):
-        expected_data_draw_i = [ 0.55424971,  0.27878691, -0.02676981, -0.24570817, -0.29440116,
+        expected_data_draw_i_q1 = [ 0.55424971,  0.27878691, -0.02676981, -0.24570817, -0.29440116,
        -0.15424971,  0.12121309,  0.42676981,  0.64570817,  0.69440116,
         0.5535426 ,  0.27821485, -0.02698832, -0.24548967, -0.2938291 ,
        -0.1535426 ,  0.12178515,  0.42698832,  0.64548967,  0.6938291 ]
-        expected_data_draw_q = [ 0.3535426 ,  0.49424473,  0.44616216,  0.22766082, -0.07779922,
+        expected_data_draw_q_q1 = [ 0.3535426 ,  0.49424473,  0.44616216,  0.22766082, -0.07779922,
        -0.3535426 , -0.49424473, -0.44616216, -0.22766082,  0.07779922,
         0.3535426 ,  0.4938291 ,  0.44548967,  0.22698832, -0.07821485,
        -0.3535426 , -0.4938291 , -0.44548967, -0.22698832,  0.07821485]
+        expected_data_draw_i_q2 = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
+        expected_data_draw_q_q2 = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
         
         data_draw = platform.draw(qp_plat_draw_qcmrf_offset)
-        np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i_q1, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q_q1, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive_line_q2_bus"][0], expected_data_draw_i_q2, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive_line_q2_bus"][1], expected_data_draw_q_q2, rtol=1e-2, atol=1e-12)
 
     def test_platform_draw_qcm(self, qp_plat_draw_qcm: QProgram, platform: Platform):
         expected_data_draw_i = [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 0. , 0. , 0. ,
