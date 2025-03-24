@@ -505,10 +505,27 @@ class Platform:
                                             dac_offset_q = instrument.out_offsets[out]
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
-                        else:
-                            data_oscilloscope[bus.alias]["dac_offset_i"] = 0
-                            data_oscilloscope[bus.alias]["dac_offset_q"] = 0
+
+                        elif instrument.name == InstrumentName.QCMRF or instrument.name == InstrumentName.QRMRF:
+                            # retrieve the dac offset and assign it to the bus
+                            identifier = bus.channels
+                            for awg in instrument.awg_sequencers:
+                                if awg.identifier == identifier[0]:
+                                    for idx, out in enumerate(awg.outputs):
+                                        if idx == 0:
+                                            if out == 0:
+                                                dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0)
+                                            elif out == 1:
+                                                dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
+                                        elif idx == 1:
+                                            if out == 0:
+                                                dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1)
+                                            elif out == 1:
+                                                dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+                            data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
+                            data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
         else:
+            # TODO: the same information could be generated with a Quantum Machine runcard, even if the QBlox Compiler is used in the background.
             raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
 
         return data_oscilloscope
