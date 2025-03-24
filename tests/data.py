@@ -203,6 +203,7 @@ class Galadriel:
                 ],
             },
             "drive_line_q1_bus": {"line": "drive", "qubits": [1]},
+            "drive_line_q2_bus": {"line": "drive", "qubits": [1]},
             "feedline_input_output_bus": {
                 "line": "readout",
                 "qubits": [0],
