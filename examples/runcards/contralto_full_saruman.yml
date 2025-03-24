@@ -1215,17 +1215,6 @@ instruments:
       gain_q: 1.0
       offset_i: 0.0
       offset_q: 0.0
-    - id: 2
-      outputs:
-      - 0
-      intermediate_frequency: -100000000.0
-      gain_imbalance: 1.0
-      phase_imbalance: 0.0
-      hardware_modulation: true
-      gain_i: 1.0
-      gain_q: 1.0
-      offset_i: 0.0
-      offset_q: 0.0
     out0_lo_freq: 6148000000.0
     out0_lo_en: true
     out0_att: 24
