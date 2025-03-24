@@ -285,7 +285,7 @@ class Galadriel:
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "outputs": [0],
+                "outputs": [0,1],
                 "intermediate_frequency": 20000000,
                 "gain_i": 0.001,
                 "gain_q": 0.02,
