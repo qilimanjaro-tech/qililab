@@ -24,7 +24,8 @@ PACKAGE = "qililab"
 
 
 with open("src/qililab/config/version.py") as f:
-    version = f.readlines()[-1].split()[-1].strip("\"'")
+    lines = [line.strip() for line in f.readlines() if line.strip()]
+    version = lines[-1].split()[-1].strip("\"'")
 
 
 # Read in requirements
