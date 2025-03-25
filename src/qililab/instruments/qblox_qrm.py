@@ -18,10 +18,7 @@ from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.instruments.qblox_module import QbloxReadoutModule
 from qililab.runcard.runcard_instruments import QbloxQRMRuncardInstrument, RuncardInstrument
-from qililab.settings.instruments import (
-    QbloxADCSequencerSettings,
-    QbloxQRMSettings,
-)
+from qililab.settings.instruments import QbloxADCSequencerSettings, QbloxQRMSettings
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_QRM)
@@ -42,29 +39,29 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings]):
             self._set_output_offset(value=output.offset, output=output.port)
 
         # Set inputs
-        for input in self.settings.inputs:
-            self._set_input_gain(value=input.gain, input=input.port)
-            self._set_input_offset(value=input.offset, input=input.port)
+        for module_input in self.settings.inputs:
+            self._set_input_gain(value=module_input.gain, module_input=module_input.port)
+            self._set_input_offset(value=module_input.offset, module_input=module_input.port)
 
     def _map_output_connections(self):
-        """Disable all connections and map sequencer paths with output channels."""
+        """Disable all connections and map channels paths with output channels."""
         self.device.disconnect_outputs()
 
         for channel in self.settings.channels:
             operations = {
-                0: self.device.sequencers[channel.id].connect_out0,
-                1: self.device.sequencers[channel.id].connect_out1
+                0: self.device.channels[channel.id].connect_out0,
+                1: self.device.channels[channel.id].connect_out1
             }
             for output, path in zip(channel.outputs, ["I", "Q"]):
                 operations[output](path)
 
     def _map_input_connections(self):
-        """Disable all connections and map sequencer paths with output channels."""
+        """Disable all connections and map channels paths with output channels."""
         self.device.disconnect_inputs()
 
-        for sequencer in self.settings.channels:
-            self.device.sequencers[sequencer.id].connect_acq_I("in0")
-            self.device.sequencers[sequencer.id].connect_acq_Q("in1")
+        for channel in self.settings.channels:
+            self.device.channels[channel.id].connect_acq_I("in0")
+            self.device.channels[channel.id].connect_acq_Q("in1")
 
     def _get_output_offset(self, output: int):
         operations = {
@@ -80,18 +77,18 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings]):
         }
         operations[output](value)
 
-    def _get_input_gain(self, input: int):
+    def _get_input_gain(self, module_input: int):
         operations = {0: self.device.in0_gain, 1: self.device.in1_gain}
-        return operations[input]()
+        return operations[module_input]()
 
-    def _set_input_gain(self, value: float, input: int):
+    def _set_input_gain(self, value: float, module_input: int):
         operations = {0: self.device.in0_gain, 1: self.device.in1_gain}
-        operations[input](value)
+        operations[module_input](value)
 
-    def _get_input_offset(self, input: int):
+    def _get_input_offset(self, module_input: int):
         operations = {0: self.device.in0_offset, 1: self.device.in1_offset}
-        operations[input]()
+        operations[module_input]()
 
-    def _set_input_offset(self, value: float, input: int):
+    def _set_input_offset(self, value: float, module_input: int):
         operations = {0: self.device.in0_offset, 1: self.device.in1_offset}
-        operations[input](value)
+        operations[module_input](value)

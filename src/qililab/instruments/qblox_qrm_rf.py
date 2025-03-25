@@ -43,30 +43,30 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings]):
             self._set_output_offset_q(value=output.offset_q, output=output.port)
 
         # Set inputs
-        for input in self.settings.inputs:
-            self._set_input_attenuation(value=input.attenuation, input=input.port)
-            self._set_input_offset_i(value=input.offset_i, input=input.port)
-            self._set_input_offset_q(value=input.offset_q, input=input.port)
+        for module_input in self.settings.inputs:
+            self._set_input_attenuation(value=module_input.attenuation, module_input=module_input.port)
+            self._set_input_offset_i(value=module_input.offset_i, module_input=module_input.port)
+            self._set_input_offset_q(value=module_input.offset_q, module_input=module_input.port)
 
     def _map_output_connections(self):
         self.device.disconnect_outputs()
 
-        for sequencer in self.settings.outputs:
+        for channel in self.settings.channels:
             operations = {
-                0: self.device.outputs[sequencer.id].connect_out0,
+                0: self.device.channels[channel.id].connect_out0,
             }
-            output = sequencer.outputs[0]
+            output = channel.outputs[0]
             operations[output]("IQ")
 
     def _map_input_connections(self):
         self.device.disconnect_inputs()
 
-        for sequencer in self.settings.sequencers:
+        for channel in self.settings.channels:
             operations = {
-                0: self.device.sequencers[sequencer.id].connect_acq,
+                0: self.device.channels[channel.id].connect_acq,
             }
-            input = sequencer.inputs[0]
-            operations[input]("in0")
+            module_input = channel.inputs[0]
+            operations[module_input]("in0")
 
     def _get_output_lo_enabled(self, output: int):
         operations = {
@@ -128,38 +128,38 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings]):
         }
         operations[output](value)
 
-    def _get_input_attenuation(self, input: int):
+    def _get_input_attenuation(self, module_input: int):
         operations = {
             0: self.device.in0_att,
         }
-        operations[input]()
+        operations[module_input]()
 
-    def _set_input_attenuation(self, value: float, input: int):
+    def _set_input_attenuation(self, value: float, module_input: int):
         operations = {
             0: self.device.in0_att,
         }
-        operations[input](value)
+        operations[module_input](value)
 
-    def _get_input_offset_i(self, input: int):
+    def _get_input_offset_i(self, module_input: int):
         operations = {
             0: self.device.in0_offset_path0,
         }
-        operations[input]()
+        operations[module_input]()
 
-    def _set_input_offset_i(self, value: float, input: int):
+    def _set_input_offset_i(self, value: float, module_input: int):
         operations = {
             0: self.device.in0_offset_path0,
         }
-        operations[input](value)
+        operations[module_input](value)
 
-    def _get_input_offset_q(self, input: int):
+    def _get_input_offset_q(self, module_input: int):
         operations = {
             0: self.device.in0_offset_path1,
         }
-        operations[input]()
+        operations[module_input]()
 
-    def _set_input_offset_q(self, value: float, input: int):
+    def _set_input_offset_q(self, value: float, module_input: int):
         operations = {
             0: self.device.in0_offset_path1,
         }
-        operations[input](value)
+        operations[module_input](value)

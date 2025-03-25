@@ -41,15 +41,15 @@ class QbloxQCM(QbloxControlModule[QbloxQCMSettings]):
             self._set_output_offset(value=output.offset, output=output.port)
 
     def _map_output_connections(self):
-        """Disable all connections and map sequencer paths with output channels."""
+        """Disable all connections and map channels paths with output channels."""
         self.device.disconnect_outputs()
 
         for channel in self.settings.channels:
             operations = {
-                0: self.device.sequencers[channel.id].connect_out0,
-                1: self.device.sequencers[channel.id].connect_out1,
-                2: self.device.sequencers[channel.id].connect_out2,
-                3: self.device.sequencers[channel.id].connect_out3,
+                0: self.device.channels[channel.id].connect_out0,
+                1: self.device.channels[channel.id].connect_out1,
+                2: self.device.channels[channel.id].connect_out2,
+                3: self.device.channels[channel.id].connect_out3,
             }
             for output, path in zip(channel.outputs, ["I", "Q"]):
                 operations[output](path)

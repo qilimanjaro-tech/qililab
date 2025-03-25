@@ -40,15 +40,15 @@ class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings]):
             self._set_output_offset_q(value=output.offset_q, output=output.port)
 
     def _map_output_connections(self):
-        """Disable all connections and map sequencer paths with output channels."""
+        """Disable all connections and map channels paths with output channels."""
         self.device.disconnect_outputs()
 
-        for sequencer in self.settings.sequencers:
+        for channel in self.settings.channels:
             operations = {
-                0: self.device.sequencers[sequencer.id].connect_out0,
-                1: self.device.sequencers[sequencer.id].connect_out1,
+                0: self.device.channels[channel.id].connect_out0,
+                1: self.device.channels[channel.id].connect_out1,
             }
-            output = sequencer.outputs[0]
+            output = channel.outputs[0]
             operations[output]("IQ")
 
     def _get_output_lo_enabled(self, output: int):
