@@ -20,12 +20,9 @@ import sysconfig
 
 from setuptools import find_packages, setup
 
+from qililab.config.version import __version__
+
 PACKAGE = "qililab"
-
-
-with open("src/qililab/config/version.py") as f:
-    no_empty_lines = [line for line in f.readlines() if line.strip()]
-    version = no_empty_lines[-1].split()[-1].strip("\"'")
 
 
 # Read in requirements
@@ -40,7 +37,7 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setup(
     name=PACKAGE,
-    version=version,
+    version=__version__,
     description="Fundamental package for fast characterization and calibration of quantum chips.",
     author="Qilimanjaro Quantum Tech",
     author_email="info@qilimanjaro.tech",
