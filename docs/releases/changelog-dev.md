@@ -82,3 +82,6 @@
 
 - Ensured that turning on the instruments does not override the RF setting of the Rohde, which can be set to 'False' in the runcard.
   [#888](https://github.com/qilimanjaro-tech/qililab/pull/888)
+
+- D5a instrument now does not raise error when the value of the dac is higher or equal than 4, now it raises an error when is higher or equal than 16 (the number of dacs).
+  [#908](https://github.com/qilimanjaro-tech/qililab/pull/908)
