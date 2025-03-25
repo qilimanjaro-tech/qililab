@@ -82,11 +82,11 @@ class QbloxD5a(VoltageSource):
             raise ValueError(f"channel not specified to update instrument {self.name.value}")
 
         channel_id = int(channel_id)
-        # if channel_id > 3:
-        #     raise ValueError(
-        #         f"the specified dac index:{channel_id} is out of range."
-        #         + " Number of dacs is 4 -> maximum channel_id should be 3."
-        #     )
+        if channel_id > 15:
+            raise ValueError(
+                f"the specified dac index:{channel_id} is out of range."
+                + " Number of dacs is 16 -> maximum channel_id should be 15."
+            )
 
         channel = self.dac(dac_index=channel_id) if self.is_device_active() else None
 
@@ -115,11 +115,11 @@ class QbloxD5a(VoltageSource):
             raise ValueError(f"channel not specified to update instrument {self.name.value}")
 
         channel_id = int(channel_id)
-        # if channel_id > 3:
-        #     raise ValueError(
-        #         f"the specified dac index:{channel_id} is out of range."
-        #         + " Number of dacs is 4 -> maximum channel_id should be 3."
-        #     )
+        if channel_id > 15:
+            raise ValueError(
+                f"the specified dac index:{channel_id} is out of range."
+                + " Number of dacs is 16 -> maximum channel_id should be 15."
+            )
         if hasattr(self.settings, parameter.value):
             return getattr(self.settings, parameter.value)[channel_id]
         raise ParameterNotFound(self, parameter)
