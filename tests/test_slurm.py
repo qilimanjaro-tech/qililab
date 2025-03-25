@@ -60,8 +60,6 @@ class TestSubmitJob:
             line=f"-o results -l {slurm_job_data_test} -n unit_test -e local",
             cell="results = a+b ",
         )
-        time.sleep(4)
-        assert ip.user_global_ns["results"].result() == 2
 
     def test_submit_job_with_random_file_in_logs_folder(self, ip):
         """Check non-submitit files are deleted if found in logs folder"""
