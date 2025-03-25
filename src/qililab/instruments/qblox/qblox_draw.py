@@ -373,8 +373,8 @@ class QbloxDraw:
             parameters[bus]["q1asm_offset_i_new"] = True
             parameters[bus]["q1asm_offset_q_new"] = True
 
-            wf1 = []
-            wf2 = []
+            wf1: list[float] = []
+            wf2: list[float] = []
             param = parameters[bus]
             instructions_ran = []  # keep track of the instructions that have been done
             data_draw[bus] = [wf1, wf2]
