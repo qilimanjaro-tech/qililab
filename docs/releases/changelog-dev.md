@@ -11,13 +11,17 @@
 
   ```python
   with platform.session():
-    results = platform.execute_qprograms_parallel([qprogram1, qprogram2, qprogram3])
+      results = platform.execute_qprograms_parallel([qprogram1, qprogram2, qprogram3])
   ```
+
   [#906](https://github.com/qilimanjaro-tech/qililab/pull/906)
 
 ### Breaking changes
 
 ### Deprecations / Removals
+
+- Remove the check of forcing GRES in slurm.
+  [#907](https://github.com/qilimanjaro-tech/qililab/pull/907)
 
 ### Documentation
 
