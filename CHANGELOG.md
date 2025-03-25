@@ -21,6 +21,11 @@
 - Remove the check of forcing GRES in slurm.
   [#907](https://github.com/qilimanjaro-tech/qililab/pull/907)
 
+### Bug fixes
+
+- D5a instrument now does not raise error when the value of the dac is higher or equal than 4, now it raises an error when is higher or equal than 16 (the number of dacs).
+  [#908](https://github.com/qilimanjaro-tech/qililab/pull/908)
+
 ## 0.29.0 (2025-03-17)
 
 ### New features since last release
