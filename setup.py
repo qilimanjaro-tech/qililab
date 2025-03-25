@@ -15,7 +15,6 @@
 """Installation script for python"""
 
 import os
-import re
 import site
 import sysconfig
 
@@ -25,7 +24,8 @@ PACKAGE = "qililab"
 
 
 with open("src/qililab/config/version.py") as f:
-    version = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', f.read())
+    lines = [line.strip() for line in f.readlines() if line.strip()]
+    version = lines[-1].split()[-1].strip("\"'")
 
 
 # Read in requirements
