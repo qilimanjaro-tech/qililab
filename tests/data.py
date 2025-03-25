@@ -285,7 +285,7 @@ class Galadriel:
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "outputs": [0,1],
+                "outputs": [0],
                 "intermediate_frequency": 20000000,
                 "gain_i": 0.001,
                 "gain_q": 0.02,
@@ -297,7 +297,7 @@ class Galadriel:
             },
             {
                 "identifier": 1,
-                "outputs": [0,1],
+                "outputs": [1],
                 "intermediate_frequency": 20000000,
                 "gain_i": 0.001,
                 "gain_q": 0.02,
@@ -559,7 +559,7 @@ class Galadriel:
             ],
         },
         {RUNCARD.ALIAS: "drive_line_q1_bus", RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value], RUNCARD.CHANNELS: [0]},
-        {RUNCARD.ALIAS: "drive_line_q2_bus", RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value], RUNCARD.CHANNELS: [0,1]},
+        {RUNCARD.ALIAS: "drive_line_q2_bus", RUNCARD.INSTRUMENTS: [InstrumentName.QCMRF.value], RUNCARD.CHANNELS: [1]},
         {
             "alias": "feedline_input_output_bus",
             RUNCARD.INSTRUMENTS: [f"{InstrumentName.QBLOX_QRM.value}_0", "rs_1"],

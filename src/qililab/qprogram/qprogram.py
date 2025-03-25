@@ -731,7 +731,7 @@ class QProgram(StructuredProgram):
 
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
-        results = compiler.compile(self)
-        result_draw = qblox_draw.draw(result=results, averages_displayed=averages_displayed)
+        sequencer = compiler.compile(self)
+        result_draw = qblox_draw.draw(sequencer=sequencer, averages_displayed=averages_displayed)
         logger.warning("The drawing feature is currently only supported for QBlox.")
         return result_draw

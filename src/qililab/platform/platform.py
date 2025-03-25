@@ -511,17 +511,13 @@ class Platform:
                             identifier = bus.channels
                             for awg in instrument.awg_sequencers:
                                 if awg.identifier == identifier[0]:
-                                    for idx, out in enumerate(awg.outputs):
-                                        if idx == 0:
-                                            if out == 0:
-                                                dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0)
-                                            elif out == 1:
-                                                dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
-                                        elif idx == 1:
-                                            if out == 0:
-                                                dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1)
-                                            elif out == 1:
-                                                dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+                                    for out in awg.outputs:
+                                        if out == 0:
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0)
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1)
+                                        elif out == 1:
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
         else:
@@ -1443,6 +1439,6 @@ class Platform:
 
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        results = self.compile_qprogram(qprogram)
-        result = qblox_draw.draw(results, runcard_data, averages_displayed)
+        sequencer = self.compile_qprogram(qprogram)
+        result = qblox_draw.draw(sequencer, runcard_data, averages_displayed)
         return result

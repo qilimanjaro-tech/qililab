@@ -39,7 +39,7 @@ class QbloxDraw:
         elif action_type == "reset_ph":
             param = self._handle_reset_phase_draw(param)
         elif action_type == "set_awg_offs":
-            param = self._handle_gain_offset(program_line, param)
+            param = self._handle_offset(program_line, param)
         elif action_type == "set_awg_gain":
             param = self._handle_gain_draw(program_line, param, 1, register)
         elif action_type == "play":
@@ -142,7 +142,6 @@ class QbloxDraw:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with a gain or offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
-            key (string): the key is gain or offset.
             default (int): default value.
 
         Returns:
@@ -155,14 +154,13 @@ class QbloxDraw:
         param["gain_i"], param["gain_q"] = i_val or default, q_val or default
         return param
 
-    def _handle_gain_offset(self, program_line, param):
+    def _handle_offset(self, program_line, param):
         """Updates the param dictionary when an offset is set in the program
 
         Args:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with a gain or offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
-            key (string): the key is gain      or offset.
             default (int): default value.
 
         Returns:
@@ -318,21 +316,25 @@ class QbloxDraw:
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
-    def draw(self, result, runcard_data=None, averages_displayed=False):
-        """Parses the program dictionary of the sequence.
+    def draw(self, sequencer, runcard_data=None, averages_displayed=False) -> dict:
+        """Parses the program dictionary of the sequence, plots the waveforms and generates waveform data.
         Args:
-            result: compilation of the qprogram, this is done either at the platform or qprogram level
+            sequencer: The compiled qprogram, either at the platform or qprogram level.
             runcard_data (dictionary): parameters of the bus (IF, phase, offset, hardware modulation) retrieved from the runcard if using the platform
-                                        This gets renamed as param to overwrite/add values from the sequencer.
-            averages_displayed (bool): False means that all loops on the sequencer starting with avg_ will only loop once, and True shows all iterations.
-                                        The default is False.
+                This gets renamed as param to overwrite/add values from the sequencer.
+            averages_displayed (bool): Determines how looping variables are handled. If False (default), all loops
+                on the sequencer starting with `avg_` will only iterate once. If True, all iterations are displayed.
 
 
         Returns:
-            Plots the waveforms and returns data_draw (all data points used to plot the waveforms)
+            data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for
+                the I and Q components. This includes all data points used for plotting the waveforms.
+
+        Note:
+            This function also **plots** the waveforms using the generated data.
 
         """
-        Q1ASM_ordered = self._parse_program(result.sequences.copy())  # (instruction, value, label of the loops, index)
+        Q1ASM_ordered = self._parse_program(sequencer.sequences.copy())  # (instruction, value, label of the loops, index)
         data_draw = {}
         parameters = {}
         for bus, _ in Q1ASM_ordered.items():
@@ -465,13 +467,18 @@ class QbloxDraw:
         """Plots the waveform data and applies the phase and frequency np array to the data
         Args:
             parameters (dictionary): parameters of all buses (IF, phase, offset, hardware modulation).
-            data_draw (list): nested list for each waveform, all data points.
-
+            data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for
+                the I and Q components. This includes all data points used for plotting the waveforms.
 
         Returns:
-            Plots the waveforms and returns data_draw (all data points used to plot the waveforms)
+            data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for
+                the I and Q components. This includes all data points used for plotting the waveforms. This function modifies this dictionary,
+                it adds the offsets, the phase and the frequency to the waveforms.
 
+        Note:
+            This function also **plots** the waveforms using the generated data.
         """
+
         data_keys = list(data_draw.keys())
         fig = make_subplots(
             rows=len(data_keys), cols=1, subplot_titles=["temp_subtitle" for date in np.arange(len(data_draw))]
