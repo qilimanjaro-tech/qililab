@@ -94,8 +94,6 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     begin_time = args.begin
     low_priority = args.low_priority
 
-    if gres is None:
-        raise ValueError("GRES needs to be provided! See the available ones typing 'sinfo -o '%G'' in the terminal")
     nice_factor = 0
     if low_priority in ["True", "true"]:
         nice_factor = 1000000  # this ensures Lab jobs have 0 priority, same as QaaS jobs
@@ -107,12 +105,15 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     executable_code = "\n".join([*import_lines, cell])
 
     # Create the executor that will be used to queue the SLURM job
+    slurm_additional_parameters = {"begin": begin_time, "nice": nice_factor}
+    if gres:
+        slurm_additional_parameters |= {"gres": f"{gres}:1"}
     executor = AutoExecutor(folder=folder_path, cluster=execution_env)
     executor.update_parameters(
         slurm_partition=partition,
         name=job_name,
         timeout_min=time_limit,
-        slurm_additional_parameters={"begin": begin_time, "nice": nice_factor, "gres": f"{gres}:1"},
+        slurm_additional_parameters=slurm_additional_parameters,
     )
 
     # Compile the code defined above
