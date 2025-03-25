@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
-from qililab.instruments.qblox_module import QbloxControlModule
+from qililab.instruments.qblox.qblox_module import QbloxControlModule
 from qililab.runcard.runcard_instruments import QbloxQCMRuncardInstrument, RuncardInstrument
 from qililab.settings.instruments import QbloxQCMSettings, QbloxSequencerSettings
 
@@ -46,10 +46,10 @@ class QbloxQCM(QbloxControlModule[QbloxQCMSettings]):
 
         for channel in self.settings.channels:
             operations = {
-                0: self.device.channels[channel.id].connect_out0,
-                1: self.device.channels[channel.id].connect_out1,
-                2: self.device.channels[channel.id].connect_out2,
-                3: self.device.channels[channel.id].connect_out3,
+                0: self.device.sequencers[channel.id].connect_out0,
+                1: self.device.sequencers[channel.id].connect_out1,
+                2: self.device.sequencers[channel.id].connect_out2,
+                3: self.device.sequencers[channel.id].connect_out3,
             }
             for output, path in zip(channel.outputs, ["I", "Q"]):
                 operations[output](path)

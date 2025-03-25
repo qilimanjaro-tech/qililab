@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
-from qililab.instruments.qblox_module import QbloxReadoutModule
+from qililab.instruments.qblox.qblox_module import QbloxReadoutModule
 from qililab.runcard.runcard_instruments import QbloxQRMRFRuncardInstrument, RuncardInstrument
 from qililab.settings.instruments import QbloxADCSequencerSettings, QbloxQRMRFSettings
 
@@ -53,7 +53,7 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings]):
 
         for channel in self.settings.channels:
             operations = {
-                0: self.device.channels[channel.id].connect_out0,
+                0: self.device.sequencers[channel.id].connect_out0,
             }
             output = channel.outputs[0]
             operations[output]("IQ")

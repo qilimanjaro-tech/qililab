@@ -118,17 +118,17 @@ class QbloxModule(
     def initial_setup(self):
         self._map_output_connections()
         self.clear_cache()
-        for output in self.settings.channels:
-            self.device.outputs[output.id].sync_en(False)
-            self.device.outputs[output.id].marker_ovr_en(False)
-            self._set_gain_i(value=output.gain_i, channel=output.id)
-            self._set_gain_q(value=output.gain_q, channel=output.id)
-            self._set_offset_i(value=output.offset_i, channel=output.id)
-            self._set_offset_q(value=output.offset_q, channel=output.id)
-            self._set_intermediate_frequency(value=output.intermediate_frequency, channel=output.id)
-            self._set_hardware_modulation(value=output.hardware_modulation, channel=output.id)
-            self._set_gain_imbalance(value=output.gain_imbalance, channel=output.id)
-            self._set_phase_imbalance(value=output.phase_imbalance, channel=output.id)
+        for channel in self.settings.channels:
+            self.device.sequencers[channel.id].sync_en(False)
+            self.device.sequencers[channel.id].marker_ovr_en(False)
+            self._set_gain_i(value=channel.gain_i, channel=channel.id)
+            self._set_gain_q(value=channel.gain_q, channel=channel.id)
+            self._set_offset_i(value=channel.offset_i, channel=channel.id)
+            self._set_offset_q(value=channel.offset_q, channel=channel.id)
+            self._set_intermediate_frequency(value=channel.intermediate_frequency, channel=channel.id)
+            self._set_hardware_modulation(value=channel.hardware_modulation, channel=channel.id)
+            self._set_gain_imbalance(value=channel.gain_imbalance, channel=channel.id)
+            self._set_phase_imbalance(value=channel.phase_imbalance, channel=channel.id)
 
     @check_device_initialized
     def turn_on(self):
@@ -147,11 +147,11 @@ class QbloxModule(
     def _map_output_connections(self):
         """Disable all connections and map sequencer paths with output channels."""
 
-    def _is_sequencer_valid(self, sequencer_id: int):
-        return any(sequencer.id == sequencer_id for sequencer in self.settings.channels)
+    def _is_channel_valid(self, channel_id: int):
+        return any(channel.id == channel_id for channel in self.settings.channels)
 
     def _get_gain_i(self, channel: int):
-        self.device.outputs[channel].gain_awg_path0()
+        self.device.sequencers[channel].gain_awg_path0()
 
     def _set_gain_i(self, value: float, channel: int):
         self.device.sequencers[channel].gain_awg_path0(value)
@@ -216,17 +216,17 @@ class QbloxModule(
         self.cache = {}
         self.qpysequences = {}
 
-    def upload_qpysequence(self, qpysequence: QpySequence, sequencer_id: int):
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int):
         """Upload the qpysequence to its corresponding sequencer.
 
         Args:
             qpysequence (QpySequence): The qpysequence to upload.
             port (str): The port of the sequencer to upload to.
         """
-        if self._is_sequencer_valid(sequencer_id):
+        if self._is_channel_valid(channel_id):
             logger.info("Sequence program: \n %s", repr(qpysequence._program))
-            self.device.sequencers[sequencer_id].sequence(qpysequence.todict())
-            self.qpysequences[sequencer_id] = qpysequence
+            self.device.sequencers[channel_id].sequence(qpysequence.todict())
+            self.qpysequences[channel_id] = qpysequence
 
     def upload(self, sequencer_id: int):
         """Upload all the previously compiled programs to its corresponding sequencers.
@@ -235,7 +235,7 @@ class QbloxModule(
         Args:
             port (str): The port of the sequencer to upload to.
         """
-        if self._is_sequencer_valid(sequencer_id) and sequencer_id in self.qpysequences:
+        if self._is_channel_valid(sequencer_id) and sequencer_id in self.qpysequences:
             sequence = self.qpysequences[sequencer_id]
             logger.info("Uploaded sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
             self.device.sequencers[sequencer_id].sequence(sequence.todict())
@@ -243,7 +243,7 @@ class QbloxModule(
 
     def run(self, sequencer_id: int):
         """Run the uploaded program"""
-        if self._is_sequencer_valid(sequencer_id) and sequencer_id in self.qpysequences:
+        if self._is_channel_valid(sequencer_id) and sequencer_id in self.qpysequences:
             self.device.arm_sequencer(sequencer_id)
             self.device.start_sequencer(sequencer_id)
 
@@ -307,12 +307,12 @@ class QbloxReadoutModule(
 
         self._map_input_connections()
         self._set_scope_hardware_averaging(self.settings.scope_hardware_averaging)
-        for output in self.settings.outputs:
-            self.device.delete_acquisition_data(sequencer=output.id, all=True)
-            self._set_hardware_demodulation(value=output.hardware_demodulation, channel=output.id)
-            self._set_integration_length(value=output.integration_length, channel=output.id)
-            self._set_threshold(value=output.threshold, channel=output.id)
-            self._set_threshold_rotation(value=output.threshold_rotation, channel=output.id)
+        for channel in self.settings.channels:
+            self.device.delete_acquisition_data(sequencer=channel.id, all=True)
+            self._set_hardware_demodulation(value=channel.hardware_demodulation, channel=channel.id)
+            self._set_integration_length(value=channel.integration_length, channel=channel.id)
+            self._set_threshold(value=channel.threshold, channel=channel.id)
+            self._set_threshold_rotation(value=channel.threshold_rotation, channel=channel.id)
 
     @abstractmethod
     def _map_input_connections(self):
@@ -389,7 +389,7 @@ class QbloxReadoutModule(
 
     @check_device_initialized
     def acquire_qprogram_results(
-        self, acquisitions: dict[str, AcquisitionData], sequencer_id: int
+        self, acquisitions: dict[str, AcquisitionData], channel_id: int
     ) -> list[QbloxMeasurementResult]:
         """Read the result from the AWG instrument
 
@@ -401,16 +401,16 @@ class QbloxReadoutModule(
         """
         results = []
         for acquisition, acquistion_data in acquisitions.items():
-            if self._is_sequencer_valid(sequencer_id) and sequencer_id in self.qpysequences:
-                self.device.get_acquisition_state(sequencer=sequencer_id, timeout=self.settings.timeout)
+            if self._is_channel_valid(channel_id) and channel_id in self.qpysequences:
+                self.device.get_acquisition_state(sequencer=channel_id, timeout=self.settings.timeout)
                 if acquistion_data.save_adc:
-                    self.device.store_scope_acquisition(sequencer=sequencer_id, name=acquisition)
-                raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer_id)[acquisition]["acquisition"]
+                    self.device.store_scope_acquisition(sequencer=channel_id, name=acquisition)
+                raw_measurement_data = self.device.get_acquisitions(sequencer=channel_id)[acquisition]["acquisition"]
                 measurement_result = QbloxMeasurementResult(
                     bus=acquisitions[acquisition].bus, raw_measurement_data=raw_measurement_data
                 )
                 results.append(measurement_result)
 
                 # always deleting acquisitions without checking save_adc flag
-                self.device.delete_acquisition_data(sequencer=sequencer_id, name=acquisition)
+                self.device.delete_acquisition_data(sequencer=channel_id, name=acquisition)
         return results
