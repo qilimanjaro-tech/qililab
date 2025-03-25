@@ -17,10 +17,7 @@ from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
 from qililab.instruments.qblox_module import QbloxReadoutModule
 from qililab.runcard.runcard_instruments import QbloxQRMRFRuncardInstrument, RuncardInstrument
-from qililab.settings.instruments import (
-    QbloxADCSequencerSettings,
-    QbloxQRMRFSettings,
-)
+from qililab.settings.instruments import QbloxADCSequencerSettings, QbloxQRMRFSettings
 
 
 @InstrumentFactory.register(InstrumentType.QBLOX_QRM_RF)
@@ -54,9 +51,9 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings]):
     def _map_output_connections(self):
         self.device.disconnect_outputs()
 
-        for sequencer in self.settings.sequencers:
+        for sequencer in self.settings.outputs:
             operations = {
-                0: self.device.sequencers[sequencer.id].connect_out0,
+                0: self.device.outputs[sequencer.id].connect_out0,
             }
             output = sequencer.outputs[0]
             operations[output]("IQ")

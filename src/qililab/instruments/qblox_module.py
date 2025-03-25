@@ -118,17 +118,17 @@ class QbloxModule(
     def initial_setup(self):
         self._map_output_connections()
         self.clear_cache()
-        for sequencer in self.settings.channels:
-            self.device.sequencers[sequencer.id].sync_en(False)
-            self.device.sequencers[sequencer.id].marker_ovr_en(False)
-            self._set_gain_i(value=sequencer.gain_i, channel=sequencer.id)
-            self._set_gain_q(value=sequencer.gain_q, channel=sequencer.id)
-            self._set_offset_i(value=sequencer.offset_i, channel=sequencer.id)
-            self._set_offset_q(value=sequencer.offset_q, channel=sequencer.id)
-            self._set_intermediate_frequency(value=sequencer.intermediate_frequency, channel=sequencer.id)
-            self._set_hardware_modulation(value=sequencer.hardware_modulation, channel=sequencer.id)
-            self._set_gain_imbalance(value=sequencer.gain_imbalance, channel=sequencer.id)
-            self._set_phase_imbalance(value=sequencer.phase_imbalance, channel=sequencer.id)
+        for output in self.settings.channels:
+            self.device.outputs[output.id].sync_en(False)
+            self.device.outputs[output.id].marker_ovr_en(False)
+            self._set_gain_i(value=output.gain_i, channel=output.id)
+            self._set_gain_q(value=output.gain_q, channel=output.id)
+            self._set_offset_i(value=output.offset_i, channel=output.id)
+            self._set_offset_q(value=output.offset_q, channel=output.id)
+            self._set_intermediate_frequency(value=output.intermediate_frequency, channel=output.id)
+            self._set_hardware_modulation(value=output.hardware_modulation, channel=output.id)
+            self._set_gain_imbalance(value=output.gain_imbalance, channel=output.id)
+            self._set_phase_imbalance(value=output.phase_imbalance, channel=output.id)
 
     @check_device_initialized
     def turn_on(self):
@@ -151,7 +151,7 @@ class QbloxModule(
         return any(sequencer.id == sequencer_id for sequencer in self.settings.channels)
 
     def _get_gain_i(self, channel: int):
-        self.device.sequencers[channel].gain_awg_path0()
+        self.device.outputs[channel].gain_awg_path0()
 
     def _set_gain_i(self, value: float, channel: int):
         self.device.sequencers[channel].gain_awg_path0(value)
@@ -307,12 +307,12 @@ class QbloxReadoutModule(
 
         self._map_input_connections()
         self._set_scope_hardware_averaging(self.settings.scope_hardware_averaging)
-        for sequencer in self.settings.sequencers:
-            self.device.delete_acquisition_data(sequencer=sequencer.id, all=True)
-            self._set_hardware_demodulation(value=sequencer.hardware_demodulation, channel=sequencer.id)
-            self._set_integration_length(value=sequencer.integration_length, channel=sequencer.id)
-            self._set_threshold(value=sequencer.threshold, channel=sequencer.id)
-            self._set_threshold_rotation(value=sequencer.threshold_rotation, channel=sequencer.id)
+        for output in self.settings.outputs:
+            self.device.delete_acquisition_data(sequencer=output.id, all=True)
+            self._set_hardware_demodulation(value=output.hardware_demodulation, channel=output.id)
+            self._set_integration_length(value=output.integration_length, channel=output.id)
+            self._set_threshold(value=output.threshold, channel=output.id)
+            self._set_threshold_rotation(value=output.threshold_rotation, channel=output.id)
 
     @abstractmethod
     def _map_input_connections(self):

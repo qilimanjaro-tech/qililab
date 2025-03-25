@@ -18,12 +18,8 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
-from qililab.settings.instrument_controllers import (
+from qililab.settings.instrument_controllers import (  # QbloxSPIRackControllerSettings,; QDevilQDAC2ControllerSettings,; QuantumMachinesClusterControllerSettings,; RohdeSchwarzSG100ControllerSettings,
     QbloxClusterControllerSettings,
-    QbloxSPIRackControllerSettings,
-    QDevilQDAC2ControllerSettings,
-    QuantumMachinesClusterControllerSettings,
-    RohdeSchwarzSG100ControllerSettings,
 )
 
 
@@ -32,38 +28,43 @@ class QbloxClusterRuncardInstrumentController(BaseModel):
     settings: QbloxClusterControllerSettings
 
 
-class QbloxSPIRackRuncardInstrumentController(BaseModel):
-    type: Literal[InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER] = (
-        InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER
-    )
-    settings: QbloxSPIRackControllerSettings
+# class QbloxSPIRackRuncardInstrumentController(BaseModel):
+#     type: Literal[InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER] = (
+#         InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER
+#     )
+#     settings: QbloxSPIRackControllerSettings
 
 
-class QDevilQDAC2RuncardInstrumentController(BaseModel):
-    type: Literal[InstrumentControllerType.QDEVIL_QDAC2_CONTROLLER] = InstrumentControllerType.QDEVIL_QDAC2_CONTROLLER
-    settings: QDevilQDAC2ControllerSettings
+# class QDevilQDAC2RuncardInstrumentController(BaseModel):
+#     type: Literal[InstrumentControllerType.QDEVIL_QDAC2_CONTROLLER] = InstrumentControllerType.QDEVIL_QDAC2_CONTROLLER
+#     settings: QDevilQDAC2ControllerSettings
 
 
-class QuantumMachinesClusterRuncardInstrumentController(BaseModel):
-    type: Literal[InstrumentControllerType.QUANTUM_MACHINES_CLUSTER_CONTROLLER] = (
-        InstrumentControllerType.QUANTUM_MACHINES_CLUSTER_CONTROLLER
-    )
-    settings: QuantumMachinesClusterControllerSettings
+# class QuantumMachinesClusterRuncardInstrumentController(BaseModel):
+#     type: Literal[InstrumentControllerType.QUANTUM_MACHINES_CLUSTER_CONTROLLER] = (
+#         InstrumentControllerType.QUANTUM_MACHINES_CLUSTER_CONTROLLER
+#     )
+#     settings: QuantumMachinesClusterControllerSettings
 
 
-class RohdeSchwarzSG100RuncardInstrumentController(BaseModel):
-    type: Literal[InstrumentControllerType.ROHDE_SCHWARZ_SG100_CONTROLLER] = (
-        InstrumentControllerType.ROHDE_SCHWARZ_SG100_CONTROLLER
-    )
-    settings: RohdeSchwarzSG100ControllerSettings
+# class RohdeSchwarzSG100RuncardInstrumentController(BaseModel):
+#     type: Literal[InstrumentControllerType.ROHDE_SCHWARZ_SG100_CONTROLLER] = (
+#         InstrumentControllerType.ROHDE_SCHWARZ_SG100_CONTROLLER
+#     )
+#     settings: RohdeSchwarzSG100ControllerSettings
 
 
 # Discriminated Union for instruments
+# RuncardInstrumentController = Annotated[
+#     QbloxClusterRuncardInstrumentController
+#     | QbloxSPIRackRuncardInstrumentController
+#     | QDevilQDAC2RuncardInstrumentController
+#     | QuantumMachinesClusterRuncardInstrumentController
+#     | RohdeSchwarzSG100RuncardInstrumentController,
+#     Field(discriminator="type"),
+# ]
+
 RuncardInstrumentController = Annotated[
-    QbloxClusterRuncardInstrumentController
-    | QbloxSPIRackRuncardInstrumentController
-    | QDevilQDAC2RuncardInstrumentController
-    | QuantumMachinesClusterRuncardInstrumentController
-    | RohdeSchwarzSG100RuncardInstrumentController,
+    QbloxClusterRuncardInstrumentController,
     Field(discriminator="type"),
 ]
