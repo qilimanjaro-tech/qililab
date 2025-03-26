@@ -48,6 +48,21 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings]):
 
         # Set inputs
         for module_input in self.settings.inputs:
+            self.add_input_parameter(
+                input_id=input.port,
+                name="input_gain",
+                settings_field="input_gain",
+                get_device_value=self._get_input_gain,
+                set_device_value=self._set_input_gain,
+            )
+            self.add_input_parameter(
+                input_id=input.port,
+                name="input_offset",
+                settings_field="input_offset",
+                get_device_value=self._get_output_offset,
+                set_device_value=self._set_output_offset,
+            )
+
             self._set_input_gain(value=module_input.gain, module_input=module_input.port)
             self._set_input_offset(value=module_input.offset, module_input=module_input.port)
 
