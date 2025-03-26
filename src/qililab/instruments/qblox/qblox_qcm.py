@@ -27,8 +27,11 @@ class QbloxQCM(QbloxControlModule[QbloxQCMSettings]):
         return QbloxQCMSettings(
             alias="qcm",
             channels=[
-                QbloxSequencerSettings(id=index, outputs=[index], hardware_modulation=False, intermediate_frequency=None, gain_q=0) for index in range(4)
-            ]
+                QbloxSequencerSettings(
+                    id=index, outputs=[index], hardware_modulation=False, intermediate_frequency=None, gain_q=0
+                )
+                for index in range(4)
+            ],
         )
 
     def to_runcard(self) -> RuncardInstrument:
@@ -38,6 +41,14 @@ class QbloxQCM(QbloxControlModule[QbloxQCMSettings]):
         super().initial_setup()
 
         for output in self.settings.outputs:
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_offset",
+                settings_field="output_offset",
+                get_device_value=self._get_output_offset,
+                set_device_value=self._set_output_offset,
+            )
+
             self._set_output_offset(value=output.offset, output=output.port)
 
     def _map_output_connections(self):

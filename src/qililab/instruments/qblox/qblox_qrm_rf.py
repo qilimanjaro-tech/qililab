@@ -26,13 +26,17 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings]):
         super().__init__(settings=settings)
 
         for output in self.settings.outputs:
-            self.add_output_parameter(port=output.port, name="lo_enabled", settings_field="voltage", get_device_value=self._get_voltage, set_device_value=self._set_voltage)
+            self.add_output_parameter(
+                port=output.port,
+                name="lo_enabled",
+                settings_field="voltage",
+                get_device_value=self._get_voltage,
+                set_device_value=self._set_voltage,
+            )
 
     @classmethod
     def get_default_settings(cls) -> QbloxQRMRFSettings:
-        return QbloxQRMRFSettings(
-            alias="qrm-rf", channels=[QbloxADCSequencerSettings(id=index) for index in range(6)]
-        )
+        return QbloxQRMRFSettings(alias="qrm-rf", channels=[QbloxADCSequencerSettings(id=index) for index in range(6)])
 
     def to_runcard(self) -> RuncardInstrument:
         return QbloxQRMRFRuncardInstrument(settings=self.settings)
@@ -42,6 +46,42 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings]):
 
         # Set outputs
         for output in self.settings.outputs:
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_lo_enabled",
+                settings_field="output_lo_enabled",
+                get_device_value=self._get_output_lo_enabled,
+                set_device_value=self._set_output_lo_enabled,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_lo_frequency",
+                settings_field="output_lo_frequency",
+                get_device_value=self._get_output_lo_frequency,
+                set_device_value=self._set_output_lo_frequency,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_attenuation",
+                settings_field="output_attenuation",
+                get_device_value=self._get_output_attenuation,
+                set_device_value=self._set_output_attenuation,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_offset_i",
+                settings_field="output_offset_i",
+                get_device_value=self._get_output_offset_i,
+                set_device_value=self._set_output_offset_i,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_offset_q",
+                settings_field="output_offset_q",
+                get_device_value=self._get_output_offset_q,
+                set_device_value=self._set_output_offset_q,
+            )
+
             self._set_output_lo_enabled(value=output.lo_enabled, output=output.port)
             self._set_output_lo_frequency(value=output.lo_frequency, output=output.port)
             self._set_output_attenuation(value=output.attenuation, output=output.port)

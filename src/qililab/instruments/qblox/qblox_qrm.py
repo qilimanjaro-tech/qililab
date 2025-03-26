@@ -36,6 +36,14 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings]):
 
         # Set outputs
         for output in self.settings.outputs:
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_offset",
+                settings_field="output_offset",
+                get_device_value=self._get_output_offset,
+                set_device_value=self._set_output_offset,
+            )
+
             self._set_output_offset(value=output.offset, output=output.port)
 
         # Set inputs
@@ -50,7 +58,7 @@ class QbloxQRM(QbloxReadoutModule[QbloxQRMSettings]):
         for channel in self.settings.channels:
             operations = {
                 0: self.device.channels[channel.id].connect_out0,
-                1: self.device.channels[channel.id].connect_out1
+                1: self.device.channels[channel.id].connect_out1,
             }
             for output, path in zip(channel.outputs, ["I", "Q"]):
                 operations[output](path)

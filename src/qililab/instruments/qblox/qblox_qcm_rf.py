@@ -33,7 +33,6 @@ class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings]):
         super().initial_setup()
 
         for output in self.settings.outputs:
-            # add output parameters as accessible output parameters
             self.add_output_parameter(
                 output_id=output.port,
                 name="output_lo_enabled",
@@ -69,7 +68,7 @@ class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings]):
                 get_device_value=self._get_output_offset_q,
                 set_device_value=self._set_output_offset_q,
             )
-            # set their values
+
             self._set_output_lo_enabled(value=output.lo_enabled, output=output.port)
             self._set_output_lo_frequency(value=output.lo_frequency, output=output.port)
             self._set_output_attenuation(value=output.attenuation, output=output.port)
