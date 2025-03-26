@@ -355,12 +355,12 @@ class TestPlatform:
             crosstalk_matrix = CrosstalkMatrix.from_buses(
                 buses={"yokogawa_gs200_current_bus": {"yokogawa_gs200_current_bus": 0.1}}
             )
+            platform_yokogawa.set_crosstalk(crosstalk=crosstalk_matrix)
             platform_yokogawa.set_parameter(
                 alias="yokogawa_gs200_current_bus",
                 parameter=Parameter.FLUX,
                 value=0.14,
                 channel_id=0,
-                crosstalk=crosstalk_matrix,
             )
 
     def test_set_flux_parameter_too_many_instruments_raises_error(self, platform: Platform):
@@ -370,12 +370,12 @@ class TestPlatform:
             crosstalk_matrix = CrosstalkMatrix.from_buses(
                 buses={"flux_line_too_many_instr": {"flux_line_too_many_instr": 0.1}}
             )
+            platform.set_crosstalk(crosstalk=crosstalk_matrix)
             platform.set_parameter(
                 alias="flux_line_too_many_instr",
                 parameter=Parameter.FLUX,
                 value=0.14,
                 channel_id=0,
-                crosstalk=crosstalk_matrix,
             )
 
     def test_set_flux_to_zero(self, platform: Platform):

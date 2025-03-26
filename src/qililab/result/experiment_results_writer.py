@@ -76,7 +76,6 @@ class ExperimentMetadata(TypedDict, total=False):
 
     platform: str
     experiment: str
-    crosstalk: str
     executed_at: datetime
     execution_time: float
     qprograms: dict[str, QProgramMetadata]
@@ -112,9 +111,6 @@ class ExperimentResultsWriter(ExperimentResults):
 
         if "experiment" in self._metadata:
             self.experiment = self._metadata["experiment"]
-
-        if "crosstalk" in self._metadata:
-            self.crosstalk = self._metadata["crosstalk"]
 
         if "executed_at" in self._metadata:
             self.executed_at = self._metadata["executed_at"]
@@ -228,18 +224,6 @@ class ExperimentResultsWriter(ExperimentResults):
         if path in self._file:
             del self._file[path]
         self._file[path] = experiment
-
-    @ExperimentResults.crosstalk.setter
-    def crosstalk(self, crosstalk: str):
-        """Sets the YAML representation of the platform.
-
-        Args:
-            platform (str): The YAML string representing the platform.
-        """
-        path = ExperimentResults.CROSSTALK
-        if path in self._file:
-            del self._file[path]
-        self._file[path] = crosstalk
 
     @ExperimentResults.executed_at.setter
     def executed_at(self, dt: datetime):

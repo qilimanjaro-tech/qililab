@@ -15,7 +15,9 @@ from types import MappingProxyType
 from typing import Callable
 
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
+from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import Domain, Variable
@@ -86,7 +88,7 @@ class Experiment(StructuredProgram):
         self,
         alias: str,
         parameter: Parameter,
-        value: int | float | Variable,
+        value: int | float | bool | Variable,
         channel_id: int | None = None,
     ):
         """Set a platform parameter.
@@ -98,7 +100,7 @@ class Experiment(StructuredProgram):
             parameter (Parameter): The parameter to set.
             value (int | float): The value to set for the parameter.
         """
-        operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)  # type: ignore[arg-type]
+        operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
         self._active_block.append(operation)
 
     def execute_qprogram(
@@ -116,4 +118,8 @@ class Experiment(StructuredProgram):
             qprogram (QProgram): The quantum program to be executed.
         """
         operation = ExecuteQProgram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug)
+        self._active_block.append(operation)
+
+    def set_crosstalk(self, crosstalk: CrosstalkMatrix):
+        operation = SetCrosstalk(crosstalk=crosstalk)
         self._active_block.append(operation)

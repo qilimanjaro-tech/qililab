@@ -486,7 +486,6 @@ class Platform:
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
-        crosstalk: CrosstalkMatrix | None = None,
     ):
         """Set a parameter for a platform element.
 
@@ -516,8 +515,6 @@ class Platform:
 
         if parameter == Parameter.FLUX:
             self.flux_parameter[alias] = float(value)
-            if crosstalk:
-                self.crosstalk = crosstalk
             self._process_crosstalk(alias, value)
             self._set_bias_from_element(element)
             return

@@ -32,6 +32,7 @@ from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
+from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
     ExperimentMetadata,
@@ -45,7 +46,6 @@ from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform.platform import Platform
-    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 
 
 @dataclass
@@ -110,11 +110,8 @@ class ExperimentExecutor:
         self.platform = platform
         self.experiment = experiment
 
-        self.crosstalk: CrosstalkMatrix | None
         if calibration and calibration.crosstalk_matrix:
-            self.crosstalk = calibration.crosstalk_matrix
-        else:
-            self.crosstalk = self.experiment.crosstalk
+            self.platform.crosstalk = calibration.crosstalk_matrix
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -242,7 +239,6 @@ class ExperimentExecutor:
         self._metadata = ExperimentMetadata(
             platform=serialize(self.platform.to_dict()),
             experiment=serialize(self.experiment),
-            crosstalk=serialize(self.crosstalk.matrix if self.crosstalk else None),
             executed_at=executed_at,
             execution_time=0.0,
             qprograms={},
@@ -340,6 +336,10 @@ class ExperimentExecutor:
                             }
                         )
                     )
+                if isinstance(element, SetCrosstalk):
+                    elements_operations.append(
+                        lambda operation=element: self.platform.set_crosstalk(crosstalk=operation.crosstalk)
+                    )
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
                     if isinstance(element.value, Variable):
@@ -351,7 +351,6 @@ class ExperimentExecutor:
                                     parameter=operation.parameter,
                                     value=current_value_of_variable[operation.value.uuid],
                                     channel_id=operation.channel_id,
-                                    crosstalk=self.crosstalk,
                                 )
                             )
                         else:
@@ -364,7 +363,6 @@ class ExperimentExecutor:
                                     parameter=operation.parameter,
                                     value=value,
                                     channel_id=operation.channel_id,
-                                    crosstalk=self.crosstalk,
                                 )
                             )
                     else:
@@ -375,7 +373,6 @@ class ExperimentExecutor:
                                 parameter=operation.parameter,
                                 value=operation.value,
                                 channel_id=operation.channel_id,
-                                crosstalk=self.crosstalk,
                             )
                         )
 

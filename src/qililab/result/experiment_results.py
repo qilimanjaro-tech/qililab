@@ -39,7 +39,6 @@ class ExperimentResults:
     VARIABLES_PATH = "variables"
     EXPERIMENT_PATH = "experiment"
     PLATFORM_PATH = "platform"
-    CROSSTALK = "crosstalk"
     EXECUTED_AT_PATH = "executed_at"
     EXECUTION_TIME_PATH = "execution_time"
 
@@ -157,15 +156,6 @@ class ExperimentResults:
             str: The YAML string of the platform.
         """
         return self._file[ExperimentResults.PLATFORM_PATH][()].decode("utf-8")
-
-    @property
-    def crosstalk(self) -> str:
-        """Gets the YAML representation of the platform.
-
-        Returns:
-            str: The YAML string of the platform.
-        """
-        return self._file[ExperimentResults.CROSSTALK][()].decode("utf-8")
 
     @property
     def executed_at(self) -> datetime:
