@@ -42,6 +42,7 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
@@ -479,6 +480,66 @@ class Platform:
             return self.flux_parameter[alias]
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
+
+    def _data_draw(self):
+        """From the runcard retrieve the parameters necessary to draw the qprogram."""
+        data_oscilloscope = {}
+        buses = list(self.buses)
+        instruments = {
+            instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
+        }
+        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            for bus in buses:
+                for instrument, _ in zip(bus.instruments, bus.channels):
+                    if isinstance(instrument, QbloxModule):
+                        data_oscilloscope[bus.alias] = {}
+                        dac_offset_i = 0
+                        dac_offset_q = 0
+                        parameters = [
+                            Parameter.IF,
+                            Parameter.GAIN_I,
+                            Parameter.GAIN_Q,
+                            Parameter.OFFSET_I,
+                            Parameter.OFFSET_Q,
+                            Parameter.HARDWARE_MODULATION,
+                        ]
+                        for parameter in parameters:
+                            data_oscilloscope[bus.alias][parameter.value] = self.get_parameter(bus.alias, parameter)
+
+                        data_oscilloscope[bus.alias]["instrument_name"] = instrument.name.value
+
+                        if instrument.name == InstrumentName.QBLOX_QCM or instrument.name == InstrumentName.QBLOX_QRM:
+                            # retrieve the dac offset and assign it to the bus
+                            identifier = bus.channels
+                            for awg in instrument.awg_sequencers:
+                                if awg.identifier == identifier[0]:
+                                    for idx, out in enumerate(awg.outputs):
+                                        if idx == 0:
+                                            dac_offset_i = instrument.out_offsets[out]
+                                        elif idx == 1:
+                                            dac_offset_q = instrument.out_offsets[out]
+                            data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
+                            data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
+
+                        elif instrument.name == InstrumentName.QCMRF or instrument.name == InstrumentName.QRMRF:
+                            # retrieve the dac offset and assign it to the bus
+                            identifier = bus.channels
+                            for awg in instrument.awg_sequencers:
+                                if awg.identifier == identifier[0]:
+                                    for out in awg.outputs:
+                                        if out == 0:
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0)
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1)
+                                        elif out == 1:
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+                            data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
+                            data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
+        else:
+            # TODO: the same information could be generated with a Quantum Machine runcard, even if the QBlox Compiler is used in the background.
+            raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
+
+        return data_oscilloscope
 
     def set_parameter(
         self,
@@ -1501,3 +1562,17 @@ class Platform:
         )
 
         return compiled_programs, final_layout
+
+    def draw(self, qprogram: QProgram, averages_displayed: bool = False):
+        """Draw the QProgram using QBlox Compiler
+
+        Args:
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
+                                        The default is False.
+        """
+
+        runcard_data = self._data_draw()
+        qblox_draw = QbloxDraw()
+        sequencer = self.compile_qprogram(qprogram)
+        result = qblox_draw.draw(sequencer, runcard_data, averages_displayed)
+        return result
