@@ -22,14 +22,31 @@ from qililab.settings.instruments import QbloxQCMRFSettings, QbloxSequencerSetti
 
 @InstrumentFactory.register(InstrumentType.QBLOX_QCM_RF)
 class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings]):
+    """
+    Class for the Qblox QCM-RF instrument.
+    """
+
     @classmethod
     def get_default_settings(cls) -> QbloxQCMRFSettings:
+        """
+        Get default settings.
+
+        Returns:
+            QbloxQCMRFSettings: QBlox QCM-RF default settings.
+        """
         return QbloxQCMRFSettings(alias="qcm-rf", channels=[QbloxSequencerSettings(id=index) for index in range(6)])
 
     def to_runcard(self) -> RuncardInstrument:
+        """
+        Convert to runcard instrument.
+
+        Returns:
+            QbloxQCMRFRuncardInstrument: QBlox QCM-RF runcard instrument.
+        """
         return QbloxQCMRFRuncardInstrument(settings=self.settings)
 
     def initial_setup(self):
+        """Set initial instrument settings."""
         super().initial_setup()
 
         for output in self.settings.outputs:

@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
     """
-    Instance for an instrument.
+    Class for a generic instrument.
 
     Parameters:
         device: The type associated to the instrument.
