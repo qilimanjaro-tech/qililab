@@ -25,6 +25,15 @@ if TYPE_CHECKING:
 
 
 class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
+    """
+    Instance for an instrument.
+
+    Parameters:
+        device: The type associated to the instrument.
+        settings: The settings associated to the instrument.
+        parameters: The parameters associated to the instrument.
+    """
+
     device: TDevice
     settings: TInstrumentSettings
     parameters: dict[str, InstrumentParameter]
@@ -39,6 +48,11 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
 
     @property
     def alias(self):
+        """Check instrument alias.
+
+        Returns:
+            str: Instrument alias.
+        """
         return self.settings.alias
 
     def is_device_active(self) -> bool:
@@ -179,17 +193,24 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
     @classmethod
     @abstractmethod
     def get_default_settings(cls) -> TInstrumentSettings:
-        pass
+        """Get default settings."""
 
     @abstractmethod
     def to_runcard(self) -> "RuncardInstrument":
-        pass
+        """Add instrument to runcard."""
 
     def __repr__(self):
         return f"{self.__class__.__name__}(settings={self.settings})"
 
 
 class Output:
+    """
+    Class for output parameters.
+
+    Parameters:
+        parameters: Dictionary with the output parameters string and associated parameters.
+    """
+
     parameters: dict[str, InstrumentParameter]
 
     def __init__(self, output_id: int):
@@ -205,6 +226,13 @@ class Output:
 
 
 class Input:
+    """
+    Class for input parameters.
+
+    Parameters:
+        parameters: Dictionary with the input parameters string and associated parameters.
+    """
+
     parameters: dict[str, InstrumentParameter]
 
     def __init__(self, input_id: int):
@@ -223,6 +251,13 @@ class InstrumentWithChannels(
     Instrument[TDevice, TInstrumentWithChannelsSettings],
     Generic[TDevice, TInstrumentWithChannelsSettings, TChannelSettings, TChannelID],
 ):
+    """
+    Instance for an instrument with channels.
+
+    Parameters:
+        settings: The settings associated to the instrument.
+    """
+
     channels: dict[TChannelID, Channel]
 
     def __init__(self, settings: TInstrumentWithChannelsSettings | None = None):
@@ -271,6 +306,13 @@ class InstrumentWithChannels(
 
 
 class Channel:
+    """
+    Class to wrap channel parameters.
+
+    Parameters:
+        channel_id: The ID of the channel.
+    """
+
     parameters: dict[str, InstrumentParameter]
 
     def __init__(self, channel_id: TChannelID):
