@@ -90,6 +90,28 @@ class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings]):
 
         # Set inputs
         for module_input in self.settings.inputs:
+            self.add_input_parameter(
+                output_id=module_input.port,
+                name="input_attenuation",
+                settings_field="input_attenuation",
+                get_device_value=self._get_input_attenuation,
+                set_device_value=self._set_input_attenuation,
+            )
+            self.add_input_parameter(
+                output_id=module_input.port,
+                name="input_offset_i",
+                settings_field="input_offset_i",
+                get_device_value=self._get_input_offset_i,
+                set_device_value=self._set_input_offset_i,
+            )
+            self.add_input_parameter(
+                output_id=module_input.port,
+                name="input_offset_q",
+                settings_field="input_offset_q",
+                get_device_value=self._set_input_offset_q,
+                set_device_value=self._set_input_offset_q,
+            )
+
             self._set_input_attenuation(value=module_input.attenuation, module_input=module_input.port)
             self._set_input_offset_i(value=module_input.offset_i, module_input=module_input.port)
             self._set_input_offset_q(value=module_input.offset_q, module_input=module_input.port)

@@ -35,6 +35,7 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
         self.settings = settings
         self.parameters = {}
         self.outputs = {}
+        self.inputs = {}
 
     @property
     def alias(self):
@@ -61,7 +62,7 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
         Registers a QCoDeS parameter for a specific output.
 
         Parameters:
-            port: The port of the output.
+            output_id: The port of the output.
             name: The name of the parameter.
             settings_field: The key in the output settings model corresponding to this parameter.
             get_device_value: Optional callable to retrieve the value from the device.
@@ -69,7 +70,7 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
             **kwargs: Additional arguments for the `InstrumentParameter` class.
         """
         if output_id not in self.outputs:
-            self.outputs[output_id] = Channel(output_id)
+            self.outputs[output_id] = Output(output_id)
 
         output_name = f"ch{output_id}"
 
@@ -87,6 +88,46 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
 
         # Add the output as an attribute for dot notation access
         setattr(self, output_name, self.outputs[output_id])
+
+    def add_input_parameter(
+        self,
+        input_id: int,
+        name: str,
+        settings_field: str,
+        get_device_value: Callable | None = None,
+        set_device_value: Callable | None = None,
+        **kwargs,
+    ):
+        """
+        Registers a QCoDeS parameter for a specific input.
+
+        Parameters:
+            input_id: The port of the input.
+            name: The name of the parameter.
+            settings_field: The key in the output settings model corresponding to this parameter.
+            get_device_value: Optional callable to retrieve the value from the device.
+            set_device_value: Optional callable to set the value in the device.
+            **kwargs: Additional arguments for the `InstrumentParameter` class.
+        """
+        if input_id not in self.inputs:
+            self.inputs[input_id] = Input(input_id)
+
+        input_name = f"ch{input_id}"
+
+        param = InstrumentParameter(
+            name=f"{name}_{input_name}",
+            owner=self,
+            settings_field=f"{settings_field}",
+            channel_id=input_id,
+            get_device_value=get_device_value,
+            set_device_value=set_device_value,
+            **kwargs,
+        )
+        # Add the parameter to the output
+        self.inputs[input_id].add_parameter(name, param)
+
+        # Add the output as an attribute for dot notation access
+        setattr(self, input_name, self.inputs[input_id])
 
     def add_parameter(
         self,
@@ -146,6 +187,36 @@ class Instrument(ABC, Generic[TDevice, TInstrumentSettings]):
 
     def __repr__(self):
         return f"{self.__class__.__name__}(settings={self.settings})"
+
+
+class Output:
+    parameters: dict[str, InstrumentParameter]
+
+    def __init__(self, output_id: int):
+        self.output_id = output_id
+        self.parameters = {}
+
+    def add_parameter(self, name: str, parameter: InstrumentParameter):
+        """
+        Add a QCoDeS parameter to this output.
+        """
+        self.parameters[name] = parameter
+        setattr(self, name, parameter)
+
+
+class Input:
+    parameters: dict[str, InstrumentParameter]
+
+    def __init__(self, input_id: int):
+        self.input_id = input_id
+        self.parameters = {}
+
+    def add_parameter(self, name: str, parameter: InstrumentParameter):
+        """
+        Add a QCoDeS parameter to this input.
+        """
+        self.parameters[name] = parameter
+        setattr(self, name, parameter)
 
 
 class InstrumentWithChannels(
