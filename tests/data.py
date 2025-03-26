@@ -240,7 +240,7 @@ class Galadriel:
     qblox_qcm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QCM.value,
         "alias": InstrumentName.QBLOX_QCM.value,
-        AWGTypes.OUT_OFFSETS: [0, 0.5, 0.7, 0.8],
+        AWGTypes.OUT_OFFSETS: [0, 0, 0.7, 0.8],
         AWGTypes.AWG_SEQUENCERS: [
             {
                 "identifier": 0,
