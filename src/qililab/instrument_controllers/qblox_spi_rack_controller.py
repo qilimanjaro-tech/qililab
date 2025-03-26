@@ -16,8 +16,8 @@ from __future__ import annotations
 from qililab.instrument_controllers.instrument_controller import InstrumentController
 from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
-from qililab.instruments.qblox_d5a import QbloxD5A
-from qililab.instruments.qblox_s4g import QbloxS4G
+from qililab.instruments.qblox.qblox_d5a import QbloxD5A
+from qililab.instruments.qblox.qblox_s4g import QbloxS4G
 from qililab.runcard.runcard_instrument_controllers import (
     QbloxSPIRackRuncardInstrumentController,
     RuncardInstrumentController,

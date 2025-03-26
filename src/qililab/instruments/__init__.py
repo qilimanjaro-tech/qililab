@@ -16,13 +16,13 @@
 
 from .decorators import check_device_initialized, log_set_parameter
 from .instrument import Instrument
-from .qblox_d5a import QbloxD5A
+from .qblox.qblox_d5a import QbloxD5A
+from .qblox.qblox_s4g import QbloxS4G
 from .qblox_module import QbloxModule
 from .qblox_qcm import QbloxQCM
 from .qblox_qcm_rf import QbloxQCMRF
 from .qblox_qrm import QbloxQRM
 from .qblox_qrm_rf import QbloxQRMRF
-from .qblox_s4g import QbloxS4G
 from .qdevil_qdac2 import QDevilQDAC2
 from .quantum_machines_opx import QuantumMachinesOPX
 from .rohde_schwarz_sg100 import RohdeSchwarzSG100

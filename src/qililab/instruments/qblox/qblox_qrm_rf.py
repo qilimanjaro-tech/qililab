@@ -22,6 +22,12 @@ from qililab.settings.instruments import QbloxADCSequencerSettings, QbloxQRMRFSe
 
 @InstrumentFactory.register(InstrumentType.QBLOX_QRM_RF)
 class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings]):
+    def __init__(self, settings: QbloxQRMRFSettings | None = None):
+        super().__init__(settings=settings)
+
+        for output in self.settings.outputs:
+            self.add_output_parameter(port=output.port, name="lo_enabled", settings_field="voltage", get_device_value=self._get_voltage, set_device_value=self._set_voltage)
+
     @classmethod
     def get_default_settings(cls) -> QbloxQRMRFSettings:
         return QbloxQRMRFSettings(
