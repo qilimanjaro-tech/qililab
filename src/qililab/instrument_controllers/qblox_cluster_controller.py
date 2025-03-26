@@ -18,10 +18,7 @@ from typing import TYPE_CHECKING
 from qililab.instrument_controllers.instrument_controller import InstrumentController
 from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
-from qililab.instruments.qblox_qcm import QbloxQCM
-from qililab.instruments.qblox_qcm_rf import QbloxQCMRF
-from qililab.instruments.qblox_qrm import QbloxQRM
-from qililab.instruments.qblox_qrm_rf import QbloxQRMRF
+from qililab.instruments import QbloxQCM, QbloxQCMRF, QbloxQRM, QbloxQRMRF
 from qililab.runcard.runcard_instrument_controllers import QbloxClusterRuncardInstrumentController
 from qililab.settings.instrument_controllers import QbloxClusterControllerSettings
 from qililab.typings.instruments import QbloxClusterDevice

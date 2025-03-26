@@ -13,10 +13,10 @@
 # limitations under the License.
 from __future__ import annotations
 
+from qililab.instruments import QbloxReadoutModule
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
-from qililab.instruments.qblox_module import QbloxReadoutModule
 from qililab.runcard.runcard_instruments import QbloxQRMRuncardInstrument, RuncardInstrument
 from qililab.settings.instruments import QbloxADCSequencerSettings, QbloxQRMSettings
 

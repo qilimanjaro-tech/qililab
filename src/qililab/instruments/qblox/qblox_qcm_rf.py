@@ -13,9 +13,9 @@
 # limitations under the License.
 from __future__ import annotations
 
+from qililab.instruments import QbloxControlModule
 from qililab.instruments.instrument_factory import InstrumentFactory
 from qililab.instruments.instrument_type import InstrumentType
-from qililab.instruments.qblox.qblox_module import QbloxControlModule
 from qililab.runcard.runcard_instruments import QbloxQCMRFRuncardInstrument, RuncardInstrument
 from qililab.settings.instruments import QbloxQCMRFSettings, QbloxSequencerSettings
 

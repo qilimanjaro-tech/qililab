@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from pydantic import BaseModel, Field, ValidationError, model_validator
 from pydantic_yaml import parse_yaml_file_as, to_yaml_file
 from ruamel.yaml import YAML
 
-from qililab.buses.bus import Bus
 from qililab.instrument_controllers.instrument_controller import InstrumentController
 from qililab.instrument_controllers.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
@@ -26,6 +24,8 @@ from qililab.runcard.runcard_buses import RuncardBus
 from qililab.runcard.runcard_instrument_controllers import RuncardInstrumentController
 from qililab.runcard.runcard_instruments import RuncardInstrument
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings
+
+from qililab.buses.bus import Bus  # isort: skip
 
 yaml = YAML()
 yaml.width = 120
