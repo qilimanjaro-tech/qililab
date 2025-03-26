@@ -11,174 +11,78 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
-"""
-Class to interface with the voltage source Qblox S4g
-"""
-
-from dataclasses import dataclass
-from time import sleep
-from typing import Any
-
-from qililab.config import logger
-from qililab.instruments.current_source import CurrentSource
-from qililab.instruments.decorators import check_device_initialized, log_set_parameter
-from qililab.instruments.instrument import ParameterNotFound
-from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
-from qililab.typings import QbloxS4g as QbloxS4gDriver
+from qililab.instruments.decorators import check_device_initialized
+from qililab.instruments.instrument import InstrumentWithChannels
+from qililab.instruments.instrument_factory import InstrumentFactory
+from qililab.instruments.instrument_type import InstrumentType
+from qililab.runcard.runcard_instruments import QbloxS4GRuncardInstrument, RuncardInstrument
+from qililab.settings.instruments import QbloxS4GChannelSettings, QbloxS4GSettings
+from qililab.typings import QbloxS4GDevice
 
 
-@InstrumentFactory.register
-class QbloxS4g(CurrentSource):
-    """Qblox S4g class
+@InstrumentFactory.register(InstrumentType.QBLOX_S4G)
+class QbloxS4G(InstrumentWithChannels[QbloxS4GDevice, QbloxS4GSettings, QbloxS4GChannelSettings, int]):
+    def __init__(self, settings: QbloxS4GSettings | None = None):
+        super().__init__(settings=settings)
 
-    Args:
-        name (InstrumentName): name of the instrument
-        device (Qblox_S4g): Instance of the qcodes S4g class.
-        settings (QbloxS4gSettings): Settings of the instrument.
-    """
+        for channel in self.settings.channels:
+            self.add_channel_parameter(channel_id=channel.id, name="current", settings_field="current", get_device_value=self._get_current, set_device_value=self._set_current)
+            self.add_channel_parameter(channel_id=channel.id, name="span", settings_field="span", get_device_value=self._get_span, set_device_value=self._set_span)
+            self.add_channel_parameter(channel_id=channel.id, name="ramping_enabled", settings_field="ramping_enabled", get_device_value=self._get_ramping_enabled, set_device_value=self._set_ramping_enabled)
+            self.add_channel_parameter(channel_id=channel.id, name="ramping_rate", settings_field="ramping_rate", get_device_value=self._get_ramping_rate, set_device_value=self._set_ramping_rate)
 
-    name = InstrumentName.QBLOX_S4G
+    @classmethod
+    def get_default_settings(cls) -> QbloxS4GSettings:
+        return QbloxS4GSettings(alias="s4g", channels=[QbloxS4GChannelSettings(id=id) for id in range(4)])
 
-    @dataclass
-    class QbloxS4gSettings(CurrentSource.CurrentSourceSettings):
-        """Contains the settings of a specific signal generator."""
-
-    settings: QbloxS4gSettings
-    device: QbloxS4gDriver
-
-    def dac(self, dac_index: int):
-        """get channel associated to the specific dac
-
-        Args:
-            dac_index (int): channel index
-
-        Returns:
-            _type_: _description_
-        """
-        return getattr(self.device, f"dac{dac_index}")
-
-    def _channel_setup(self, dac_index: int) -> None:
-        """Setup for a specific dac channel
-
-        Args:
-            dac_index (int): dac specific index channel
-        """
-        channel = self.dac(dac_index=dac_index)
-        channel.ramping_enabled(self.ramping_enabled[dac_index])
-        channel.ramp_rate(self.ramp_rate[dac_index])
-        channel.span(self.span[dac_index])
-        channel.current(self.current[dac_index])
-        logger.debug("SPI current set to %f", channel.current())
-        while channel.is_ramping():
-            sleep(0.1)
-
-    @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
-        """Set Qblox instrument calibration settings."""
-
-        if channel_id is None:
-            if len(self.dacs) == 1:
-                channel_id = self.dacs[0]
-            else:
-                raise ValueError(f"channel not specified to update instrument {self.name.value}")
-
-        channel_id = int(channel_id)
-        if channel_id > 3:
-            raise ValueError(
-                f"the specified dac index:{channel_id} is out of range."
-                + " Number of dacs is 4 -> maximum channel_id should be 3."
-            )
-
-        channel = self.dac(dac_index=channel_id) if self.is_device_active() else None
-
-        if parameter == Parameter.CURRENT:
-            self._set_current(value=value, channel_id=channel_id, channel=channel)
-            return
-        if parameter == Parameter.SPAN:
-            self._set_span(value=value, channel_id=channel_id, channel=channel)
-            return
-        if parameter == Parameter.RAMPING_ENABLED:
-            self._set_ramping_enabled(value=value, channel_id=channel_id, channel=channel)
-            return
-        if parameter == Parameter.RAMPING_RATE:
-            self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel)
-            return
-        raise ParameterNotFound(self, parameter)
-
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
-        """Get instrument parameter.
-
-        Args:
-            parameter (Parameter): Name of the parameter to get.
-            channel_id (int | None): Channel identifier of the parameter to update.
-        """
-        if channel_id is None:
-            if len(self.dacs) == 1:
-                channel_id = self.dacs[0]
-            else:
-                raise ValueError(f"channel not specified to update instrument {self.name.value}")
-
-        channel_id = int(channel_id)
-        if channel_id > 3:
-            raise ValueError(
-                f"the specified dac index:{channel_id} is out of range."
-                + " Number of dacs is 4 -> maximum channel_id should be 3."
-            )
-        if hasattr(self.settings, parameter.value):
-            return getattr(self.settings, parameter.value)[channel_id]
-        raise ParameterNotFound(self, parameter)
-
-    def _set_current(self, value: float | str | bool, channel_id: int, channel: Any):
-        """Set the current"""
-        self.settings.current[channel_id] = float(value)
-
-        if self.is_device_active():
-            channel.current(self.current[channel_id])
-
-    def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
-        """Set the span"""
-        self.settings.span[channel_id] = str(value)
-
-        if self.is_device_active():
-            channel.span(self.span[channel_id])
-
-    def _set_ramping_enabled(self, value: float | str | bool, channel_id: int, channel: Any):
-        """Set the ramping_enabled"""
-        self.settings.ramping_enabled[channel_id] = bool(value)
-
-        if self.is_device_active():
-            channel.ramping_enabled(self.ramping_enabled[channel_id])
-
-    def _set_ramping_rate(self, value: float | str | bool, channel_id: int, channel: Any):
-        """Set the ramp_rate"""
-        self.settings.ramp_rate[channel_id] = float(value)
-
-        if self.is_device_active():
-            channel.ramp_rate(self.ramp_rate[channel_id])
+    def to_runcard(self) -> RuncardInstrument:
+        return QbloxS4GRuncardInstrument(settings=self.settings)
 
     @check_device_initialized
     def initial_setup(self):
-        """performs an initial setup."""
-        for dac_index in self.dacs:
-            self._channel_setup(dac_index=dac_index)
+        for channel in self.settings.channels:
+            self._set_span(channel.span, channel.id)
+            self._set_ramping_rate(channel.ramping_rate, channel.id)
+            self._set_ramping_enabled(channel.ramping_enabled, channel.id)
 
     @check_device_initialized
     def turn_on(self):
-        """Dummy method."""
+        for channel in self.settings.channels:
+            self._set_current(channel.curr, channel.id)
 
     @check_device_initialized
     def turn_off(self):
-        """Stop outputing current."""
-        for dac_index in self.settings.dacs:
-            channel = self.dac(dac_index=dac_index)
-            channel.current(0)
-            logger.debug("Dac%d current resetted to  %f", dac_index, channel.current())
+        for channel in self.settings.channels:
+            self._set_current(0.0, channel.id)
 
     @check_device_initialized
     def reset(self):
-        """Reset instrument."""
-        for dac_index in self.settings.dacs:
-            channel = self.dac(dac_index=dac_index)
-            channel.current(0)
+        self.turn_off()
+        for channel in self.settings.channels:
+            self._set_current(channel.voltage, channel.id)
+
+    def _get_current(self, channel: int):
+        getattr(self.device, f"dac{channel}").current()
+
+    def _set_current(self, value: float, channel: int):
+        getattr(self.device, f"dac{channel}").current(value)
+
+    def _get_span(self, channel: int):
+        getattr(self.device, f"dac{channel}").span()
+
+    def _set_span(self, value: str, channel: int):
+        getattr(self.device, f"dac{channel}").span(value)
+
+    def _get_ramping_enabled(self, channel: int):
+        getattr(self.device, f"dac{channel}").ramping_enabled()
+
+    def _set_ramping_enabled(self, value: bool, channel: int):
+        getattr(self.device, f"dac{channel}").ramping_enabled(value)
+
+    def _get_ramping_rate(self, channel: int):
+        getattr(self.device, f"dac{channel}").ramp_rate()
+
+    def _set_ramping_rate(self, value: float, channel: int):
+        getattr(self.device, f"dac{channel}").ramp_rate(value)

@@ -11,114 +11,223 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
-"""This file contains the QbloxQCMRF class."""
-
-from dataclasses import dataclass, field
-from typing import ClassVar
-
-from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
-
-from qililab.instruments.decorators import check_device_initialized, log_set_parameter
-from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
-
-from .qblox_qrm import QbloxQRM
+from qililab.instruments.instrument_factory import InstrumentFactory
+from qililab.instruments.instrument_type import InstrumentType
+from qililab.instruments.qblox.qblox_module import QbloxReadoutModule
+from qililab.runcard.runcard_instruments import QbloxQRMRFRuncardInstrument, RuncardInstrument
+from qililab.settings.instruments import QbloxADCSequencerSettings, QbloxQRMRFSettings
 
 
-@InstrumentFactory.register
-class QbloxQRMRF(QbloxQRM):
-    """Qblox QRM-RF driver."""
+@InstrumentFactory.register(InstrumentType.QBLOX_QRM_RF)
+class QbloxQRMRF(QbloxReadoutModule[QbloxQRMRFSettings]):
+    def __init__(self, settings: QbloxQRMRFSettings | None = None):
+        super().__init__(settings=settings)
 
-    name = InstrumentName.QRMRF
-    device: QcmQrm
+        for output in self.settings.outputs:
+            self.add_output_parameter(
+                port=output.port,
+                name="lo_enabled",
+                settings_field="voltage",
+                get_device_value=self._get_voltage,
+                set_device_value=self._set_voltage,
+            )
 
-    @dataclass
-    class QbloxQRMRFSettings(QbloxQRM.QbloxQRMSettings):
-        """Contains the settings of a specific Qblox QRM-RF module."""
+    @classmethod
+    def get_default_settings(cls) -> QbloxQRMRFSettings:
+        return QbloxQRMRFSettings(alias="qrm-rf", channels=[QbloxADCSequencerSettings(id=index) for index in range(6)])
 
-        out0_in0_lo_freq: float
-        out0_in0_lo_en: bool
-        out0_att: int  # must be a multiple of 2!
-        in0_att: int  # must be a multiple of 2!
-        out0_offset_path0: float
-        out0_offset_path1: float
-        out_offsets: list[float] = field(init=False, default_factory=list)
+    def to_runcard(self) -> RuncardInstrument:
+        return QbloxQRMRFRuncardInstrument(settings=self.settings)
 
-    # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
-    # al the settable parameters of an instrument.
-    parameters: ClassVar[set[Parameter]] = {
-        Parameter.OUT0_IN0_LO_FREQ,
-        Parameter.OUT0_IN0_LO_EN,
-        Parameter.OUT0_ATT,
-        Parameter.IN0_ATT,
-        Parameter.OUT0_OFFSET_PATH0,
-        Parameter.OUT0_OFFSET_PATH1,
-    }
-
-    settings: QbloxQRMRFSettings
-
-    @check_device_initialized
     def initial_setup(self):
-        """Initial setup"""
         super().initial_setup()
-        for parameter in self.parameters:
-            self.set_parameter(parameter, getattr(self.settings, parameter.value))
 
-    def _map_connections(self):
-        """Disable all connections and map sequencer paths with output/input channels."""
-        # Disable all connections
+        # Set outputs
+        for output in self.settings.outputs:
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_lo_enabled",
+                settings_field="output_lo_enabled",
+                get_device_value=self._get_output_lo_enabled,
+                set_device_value=self._set_output_lo_enabled,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_lo_frequency",
+                settings_field="output_lo_frequency",
+                get_device_value=self._get_output_lo_frequency,
+                set_device_value=self._set_output_lo_frequency,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_attenuation",
+                settings_field="output_attenuation",
+                get_device_value=self._get_output_attenuation,
+                set_device_value=self._set_output_attenuation,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_offset_i",
+                settings_field="output_offset_i",
+                get_device_value=self._get_output_offset_i,
+                set_device_value=self._set_output_offset_i,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_offset_q",
+                settings_field="output_offset_q",
+                get_device_value=self._get_output_offset_q,
+                set_device_value=self._set_output_offset_q,
+            )
+
+            self._set_output_lo_enabled(value=output.lo_enabled, output=output.port)
+            self._set_output_lo_frequency(value=output.lo_frequency, output=output.port)
+            self._set_output_attenuation(value=output.attenuation, output=output.port)
+            self._set_output_offset_i(value=output.offset_i, output=output.port)
+            self._set_output_offset_q(value=output.offset_q, output=output.port)
+
+        # Set inputs
+        for module_input in self.settings.inputs:
+            self.add_input_parameter(
+                output_id=module_input.port,
+                name="input_attenuation",
+                settings_field="input_attenuation",
+                get_device_value=self._get_input_attenuation,
+                set_device_value=self._set_input_attenuation,
+            )
+            self.add_input_parameter(
+                output_id=module_input.port,
+                name="input_offset_i",
+                settings_field="input_offset_i",
+                get_device_value=self._get_input_offset_i,
+                set_device_value=self._set_input_offset_i,
+            )
+            self.add_input_parameter(
+                output_id=module_input.port,
+                name="input_offset_q",
+                settings_field="input_offset_q",
+                get_device_value=self._set_input_offset_q,
+                set_device_value=self._set_input_offset_q,
+            )
+
+            self._set_input_attenuation(value=module_input.attenuation, module_input=module_input.port)
+            self._set_input_offset_i(value=module_input.offset_i, module_input=module_input.port)
+            self._set_input_offset_q(value=module_input.offset_q, module_input=module_input.port)
+
+    def _map_output_connections(self):
         self.device.disconnect_outputs()
+
+        for channel in self.settings.channels:
+            operations = {
+                0: self.device.sequencers[channel.id].connect_out0,
+            }
+            output = channel.outputs[0]
+            operations[output]("IQ")
+
+    def _map_input_connections(self):
         self.device.disconnect_inputs()
 
-        for sequencer_dataclass in self.awg_sequencers:
-            sequencer = self.device.sequencers[sequencer_dataclass.identifier]
-            sequencer.connect_out0("IQ")
-            sequencer.connect_acq("in0")
+        for channel in self.settings.channels:
+            operations = {
+                0: self.device.channels[channel.id].connect_acq,
+            }
+            module_input = channel.inputs[0]
+            operations[module_input]("in0")
 
-    @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
-        """Set a parameter of the Qblox QCM-RF module.
-        Args:
-            parameter (Parameter): Parameter name.
-            value (float | str | bool): Value to set.
-            channel_id (int | None, optional): ID of the sequencer. Defaults to None.
-        """
-        if parameter == Parameter.LO_FREQUENCY:
-            parameter = Parameter.OUT0_IN0_LO_FREQ
+    def _get_output_lo_enabled(self, output: int):
+        operations = {
+            0: self.device.out0_in0_lo_en,
+        }
+        operations[output]()
 
-        if parameter == Parameter.OUT0_ATT:
-            max_att = self.device._get_max_out_att_0()
-            if value > max_att:
-                raise Exception(
-                    f"`{Parameter.OUT0_ATT}` for this module cannot be higher than {max_att}dB.\n"
-                    "Please specify an attenuation level, multiple of 2, below this value."
-                )
+    def _set_output_lo_enabled(self, value: bool, output: int):
+        operations = {
+            0: self.device.out0_in0_lo_en,
+        }
+        operations[output](value)
 
-        if parameter in self.parameters:
-            setattr(self.settings, parameter.value, value)
+    def _get_output_lo_frequency(self, output: int):
+        operations = {
+            0: self.device.out0_in0_lo_freq,
+        }
+        operations[output]()
 
-            if self.is_device_active():
-                self.device.set(parameter.value, value)
-            return
-        super().set_parameter(parameter, value, channel_id)
+    def _set_output_lo_frequency(self, value: float, output: int):
+        operations = {
+            0: self.device.out0_in0_lo_freq,
+        }
+        operations[output](value)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
-        """Get a parameter of the Qblox QRM-RF module.
-        Args:
-            parameter (Parameter): Parameter name.
-            value (float | str | bool): Value to set.
-            channel_id (int | None, optional): ID of the sequencer. Defaults to None.
-        """
-        if parameter == Parameter.LO_FREQUENCY:
-            parameter = Parameter.OUT0_IN0_LO_FREQ
+    def _get_output_attenuation(self, output: int):
+        operations = {
+            0: self.device.out0_att,
+        }
+        operations[output]()
 
-        if parameter in self.parameters:
-            return getattr(self.settings, parameter.value)
-        return super().get_parameter(parameter, channel_id)
+    def _set_output_attenuation(self, value: float, output: int):
+        operations = {
+            0: self.device.out0_att,
+        }
+        operations[output](value)
 
-    def to_dict(self):
-        """Return a dict representation of an `QRM-RF` instrument."""
-        dictionary = super().to_dict()
-        dictionary.pop("out_offsets")
-        return dictionary
+    def _get_output_offset_i(self, output: int):
+        operations = {
+            0: self.device.out0_offset_path0,
+        }
+        operations[output]()
+
+    def _set_output_offset_i(self, value: float, output: int):
+        operations = {
+            0: self.device.out0_offset_path0,
+        }
+        operations[output](value)
+
+    def _get_output_offset_q(self, output: int):
+        operations = {
+            0: self.device.out0_offset_path1,
+        }
+        operations[output]()
+
+    def _set_output_offset_q(self, value: float, output: int):
+        operations = {
+            0: self.device.out0_offset_path1,
+        }
+        operations[output](value)
+
+    def _get_input_attenuation(self, module_input: int):
+        operations = {
+            0: self.device.in0_att,
+        }
+        operations[module_input]()
+
+    def _set_input_attenuation(self, value: float, module_input: int):
+        operations = {
+            0: self.device.in0_att,
+        }
+        operations[module_input](value)
+
+    def _get_input_offset_i(self, module_input: int):
+        operations = {
+            0: self.device.in0_offset_path0,
+        }
+        operations[module_input]()
+
+    def _set_input_offset_i(self, value: float, module_input: int):
+        operations = {
+            0: self.device.in0_offset_path0,
+        }
+        operations[module_input](value)
+
+    def _get_input_offset_q(self, module_input: int):
+        operations = {
+            0: self.device.in0_offset_path1,
+        }
+        operations[module_input]()
+
+    def _set_input_offset_q(self, value: float, module_input: int):
+        operations = {
+            0: self.device.in0_offset_path1,
+        }
+        operations[module_input](value)

@@ -1,0 +1,879 @@
+name: saruman
+buses:
+- alias: drive_bus
+  instruments:
+  - qcm
+  channels:
+  - 0
+  - 1
+  - 2
+  - 3
+- alias: readout_bus
+  instruments:
+  - qrm
+  channels:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+instruments:
+- type: qcm
+  settings:
+    alias: qcm
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      hardware_modulation: false
+      intermediate_frequency:
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 0.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 1
+      hardware_modulation: false
+      intermediate_frequency:
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 0.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 2
+      outputs:
+      - 2
+      hardware_modulation: false
+      intermediate_frequency:
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 0.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 3
+      outputs:
+      - 3
+      hardware_modulation: false
+      intermediate_frequency:
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 0.0
+      offset_i: 0.0
+      offset_q: 0.0
+    timeout: 1
+    outputs:
+    - port: 0
+      offset: 0.0
+    - port: 1
+      offset: 0.0
+    - port: 2
+      offset: 0.0
+    - port: 3
+      offset: 0.0
+- type: qrm
+  settings:
+    alias: qrm
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    - id: 1
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    - id: 2
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    - id: 3
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    - id: 4
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    - id: 5
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    timeout: 1
+    outputs:
+    - port: 0
+      offset: 0.0
+    - port: 1
+      offset: 0.0
+    inputs:
+    - port: 0
+      gain: 0
+      offset: 0.0
+    - port: 1
+      gain: 0
+      offset: 0.0
+    scope_hardware_averaging: true
+- type: qcm-rf
+  settings:
+    alias: qcm-rf
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 1
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 2
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 3
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 4
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    - id: 5
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+    timeout: 1
+    outputs:
+    - port: 0
+      lo_enabled: true
+      lo_frequency: 10000000000.0
+      attenuation: 0
+      offset_i: 0.0
+      offset_q: 0.0
+    - port: 1
+      lo_enabled: true
+      lo_frequency: 10000000000.0
+      attenuation: 0
+      offset_i: 0.0
+      offset_q: 0.0
+- type: qrm-rf
+  settings:
+    alias: qrm-rf
+    channels:
+    - id: 0
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    - id: 1
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    - id: 2
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    - id: 3
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    - id: 4
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    - id: 5
+      outputs:
+      - 0
+      hardware_modulation: true
+      intermediate_frequency: 500000000.0
+      gain_imbalance: 0.0
+      phase_imbalance: 0.0
+      gain_i: 1.0
+      gain_q: 1.0
+      offset_i: 0.0
+      offset_q: 0.0
+      inputs:
+      - 0
+      hardware_demodulation: true
+      integration_length: 1000
+      threshold: 0.0
+      threshold_rotation: 0.0
+      time_of_flight: 0
+    timeout: 1
+    outputs:
+    - port: 0
+      lo_enabled: true
+      lo_frequency: 10000000000.0
+      attenuation: 0
+      offset_i: 0.0
+      offset_q: 0.0
+    inputs:
+    - port: 0
+      attenuation: 0
+      offset_i: 0.0
+      offset_q: 0.0
+    scope_hardware_averaging: true
+- type: qdac2
+  settings:
+    alias: qdac2
+    channels:
+    - id: 0
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 1
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 2
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 3
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 4
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 5
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 6
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 7
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 8
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 9
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 10
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 11
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 12
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 13
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 14
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 15
+      voltage: 1.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 16
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 17
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 18
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 19
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 20
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 21
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 22
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 23
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+- type: qdac2
+  settings:
+    alias: second_qdac2
+    channels:
+    - id: 0
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 1
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 2
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 3
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 4
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 5
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 6
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 7
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 8
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 9
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 10
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 11
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 12
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 13
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 14
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 15
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 16
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 17
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 18
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 19
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 20
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 21
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 22
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+    - id: 23
+      voltage: 0.0
+      span: low
+      ramping_enabled: true
+      ramping_rate: 1.0
+      low_pass_filter: dc
+- type: sg100
+  settings:
+    alias: sg100
+    power: 0.0
+    frequency: 1000000000.0
+    rf_on: false
+- type: s4g
+  settings:
+    alias: s4g
+    channels:
+    - id: 0
+    - id: 1
+    - id: 2
+    - id: 3
+- type: d5a
+  settings:
+    alias: d5a
+    channels:
+    - id: 0
+      voltage: 1.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 1
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 2
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 3
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 4
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 5
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 6
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 7
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 8
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 9
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 10
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 11
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 12
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 13
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 14
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+    - id: 15
+      voltage: 0.0
+      span: bi_2V
+      ramping_enabled: true
+      ramping_rate: 0.1
+instrument_controllers:
+- type: qdac2_controller
+  settings:
+    alias: qdac2_controller
+    connection:
+      type: tcp_ip
+      address: 168.0.0.1
+    modules:
+    - alias: qdac2
+      slot: 0
+    reset: true
+- type: qblox_cluster_controller
+  settings:
+    alias: qblox_cluster
+    connection:
+      type: tcp_ip
+      address: 168.0.0.1
+    modules:
+    - alias: qcm
+      slot: 0
+    - alias: qrm
+      slot: 5
+    - alias: qcm-rf
+      slot: 10
+    - alias: qrm-rf
+      slot: 15
+    reset: true
+    reference_clock: internal
+- type: qblox_spi_rack_controller
+  settings:
+    alias: spi-rack
+    connection:
+      type: tcp_ip
+      address: 168.0.0.1
+    modules:
+    - alias: d5a
+      slot: 2
+    - alias: s4g
+      slot: 10
+    reset: true
+analog:
+  flux_control_topology:
+  - flux: phix_q0
+    bus: flux_q0_x
+  - flux: phiz_q0
+    bus: flux_q0_z
+digital:
+  minimum_clock_time: 4
+  delay_before_readout: 0
+  topology: []
+  gates:
+    DRAG(0):
+    - bus: drive_q0
+      pulse:
+        amplitude: 1.0
+        phase: 40.0
+        duration: 100
+        shape: {}
+        options: {}
+      wait_time: 0
+  buses:
+    drive_q0:
+      line: drive
+      qubits:
+      - 0
+      delay: 0
+      distortions: []
+      weights_i: []
+      weights_q: []
+      weighed_acq_enabled: false
