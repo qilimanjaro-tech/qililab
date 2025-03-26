@@ -15,15 +15,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qililab.buses.aggregated_bus_parameter import AggregatedBusParameter
-from qililab.instruments.instrument import InstrumentWithChannels
-from qililab.instruments.qblox_qcm import QbloxQCM
-from qililab.instruments.qblox_qrm import QbloxQRM
-
 if TYPE_CHECKING:
     from qpysequence import Sequence as QpySequence
 
-    from qililab.instruments.instrument import Instrument
+    from qililab.buses.aggregated_bus_parameter import AggregatedBusParameter
+    from qililab.instruments import QbloxQCM, QbloxQRM
+    from qililab.instruments.instrument import Instrument, InstrumentWithChannels
     from qililab.qprogram.qblox_compiler import AcquisitionData
     from qililab.result import Result
     from qililab.result.qprogram import MeasurementResult
