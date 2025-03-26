@@ -33,6 +33,43 @@ class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings]):
         super().initial_setup()
 
         for output in self.settings.outputs:
+            # add output parameters as accessible output parameters
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_lo_enabled",
+                settings_field="output_lo_enabled",
+                get_device_value=self._get_output_lo_enabled,
+                set_device_value=self._set_output_lo_enabled,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_lo_frequency",
+                settings_field="output_lo_frequency",
+                get_device_value=self._get_output_lo_frequency,
+                set_device_value=self._set_output_lo_frequency,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_attenuation",
+                settings_field="output_attenuation",
+                get_device_value=self._get_output_attenuation,
+                set_device_value=self._set_output_attenuation,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_offset_i",
+                settings_field="output_offset_i",
+                get_device_value=self._get_output_offset_i,
+                set_device_value=self._set_output_offset_i,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_offset_q",
+                settings_field="output_offset_q",
+                get_device_value=self._get_output_offset_q,
+                set_device_value=self._set_output_offset_q,
+            )
+            # set their values
             self._set_output_lo_enabled(value=output.lo_enabled, output=output.port)
             self._set_output_lo_frequency(value=output.lo_frequency, output=output.port)
             self._set_output_attenuation(value=output.attenuation, output=output.port)
