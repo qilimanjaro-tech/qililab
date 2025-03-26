@@ -56,7 +56,7 @@ class LoopInfo:
 
 class _BusCompilationInfo:
     def __init__(self) -> None:
-        self.current_gain: float | qua.QuaVariableType | None = None
+        self.current_gain: float | qua.Variable | None = None
         self.threshold: float | None = None
         self.threshold_rotation: float | None = None
 
@@ -65,15 +65,15 @@ class _MeasurementCompilationInfo:
     def __init__(
         self,
         bus: str,
-        variable_I: qua.QuaVariableType,
-        variable_Q: qua.QuaVariableType,
+        variable_I: qua.Variable,
+        variable_Q: qua.Variable,
         stream_I: qua_dsl._ResultSource,
         stream_Q: qua_dsl._ResultSource,
         stream_raw_adc: qua_dsl._ResultSource | None = None,
     ) -> None:
         self.bus: str = bus
-        self.variable_I: qua.QuaVariableType = variable_I
-        self.variable_Q: qua.QuaVariableType = variable_Q
+        self.variable_I: qua.Variable = variable_I
+        self.variable_Q: qua.Variable = variable_Q
         self.stream_I: qua_dsl._ResultSource = stream_I
         self.stream_Q: qua_dsl._ResultSource = stream_Q
         self.stream_raw_adc: qua_dsl._ResultSource | None = stream_raw_adc
@@ -99,7 +99,12 @@ class QuantumMachinesCompilationOutput:
     """
 
     def __init__(
-        self, qprogram: QProgram, qua: Program, configuration: dict, measurements: list[MeasurementInfo]
+        self,
+        qprogram: QProgram,
+        qua: Program,
+        configuration: dict,
+        measurements: list[MeasurementInfo],
+        running_infinite_loop: bool,
     ) -> None:
         """Initialize the QuantumMachinesCompilationOutput instance.
 
@@ -112,6 +117,7 @@ class QuantumMachinesCompilationOutput:
         self.qua: Program = qua
         self.configuration: dict = configuration
         self.measurements: list[MeasurementInfo] = measurements
+        self.running_infinite_loop: bool = running_infinite_loop
 
     def __iter__(self):
         """Allows the class to be unpacked as a tuple (program, config, measurements)."""
@@ -151,10 +157,11 @@ class QuantumMachinesCompiler:
 
         self._qprogram: QProgram
         self._qprogram_block_stack: deque[Block]
-        self._qprogram_to_qua_variables: dict[Variable, qua.QuaVariableType]
+        self._qprogram_to_qua_variables: dict[Variable, qua.Variable]
         self._measurements: list[_MeasurementCompilationInfo]
         self._configuration: dict
         self._buses: dict[str, _BusCompilationInfo]
+        self._running_infinite_loop: bool = False
 
     def compile(
         self,
@@ -232,7 +239,11 @@ class QuantumMachinesCompiler:
 
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
         return QuantumMachinesCompilationOutput(
-            qprogram=self._qprogram, qua=qua_program, configuration=self._configuration, measurements=measurements
+            qprogram=self._qprogram,
+            qua=qua_program,
+            configuration=self._configuration,
+            measurements=measurements,
+            running_infinite_loop=self._running_infinite_loop,
         )
 
     def _process_measurements(self):
@@ -290,6 +301,7 @@ class QuantumMachinesCompiler:
         self._buses = {bus: _BusCompilationInfo() for bus in buses}
 
     def _handle_infinite_loop(self, _: InfiniteLoop):
+        self._running_infinite_loop = True
         return qua.infinite_loop_()
 
     def _handle_parallel_loop(self, element: Parallel):

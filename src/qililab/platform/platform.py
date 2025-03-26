@@ -932,13 +932,14 @@ class Platform:
                 measurement_result.set_classification_threshold(measurement.threshold)
                 results.append_result(bus=measurement.bus, result=measurement_result)
 
+            if output.running_infinite_loop:
+                job.halt()
+
             return results
 
         except Exception as e:
             cluster.turn_off()
             raise e
-
-        return results
 
     def execute_qprogram(
         self,

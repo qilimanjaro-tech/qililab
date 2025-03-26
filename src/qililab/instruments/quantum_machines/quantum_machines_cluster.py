@@ -20,7 +20,8 @@ from typing import Any, cast
 
 import numpy as np
 from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig
-from qm.api.v2.job_api import JobApi
+from qm.api.v2.job_api.job_api import JobApiWithDeprecations
+from qm.api.v2.qm_api_old import QmApiWithDeprecations
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
 from qm.program import Program
@@ -215,7 +216,9 @@ class QuantumMachinesCluster(Instrument):
                         "LO_frequency": rf_output["lo_frequency"],  # Should be between 2 and 18 GHz.
                         "LO_source": "internal",
                         "gain": rf_output["gain"] if "gain" in rf_output else 0.0,
-                        "output_mode": "always_on",
+                        "output_mode": (
+                            rf_output["output_mode"] if "output_mode" in rf_output else "always_on"
+                        ),  # Can be triggered_reversed', 'always_on', 'triggered', 'always_off'
                         "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
                     }
                     if "i_connection" in rf_output:
@@ -415,7 +418,7 @@ class QuantumMachinesCluster(Instrument):
     settings: QuantumMachinesClusterSettings
     device: QMMDriver
     _qmm: QuantumMachinesManager
-    _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
+    _qm: QuantumMachine | QmApiWithDeprecations  # TODO: Change private QM API to public when implemented by QM.
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
@@ -450,7 +453,7 @@ class QuantumMachinesCluster(Instrument):
             QuantumMachinesManager(
                 host=self.settings.address,
                 cluster_name=self.settings.cluster,
-                octave_calibration_db_path=self._octave_config._calibration_db_path,
+                octave_calibration_db_path=self._octave_config._calibration_db,
             )
             if self._octave_config is not None
             else QuantumMachinesManager(
@@ -500,9 +503,12 @@ class QuantumMachinesCluster(Instrument):
             self._config = cast("DictQuaConfig", merged_configuration)
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
-                self._qm.close()
-                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
-                self._compiled_program_cache = {}
+                if isinstance(self._qm, QmApiWithDeprecations):
+                    self._qm.update_config(config=self._config)
+                else:
+                    self._qm.close()
+                    self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
+                    self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
         """Run calibration procedure for the buses with octaves, if any."""
@@ -871,7 +877,7 @@ class QuantumMachinesCluster(Instrument):
             self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
         return self._compiled_program_cache[qua_program_hash]
 
-    def run_compiled_program(self, compiled_program_id: str) -> QmJob | JobApi:
+    def run_compiled_program(self, compiled_program_id: str) -> QmJob | JobApiWithDeprecations:
         """Executes a previously compiled QUA program identified by its unique compiled program ID.
 
         This method submits the compiled program to the Quantum Machines (QM) execution queue and waits for
@@ -912,7 +918,7 @@ class QuantumMachinesCluster(Instrument):
 
         return self._qm.execute(program)
 
-    def get_acquisitions(self, job: QmJob | JobApi) -> dict[str, np.ndarray]:
+    def get_acquisitions(self, job: QmJob | JobApiWithDeprecations) -> dict[str, np.ndarray]:
         """Fetches the results from the execution of a QUA Program.
 
         Once the results have been fetched, they are returned wrapped in a QuantumMachinesResult instance.
