@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.29.1 (2025-03-25)
+## 0.29.1 (2025-03-27)
 
 ### New features since last release
 

@@ -24,7 +24,6 @@ PACKAGE = "qililab"
 
 
 with open("src/qililab/config/version.py") as f:
-    no_empty_lines = [line.strip() for line in f.readlines() if line.strip()]
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 
