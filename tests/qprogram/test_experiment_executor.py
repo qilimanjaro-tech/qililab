@@ -35,6 +35,7 @@ def mock_platform():
     platform.to_dict = Mock(return_value={"name": "platform"})
     platform.experiment_results_base_path = tempfile.gettempdir()
     platform.experiment_results_path_format = "{date}/{time}/{label}.h5"
+    platform.set_crosstalk = Mock()
 
     return platform
 
@@ -62,6 +63,10 @@ def fixture_qprogram():
 
     return qp
 
+@pytest.fixture(name="crosstalk")
+def fixture_crosstalk():
+    return CrosstalkMatrix.from_buses(buses={"flux_q0": {"flux_q0": 1.0}})
+
 
 def get_qprogram_nshots_by_loop(nshots: int, qprogram: QProgram):
     with qprogram.average(nshots):
@@ -81,16 +86,21 @@ def get_qprogram_frequency_and_bias_by_loop(frequency: float, bias: float, qprog
 
 
 @pytest.fixture(name="experiment")
-def fixture_experiment(qprogram: QProgram):
+def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
     """Fixture to create a mock Experiment."""
     experiment = Experiment(label="experiment")
     bias = experiment.variable(label="Bias (mV)", domain=Domain.Voltage)
     frequency = experiment.variable(label="Frequency (Hz)", domain=Domain.Frequency)
     nshots = experiment.variable(label="nshots", domain=Domain.Scalar, type=int)
+
+    # Test SetCrosstalk
+    experiment.set_crosstalk(crosstalk=crosstalk)
+
     # Test SetParameter
     experiment.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.0)
     experiment.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5)
     experiment.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=1.0)
+    experiment.set_parameter(alias="flux_q0", parameter=Parameter.FLUX, value=0.0)
 
     # Test GetParameter returns a variable that can be reused
     gain = experiment.get_parameter(alias="flux_q0", parameter=Parameter.GAIN)
@@ -129,7 +139,7 @@ def fixture_experiment(qprogram: QProgram):
 class TestExperimentExecutor:
     """Test ExperimentExecutor class"""
 
-    def test_execute(self, platform, experiment, qprogram):
+    def test_execute(self, platform, experiment, qprogram, crosstalk):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
         executor = ExperimentExecutor(platform=platform, experiment=experiment, calibration=None)
         resuls_path = executor.execute()
@@ -141,9 +151,11 @@ class TestExperimentExecutor:
         # Check that platform methods were called in the correct order
         expected_calls = [
             call.to_dict(),
+            call.set_crosstalk(crosstalk=crosstalk),
             call.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
             call.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
             call.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None),
+            call.set_parameter(alias="flux_q0", parameter=Parameter.FLUX, value=0.0, channel_id=None),
             # Check that get_parameter returns a variable that can be reused
             call.get_parameter(alias="flux_q0", parameter=Parameter.GAIN, channel_id=None),
             call.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=1.23, channel_id=None),
