@@ -69,7 +69,7 @@ def qp_plat_draw_qcmrf() -> QProgram:
 def qp_plat_draw_qcm() -> QProgram:
     qp = QProgram()
     qp.set_phase("drive_line_q0_bus", 0.5)
-    qp.set_frequency("drive_line_q0_bus", 100e6)
+    # qp.set_frequency("drive_line_q0_bus", 100e6)
     qp.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=10))
     qp.wait("drive_line_q0_bus", 10)
     qp.set_phase("drive_line_q0_bus", 0)
@@ -79,7 +79,7 @@ def qp_plat_draw_qcm() -> QProgram:
 def qp_plat_draw_qcm_offset() -> QProgram:
     qp = QProgram()
     qp.set_offset("drive_line_q0_bus", 0.5)
-    qp.set_frequency("drive_line_q0_bus", 100e6)
+    # qp.set_frequency("drive_line_q0_bus", 100e6)
     qp.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=10))
     qp.wait("drive_line_q0_bus", 10)
     qp.set_offset("drive_line_q0_bus", 0)
