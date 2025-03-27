@@ -159,10 +159,12 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
+        self._voltage_coefficient: dict[str, float] = {}
 
     def compile(
         self,
         qprogram: QProgram,
+        voltage_coefficient: dict[str, float],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         times_of_flight: dict[str, int] | None = None,
@@ -173,8 +175,12 @@ class QbloxCompiler:
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
-            bus_mapping (dict[str, str], optional): Optional mapping of bus names. Defaults to None.
-            times_of_flight (dict[str, int], optional): Optional time of flight of bus. Defaults to None.
+            voltage_coefficient (dict[str, float]): Coefficient of voltage that depends on the module type and its voltage limit, QRMs reach 1 Vpp and QCMs 5 Vpp.
+            bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
+            calibration (Calibration | None, optional): . Defaults to None.
+            times_of_flight (dict[str, int] | None, optional): Optional time of flight of bus. Defaults to None.
+            delays (dict[str, int] | None, optional): . Defaults to None.
+            markers (dict[str, str] | None, optional): . Defaults to None.
 
         Returns:
             QbloxCompilationOutput:
@@ -224,6 +230,7 @@ class QbloxCompiler:
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
+        self._voltage_coefficient = voltage_coefficient
 
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
@@ -288,7 +295,7 @@ class QbloxCompiler:
                 )
                 return index, length
 
-            envelope = waveform.envelope() if waveform else np.zeros(default_length)
+            envelope = waveform.envelope() / self._voltage_coefficient[bus] if waveform else np.zeros(default_length)
             index = self._buses[bus].qpy_sequence._waveforms.add(envelope)
             self._buses[bus].waveform_to_index[_hash] = index
             return index, len(envelope)
