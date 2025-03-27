@@ -7,7 +7,7 @@
 The user can access the Qblox drawing feature in two ways:
 
   1. Via platform (includes runcard knowledge)
-   `platform.draw(self, qprogram: QProgram, averages_displayed: bool = False)`
+  `platform.draw(self, qprogram: QProgram, averages_displayed: bool = False)`
 
   ```python
   with platform.session():
