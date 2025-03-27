@@ -11,13 +11,12 @@ The user can access the Qblox drawing feature in two ways:
 
   ```python
   with platform.session():
-    platform.draw(qprogram=qprogram)
+    platform.draw(qprogram = qprogram)
   ```
-
   Note that if it is used with a Quantum Machine runcard, a ValueError will be generated.
 
   2. Via QProgram (includes runcard knowledge)
-   `qprogram.draw(self, averages_displayed=False)`
+  `qprogram.draw(self, averages_displayed=False)`
 
   ```python
   qp = QProgram()
