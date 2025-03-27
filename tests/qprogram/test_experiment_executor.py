@@ -63,9 +63,12 @@ def fixture_qprogram():
 
     return qp
 
+
 @pytest.fixture(name="crosstalk")
 def fixture_crosstalk():
-    return CrosstalkMatrix.from_buses(buses={"flux_q0": {"flux_q0": 1.0}})
+    return CrosstalkMatrix.from_array(
+        buses=["flux_q0", "flux_q1"], matrix_array=np.array([[1.47046905, 0.12276261], [-0.55322207, 1.58247856]])
+    )
 
 
 def get_qprogram_nshots_by_loop(nshots: int, qprogram: QProgram):
@@ -246,7 +249,9 @@ class TestExperimentExecutor:
             "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
         }
         calibration = Calibration()
-        calibration.crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+        calibration.crosstalk_matrix = CrosstalkMatrix.from_array(
+            buses=["flux_0", "flux_1"], matrix_array=np.array([[1.47046905, 0.12276261], [-0.55322207, 1.58247856]])
+        )
 
         executor = ExperimentExecutor(platform=platform, experiment=experiment, calibration=calibration)
         _ = executor.execute()
