@@ -15,10 +15,12 @@ from types import MappingProxyType
 from typing import Callable
 
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
+from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import Domain
+from qililab.qprogram.variable import Domain, Variable
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
@@ -43,6 +45,7 @@ class Experiment(StructuredProgram):
             Parameter.OFFSET_OUT1: Domain.Voltage,
             Parameter.OFFSET_OUT2: Domain.Voltage,
             Parameter.OFFSET_OUT3: Domain.Voltage,
+            Parameter.FLUX: Domain.Flux,
             Parameter.DURATION: Domain.Time,
             Parameter.LO_FREQUENCY: Domain.Frequency,
             Parameter.IF: Domain.Frequency,
@@ -59,6 +62,7 @@ class Experiment(StructuredProgram):
 
     def __init__(self, label: str) -> None:
         super().__init__()
+
         self.label: str = label
 
     def get_parameter(self, alias: str, parameter: Parameter, channel_id: int | None = None):
@@ -80,7 +84,13 @@ class Experiment(StructuredProgram):
         self._active_block.append(operation)
         return variable
 
-    def set_parameter(self, alias: str, parameter: Parameter, value: int | float | int, channel_id: int | None = None):
+    def set_parameter(
+        self,
+        alias: str,
+        parameter: Parameter,
+        value: int | float | bool | Variable,
+        channel_id: int | None = None,
+    ):
         """Set a platform parameter.
 
         Appends a SetParameter operation to the active block of the experiment.
@@ -97,8 +107,8 @@ class Experiment(StructuredProgram):
         self,
         qprogram: QProgram | Callable[..., QProgram],  # type: ignore
         bus_mapping: dict[str, str] | None = None,
-        calibration: Calibration | None = None,
         debug: bool = False,
+        calibration: Calibration | None = None,
     ):
         """Execute a quantum program within the experiment.
 
@@ -108,4 +118,8 @@ class Experiment(StructuredProgram):
             qprogram (QProgram): The quantum program to be executed.
         """
         operation = ExecuteQProgram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, debug=debug)
+        self._active_block.append(operation)
+
+    def set_crosstalk(self, crosstalk: CrosstalkMatrix):
+        operation = SetCrosstalk(crosstalk=crosstalk)
         self._active_block.append(operation)

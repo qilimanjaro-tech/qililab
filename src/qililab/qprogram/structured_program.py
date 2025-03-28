@@ -250,7 +250,7 @@ class StructuredProgram:
 
         if domain == Domain.Time:
             return _int_variable(label, domain)
-        if domain in [Domain.Frequency, Domain.Phase, Domain.Voltage]:
+        if domain in [Domain.Frequency, Domain.Phase, Domain.Voltage, Domain.Flux]:
             return _float_variable(label, domain)
         raise NotImplementedError
 
