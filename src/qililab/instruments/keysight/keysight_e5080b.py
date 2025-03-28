@@ -1,8 +1,3 @@
-#QUESTIONS FOR FABIO
-# Power always has port1
-# bounds of power -  do i want to query?
-# always the S11?
-
 #This file is meant to be qcode
 
 from qcodes import VisaInstrument
@@ -25,12 +20,11 @@ class KeySight_E5080B(VisaInstrument):
         max_freq = 53e9
         min_if_bandwidth = 1
         max_if_bandwidth = 15e6
+        min_nop = 11
+        max_nop = 100003
+        min_power = 0
+        max_power = 10
 
-        def get_power_limits(self):
-            """Queries the minimum and maximum power limits."""
-            max_power = float(self.ask(f"SOURce{self.channel}:POWer? MAX"))
-            min_power = float(self.ask(f"SOURce{self.channel}:POWer? MIN"))
-            return min_power, max_power
 
         # Sets the start frequency of the analyzer.
         self.start_freq: Parameter = self.add_parameter(
@@ -122,7 +116,7 @@ class KeySight_E5080B(VisaInstrument):
             get_parser=int,
             set_cmd="SENS:SWE:POIN {}",
             unit="",
-            vals=Numbers(min_value=11, max_value=100003),
+            vals=Numbers(min_value=min_nop, max_value=max_nop),
         )
         """Parameter points"""
 
@@ -134,7 +128,7 @@ class KeySight_E5080B(VisaInstrument):
             get_cmd="SOUR:POW?",
             set_cmd= self._set_power_bounds,
             get_parser=float,
-            vals=Numbers(),
+            vals=Numbers(min_value=min_power, max_value=max_power),
         )
         """Parameter source_power"""
 
@@ -160,19 +154,15 @@ class KeySight_E5080B(VisaInstrument):
         )
         """Parameter sweep_type"""
 
-
-#REVIEW BELOW
         # Set/get a measurement parameter for the specified measurement.
-        self.if_bandwidth: Parameter = self.add_parameter(
-            "if_bandwidth",
-            label="if_bandwidth",
-            unit="Hz",
+        self.scattering_parameter: Parameter = self.add_parameter(
+            "scattering_parameter",
+            label="scattering_parameter",
             get_cmd="CALC:MEAS:PAR?",
-            set_cmd="CALC%:MEAS:PAR? {}", #NEED TO SPECIFY THE PARAM
-            get_parser=float,
-            vals=Numbers(min_value=min_if_bandwidth, max_value=max_if_bandwidth),
+            set_cmd=f"CALC%:MEAS:PAR? {}",
+            vals=Enum("S11","S12","S21","S22"),
         )
-        """Parameter if_bandwidth"""
+        """Parameter scattering_parameter"""
 
         # Turns trace averaging ON or OFF.
         self.averages_enabled: Parameter = self.add_parameter(
@@ -214,11 +204,3 @@ class KeySight_E5080B(VisaInstrument):
         """
         self.write("SENS:AVER:CLE")
 
-    def _set_power_bounds(self, value):
-        """Sets the power bounds after dynamically determining valid limits."""
-        max_power = float(self.ask("SOUR:POW?MAX"))
-        min_power = float(self.ask("SOUR:POW?MIN"))
-        self.power_level.vals = Numbers(min_value=min_power, max_value=max_power)
-        self.write("SOUR:POW {}")
-
-    

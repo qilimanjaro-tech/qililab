@@ -210,10 +210,10 @@ class VNATriggerModes(str, Enum):
     BUS = "BUS"
 
 
-class VNASweepModes(str, Enum):
-    """Vector Network Analyzers Sweep Modes
+class VNASweepTypes(str, Enum):
+    """Vector Network Analyzers Sweep Types
     Args:
-        enum (str): Available types of sweeping modes:
+        enum (str): Available types of sweeping types:
         * hold
         * cont
         * single
@@ -224,6 +224,17 @@ class VNASweepModes(str, Enum):
     CONT = "cont"
     SING = "single"
     GRO = "group"
+
+class VNAAverageModes(str, Enum):
+    """Vector Network Analyzers Average Modes
+    Args:
+        enum (str): Available types of average modes:
+        * point
+        * sweep
+    """
+
+    POIN = "poin"
+    SWEEP = "sweep"
 
 
 class InstrumentControllerName(str, Enum):
@@ -330,7 +341,7 @@ class Parameter(str, Enum):
     RF_ON = "rf_on"
     OPERATION_PARAMETER = "operation_parameter"
     DEVICE_TIMEOUT = "device_timeout"
-    SWEEP_MODE = "sweep_mode"
+    SWEEP_TYPE = "sweep_type"
     ELECTRICAL_DELAY = "electrical_delay"
     TIMEOUT = "timeout"
     NUM_FLIPS = "num_flips"
@@ -357,6 +368,11 @@ class Parameter(str, Enum):
     B = "b"
     T_PHI = "t_phi"
     GATE_OPTIONS = "options"
+    STEP_AUTO = "step_auto"
+    STEP_SIZE = "step_size"
+    CW_FREQUENCY = "cw_frequency"
+    AVERAGES_MODE = "averages_mode"
+
 
     @classmethod
     def to_yaml(cls, representer, node):

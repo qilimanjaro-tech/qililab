@@ -26,7 +26,7 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
-from qililab.typings.enums import VNASweepModes
+from qililab.typings.enums import VNAScatteringParameters, VNAAverageModes, VNASweepTypes
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 
 
@@ -47,8 +47,7 @@ class E5080B(Instrument):
             num_points (int): Number of measurement points.
             if_bandwidth (float): Intermediate frequency bandwidth.
         """
-        
-        power: float
+    
         start_freq: float
         stop_freq: float
         center_freq: float
@@ -57,11 +56,13 @@ class E5080B(Instrument):
         span: float
         cw: float
         points: int
+        source_power: float
         if_bandwidth: float
-        sweep_type: Enum
+        sweep_type: VNASweepTypes
         averages_enabled: bool
         averages_count: int
-        averages_mode: Enum
+        averages_mode: VNAAverageModes
+        scattering_parameter: VNAScatteringParameters
         
 
     settings: E5080BSettings
@@ -160,7 +161,7 @@ class E5080B(Instrument):
         return self.settings.if_bandwidth
     
     @property
-    def sweep_type(self):
+    def sweep_type(self) -> VNASweepTypes:
         """Sets the type of analyzer sweep mode. First set sweep type, then set sweep parameters such as frequency or power settings. Default is LIN
 
         Returns:
@@ -169,8 +170,14 @@ class E5080B(Instrument):
         return self.settings.sweep_type
 
     @property
-    # TODO:def MEASURE TO BE ADDED
+    def scattering_parameter(self) -> VNAScatteringParameters:
+        """Sets the type of analyzer sweep mode. First set sweep type, then set sweep parameters such as frequency or power settings. Default is LIN
 
+        Returns:
+            Enum: settings.sweep_type.
+        """
+        return self.settings.scattering_parameter
+    
     @property
     def averages_enabled(self):
         """Turns trace averaging ON or OFF.
@@ -190,7 +197,7 @@ class E5080B(Instrument):
         return self.settings.averages_count
 
     @property
-    def averages_mode(self):
+    def averages_mode(self) -> VNAAverageModes:
         """Sets the type of averaging to perform: Point or Sweep (default is sweep).
 
         Returns:
@@ -199,7 +206,7 @@ class E5080B(Instrument):
         return self.settings.averages_mode
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: int = 1, port: int = 1) -> None:
+    def set_parameter(self, parameter: Parameter, value: ParameterValue) -> None:
         """Get instrument parameter.
 
         Args:
@@ -207,27 +214,12 @@ class E5080B(Instrument):
             channel_id (int): Channel identifier of the parameter to update.
             port (int): Port identifier of the parameter to update.
         """
-    #     def set_parameter(self, parameter: Parameter, value: ParameterValue):
-    # """Set various parameters for the VNA."""
-    
-        if parameter == Parameter.POWER:
-            self.settings.source_power = float(value)
-            if self.is_device_active():
-                self.device.source_power(self.settings.source_power)
-            return
         
         if parameter == Parameter.FREQUENCY_START:
             self.settings.start_freq = float(value)
             if self.is_device_active():
                 self.device.start_freq(self.settings.start_freq)
             return
-
-        if parameter == Parameter.POWER:
-            self.settings.power = float(value)
-            if self.is_device_active():
-                self.device.power(self.power)
-            return
-
 
         if parameter == Parameter.FREQUENCY_STOP:
             self.settings.stop_freq = float(value)
@@ -270,6 +262,12 @@ class E5080B(Instrument):
             if self.is_device_active():
                 self.device.points(self.settings.points)
             return
+
+        if parameter == Parameter.POWER:
+            self.settings.source_power = float(value)
+            if self.is_device_active():
+                self.device.power(self.source_power)
+            return
         
         if parameter == Parameter.IF_BANDWIDTH:
             self.settings.if_bandwidth = float(value)
@@ -277,10 +275,16 @@ class E5080B(Instrument):
                 self.device.if_bandwidth(self.settings.if_bandwidth)
             return
         
-        if parameter == Parameter.SWEEP_MODE:
+        if parameter == Parameter.SWEEP_TYPE:
             self.settings.sweep_type = value  # Assuming Enum type
             if self.is_device_active():
                 self.device.sweep_type(self.settings.sweep_type)
+            return
+        
+        if parameter == Parameter.SCATTERING_PARAMETER:
+            self.settings.scattering_parameter = value
+            if self.is_device_active():
+                self.device.scattering_parameter(self.settings.scattering_parameter)
             return
         
         if parameter == Parameter.AVERAGING_ENABLED:
@@ -296,13 +300,12 @@ class E5080B(Instrument):
             return
         
         if parameter == Parameter.AVERAGES_MODE:
-            self.settings.averages_mode = value  # Assuming Enum type
+            self.settings.averages_mode = value
             if self.is_device_active():
                 self.device.averages_mode(self.settings.averages_mode)
             return
         
         raise ParameterNotFound(self, parameter)
-
 
 
     def get_parameter(self, parameter: Parameter):
@@ -311,15 +314,39 @@ class E5080B(Instrument):
         Args:
             parameter (Parameter): Name of the parameter to get.
         """
+        
+        if parameter == Parameter.FREQUENCY_START:
+            return self.settings.start_freq
+        if parameter == Parameter.FREQUENCY_STOP:
+            return self.settings.stop_freq
+        if parameter == Parameter.FREQUENCY_CENTER:
+            return self.settings.center_freq
+        if parameter == Parameter.STEP_AUTO:
+            return self.settings.step_auto
+        if parameter == Parameter.STEP_SIZE:
+            return self.settings.step_size
+        if parameter == Parameter.SPAN:
+            return self.settings.span
+        if parameter == Parameter.CW_FREQUENCY:
+            return self.settings.cw
+        if parameter == Parameter.NUMBER_POINTS:
+            return self.settings.points
         if parameter == Parameter.POWER:
-            return self.settings.power
+            return self.settings.source_power
         if parameter == Parameter.IF_BANDWIDTH:
             return self.settings.if_bandwidth
-        if parameter == Parameter.SWEEP_MODE:
-            return self._get_sweep_mode()
-        if parameter == Parameter.DEVICE_TIMEOUT:
-            return self.device_timeout
+        if parameter == Parameter.SWEEP_TYPE:
+            return self.settings.sweep_type
+        if parameter == Parameter.SCATTERING_PARAMETER:
+            return self.settings.scattering_parameter
+        if parameter == Parameter.AVERAGING_ENABLED:
+            return self.settings.averages_enabled
+        if parameter == Parameter.NUMBER_AVERAGES:
+            return self.settings.averages_count
+        if parameter == Parameter.AVERAGES_MODE:
+            return self.settings.averages_mode
         raise ParameterNotFound(self, parameter)
+
 
     def _set_parameter_str(self, parameter: Parameter, value: str):
         """Set instrument settings parameter to the corresponding value
