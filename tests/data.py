@@ -240,7 +240,7 @@ class Galadriel:
     qblox_qcm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QCM.value,
         "alias": InstrumentName.QBLOX_QCM.value,
-        AWGTypes.OUT_OFFSETS: [0, 0.5, 0.7, 0.8],
+        AWGTypes.OUT_OFFSETS: [0, 0, 0.7, 0.8],
         AWGTypes.AWG_SEQUENCERS: [
             {
                 "identifier": 0,
@@ -252,11 +252,47 @@ class Galadriel:
                 Parameter.PHASE_IMBALANCE.value: 0,
                 Parameter.OFFSET_I.value: 0,
                 Parameter.OFFSET_Q.value: 0,
-                Parameter.HARDWARE_MODULATION.value: False,
+                Parameter.HARDWARE_MODULATION.value: True,
             },
             {
                 "identifier": 1,
-                "outputs": [0, 1],
+                "outputs": [0],
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+            },
+            {
+                "identifier": 2,
+                "outputs": [1],
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+            },
+            {
+                "identifier": 3,
+                "outputs": [2],
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+            },
+            {
+                "identifier": 4,
+                "outputs": [3],
                 Parameter.IF.value: 100_000_000,
                 Parameter.GAIN_I.value: 1,
                 Parameter.GAIN_Q.value: 1,
@@ -579,6 +615,26 @@ class Galadriel:
             RUNCARD.ALIAS: "flux_line_q0_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             RUNCARD.CHANNELS: [1, None],
+        },
+        {
+            RUNCARD.ALIAS: "flux_line_q1_bus",
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
+            RUNCARD.CHANNELS: [2, None],
+        },
+        {
+            RUNCARD.ALIAS: "flux_line_q2_bus",
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
+            RUNCARD.CHANNELS: [3, None],
+        },
+        {
+            RUNCARD.ALIAS: "flux_line_q3_bus",
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
+            RUNCARD.CHANNELS: [4, None],
+        },
+        {
+            RUNCARD.ALIAS: "flux_line_too_many_instr",
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, InstrumentName.QBLOX_QCM.value],
+            RUNCARD.CHANNELS: [1, 4],
         },
     ]
 
@@ -905,8 +961,16 @@ class SauronVNA:
     ]
 
     buses: list[dict[str, Any]] = [
-        {RUNCARD.ALIAS: "keysight_e5080b_bus", RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value], RUNCARD.CHANNELS: [0]},
-        {RUNCARD.ALIAS: "agilent_e5071b_bus", RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value], RUNCARD.CHANNELS: [0]},
+        {
+            RUNCARD.ALIAS: "keysight_e5080b_bus",
+            RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
+            RUNCARD.CHANNELS: [0],
+        },
+        {
+            RUNCARD.ALIAS: "agilent_e5071b_bus",
+            RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
+            RUNCARD.CHANNELS: [0],
+        },
     ]
 
     runcard = {
@@ -915,6 +979,7 @@ class SauronVNA:
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
         RUNCARD.BUSES: buses,
     }
+
 
 class SauronQuantumMachines:
     """Test data of the sauron with quantum machines platform."""

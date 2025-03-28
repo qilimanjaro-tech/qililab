@@ -52,9 +52,9 @@ class ExperimentResults:
         """
         self.path = path
         self.data: dict[tuple[str, str], Any] = {}  # To hold links to the data of the results for in-memory access
-        self.dimensions: dict[
-            tuple[str, str], Any
-        ] = {}  # To hold links to dimensions of the results for in-memory access
+        self.dimensions: dict[tuple[str, str], Any] = (
+            {}
+        )  # To hold links to dimensions of the results for in-memory access
         self._file: h5py.File
 
     def __enter__(self):
