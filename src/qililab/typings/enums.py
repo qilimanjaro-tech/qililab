@@ -161,7 +161,6 @@ class InstrumentName(str, Enum):
         * qblox_D5a
         * qblox_S4g
         * keysight_e5080b
-        * agilent_e5071B
         * yokogawa_gs200
         * OPX -> Exactly as Quantum Machines InstrumentType
     """
@@ -175,7 +174,6 @@ class InstrumentName(str, Enum):
     QBLOX_D5A = "D5a"
     QBLOX_S4G = "S4g"
     KEYSIGHT_E5080B = "keysight_e5080b"
-    AGILENT_E5071B = "agilent_e5071B"
     YOKOGAWA_GS200 = "yokogawa_gs200"
     QCMRF = "QCM-RF"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster"
@@ -214,6 +212,22 @@ class VNASweepTypes(str, Enum):
     """Vector Network Analyzers Sweep Types
     Args:
         enum (str): Available types of sweeping types:
+        * lin
+        * log
+        * pow
+        * cw
+        * segm
+    """
+    LIN = "lin"
+    LOG = "log"
+    POW = "pow"
+    CW = "cw"
+    SEGM = "segm"
+
+class VNASweepModes(str, Enum):
+    """Vector Network Analyzers Sweep Types
+    Args:
+        enum (str): Available types of sweeping modes:
         * hold
         * cont
         * single
@@ -248,7 +262,6 @@ class InstrumentControllerName(str, Enum):
         * mini_circuits
         * keithley_2600
         * keysight_e5080b
-        * agilent_e5071B
         * yokogawa
         * qmm
     """
@@ -259,7 +272,6 @@ class InstrumentControllerName(str, Enum):
     KEITHLEY2600 = "keithley_2600"
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
-    AGILENT_E5071B = "agilent_e5071B_controller"
     YOKOGAWA_GS200 = "yokogawa_gs200_controller"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
     QDEVIL_QDAC2 = "qdevil_qdac2"
@@ -372,6 +384,7 @@ class Parameter(str, Enum):
     STEP_SIZE = "step_size"
     CW_FREQUENCY = "cw_frequency"
     AVERAGES_MODE = "averages_mode"
+    SWEEP_MODE = "sweep_mode"
 
 
     @classmethod

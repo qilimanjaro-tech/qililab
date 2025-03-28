@@ -26,7 +26,7 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
-from qililab.typings.enums import VNAScatteringParameters, VNAAverageModes, VNASweepTypes
+from qililab.typings.enums import VNAScatteringParameters, VNAAverageModes, VNASweepTypes, VNASweepModes
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 
 
@@ -59,6 +59,7 @@ class E5080B(Instrument):
         source_power: float
         if_bandwidth: float
         sweep_type: VNASweepTypes
+        sweep_mode: VNASweepModes
         averages_enabled: bool
         averages_count: int
         averages_mode: VNAAverageModes
@@ -168,6 +169,15 @@ class E5080B(Instrument):
             Enum: settings.sweep_type.
         """
         return self.settings.sweep_type
+    
+    @property
+    def sweep_mode(self) -> VNASweepModes:
+        """Sets the number of trigger signals the specified channel will ACCEPT. Default is Continuous
+
+        Returns:
+            Enum: settings.sweep_mode.
+        """
+        return self.settings.sweep_mode
 
     @property
     def scattering_parameter(self) -> VNAScatteringParameters:
@@ -281,6 +291,12 @@ class E5080B(Instrument):
                 self.device.sweep_type(self.settings.sweep_type)
             return
         
+        if parameter == Parameter.SWEEP_MODE:
+            self.settings.sweep_mode = value  # Assuming Enum type
+            if self.is_device_active():
+                self.device.sweep_mode(self.settings.sweep_mode)
+            return
+        
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = value
             if self.is_device_active():
@@ -337,6 +353,8 @@ class E5080B(Instrument):
             return self.settings.if_bandwidth
         if parameter == Parameter.SWEEP_TYPE:
             return self.settings.sweep_type
+        if parameter == Parameter.SWEEP_MODE:
+            return self.settings.sweep_mode
         if parameter == Parameter.SCATTERING_PARAMETER:
             return self.settings.scattering_parameter
         if parameter == Parameter.AVERAGING_ENABLED:
@@ -348,70 +366,6 @@ class E5080B(Instrument):
         raise ParameterNotFound(self, parameter)
 
 
-    def _set_parameter_str(self, parameter: Parameter, value: str):
-        """Set instrument settings parameter to the corresponding value
-
-        Args:
-            parameter (Parameter): settings parameter to be updated
-            value (str): new value
-        """
-        if parameter == Parameter.SWEEP_MODE:
-            self.set_sweep_mode(VNASweepModes(value))
-            return
-
-        super()._set_parameter_str(parameter, value)
-
-    def set_power(self, power: float, channel=1, port=1):
-        """sets the power in dBm"""
-        self.settings.power = power
-        if self.is_device_active():
-            self.send_command(f"SOUR{channel}:POW{port}", f"{self.settings.power:.1f}")
-
-    def set_if_bandwidth(self, value: float, channel=1):
-        """sets the if bandwidth in Hz"""
-        self.settings.if_bandwidth = value
-        if self.is_device_active():
-            bandwidth = str(self.settings.if_bandwidth)
-            self.send_command(f"SENS{channel}:BWID", bandwidth)
-
-    def get_sweep_mode(self):
-        """VectorNetworkAnalyzer'sweep_mode' property.
-
-        Returns:mode
-            str: settings.sweep_mode.
-        """
-        return self.settings.sweep_mode
-
-    def set_sweep_mode(self, value: str, channel=1):
-        """
-        Sets the sweep mode
-
-        Input:
-            mode (str) : Sweep mode: 'hold', 'cont', single' and 'group'
-        """
-        self.settings.sweep_mode = VNASweepModes(value)
-        if self.is_device_active():
-            mode = self.settings.sweep_mode.name
-            self.send_command(f"SENS{channel}:SWE:MODE", mode)
-
-    @property
-    def device_timeout(self):
-        """VectorNetworkAnalyzer 'device_timeout' property.
-
-        Returns:
-            float: settings.device_timeout.
-        """
-        return self.settings.device_timeout
-
-    @device_timeout.setter
-    def device_timeout(self, value: float):
-        """sets the device timeout in mili seconds"""
-        self.settings.device_timeout = value
-
-    def _get_sweep_mode(self, channel=1):
-        """Return the current sweep mode."""
-        return str(self.send_query(f":SENS{channel}:SWE:MODE?")).rstrip()
-
     def _get_trace(self, channel=1, trace=1):
         """Get the data of the current trace."""
         self.send_command(command="FORM:DATA", arg="REAL,32")
@@ -421,14 +375,6 @@ class E5080B(Instrument):
         dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
 
         return datareal + 1j * dataimag
-
-    def _set_count(self, count: str, channel=1):
-        """
-        Sets the trigger count (groups)
-        Input:
-            count (str) : Count number
-        """
-        self.send_command(f"SENS{channel}:SWE:GRO:COUN", count)
 
     def _pre_measurement(self):
         """
@@ -460,9 +406,18 @@ class E5080B(Instrument):
             time.sleep(period)
         return False
 
-    def average_clear(self, channel=1):
-        """Clears the average buffer."""
-        self.send_command(command=f":SENS{channel}:AVER:CLE", arg="")
+    def read_tracedata(self):
+        """
+        Return the current trace data.
+        It already releases the VNA after finishing the required number of averages.
+        """
+        self._pre_measurement()
+        self._start_measurement()
+        if self._wait_until_ready():
+            trace = self._get_trace()
+            self.release()
+            return trace
+        raise TimeoutError("Timeout waiting for trace data")
 
     def get_frequencies(self):
         """return freqpoints"""
@@ -484,18 +439,7 @@ class E5080B(Instrument):
         mode = self.settings.sweep_mode.name
         self.send_command(f"SENS{channel}:SWE:MODE", mode)
 
-    def read_tracedata(self):
-        """
-        Return the current trace data.
-        It already releases the VNA after finishing the required number of averages.
-        """
-        self._pre_measurement()
-        self._start_measurement()
-        if self._wait_until_ready():
-            trace = self._get_trace()
-            self.release()
-            return trace
-        raise TimeoutError("Timeout waiting for trace data")
+
 
     def acquire_result(self):
         """Convert the data received from the device to a Result object."""

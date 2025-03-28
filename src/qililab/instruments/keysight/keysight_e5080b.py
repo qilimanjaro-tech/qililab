@@ -154,6 +154,16 @@ class KeySight_E5080B(VisaInstrument):
         )
         """Parameter sweep_type"""
 
+        # Sets the number of trigger signals the specified channel will ACCEPT. Default is CONT.
+        self.sweep_mode: Parameter = self.add_parameter(
+            "sweep_mode",
+            label="Type",
+            get_cmd="SENS:SWE:MODE?",
+            set_cmd="SENS:SWE:MODE {}",
+            vals=Enum("HOLD", "CONT", "GRO", "SING"),
+        )
+        """Parameter sweep_mode"""
+
         # Set/get a measurement parameter for the specified measurement.
         self.scattering_parameter: Parameter = self.add_parameter(
             "scattering_parameter",
