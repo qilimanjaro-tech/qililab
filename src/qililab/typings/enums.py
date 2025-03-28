@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+#TODO: FIX VNAFormatData
+#revuew all of the bootom of the code (ie the preexisitjng one)
+#check out the NB i found on keysight to determine how to deal with the wait
+
 """Enum classes"""
 
 from enum import Enum
@@ -250,6 +255,16 @@ class VNAAverageModes(str, Enum):
     POIN = "poin"
     SWEEP = "sweep"
 
+class VNAFormatData(str, Enum):
+    """Vector Network Analyzers Average Modes
+    Args:
+        enum (str): Available types of average modes:
+        * point
+        * sweep
+    """
+
+    REAL_32 = "real,32"
+    SWEEP = "sweep"
 
 class InstrumentControllerName(str, Enum):
     """Instrument Controller names.
@@ -385,6 +400,7 @@ class Parameter(str, Enum):
     CW_FREQUENCY = "cw_frequency"
     AVERAGES_MODE = "averages_mode"
     SWEEP_MODE = "sweep_mode"
+    CLEAR_AVERAGES = "clear_averages"
 
 
     @classmethod

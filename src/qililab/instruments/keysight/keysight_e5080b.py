@@ -174,7 +174,7 @@ class KeySight_E5080B(VisaInstrument):
         )
         """Parameter scattering_parameter"""
 
-        # Turns trace averaging ON or OFF.
+        # Turns trace averaging ON or OFF. Default OFF
         self.averages_enabled: Parameter = self.add_parameter(
             "averages_enabled",
             label="Averages Enabled",
@@ -195,7 +195,7 @@ class KeySight_E5080B(VisaInstrument):
         )
         """Parameter averages count"""
 
-        #Sets the type of averaging to perform: Point or Sweep (default is sweep).
+        # Sets the type of averaging to perform: Point or Sweep (default is sweep).
         self.averages_mode: Parameter = self.add_parameter(
             "averages_mode",
             label="Averages Mode",
@@ -205,6 +205,15 @@ class KeySight_E5080B(VisaInstrument):
         )
         """Parameter averages mode"""
 
+        # Sets the data format for transferring measurement data and frequency data. Default is ASCii,0.
+        self.format_data: Parameter = self.add_parameter(
+            "format_data",
+            label="Format Data",
+            get_cmd="FORM:DATA?",
+            set_cmd="FORM:DATA {}",
+            vals=Enum("REAL,32", "REAL,64", "ASCii,0"),
+        )
+        """Parameter averages mode"""
     
     #Write only commands
 

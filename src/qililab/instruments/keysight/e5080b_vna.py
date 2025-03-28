@@ -26,7 +26,7 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
-from qililab.typings.enums import VNAScatteringParameters, VNAAverageModes, VNASweepTypes, VNASweepModes
+from qililab.typings.enums import VNAScatteringParameters, VNAAverageModes, VNASweepTypes, VNASweepModes, VNAFormatData
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 
 
@@ -64,6 +64,8 @@ class E5080B(Instrument):
         averages_count: int
         averages_mode: VNAAverageModes
         scattering_parameter: VNAScatteringParameters
+        format_data: VNAFormatData
+
         
 
     settings: E5080BSettings
@@ -215,6 +217,15 @@ class E5080B(Instrument):
         """
         return self.settings.averages_mode
 
+    @property
+    def format_data(self) -> VNAFormatData:
+        """Sets the data format for transferring measurement data and frequency data. Default is ASCii,0.
+
+        Returns:
+            Enum: settings.format_data.
+        """
+        return self.settings.format_data
+    
     @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue) -> None:
         """Get instrument parameter.
@@ -321,6 +332,15 @@ class E5080B(Instrument):
                 self.device.averages_mode(self.settings.averages_mode)
             return
         
+        if parameter == Parameter.FORMAT_DATA:
+            self.settings.format_data = value
+            if self.is_device_active():
+                self.device.format_data(self.settings.format_data)
+            return
+        
+        if parameter == Parameter.CLEAR_AVERAGES:
+            self.device.clear_averages()
+
         raise ParameterNotFound(self, parameter)
 
 
@@ -363,6 +383,9 @@ class E5080B(Instrument):
             return self.settings.averages_count
         if parameter == Parameter.AVERAGES_MODE:
             return self.settings.averages_mode
+        if parameter == Parameter.FORMAT_DATA:
+            return self.settings.format_data
+        
         raise ParameterNotFound(self, parameter)
 
 
@@ -380,22 +403,19 @@ class E5080B(Instrument):
         """
         Set everything needed for the measurement
         Averaging has to be enabled.
-        Trigger count is set to number of averages
         """
-        if not self.averaging_enabled:
+        if not self.averages_enabled:
             self.averaging_enabled = True
             self.number_averages = 1
-        self._set_count(str(self.settings.number_averages))
 
     def _start_measurement(self, channel=1):
         """
         This function is called at the beginning of each single measurement in the spectroscopy script.
         Also, the averages need to be reset.
         """
-        self.average_clear()
-        self.settings.sweep_mode = VNASweepModes("group")
+        self.clear_averages()
         mode = self.settings.sweep_mode.name
-        self.send_command(f"SENS{channel}:SWE:MODE", mode)
+        self.sweep_mode(mode)
 
     def _wait_until_ready(self, period=0.25) -> bool:
         """Waiting function to wait until VNA is ready."""
@@ -418,6 +438,10 @@ class E5080B(Instrument):
             self.release()
             return trace
         raise TimeoutError("Timeout waiting for trace data")
+    
+    def clear_averages(self):
+        """ Clears and restarts averaging of the measurement data. Does NOT apply to point averaging."""
+        self.device.clear_averages()
 
     def get_frequencies(self):
         """return freqpoints"""
