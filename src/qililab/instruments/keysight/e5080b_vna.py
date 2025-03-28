@@ -21,34 +21,182 @@ import numpy as np
 
 from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instruments.decorators import log_set_parameter
-from qililab.instruments.instrument import ParameterNotFound
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings.enums import VNASweepModes
-from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
+from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 
 
 @InstrumentFactory.register
-class E5080B(VectorNetworkAnalyzer):
+class E5080B(Instrument):
     """KeySight Vector Network Analyzer E5080B"""
 
     name = InstrumentName.KEYSIGHT_E5080B
-    device: VectorNetworkAnalyzerDriver
 
     @dataclass
-    class E5080BSettings(VectorNetworkAnalyzer.VectorNetworkAnalyzerSettings):
-        """Contains the settings of a specific VectorNetworkAnalyzer.
+    class E5080BSettings(Instrument.InstrumentSettings):
+        """Contains the settings of the VNA.
 
         Args:
-            sweep_mode (str): Sweeping mode of the instrument
+            power (float): Output power in dBm.
+            start_freq (float): Start frequency in Hz.
+            stop_freq (float): Stop frequency in Hz.
+            num_points (int): Number of measurement points.
+            if_bandwidth (float): Intermediate frequency bandwidth.
         """
-
-        sweep_mode: VNASweepModes = VNASweepModes.CONT
-        device_timeout: float = DEFAULT_TIMEOUT
+        
+        power: float
+        start_freq: float
+        stop_freq: float
+        center_freq: float
+        step_auto: bool
+        step_size: float
+        span: float
+        cw: float
+        points: int
+        if_bandwidth: float
+        sweep_type: Enum
+        averages_enabled: bool
+        averages_count: int
+        averages_mode: Enum
+        
 
     settings: E5080BSettings
+    device: KeysightE5080B
+    device_initialized: bool = False
+
+    @property
+    def start_freq(self):
+        """Sets the start frequency of the analyzer.
+
+        Returns:
+            float: settings.start_freq.
+        """
+        return self.settings.start_freq
+    
+    @property
+    def stop_freq(self):
+        """Sets the stop frequency of the analyzer.
+
+        Returns:
+            float: settings.stop_freq.
+        """
+        return self.settings.stop_freq
+
+    @property
+    def center_freq(self):
+        """Sets the center frequency of the analyzer.
+
+        Returns:
+            float: settings.center_freq.
+        """
+        return self.settings.center_freq
+    
+    @property
+    def step_auto(self):
+        """ Sets and reads how the center frequency step size is set. When TRUE, center steps by 5% of span. When FALSE, center steps by STEP:SIZE value.
+            Default is 40 Mhz. When STEP:AUTO is TRUE, this value is ignored.
+
+        Returns:
+            bool: settings.step_auto.
+        """
+        return self.settings.step_auto
+    
+    @property
+    def step_size(self):
+        """Sets the center frequency step size of the analyzer. This command sets the manual step size (only valid when STEP:AUTO is FALSE).
+
+        Returns:
+            float: settings.step_size.
+        """
+        return self.settings.step_size
+
+    @property
+    def span(self):
+        """Sets the frequency span of the analyzer.
+
+        Returns:
+            float: settings.span.
+        """
+        return self.settings.span
+    
+    @property
+    def cw(self):
+        """Sets the Continuous Wave (or Fixed) frequency. Must also send SENS:SWEEP:TYPE CW to put the analyzer into CW sweep mode.
+
+        Returns:
+            float: settings.cw.
+        """
+        return self.settings.cw
+
+    @property
+    def points(self):
+        """Sets the number of data points for the measurement.
+
+        Returns:
+            int: settings.points.
+        """
+        return self.settings.points
+    
+    @property
+    def source_power(self):
+        """Sets the RF power output level.
+
+        Returns:
+            float: settings.source_power.
+        """
+        return self.settings.source_power
+    
+    @property
+    def if_bandwidth(self):
+        """Sets the bandwidth of the digital IF filter to be used in the measurement.
+
+        Returns:
+            float: settings.if_bandwidth.
+        """
+        return self.settings.if_bandwidth
+    
+    @property
+    def sweep_type(self):
+        """Sets the type of analyzer sweep mode. First set sweep type, then set sweep parameters such as frequency or power settings. Default is LIN
+
+        Returns:
+            Enum: settings.sweep_type.
+        """
+        return self.settings.sweep_type
+
+    @property
+    # TODO:def MEASURE TO BE ADDED
+
+    @property
+    def averages_enabled(self):
+        """Turns trace averaging ON or OFF.
+
+        Returns:
+            bool: settings.averages_enabled.
+        """
+        return self.settings.averages_enabled
+
+    @property
+    def averages_count(self):
+        """Sets the number of measurements to combine for an average. Must also set SENS:AVER[:STATe] ON
+
+        Returns:
+            int: settings.averages_count.
+        """
+        return self.settings.averages_count
+
+    @property
+    def averages_mode(self):
+        """Sets the type of averaging to perform: Point or Sweep (default is sweep).
+
+        Returns:
+            Enum: settings.averages_mode.
+        """
+        return self.settings.averages_mode
 
     @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: int = 1, port: int = 1) -> None:
@@ -59,58 +207,119 @@ class E5080B(VectorNetworkAnalyzer):
             channel_id (int): Channel identifier of the parameter to update.
             port (int): Port identifier of the parameter to update.
         """
+    #     def set_parameter(self, parameter: Parameter, value: ParameterValue):
+    # """Set various parameters for the VNA."""
+    
         if parameter == Parameter.POWER:
-            value = float(value)
-            self.set_power(power=value, channel=channel_id, port=port)
+            self.settings.source_power = float(value)
+            if self.is_device_active():
+                self.device.source_power(self.settings.source_power)
             return
+        
+        if parameter == Parameter.FREQUENCY_START:
+            self.settings.start_freq = float(value)
+            if self.is_device_active():
+                self.device.start_freq(self.settings.start_freq)
+            return
+
+        if parameter == Parameter.POWER:
+            self.settings.power = float(value)
+            if self.is_device_active():
+                self.device.power(self.power)
+            return
+
+
+        if parameter == Parameter.FREQUENCY_STOP:
+            self.settings.stop_freq = float(value)
+            if self.is_device_active():
+                self.device.stop_freq(self.settings.stop_freq)
+            return
+        
+        if parameter == Parameter.FREQUENCY_CENTER:
+            self.settings.center_freq = float(value)
+            if self.is_device_active():
+                self.device.center_freq(self.settings.center_freq)
+            return
+        
+        if parameter == Parameter.STEP_AUTO:
+            self.settings.step_auto = bool(value)
+            if self.is_device_active():
+                self.device.step_auto(self.settings.step_auto)
+            return
+        
+        if parameter == Parameter.STEP_SIZE:
+            self.settings.step_size = float(value)
+            if self.is_device_active():
+                self.device.step_size(self.settings.step_size)
+            return
+        
+        if parameter == Parameter.SPAN:
+            self.settings.span = float(value)
+            if self.is_device_active():
+                self.device.span(self.settings.span)
+            return
+        
+        if parameter == Parameter.CW_FREQUENCY:
+            self.settings.cw = float(value)
+            if self.is_device_active():
+                self.device.cw(self.settings.cw)
+            return
+        
+        if parameter == Parameter.NUMBER_POINTS:
+            self.settings.points = int(value)
+            if self.is_device_active():
+                self.device.points(self.settings.points)
+            return
+        
         if parameter == Parameter.IF_BANDWIDTH:
-            value = float(value)
-            self.set_if_bandwidth(value=value, channel=channel_id)
+            self.settings.if_bandwidth = float(value)
+            if self.is_device_active():
+                self.device.if_bandwidth(self.settings.if_bandwidth)
             return
-        if parameter == Parameter.ELECTRICAL_DELAY:
-            self.electrical_delay = value
-            return
+        
         if parameter == Parameter.SWEEP_MODE:
-            self.set_sweep_mode(value=value, channel=channel_id)  # type: ignore
+            self.settings.sweep_type = value  # Assuming Enum type
+            if self.is_device_active():
+                self.device.sweep_type(self.settings.sweep_type)
             return
-        if parameter == Parameter.DEVICE_TIMEOUT:
-            self.device_timeout = value
+        
+        if parameter == Parameter.AVERAGING_ENABLED:
+            self.settings.averages_enabled = bool(value)
+            if self.is_device_active():
+                self.device.averages_enabled(self.settings.averages_enabled)
             return
+        
+        if parameter == Parameter.NUMBER_AVERAGES:
+            self.settings.averages_count = int(value)
+            if self.is_device_active():
+                self.device.averages_count(self.settings.averages_count)
+            return
+        
+        if parameter == Parameter.AVERAGES_MODE:
+            self.settings.averages_mode = value  # Assuming Enum type
+            if self.is_device_active():
+                self.device.averages_mode(self.settings.averages_mode)
+            return
+        
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+
+
+    def get_parameter(self, parameter: Parameter):
         """Get instrument parameter.
 
         Args:
             parameter (Parameter): Name of the parameter to get.
-            channel_id (int | None): Channel identifier of the parameter to update.
         """
         if parameter == Parameter.POWER:
             return self.settings.power
         if parameter == Parameter.IF_BANDWIDTH:
             return self.settings.if_bandwidth
-        if parameter == Parameter.ELECTRICAL_DELAY:
-            return self.settings.electrical_delay
         if parameter == Parameter.SWEEP_MODE:
-            if channel_id:
-                return self._get_sweep_mode(channel=channel_id)
             return self._get_sweep_mode()
         if parameter == Parameter.DEVICE_TIMEOUT:
             return self.device_timeout
         raise ParameterNotFound(self, parameter)
-
-    def _set_parameter_float(self, parameter: Parameter, value: float):
-        """Set instrument settings parameter to the corresponding value
-
-        Args:
-            parameter (Parameter): settings parameter to be updated
-            value (float): new value
-        """
-        if parameter == Parameter.DEVICE_TIMEOUT:
-            self.device_timeout = value
-            return
-
-        super()._set_parameter_float(parameter, value)
 
     def _set_parameter_str(self, parameter: Parameter, value: str):
         """Set instrument settings parameter to the corresponding value
@@ -137,19 +346,6 @@ class E5080B(VectorNetworkAnalyzer):
         if self.is_device_active():
             bandwidth = str(self.settings.if_bandwidth)
             self.send_command(f"SENS{channel}:BWID", bandwidth)
-
-    @VectorNetworkAnalyzer.electrical_delay.setter  # type: ignore
-    def electrical_delay(self, value: float):
-        """
-        Set electrical delay in channel 1
-
-        Input:
-            value (str) : Electrical delay in ns
-        """
-        self.settings.electrical_delay = value
-        if self.is_device_active():
-            etime = f"{self.settings.electrical_delay:.12f}"
-            self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
 
     def get_sweep_mode(self):
         """VectorNetworkAnalyzer'sweep_mode' property.

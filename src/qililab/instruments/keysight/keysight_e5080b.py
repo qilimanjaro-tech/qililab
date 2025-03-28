@@ -3,6 +3,7 @@
 # bounds of power -  do i want to query?
 # always the S11?
 
+#This file is meant to be qcode
 
 from qcodes import VisaInstrument
 from qcodes.parameters import (
@@ -11,7 +12,7 @@ from qcodes.parameters import (
 from qcodes.validators import Arrays, Bool, Enum, Ints, Numbers
 from qcodes.parameters import create_on_off_val_mapping
 
-class KeySightE5080B(VisaInstrument):
+class KeySight_E5080B(VisaInstrument):
     """
     This is the qcodes driver for the Keysight E5080B Vector Network Analyzer
     """
@@ -32,8 +33,8 @@ class KeySightE5080B(VisaInstrument):
             return min_power, max_power
 
         # Sets the start frequency of the analyzer.
-        self.start: Parameter = self.add_parameter(
-            "start",
+        self.start_freq: Parameter = self.add_parameter(
+            "start_freq",
             label="Start Frequency",
             get_cmd="SENS:FREQ:STAR?",
             get_parser=float,
@@ -41,11 +42,11 @@ class KeySightE5080B(VisaInstrument):
             unit="Hz",
             vals=Numbers(min_value=min_freq, max_value=max_freq),
         )
-        """Parameter start"""
+        """Parameter start_freq"""
 
         # Sets the stop frequency of the analyzer.
-        self.stop: Parameter = self.add_parameter(
-            "stop",
+        self.stop_freq: Parameter = self.add_parameter(
+            "stop_freq",
             label="Stop Frequency",
             get_cmd="SENS:FREQ:STOP?",
             get_parser=float,
@@ -53,11 +54,11 @@ class KeySightE5080B(VisaInstrument):
             unit="Hz",
             vals=Numbers(min_value=min_freq, max_value=max_freq),
         )
-        """Parameter stop"""
+        """Parameter stop_freq"""
 
         # Sets the center frequency of the analyzer.
-        self.center: Parameter = self.add_parameter(
-            "center",
+        self.center_freq: Parameter = self.add_parameter(
+            "center_freq",
             label="Center Frequency",
             get_cmd="SENS:FREQ:CENT?",
             get_parser=float,
@@ -65,7 +66,7 @@ class KeySightE5080B(VisaInstrument):
             unit="Hz",
             vals=Numbers(min_value=min_freq, max_value=max_freq),
         )
-        """Parameter center"""
+        """Parameter center_freq"""
 
         # Sets and reads how the center frequency step size is set. When TRUE, center steps by 5% of span. When FALSE, center steps by STEP:SIZE value.
         # Default is 40 Mhz. When STEP:AUTO is TRUE, this value is ignored.
@@ -112,7 +113,6 @@ class KeySightE5080B(VisaInstrument):
             unit="Hz",
         )
         """Parameter Continuous wave"""
-
         
         # Sets the number of data points for the measurement.
         self.points: Parameter = self.add_parameter(
@@ -137,18 +137,6 @@ class KeySightE5080B(VisaInstrument):
             vals=Numbers(),
         )
         """Parameter source_power"""
-
-        # Sets the bandwidth of the digital IF filter to be used in the measurement.
-        self.if_bandwidth: Parameter = self.add_parameter(
-            "if_bandwidth",
-            label="if_bandwidth",
-            unit="Hz",
-            get_cmd="SENS:BWID?",
-            set_cmd="SENS:BWID {}",
-            get_parser=float,
-            vals=Numbers(min_value=min_if_bandwidth, max_value=max_if_bandwidth),
-        )
-        """Parameter if_bandwidth"""
 
         # Sets the bandwidth of the digital IF filter to be used in the measurement.
         self.if_bandwidth: Parameter = self.add_parameter(
@@ -203,7 +191,6 @@ class KeySightE5080B(VisaInstrument):
             get_cmd="SENS:AVER:COUN?",
             get_parser=int,
             set_cmd="SENS:AVER:COUN {:d}",
-            unit="",
             vals=Numbers(min_value=1, max_value=65536),
         )
         """Parameter averages count"""
@@ -233,3 +220,5 @@ class KeySightE5080B(VisaInstrument):
         min_power = float(self.ask("SOUR:POW?MIN"))
         self.power_level.vals = Numbers(min_value=min_power, max_value=max_power)
         self.write("SOUR:POW {}")
+
+    
