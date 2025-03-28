@@ -479,10 +479,7 @@ class QbloxDraw:
 
         data_keys = list(data_draw.keys())
 
-        # give a temporary subtitle to have the position of the annotation
-        fig = make_subplots(
-            rows=len(data_keys), cols=1, subplot_titles=["temp_subtitle" for date in np.arange(len(data_draw))]
-        )
+        fig = go.Figure()
 
         for idx, key in enumerate(data_keys):
             q1asm_offset_i = np.array(parameters[key]["q1asm_offset_i"])
@@ -503,9 +500,7 @@ class QbloxDraw:
                 data_draw[key][0] = waveform_flux
                 data_draw[key][1] = None
                 fig.add_trace(
-                    go.Scatter(y=waveform_flux, mode="lines", name="Flux", legendgroup=idx),
-                    row=idx + 1,
-                    col=1,
+                    go.Scatter(y=waveform_flux, mode="lines", name="Flux")
                 )
             else:
                 ac_offset_i, ac_offset_q = (
@@ -544,30 +539,22 @@ class QbloxDraw:
                 data_draw[key][0], data_draw[key][1] = path0_clipped, path1_clipped
 
                 fig.add_trace(
-                    go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I", legendgroup=idx), row=idx + 1, col=1
+                    go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I")
                 )
                 fig.add_trace(
-                    go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q", legendgroup=idx), row=idx + 1, col=1
+                    go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q")
                 )
 
-            # Update the subplot title
-            name = parameters[key]["instrument_name"]
-            title = f"{name} {key}"
-            fig.layout.annotations[idx]["text"] = title
-
-            # Add axis titles
-            # for i, key in enumerate(data_keys):
-            if parameters[key]["instrument_name"] == "QProgram":
-                fig.update_yaxes(title_text="Amplitude [a.u.]", row=idx + 1, col=1)
-            else:
-                fig.update_yaxes(title_text="Voltage [V]", row=idx + 1, col=1)
-            fig.update_xaxes(title_text="Time [ns]", row=idx + 1, col=1)
+        if parameters[key]["instrument_name"] == "QProgram":
+            fig.update_yaxes(title_text="Amplitude [a.u.]")
+        else:
+            fig.update_yaxes(title_text="Voltage [V]")
+        fig.update_xaxes(title_text="Time [ns]")
 
         # Update layout
         fig.update_layout(
-            height=260 * len(data_keys),
+            height=200 * len(data_keys),
             width=1100,
-            legend_tracegroupgap=210,
             title_text="QBlox Oscillator simulation",
             showlegend=True,
         )
