@@ -1,23 +1,18 @@
 """Tests for the Qblox Module class."""
+from typing import cast
+from unittest.mock import MagicMock
 
-import copy
-import re
-from unittest.mock import MagicMock, patch, create_autospec
-
-import numpy as np
 import pytest
+from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
+from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
-from qililab.instrument_controllers.qblox.qblox_cluster_controller import QbloxClusterController
+from qililab.data_management import build_platform
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQRM
 from qililab.platform import Platform
-from qililab.data_management import build_platform
-from qililab.typings import AcquireTriggerMode, IntegrationMode, Parameter
-from typing import cast
-from qblox_instruments.qcodes_drivers.sequencer import Sequencer
-from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 from qililab.qprogram.qblox_compiler import AcquisitionData
+from qililab.typings import AcquireTriggerMode, IntegrationMode, Parameter
 
 
 @pytest.fixture(name="platform")
@@ -394,8 +389,8 @@ class TestQbloxQRM:
         qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
         qp_acqusitions = {
-            "acquisition_0": AcquisitionData(bus="readout_q0", save_adc=False),
-            "acquisition_1": AcquisitionData(bus="readout_q0", save_adc=True)
+            "acquisition_0": AcquisitionData(bus="readout_q0", save_adc=False, shape=(-1,)),
+            "acquisition_1": AcquisitionData(bus="readout_q0", save_adc=True, shape=(-1,))
         }
 
         qrm.acquire_qprogram_results(acquisitions=qp_acqusitions, channel_id=0)

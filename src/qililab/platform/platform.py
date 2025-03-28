@@ -21,9 +21,6 @@ import ast
 import io
 import re
 import tempfile
-import time
-import traceback
-import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -45,6 +42,7 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
@@ -72,10 +70,9 @@ from qililab.utils import hash_qpy_sequence
 if TYPE_CHECKING:
     from queue import Queue
 
-    from qibo.transpiler.placer import Placer
-    from qibo.transpiler.router import Router
     from qpysequence import Sequence as QpySequence
 
+    from qililab.digital import DigitalTranspilationConfig
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result
@@ -391,6 +388,7 @@ class Platform:
             return
         self.instrument_controllers.disconnect()
         self._connected_to_instruments = False
+        self._qpy_sequence_cache = {}
         logger.info("Disconnected from instruments")
 
     def get_element(self, alias: str):
@@ -442,7 +440,7 @@ class Platform:
         """Gets buses given their alias.
 
         Args:
-            alias (str | None, optional): Bus alias to identify it. Defaults to None.
+            alias (str, optional): Bus alias to identify it. Defaults to None.
 
         Returns:
             :class:`Bus`: Bus corresponding to the given alias. If none is found `None` is returned.
@@ -467,6 +465,66 @@ class Platform:
             )
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
+
+    def _data_draw(self):
+        """From the runcard retrieve the parameters necessary to draw the qprogram."""
+        data_oscilloscope = {}
+        buses = list(self.buses)
+        instruments = {
+            instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
+        }
+        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            for bus in buses:
+                for instrument, _ in zip(bus.instruments, bus.channels):
+                    if isinstance(instrument, QbloxModule):
+                        data_oscilloscope[bus.alias] = {}
+                        dac_offset_i = 0
+                        dac_offset_q = 0
+                        parameters = [
+                            Parameter.IF,
+                            Parameter.GAIN_I,
+                            Parameter.GAIN_Q,
+                            Parameter.OFFSET_I,
+                            Parameter.OFFSET_Q,
+                            Parameter.HARDWARE_MODULATION,
+                        ]
+                        for parameter in parameters:
+                            data_oscilloscope[bus.alias][parameter.value] = self.get_parameter(bus.alias, parameter)
+
+                        data_oscilloscope[bus.alias]["instrument_name"] = instrument.name.value
+
+                        if instrument.name == InstrumentName.QBLOX_QCM or instrument.name == InstrumentName.QBLOX_QRM:
+                            # retrieve the dac offset and assign it to the bus
+                            identifier = bus.channels
+                            for awg in instrument.awg_sequencers:
+                                if awg.identifier == identifier[0]:
+                                    for idx, out in enumerate(awg.outputs):
+                                        if idx == 0:
+                                            dac_offset_i = instrument.out_offsets[out]
+                                        elif idx == 1:
+                                            dac_offset_q = instrument.out_offsets[out]
+                            data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
+                            data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
+
+                        elif instrument.name == InstrumentName.QCMRF or instrument.name == InstrumentName.QRMRF:
+                            # retrieve the dac offset and assign it to the bus
+                            identifier = bus.channels
+                            for awg in instrument.awg_sequencers:
+                                if awg.identifier == identifier[0]:
+                                    for out in awg.outputs:
+                                        if out == 0:
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0)
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1)
+                                        elif out == 1:
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+                            data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
+                            data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
+        else:
+            # TODO: the same information could be generated with a Quantum Machine runcard, even if the QBlox Compiler is used in the background.
+            raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
+
+        return data_oscilloscope
 
     def set_parameter(
         self,
@@ -844,7 +902,6 @@ class Platform:
     def execute_compilation_output(
         self,
         output: QbloxCompilationOutput | QuantumMachinesCompilationOutput,
-        timeout_tries: int = 3,
         debug: bool = False,
     ):
         if isinstance(output, QbloxCompilationOutput):
@@ -855,9 +912,7 @@ class Platform:
         if len(instruments) != 1:
             raise NotImplementedError("Executing QProgram in more than one Quantum Machines Cluster is not supported.")
         cluster: QuantumMachinesCluster = cast(QuantumMachinesCluster, next(iter(instruments)))
-        return self._execute_quantum_machines_compilation_output(
-            output=output, cluster=cluster, timeout_tries=timeout_tries, debug=debug
-        )
+        return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
 
     def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
         sequences, acquisitions = output.sequences, output.acquisitions
@@ -881,7 +936,7 @@ class Platform:
                 buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
                 self._qpy_sequence_cache[bus_alias] = sequence_hash
             # sync all relevant sequences
-            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus.alias].channels):
+            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                 if isinstance(instrument, QbloxModule):
                     instrument.sync_sequencer(sequencer_id=int(channel))
 
@@ -893,7 +948,7 @@ class Platform:
         results = QProgramResults()
         for bus_alias, bus in buses.items():
             if bus.has_adc():
-                for instrument, channel in zip(buses[bus_alias].instruments, buses[bus.alias].channels):
+                for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                     if isinstance(instrument, QbloxModule):
                         bus_results = bus.acquire_qprogram_results(
                             acquisitions=acquisitions[bus_alias], channel_id=int(channel)
@@ -903,7 +958,7 @@ class Platform:
 
         # Reset instrument settings
         for bus_alias in sequences:
-            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus.alias].channels):
+            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                 if isinstance(instrument, QbloxModule):
                     instrument.desync_sequencer(sequencer_id=int(channel))
 
@@ -913,48 +968,36 @@ class Platform:
         self,
         output: QuantumMachinesCompilationOutput,
         cluster: QuantumMachinesCluster,
-        timeout_tries: int = 3,
         debug: bool = False,
     ):
         qua, configuration, measurements = output.qua, output.configuration, output.measurements
-        for iteration in np.arange(timeout_tries):  # TODO: This is a temporal fix as QM fixes the timeout error
-            try:
-                cluster.append_configuration(configuration=configuration)
+        try:
+            cluster.append_configuration(configuration=configuration)
 
-                if debug:
-                    with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                        print(generate_qua_script(qua, cluster.config), file=sourceFile)
+            if debug:
+                with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
+                    print(generate_qua_script(qua, cluster.config), file=sourceFile)
 
-                compiled_program_id = cluster.compile(program=qua)
-                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+            compiled_program_id = cluster.compile(program=qua)
+            job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
-                acquisitions = cluster.get_acquisitions(job=job)
+            acquisitions = cluster.get_acquisitions(job=job)
 
-                results = QProgramResults()
-                # Doing manual classification of results as QM does not return thresholded values like Qblox
-                for measurement in measurements:
-                    measurement_result = QuantumMachinesMeasurementResult(
-                        measurement.bus,
-                        *[acquisitions[handle] for handle in measurement.result_handles],
-                    )
-                    measurement_result.set_classification_threshold(measurement.threshold)
-                    results.append_result(bus=measurement.bus, result=measurement_result)
-
-                return results
-
-            except TimeoutError as timeout:
-                warnings.warn(
-                    f"Warning: {timeout} raised, retrying experiment ({iteration + 1}/{timeout_tries} available tries)"
+            results = QProgramResults()
+            # Doing manual classification of results as QM does not return thresholded values like Qblox
+            for measurement in measurements:
+                measurement_result = QuantumMachinesMeasurementResult(
+                    measurement.bus,
+                    *[acquisitions[handle] for handle in measurement.result_handles],
                 )
-                warnings.warn(traceback.format_exc())
-                if iteration + 1 != timeout_tries:
-                    time.sleep(1 * timeout_tries)
-                    continue
-                cluster.turn_off()
-                raise timeout
-            except Exception as e:
-                cluster.turn_off()
-                raise e
+                measurement_result.set_classification_threshold(measurement.threshold)
+                results.append_result(bus=measurement.bus, result=measurement_result)
+
+            return results
+
+        except Exception as e:
+            cluster.turn_off()
+            raise e
 
         return results
 
@@ -963,7 +1006,6 @@ class Platform:
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
-        timeout_tries: int = 3,
         debug: bool = False,
     ) -> QProgramResults:
         """Execute a :class:`.QProgram` using the platform instruments.
@@ -996,39 +1038,184 @@ class Platform:
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
-        return self.execute_compilation_output(output=output, timeout_tries=timeout_tries, debug=debug)
+        return self.execute_compilation_output(output=output, debug=debug)
+
+    def execute_qprograms_parallel(
+        self,
+        qprograms: list[QProgram],
+        bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None,
+        debug: bool = False,
+    ) -> list[QProgramResults]:
+        """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
+        It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
+
+        **The execution can be done for (buses associated to) Qblox only. And it can only be done for qprograms that do not share buses.**
+
+        Args:
+            qprograms (QProgram): A list of the :class:`.QProgram` to execute.
+            bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
+                It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
+            calibration (Calibration, optional): :class:`.Calibration` instance containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
+            debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
+                Defaults to False.
+
+        Returns:
+            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.
+            Each element of the list corresponds to a sequencer.
+            The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+        """
+        buses_per_qprogram = [qprogram.buses for qprogram in qprograms]
+        total_buses = sum(len(s) for s in buses_per_qprogram)
+        unique_buses = len(set.union(*buses_per_qprogram))
+        if total_buses != unique_buses:
+            raise ValueError("QPrograms cannot be executed in parallel.")
+        outputs = [
+            self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+            for qprogram in qprograms
+        ]
+        if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
+            raise ValueError("Parallel execution is not supported in Quantum Machines.")
+        return self.execute_compilation_outputs_parallel(
+            outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug
+        )
+
+    def execute_compilation_outputs_parallel(
+        self,
+        outputs: list[QbloxCompilationOutput],
+        debug: bool = False,
+    ):
+        """Execute compiled qprograms in parallel.
+        It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
+
+        |
+
+        **The execution is done in the following steps:**
+
+        1. Upload all sequences.
+        2. Execute all sequences.
+        3. Acquire the results.
+
+        |
+
+        **The execution can be done for (buses associated to) Qblox only.**
+
+        Args:
+            outputs: A list of the compiled qprograms.
+            debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
+                Defaults to False.
+
+        Returns:
+            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.
+            Each element of the list corresponds to a sequencer.
+            The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+        """
+        sequences_per_qprogram = [output.sequences for output in outputs]
+        aquisitions_per_qprogram = [output.acquisitions for output in outputs]
+        buses_per_qprogram = [
+            {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
+            for sequences in sequences_per_qprogram
+        ]
+        for qprogram_idx, buses in enumerate(buses_per_qprogram):
+            for bus_alias, bus in buses.items():
+                if bus.distortions:
+                    for distortion in bus.distortions:
+                        for waveform in sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms._waveforms:
+                            sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms.modify(
+                                waveform.name, distortion.apply(waveform.data)
+                            )
+
+        if debug:
+            with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
+                for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
+                    print(f"QProgram {qprogram_idx}:", file=sourceFile)
+                    for bus_alias, sequence in sequences.items():
+                        print(f"Bus {bus_alias}:", file=sourceFile)
+                        print(str(sequence._program), file=sourceFile)
+                        print(file=sourceFile)
+
+        # Upload sequences
+        for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
+            for bus_alias in sequences:
+                sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
+                if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
+                    buses_per_qprogram[qprogram_idx][bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+                    self._qpy_sequence_cache[bus_alias] = sequence_hash
+                # sync all relevant sequences
+                for instrument, channel in zip(
+                    buses_per_qprogram[qprogram_idx][bus_alias].instruments,
+                    buses_per_qprogram[qprogram_idx][bus_alias].channels,
+                ):
+                    if isinstance(instrument, QbloxModule):
+                        instrument.sync_sequencer(sequencer_id=int(channel))
+
+        # Execute sequences
+        for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
+            for bus_alias in sequences:
+                buses_per_qprogram[qprogram_idx][bus_alias].run()
+
+        # Acquire results
+        results = [QProgramResults() for _ in outputs]
+        for qprogram_idx, buses in enumerate(buses_per_qprogram):
+            for bus_alias, bus in buses.items():
+                if bus.has_adc():
+                    for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
+                        if isinstance(instrument, QbloxModule):
+                            bus_results = bus.acquire_qprogram_results(
+                                acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias], channel_id=int(channel)
+                            )
+                            for bus_result in bus_results:
+                                results[qprogram_idx].append_result(bus=bus_alias, result=bus_result)
+
+        # Reset instrument settings
+        for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
+            for bus_alias in sequences:
+                for instrument, channel in zip(
+                    buses_per_qprogram[qprogram_idx][bus_alias].instruments,
+                    buses_per_qprogram[qprogram_idx][bus_alias].channels,
+                ):
+                    if isinstance(instrument, QbloxModule):
+                        instrument.desync_sequencer(sequencer_id=int(channel))
+
+        return results
 
     def execute(
         self,
         program: PulseSchedule | Circuit,
         num_avg: int,
-        repetition_duration: int,
+        repetition_duration: int = 200_000,
         num_bins: int = 1,
         queue: Queue | None = None,
-        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
-        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
-        routing_iterations: int = 10,
-        optimize: bool = True,
+        transpilation_config: DigitalTranspilationConfig | None = None,
     ) -> Result | QbloxResult:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
-        If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
-        settings of the platform and the passed placer and router. Then the pulse schedules will be compiled into the assembly programs and executed.
+        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
+        settings of the platform and the passed transpile onfiguration. Then the pulse schedules will be compiled into the assembly programs and executed.
 
         To compile to assembly programs, the ``platform.compile()`` method is called; check its documentation for more information.
 
+        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
+
+        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
+
+        .. note ::
+
+            Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
+
+            To do Step **1.** set routing=True in transpilation_config (default behavior skips it).
+
+            To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
+
         Args:
-            program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to execute.
+            program (``PulseSchedule`` | ``Circuit``): Circuit or pulse schedule to execute.
             num_avg (int): Number of hardware averages used.
-            repetition_duration (int): Minimum duration of a single execution.
+            repetition_duration (int): Minimum duration of a single execution. Defaults to 200_000.
             num_bins (int, optional): Number of bins used. Defaults to 1.
             queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
-            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
+                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
+                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
             Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
@@ -1038,11 +1225,31 @@ class Platform:
                     path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
 
                 - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
+
+        |
+
+        Example Usage:
+
+        .. code-block:: python
+
+            from qibo import gates, Circuit
+            from qibo.transpiler import ReverseTraversal, Sabre
+            from qililab import build_platform
+            from qililab.digital import DigitalTranspilationConfig
+
+            # Create circuit:
+            c = Circuit(5)
+            c.add(gates.CNOT(1, 0))
+
+            # Create platform:
+            platform = build_platform(runcard="<path_to_runcard>")
+            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
+
+            # Execute with automatic transpilation:
+            result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
         """
         # Compile pulse schedule
-        programs, final_layout = self.compile(
-            program, num_avg, repetition_duration, num_bins, placer, router, routing_iterations, optimize
-        )
+        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpilation_config)
 
         # Upload pulse schedule
         for bus_alias in programs:
@@ -1070,22 +1277,22 @@ class Platform:
 
         # Flatten results if more than one readout bus was used for a qblox module
         if len(results) > 1:
-            results = [
-                QbloxResult(
-                    integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
-                    qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
-                )
-            ]
-        if not results:
+            result = QbloxResult(
+                integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
+                qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
+            )
+        elif not results:
             raise ValueError("There are no readout buses in the platform.")
+        else:
+            result = results[0]
 
         if isinstance(program, Circuit):
-            results = [self._order_result(results[0], program, final_layout)]
+            result = self._order_result(result, program, final_layout)
 
-        # FIXME: return result instead of results[0]
-        return results[0]
+        return result
 
-    def _order_result(self, result: Result, circuit: Circuit, final_layout: dict[str, int] | None) -> Result:
+    @staticmethod
+    def _order_result(result: Result, circuit: Circuit, final_layout: list[int] | None) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1095,11 +1302,12 @@ class Platform:
 
         Args:
             result (Result): Result obtained from the execution
-            circuit (Circuit): qibo circuit being executed
-            final_layouts (dict[str, int]): final layout of the qubits in the circuit.
+            circuit (Circuit): Qibo circuit being executed
+            final_layouts (list[int], optional): Final layout of the original logical qubits in the physical circuit:
+                [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
 
         Returns:
-            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue
+            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue.
         """
         if not isinstance(result, QbloxResult):
             raise NotImplementedError("Result ordering is only implemented for qblox results")
@@ -1108,6 +1316,8 @@ class Platform:
         qubits_m = {}
         order = {}
         # iterate over qubits measured in same order as they appear in the circuit
+        # TODO: You need to check where each measurement is, since SWAPs can be after a measurement...
+        # FIXME: In the meanwhile do it asuming the Measurement is the last gate for each qubit
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
@@ -1118,13 +1328,21 @@ class Platform:
                 f"Number of measurements in the circuit {len(order)} does not match number of acquisitions {len(result.qblox_raw_results)}"
             )
 
+        # Tell users that the final layout is being undone:
+        logger.info(
+            "Undoing final physical qubit mapping, so you get back the original qubit order in your logical circuit."
+        )
+
         # allocate each measurement its corresponding index in the results list
         results = [None] * len(order)  # type: list | list[dict]
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
-            qubit = qblox_result["qubit"]
-            original_qubit = final_layout[f"q{qubit}"] if final_layout is not None else qubit
-            results[order[original_qubit, measurement]] = qblox_result
+            physical_qubit = qblox_result["qubit"]
+            original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
+
+            # TODO:Check this is correct, or how it works with multiple measurements per qubit:
+            original_measure_num = order[original_logical_qubit, measurement]
+            results[original_measure_num] = qblox_result
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
@@ -1134,32 +1352,42 @@ class Platform:
         num_avg: int,
         repetition_duration: int,
         num_bins: int,
-        placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None,
-        router: Router | type[Router] | tuple[type[Router], dict] | None = None,
-        routing_iterations: int = 10,
-        optimize: bool = True,
-    ) -> tuple[dict[str, list[QpySequence]], dict[str, int] | None]:
+        transpilation_config: DigitalTranspilationConfig | None = None,
+    ) -> tuple[dict[str, list[QpySequence]], list[int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
-        If the ``program`` argument is a :class:`Circuit`, it will first be translated into a :class:`PulseSchedule` using the transpilation
-        settings of the platform and passed placer and router. Then the pulse schedules will be compiled into the assembly programs.
+        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
+        settings of the platform and passed  transpile configuration. Then the pulse schedules will be compiled into the assembly programs.
 
-        This methods gets called during the ``platform.execute()`` method, check its documentation for more information.
+        .. note::
+
+            Compile is called during ``platform.execute()``, check its documentation for more information.
+
+        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
+
+        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
+
+        .. note ::
+
+            Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
+
+            To do Step **1.** set routing=True in transpilation_config (default behavior skips it).
+
+            To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
 
         Args:
-            program (:class:`PulseSchedule` | :class:`Circuit`): Circuit or pulse schedule to compile.
+            program (PulseSchedule | Circuit): Circuit or pulse schedule to compile.
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-            router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-                use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
-            routing_iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
-            optimize (bool, optional): whether to optimize the circuit and/or transpilation. Defaults to True.
+            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
+                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
+                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[dict, dict[str, int]]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``), and the value is the assembly compilation (``list``)) and the final layout of the qubits in the circuit {"qX":Y}.
+            tuple[dict, list[int] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
+                and the value is the assembly compilation (``list``)), and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
 
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
@@ -1169,12 +1397,8 @@ class Platform:
             raise ValueError("Cannot compile Qibo Circuit or Pulse Schedule without gates settings.")
 
         if isinstance(program, Circuit):
-            transpiler = CircuitTranspiler(digital_compilation_settings=self.digital_compilation_settings)
-
-            transpiled_circuits, final_layouts = transpiler.transpile_circuits(
-                [program], placer, router, routing_iterations, optimize
-            )
-            pulse_schedule, final_layout = transpiled_circuits[0], final_layouts[0]
+            transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
+            pulse_schedule, final_layout = transpiler.transpile_circuit(program, transpilation_config)
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
@@ -1204,7 +1428,7 @@ class Platform:
         )
 
         return compiled_programs, final_layout
-    
+
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
         bus = self.get_element(alias=alias)
         for instrument, instrument_channel in zip(bus.instruments, bus.channels):
@@ -1215,3 +1439,31 @@ class Platform:
                     instrument.calibrate_mixers(cal_type, channel_id)
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
+
+    def draw(self, qprogram: QProgram, averages_displayed: bool = False):
+        """Draw the QProgram using QBlox Compiler
+
+        Args:
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
+                                        The default is False.
+        """
+
+        runcard_data = self._data_draw()
+        qblox_draw = QbloxDraw()
+        sequencer = self.compile_qprogram(qprogram)
+        result = qblox_draw.draw(sequencer, runcard_data, averages_displayed)
+        return result
+
+    def draw(self, qprogram: QProgram, averages_displayed: bool = False):
+        """Draw the QProgram using QBlox Compiler
+
+        Args:
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
+                                        The default is False.
+        """
+
+        runcard_data = self._data_draw()
+        qblox_draw = QbloxDraw()
+        sequencer = self.compile_qprogram(qprogram)
+        result = qblox_draw.draw(sequencer, runcard_data, averages_displayed)
+        return result

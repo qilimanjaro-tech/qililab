@@ -14,11 +14,10 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
-from tests.data import Galadriel, SauronQuantumMachines
-from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import SGS100A
@@ -36,6 +35,8 @@ from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
+from tests.data import Galadriel, SauronQuantumMachines
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
@@ -312,6 +313,13 @@ class TestPlatform:
         mock_logger.info.assert_called_once_with("Already connected to the instruments")
 
     def test_disconnect_logger(self, platform: Platform):
+        platform._connected_to_instruments = True
+        platform.instrument_controllers = MagicMock()
+        with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
+            platform.disconnect()
+        mock_logger.info.assert_called_once_with("Disconnected from instruments")
+
+    def test_disconnect_fail_logger(self, platform: Platform):
         platform._connected_to_instruments = False
         platform.instrument_controllers = MagicMock()
         with patch("qililab.platform.platform.logger", autospec=True) as mock_logger:
@@ -526,9 +534,9 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
-    def test_compile_circuit(self, platform: Platform):
+    @pytest.mark.parametrize("optimize", [True, False])
+    def test_compile_circuit(self, optimize: bool, platform: Platform):
         """Test the compilation of a qibo Circuit."""
-
         circuit = Circuit(3)
         circuit.add(gates.X(0))
         circuit.add(gates.X(1))
@@ -536,7 +544,7 @@ class TestMethods:
         circuit.add(gates.Y(1))
         circuit.add(gates.M(0, 1, 2))
 
-        self._compile_and_assert(platform, circuit, 6)
+        self._compile_and_assert(platform, circuit, 6, optimize=optimize)
 
     def test_compile_circuit_raises_error_if_digital_settings_missing(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
@@ -566,15 +574,26 @@ class TestMethods:
 
         self._compile_and_assert(platform, pulse_schedule, 2)
 
-    def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int):
-        sequences, _ = platform.compile(program=program, num_avg=1000, repetition_duration=200_000, num_bins=1)
-        assert isinstance(sequences, dict)
-        assert len(sequences) == len_sequences
-        for alias, sequences_list in sequences.items():
+    def _compile_and_assert(
+        self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize: bool = False
+    ):
+        sequences_w_alias, _ = platform.compile(
+            program=program,
+            num_avg=1000,
+            repetition_duration=200_000,
+            num_bins=1,
+            transpilation_config=DigitalTranspilationConfig(optimize=optimize),
+        )
+        assert isinstance(sequences_w_alias, dict)
+        if not optimize:
+            assert len(sequences_w_alias) == len_sequences
+        else:
+            assert len(sequences_w_alias) < len_sequences
+        for alias, sequences in sequences_w_alias.items():
             assert alias in {bus.alias for bus in platform.buses}
-            assert isinstance(sequences_list, list)
-            assert all(isinstance(sequence, Sequence) for sequence in sequences_list)
-            assert sequences_list[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
+            assert isinstance(sequences, list)
+            assert all(isinstance(sequence, Sequence) for sequence in sequences)
+            assert sequences[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
 
     @pytest.mark.parametrize(
         "qprogram_fixture, calibration_fixture",
@@ -863,7 +882,7 @@ class TestMethods:
         c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
         # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
-        for idx, final_layout in enumerate([{"q0": 0, "q1": 1}, {"q0": 1, "q1": 0}]):
+        for idx, final_layout in enumerate([{0: 0, 1: 1}, {0: 1, 1: 0}]):
             platform.compile = MagicMock()  # type: ignore # don't care about compilation
             platform.compile.return_value = {"feedline_input_output_bus": None}, final_layout
             with patch.object(Bus, "upload"):
@@ -876,13 +895,13 @@ class TestMethods:
                             result = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
 
             # check that the order of #measurement # qubit is the same as in the circuit
-            order_measurement_qubit = [(result["measurement"], result["qubit"]) for result in result.qblox_raw_results]  # type: ignore
+            order_measurement_qubit = [(result["qubit"], result["measurement"]) for result in result.qblox_raw_results]  # type: ignore
 
             # Change the qubit mappings, given the final_layout:
             assert (
-                order_measurement_qubit == [(0, 1), (0, 0), (1, 0), (1, 1)]
+                order_measurement_qubit == [(1, 0), (0, 0), (0, 1), (1, 1)]
                 if idx == 0
-                else [(0, 0), (0, 1), (1, 1), (1, 0)]
+                else [(0, 0), (1, 0), (1, 1), (0, 1)]
             )
 
     def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):
@@ -1071,3 +1090,92 @@ class TestMethods:
                 for flux_bus in platform.analog_compilation_settings.flux_control_topology
                 if flux_bus.flux == flux
             )
+    
+    
+    def  test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
+        """Test that if parallelisation is attempted on qprograms using at least one bus in common, an error will be raised"""
+        error_string = "QPrograms cannot be executed in parallel."
+        qp1 = QProgram()
+        qp2 = QProgram()
+        qp3 = QProgram()
+        qp1.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=5))
+        qp2.play(bus="drive_line_q1_bus", waveform=Square(amplitude=1, duration=25))
+        qp2.play(bus="drive_line_q0_bus", waveform=Square(amplitude=0.5, duration=35))
+        qp3.play(bus="feedline_input_output_bus_1", waveform=Square(amplitude=0.5, duration=15))
+        
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+        ):
+            qp_list = [qp1,qp2,qp3]
+            with pytest.raises(ValueError, match=error_string):
+                platform.execute_qprograms_parallel(qp_list, debug=True)
+
+
+    def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
+        error_string = "Parallel execution is not supported in Quantum Machines."
+        qp1 = QProgram()
+        qp2 = QProgram()
+        qp3 = QProgram()
+        qp1.play(bus="drive_q0", waveform=Square(amplitude=1, duration=5))
+        qp2.play(bus="flux_q0", waveform=Square(amplitude=1, duration=25))
+
+        
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+        ):
+            qp_list = [qp1,qp2,qp3]
+            with pytest.raises(ValueError, match=error_string):
+                platform_quantum_machines.execute_qprograms_parallel(qp_list)
+
+    def test_parallelisation_execute_qblox(self, platform: Platform):
+        """Test that the execute parallelisation returns the same result per qprogram as the regular excute method"""
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+        drive_wf2 = IQPair(I=Square(amplitude=1.0, duration=80), Q=Square(amplitude=0.0, duration=80))
+        readout_wf2 = IQPair(I=Square(amplitude=1.0, duration=150), Q=Square(amplitude=0.0, duration=150))
+        weights_wf2 = IQPair(I=Square(amplitude=1.0, duration=2200), Q=Square(amplitude=0.0, duration=2200))
+
+        qprogram1 = QProgram()
+        qprogram1.play(bus="drive_line_q0_bus", waveform=drive_wf)
+        qprogram1.play(bus="drive_line_q1_bus", waveform=drive_wf)
+        qprogram1.sync()
+        qprogram1.play(bus="feedline_input_output_bus", waveform=readout_wf)
+        qprogram1.play(bus="feedline_input_output_bus_1", waveform=readout_wf)
+        qprogram1.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+
+        qprogram2 = QProgram()
+        qprogram2.play(bus="flux_line_q0_bus", waveform=drive_wf2)
+        qprogram2.sync()
+        qprogram2.play(bus="feedline_input_output_bus_2", waveform=readout_wf2)
+        qprogram2.qblox.acquire(bus="feedline_input_output_bus_2", weights=weights_wf2)
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            qp_list = [qprogram1,qprogram2]
+            result_parallel = platform.execute_qprograms_parallel(qp_list, debug=True)
+            non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1, debug=True)
+            non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2, debug=True)
+
+
+            #check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
+            assert result_parallel[0].results==non_parallel_results1.results
+            assert result_parallel[1].results==non_parallel_results2.results

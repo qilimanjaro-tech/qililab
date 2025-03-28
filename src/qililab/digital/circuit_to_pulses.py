@@ -18,9 +18,9 @@ from dataclasses import asdict
 
 import numpy as np
 from qibo import gates
-from qibo.models import Circuit
 
 from qililab.constants import RUNCARD
+from qililab.digital.native_gates import _GateHandler
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
@@ -33,39 +33,32 @@ from .native_gates import Drag, Wait
 
 
 class CircuitToPulses:
-    """Translates circuits into pulse sequences."""
+    """Translates circuits into pulse sequences.
 
-    def __init__(self, digital_compilation_settings: DigitalCompilationSettings):  # type: ignore # ignore typing to avoid importing platform and causing circular imports
-        self.digital_compilation_settings = digital_compilation_settings
+    Args:
+        settings (DigitalCompilationSettings): Object containing the Digital Compilations Settings and the info on chip's physical qubits.
+            It can be obtained from the ``digital_compilation_settings`` attribute of a ``Platform`` object.
+    """
 
-    def run(self, circuit: Circuit) -> PulseSchedule:
-        """Translates a circuit into a  pulse sequences.
+    def __init__(self, settings: DigitalCompilationSettings):
+        self.settings: DigitalCompilationSettings = settings
+        """Object containing the digital compilations settings and the info on chip's physical qubits."""
 
-        For each circuit gate we look up for its corresponding gates settings in the runcard (the name of the class of the circuit
-        gate and the name of the gate in the runcard should match) and load its schedule of GateEvents.
+    def run(self, circuit_gates: list[gates.Gate]) -> PulseSchedule:
+        """Translates a Qibo circuit into its corresponding pulse sequences.
 
-        Each gate event corresponds to a concrete pulse applied at a certain time w.r.t the gate's start time and through a specific bus
-        (see gates settings docstrings for more details).
-
-        Measurement gates are handled in a slightly different manner. For a circuit gate M(0,1,2) the settings for each M(0), M(1), M(2)
-        will be looked up and will be applied in sync. Note that thus a circuit gate for M(0,1,2) is different from the circuit sequence
-        M(0)M(1)M(2) since the later will not be necessarily applied at the same time for all the qubits involved.
-
-        Times for each qubit are kept track of with the dictionary `time`.
-
-        The times at which each pulse is applied are padded if they are not multiples of the minimum clock time. This means that if min clock
-        time is 4 and a pulse applied to qubit k lasts 17ns, the next pulse at qubit k will be at t=20ns
+        Check public docstring in :meth:`.CircuitTranspiler.gates_to_pulses()` for more information.
 
         Args:
-            circuits (List[Circuit]): List of Qibo Circuit classes.
+            circuit_gates (list[gates.Gate]): list of native gates of the qibo circuit.
 
         Returns:
-            list[PulseSequences]: List of :class:`PulseSequences` classes.
+            PulseSequences: equivalent :class:`PulseSequences` class.
         """
 
         pulse_schedule: PulseSchedule = PulseSchedule()
         time: dict[int, int] = {}  # init/restart time
-        for gate in circuit.queue:
+        for gate in circuit_gates:
             # handle wait gates
             if isinstance(gate, Wait):
                 self._update_time(time=time, qubit=gate.qubits[0], gate_time=gate.parameters[0])
@@ -103,14 +96,14 @@ class CircuitToPulses:
                 if isinstance(gate, gates.M):
                     gate = gates.M(*gate.qubits[1:])
                 # add event
-                delay = self.digital_compilation_settings.buses[gate_event.bus].delay
+                delay = self.settings.buses[gate_event.bus].delay
                 pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=gate_event.bus, delay=delay)  # type: ignore
 
-        for bus_alias in self.digital_compilation_settings.buses:
+        for bus_alias in self.settings.buses:
             # If we find a flux port, create empty schedule for that port.
             # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
             # add an empty schedule its offsets won't be activated and the results will be misleading.
-            if self.digital_compilation_settings.buses[bus_alias].line == Line.FLUX:
+            if self.settings.buses[bus_alias].line == Line.FLUX:
                 pulse_schedule.create_schedule(bus_alias=bus_alias)
 
         return pulse_schedule
@@ -126,7 +119,7 @@ class CircuitToPulses:
             list[GateEventSettings]: schedule list with each of the pulses settings
         """
 
-        gate_schedule = self.digital_compilation_settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
+        gate_schedule = self.settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits)
 
         if not isinstance(gate, Drag):
             return gate_schedule
@@ -139,27 +132,15 @@ class CircuitToPulses:
         drag_schedule = GateEventSettings(
             **asdict(gate_schedule[0])
         )  # make new object so that gate_schedule is not overwritten
-        theta = self._normalize_angle(angle=gate.parameters[0])
+        theta = _GateHandler.normalize_angle(angle=gate.parameters[0])
         amplitude = drag_schedule.pulse.amplitude * theta / np.pi
-        phase = self._normalize_angle(angle=gate.parameters[1])
+        phase = _GateHandler.normalize_angle(angle=gate.parameters[1])
         if amplitude < 0:
             amplitude = -amplitude
-            phase = self._normalize_angle(angle=gate.parameters[1] + np.pi)
+            phase = _GateHandler.normalize_angle(angle=gate.parameters[1] + np.pi)
         drag_schedule.pulse.amplitude = amplitude
         drag_schedule.pulse.phase = phase
         return [drag_schedule]
-
-    @staticmethod
-    def _normalize_angle(angle: float):
-        """Normalizes angle in range [-pi, pi].
-
-        Args:
-            angle (float): Normalized angle.
-        """
-        angle %= 2 * np.pi
-        if angle > np.pi:
-            angle -= 2 * np.pi
-        return angle
 
     @staticmethod
     def _get_total_schedule_duration(schedule: list[GateEventSettings]) -> int:
@@ -192,8 +173,8 @@ class CircuitToPulses:
             [
                 qubit
                 for schedule_element in schedule
-                for qubit in self.digital_compilation_settings.buses[schedule_element.bus].qubits
-                if schedule_element.bus in self.digital_compilation_settings.buses
+                for qubit in self.settings.buses[schedule_element.bus].qubits
+                if schedule_element.bus in self.settings.buses
             ]
             if schedule is not None
             else []
@@ -223,7 +204,7 @@ class CircuitToPulses:
         pulse_shape = Factory.get(pulse_shape_copy.pop(RUNCARD.NAME))(**pulse_shape_copy)
 
         # handle measurement gates and target qubits for control gates which might have multi-qubit schedules
-        bus = self.digital_compilation_settings.buses[gate_event.bus]
+        bus = self.settings.buses[gate_event.bus]
         qubit = (
             gate.qubits[0]
             if isinstance(gate, gates.M)
@@ -240,7 +221,7 @@ class CircuitToPulses:
                 frequency=0,
                 pulse_shape=pulse_shape,
             ),
-            start_time=time + gate_event.wait_time + self.digital_compilation_settings.delay_before_readout,
+            start_time=time + gate_event.wait_time + self.settings.delay_before_readout,
             pulse_distortions=bus.distortions,
             qubit=qubit,
         )
@@ -256,9 +237,9 @@ class CircuitToPulses:
         if qubit not in time:
             time[qubit] = 0
         old_time = time[qubit]
-        residue = (gate_time) % self.digital_compilation_settings.minimum_clock_time
+        residue = (gate_time) % self.settings.minimum_clock_time
         if residue != 0:
-            gate_time += self.digital_compilation_settings.minimum_clock_time - residue
+            gate_time += self.settings.minimum_clock_time - residue
         time[qubit] += gate_time
         return old_time
 

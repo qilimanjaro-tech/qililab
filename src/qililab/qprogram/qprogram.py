@@ -14,6 +14,7 @@
 from copy import deepcopy
 from typing import overload
 
+from qililab.config import logger
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.decorators import requires_domain
@@ -410,7 +411,7 @@ class QProgram(StructuredProgram):
         If no buses are given, then the synchronization will involve all buses present in the QProgram.
 
         Args:
-            buses (list[str] | None, optional): List of unique identifiers of the buses. Defaults to None.
+            buses (list[str], optional): List of unique identifiers of the buses. Defaults to None.
         """
         operation = Sync(buses=buses)
         self._active_block.append(operation)
@@ -716,3 +717,21 @@ class QProgram(StructuredProgram):
                 )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
+
+    def draw(self, averages_displayed=False):
+        """Draw the QProgram using QBlox Compiler
+
+        Args:
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
+                                        The default is False.
+        """
+
+        from qililab.instruments.qblox.qblox_draw import QbloxDraw
+        from qililab.qprogram.qblox_compiler import QbloxCompiler
+
+        qblox_draw = QbloxDraw()
+        compiler = QbloxCompiler()
+        sequencer = compiler.compile(self)
+        result_draw = qblox_draw.draw(sequencer=sequencer, averages_displayed=averages_displayed)
+        logger.warning("The drawing feature is currently only supported for QBlox.")
+        return result_draw

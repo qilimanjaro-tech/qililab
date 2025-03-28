@@ -202,4 +202,4 @@ class PulseBusSchedule:
         """
         timeline = [PulseEvent.from_dict(event) for event in dictionary[PULSEBUSSCHEDULE.TIMELINE]]
         bus_alias = dictionary["bus_alias"]
-        return PulseBusSchedule(timeline=timeline, bus_alias=bus_alias)
+        return cls(timeline=timeline, bus_alias=bus_alias)

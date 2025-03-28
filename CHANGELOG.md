@@ -1,5 +1,449 @@
 # CHANGELOG
 
+## 0.29.1 (2025-03-27)
+
+### New features since last release
+
+- QBlox: An oscilloscope simulator has been implemented. It takes the sequencer as input, plots its waveforms and returns a dictionary (data_draw) containing all data points used for plotting.
+
+  The user can access the Qblox drawing feature in two ways:
+  
+    1. Via platform (includes runcard knowledge)
+        
+        ```python
+        with platform.session():
+          platform.draw(qprogram = qprogram)
+        ```
+  
+        Note that if it is used with a Quantum Machine runcard, a ValueError will be generated.
+
+
+    2. Via QProgram (includes runcard knowledge)
+   
+        ```python
+        qp = QProgram()
+        qprogram.draw()
+        ```
+    
+  Both methods compile the qprogram internally to generate the sequencer and call `QbloxDraw.draw(self, sequencer, runcard_data=None, averages_displayed=False) -> dict`. [#901](https://github.com/qilimanjaro-tech/qililab/pull/901)
+
+### Improvements
+
+- Now the Rohde & Schwarz will return an error after a limit of frequency or power is reached based on the machine's version.
+  [#897](https://github.com/qilimanjaro-tech/qililab/pull/897)
+
+- QBlox: Added support for executing multiple QProgram instances in parallel via the new method `platform.execute_qprograms_parallel(qprograms: list[QProgram])`. This method returns a list of `QProgramResults` corresponding to the input order of the provided qprograms. Note that an error will be raised if any submitted qprograms share a common bus.
+
+  ```python
+  with platform.session():
+      results = platform.execute_qprograms_parallel([qprogram1, qprogram2, qprogram3])
+  ```
+
+  [#906](https://github.com/qilimanjaro-tech/qililab/pull/906)
+
+### Deprecations / Removals
+
+- Remove the check of forcing GRES in slurm.
+  [#907](https://github.com/qilimanjaro-tech/qililab/pull/907)
+
+### Bug fixes
+
+- D5a instrument now does not raise error when the value of the dac is higher or equal than 4, now it raises an error when is higher or equal than 16 (the number of dacs).
+  [#908](https://github.com/qilimanjaro-tech/qililab/pull/908)
+
+## 0.29.0 (2025-03-17)
+
+### New features since last release
+
+- We have introduced an optimization in the QbloxCompiler that significantly reduces memory usage when compiling square waveforms. The compiler now uses a heuristic algorithm that segments long waveforms into smaller chunks and loops over them. This optimization follows a two-pass search:
+
+  1. **First Pass**: The compiler tries to find a chunk duration that divides the total waveform length evenly (i.e., remainder = 0).
+  1. **Second Pass**: If no exact divisor is found, it looks for a chunk duration that leaves a remainder of at least 4 ns. This leftover chunk is large enough to be stored or handled separately.
+
+  Each chunk duration is restricted to the range (\[100, 500\]) ns, ensuring that chunks are neither too small (leading to excessive repetitions) nor too large (risking out-of-memory issues). If no duration within (\[100, 500\]) ns meets these remainder constraints, the compiler defaults to using the original waveform in its entirety.
+  [#861](https://github.com/qilimanjaro-tech/qililab/pull/861)
+  [#895](https://github.com/qilimanjaro-tech/qililab/pull/895)
+
+- Raises an error when the inputed value for the QDAC is outside of the bounds provided by QM. Done in 3 ways, runcard, set_parameter RAMPING_ENABLED and set_parameter RAMPING_RATE.
+  [#865](https://github.com/qilimanjaro-tech/qililab/pull/865)
+
+- Enable square waveforms optimization for Qblox.
+  [#874](https://github.com/qilimanjaro-tech/qililab/pull/874)
+
+- Implemented ALC, IQ wideband and a function to see the RS models inside the drivers for SGS100a.
+  [#894](https://github.com/qilimanjaro-tech/qililab/pull/894)
+
+### Improvements
+
+- Updated qm-qua to stable version 1.2.1. And close other machines has been set to True as now it closes only stated ports.
+  [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
+- Improvements to Digital Transpilation:
+
+  - Move `optimize` flag, for actual optional optimizations (& Improve `optimize` word use in methods names)
+  - Make `Transpilation`/`execute`/`compile` only for single circuits (unify code standard across `qililab`)
+  - Make `Transpilation` efficient, by not constructing the `Circuit` class so many times, between methods
+  - Pass a transpilation `kwargs` as a TypedDict instead of so many args in `platform`/`qililab`'s `execute(...)`
+  - Improve documentation on transpilation, simplifying it in `execute()`'s, and creating Transpilation new section.
+
+  [#862](https://github.com/qilimanjaro-tech/qililab/pull/862)
+
+- Added optimizations for Digital Transpilation for Native gates:
+
+  - Make bunching of consecutive Drag Gates, with same phi's
+  - Make the deletion of gates with no amplitude
+
+  [#863](https://github.com/qilimanjaro-tech/qililab/pull/863)
+
+- Improved the layout information display and Updated qibo version to the last version (0.2.15), which improves layout handling
+  [#869](https://github.com/qilimanjaro-tech/qililab/pull/869)
+
+- Now the QM qprogram compiler is able to generate the correct stream_processing while the average loop is inside any other kind of loop, before it was only able to be located on the outermost loop due to the way qprogram generated the stream_processing.
+  [#880](https://github.com/qilimanjaro-tech/qililab/pull/880)
+
+- The user is now able to only put one value when setting the offset of the bus when using Qblox in the qprogram. Qblox requires two values hence if only 1 value is given, the second will be set to 0, a warning will be given to the user.
+  [#896](https://github.com/qilimanjaro-tech/qililab/pull/896)
+
+- For Qblox compiler, all latched parameters are updated before a wait is applied. The update parameter has a minimum wait of 4 ns, which is removed from the wait. If the wait is below 8ns it is entirely replaced with the update parameter.
+  [#898](https://github.com/qilimanjaro-tech/qililab/pull/898)
+
+### Breaking changes
+
+### Deprecations / Removals
+
+- Removed weighted acquisitions for circuits.
+  [#904](https://github.com/qilimanjaro-tech/qililab/pull/904)
+
+- Removed quick fix for the timeout error while running with QM as it has been fixed.
+  [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
+### Documentation
+
+### Bug fixes
+
+- Addressed a known bug in the qblox where the first frequency and gain settings in a hardware loop are incorrect. The code now includes a workaround to set these parameters a second time to ensure proper functionality. This is a temporary fix awaiting for QBlox to resolve it.
+  [#903](https://github.com/qilimanjaro-tech/qililab/pull/898)
+
+- Fixed an issue where having nested loops would output wrong shape in QbloxMeasurementResult.
+  [#853](https://github.com/qilimanjaro-tech/qililab/pull/853)
+
+- Restore the vna driver as it was deleted.
+  [#857](https://github.com/qilimanjaro-tech/qililab/pull/857)
+
+- Fixed an issue where appending a configuration to an open QM instance left it hanging. The QM now properly closes before reopening with the updated configuration.
+  [#851](https://github.com/qilimanjaro-tech/qililab/pull/851)
+
+- Fixed an issue where turning off voltage/current source instruments would set to zero all dacs instead of only the ones specified in the runcard.
+  [#819](https://github.com/qilimanjaro-tech/qililab/pull/819)
+
+- Fixed the shareable trigger in the runcard to make every controller shareable while close other machines is set to false (current default) for QM. Improved shareable for OPX1000 as now it only requires to specify the flag on the fem. Now Octave name inside runcard requires to be the same as the one inside the configuration (now it has the same behavior as the cluster and opx controller).
+  [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
+- Ensured that turning on the instruments does not override the RF setting of the Rohde, which can be set to 'False' in the runcard.
+  [#888](https://github.com/qilimanjaro-tech/qililab/pull/888)
+
+## 0.28.0 (2024-12-09)
+
+### New features since last release
+
+- Incorporated new check for maximum allowed attenuation in RF modules.
+
+[#843](https://github.com/qilimanjaro-tech/qililab/pull/843)
+
+- Updated to latest qblox-instruments version. Changed some deprecated code from the new version and the QcmQrm into the more generic Module class.
+
+[#836](https://github.com/qilimanjaro-tech/qililab/pull/836)
+
+- Added empty handlers for Blocks in QProgram compilers
+
+[#839](https://github.com/qilimanjaro-tech/qililab/pull/839)
+
+- Support GRES in %%submit_job magic method
+
+[#828](https://github.com/qilimanjaro-tech/qililab/pull/828)
+
+- Added intermediate frequency to single input lines on qm. The default is 0 (this prevents some bugs from qua-qm). Now it is possible to use the set_parameter IF and qm.set_frequency for buses with single_input.
+
+[#807](https://github.com/qilimanjaro-tech/qililab/pull/807)
+
+- A new `GetParameter` operation has been added to the Experiment class, accessible via the `.get_parameter()` method. This allows users to dynamically retrieve parameters during experiment execution, which is particularly useful when some variables do not have a value at the time of experiment definition but are provided later through external operations. The operation returns a `Variable` that can be used seamlessly within `SetParameter` and `ExecuteQProgram`.
+
+  Example:
+
+  ```
+  experiment = Experiment()
+
+  # Get a parameter's value
+  amplitude = experiment.get_parameter(bus="drive_q0", parameter=Parameter.AMPLITUDE)
+
+  # The returned value is of type `Variable`. It's value will be resolved during execution.
+  # It can be used as usual in operations.
+
+  # Use the variable in a SetOperation.
+  experiment.set_parameter(bus="drive_q1", parameter=Parameter.AMPLITUDE, value=amplitude)
+
+  # Use the variable in an ExecuteQProgram with the lambda syntax.
+  def get_qprogram(amplitude: float, duration: int):
+    square_wf = Square(amplitude=amplitude, duration=duration)
+
+    qp = QProgram()
+    qp.play(bus="readout", waveform=square_wf)
+    return qp
+
+  experiment.execute_qprogram(lambda: amplitude=amplitude: get_qprogram(amplitude, 2000))
+  ```
+
+  [#814](https://github.com/qilimanjaro-tech/qililab/pull/814)
+
+- Added offset set and get for quantum machines (both OPX+ and OPX1000). For hardware loops there is `qp.set_offset(bus: str, offset_path0: float, offset_path1: float | None)` where `offset_path0` is a mandatory field (for flux, drive and readout lines) and `offset_path1` is only used when changing the offset of buses that have to IQ lines (drive and readout). For software loops there is `platform.set_parameter(alias=bus_name, parameter=ql.Parameter.OFFSET_PARAMETER, value=offset_value)`. The possible arguments for `ql.Parameter` are: `DC_OFFSET` (flux lines), `OFFSET_I` (I lines for IQ buses), `OFFSET_Q` (Q lines for IQ buses), `OFFSET_OUT1` (output 1 lines for readout lines), `OFFSET_OUT2` (output 2 lines for readout lines).
+  [#791](https://github.com/qilimanjaro-tech/qililab/pull/791)
+
+- Added the `Ramp` class, which represents a waveform that linearly ramps between two amplitudes over a specified duration.
+
+  ```python
+  from qililab import Ramp
+
+  # Create a ramp waveform from amplitude 0.0 to 1.0 over a duration of 100 units
+  ramp_wf = Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=100)
+  ```
+
+  [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
+
+- Added the `Chained` class, which represents a waveform composed of multiple waveforms chained together in time.
+
+  ```python
+  from qililab import Ramp, Square, Chained
+
+  # Create a chained waveform consisting of a ramp up, a square wave, and a ramp down
+  chained_wf = Chained(
+      waveforms=[
+          Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=100),
+          Square(amplitude=1.0, duration=200),
+          Ramp(from_amplitude=1.0, to_amplitude=0.0, duration=100),
+      ]
+  )
+  ```
+
+  [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
+
+- Added `add_block()` and `get_block()` methods to the `Calibration` class. These methods allow users to store a block of operations in a calibration file and later retrieve it. The block can be inserted into a `QProgram` or `Experiment` by calling `insert_block()`.
+
+  ```python
+  from qililab import QProgram, Calibration
+
+  # Create a QProgram and add operations
+  qp = QProgram()
+  # Add operations to qp...
+
+  # Store the QProgram's body as a block in the calibration file
+  calibration = Calibration()
+  calibration.add_block(name="qp_as_block", block=qp.body)
+
+  # Retrieve the block by its name
+  calibrated_block = calibration.get_block(name="qp_as_block")
+
+  # Insert the retrieved block into another QProgram
+  another_qp = QProgram()
+  another_qp.insert_block(block=calibrated_block)
+  ```
+
+  [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
+
+- Added routing algorithms to `qililab` in function of the platform connectivity. This is done passing `Qibo` own `Routers` and `Placers` classes,
+  and can be called from different points of the stack.
+
+  The most common way to route, will be automatically through `qililab.execute_circuit.execute()`, or also from `qililab.platform.execute/compile()`. Another way, would be doing the transpilation/routing directly from an instance of the Transpiler, with: `qililab.digital.CircuitTranspiler.transpile/route_circuit()` (with this last one, you can route with a different topology from the platform one, if desired, defaults to platform)
+
+  Example
+
+  ```python
+  from qibo import gates
+  from qibo.models import Circuit
+  from qibo.transpiler.placer import ReverseTraversal, Random
+  from qibo.transpiler.router import Sabre
+  from qililab import build_platform
+  from qililab.digital import CircuitTranspiler
+
+  # Create circuit:
+  c = Circuit(5)
+  c.add(gates.CNOT(1, 0))
+
+  ### From execute_circuit:
+  # With defaults (ReverseTraversal placer and Sabre routing):
+  probabilities = ql.execute(c, runcard="./runcards/galadriel.yml", placer= Random, router = Sabre, routing_iterations: int = 10,)
+  # Changing the placer to Random, and changing the number of iterations:
+  probabilities = ql.execute(c, runcard="./runcards/galadriel.yml",
+
+  ### From the platform:
+  # Create platform:
+  platform = build_platform(runcard="<path_to_runcard>")
+  # With defaults (ReverseTraversal placer, Sabre routing)
+  probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000)
+  # With non-defaults, and specifying the router with kwargs:
+  probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000,  placer= Random, router = (Sabre, {"lookahead": 2}), routing_iterations: int = 20))
+  # With a router instance:
+  router = Sabre(connectivity=None, lookahead=1) # No connectivity needed, since it will be overwritten by the platform's one
+  probabilities = platform.execute(c, num_avg: 1000, repetition_duration: 1000, placer=Random, router=router)
+
+  ### Using the transpiler directly:
+  ### (If using the routing from this points of the stack, you can route with a different topology from the platform one)
+  # Create transpiler:
+  transpiler = CircuitTranspiler(platform)
+  # Default Transpilation (ReverseTraversal, Sabre and Platform connectivity):
+  routed_circ, qubits, final_layouts = transpiler.route_circuit(c)
+  # With Non-Default Random placer, specifying the kwargs, for the router, and different coupling_map:
+  routed_circ, qubits, final_layouts = transpiler.route_circuit(c, placer=Random, router=(Sabre, {"lookahead": 2}, coupling_map=<some_different_topology>))
+  # Or finally, Routing with a concrete Routing instance:
+  router = Sabre(connectivity=None, lookahead=1) # No connectivity needed, since it will be overwritten by the specified in the Transpiler:
+  routed_circ, qubits, final_layouts = transpiler.route_circuit(c, placer=Random, router=router, coupling_map=<connectivity_to_use>)
+  ```
+
+[#821](https://github.com/qilimanjaro-tech/qililab/pull/821)
+
+- Added a timeout inside quantum machines to control the `wait_for_all_values` function. The timeout is controlled through the runcard as shown in the example:
+
+  ```yaml
+  instruments:
+    - name: quantum_machines_cluster
+      alias: QMM
+      ...
+      timeout: 10000 # optional timeout in seconds
+      octaves:
+      ...
+  ```
+
+  [#826](https://github.com/qilimanjaro-tech/qililab/pull/826)
+
+- Added `shareable` trigger inside runcard for quantum machines controller. The controller is defined in the runcard following this example:
+
+  ```
+  instruments:
+    - name: con1
+        analog_outputs:
+        - port: 1
+          offset: 0.0
+          shareable: True
+  ```
+
+[#844](https://github.com/qilimanjaro-tech/qililab/pull/844)
+
+### Improvements
+
+- Legacy linting and formatting tools such as pylint, flake8, isort, bandit, and black have been removed. These have been replaced with Ruff, a more efficient tool that handles both linting and formatting. All configuration settings have been consolidated into the `pyproject.toml` file, simplifying the project's configuration and maintenance. Integration config files like `pre-commit-config.yaml` and `.github/workflows/code_quality.yml` have been updated accordingly. Several rules from Ruff have also been implemented to improve code consistency and quality across the codebase. Additionally, the development dependencies in `dev-requirements.txt` have been updated to their latest versions, ensuring better compatibility and performance. [#813](https://github.com/qilimanjaro-tech/qililab/pull/813)
+
+- `platform.execute_experiment()` and the underlying `ExperimentExecutor` can now handle experiments with multiple qprograms and multiple measurements. Parallel loops are also supported in both experiment and qprogram. The structure of the HDF5 results file as well as the functionality of `ExperimentResults` class have been changed accordingly. [#796](https://github.com/qilimanjaro-tech/qililab/pull/796)
+
+- Added pulse distorsions in `execute_qprogram` for QBlox in a similar methodology to the distorsions implemented in pulse circuits. The runcard needs to contain the same structure for distorsions as the runcards for circuits and the code will modify the waveforms after compilation (inside `platform.execute_qprogram`).
+
+  Example (for Qblox)
+
+  ```yaml
+  buses:
+  - alias: readout
+    ...
+    distortions:
+      - name: exponential
+        tau_exponential: 1.
+        amp: 1.
+        sampling_rate: 1.  # Optional. Defaults to 1
+        norm_factor: 1.  # Optional. Defaults to 1
+        auto_norm: True  # Optional. Defaults to True
+      - name: bias_tee
+        tau_bias_tee: 11000
+        sampling_rate: 1.  # Optional. Defaults to 1
+        norm_factor: 1.  # Optional. Defaults to 1
+        auto_norm: True  # Optional. Defaults to True
+      - name: lfilter
+        a: []
+        b: []
+        norm_factor: 1.  # Optional. Defaults to 1
+        auto_norm: True  # Optional. Defaults to True
+  ```
+
+  [#779](https://github.com/qilimanjaro-tech/qililab/pull/779)
+
+- The execution of `QProgram` has been split into two distinct steps: **compilation** and **execution**.
+
+  1. **Compilation**: Users can now compile a `QProgram` by calling:
+
+  ```python
+  platform.compile_qprogram(
+    qprogram: QProgram,
+    bus_mapping: dict[str, str] | None = None,
+    calibration: Calibration | None = None
+  )
+  ```
+
+  This method can be executed without being connected to any instruments. It returns either a `QbloxCompilationOutput` or a `QuantumMachinesCompilationOutput`, depending on the platform setup.
+
+  2. **Execution**: Once the compilation is complete, users can execute the resulting output by calling:
+
+  ```python
+  platform.execute_compilation_output(
+    output: QbloxCompilationOutput | QuantumMachinesCompilationOutput,
+    debug: bool = False
+  )
+  ```
+
+  If desired, both steps can still be combined into a single call using the existing method:
+
+  ```python
+  platform.execute_qprogram(
+    qprogram: QProgram,
+    bus_mapping: dict[str, str] | None = None,
+    calibration: Calibration | None = None,
+    debug: bool = False
+  )
+  ```
+
+  [#817](https://github.com/qilimanjaro-tech/qililab/pull/817)
+
+- Introduced settable attributes `experiment_results_base_path` and `experiment_results_path_format` in the `Platform` class. These attributes determine the directory and file structure for saving experiment results during execution. By default, results are stored within `experiment_results_base_path` following the format `{date}/{time}/{label}.h5`. [#819](https://github.com/qilimanjaro-tech/qililab/pull/819)
+
+- Added a `save_plot=True` parameter to the `plotS21()` method of `ExperimentResults`. When enabled (default: True), the plot is automatically saved in the same directory as the experiment results. [#819](https://github.com/qilimanjaro-tech/qililab/pull/819)
+
+- Improved the transpiler, by making it more modular, and adding a `gate_cancellation()` stage before the transpilation to natives, this stage can be skipped, together with the old `optimize_transpilation()`, if the flag `optimize=False` is passed. [#823](https://github.com/qilimanjaro-tech/qililab/pull/823)
+
+- Split execution of annealing programs into two steps: compilation and execution. [#825](https://github.com/qilimanjaro-tech/qililab/pull/825)
+
+- Added a try and except similar to the dataloss error to restart the measurement in case of random timeout issue for quantum machines. This is a temporary fix and will be deleted once the Quantum Machines team fix their issue.
+
+[#832](https://github.com/qilimanjaro-tech/qililab/pull/832)
+
+### Breaking changes
+
+- Renamed the platform's `execute_anneal_program()` method to `execute_annealing_program()` and updated its parameters. The method now expects `preparation_block` and `measurement_block`, which are strings used to retrieve blocks from the `Calibration`. These blocks are inserted before and after the annealing schedule, respectively.
+  [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
+
+- **Major reorganization of the library structure and runcard functionality**. Key updates include:
+
+  - Removed obsolete instruments, such as VNAs.
+  - Removed the `drivers` module.
+  - Simplified the `Qblox` sequencer class hierarchy into two main classes: `QbloxSequencer` and `QbloxADCSequencer`.
+  - Removed `SystemController` and `ReadoutSystemController`; buses now interface directly with instruments.
+  - Introduced a new `channels` attribute to the `Bus` class, allowing specification of channels for each associated instrument.
+  - Removed the `Chip` class and its related runcard settings.
+  - Eliminated outdated settings, such as instrument firmware.
+  - Refactored runcard settings into a modular structure with four distinct groups:
+    - `instruments` and `instrument_controllers` for lab instrument setup.
+    - `buses` for grouping instrument channels.
+    - `digital` for digital compilation settings (e.g., Qibo circuits).
+    - `analog` for analog compilation settings (e.g., annealing programs).
+
+[#820](https://github.com/qilimanjaro-tech/qililab/pull/820)
+
+### Bug fixes
+
+- Fixed minor type bug in `Platform`. [#846](https://github.com/qilimanjaro-tech/qililab/pull/846)
+
+- Fixed minor type bug in `CrosstalkMatrix`. [#825](https://github.com/qilimanjaro-tech/qililab/pull/825)
+
+- Fixed typo in ExceptionGroup import statement for python 3.11+ [#808](https://github.com/qilimanjaro-tech/qililab/pull/808)
+
+- Fixed serialization/deserialization of lambda functions, mainly used in `experiment.execute_qprogram()` method. The fix depends on the `dill` library which is added as requirement. [#815](https://github.com/qilimanjaro-tech/qililab/pull/815)
+
+- Fixed calculation of Arbitrary waveform's envelope when resolution is greater than 1ns. [#837](https://github.com/qilimanjaro-tech/qililab/pull/837)
+
 ## 0.27.1 (2024-09-16)
 
 ### New features since last release
@@ -113,9 +557,7 @@
   platform = ql.build_platform("examples/runcards/galadriel.yml")
   anneal_program_dict = [...]  # same as in the above example
   # intialize annealing program class
-  anneal_program = ql.AnnealingProgram(
-      platform=platform, anneal_program=anneal_program_dict
-  )
+  anneal_program = ql.AnnealingProgram(platform=platform, anneal_program=anneal_program_dict)
   # transpile ising to flux, now flux values can be accessed same as ising coeff values
   # eg. for phix qubit 0 at t=1ns anneal_program.anneal_program[1]["qubit_0"]["phix"]
   anneal_program.transpile(lambda delta, epsilon: (delta, epsilon))
@@ -1253,9 +1695,7 @@
 
   ```python
   # Option 1 (Default)
-  figure = sample_experiment.draw(
-      real=True, imag=True, abs=False, modulation=True, linestyle="-"
-  )
+  figure = sample_experiment.draw(real=True, imag=True, abs=False, modulation=True, linestyle="-")
 
   # Option 2 (Equivalent to option 1)
   figure = sample_experiment.draw()
@@ -1377,9 +1817,7 @@
 - Added `pulse.pulse_distortion.lfilter_correction.py` module, which is another child class for the `pulse.pulse_distortion` package.
 
   ```python
-  distorted_envelope = LFilter(norm_factor=1.2, a=[0.7, 1.3], b=[0.5, 0.6]).apply(
-      original_envelopes
-  )
+  distorted_envelope = LFilter(norm_factor=1.2, a=[0.7, 1.3], b=[0.5, 0.6]).apply(original_envelopes)
   ```
 
   Also adds a phase property to `PulseEvent` and implements `Factory.get` directly in the `from_dict()` method of the parent class `PulseDistortion`.

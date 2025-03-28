@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Acquisitions Result """
+"""Acquisitions Result"""
 
 from dataclasses import dataclass, field
 
@@ -38,10 +38,10 @@ class Acquisitions:
         """return the acquisitions with a structure
         I, Q, Amplitude, Phase
         """
-        acquisition_list = [acquisition.acquisition for acquisition in self._acquisitions]
+        acquisitions: list = [acquisition.acquisition for acquisition in self._acquisitions]
 
         return concatenate_creating_new_name_index(
-            dataframe_list=acquisition_list, new_index_name=RESULTSDATAFRAME.ACQUISITION_INDEX
+            dataframes=acquisitions, new_index_name=RESULTSDATAFRAME.ACQUISITION_INDEX
         )
 
     def probabilities(self) -> dict[str, float]:

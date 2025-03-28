@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import math
 from collections import deque
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -22,8 +22,9 @@ import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
-from qpysequence.utils.constants import INST_MAX_WAIT
+from qpysequence.constants import INST_MAX_WAIT
 
+from qililab.config import logger
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -42,7 +43,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
-from qililab.waveforms import IQPair, Waveform
+from qililab.waveforms import IQPair, Square, Waveform
 
 
 @dataclass
@@ -51,6 +52,7 @@ class AcquisitionData:
 
     bus: str
     save_adc: bool
+    shape: tuple
 
 
 Sequences = dict[str, QPy.Sequence]
@@ -107,6 +109,7 @@ class BusCompilationInfo:
         self.next_acquisition_index = 0
         self.loop_counter = 0
         self.average_counter = 0
+        self.square_optimization_counter = 0
 
         # Syncing durations
         self.static_duration = 0
@@ -121,6 +124,9 @@ class BusCompilationInfo:
 
         # Delay. Defaults 0 delay and is updated if delays parameter is provided within the runcard.
         self.delay = 0
+
+        # Latched Paramter flag
+        self.upd_param_instruction_pending: bool = False
 
 
 class QbloxCompiler:
@@ -167,8 +173,8 @@ class QbloxCompiler:
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
-            bus_mapping (dict[str, str] | None, optional): Optional mapping of bus names. Defaults to None.
-            times_of_flight (dict[str, int] | None, optional): Optional time of flight of bus. Defaults to None.
+            bus_mapping (dict[str, str], optional): Optional mapping of bus names. Defaults to None.
+            times_of_flight (dict[str, int], optional): Optional time of flight of bus. Defaults to None.
 
         Returns:
             QbloxCompilationOutput:
@@ -386,6 +392,12 @@ class QbloxCompiler:
             component=QPyInstructions.SetFreq(frequency=frequency)
         )
 
+        # set the frequency a second time - because of a qblox bug where the first frequency in a hardware loop is false (same is done for the gain).
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetFreq(frequency=frequency)
+        )
+        self._buses[element.bus].upd_param_instruction_pending = True
+
     def _handle_set_phase(self, element: SetPhase):
         convert = QbloxCompiler._convert_value(element)
         phase = (
@@ -394,9 +406,11 @@ class QbloxCompiler:
             else convert(element.phase)
         )
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.SetPh(phase=phase))
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_reset_phase(self, element: ResetPhase):
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_gain(self, element: SetGain):
         convert = QbloxCompiler._convert_value(element)
@@ -408,6 +422,11 @@ class QbloxCompiler:
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
         )
+        # set the gain a second time - because of a qblox bug where the first gain in a hardware loop is false (same is done for the frequency).
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
+        )
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset):
         convert = QbloxCompiler._convert_value(element)
@@ -417,21 +436,27 @@ class QbloxCompiler:
             else convert(element.offset_path0)
         )
         if element.offset_path1 is None:
-            raise ValueError("No offset has been given for path 1 inside set_offset.")
-        offset_1 = (
-            self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
-            if isinstance(element.offset_path1, Variable)
-            else convert(element.offset_path1)
-        )
+            offset_1 = offset_0
+            logger.warning(
+                "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
+            )
+        else:
+            offset_1 = (
+                self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
+                if isinstance(element.offset_path1, Variable)
+                else convert(element.offset_path1)
+            )
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
         )
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_markers(self, element: SetMarkers):
         marker_outputs = int(element.mask, 2)
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetMrk(marker_outputs=marker_outputs)
         )
+        self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_wait(self, element: Wait, delay: bool = False):
         duration: QPyProgram.Register | int
@@ -458,15 +483,33 @@ class QbloxCompiler:
             element (Wait): wait element
             duration (int): duration to wait in ns
         """
-        if duration > INST_MAX_WAIT:
-            for _ in range(duration // INST_MAX_WAIT):
-                self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
-                )
-        # add the remaining wait time (or all of it if the above conditional is false)
-        self._buses[bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
-        )
+
+        if self._buses[bus].upd_param_instruction_pending:
+            if 4 < duration < 8:  # you cannot play an update param and then a wait bc both have a minimum of 4
+                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
+            else:
+                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
+                duration -= 4
+                if duration > INST_MAX_WAIT:
+                    for _ in range(duration // INST_MAX_WAIT):
+                        self._buses[bus].qpy_block_stack[-1].append_component(
+                            component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                        )
+                if duration >= 4:
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
+                    )
+            self._buses[bus].upd_param_instruction_pending = False
+
+        else:  # no instructions pending
+            if duration > INST_MAX_WAIT:
+                for _ in range(duration // INST_MAX_WAIT):
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                    )
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
+            )
 
     def _handle_sync(self, element: Sync, delay: bool = False):
         # Get the buses involved in the sync operation.
@@ -531,6 +574,7 @@ class QbloxCompiler:
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
             if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
+        shape = tuple(loop[1].iterations for loop in loops)
         num_bins = math.prod(loop[1].iterations for loop in loops)
         acquisition_name = f"acquisition_{self._buses[element.bus].next_acquisition_index}"
         self._buses[element.bus].qpy_sequence._acquisitions.add(
@@ -539,7 +583,7 @@ class QbloxCompiler:
             index=self._buses[element.bus].next_acquisition_index,
         )
         self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
-            bus=element.bus, save_adc=element.save_adc
+            bus=element.bus, save_adc=element.save_adc, shape=shape
         )
 
         index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
@@ -587,23 +631,67 @@ class QbloxCompiler:
         self._buses[element.bus].next_bin_index = 0  # maybe this counter can be removed completely
         self._buses[element.bus].next_acquisition_index += 1
         self._buses[element.bus].marked_for_sync = True
+        self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
-        if not waveform_variables:
-            index_I, index_Q, duration = self._append_to_waveforms_of_bus(
+        if waveform_variables:
+            logger.error("Variables in waveforms are not supported in Qblox.")
+            return
+        if element.wait_time:
+            # The qp.qblox.play() was used. Don't apply optimizations
+            index_I, index_Q, _ = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
             )
-            if element.wait_time is not None:  # TODO: Change this in clean fix
-                duration = element.wait_time
             convert = QbloxCompiler._convert_value(element)
-            duration = convert(duration)
-            self._buses[element.bus].static_duration += duration
+            duration = convert(element.wait_time)
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
             )
-            self._buses[element.bus].marked_for_sync = True
+        elif (
+            isinstance(waveform_I, Square)
+            and (waveform_Q is None or isinstance(waveform_Q, Square))
+            and (waveform_I.duration >= 100)
+        ):
+            copied_waveform_I: Square = deepcopy(waveform_I)
+            copied_waveform_Q: Square | None = deepcopy(waveform_Q)
+            duration = copied_waveform_I.duration
+            chunk_duration, iterations, remainder = QbloxCompiler.calculate_square_waveform_optimization_values(
+                duration
+            )
+            copied_waveform_I.duration = chunk_duration
+            if isinstance(copied_waveform_Q, Square):
+                copied_waveform_Q.duration = chunk_duration
+            index_I, index_Q, _ = self._append_to_waveforms_of_bus(
+                bus=element.bus, waveform_I=copied_waveform_I, waveform_Q=copied_waveform_Q
+            )
+            loop = QPyProgram.IterativeLoop(
+                name=f"square_{self._buses[element.bus].square_optimization_counter}", iterations=iterations
+            )
+            loop.append_component(component=QPyInstructions.Play(index_I, index_Q, wait_time=chunk_duration))
+            self._buses[element.bus].qpy_block_stack[-1].append_component(component=loop)
+            if remainder != 0:
+                copied_waveform_I.duration = remainder
+                if isinstance(copied_waveform_Q, Square):
+                    copied_waveform_Q.duration = remainder
+                index_I, index_Q, _ = self._append_to_waveforms_of_bus(
+                    bus=element.bus, waveform_I=copied_waveform_I, waveform_Q=copied_waveform_Q
+                )
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Play(index_I, index_Q, wait_time=remainder)
+                )
+            self._buses[element.bus].square_optimization_counter += 1
+        else:
+            index_I, index_Q, duration = self._append_to_waveforms_of_bus(
+                bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
+            )
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
+            )
+        self._buses[element.bus].static_duration += duration
+        self._buses[element.bus].marked_for_sync = True
+        self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_block(self, element: Block):
         pass
@@ -669,3 +757,30 @@ class QbloxCompiler:
             key: (value.__dict__ if isinstance(value, Waveform) else value) for key, value in waveform.__dict__.items()
         }
         return f"{waveform.__class__.__name__} {hashes}"
+
+    @staticmethod
+    def calculate_square_waveform_optimization_values(duration):
+        def remainder_conditions(chunk_duration):
+            remainder = duration % chunk_duration
+            return remainder, (chunk_duration >= 4 and (remainder == 0 or remainder >= 4))
+
+        def find_chunk_duration(condition_func):
+            for chunk_duration in range(100, 501):
+                if chunk_duration <= duration:
+                    remainder, valid = remainder_conditions(chunk_duration)
+                    if valid and condition_func(remainder):
+                        return chunk_duration
+            return None
+
+        # First try for remainder == 0
+        final_chunk_duration = find_chunk_duration(lambda rem: rem == 0)
+        if final_chunk_duration is not None:
+            return final_chunk_duration, duration // final_chunk_duration, duration % final_chunk_duration
+
+        # If not found, try for remainder ≥ 4
+        final_chunk_duration = find_chunk_duration(lambda rem: rem >= 4)
+        if final_chunk_duration is not None:
+            return final_chunk_duration, duration // final_chunk_duration, duration % final_chunk_duration
+
+        # If no suitable piece_duration found, fallback to entire duration
+        return duration, 1, 0

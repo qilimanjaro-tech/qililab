@@ -59,11 +59,11 @@ class CalibrationNode:
 
     Args:
         nb_path (str): Full notebook path with the folder, nb_name, and ``.ipynb`` extension, written in unix format: `folder/subfolder/.../file.ipynb`.
-        qubit_index (int | list[int] | None, optional): Qubit on which this notebook will be executed. Defaults to None.
-        node_distinguishier (int | str | None, optional): Distinguisher for when the same notebook its used multiple times in the same qubit. Mandatory to use in such case, or
+        qubit_index (int | list[int], optional): Qubit on which this notebook will be executed. Defaults to None.
+        node_distinguishier (int | str, optional): Distinguisher for when the same notebook its used multiple times in the same qubit. Mandatory to use in such case, or
             the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
-        input_parameters (dict | None, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
-        sweep_interval (np.ndarray | None, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
+        input_parameters (dict, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
+        sweep_interval (np.ndarray, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
 
     Examples:
 
@@ -188,13 +188,13 @@ class CalibrationNode:
                 circuit = ...
 
                 # Loop over the sweeps executing the platform:
-                results_list = []
+                results = []
                 for X in sweep_interval:
                     platform.set_parameter(alias=alias, parameter=ql.Parameter.X, value=X)
                     result = platform.execute(program=circuit, num_avg=hw_avg, repetition_duration=repetition_duration)
-                    results_list.append(result.array)
+                    results.append(result.array)
 
-                results = np.hstack(results_list)
+                results = np.hstack(results)
 
         |
 
@@ -409,7 +409,7 @@ class CalibrationNode:
         Args:
             input_path (str): The input path of the notebook to be executed.
             output_path (str): The output path where the executed noteboo will be saved. If None, no file will be saved.
-            parameters (dict | None, optional): Input parameters kwargs, to overwrite the notebook `parameters` cell with. Defaults to None.
+            parameters (dict, optional): Input parameters kwargs, to overwrite the notebook `parameters` cell with. Defaults to None.
 
         Returns:
             dict | None: A dictionary containing the output parameters of the execution.
@@ -442,7 +442,7 @@ class CalibrationNode:
         Args:
             original_path (str): The original path of the notebook, to add the datetime to. The path directory doesn't need to exist. Can have the ``.ipynb`` extension or not.
                 The part of the string after the last "/" will be considered the file name, and the part before it's directory.
-            timestamp (float | None, optional): Timestamp to add to the name. If None, the current time will be used. Defaults to None.
+            timestamp (float, optional): Timestamp to add to the name. If None, the current time will be used. Defaults to None.
             dirty (bool, optional): Flag indicating if the notebook is in a "dirty" state. Defaults to False.
             error (bool, optional): Flag indicating if the notebook comes from an execution error. Defaults to False.
 
@@ -490,10 +490,10 @@ class CalibrationNode:
         distinguish_str = f"_{self.node_distinguisher!s}" if self.node_distinguisher is not None else ""
 
         # Remove .ipynb from end if it has one, and separate the folder and name with the last "/":
-        path_list = original_path.split(".ipynb")[0].split("/")
+        split_path = original_path.split(".ipynb")[0].split("/")
 
-        name = path_list.pop() + distinguish_str + qubit_str
-        folder_path = "/".join(path_list)
+        name = split_path.pop() + distinguish_str + qubit_str
+        folder_path = "/".join(split_path)
         return name, folder_path
 
     def get_last_calibrated_timestamp(self) -> float | None:

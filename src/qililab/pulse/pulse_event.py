@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """PulseEvent class."""
+
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -114,15 +115,15 @@ class PulseEvent:
         pulse_settings = local_dictionary[PULSEEVENT.PULSE]
         local_dictionary[PULSEEVENT.PULSE] = Pulse.from_dict(pulse_settings)
 
-        pulse_distortions_list: list[PulseDistortion] = []
+        pulse_distortions: list[PulseDistortion] = []
 
         if PULSEEVENT.PULSE_DISTORTIONS in local_dictionary:
-            pulse_distortions_list.extend(
+            pulse_distortions.extend(
                 PulseDistortion.from_dict(pulse_distortion_dict)
                 for pulse_distortion_dict in local_dictionary[PULSEEVENT.PULSE_DISTORTIONS]
             )
 
-        local_dictionary[PULSEEVENT.PULSE_DISTORTIONS] = pulse_distortions_list
+        local_dictionary[PULSEEVENT.PULSE_DISTORTIONS] = pulse_distortions
 
         return cls(**local_dictionary)
 
