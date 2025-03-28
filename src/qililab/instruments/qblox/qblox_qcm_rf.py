@@ -162,7 +162,7 @@ class QbloxQCMRF(QbloxQCM):
     def calibrate_mixers(self, cal_type: str, channel_id: ChannelID | None = None):
         if cal_type == "lo":
             self.device._run_mixer_lo_calib(channel_id)
-        if cal_type == "lo and sidebands":
+        if cal_type == "lo_and_sidebands":
             self.device._run_mixer_lo_calib(channel_id)
             for sequencer_dataclass in self.awg_sequencers:
                 sequencer = self.device.sequencers[sequencer_dataclass.identifier]
