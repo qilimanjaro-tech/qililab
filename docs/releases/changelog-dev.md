@@ -45,3 +45,5 @@ platform.set_flux_to_zero()
 ### Documentation
 
 ### Bug fixes
+- Correction of bugs following the implementation of the qblox drawing class. The user can now play the same waveform twice in one play, and when gains are set as 0 in the qprogram they are no longer replaced by 1 but remain at 0. Some improvements added, the RF modules are now scaled properly instead of on 1, when plotting through qprogram the y axis now reads Amplitude [a.u.], and the subplots have been removed, all the lines plot in one plot.
+[#918](https://github.com/qilimanjaro-tech/qililab/pull/918)
