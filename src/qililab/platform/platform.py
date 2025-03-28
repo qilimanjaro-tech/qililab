@@ -1452,18 +1452,5 @@ class Platform:
         qblox_draw = QbloxDraw()
         sequencer = self.compile_qprogram(qprogram)
         result = qblox_draw.draw(sequencer, runcard_data, averages_displayed)
-        return result
 
-    def draw(self, qprogram: QProgram, averages_displayed: bool = False):
-        """Draw the QProgram using QBlox Compiler
-
-        Args:
-            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
-                                        The default is False.
-        """
-
-        runcard_data = self._data_draw()
-        qblox_draw = QbloxDraw()
-        sequencer = self.compile_qprogram(qprogram)
-        result = qblox_draw.draw(sequencer, runcard_data, averages_displayed)
         return result
