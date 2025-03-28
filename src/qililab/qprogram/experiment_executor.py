@@ -29,7 +29,6 @@ import numpy as np
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
-from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
@@ -106,12 +105,9 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment, calibration: Calibration | None):
+    def __init__(self, platform: "Platform", experiment: Experiment):
         self.platform = platform
         self.experiment = experiment
-
-        if calibration and calibration.crosstalk_matrix:
-            self.platform.crosstalk = calibration.crosstalk_matrix
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})

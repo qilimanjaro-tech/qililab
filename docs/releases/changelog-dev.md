@@ -2,7 +2,7 @@
 
 ### New features since last release
 
-- Implemented Crosstalk automatic implementation through the experiment class. The crosstalk can be added through the `Calibration` file or by creating a `CrosstalkMatrix`. The crosstalk implementation inside the `Experiment` class while not using `Calibration` should be similar to this:
+- Implemented Crosstalk automatic implementation through the experiment class. The crosstalk can be added through the `Calibration` file or by creating a `CrosstalkMatrix`. The crosstalk implementation inside the `Experiment` class is:
 
 ```
 experiment = ql.Experiment(label="liveplot_test")
@@ -10,23 +10,7 @@ experiment = ql.Experiment(label="liveplot_test")
 flux_x = experiment.variable("flux_x", ql.Domain.Flux)
 flux_z = experiment.variable("flux_z", ql.Domain.Flux)
 
-experiment.crosstalk(crosstalk=crosstalk_matrix)  # to see the values to be applied on the sample
-with experiment.for_loop(variable=flux_x, start=0, stop=0.4, step=0.01):
-    with experiment.for_loop(variable=flux_z, start=0, stop=0.4, step=0.01):
-        experiment.set_parameter(alias="flux_x1", parameter=ql.Parameter.FLUX, value=flux_x)
-        experiment.set_parameter(alias="flux_z1", parameter=ql.Parameter.FLUX, value=flux_z)
-        experiment.execute_qprogram(qp)
-```
-
-With `Calibration`, `experiment.crosstalk` requires the calibration file:
-
-```
-experiment = ql.Experiment(label="liveplot_test")
-
-flux_x = experiment.variable("flux_x", ql.Domain.Flux)
-flux_z = experiment.variable("flux_z", ql.Domain.Flux)
-
-experiment.crosstalk(calibration=calibration)
+experiment.set_crosstalk(crosstalk=crosstalk_matrix)  # to see the values to be applied on the sample
 with experiment.for_loop(variable=flux_x, start=0, stop=0.4, step=0.01):
     with experiment.for_loop(variable=flux_z, start=0, stop=0.4, step=0.01):
         experiment.set_parameter(alias="flux_x1", parameter=ql.Parameter.FLUX, value=flux_x)
@@ -48,30 +32,6 @@ platform.set_flux_to_zero()
 ```
 
 [#899](https://github.com/qilimanjaro-tech/qililab/pull/899)
-
-- QBlox: An oscilloscope simulator has been implemented. It takes the sequencer as input, plots its waveforms and returns a dictionary (data_draw) containing all data points used for plotting.
-
-The user can access the Qblox drawing feature in two ways:
-  1. Via platform (includes runcard knowledge)
-  `platform.draw(self, qprogram: QProgram, averages_displayed: bool = False)`
-  ```python
-  with platform.session():
-    platform.draw(qprogram = qprogram)
-  ```
-  Note that if it is used with a Quantum Machine runcard, a ValueError will be generated.
-
-
-  2. Via QProgram (includes runcard knowledge)
-  `qprogram.draw(self, averages_displayed=False)`
-  ```python
-  qp = QProgram()
-  qprogram.draw()
-  ```
-    
-Both methods compile the qprogram internally to generate the sequencer and call `QbloxDraw.draw(self, sequencer, runcard_data=None, averages_displayed=False) -> dict`.
-Aditionally both 
-
-  [#901](https://github.com/qilimanjaro-tech/qililab/pull/901)
 
 ### Improvements
 

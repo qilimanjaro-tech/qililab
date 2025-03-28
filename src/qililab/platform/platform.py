@@ -961,7 +961,7 @@ class Platform:
             - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment, calibration=calibration)
+        executor = ExperimentExecutor(platform=self, experiment=experiment)
         return executor.execute()
 
     def compile_qprogram(

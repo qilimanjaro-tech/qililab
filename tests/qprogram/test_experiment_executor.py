@@ -144,7 +144,7 @@ class TestExperimentExecutor:
 
     def test_execute(self, platform, experiment, qprogram, crosstalk):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, calibration=None)
+        executor = ExperimentExecutor(platform=platform, experiment=experiment)
         resuls_path = executor.execute()
 
         # Check if the correct file path is returned
@@ -240,21 +240,3 @@ class TestExperimentExecutor:
 
         # If you want to ensure the exact sequence across all calls
         platform.assert_has_calls(expected_calls, any_order=False)
-
-    def test_execute_with_calibration(self, platform, experiment):
-        """Test the execute method to ensure the experiment is executed correctly and results are stored while using calibration."""
-
-        buses = {
-            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
-            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
-        }
-        calibration = Calibration()
-        calibration.crosstalk_matrix = CrosstalkMatrix.from_array(
-            buses=["flux_0", "flux_1"], matrix_array=np.array([[1.47046905, 0.12276261], [-0.55322207, 1.58247856]])
-        )
-
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, calibration=calibration)
-        _ = executor.execute()
-
-        # Check if the correct matrix is given
-        assert executor.platform.crosstalk.matrix == buses

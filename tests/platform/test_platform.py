@@ -789,7 +789,6 @@ class TestMethods:
 
         # Create an autospec of the Experiment class and Calibration class
         mock_experiment = create_autospec(Experiment)
-        mock_calibration = create_autospec(Calibration)
 
         expected_results_path = "mock/results/path/data.h5"
 
@@ -799,12 +798,10 @@ class TestMethods:
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
-            results_path = platform.execute_experiment(experiment=mock_experiment, calibration=mock_calibration)
+            results_path = platform.execute_experiment(experiment=mock_experiment)
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
-            MockExecutor.assert_called_once_with(
-                platform=platform, experiment=mock_experiment, calibration=mock_calibration
-            )
+            MockExecutor.assert_called_once_with(platform=platform, experiment=mock_experiment)
 
             # Ensure the execute method was called on the ExperimentExecutor instance
             mock_executor_instance.execute.assert_called_once()
@@ -1231,9 +1228,8 @@ class TestMethods:
                 for flux_bus in platform.analog_compilation_settings.flux_control_topology
                 if flux_bus.flux == flux
             )
-    
-    
-    def  test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
+
+    def test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
         """Test that if parallelisation is attempted on qprograms using at least one bus in common, an error will be raised"""
         error_string = "QPrograms cannot be executed in parallel."
         qp1 = QProgram()
@@ -1243,7 +1239,7 @@ class TestMethods:
         qp2.play(bus="drive_line_q1_bus", waveform=Square(amplitude=1, duration=25))
         qp2.play(bus="drive_line_q0_bus", waveform=Square(amplitude=0.5, duration=35))
         qp3.play(bus="feedline_input_output_bus_1", waveform=Square(amplitude=0.5, duration=15))
-        
+
         with (
             patch("builtins.open") as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
@@ -1252,10 +1248,9 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
-            qp_list = [qp1,qp2,qp3]
+            qp_list = [qp1, qp2, qp3]
             with pytest.raises(ValueError, match=error_string):
                 platform.execute_qprograms_parallel(qp_list, debug=True)
-
 
     def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
         error_string = "Parallel execution is not supported in Quantum Machines."
@@ -1265,7 +1260,6 @@ class TestMethods:
         qp1.play(bus="drive_q0", waveform=Square(amplitude=1, duration=5))
         qp2.play(bus="flux_q0", waveform=Square(amplitude=1, duration=25))
 
-        
         with (
             patch("builtins.open") as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
@@ -1274,7 +1268,7 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
-            qp_list = [qp1,qp2,qp3]
+            qp_list = [qp1, qp2, qp3]
             with pytest.raises(ValueError, match=error_string):
                 platform_quantum_machines.execute_qprograms_parallel(qp_list)
 
@@ -1311,12 +1305,11 @@ class TestMethods:
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
             acquire_qprogram_results.return_value = [123]
-            qp_list = [qprogram1,qprogram2]
+            qp_list = [qprogram1, qprogram2]
             result_parallel = platform.execute_qprograms_parallel(qp_list, debug=True)
             non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1, debug=True)
             non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2, debug=True)
 
-
-            #check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
-            assert result_parallel[0].results==non_parallel_results1.results
-            assert result_parallel[1].results==non_parallel_results2.results
+            # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
+            assert result_parallel[0].results == non_parallel_results1.results
+            assert result_parallel[1].results == non_parallel_results2.results
