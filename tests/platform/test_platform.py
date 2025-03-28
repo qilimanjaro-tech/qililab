@@ -15,8 +15,6 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
-from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
-from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -39,6 +37,8 @@ from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
+from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
+from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
@@ -1313,3 +1313,49 @@ class TestMethods:
             # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
             assert result_parallel[0].results == non_parallel_results1.results
             assert result_parallel[1].results == non_parallel_results2.results
+
+    def test_calibrate_mixers(self, platform: Platform):
+        """Test calibrating the Qblox mixers."""
+        channel_id = 0
+        cal_type = "lo"
+        alias_drive_bus = "drive_line_q1_bus"
+        alias_readout_bus = "feedline_input_output_bus_1"
+        drive_bus = platform.get_element(alias=alias_drive_bus)
+        readout_bus = platform.get_element(alias=alias_readout_bus)
+        qcm_rf = drive_bus.instruments[0]
+        qrm_rf = readout_bus.instruments[0]
+
+        qcm_rf.calibrate_mixers = MagicMock()
+        qrm_rf.calibrate_mixers = MagicMock()
+
+        platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
+        qcm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
+        qrm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        cal_type = "lo_and_sidebands"
+
+        platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
+        qcm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
+        qrm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        cal_type = "lo"
+        non_rf_drive_bus = "drive_line_q0_bus"
+        non_rf_readout_bus = "feedline_input_output_bus"
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_drive_bus, cal_type=cal_type, channel_id=channel_id)
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
+
+        cal_type = "lo_and_sidebands"
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_drive_bus, cal_type=cal_type, channel_id=channel_id)
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
