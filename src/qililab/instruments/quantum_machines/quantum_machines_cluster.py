@@ -20,8 +20,7 @@ from typing import Any, cast
 
 import numpy as np
 from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig
-from qm.api.v2.job_api.job_api import JobApiWithDeprecations
-from qm.api.v2.qm_api_old import QmApiWithDeprecations
+from qm.api.v2.job_api import JobApi
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
 from qm.program import Program
@@ -123,12 +122,12 @@ class QuantumMachinesCluster(Instrument):
                                         "feedforward": (
                                             output["filter"]["feedforward"] if "feedforward" in output["filter"] else []
                                         ),
-                                        "feedback": (
-                                            output["filter"]["feedback"] if "feedback" in output["filter"] else []
+                                        "exponential": (
+                                            output["filter"]["exponential"] if "exponential" in output["filter"] else []
                                         ),
                                     }
                                     if "filter" in output
-                                    else {"feedforward": [], "feedback": []}
+                                    else {"feedforward": [], "exponential": []}
                                 ),
                                 "shareable": output["shareable"] if "shareable" in output else False,
                             }
@@ -171,14 +170,14 @@ class QuantumMachinesCluster(Instrument):
                                                     if "feedforward" in output["filter"]
                                                     else []
                                                 ),
-                                                "feedback": (
-                                                    output["filter"]["feedback"]
-                                                    if "feedback" in output["filter"]
+                                                "exponential": (
+                                                    output["filter"]["exponential"]
+                                                    if "exponential" in output["filter"]
                                                     else []
                                                 ),
                                             }
                                             if "filter" in output
-                                            else {"feedforward": [], "feedback": []}
+                                            else {"feedforward": [], "exponential": []}
                                         ),
                                         "shareable": fem["shareable"] if "shareable" in fem else False,
                                     }
@@ -418,7 +417,7 @@ class QuantumMachinesCluster(Instrument):
     settings: QuantumMachinesClusterSettings
     device: QMMDriver
     _qmm: QuantumMachinesManager
-    _qm: QuantumMachine | QmApiWithDeprecations  # TODO: Change private QM API to public when implemented by QM.
+    _qm: QuantumMachine  # TODO: Change private QM API to public when implemented by QM.
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
@@ -503,12 +502,9 @@ class QuantumMachinesCluster(Instrument):
             self._config = cast("DictQuaConfig", merged_configuration)
             # If we are already connected, reopen the connection with the new configuration
             if self._is_connected_to_qm:
-                if isinstance(self._qm, QmApiWithDeprecations):
-                    self._qm.update_config(config=self._config)
-                else:
-                    self._qm.close()
-                    self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
-                    self._compiled_program_cache = {}
+                self._qm.close()
+                self._qm = self._qmm.open_qm(config=self._config, close_other_machines=True)  # type: ignore[assignment]
+                self._compiled_program_cache = {}
 
     def run_octave_calibration(self):
         """Run calibration procedure for the buses with octaves, if any."""
@@ -877,7 +873,7 @@ class QuantumMachinesCluster(Instrument):
             self._compiled_program_cache[qua_program_hash] = self._qm.compile(program=program)
         return self._compiled_program_cache[qua_program_hash]
 
-    def run_compiled_program(self, compiled_program_id: str) -> QmJob | JobApiWithDeprecations:
+    def run_compiled_program(self, compiled_program_id: str) -> QmJob | JobApi:
         """Executes a previously compiled QUA program identified by its unique compiled program ID.
 
         This method submits the compiled program to the Quantum Machines (QM) execution queue and waits for
@@ -918,7 +914,7 @@ class QuantumMachinesCluster(Instrument):
 
         return self._qm.execute(program)
 
-    def get_acquisitions(self, job: QmJob | JobApiWithDeprecations) -> dict[str, np.ndarray]:
+    def get_acquisitions(self, job: QmJob | JobApi) -> dict[str, np.ndarray]:
         """Fetches the results from the execution of a QUA Program.
 
         Once the results have been fetched, they are returned wrapped in a QuantumMachinesResult instance.
