@@ -1090,9 +1090,8 @@ class TestMethods:
                 for flux_bus in platform.analog_compilation_settings.flux_control_topology
                 if flux_bus.flux == flux
             )
-    
-    
-    def  test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
+
+    def test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
         """Test that if parallelisation is attempted on qprograms using at least one bus in common, an error will be raised"""
         error_string = "QPrograms cannot be executed in parallel."
         qp1 = QProgram()
@@ -1102,7 +1101,7 @@ class TestMethods:
         qp2.play(bus="drive_line_q1_bus", waveform=Square(amplitude=1, duration=25))
         qp2.play(bus="drive_line_q0_bus", waveform=Square(amplitude=0.5, duration=35))
         qp3.play(bus="feedline_input_output_bus_1", waveform=Square(amplitude=0.5, duration=15))
-        
+
         with (
             patch("builtins.open") as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
@@ -1111,10 +1110,9 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
-            qp_list = [qp1,qp2,qp3]
+            qp_list = [qp1, qp2, qp3]
             with pytest.raises(ValueError, match=error_string):
                 platform.execute_qprograms_parallel(qp_list, debug=True)
-
 
     def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
         error_string = "Parallel execution is not supported in Quantum Machines."
@@ -1124,7 +1122,6 @@ class TestMethods:
         qp1.play(bus="drive_q0", waveform=Square(amplitude=1, duration=5))
         qp2.play(bus="flux_q0", waveform=Square(amplitude=1, duration=25))
 
-        
         with (
             patch("builtins.open") as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
@@ -1133,7 +1130,7 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
-            qp_list = [qp1,qp2,qp3]
+            qp_list = [qp1, qp2, qp3]
             with pytest.raises(ValueError, match=error_string):
                 platform_quantum_machines.execute_qprograms_parallel(qp_list)
 
@@ -1170,12 +1167,57 @@ class TestMethods:
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
             acquire_qprogram_results.return_value = [123]
-            qp_list = [qprogram1,qprogram2]
+            qp_list = [qprogram1, qprogram2]
             result_parallel = platform.execute_qprograms_parallel(qp_list, debug=True)
             non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1, debug=True)
             non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2, debug=True)
 
+            # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
+            assert result_parallel[0].results == non_parallel_results1.results
+            assert result_parallel[1].results == non_parallel_results2.results
 
-            #check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
-            assert result_parallel[0].results==non_parallel_results1.results
-            assert result_parallel[1].results==non_parallel_results2.results
+    def test_calibrate_mixers(self, platform: Platform):
+        """Test calibrating the Qblox mixers."""
+        channel_id = 0
+        cal_type = "lo"
+        alias_drive_bus = "drive_line_q1_bus"
+        alias_readout_bus = "feedline_input_output_bus_1"
+        drive_bus = platform.get_element(alias=alias_drive_bus)
+        readout_bus = platform.get_element(alias=alias_readout_bus)
+        qcm_rf = drive_bus.instruments[0]
+        qrm_rf = readout_bus.instruments[0]
+
+        qcm_rf.calibrate_mixers = MagicMock()
+        qrm_rf.calibrate_mixers = MagicMock()
+
+        platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
+        qcm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
+        qrm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        cal_type = "lo_and_sidebands"
+
+        platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
+        qcm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
+        qrm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        cal_type = "lo"
+        non_rf_drive_bus = "drive_line_q0_bus"
+        non_rf_readout_bus = "feedline_input_output_bus"
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_drive_bus, cal_type=cal_type, channel_id=channel_id)
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
+
+        cal_type = "lo_and_sidebands"
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_drive_bus, cal_type=cal_type, channel_id=channel_id)
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
