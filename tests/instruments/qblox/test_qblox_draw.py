@@ -70,22 +70,20 @@ def fixture_qp_plat_draw_qcmrf() -> QProgram:
 @pytest.fixture(name="qp_plat_draw_qcm_flux")
 def fixture_qp_plat_draw_qcm_flux() -> QProgram:
     qp = QProgram()
-    qp.set_phase("drive_line_q0_bus", 0.5)
-    qp.set_frequency("drive_line_q0_bus", 100e6)
-    qp.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=10))
-    qp.wait("drive_line_q0_bus", 10)
-    qp.set_phase("drive_line_q0_bus", 0)
+    qp.set_phase("flux_line_q0_bus", 0.5)
+    qp.play(bus="flux_line_q0_bus", waveform=Square(amplitude=1, duration=10))
+    qp.wait("flux_line_q0_bus", 10)
+    qp.set_phase("flux_line_q0_bus", 0)
     return qp
 
 
 @pytest.fixture(name="qp_plat_draw_qcm_flux_offset")
 def fixture_qp_plat_draw_qcm_flux_offset() -> QProgram:
     qp = QProgram()
-    qp.set_offset("drive_line_q0_bus", 0.5)
-    qp.set_frequency("drive_line_q0_bus", 100e6)
-    qp.play(bus="drive_line_q0_bus", waveform=Square(amplitude=1, duration=10))
-    qp.wait("drive_line_q0_bus", 10)
-    qp.set_offset("drive_line_q0_bus", 0)
+    qp.set_offset("flux_line_q0_bus", 0.5)
+    qp.play(bus="flux_line_q0_bus", waveform=Square(amplitude=1, duration=10))
+    qp.wait("flux_line_q0_bus", 10)
+    qp.set_offset("flux_line_q0_bus", 0)
     return qp
 
 
@@ -329,100 +327,27 @@ class TestQBloxDraw:
         np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_platform_draw_qcmrf(self, qp_plat_draw_qcmrf: QProgram, platform: Platform):
-        expected_data_draw_i = [
-            0.20062054,
-            0.20030277,
-            0.19986935,
-            0.19948583,
-            0.19929871,
-            0.19937946,
-            0.19969723,
-            0.20013065,
-            0.20051417,
-            0.20070129,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-        ]
-        expected_data_draw_q = [
-            0.07033901,
-            0.07063901,
-            0.07069493,
-            0.07048541,
-            0.07009049,
-            0.06966099,
-            0.06936099,
-            0.06930507,
-            0.06951459,
-            0.06990951,
-            0.07,
-            0.07,
-            0.07,
-            0.07,
-            0.07,
-            0.07,
-            0.07,
-            0.07,
-            0.07,
-            0.07,
-        ]
-
+        expected_data_draw_i = [0.20155136, 0.20075692, 0.19967336, 0.19871457, 0.19824677,
+       0.19844864, 0.19924308, 0.20032664, 0.20128543, 0.20175323,
+       0.2       , 0.2       , 0.2       , 0.2       , 0.2       ,
+       0.2       , 0.2       , 0.2       , 0.2       , 0.2       ]
+        expected_data_draw_q = [0.07084751, 0.07159752, 0.07173733, 0.07121354, 0.07022622,
+       0.06915249, 0.06840248, 0.06826267, 0.06878646, 0.06977378,
+       0.07      , 0.07      , 0.07      , 0.07      , 0.07      ,
+       0.07      , 0.07      , 0.07      , 0.07      , 0.07      ]
         data_draw = platform.draw(qp_plat_draw_qcmrf)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_platform_draw_qcmrf_offset(self, qp_plat_draw_qcmrf_offset: QProgram, platform: Platform):
-        expected_data_draw_i_q1 = [
-            0.55424971,
-            0.27878691,
-            -0.02676981,
-            -0.24570817,
-            -0.29440116,
-            -0.15424971,
-            0.12121309,
-            0.42676981,
-            0.64570817,
-            0.69440116,
-            0.5535426,
-            0.27821485,
-            -0.02698832,
-            -0.24548967,
-            -0.2938291,
-            -0.1535426,
-            0.12178515,
-            0.42698832,
-            0.64548967,
-            0.6938291,
-        ]
-        expected_data_draw_q_q1 = [
-            0.4235426,
-            0.56424473,
-            0.51616216,
-            0.29766082,
-            -0.00779922,
-            -0.2835426,
-            -0.42424473,
-            -0.37616216,
-            -0.15766082,
-            0.14779922,
-            0.4235426,
-            0.5638291,
-            0.51548967,
-            0.29698832,
-            -0.00821485,
-            -0.2835426,
-            -0.4238291,
-            -0.37548967,
-            -0.15698832,
-            0.14821485,
-        ]
+        expected_data_draw_i_q1 = [ 1.08562427,  0.39696727, -0.36692454, -0.91427044, -1.0360029 ,
+       -0.68562427,  0.00303273,  0.76692454,  1.31427044,  1.4360029 ,
+        1.0838565 ,  0.39553711, -0.36747081, -0.91372416, -1.03457275,
+       -0.6838565 ,  0.00446289,  0.76747081,  1.31372416,  1.43457275]
+        expected_data_draw_q_q1 = [ 0.9538565 ,  1.30561181,  1.18540541,  0.63915205, -0.12449805,
+       -0.8138565 , -1.16561181, -1.04540541, -0.49915205,  0.26449805,
+        0.9538565 ,  1.30457275,  1.18372416,  0.63747081, -0.12553711,
+       -0.8138565 , -1.16457275, -1.04372416, -0.49747081,  0.26553711]
         expected_data_draw_i_q2 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
         expected_data_draw_q_q2 = [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6]
 
