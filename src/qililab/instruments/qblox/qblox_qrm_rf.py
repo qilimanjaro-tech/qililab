@@ -44,7 +44,7 @@ class QbloxQRMRF(QbloxQRM):
         out0_offset_path0: float
         out0_offset_path1: float
         out_offsets: list[float] = field(init=False, default_factory=list)
-        out0_in0_lo_freq_cal_type_default: str Optional[str] = "off"
+        out0_in0_lo_freq_cal_type_default: Optional[str] = "off"
 
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
