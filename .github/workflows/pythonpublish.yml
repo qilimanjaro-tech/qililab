@@ -29,9 +29,10 @@ jobs:
           python -m pip install -U pip
           python -m pip install -r dev-requirements.txt
 
-      - name: Zip and build wheel
+      - name: Build from scratch
         run: |
-          python -m pip install build wheel setuptools
+          rm -rf dist/ build/ *.egg-info
+          python -m pip install --upgrade build setuptools wheel
           python -m build
 
       - name: Publish package distributions to PyPI
