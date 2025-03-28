@@ -360,6 +360,7 @@ class Parameter(str, Enum):
     B = "b"
     T_PHI = "t_phi"
     GATE_OPTIONS = "options"
+    FLUX = "flux"
 
     @classmethod
     def to_yaml(cls, representer, node):
