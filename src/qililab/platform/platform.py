@@ -1563,6 +1563,18 @@ class Platform:
 
         return compiled_programs, final_layout
 
+    def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
+        bus = self.get_element(alias=alias)
+        for instrument, instrument_channel in zip(bus.instruments, bus.channels):
+            if instrument.name == InstrumentName.QRMRF:
+                if channel_id is not None and channel_id == instrument_channel:
+                    instrument.calibrate_mixers(cal_type, instrument_channel)
+            elif instrument.name == InstrumentName.QCMRF:
+                if channel_id is not None and channel_id == instrument_channel:
+                    instrument.calibrate_mixers(cal_type, channel_id)
+            else:
+                raise AttributeError("Mixers calibration not implemented for this instrument.")
+
     def draw(self, qprogram: QProgram, averages_displayed: bool = False):
         """Draw the QProgram using QBlox Compiler
 
@@ -1575,4 +1587,5 @@ class Platform:
         qblox_draw = QbloxDraw()
         sequencer = self.compile_qprogram(qprogram)
         result = qblox_draw.draw(sequencer, runcard_data, averages_displayed)
+
         return result
