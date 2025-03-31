@@ -314,3 +314,8 @@ class TestQbloxQCMRF:
 
         for sequencer in qcm_rf.device.sequencers:
             qcm_rf.device.sequencers[sequencer].sideband_cal.assert_called()
+
+        cal_type = "oh hi Mark!"
+
+        with pytest.raises(Exception):
+            qcm_rf.calibrate_mixers(cal_type=cal_type, channel_id=channel_id)
