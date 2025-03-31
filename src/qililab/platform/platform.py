@@ -1567,7 +1567,8 @@ class Platform:
         bus = self.get_element(alias=alias)
         for instrument, instrument_channel in zip(bus.instruments, bus.channels):
             if instrument.name == InstrumentName.QRMRF:
-                instrument.calibrate_mixers(cal_type, instrument_channel)
+                if channel_id is not None and channel_id == instrument_channel:
+                    instrument.calibrate_mixers(cal_type, instrument_channel)
             elif instrument.name == InstrumentName.QCMRF:
                 if channel_id is not None and channel_id == instrument_channel:
                     instrument.calibrate_mixers(cal_type, channel_id)
