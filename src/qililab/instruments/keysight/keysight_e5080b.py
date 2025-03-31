@@ -123,10 +123,10 @@ class KeySight_E5080B(VisaInstrument):
         # Sets the RF power output level.
         self.source_power: Parameter = self.add_parameter(
             "source_power",
-            label="power",
+            label="source_power",
             unit="dBm",
             get_cmd="SOUR:POW?",
-            set_cmd= self._set_power_bounds,
+            set_cmd= "SENS:POW {}",
             get_parser=float,
             vals=Numbers(min_value=min_power, max_value=max_power),
         )
@@ -169,7 +169,7 @@ class KeySight_E5080B(VisaInstrument):
             "scattering_parameter",
             label="scattering_parameter",
             get_cmd="CALC:MEAS:PAR?",
-            set_cmd=f"CALC%:MEAS:PAR? {}",
+            set_cmd="CALC:MEAS:PAR {}",
             vals=Enum("S11","S12","S21","S22"),
         )
         """Parameter scattering_parameter"""

@@ -264,7 +264,8 @@ class VNAFormatData(str, Enum):
     """
 
     REAL_32 = "real,32"
-    SWEEP = "sweep"
+    REAL_64 = "real,64"
+    ASCii_0 = "ascii,0"
 
 class InstrumentControllerName(str, Enum):
     """Instrument Controller names.
@@ -401,6 +402,8 @@ class Parameter(str, Enum):
     AVERAGES_MODE = "averages_mode"
     SWEEP_MODE = "sweep_mode"
     CLEAR_AVERAGES = "clear_averages"
+    FORMAT_DATA = "format_data"
+    SOURCE_POWER = "source_power"
 
 
     @classmethod

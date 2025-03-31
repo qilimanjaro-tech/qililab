@@ -23,12 +23,10 @@ from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instruments.decorators import log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import InstrumentName, Parameter, ParameterValue
 from qililab.typings.enums import VNAScatteringParameters, VNAAverageModes, VNASweepTypes, VNASweepModes, VNAFormatData
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
-
 
 @InstrumentFactory.register
 class E5080B(Instrument):
@@ -48,25 +46,24 @@ class E5080B(Instrument):
             if_bandwidth (float): Intermediate frequency bandwidth.
         """
     
-        start_freq: float
-        stop_freq: float
-        center_freq: float
-        step_auto: bool
-        step_size: float
-        span: float
-        cw: float
-        points: int
-        source_power: float
-        if_bandwidth: float
-        sweep_type: VNASweepTypes
-        sweep_mode: VNASweepModes
-        averages_enabled: bool
-        averages_count: int
-        averages_mode: VNAAverageModes
-        scattering_parameter: VNAScatteringParameters
-        format_data: VNAFormatData
-
-        
+        start_freq: float | None = None
+        stop_freq: float | None = None
+        center_freq: float | None = None
+        step_auto: bool | None = None
+        step_size: float | None = None
+        span: float | None = None
+        cw: float | None = None
+        points: int | None = None
+        source_power: float | None = None
+        if_bandwidth: float | None = None
+        sweep_type: VNASweepTypes | None = None
+        sweep_mode: VNASweepModes | None = None
+        averages_enabled: bool | None = None
+        averages_count: int | None = None
+        averages_mode: VNAAverageModes | None = None
+        scattering_parameter: VNAScatteringParameters | None = None
+        format_data: VNAFormatData | None = None
+        timeout: float = DEFAULT_TIMEOUT
 
     settings: E5080BSettings
     device: KeysightE5080B
@@ -284,10 +281,10 @@ class E5080B(Instrument):
                 self.device.points(self.settings.points)
             return
 
-        if parameter == Parameter.POWER:
+        if parameter == Parameter.SOURCE_POWER:
             self.settings.source_power = float(value)
             if self.is_device_active():
-                self.device.power(self.source_power)
+                self.device.source_power(self.source_power)
             return
         
         if parameter == Parameter.IF_BANDWIDTH:
@@ -367,7 +364,7 @@ class E5080B(Instrument):
             return self.settings.cw
         if parameter == Parameter.NUMBER_POINTS:
             return self.settings.points
-        if parameter == Parameter.POWER:
+        if parameter == Parameter.SOURCE_POWER:
             return self.settings.source_power
         if parameter == Parameter.IF_BANDWIDTH:
             return self.settings.if_bandwidth
@@ -389,11 +386,11 @@ class E5080B(Instrument):
         raise ParameterNotFound(self, parameter)
 
 
-    def _get_trace(self, channel=1, trace=1):
+    def _get_trace(self, trace=1):
         """Get the data of the current trace."""
-        self.send_command(command="FORM:DATA", arg="REAL,32")
-        self.send_command(command="FORM:BORD", arg="SWAPPED")  # SWAPPED
-        data = self.send_binary_query(f"CALC{channel}:MEAS{trace}:DATA:SDAT?")
+        self.device.send_command(command="FORM:DATA", arg="REAL,32")
+        self.device.send_command(command="FORM:BORD", arg="SWAPPED")  # SWAPPED is for IBM Compatible computers
+        data = self.device.query_binary_values(f"CALC:MEAS{trace}:DATA:SDAT?")
         datareal = np.array(data[::2])  # Elements from data starting from 0 iterating by 2
         dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
 
@@ -405,10 +402,10 @@ class E5080B(Instrument):
         Averaging has to be enabled.
         """
         if not self.averages_enabled:
-            self.averaging_enabled = True
-            self.number_averages = 1
+            self.averages_enabled = True
+            self.averages_count = 1
 
-    def _start_measurement(self, channel=1):
+    def _start_measurement(self):
         """
         This function is called at the beginning of each single measurement in the spectroscopy script.
         Also, the averages need to be reset.
@@ -419,7 +416,7 @@ class E5080B(Instrument):
 
     def _wait_until_ready(self, period=0.25) -> bool:
         """Waiting function to wait until VNA is ready."""
-        timelimit = time.time() + self.device_timeout
+        timelimit = time.time() + self.set_timeout
         while time.time() < timelimit:
             if self.ready():
                 return True
@@ -445,7 +442,8 @@ class E5080B(Instrument):
 
     def get_frequencies(self):
         """return freqpoints"""
-        return np.array(self.send_binary_query("SENS:X?"))
+        self.device.send_command(command="FORM:DATA", arg="REAL,64") #recommended to avoid frequency rounding errors
+        return np.array(self.device.query("CALC:MEAS:X?"))
 
     def ready(self) -> bool:
         """
@@ -453,18 +451,88 @@ class E5080B(Instrument):
         Returns True if the VNA is on HOLD after finishing the required number of averages.
         """
         try:  # the VNA sometimes throws an error here, we just ignore it
-            return self._get_sweep_mode() == "HOLD"
+            return self.get_parameter(Parameter.SWEEP_MODE) == "HOLD"
         except Exception:  # noqa: BLE001
             return False
 
-    def release(self, channel=1):
+    def release(self):
         """Bring the VNA back to a mode where it can be easily used by the operator."""
-        self.settings.sweep_mode = VNASweepModes("cont")
-        mode = self.settings.sweep_mode.name
-        self.send_command(f"SENS{channel}:SWE:MODE", mode)
-
-
+        mode = VNASweepModes("cont")
+        self.set_parameter(Parameter.SWEEP_MODE,mode)
 
     def acquire_result(self):
         """Convert the data received from the device to a Result object."""
         return VNAResult(data=self.read_tracedata())
+
+    def initial_setup(self):
+        self.device.start_freq(self.settings.start_freq)
+        self.device.stop_freq(self.settings.stop_freq)
+        self.device.center_freq(self.settings.center_freq)
+        self.device.span(self.settings.span)
+        self.device.source_power(self.settings.source_power)
+        self.device.if_bandwidth(self.settings.if_bandwidth)
+        self.device.sweep_type(self.settings.sweep_type)
+        self.device.sweep_mode(self.settings.sweep_mode)
+        self.device.scattering_parameter(self.settings.scattering_parameter)
+        self.device.averages_enabled(self.settings.averages_enabled)
+        self.device.averages_count(self.settings.averages_count)
+        self.device.averages_mode(self.settings.averages_mode)
+        self.device.format_data(self.settings.format_data)
+        self.device.step_auto(self.settings.step_auto)
+        if not self.settings.step_auto:
+            self.device.step_size(self.settings.step_size)
+
+
+    def to_dict(self):
+        """Return a dict representation of the VectorNetworkAnalyzer class."""
+        return dict(super().to_dict().items())
+
+    # def initial_setup(self):
+    #     """Set initial instrument settings."""
+    #     self.device.initial_setup()
+
+    def reset(self):
+        """Reset instrument settings."""
+        self.device.reset()
+
+    def turn_on(self):
+        """Start an instrument."""
+        return self.send_command(command=":OUTP", arg="ON")
+
+    def turn_off(self):
+        """Stop an instrument."""
+        return self.send_command(command=":OUTP", arg="OFF")
+
+    def send_command(self, command: str, arg: str = "?") -> str:
+        """Send a command directly to the device.
+
+        Args:
+            command(str): Command to send the device
+            arg(str): Argument to send the command with. Default empty string
+
+        Example:
+            >>> send_command(command=":OUTP",arg="ON") -> ":OUTP ON"
+        """
+        return self.device.send_command(command=command, arg=arg)
+
+    def send_query(self, query: str):
+        """
+        Send a query directly to the device.
+
+        Input:
+            query(str): Query to send the device
+        """
+        return self.device.send_query(query)
+
+    def send_binary_query(self, query: str):
+        """
+        Send a binary query directly to the device.
+
+        Input:
+            query(str): Query to send the device
+        """
+        return self.device.send_binary_query(query)
+
+    def set_timeout(self, value: float):
+        """Set timeout in mili seconds"""
+        self.device.set_timeout(value)

@@ -859,7 +859,7 @@ class SauronVNA:
     keysight_e5080b: dict[str, Any] = {
         "name": InstrumentName.KEYSIGHT_E5080B,
         "alias": InstrumentName.KEYSIGHT_E5080B.value,
-        Parameter.POWER.value: -60.0,
+        Parameter.SOURCE_POWER.value: -60.0,
     }
 
     instruments = [keysight_e5080b]

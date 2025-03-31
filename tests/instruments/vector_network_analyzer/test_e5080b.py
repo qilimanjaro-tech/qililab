@@ -57,7 +57,7 @@ class TestE5080B:
     @pytest.mark.parametrize(
         "parameter, value",
         [
-            (Parameter.POWER, -60.0),
+            (Parameter.SOURCE_POWER, -60.0),
             (Parameter.FREQUENCY_SPAN, 6.4e-3),
             (Parameter.FREQUENCY_CENTER, 8.5e-3),
             (Parameter.FREQUENCY_START, 27.5),
@@ -72,8 +72,8 @@ class TestE5080B:
         assert isinstance(parameter, Parameter)
         assert isinstance(value, float)
         e5080b.setup(parameter, value)
-        if parameter == Parameter.POWER:
-            assert e5080b.settings.power == value
+        if parameter == Parameter.SOURCE_POWER:
+            assert e5080b.settings.source_power == value
         if parameter == Parameter.FREQUENCY_SPAN:
             assert e5080b.frequency_span == value
         if parameter == Parameter.FREQUENCY_CENTER:
@@ -211,7 +211,7 @@ class TestE5080B:
         "parameter, value",
         [
             # Test POWER setting
-            (Parameter.POWER, 2.0),
+            (Parameter.SOURCE_POWER, 2.0),
 
             # Test IF_BANDWIDTH setting
             (Parameter.IF_BANDWIDTH, 1.0),
@@ -231,8 +231,8 @@ class TestE5080B:
         e5080b.set_parameter(parameter, value, channel_id=1)
 
         # Check values based on the parameter
-        if parameter == Parameter.POWER:
-            assert e5080b.settings.power == value
+        if parameter == Parameter.SOURCE_POWER:
+            assert e5080b.settings.source_power == value
         elif parameter == Parameter.IF_BANDWIDTH:
             assert e5080b.settings.if_bandwidth == value
         elif parameter == Parameter.ELECTRICAL_DELAY:
@@ -254,20 +254,20 @@ class TestE5080B:
             e5080b.set_parameter(parameter, value)
 
     @pytest.mark.parametrize(
-        "parameter, expected_value, channel_id",
+        "parameter, expected_value",
         [
             # Test POWER setting
-            (Parameter.POWER, -60.0, None),
+            (Parameter.SOURCE_POWER, -60.0),
             # Test IF_BANDWITH setting
-            (Parameter.IF_BANDWIDTH, 1.5, None),
+            (Parameter.IF_BANDWIDTH, 1.5),
             # Test ELECTRICAL_DELAY setting
-            (Parameter.ELECTRICAL_DELAY, 0.0, None),
+            (Parameter.ELECTRICAL_DELAY, 0.0),
             # Test SWEEP_MODE setting with channel
             (Parameter.SWEEP_MODE, VNASweepModes.HOLD, 1),
             # Test SWEEP_MODE setting without channel
-            (Parameter.SWEEP_MODE, VNASweepModes.HOLD, None),
+            (Parameter.SWEEP_MODE, VNASweepModes.HOLD),
             # Test DEVICE_TIMEOUT setting
-            (Parameter.DEVICE_TIMEOUT, 10000, None)
+            (Parameter.DEVICE_TIMEOUT, 10000)
         ]
     )
     @patch("qililab.instruments.keysight.e5080b_vna.E5080B._get_sweep_mode")
