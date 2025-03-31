@@ -21,6 +21,8 @@ platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=c
 channel_id = 0
 cal_type = "lo_and_sidebands"
 alias_readout_bus = "readout_line_q1_bus"
+
+platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
 ```
 
 Warnings rise if a value that is not `off`, `lo` or `lo_and_sidebands` are used.
