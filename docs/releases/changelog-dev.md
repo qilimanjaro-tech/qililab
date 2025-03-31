@@ -2,6 +2,30 @@
 
 ### New features since last release
 
+- Implemented automatic mixers calibration for Qblox RF modules. There are to ways to use it. The first one is by setting a parameter in the runcard, which indicates when and which type of calibration is ran.
+
+For the QRM-RF module the parameter is `out0_in0_lo_freq_cal_type_default`, and the values it can take are `off`, `lo` and `lo_and_sidebands`. The first one is the default value, if set the instrument won't do any automatic mixers calibration on its own, to avoid unexpected behaviours by default. The second value will suppress the leakage in the LO, and the third one the LO plus the sidebands. The parameter that will trigger this autocalibration everytime is changed in the instrument is `out0_in0_lo_freq`.
+
+For the QCM-RF module the parameters in the runcard are `out0_lo_freq_cal_type_default` and `out1_lo_freq_cal_type_default`, and the values are the same one that for the QRM-RF described above. The parameters that will trigger this autocalibration everytime is changed in the instrument are `out0_lo_freq`  and `out1_lo_freq`.
+
+The second way to use this autocalibration is to trigger it manually using the `Platform` instance by calling its method `Platform.calibrate_mixers()`. As input parameters you will need to specify the `alias` for the bus where the RF instrument is, the `cal_type` which allows to specify one of the three values described above, and the `channel_id` for which mixer you would like to calibrate.
+
+
+```
+channel_id = 0
+cal_type = "lo"
+alias_drive_bus = "drive_line_q1_bus"
+
+platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
+
+channel_id = 0
+cal_type = "lo_and_sidebands"
+alias_readout_bus = "readout_line_q1_bus"
+```
+
+Warnings rise if a value that is not `off`, `lo` or `lo_and_sidebands` are used.
+[#917](https://github.com/qilimanjaro-tech/qililab/pull/917)
+
 - Implemented Crosstalk automatic implementation through the experiment class. The crosstalk can be added through the `Calibration` file or by creating a `CrosstalkMatrix`. The crosstalk implementation inside the `Experiment` class is:
 
 ```
