@@ -346,9 +346,9 @@ class QbloxDraw:
                 parameters[bus]["intermediate_frequency"] = [IF]
                 parameters[bus]["ac_offset_i"] = parameters[bus]["offset_i"]
                 parameters[bus]["ac_offset_q"] = parameters[bus]["offset_q"]
-                if parameters[bus]["instrument_name"] == "QCM" or parameters[bus]["instrument_name"] == "QCM-RF":
+                if parameters[bus]["instrument_name"] in {"QCM", "QCM-RF"}:
                     parameters[bus]["max_voltage"] = 2.5
-                elif parameters[bus]["instrument_name"] == "QRM" or parameters[bus]["instrument_name"] == "QRM-RF":
+                elif parameters[bus]["instrument_name"] in {"QRM", "QRM-RF"}:
                     parameters[bus]["max_voltage"] = 0.5
             else:  # no runcard uploaded- running qp directly
                 parameters[bus] = {}
