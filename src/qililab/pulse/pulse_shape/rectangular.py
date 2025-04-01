@@ -44,7 +44,7 @@ class Rectangular(PulseShape):
             :align: center
     """
 
-    name = PulseShapeName.RECTANGULAR  #: Name of the rectangular pulse shape.
+    name = PulseShapeName.RECTANGULAR  # noqa: RUF045
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Constant amplitude envelope.
