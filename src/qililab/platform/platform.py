@@ -325,10 +325,10 @@ class Platform:
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
 
-        self.experiment_results_base_path: str = tempfile.gettempdir()
+        self.experiment_results_base_path: str = "/home/jupytershared/testing_db/data"
         """Base path for saving experiment results."""
 
-        self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
+        self.experiment_results_path_format: str = "{sample}/{cooldown}/{date}/{time}/{label}.h5"
         """Format of the experiment results path."""
 
     def connect(self):
@@ -794,7 +794,7 @@ class Platform:
         )
         return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
-    def execute_experiment(self, experiment: Experiment) -> str:
+    def execute_experiment(self, experiment: Experiment, db_manager, optional_identifier = None) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
@@ -827,7 +827,7 @@ class Platform:
             - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment)
+        executor = ExperimentExecutor(platform=self, experiment=experiment, db_manager = db_manager, optional_identifier = optional_identifier)
         return executor.execute()
 
     def compile_qprogram(

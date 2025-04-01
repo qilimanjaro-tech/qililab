@@ -104,9 +104,11 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment):
+    def __init__(self, platform: "Platform", experiment: Experiment, db_manager, optional_identifier):
         self.platform = platform
         self.experiment = experiment
+        self.db_manager = db_manager
+        self.optional_identifier = optional_identifier
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -505,12 +507,12 @@ class ExperimentExecutor:
         path_format = self.platform.experiment_results_path_format
 
         # Format date and time for directory names
-        date = executed_at.strftime("%Y%m%d")
-        timestamp = executed_at.strftime("%H%M%S")
+        date = executed_at.strftime("%Y-%m-%d")
+        timestamp = executed_at.strftime("%H_%M_%S")
         label = self.experiment.label
 
         # Format the path based on the path's format
-        path = path_format.format(date=date, time=timestamp, label=label)
+        path = path_format.format(sample = self.db_manager.current_sample, cooldown = self.db_manager.current_cd, date=date, time=timestamp, label=label)
 
         # Construct the full path
         path = os.path.join(base_path, path)
@@ -521,6 +523,10 @@ class ExperimentExecutor:
         # Create the directories if they don't exist
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
+        
+        
+        
+        
         return path
 
     def _measure_execution_time(self, execution_completed: threading.Event):
@@ -562,6 +568,21 @@ class ExperimentExecutor:
         # Event to signal that the execution has completed
         execution_completed = threading.Event()
 
+        
+        self.measurement = self.db_manager.add_measurement(
+               experiment_name=self.experiment.label,
+               result_path=results_path, 
+               experiment_completed=False, 
+               start_time=executed_at, 
+               optional_identifier=self.optional_identifier, 
+               platform=self.platform.to_dict(),
+               qprogram=(serialize(self.qprogram)),
+               experiment = serialize(self.experiment),
+               ) # save calibration too
+        
+        
+        
+        
         with ThreadPoolExecutor() as executor:
             # Start the _measure_execution_time in a separate thread
             execution_time_future = executor.submit(self._measure_execution_time, execution_completed)
@@ -586,4 +607,4 @@ class ExperimentExecutor:
             with self._results_writer:
                 self._results_writer.execution_time = execution_time
 
-        return results_path
+        return results_path, self.measurement
