@@ -38,7 +38,7 @@ class TwoStep(PulseShape):
             two_step_envelope = TwoStep().envelope(amplitude=X, duration=50)
     """
 
-    name = PulseShapeName.TWOSTEP  #: Name of the two-step pulse shape.
+    name = PulseShapeName.TWOSTEP  # noqa: RUF045
     step_amplitude: float
     step_duration: int
 

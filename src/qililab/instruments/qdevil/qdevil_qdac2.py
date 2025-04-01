@@ -77,13 +77,13 @@ class QDevilQDac2(VoltageSource):
             voltage = float(value)
             self.settings.voltage[index] = voltage
             if self.is_device_active():
-                channel.dc_constant_V(voltage)
+                channel.dc_constant_V(voltage)  # type: ignore[union-attr]
             return
         if parameter == Parameter.SPAN:
             span = str(value)
             self.settings.span[index] = span
             if self.is_device_active():
-                channel.output_range(span)
+                channel.output_range(span)  # type: ignore[union-attr]
             return
         if parameter == Parameter.RAMPING_ENABLED:
             ramping_enabled = bool(value)
@@ -97,9 +97,9 @@ class QDevilQDac2(VoltageSource):
                         raise ValueError(
                             f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s."
                         )
-                    channel.dc_slew_rate_V_per_s(self.ramp_rate[index])
+                    channel.dc_slew_rate_V_per_s(self.ramp_rate[index])  # type: ignore[union-attr]
                 else:
-                    channel.dc_slew_rate_V_per_s(2e7)
+                    channel.dc_slew_rate_V_per_s(2e7)  # type: ignore[union-attr]
             return
         if parameter == Parameter.RAMPING_RATE:
             ramping_rate = float(value)
@@ -110,13 +110,13 @@ class QDevilQDac2(VoltageSource):
                     raise ValueError(
                         f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s."
                     )
-                channel.dc_slew_rate_V_per_s(ramping_rate)
+                channel.dc_slew_rate_V_per_s(ramping_rate)  # type: ignore[union-attr]
             return
         if parameter == Parameter.LOW_PASS_FILTER:
             low_pass_filter = str(value)
             self.settings.low_pass_filter[index] = low_pass_filter
             if self.is_device_active():
-                channel.output_filter(low_pass_filter)
+                channel.output_filter(low_pass_filter)  # type: ignore[union-attr]
             return
         raise ParameterNotFound(self, parameter)
 

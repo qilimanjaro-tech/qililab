@@ -66,7 +66,7 @@ class Drag(PulseShape):
         drag_coefficient (float): Drag coefficient that gives the DRAG its imaginary components.
     """
 
-    name = PulseShapeName.DRAG  #: Name of the drag pulse shape.
+    name = PulseShapeName.DRAG  # noqa: RUF045
     num_sigmas: float
     drag_coefficient: float
 

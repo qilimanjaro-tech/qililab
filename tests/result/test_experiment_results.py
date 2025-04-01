@@ -528,6 +528,14 @@ class TestExperimentResultsWriter:
             exp_writer.platform = "newer_platform"
             assert exp_writer.platform == "newer_platform"
 
+            # test crosstalk property
+            exp_writer.crosstalk = "new_crosstalk"
+            assert exp_writer.crosstalk == "new_crosstalk"
+
+            # write again to assert that HDF5 old partition is deleted correctly
+            exp_writer.crosstalk = "newer_crosstalk"
+            assert exp_writer.crosstalk == "newer_crosstalk"
+
             # test executed_at property
             exp_writer.executed_at = datetime(2025, 1, 1, 0, 0, 0)
             assert exp_writer.executed_at == datetime(2025, 1, 1, 0, 0, 0)

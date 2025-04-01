@@ -3,6 +3,7 @@
 import copy
 import io
 import re
+import warnings
 from pathlib import Path
 from queue import Queue
 from types import MethodType
@@ -27,6 +28,7 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -35,7 +37,7 @@ from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
-from tests.data import Galadriel, SauronQuantumMachines
+from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
 from tests.test_utils import build_platform
 
 
@@ -47,6 +49,21 @@ def fixture_platform():
 @pytest.fixture(name="platform_quantum_machines")
 def fixture_platform_quantum_machines():
     return build_platform(runcard=SauronQuantumMachines.runcard)
+
+
+@pytest.fixture(name="platform_spi")
+def fixture_platform_spi():
+    return build_platform(runcard=SauronSpiRack.runcard)
+
+
+@pytest.fixture(name="platform_qdevil")
+def fixture_platform_qdevil():
+    return build_platform(runcard=SauronQDevil.runcard)
+
+
+@pytest.fixture(name="platform_yokogawa")
+def fixture_platform_yokogawa():
+    return build_platform(runcard=SauronYokogawa.runcard)
 
 
 @pytest.fixture(name="runcard")
@@ -278,11 +295,124 @@ class TestPlatform:
         ):
             platform.initial_setup()
 
+    @patch("qililab.typings.Parameter")
+    def test_set_flux_parameter_qblox_channel0(self, mock_parameter, platform: Platform):
+        """Test platform raises and error if no instrument connection."""
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q0_bus": {"flux_line_q0_bus": 0.1}}))
+        platform.set_parameter(alias="flux_line_q0_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.OFFSET_OUT0.called_once()
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q1_bus": {"flux_line_q1_bus": 0.1}}))
+        platform.set_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.OFFSET_OUT1.called_once()
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q2_bus": {"flux_line_q2_bus": 0.1}}))
+        platform.set_parameter(alias="flux_line_q2_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.OFFSET_OUT2.called_once()
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q3_bus": {"flux_line_q3_bus": 0.1}}))
+        platform.set_parameter(alias="flux_line_q3_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.OFFSET_OUT3.called_once()
+
+    @patch("qililab.typings.Parameter")
+    def test_set_flux_parameter_spi(self, mock_parameter, platform_spi: Platform):
+        """Test platform raises and error if no instrument connection."""
+        platform_spi.set_crosstalk(CrosstalkMatrix.from_buses(buses={"spi_bus": {"spi_bus": 0.1}}))
+        platform_spi.set_parameter(alias="spi_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.CURRENT.called_once()
+
+    @patch("qililab.typings.Parameter")
+    def test_set_flux_parameter_qdevil(self, mock_parameter, platform_qdevil: Platform):
+        """Test platform raises and error if no instrument connection."""
+        platform_qdevil.set_crosstalk(CrosstalkMatrix.from_buses(buses={"qdac_bus": {"qdac_bus": 0.1}}))
+        platform_qdevil.set_parameter(alias="qdac_bus", parameter=Parameter.FLUX, value=0.14)
+        assert mock_parameter.VOLTAGE.called_once()
+
+    def test_set_flux_parameter_with_set_crosstalk(self, platform: Platform):
+        """Test platform set FLUX parameter when crosstalk is given."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        platform.set_crosstalk(crosstalk_matrix)
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
+        assert crosstalk_matrix == platform.crosstalk
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
+
+    def test_set_flux_parameter_with_wrong_bus_raises_error(self, platform: Platform):
+        """Test error raising when platform set FLUX alias is the wrong bus."""
+        alias = "drive_line_q1_bus"
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        error_string = f"{alias} not inside crosstalk matrix\n{crosstalk_matrix}"
+        platform.set_crosstalk(crosstalk_matrix)
+        with pytest.raises(ValueError, match=error_string):
+            platform.set_parameter(alias=alias, parameter=Parameter.FLUX, value=0.14, channel_id=0)
+
+    def test_set_flux_parameter_without_crosstalk_matrix_raises_error(self, platform: Platform):
+        """Test error raised when the crostalk is not set"""
+        error_string = "Crosstalk matrix has not been set"
+        with pytest.raises(ValueError, match=error_string):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
+
+    def test_set_flux_parameter_without_instruments_raises_error(self, platform_yokogawa: Platform):
+        """Test error raised when the instruments do not match the flux parameter"""
+        error_string = "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+        with pytest.raises(ReferenceError, match=error_string):
+            crosstalk_matrix = CrosstalkMatrix.from_buses(
+                buses={"yokogawa_gs200_current_bus": {"yokogawa_gs200_current_bus": 0.1}}
+            )
+            platform_yokogawa.set_crosstalk(crosstalk=crosstalk_matrix)
+            platform_yokogawa.set_parameter(
+                alias="yokogawa_gs200_current_bus",
+                parameter=Parameter.FLUX,
+                value=0.14,
+                channel_id=0,
+            )
+
+    def test_set_flux_parameter_too_many_instruments_raises_error(self, platform: Platform):
+        """Test error raised when there is more than one instrument affected by the flux"""
+        error_string = "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+        with pytest.raises(NotImplementedError, match=error_string):
+            crosstalk_matrix = CrosstalkMatrix.from_buses(
+                buses={"flux_line_too_many_instr": {"flux_line_too_many_instr": 0.1}}
+            )
+            platform.set_crosstalk(crosstalk=crosstalk_matrix)
+            platform.set_parameter(
+                alias="flux_line_too_many_instr",
+                parameter=Parameter.FLUX,
+                value=0.14,
+                channel_id=0,
+            )
+
+    def test_set_flux_to_zero(self, platform: Platform):
+        """Test set_flux_to_zero function."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        platform.set_crosstalk(crosstalk_matrix)
+        platform.set_flux_to_zero()
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX) == 0.0
+
+    def test_set_flux_to_zero_without_crosstalk_raises_error(self, platform: Platform):
+        """Test set_flux_to_zero function error without crosstalk."""
+        error_string = "Crosstalk matrix has not been set"
+        with pytest.raises(ValueError, match=error_string):
+            platform.set_flux_to_zero()
+
+    def test_set_bias_to_zero(self, platform: Platform):
+        """Test set_bias_to_zero function."""
+        crosstalk_matrix = CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}})
+        platform.set_crosstalk(crosstalk_matrix)
+        platform.set_bias_to_zero()
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.OFFSET_OUT0) == 0.0
+
+    def test_set_bias_to_zero_without_crosstalk_raises_error(self, platform: Platform):
+        """Test set_bias_to_zero function error without crosstalk."""
+        error_string = "Neither crosstalk matrix nor bus_list has been set"
+        with pytest.raises(ValueError, match=error_string):
+            platform.set_bias_to_zero()
+
     def test_set_parameter_no_instrument_connection_QBLOX(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""
         platform._connected_to_instruments = False
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14, channel_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14
+
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}}))
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, channel_id=0) == 0.14
 
     @pytest.mark.parametrize(
         "bus, parameter, value",
@@ -294,6 +424,7 @@ class TestPlatform:
             ("readout_q0_rf", Parameter.IF, 16e6),
             ("readout_q0_rf", Parameter.GAIN, 0.002),
             ("drive_q0", Parameter.IF, 13e6),
+            ("flux_q0", Parameter.FLUX, 0.5),
         ],
     )
     def test_set_parameter_no_instrument_connection_QM(self, bus: str, parameter: Parameter, value: float | str | bool):
@@ -302,6 +433,7 @@ class TestPlatform:
         platform = build_platform(runcard=SauronQuantumMachines.runcard)
         platform._connected_to_instruments = False
 
+        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={bus: {bus: 1}}))
         platform.set_parameter(alias=bus, parameter=parameter, value=value)
         assert platform.get_parameter(alias=bus, parameter=parameter) == value
 
@@ -655,7 +787,7 @@ class TestMethods:
         # Manually set the execute_experiment method to the real one
         platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
 
-        # Create an autospec of the Experiment class
+        # Create an autospec of the Experiment class and Calibration class
         mock_experiment = create_autospec(Experiment)
 
         expected_results_path = "mock/results/path/data.h5"
@@ -1050,6 +1182,12 @@ class TestMethods:
         value = platform.get_parameter(parameter=parameter, alias="platform")
         assert value == 0
 
+    @pytest.mark.parametrize("parameter", [Parameter.FLUX])
+    def test_get_flux_parameter(self, parameter, platform: Platform):
+        """Test the ``get_parameter`` method with platform flux parameters. The default as 0 is created"""
+        value = platform.get_parameter(parameter=parameter, alias="flux_line_phix_q0")
+        assert value == 0
+
     def test_get_parameter_with_delay(self, platform: Platform):
         """Test the ``get_parameter`` method with the delay of a bus."""
         value = platform.get_parameter(parameter=Parameter.DELAY, alias="drive_line_q0_bus")
@@ -1090,9 +1228,8 @@ class TestMethods:
                 for flux_bus in platform.analog_compilation_settings.flux_control_topology
                 if flux_bus.flux == flux
             )
-    
-    
-    def  test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
+
+    def test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
         """Test that if parallelisation is attempted on qprograms using at least one bus in common, an error will be raised"""
         error_string = "QPrograms cannot be executed in parallel."
         qp1 = QProgram()
@@ -1102,7 +1239,7 @@ class TestMethods:
         qp2.play(bus="drive_line_q1_bus", waveform=Square(amplitude=1, duration=25))
         qp2.play(bus="drive_line_q0_bus", waveform=Square(amplitude=0.5, duration=35))
         qp3.play(bus="feedline_input_output_bus_1", waveform=Square(amplitude=0.5, duration=15))
-        
+
         with (
             patch("builtins.open") as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
@@ -1111,10 +1248,9 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
-            qp_list = [qp1,qp2,qp3]
+            qp_list = [qp1, qp2, qp3]
             with pytest.raises(ValueError, match=error_string):
                 platform.execute_qprograms_parallel(qp_list, debug=True)
-
 
     def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
         error_string = "Parallel execution is not supported in Quantum Machines."
@@ -1124,7 +1260,6 @@ class TestMethods:
         qp1.play(bus="drive_q0", waveform=Square(amplitude=1, duration=5))
         qp2.play(bus="flux_q0", waveform=Square(amplitude=1, duration=25))
 
-        
         with (
             patch("builtins.open") as patched_open,
             patch.object(Bus, "upload_qpysequence") as upload,
@@ -1133,7 +1268,7 @@ class TestMethods:
             patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
-            qp_list = [qp1,qp2,qp3]
+            qp_list = [qp1, qp2, qp3]
             with pytest.raises(ValueError, match=error_string):
                 platform_quantum_machines.execute_qprograms_parallel(qp_list)
 
@@ -1170,12 +1305,57 @@ class TestMethods:
             patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
         ):
             acquire_qprogram_results.return_value = [123]
-            qp_list = [qprogram1,qprogram2]
+            qp_list = [qprogram1, qprogram2]
             result_parallel = platform.execute_qprograms_parallel(qp_list, debug=True)
             non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1, debug=True)
             non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2, debug=True)
 
+            # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
+            assert result_parallel[0].results == non_parallel_results1.results
+            assert result_parallel[1].results == non_parallel_results2.results
 
-            #check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
-            assert result_parallel[0].results==non_parallel_results1.results
-            assert result_parallel[1].results==non_parallel_results2.results
+    def test_calibrate_mixers(self, platform: Platform):
+        """Test calibrating the Qblox mixers."""
+        channel_id = 0
+        cal_type = "lo"
+        alias_drive_bus = "drive_line_q1_bus"
+        alias_readout_bus = "feedline_input_output_bus_1"
+        drive_bus = platform.get_element(alias=alias_drive_bus)
+        readout_bus = platform.get_element(alias=alias_readout_bus)
+        qcm_rf = drive_bus.instruments[0]
+        qrm_rf = readout_bus.instruments[0]
+
+        qcm_rf.calibrate_mixers = MagicMock()
+        qrm_rf.calibrate_mixers = MagicMock()
+
+        platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
+        qcm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
+        qrm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        cal_type = "lo_and_sidebands"
+
+        platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
+        qcm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
+        qrm_rf.calibrate_mixers.assert_called_with(cal_type, channel_id)
+
+        cal_type = "lo"
+        non_rf_drive_bus = "drive_line_q0_bus"
+        non_rf_readout_bus = "feedline_input_output_bus"
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_drive_bus, cal_type=cal_type, channel_id=channel_id)
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
+
+        cal_type = "lo_and_sidebands"
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_drive_bus, cal_type=cal_type, channel_id=channel_id)
+
+        with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
+            platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
