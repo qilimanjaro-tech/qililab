@@ -62,6 +62,9 @@ docs = [
     "sphinxawesome-theme>=6.0.0b1",
 ]
 
+[tool.uv]
+prerelease = "allow"
+
 [tool.ruff]
 line-length = 120
 output-format = "concise"
