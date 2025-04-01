@@ -67,7 +67,7 @@ class Gaussian(PulseShape):
         num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
     """
 
-    name = PulseShapeName.GAUSSIAN  #: Name of the gaussian pulse shape.
+    name = PulseShapeName.GAUSSIAN  # noqa: RUF045
     num_sigmas: float  #: Sigma number of the gaussian pulse shape.
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:

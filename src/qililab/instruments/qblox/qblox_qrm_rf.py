@@ -15,7 +15,7 @@
 """This file contains the QbloxQCMRF class."""
 
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 
@@ -44,6 +44,7 @@ class QbloxQRMRF(QbloxQRM):
         out0_offset_path0: float
         out0_offset_path1: float
         out_offsets: list[float] = field(init=False, default_factory=list)
+        out0_in0_lo_freq_cal_type_default: Optional[str] = "off"
 
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
@@ -54,6 +55,7 @@ class QbloxQRMRF(QbloxQRM):
         Parameter.IN0_ATT,
         Parameter.OUT0_OFFSET_PATH0,
         Parameter.OUT0_OFFSET_PATH1,
+        Parameter.OUT0_IN0_LO_FREQ_CAL_TYPE_DEFAULT,
     }
 
     settings: QbloxQRMRFSettings
@@ -122,3 +124,18 @@ class QbloxQRMRF(QbloxQRM):
         dictionary = super().to_dict()
         dictionary.pop("out_offsets")
         return dictionary
+
+    def calibrate_mixers(self, cal_type: str, channel_id: ChannelID | None = None):
+        if cal_type == "lo":
+            self.device._run_mixer_lo_calib(channel_id)
+        elif cal_type == "lo_and_sidebands":
+            self.device._run_mixer_lo_calib(channel_id)
+            for sequencer_dataclass in self.awg_sequencers:
+                sequencer = self.device.sequencers[sequencer_dataclass.identifier]
+                sequencer.sideband_cal()
+        else:
+            raise Exception(
+                f"`{cal_type}` for this module must be one of the following values: " "'lo' or 'lo_and_sidebands'."
+            )
+
+        return

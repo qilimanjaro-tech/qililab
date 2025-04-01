@@ -1,5 +1,226 @@
 # CHANGELOG
 
+## 0.29.2 (2025-03-31)
+
+### New features since last release
+
+- This update marks a significant transition in our workflow by adopting Astral's uv for dependency management, building, and publishing. With this change, our project now centralizes dependency definitions within a dedicated configuration file `pyproject.toml`, ensuring consistent version locking and resolution across all environments. The legacy system for managing dependencies has been replaced with uv's streamlined approach, which simplifies the maintenance process and reduces potential inconsistencies.
+
+In addition, the build process has been completely overhauled. The old build scripts have been retired in favor of uv's build command, which compiles the source code, bundles assets, and prepares production-ready artifacts. This change not only standardizes the build process but also introduces enhanced logging and error handling, making it easier to diagnose any issues that arise during the build.
+
+Publishing has also been improved with the integration of uv. The new process automates packaging and deployment, ensuring that artifacts are published in sync with the version specified in the configuration file. This automation minimizes manual intervention and helps maintain consistency in the release process.
+
+Developers should install Astral's uv globally (for example, running `curl -LsSf https://astral.sh/uv/install.sh | sh`). After installation, project management is handled through uv CLI. For additional details or troubleshooting, please refer to the official Astral's uv documentation at https://docs.astral.sh/uv/concepts/projects/.
+
+[#923](https://github.com/qilimanjaro-tech/qililab/pull/923)
+
+- Implemented automatic mixers calibration for Qblox RF modules. There are to ways to use it. The first one is by setting a parameter in the runcard, which indicates when and which type of calibration is ran.
+
+For the QRM-RF module the parameter is `out0_in0_lo_freq_cal_type_default`, and the values it can take are `off`, `lo` and `lo_and_sidebands`. The first one is the default value, if set the instrument won't do any automatic mixers calibration on its own, to avoid unexpected behaviours by default. The second value will suppress the leakage in the LO, and the third one the LO plus the sidebands. The parameter that will trigger this autocalibration everytime is changed in the instrument is `out0_in0_lo_freq`.
+
+For the QCM-RF module the parameters in the runcard are `out0_lo_freq_cal_type_default` and `out1_lo_freq_cal_type_default`, and the values are the same one that for the QRM-RF described above. The parameters that will trigger this autocalibration everytime is changed in the instrument are `out0_lo_freq`  and `out1_lo_freq`.
+
+The second way to use this autocalibration is to trigger it manually using the `Platform` instance by calling its method `Platform.calibrate_mixers()`. As input parameters you will need to specify the `alias` for the bus where the RF instrument is, the `cal_type` which allows to specify one of the three values described above, and the `channel_id` for which mixer you would like to calibrate.
+
+```
+channel_id = 0
+cal_type = "lo"
+alias_drive_bus = "drive_line_q1_bus"
+
+platform.calibrate_mixers(alias=alias_drive_bus, cal_type=cal_type, channel_id=channel_id)
+
+channel_id = 0
+cal_type = "lo_and_sidebands"
+alias_readout_bus = "readout_line_q1_bus"
+
+platform.calibrate_mixers(alias=alias_readout_bus, cal_type=cal_type, channel_id=channel_id)
+```
+
+Warnings rise if a value that is not `off`, `lo` or `lo_and_sidebands` are used.
+[#917](https://github.com/qilimanjaro-tech/qililab/pull/917)
+
+- Implemented Crosstalk automatic implementation through the experiment class. The crosstalk can be added through the `Calibration` file or by creating a `CrosstalkMatrix`. The crosstalk implementation inside the `Experiment` class is:
+
+```
+experiment = ql.Experiment(label="liveplot_test")
+
+flux_x = experiment.variable("flux_x", ql.Domain.Flux)
+flux_z = experiment.variable("flux_z", ql.Domain.Flux)
+
+experiment.set_crosstalk(crosstalk=crosstalk_matrix)  # to see the values to be applied on the sample
+with experiment.for_loop(variable=flux_x, start=0, stop=0.4, step=0.01):
+    with experiment.for_loop(variable=flux_z, start=0, stop=0.4, step=0.01):
+        experiment.set_parameter(alias="flux_x1", parameter=ql.Parameter.FLUX, value=flux_x)
+        experiment.set_parameter(alias="flux_z1", parameter=ql.Parameter.FLUX, value=flux_z)
+        experiment.execute_qprogram(qp)
+```
+
+Note that not giving a crosstalk matrix implies working with the identity. Warnings rise while creating the experiment to inform the user of this.
+[#899](https://github.com/qilimanjaro-tech/qililab/pull/899)
+
+- Implemented crosstalk to the `platform.set_parameter` function through the parameter `Parameter.FLUX`. This flux parameter automatically applies the crosstalk calibration upon the implied fluxes and executes a `set_parameter` with `Parameter.VOLTAGE`, `Parameter.CURRENT` or `Parameter.OFFSET` depending on the instrument of the bus.
+  Two new functions have been implemented inside platform: `add_crosstalk()`, to add either the `CrosstalkMatrix` or the `Calibration` file and `set_flux_to_zero()`, to set all fluxes to 0 applying a `set_parameter(bus, parameter.FLUX, 0)` for all relevant busses
+  An example of this implementation would be:
+
+```
+platform.add_crosstalk(crosstalk_matrix)
+platform.set_parameter("flux_ax_ac", ql.Parameter.FLUX, 0.1)
+platform.set_flux_to_zero()
+```
+
+[#899](https://github.com/qilimanjaro-tech/qililab/pull/899)
+
+### Improvements
+
+- Modified the `CrosstalkMatrix` and `FluxVector` classes to fit for the crosstalk matrix implementation inside `Experiment` and `Platform`. Now both classes update following the specifications and needs of experimentalists.
+  [#899](https://github.com/qilimanjaro-tech/qililab/pull/899)
+
+### Bug fixes
+
+- Correction of bugs following the implementation of the qblox drawing class. The user can now play the same waveform twice in one play, and when gains are set as 0 in the qprogram they are no longer replaced by 1 but remain at 0. Some improvements added, the RF modules are now scaled properly instead of on 1, when plotting through qprogram the y axis now reads Amplitude \[a.u.\], and the subplots have been removed, all the lines plot in one plot.
+  [#918](https://github.com/qilimanjaro-tech/qililab/pull/918)
+
+## 0.29.1 (2025-03-27)
+
+### New features since last release
+
+- QBlox: An oscilloscope simulator has been implemented. It takes the sequencer as input, plots its waveforms and returns a dictionary (data_draw) containing all data points used for plotting.
+
+  The user can access the Qblox drawing feature in two ways:
+
+  1. Via platform (includes runcard knowledge)
+
+     ```python
+     with platform.session():
+         platform.draw(qprogram=qprogram)
+     ```
+
+     Note that if it is used with a Quantum Machine runcard, a ValueError will be generated.
+
+  1. Via QProgram (includes runcard knowledge)
+
+     ```python
+     qp = QProgram()
+     qprogram.draw()
+     ```
+
+  Both methods compile the qprogram internally to generate the sequencer and call `QbloxDraw.draw(self, sequencer, runcard_data=None, averages_displayed=False) -> dict`. [#901](https://github.com/qilimanjaro-tech/qililab/pull/901)
+
+### Improvements
+
+- Now the Rohde & Schwarz will return an error after a limit of frequency or power is reached based on the machine's version.
+  [#897](https://github.com/qilimanjaro-tech/qililab/pull/897)
+
+- QBlox: Added support for executing multiple QProgram instances in parallel via the new method `platform.execute_qprograms_parallel(qprograms: list[QProgram])`. This method returns a list of `QProgramResults` corresponding to the input order of the provided qprograms. Note that an error will be raised if any submitted qprograms share a common bus.
+
+  ```python
+  with platform.session():
+      results = platform.execute_qprograms_parallel([qprogram1, qprogram2, qprogram3])
+  ```
+
+  [#906](https://github.com/qilimanjaro-tech/qililab/pull/906)
+
+### Deprecations / Removals
+
+- Remove the check of forcing GRES in slurm.
+  [#907](https://github.com/qilimanjaro-tech/qililab/pull/907)
+
+### Bug fixes
+
+- D5a instrument now does not raise error when the value of the dac is higher or equal than 4, now it raises an error when is higher or equal than 16 (the number of dacs).
+  [#908](https://github.com/qilimanjaro-tech/qililab/pull/908)
+
+## 0.29.0 (2025-03-17)
+
+### New features since last release
+
+- We have introduced an optimization in the QbloxCompiler that significantly reduces memory usage when compiling square waveforms. The compiler now uses a heuristic algorithm that segments long waveforms into smaller chunks and loops over them. This optimization follows a two-pass search:
+
+  1. **First Pass**: The compiler tries to find a chunk duration that divides the total waveform length evenly (i.e., remainder = 0).
+  1. **Second Pass**: If no exact divisor is found, it looks for a chunk duration that leaves a remainder of at least 4 ns. This leftover chunk is large enough to be stored or handled separately.
+
+  Each chunk duration is restricted to the range (\[100, 500\]) ns, ensuring that chunks are neither too small (leading to excessive repetitions) nor too large (risking out-of-memory issues). If no duration within (\[100, 500\]) ns meets these remainder constraints, the compiler defaults to using the original waveform in its entirety.
+  [#861](https://github.com/qilimanjaro-tech/qililab/pull/861)
+  [#895](https://github.com/qilimanjaro-tech/qililab/pull/895)
+
+- Raises an error when the inputed value for the QDAC is outside of the bounds provided by QM. Done in 3 ways, runcard, set_parameter RAMPING_ENABLED and set_parameter RAMPING_RATE.
+  [#865](https://github.com/qilimanjaro-tech/qililab/pull/865)
+
+- Enable square waveforms optimization for Qblox.
+  [#874](https://github.com/qilimanjaro-tech/qililab/pull/874)
+
+- Implemented ALC, IQ wideband and a function to see the RS models inside the drivers for SGS100a.
+  [#894](https://github.com/qilimanjaro-tech/qililab/pull/894)
+
+### Improvements
+
+- Updated qm-qua to stable version 1.2.1. And close other machines has been set to True as now it closes only stated ports.
+  [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
+- Improvements to Digital Transpilation:
+
+  - Move `optimize` flag, for actual optional optimizations (& Improve `optimize` word use in methods names)
+  - Make `Transpilation`/`execute`/`compile` only for single circuits (unify code standard across `qililab`)
+  - Make `Transpilation` efficient, by not constructing the `Circuit` class so many times, between methods
+  - Pass a transpilation `kwargs` as a TypedDict instead of so many args in `platform`/`qililab`'s `execute(...)`
+  - Improve documentation on transpilation, simplifying it in `execute()`'s, and creating Transpilation new section.
+
+  [#862](https://github.com/qilimanjaro-tech/qililab/pull/862)
+
+- Added optimizations for Digital Transpilation for Native gates:
+
+  - Make bunching of consecutive Drag Gates, with same phi's
+  - Make the deletion of gates with no amplitude
+
+  [#863](https://github.com/qilimanjaro-tech/qililab/pull/863)
+
+- Improved the layout information display and Updated qibo version to the last version (0.2.15), which improves layout handling
+  [#869](https://github.com/qilimanjaro-tech/qililab/pull/869)
+
+- Now the QM qprogram compiler is able to generate the correct stream_processing while the average loop is inside any other kind of loop, before it was only able to be located on the outermost loop due to the way qprogram generated the stream_processing.
+  [#880](https://github.com/qilimanjaro-tech/qililab/pull/880)
+
+- The user is now able to only put one value when setting the offset of the bus when using Qblox in the qprogram. Qblox requires two values hence if only 1 value is given, the second will be set to 0, a warning will be given to the user.
+  [#896](https://github.com/qilimanjaro-tech/qililab/pull/896)
+
+- For Qblox compiler, all latched parameters are updated before a wait is applied. The update parameter has a minimum wait of 4 ns, which is removed from the wait. If the wait is below 8ns it is entirely replaced with the update parameter.
+  [#898](https://github.com/qilimanjaro-tech/qililab/pull/898)
+
+### Breaking changes
+
+### Deprecations / Removals
+
+- Removed weighted acquisitions for circuits.
+  [#904](https://github.com/qilimanjaro-tech/qililab/pull/904)
+
+- Removed quick fix for the timeout error while running with QM as it has been fixed.
+  [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
+### Documentation
+
+### Bug fixes
+
+- Addressed a known bug in the qblox where the first frequency and gain settings in a hardware loop are incorrect. The code now includes a workaround to set these parameters a second time to ensure proper functionality. This is a temporary fix awaiting for QBlox to resolve it.
+  [#903](https://github.com/qilimanjaro-tech/qililab/pull/898)
+
+- Fixed an issue where having nested loops would output wrong shape in QbloxMeasurementResult.
+  [#853](https://github.com/qilimanjaro-tech/qililab/pull/853)
+
+- Restore the vna driver as it was deleted.
+  [#857](https://github.com/qilimanjaro-tech/qililab/pull/857)
+
+- Fixed an issue where appending a configuration to an open QM instance left it hanging. The QM now properly closes before reopening with the updated configuration.
+  [#851](https://github.com/qilimanjaro-tech/qililab/pull/851)
+
+- Fixed an issue where turning off voltage/current source instruments would set to zero all dacs instead of only the ones specified in the runcard.
+  [#819](https://github.com/qilimanjaro-tech/qililab/pull/819)
+
+- Fixed the shareable trigger in the runcard to make every controller shareable while close other machines is set to false (current default) for QM. Improved shareable for OPX1000 as now it only requires to specify the flag on the fem. Now Octave name inside runcard requires to be the same as the one inside the configuration (now it has the same behavior as the cluster and opx controller).
+  [#854](https://github.com/qilimanjaro-tech/qililab/pull/854)
+
+- Ensured that turning on the instruments does not override the RF setting of the Rohde, which can be set to 'False' in the runcard.
+  [#888](https://github.com/qilimanjaro-tech/qililab/pull/888)
+
 ## 0.28.0 (2024-12-09)
 
 ### New features since last release
