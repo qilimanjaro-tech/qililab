@@ -217,7 +217,8 @@ tag_format = "$version"
         # TODO: Remove these once we modernize instruments
         "src/qililab/instruments/keithley/keithley_2600.py",
         "src/qililab/instruments/qblox/qblox_d5a.py",
-        "src/qililab/instruments/qblox/qblox_s4g.py"
+        "src/qililab/instruments/qblox/qblox_s4g.py",
+        "src/qililab/__init__.py"
     ]
 
 [tool.nbqa.md]
