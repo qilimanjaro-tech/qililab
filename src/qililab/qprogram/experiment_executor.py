@@ -576,7 +576,7 @@ class ExperimentExecutor:
                start_time=executed_at, 
                optional_identifier=self.optional_identifier, 
                platform=self.platform.to_dict(),
-               qprogram=(serialize(self.qprogram)),
+            #    qprogram=(serialize(self.qprogram)), #NOTE update to include qprogram here
                experiment = serialize(self.experiment),
                ) # save calibration too
         
@@ -597,14 +597,15 @@ class ExperimentExecutor:
                     operations = self._prepare_operations(self.experiment.body, progress)
                     self._execute_operations(operations, progress)
 
-            # Signal that the execution has completed
-            execution_completed.set()
+                # Signal that the execution has completed
+                execution_completed.set()
 
-            # Retrieve the execution time from the Future
-            execution_time = execution_time_future.result()
+                # Retrieve the execution time from the Future
+                execution_time = execution_time_future.result()
 
-            # Now write the execution time to the results writer
-            with self._results_writer:
+                # Now write the execution time to the results writer
                 self._results_writer.execution_time = execution_time
 
         return results_path, self.measurement
+    
+    
