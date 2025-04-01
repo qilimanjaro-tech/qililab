@@ -448,9 +448,6 @@ class QbloxDraw:
                 elif Q1ASM_line[-1] not in instructions_ran:  # run if no loop label
                     self._call_handlers(Q1ASM_line, param, register, data_draw[bus], wf)
 
-                else:
-                    pass
-
             # remove the latest freq, phase and offset data points if nothing played after
             for key in ["intermediate_frequency", "phase", "q1asm_offset_i", "q1asm_offset_q"]:
                 if param[f"{key}_new"]:
@@ -498,9 +495,7 @@ class QbloxDraw:
                 )
                 data_draw[key][0] = waveform_flux
                 data_draw[key][1] = None
-                fig.add_trace(
-                    go.Scatter(y=waveform_flux, mode="lines", name="Flux")
-                )
+                fig.add_trace(go.Scatter(y=waveform_flux, mode="lines", name="Flux"))
             else:
                 ac_offset_i, ac_offset_q = (
                     ac_offset_i * volt_bounds / np.sqrt(2),
@@ -537,12 +532,8 @@ class QbloxDraw:
 
                 data_draw[key][0], data_draw[key][1] = path0_clipped, path1_clipped
 
-                fig.add_trace(
-                    go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I")
-                )
-                fig.add_trace(
-                    go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q")
-                )
+                fig.add_trace(go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I"))
+                fig.add_trace(go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q"))
 
         if parameters[key]["instrument_name"] == "QProgram":
             fig.update_yaxes(title_text="Amplitude [a.u.]")

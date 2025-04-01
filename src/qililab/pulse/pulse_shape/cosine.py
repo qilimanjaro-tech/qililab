@@ -68,7 +68,7 @@ class Cosine(PulseShape):
                     which fulfills the constrain: :math:`1=\lambda_1+\lambda_2`. Defaults to 0.
     """
 
-    name = PulseShapeName.COSINE
+    name: PulseShapeName = PulseShapeName.COSINE
     lambda_2: float = 0.0  # between 0 and 1
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:

@@ -59,8 +59,10 @@ class BiasTeeCorrection(PulseDistortion):
             You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = PulseDistortionName.BIAS_TEE_CORRECTION  #: Type of the correction. Enum type of PulseDistortionName class.
-    tau_bias_tee: float  #: Time constant.
+    name: PulseDistortionName = (
+        PulseDistortionName.BIAS_TEE_CORRECTION
+    )  #: Type of the correction. Enum type of PulseDistortionName class.
+    tau_bias_tee: float  # type: ignore[misc]  #: Time constant.
     sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:

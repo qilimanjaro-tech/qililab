@@ -66,9 +66,9 @@ class Drag(PulseShape):
         drag_coefficient (float): Drag coefficient that gives the DRAG its imaginary components.
     """
 
-    name = PulseShapeName.DRAG  #: Name of the drag pulse shape.
-    num_sigmas: float
-    drag_coefficient: float
+    name: PulseShapeName = PulseShapeName.DRAG  #: Name of the drag pulse shape.
+    num_sigmas: float  # type: ignore[misc]
+    drag_coefficient: float  # type: ignore[misc]
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """DRAG envelope centered with respect to the pulse.
