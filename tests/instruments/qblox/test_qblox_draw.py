@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+import plotly.io as pio
 from tests.data import Galadriel, SauronQuantumMachines
 
 from qililab import Domain, QbloxCompiler, QProgram, Square
@@ -118,6 +119,7 @@ class TestQBloxDraw:
         compiler = QbloxCompiler()
         draw = QbloxDraw()
         sequences, _ = compiler.compile(qprogram=parsing)
+        pio.renderers.default = "json"
         parsing = draw._parse_program(sequences)
         expected_parsing = [
             ("move", "3, R0", (), 0),
@@ -322,6 +324,7 @@ class TestQBloxDraw:
         compiler = QbloxCompiler()
         qblox_draw = QbloxDraw()
         results = compiler.compile(qp_draw)
+        pio.renderers.default = "json"
         data_draw = qblox_draw.draw(results, None, True)
         np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
@@ -335,6 +338,7 @@ class TestQBloxDraw:
        0.06915249, 0.06840248, 0.06826267, 0.06878646, 0.06977378,
        0.07      , 0.07      , 0.07      , 0.07      , 0.07      ,
        0.07      , 0.07      , 0.07      , 0.07      , 0.07      ]
+        pio.renderers.default = "json"
         data_draw = platform.draw(qp_plat_draw_qcmrf)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
@@ -350,7 +354,7 @@ class TestQBloxDraw:
        -0.8138565 , -1.16457275, -1.04372416, -0.49747081,  0.26553711]
         expected_data_draw_i_q2 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
         expected_data_draw_q_q2 = [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6]
-
+        pio.renderers.default = "json"
         data_draw = platform.draw(qp_plat_draw_qcmrf_offset)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i_q1, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q_q1, rtol=1e-2, atol=1e-12)
@@ -380,7 +384,7 @@ class TestQBloxDraw:
             0.0,
             0.0,
         ]
-
+        pio.renderers.default = "json"
         data_draw = platform.draw(qp_plat_draw_qcm_flux)
         np.testing.assert_allclose(data_draw["flux_line_q0_bus"][0], expected_data_draw_i, rtol=1e-9, atol=1e-12)
         assert data_draw["flux_line_q0_bus"][1] is None
@@ -408,7 +412,7 @@ class TestQBloxDraw:
             1.24996185,
             1.24996185,
         ]
-
+        pio.renderers.default = "json"
         data_draw = platform.draw(qp_plat_draw_qcm_flux_offset)
         np.testing.assert_allclose(data_draw["flux_line_q0_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         assert data_draw["flux_line_q0_bus"][1] is None
@@ -417,6 +421,7 @@ class TestQBloxDraw:
         draw = QbloxDraw()
         register = {}
         register["avg_no_loop"] = 1
+        pio.renderers.default = "json"
         assert draw._get_value(None, register) is None
 
     def test_qp_plat_draw_qrm(self, qp_plat_draw_qrm: QProgram, platform: Platform):
@@ -442,7 +447,7 @@ class TestQBloxDraw:
             0.123,
             0.123,
         ]
-
+        pio.renderers.default = "json"
         data_draw = platform.draw(qp_plat_draw_qrm)
         np.testing.assert_allclose(
             data_draw["feedline_input_output_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12
@@ -452,5 +457,6 @@ class TestQBloxDraw:
     def platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
+        pio.renderers.default = "json"
         with pytest.raises(NotImplementedError("The drawing feature is currently only supported for QBlox.")):
             platform_quantum_machines.draw(qp_quantum_machine)
