@@ -45,8 +45,8 @@ class FlatTop(PulseShape):
             :align: center
     """
 
-    name: PulseShapeName = PulseShapeName.FLATTOP  #: Name of the rectangular pulse shape.
-    gaussian: float  # type: ignore[misc]
+    name = PulseShapeName.FLATTOP  #: Name of the rectangular pulse shape.
+    gaussian: float
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0, buffer: float = 3.0) -> np.ndarray:
         """Constant amplitude envelope.

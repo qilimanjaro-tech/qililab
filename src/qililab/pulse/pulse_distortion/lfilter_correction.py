@@ -80,9 +80,9 @@ class LFilterCorrection(PulseDistortion):
             You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name: PulseDistortionName = PulseDistortionName.LFILTER  #: Type of the correction.
-    a: list[float]  # type: ignore[misc]  #: The denominator coefficient vector in a 1-D sequence.
-    b: list[float]  # type: ignore[misc]  #: The numerator coefficient vector in a 1-D sequence.
+    name = PulseDistortionName.LFILTER  #: Type of the correction.
+    a: list[float]  #: The denominator coefficient vector in a 1-D sequence.
+    b: list[float]  #: The numerator coefficient vector in a 1-D sequence.
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
         """Distorts envelopes (which normally get calibrated with square envelopes).

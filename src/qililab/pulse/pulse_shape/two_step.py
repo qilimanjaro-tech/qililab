@@ -38,9 +38,9 @@ class TwoStep(PulseShape):
             two_step_envelope = TwoStep().envelope(amplitude=X, duration=50)
     """
 
-    name: PulseShapeName = PulseShapeName.TWOSTEP  #: Name of the two-step pulse shape.
-    step_amplitude: float  # type: ignore[misc]
-    step_duration: int  # type: ignore[misc]
+    name = PulseShapeName.TWOSTEP  #: Name of the two-step pulse shape.
+    step_amplitude: float
+    step_duration: int
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Two step envelope.

@@ -21,13 +21,9 @@ jobs:
       HOME_REPO: /home/repo
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-
-      - name: Install Graphviz
-        run: |
-          sudo apt-get install -y graphviz
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -36,9 +32,9 @@ jobs:
         run: uv python install 3.10
 
       - name: Install the project
-        run: uv sync --all-extras --dev --prerelease=allow
+        run: uv sync --all-extras --dev
 
-      - name: Test with pytest core
+      - name: Run tests
         run: |
           uv run pytest --cov=qililab --cov-report=xml tests
 

@@ -62,11 +62,11 @@ class ExponentialCorrection(PulseDistortion):
             You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name: PulseDistortionName = (
+    name = (
         PulseDistortionName.EXPONENTIAL_CORRECTION
     )  #: Type of the correction. Enum type of PulseDistortionName class.
-    tau_exponential: float  # type: ignore[misc]  #: Tau exponential factor.
-    amp: float  # type: ignore[misc]  #: Amplitude constant. Value between 0 and 1.
+    tau_exponential: float  #: Tau exponential factor.
+    amp: float  #: Amplitude constant. Value between 0 and 1.
     sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
