@@ -12,6 +12,8 @@ Publishing has also been improved with the integration of uv. The new process au
 
 Developers should install Astral's uv globally (for example, running `curl -LsSf https://astral.sh/uv/install.sh | sh`). After installation, project management is handled through uv CLI. For additional details or troubleshooting, please refer to the official Astral's uv documentation at https://docs.astral.sh/uv/concepts/projects/.
 
+[#923](https://github.com/qilimanjaro-tech/qililab/pull/923)
+
 - Implemented automatic mixers calibration for Qblox RF modules. There are to ways to use it. The first one is by setting a parameter in the runcard, which indicates when and which type of calibration is ran.
 
 For the QRM-RF module the parameter is `out0_in0_lo_freq_cal_type_default`, and the values it can take are `off`, `lo` and `lo_and_sidebands`. The first one is the default value, if set the instrument won't do any automatic mixers calibration on its own, to avoid unexpected behaviours by default. The second value will suppress the leakage in the LO, and the third one the LO plus the sidebands. The parameter that will trigger this autocalibration everytime is changed in the instrument is `out0_in0_lo_freq`.
