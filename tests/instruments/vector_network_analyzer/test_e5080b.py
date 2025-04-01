@@ -25,6 +25,23 @@ def fixture_e5080b() -> E5080B:
         {
             "alias": "vna",
             Parameter.SOURCE_POWER.value: 10,
+            # Parameter.FREQUENCY_START.value: 1e6,
+            Parameter.FREQUENCY_STOP.value: 8e9,
+            Parameter.FREQUENCY_CENTER.value: 4e9,
+            Parameter.STEP_AUTO.value: False,
+            Parameter.STEP_SIZE.value: 1e6,
+            Parameter.SPAN.value: 7.99e9,
+            Parameter.CW_FREQUENCY.value: 4e9,
+            Parameter.NUMBER_POINTS.value: 201,
+            Parameter.SOURCE_POWER.value: 10,
+            Parameter.IF_BANDWIDTH.value: 1e3,
+            Parameter.SWEEP_TYPE.value: "lin",
+            Parameter.SWEEP_MODE.value: "cont",
+            Parameter.SCATTERING_PARAMETER.value: "S21",
+            Parameter.AVERAGES_ENABLED.value: True,
+            Parameter.NUMBER_AVERAGES.value: 16,
+            Parameter.AVERAGES_MODE.value: "Point",
+            Parameter.FORMAT_DATA.value: "real,32",
         }
     )
     e5080b.device = MagicMock()

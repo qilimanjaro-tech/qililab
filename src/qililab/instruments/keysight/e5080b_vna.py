@@ -235,49 +235,49 @@ class E5080B(Instrument):
         if parameter == Parameter.FREQUENCY_START:
             self.settings.start_freq = float(value)
             if self.is_device_active():
-                self.device.start_freq(self.settings.start_freq)
+                self.device.start_freq(self.start_freq)
             return
 
         if parameter == Parameter.FREQUENCY_STOP:
             self.settings.stop_freq = float(value)
             if self.is_device_active():
-                self.device.stop_freq(self.settings.stop_freq)
+                self.device.stop_freq(self.stop_freq)
             return
         
         if parameter == Parameter.FREQUENCY_CENTER:
             self.settings.center_freq = float(value)
             if self.is_device_active():
-                self.device.center_freq(self.settings.center_freq)
+                self.device.center_freq(self.center_freq)
             return
         
         if parameter == Parameter.STEP_AUTO:
             self.settings.step_auto = bool(value)
             if self.is_device_active():
-                self.device.step_auto(self.settings.step_auto)
+                self.device.step_auto(self.step_auto)
             return
         
         if parameter == Parameter.STEP_SIZE:
             self.settings.step_size = float(value)
             if self.is_device_active():
-                self.device.step_size(self.settings.step_size)
+                self.device.step_size(self.step_size)
             return
         
         if parameter == Parameter.SPAN:
             self.settings.span = float(value)
             if self.is_device_active():
-                self.device.span(self.settings.span)
+                self.device.span(self.span)
             return
         
         if parameter == Parameter.CW_FREQUENCY:
             self.settings.cw = float(value)
             if self.is_device_active():
-                self.device.cw(self.settings.cw)
+                self.device.cw(self.cw)
             return
         
         if parameter == Parameter.NUMBER_POINTS:
             self.settings.points = int(value)
             if self.is_device_active():
-                self.device.points(self.settings.points)
+                self.device.points(self.points)
             return
 
         if parameter == Parameter.SOURCE_POWER:
@@ -289,49 +289,49 @@ class E5080B(Instrument):
         if parameter == Parameter.IF_BANDWIDTH:
             self.settings.if_bandwidth = float(value)
             if self.is_device_active():
-                self.device.if_bandwidth(self.settings.if_bandwidth)
+                self.device.if_bandwidth(self.if_bandwidth)
             return
         
         if parameter == Parameter.SWEEP_TYPE:
             self.settings.sweep_type = value  # Assuming Enum type
             if self.is_device_active():
-                self.device.sweep_type(self.settings.sweep_type)
+                self.device.sweep_type(self.sweep_type)
             return
         
         if parameter == Parameter.SWEEP_MODE:
             self.settings.sweep_mode = value  # Assuming Enum type
             if self.is_device_active():
-                self.device.sweep_mode(self.settings.sweep_mode)
+                self.device.sweep_mode(self.sweep_mode)
             return
         
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = value
             if self.is_device_active():
-                self.device.scattering_parameter(self.settings.scattering_parameter)
+                self.device.scattering_parameter(self.scattering_parameter)
             return
         
         if parameter == Parameter.AVERAGES_ENABLED:
             self.settings.averages_enabled = bool(value)
             if self.is_device_active():
-                self.device.averages_enabled(self.settings.averages_enabled)
+                self.device.averages_enabled(self.averages_enabled)
             return
         
         if parameter == Parameter.NUMBER_AVERAGES:
             self.settings.averages_count = int(value)
             if self.is_device_active():
-                self.device.averages_count(self.settings.averages_count)
+                self.device.averages_count(self.averages_count)
             return
         
         if parameter == Parameter.AVERAGES_MODE:
             self.settings.averages_mode = value
             if self.is_device_active():
-                self.device.averages_mode(self.settings.averages_mode)
+                self.device.averages_mode(self.averages_mode)
             return
         
         if parameter == Parameter.FORMAT_DATA:
             self.settings.format_data = value
             if self.is_device_active():
-                self.device.format_data(self.settings.format_data)
+                self.device.format_data(self.format_data)
             return
         
         if parameter == Parameter.CLEAR_AVERAGES:
@@ -384,9 +384,6 @@ class E5080B(Instrument):
             return self.settings.averages_mode
         if parameter == Parameter.FORMAT_DATA:
             return self.settings.format_data
-        # if parameter == Parameter.DEVICE_TIMEOUT:
-        #     return self.device_timeout
-        
         raise ParameterNotFound(self, parameter)
 
 
@@ -417,16 +414,6 @@ class E5080B(Instrument):
         self.clear_averages()
         mode = self.settings.sweep_mode.name
         self.sweep_mode(mode)
-
-    def _wait_until_ready(self, period=0.25) -> bool:
-        """Waiting function to wait until VNA is ready."""
-        # timelimit = time.time() + self.set_timeout
-        timelimit = time.time()
-        while time.time() < timelimit:
-            if self.ready():
-                return True
-            time.sleep(period)
-        return False
 
     def read_tracedata(self):
         """
@@ -470,22 +457,6 @@ class E5080B(Instrument):
         return VNAResult(data=self.read_tracedata())
 
     def initial_setup(self):
-        # self.device.start_freq(self.settings.start_freq)
-        # self.device.stop_freq(self.settings.stop_freq)
-        # self.device.center_freq(self.settings.center_freq)
-        # self.device.span(self.settings.span)
-        # self.device.source_power(self.settings.source_power)
-        # self.device.if_bandwidth(self.settings.if_bandwidth)
-        # self.device.sweep_type(self.settings.sweep_type)
-        # self.device.sweep_mode(self.settings.sweep_mode)
-        # self.device.scattering_parameter(self.settings.scattering_parameter)
-        # self.device.averages_enabled(self.settings.averages_enabled)
-        # self.device.averages_count(self.settings.averages_count)
-        # self.device.averages_mode(self.settings.averages_mode)
-        # self.device.format_data(self.settings.format_data)
-        # self.device.step_auto(self.settings.step_auto)
-        # if not self.settings.step_auto:
-        #     self.device.step_size(self.settings.step_size)
         self.device.write("FORM:DATA REAL,32")
         self.device.write("*CLS")
         self.reset()
@@ -515,11 +486,4 @@ class E5080B(Instrument):
         """
         return self.device.send_binary_query(query)
 
-    # def set_timeout(self, timeout: float):
-    #     """Set timeout in mili seconds"""
-    #     self.device.timeout.set(timeout)
-
-    # def set_timeout(self, value: float):
-    #     """Set timeout in mili seconds"""
-    #     self.device.set_timeout(value)
 
