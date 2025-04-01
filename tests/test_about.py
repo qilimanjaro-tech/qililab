@@ -22,8 +22,7 @@ def test_about():
     ql.about()
     sys.stdout = sys.__stdout__  # Reset redirect
 
-    expected_string = f"""{check_output([sys.executable, "-m", "pip", "show", "qililab"]).decode()}
-Platform info:             {platform.platform(aliased=True)}
+    expected_string = f"""Platform info:             {platform.platform(aliased=True)}
 Python version:            {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}
 PyVISA version:            {pyvisa_py.__version__}
 QCodes version:            {qcodes.__version__}

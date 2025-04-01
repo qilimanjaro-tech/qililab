@@ -13,10 +13,11 @@
 # limitations under the License.
 
 """config.py"""
+
 import logging
 import os
 
-from qililab.config.version import __version__
+from qililab import __version__
 
 # Logging level from 0 (all) to 4 (errors) (see https://docs.python.org/3/library/logging.html#logging-levels)
 LIBRARY_LOG_LEVEL = int(os.environ.get("LIBRARY_LOG_LEVEL", 20))

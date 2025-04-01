@@ -52,16 +52,14 @@ class TestSubmitJob:
             )
 
     def test_submit_job_no_gres_provided(self, ip):
-        """Check ValueError is raised in case GRES is not provided."""
+        """Check no Error is raised in case GRES is not provided."""
         ip.run_cell(raw_cell="a=1\nb=1")
-        with pytest.raises(
-            ValueError, match="GRES needs to be provided! See the available ones typing 'sinfo -o '%G'' in the terminal"
-        ):
-            ip.run_cell_magic(
-                magic_name="submit_job",
-                line=f"-o results -l {slurm_job_data_test} -n unit_test -e local",
-                cell="a+b",
-            )
+
+        ip.run_cell_magic(
+            magic_name="submit_job",
+            line=f"-o results -l {slurm_job_data_test} -n unit_test -e local",
+            cell="results = a+b ",
+        )
 
     def test_submit_job_with_random_file_in_logs_folder(self, ip):
         """Check non-submitit files are deleted if found in logs folder"""

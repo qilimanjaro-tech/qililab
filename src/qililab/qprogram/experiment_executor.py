@@ -31,6 +31,7 @@ from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedCo
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
+from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
     ExperimentMetadata,
@@ -116,6 +117,10 @@ class ExperimentExecutor:
 
         # Mapping from each ExecuteQProgram operation to its execution index (order of execution)
         self._qprogram_execution_indices: dict[ExecuteQProgram, int] = {}
+
+        # Variables that uses flux for further processing and saving the right bias
+        # TODO: implement a way to save the bias based on the same principle as HW loops Xtalk
+        self._flux_variables: dict[str, np.ndarray] = {}
 
         # Stack to keep track of variables in the experiment context (outside QPrograms)
         self._experiment_variables_stack: list[list[VariableInfo]] = []
@@ -327,6 +332,10 @@ class ExperimentExecutor:
                             }
                         )
                     )
+                if isinstance(element, SetCrosstalk):
+                    elements_operations.append(
+                        lambda operation=element: self.platform.set_crosstalk(crosstalk=operation.crosstalk)
+                    )
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
                     if isinstance(element.value, Variable):
@@ -462,7 +471,7 @@ class ExperimentExecutor:
         decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
 
         # Calculate the number of steps
-        num_steps = int(round((stop - start) / step)) + 1
+        num_steps = round((stop - start) / step) + 1
 
         # Use linspace and then round to avoid floating-point inaccuracies
         result = np.linspace(start, stop, num_steps)
@@ -576,14 +585,13 @@ class ExperimentExecutor:
                     operations = self._prepare_operations(self.experiment.body, progress)
                     self._execute_operations(operations, progress)
 
-            # Signal that the execution has completed
-            execution_completed.set()
+                # Signal that the execution has completed
+                execution_completed.set()
 
-            # Retrieve the execution time from the Future
-            execution_time = execution_time_future.result()
+                # Retrieve the execution time from the Future
+                execution_time = execution_time_future.result()
 
-            # Now write the execution time to the results writer
-            with self._results_writer:
+                # Now write the execution time to the results writer
                 self._results_writer.execution_time = execution_time
 
         return results_path
