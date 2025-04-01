@@ -2935,6 +2935,7 @@ dependencies = [
     { name = "submitit" },
     { name = "tqdm" },
     { name = "urllib3" },
+    { name = "dash" },
 ]
 
 [package.dev-dependencies]
@@ -2977,6 +2978,7 @@ requires-dist = [
     { name = "submitit", specifier = ">=1.5.2" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "urllib3", specifier = ">=2.3.0" },
+    { name = "dash", specifier = "2.18.2"},
 ]
 
 [package.metadata.requires-dev]
