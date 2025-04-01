@@ -29,4 +29,4 @@ jobs:
 
         - name: Build docs
           run: |
-            sphinx-build -W -b html docs docs/_build --keep-going
+            uv run sphinx-build -W -b html docs docs/_build --keep-going

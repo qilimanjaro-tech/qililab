@@ -35,16 +35,16 @@ jobs:
         run: uv sync --all-extras --all-groups --dev --prerelease=allow
 
       - name: Ruff
-        run: ruff check --output-format=github .
+        run: uv run ruff check --output-format=github .
 
       - name: Mypy
-        run: mypy src --ignore-missing-imports
+        run: uv run mypy src --ignore-missing-imports
 
       - name: Mdformat
-        run: mdformat .
+        run: uv run mdformat .
 
       - name: nbqa
         run: |
           # nbqa ruff .
-          nbqa mypy . --ignore-missing-imports
-          nbqa mdformat .
+          uv run nbqa mypy . --ignore-missing-imports
+          uv run nbqa mdformat .
