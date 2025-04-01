@@ -6,7 +6,7 @@ authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
 urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}
 readme = "README.md"
 requires-python = ">=3.10"
-keywords = ["qblox", "q1asm"]
+keywords = ["quantum control"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Topic :: Scientific/Engineering",
