@@ -384,6 +384,9 @@ class Parameter(str, Enum):
     OUT1_LO_FREQ = "out1_lo_freq"
     OUT0_LO_EN = "out0_lo_en"
     OUT0_IN0_LO_EN = "out0_in0_lo_en"
+    OUT0_IN0_LO_FREQ_CAL_TYPE_DEFAULT = "out0_in0_lo_freq_cal_type_default"
+    OUT0_LO_FREQ_CAL_TYPE_DEFAULT = "out0_lo_freq_cal_type_default"
+    OUT1_LO_FREQ_CAL_TYPE_DEFAULT = "out1_lo_freq_cal_type_default"
     OUT1_LO_EN = "out1_lo_en"
     OUT0_ATT = "out0_att"
     IN0_ATT = "in0_att"
@@ -405,6 +408,7 @@ class Parameter(str, Enum):
     FORMAT_DATA = "format_data"
     SOURCE_POWER = "source_power"
     AVERAGES_ENABLED = "averages_enabled"
+    FLUX = "flux"
 
 
     @classmethod

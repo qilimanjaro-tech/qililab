@@ -18,7 +18,6 @@ This module contains a function to display all the details of the Qililab instal
 
 import platform
 import sys
-from subprocess import check_output  # noqa: S404
 
 import pyvisa_py
 import qblox_instruments
@@ -33,7 +32,6 @@ def about():
     """
     Prints the information for Qililab installation.
     """
-    print(check_output([sys.executable, "-m", "pip", "show", "qililab"]).decode())  # noqa: S603
     print(f"Platform info:             {platform.platform(aliased=True)}")
     print(f"Python version:            {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}")
     print(f"PyVISA version:            {pyvisa_py.__version__}")

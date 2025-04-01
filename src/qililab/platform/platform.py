@@ -42,6 +42,7 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
@@ -59,6 +60,7 @@ from qililab.qprogram import (
     QuantumMachinesCompilationOutput,
     QuantumMachinesCompiler,
 )
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
@@ -76,6 +78,7 @@ if TYPE_CHECKING:
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result
     from qililab.settings import Runcard
+    from qililab.settings.digital.gate_event_settings import GateEventSettings
 
 
 class Platform:
@@ -330,6 +333,15 @@ class Platform:
         self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
         """Format of the experiment results path."""
 
+        self.crosstalk: CrosstalkMatrix | None = None
+        """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
+
+        self.flux_vector: FluxVector | None = None
+        """Flux vector information, defaults to None (only used on FLUX parameters)"""
+
+        self.flux_parameter: dict[str, int | float | bool | str] = {}
+        """Flux dictionary with information for the get parameter (only used on FLUX parameters)"""
+
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
 
@@ -462,8 +474,72 @@ class Platform:
             return self.digital_compilation_settings.get_parameter(
                 alias=alias, parameter=parameter, channel_id=channel_id
             )
+        if parameter == Parameter.FLUX:
+            if alias not in self.flux_parameter:
+                self.flux_parameter[alias] = 0.0
+            return self.flux_parameter[alias]
         element = self.get_element(alias=alias)
         return element.get_parameter(parameter=parameter, channel_id=channel_id)
+
+    def _data_draw(self):
+        """From the runcard retrieve the parameters necessary to draw the qprogram."""
+        data_oscilloscope = {}
+        buses = list(self.buses)
+        instruments = {
+            instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
+        }
+        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            for bus in buses:
+                for instrument, _ in zip(bus.instruments, bus.channels):
+                    if isinstance(instrument, QbloxModule):
+                        data_oscilloscope[bus.alias] = {}
+                        dac_offset_i = 0
+                        dac_offset_q = 0
+                        parameters = [
+                            Parameter.IF,
+                            Parameter.GAIN_I,
+                            Parameter.GAIN_Q,
+                            Parameter.OFFSET_I,
+                            Parameter.OFFSET_Q,
+                            Parameter.HARDWARE_MODULATION,
+                        ]
+                        for parameter in parameters:
+                            data_oscilloscope[bus.alias][parameter.value] = self.get_parameter(bus.alias, parameter)
+
+                        data_oscilloscope[bus.alias]["instrument_name"] = instrument.name.value
+
+                        if instrument.name == InstrumentName.QBLOX_QCM or instrument.name == InstrumentName.QBLOX_QRM:
+                            # retrieve the dac offset and assign it to the bus
+                            identifier = bus.channels
+                            for awg in instrument.awg_sequencers:
+                                if awg.identifier == identifier[0]:
+                                    for idx, out in enumerate(awg.outputs):
+                                        if idx == 0:
+                                            dac_offset_i = instrument.out_offsets[out]
+                                        elif idx == 1:
+                                            dac_offset_q = instrument.out_offsets[out]
+                            data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
+                            data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
+
+                        elif instrument.name == InstrumentName.QCMRF or instrument.name == InstrumentName.QRMRF:
+                            # retrieve the dac offset and assign it to the bus
+                            identifier = bus.channels
+                            for awg in instrument.awg_sequencers:
+                                if awg.identifier == identifier[0]:
+                                    for out in awg.outputs:
+                                        if out == 0:
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0)
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1)
+                                        elif out == 1:
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+                            data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
+                            data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
+        else:
+            # TODO: the same information could be generated with a Quantum Machine runcard, even if the QBlox Compiler is used in the background.
+            raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
+
+        return data_oscilloscope
 
     def set_parameter(
         self,
@@ -495,8 +571,127 @@ class Platform:
                 alias=alias, parameter=parameter, value=value, channel_id=channel_id
             )
             return
+
         element = self.get_element(alias=alias)
+
+        if parameter == Parameter.FLUX:
+            self.flux_parameter[alias] = float(value)
+            self._process_crosstalk(alias, value)
+            self._set_bias_from_element(element)
+            return
+
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+
+    def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
+        """Sets the right parameter depending on the instrument defined inside the element.
+        This is used in the crosstalk correction.
+        The instruments included in this function are: QM, QBlox, SPI and QDevil.
+
+        Args:
+            element (_type_): runcard elemnt.
+
+        """
+        bias = [
+            instrument
+            for instrument in element.instruments  # type: ignore[union-attr]
+            if instrument.name
+            in {"QCM", "QRM", "QRM-RF", "QCM-RF", "D5a", "S4g", "quantum_machines_cluster", "qdevil_qdac2"}
+        ]
+
+        if len(bias) == 0:
+            raise ReferenceError(
+                "Flux bus must have one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+            )
+        if len(bias) > 1:
+            raise NotImplementedError(
+                "Flux bus must not have more than one of these instruments:\nQCM, QRM, QRM-RF, QCM-RF, D5a, S4g, quantum_machines_cluster, qdevil_qdac2"
+            )
+        if bias[0].name in {"quantum_machines_cluster"}:
+            parameter = Parameter.DC_OFFSET
+        if bias[0].name in {"D5a", "qdevil_qdac2"}:
+            parameter = Parameter.VOLTAGE
+        if bias[0].name in {"S4g"}:
+            parameter = Parameter.CURRENT
+        for flux_alias, flux_value in self.flux_vector.bias_vector.items():  # type: ignore[union-attr]
+            flux_element = self.get_element(alias=flux_alias)
+            if bias[0].name in {"QCM", "QRM", "QRM-RF", "QCM-RF"}:
+                offset_channel = flux_element.instruments[0].awg_sequencers[flux_element.channels[0]].outputs[0]
+                if offset_channel == 0:
+                    parameter = Parameter.OFFSET_OUT0
+                if offset_channel == 1:
+                    parameter = Parameter.OFFSET_OUT1
+                if offset_channel == 2:
+                    parameter = Parameter.OFFSET_OUT2
+                if offset_channel == 3:
+                    parameter = Parameter.OFFSET_OUT3
+            flux_element.set_parameter(parameter=parameter, value=flux_value)
+        return
+
+    def _process_crosstalk(self, alias: str, value):
+        """Calculates the Current/Voltage of the set parameter based on the value of the flux and the crosstalk matrix"""
+        if not self.crosstalk:
+            raise ValueError("Crosstalk matrix has not been set")
+
+        bus_list = list(self.crosstalk.matrix.keys())
+
+        if not self.flux_vector:
+            self.flux_vector = FluxVector()
+        for flux in bus_list:
+            if flux not in self.flux_vector.flux_vector.keys():
+                self.flux_vector[flux] = 0
+
+        if alias not in self.crosstalk.matrix.keys():
+            raise ValueError(f"{alias} not inside crosstalk matrix\n{self.crosstalk}")
+
+        if not self.flux_vector.crosstalk or self.crosstalk != self.flux_vector.crosstalk:
+            self.flux_vector.set_crosstalk(self.crosstalk)
+
+        self.flux_vector[alias] = value
+
+    def set_crosstalk(self, crosstalk: CrosstalkMatrix):
+        """Sets the crosstalk matrix using the crosstalk matrix class.
+
+        Args:
+            crosstalk (CrosstalkMatrix): Crosstalk matrix to implement on the sample
+        """
+        self.crosstalk = crosstalk
+
+    def set_flux_to_zero(self, bus_list: list[str] | None = None):
+        """Set all lines inside the crosstalk / bus list to 0 Phi0, sets everything into the crosstalk offsets.
+
+        Args:
+            bus_list (list[str] | None, optional): Optional bus list for all the flux used in the experiment. Defaults to the Crosstalk buses.
+        """
+        if not self.crosstalk:
+            raise ValueError("Crosstalk matrix has not been set")
+
+        if not bus_list:
+            bus_list = list(self.crosstalk.matrix.keys())
+
+        for flux_alias in bus_list:
+            self.set_parameter(alias=flux_alias, parameter=Parameter.FLUX, value=0)
+
+    def set_bias_to_zero(self, bus_list: list[str] | None = None):
+        """Set all lines inside the crosstalk / bus list to 0 Volts / Amperes.
+
+        Args:
+            bus_list (list[str] | None, optional): Optional bus list for all the flux used in the experiment. Defaults to the Crosstalk buses.
+        """
+
+        if not bus_list:
+            if not self.crosstalk:
+                raise ValueError("Neither crosstalk matrix nor bus_list has been set")
+            bus_list = list(self.crosstalk.matrix.keys())
+
+        if not self.flux_vector:
+            self.flux_vector = FluxVector()
+        for flux in bus_list:
+            if flux not in self.flux_vector.flux_vector.keys():
+                self.flux_vector[flux] = 0
+
+        for flux_alias in bus_list:
+            element = self.get_element(alias=flux_alias)
+            self._set_bias_from_element(element)
 
     def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiates all instrument classes from their respective dictionaries.
@@ -733,7 +928,7 @@ class Platform:
         )
         return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
-    def execute_experiment(self, experiment: Experiment) -> str:
+    def execute_experiment(self, experiment: Experiment, calibration: Calibration | None = None) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
@@ -850,7 +1045,7 @@ class Platform:
         instruments = {instrument for bus in buses for instrument in bus.instruments if bus.has_adc()}
         if len(instruments) != 1:
             raise NotImplementedError("Executing QProgram in more than one Quantum Machines Cluster is not supported.")
-        cluster: QuantumMachinesCluster = cast(QuantumMachinesCluster, next(iter(instruments)))
+        cluster: QuantumMachinesCluster = cast("QuantumMachinesCluster", next(iter(instruments)))
         return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
 
     def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
@@ -1367,3 +1562,30 @@ class Platform:
         )
 
         return compiled_programs, final_layout
+
+    def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
+        bus = self.get_element(alias=alias)
+        for instrument, instrument_channel in zip(bus.instruments, bus.channels):
+            if instrument.name == InstrumentName.QRMRF:
+                if channel_id is not None and channel_id == instrument_channel:
+                    instrument.calibrate_mixers(cal_type, instrument_channel)
+            elif instrument.name == InstrumentName.QCMRF:
+                if channel_id is not None and channel_id == instrument_channel:
+                    instrument.calibrate_mixers(cal_type, channel_id)
+            else:
+                raise AttributeError("Mixers calibration not implemented for this instrument.")
+
+    def draw(self, qprogram: QProgram, averages_displayed: bool = False):
+        """Draw the QProgram using QBlox Compiler
+
+        Args:
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
+                                        The default is False.
+        """
+
+        runcard_data = self._data_draw()
+        qblox_draw = QbloxDraw()
+        sequencer = self.compile_qprogram(qprogram)
+        result = qblox_draw.draw(sequencer, runcard_data, averages_displayed)
+
+        return result

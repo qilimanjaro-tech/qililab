@@ -78,20 +78,20 @@ class QbloxQRM(QbloxModule):
             # Remove all acquisition data
             self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
             self._set_integration_length(
-                value=cast(QbloxADCSequencer, sequencer).integration_length, sequencer_id=sequencer_id
+                value=cast("QbloxADCSequencer", sequencer).integration_length, sequencer_id=sequencer_id
             )
             self._set_acquisition_mode(
-                value=cast(QbloxADCSequencer, sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
+                value=cast("QbloxADCSequencer", sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
             )
             self._set_scope_hardware_averaging(
-                value=cast(QbloxADCSequencer, sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
+                value=cast("QbloxADCSequencer", sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
             )
             self._set_hardware_demodulation(
-                value=cast(QbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
+                value=cast("QbloxADCSequencer", sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
-            self._set_threshold(value=cast(QbloxADCSequencer, sequencer).threshold, sequencer_id=sequencer_id)
+            self._set_threshold(value=cast("QbloxADCSequencer", sequencer).threshold, sequencer_id=sequencer_id)
             self._set_threshold_rotation(
-                value=cast(QbloxADCSequencer, sequencer).threshold_rotation, sequencer_id=sequencer_id
+                value=cast("QbloxADCSequencer", sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
 
     def _map_connections(self):
@@ -136,11 +136,11 @@ class QbloxQRM(QbloxModule):
             if sequencer.identifier in self.sequences:
                 sequencer_id = sequencer.identifier
                 flags = self.device.get_sequencer_status(
-                    sequencer=sequencer_id, timeout=cast(QbloxADCSequencer, sequencer).sequence_timeout
+                    sequencer=sequencer_id, timeout=cast("QbloxADCSequencer", sequencer).sequence_timeout
                 )
                 logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
                 self.device.get_acquisition_status(
-                    sequencer=sequencer_id, timeout=cast(QbloxADCSequencer, sequencer).acquisition_timeout
+                    sequencer=sequencer_id, timeout=cast("QbloxADCSequencer", sequencer).acquisition_timeout
                 )
 
                 if sequencer.scope_store_enabled:
@@ -182,7 +182,7 @@ class QbloxQRM(QbloxModule):
             if sequencer is not None and sequencer.identifier in self.sequences:
                 self.device.get_acquisition_status(
                     sequencer=sequencer.identifier,
-                    timeout=cast(QbloxADCSequencer, sequencer).acquisition_timeout,
+                    timeout=cast("QbloxADCSequencer", sequencer).acquisition_timeout,
                 )
                 if acquisition_data.save_adc:
                     self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
@@ -192,7 +192,7 @@ class QbloxQRM(QbloxModule):
                 measurement_result = QbloxMeasurementResult(
                     bus=acquisitions[acquisition].bus,
                     raw_measurement_data=raw_measurement_data,
-                    shape=acquisition_data.shape
+                    shape=acquisition_data.shape,
                 )
                 results.append(measurement_result)
 
@@ -275,7 +275,7 @@ class QbloxQRM(QbloxModule):
     def _set_nco(self, sequencer_id: int):
         """Enable modulation/demodulation of pulses and setup NCO frequency."""
         super()._set_nco(sequencer_id=sequencer_id)
-        if cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).hardware_demodulation:
+        if cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).hardware_demodulation:
             self._set_hardware_demodulation(
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
@@ -334,7 +334,7 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not bool
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
 
         if self.is_device_active():
             self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
@@ -346,7 +346,7 @@ class QbloxQRM(QbloxModule):
             value (float | str | bool): value to update
             sequencer_id (int): sequencer to update the value
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).threshold = float(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).threshold = float(value)
 
         if self.is_device_active():
             self._set_device_threshold(value=float(value), sequencer_id=sequencer_id)
@@ -358,7 +358,7 @@ class QbloxQRM(QbloxModule):
             value (float | str | bool): value to update
             sequencer_id (int): sequencer to update the value
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).threshold_rotation = float(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).threshold_rotation = float(value)
         if self.is_device_active():
             self._set_device_threshold_rotation(value=float(value), sequencer_id=sequencer_id)
 
@@ -372,7 +372,7 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not bool
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).hardware_demodulation = bool(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).hardware_demodulation = bool(value)
         if self.is_device_active():
             self._set_device_hardware_demodulation(value=bool(value), sequencer_id=sequencer_id)
 
@@ -386,7 +386,9 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not string
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_acquire_trigger_mode = AcquireTriggerMode(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).scope_acquire_trigger_mode = AcquireTriggerMode(
+            value
+        )
         if self.is_device_active():
             self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
 
@@ -400,7 +402,7 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not float
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length = int(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).integration_length = int(value)
         if self.is_device_active():
             self._set_device_integration_length(value=int(value), sequencer_id=sequencer_id)
 
@@ -414,7 +416,7 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not float
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).sampling_rate = float(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).sampling_rate = float(value)
 
     def _set_integration_mode(self, value: float | str | bool | IntegrationMode, sequencer_id: int):
         """set integration_mode for the specific channel
@@ -426,7 +428,7 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not string
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_mode = IntegrationMode(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).integration_mode = IntegrationMode(value)
 
     def _set_sequence_timeout(self, value: int | float | str | bool, sequencer_id: int):
         """set sequence_timeout for the specific channel
@@ -438,7 +440,7 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not float or int
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).sequence_timeout = int(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).sequence_timeout = int(value)
 
     def _set_acquisition_timeout(self, value: int | float | str | bool, sequencer_id: int):
         """set acquisition_timeout for the specific channel
@@ -450,7 +452,7 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not float or int
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).acquisition_timeout = int(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).acquisition_timeout = int(value)
 
     def _set_scope_store_enabled(self, value: float | str | bool, sequencer_id: int):
         """set scope_store_enable
@@ -462,7 +464,7 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not bool
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
 
     def _set_time_of_flight(self, value: int | float | str | bool, sequencer_id: int):
         """set time_of_flight
@@ -474,4 +476,4 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not bool
         """
-        cast(QbloxADCSequencer, self.get_sequencer(sequencer_id)).time_of_flight = int(value)
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).time_of_flight = int(value)

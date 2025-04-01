@@ -30,8 +30,8 @@ from qililab.utils.factory import Factory
 class VNAResult(Result):  # TODO: Remove this class (it is useless)
     """VNAResult class."""
 
-    name = ResultName.VECTOR_NETWORK_ANALYZER
     data: npt.NDArray[np.float32]
+    name: ResultName = ResultName.VECTOR_NETWORK_ANALYZER  # type: ignore[misc]
 
     def acquisitions(self) -> np.ndarray:
         """Return acquisition values."""
