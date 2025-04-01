@@ -122,12 +122,12 @@ class QuantumMachinesCluster(Instrument):
                                         "feedforward": (
                                             output["filter"]["feedforward"] if "feedforward" in output["filter"] else []
                                         ),
-                                        "feedback": (
-                                            output["filter"]["feedback"] if "feedback" in output["filter"] else []
+                                        "exponential": (
+                                            output["filter"]["exponential"] if "exponential" in output["filter"] else []
                                         ),
                                     }
                                     if "filter" in output
-                                    else {"feedforward": [], "feedback": []}
+                                    else {"feedforward": [], "exponential": []}
                                 ),
                                 "shareable": output["shareable"] if "shareable" in output else False,
                             }
@@ -170,14 +170,14 @@ class QuantumMachinesCluster(Instrument):
                                                     if "feedforward" in output["filter"]
                                                     else []
                                                 ),
-                                                "feedback": (
-                                                    output["filter"]["feedback"]
-                                                    if "feedback" in output["filter"]
+                                                "exponential": (
+                                                    output["filter"]["exponential"]
+                                                    if "exponential" in output["filter"]
                                                     else []
                                                 ),
                                             }
                                             if "filter" in output
-                                            else {"feedforward": [], "feedback": []}
+                                            else {"feedforward": [], "exponential": []}
                                         ),
                                         "shareable": fem["shareable"] if "shareable" in fem else False,
                                     }
@@ -215,7 +215,9 @@ class QuantumMachinesCluster(Instrument):
                         "LO_frequency": rf_output["lo_frequency"],  # Should be between 2 and 18 GHz.
                         "LO_source": "internal",
                         "gain": rf_output["gain"] if "gain" in rf_output else 0.0,
-                        "output_mode": "always_on",
+                        "output_mode": (
+                            rf_output["output_mode"] if "output_mode" in rf_output else "always_on"
+                        ),  # Can be triggered_reversed', 'always_on', 'triggered', 'always_off'
                         "input_attenuators": "OFF",  # can be: "OFF" / "ON". Default is "OFF".
                     }
                     if "i_connection" in rf_output:
@@ -415,7 +417,7 @@ class QuantumMachinesCluster(Instrument):
     settings: QuantumMachinesClusterSettings
     device: QMMDriver
     _qmm: QuantumMachinesManager
-    _qm: QuantumMachine  # TODO: Change private QM API to public when implemented.
+    _qm: QuantumMachine  # TODO: Change private QM API to public when implemented by QM.
     _config: DictQuaConfig
     _octave_config: QmOctaveConfig | None = None
     _is_connected_to_qm: bool = False
@@ -450,7 +452,7 @@ class QuantumMachinesCluster(Instrument):
             QuantumMachinesManager(
                 host=self.settings.address,
                 cluster_name=self.settings.cluster,
-                octave_calibration_db_path=self._octave_config._calibration_db_path,
+                octave_calibration_db_path=self._octave_config._calibration_db,
             )
             if self._octave_config is not None
             else QuantumMachinesManager(
