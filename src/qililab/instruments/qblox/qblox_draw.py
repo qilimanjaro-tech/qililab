@@ -16,7 +16,6 @@ import re
 
 import numpy as np
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 
 class QbloxDraw:
@@ -41,7 +40,7 @@ class QbloxDraw:
         elif action_type == "set_awg_offs":
             param = self._handle_offset(program_line, param)
         elif action_type == "set_awg_gain":
-            param = self._handle_gain_draw(program_line, param, 1, register)
+            param = self._handle_gain_draw(program_line, param, register)
         elif action_type == "play":
             data_draw = self._handle_play_draw(data_draw, program_line, waveform_seq, param)
         elif action_type == "wait":
@@ -89,16 +88,15 @@ class QbloxDraw:
         """
         output_path1, output_path2, _ = map(int, program_line[1].split(","))
         # modify and store the wf data
-        for _, waveform_value in waveform_seq:
-            index = waveform_value["index"]
-            if index in [output_path1, output_path2]:
-                iq = "I" if index == output_path1 else "Q"
-                scaling_factor, max_voltage, gain = self._calculate_scaling_and_offsets(param, iq)
-                scaled_array = np.array(waveform_value["data"]) * scaling_factor
-                modified_waveform = np.clip(scaled_array * gain, -max_voltage, max_voltage)
-                data_draw[0 if index == output_path1 else 1] = np.append(
-                    data_draw[0 if index == output_path1 else 1], modified_waveform
-                )
+        for idx, output_path in enumerate([output_path1, output_path2]):
+            for _, waveform_value in waveform_seq:
+                index = waveform_value["index"]
+                if index == output_path:
+                    iq = "I" if idx == 0 else "Q"
+                    scaling_factor, max_voltage, gain = self._calculate_scaling_and_offsets(param, iq)
+                    scaled_array = np.array(waveform_value["data"]) * scaling_factor
+                    modified_waveform = np.clip(scaled_array * gain, -max_voltage, max_voltage)
+                    data_draw[idx] = np.append(data_draw[idx], modified_waveform)
 
         # extend the IF and phase by the length of the wf
         for key in ["intermediate_frequency", "phase", "q1asm_offset_i", "q1asm_offset_q"]:
@@ -135,14 +133,13 @@ class QbloxDraw:
                 param[key].extend([param[key][-1]] * len(y_wait))
         return data_draw
 
-    def _handle_gain_draw(self, program_line, param, default, register):
+    def _handle_gain_draw(self, program_line, param, register):
         """Updates the param dictionary when a gain is set in the program
 
         Args:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with a gain or offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
-            default (int): default value.
 
         Returns:
             Appends the param dictionary
@@ -150,8 +147,7 @@ class QbloxDraw:
         i_val, q_val = program_line[1].split(", ")
         i_val = float(self._get_value(i_val, register)) / 32767
         q_val = float(self._get_value(q_val, register)) / 32767
-
-        param["gain_i"], param["gain_q"] = i_val or default, q_val or default
+        param["gain_i"], param["gain_q"] = i_val, q_val
         return param
 
     def _handle_offset(self, program_line, param):
@@ -159,9 +155,8 @@ class QbloxDraw:
 
         Args:
             data_draw (list): nested list for each waveform, data points until current time.
-            program_line (tuple): line of the Q1ASM program parsed with a gain or offset instruction.
+            program_line (tuple): line of the Q1ASM program parsed with an offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
-            default (int): default value.
 
         Returns:
             Appends the param dictionary
@@ -324,6 +319,8 @@ class QbloxDraw:
                 This gets renamed as param to overwrite/add values from the sequencer.
             averages_displayed (bool): Determines how looping variables are handled. If False (default), all loops
                 on the sequencer starting with `avg_` will only iterate once. If True, all iterations are displayed.
+            loops_displayed (bool): Determines how looping variables are handled. If False (default), all loops
+                on the sequencer starting with `loop_` will only iterate once. If True, all iterations are displayed.
 
 
         Returns:
@@ -334,7 +331,9 @@ class QbloxDraw:
             This function also **plots** the waveforms using the generated data.
 
         """
-        Q1ASM_ordered = self._parse_program(sequencer.sequences.copy())  # (instruction, value, label of the loops, index)
+        Q1ASM_ordered = self._parse_program(
+            sequencer.sequences.copy()
+        )  # (instruction, value, label of the loops, index)
         data_draw = {}
         parameters = {}
         for bus, _ in Q1ASM_ordered.items():
@@ -347,12 +346,10 @@ class QbloxDraw:
                 parameters[bus]["intermediate_frequency"] = [IF]
                 parameters[bus]["ac_offset_i"] = parameters[bus]["offset_i"]
                 parameters[bus]["ac_offset_q"] = parameters[bus]["offset_q"]
-                if parameters[bus]["instrument_name"] == "QCM":
+                if parameters[bus]["instrument_name"] in {"QCM", "QCM-RF"}:
                     parameters[bus]["max_voltage"] = 2.5
-                elif parameters[bus]["instrument_name"] == "QRM":
+                elif parameters[bus]["instrument_name"] in {"QRM", "QRM-RF"}:
                     parameters[bus]["max_voltage"] = 0.5
-                else:
-                    parameters[bus]["max_voltage"] = 1
             else:  # no runcard uploaded- running qp directly
                 parameters[bus] = {}
                 parameters[bus]["intermediate_frequency"] = [0]
@@ -480,9 +477,8 @@ class QbloxDraw:
         """
 
         data_keys = list(data_draw.keys())
-        fig = make_subplots(
-            rows=len(data_keys), cols=1, subplot_titles=["temp_subtitle" for date in np.arange(len(data_draw))]
-        )
+
+        fig = go.Figure()
 
         for idx, key in enumerate(data_keys):
             q1asm_offset_i = np.array(parameters[key]["q1asm_offset_i"])
@@ -503,9 +499,7 @@ class QbloxDraw:
                 data_draw[key][0] = waveform_flux
                 data_draw[key][1] = None
                 fig.add_trace(
-                    go.Scatter(y=waveform_flux, mode="lines", name="Flux", legendgroup=idx),
-                    row=idx + 1,
-                    col=1,
+                    go.Scatter(y=waveform_flux, mode="lines", name="Flux")
                 )
             else:
                 ac_offset_i, ac_offset_q = (
@@ -544,27 +538,22 @@ class QbloxDraw:
                 data_draw[key][0], data_draw[key][1] = path0_clipped, path1_clipped
 
                 fig.add_trace(
-                    go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I", legendgroup=idx), row=idx + 1, col=1
+                    go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I")
                 )
                 fig.add_trace(
-                    go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q", legendgroup=idx), row=idx + 1, col=1
+                    go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q")
                 )
 
-            # Update the subplot title
-            name = parameters[key]["instrument_name"]
-            title = f"{name} {key}"
-            fig.layout.annotations[idx]["text"] = title
-
-        # Add axis titles
-        for i, key in enumerate(data_keys):
-            fig.update_xaxes(title_text="Time [ns]", row=i + 1, col=1)
-            fig.update_yaxes(title_text="Voltage [V]", row=i + 1, col=1)
+        if parameters[key]["instrument_name"] == "QProgram":
+            fig.update_yaxes(title_text="Amplitude [a.u.]")
+        else:
+            fig.update_yaxes(title_text="Voltage [V]")
+        fig.update_xaxes(title_text="Time [ns]")
 
         # Update layout
         fig.update_layout(
-            height=260 * len(data_keys),
+            height=200 * len(data_keys),
             width=1100,
-            legend_tracegroupgap=210,
             title_text="QBlox Oscillator simulation",
             showlegend=True,
         )
