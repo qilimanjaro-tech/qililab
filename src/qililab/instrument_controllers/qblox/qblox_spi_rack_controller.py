@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Qblox SPI Rack Controller class"""
+
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -45,7 +46,7 @@ class QbloxSPIRackController(InstrumentController):
     class QbloxSPIRackControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific Qblox Cluster Controller."""
 
-        reset = False
+        reset: bool = False
 
         def __post_init__(self):
             super().__post_init__()

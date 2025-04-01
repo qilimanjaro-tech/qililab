@@ -1045,7 +1045,7 @@ class Platform:
         instruments = {instrument for bus in buses for instrument in bus.instruments if bus.has_adc()}
         if len(instruments) != 1:
             raise NotImplementedError("Executing QProgram in more than one Quantum Machines Cluster is not supported.")
-        cluster: QuantumMachinesCluster = cast(QuantumMachinesCluster, next(iter(instruments)))
+        cluster: QuantumMachinesCluster = cast("QuantumMachinesCluster", next(iter(instruments)))
         return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
 
     def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
