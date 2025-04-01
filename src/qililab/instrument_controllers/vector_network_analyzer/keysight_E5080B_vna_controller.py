@@ -13,21 +13,22 @@
 # limitations under the License.
 
 """KeySight E5080B Instrument Controller"""
+import pyvisa
 
 from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Sequence
-
+from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
-from qililab.instrument_controllers.vector_network_analyzer.vector_network_analyzer_controller import (
-    VectorNetworkAnalyzerController,
-)
+from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instruments.keysight.e5080b_vna import E5080B
 from qililab.typings.enums import InstrumentControllerName, InstrumentName
-from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
-
+from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
+from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
+from qililab.typings.enums import ConnectionName
 
 @InstrumentControllerFactory.register
-class E5080BController(VectorNetworkAnalyzerController):
+class E5080BController(SingleInstrumentController):
     """KeySight E5080B Instrument Controller
 
     Args:
@@ -37,20 +38,37 @@ class E5080BController(VectorNetworkAnalyzerController):
     """
 
     name = InstrumentControllerName.KEYSIGHT_E5080B
-    device: VectorNetworkAnalyzerDriver
+    device: KeysightE5080B
+
     modules: Sequence[E5080B]
+    
 
     @dataclass
-    class E5080BControllerSettings(VectorNetworkAnalyzerController.VectorNetworkAnalyzerControllerSettings):
+    class E5080BControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific E5080B Controller."""
-
+ 
+        # timeout: float = DEFAULT_TIMEOUT
+        def __post_init__(self):
+            super().__post_init__()
+            self.connection.name = ConnectionName.TCP_IP
+            # resource_manager = pyvisa.ResourceManager("@py")
+            # self.driver = resource_manager.open_resource(f"TCPIP::{self.address}::INSTR")
+            # self.driver.timeout = self.timeout
     settings: E5080BControllerSettings
+
+    @SingleInstrumentController.CheckConnected
+    def initial_setup(self):
+        """Initial setup of the instrument."""
+        # self.device.set_timeout(self.settings.timeout)
+        super().initial_setup()
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = VectorNetworkAnalyzerDriver(
-            name=f"{self.name.value}_{self.alias}", address=self.address, timeout=self.timeout
+
+        self.device =  KeysightE5080B(
+            name=f"{self.name.value}_{self.alias}", address=f"TCPIP::{self.address}::INSTR", visalib="@py"
         )
+
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
@@ -60,3 +78,18 @@ class E5080BController(VectorNetworkAnalyzerController):
                     f"Instrument {type(module)} not supported."
                     + f"The only supported instrument is {InstrumentName.KEYSIGHT_E5080B}"
                 )
+
+    # @property
+    # def timeout(self):
+    #     """VectorNetworkAnalyzer 'timeout' property.
+
+    #     Returns:
+    #         float: settings.timeout.
+    #     """
+    #     return self.settings.timeout
+
+    # @timeout.setter
+    # def timeout(self, value: float):
+    #     """sets the timeout"""
+    #     self.settings.timeout = value
+    #     self.device.set_timeout(value=self.settings.timeout)

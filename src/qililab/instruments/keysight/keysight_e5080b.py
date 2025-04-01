@@ -1,5 +1,5 @@
 #This file is meant to be qcode
-
+from typing import Any
 from qcodes import VisaInstrument
 from qcodes.parameters import (
     Parameter,
@@ -11,9 +11,8 @@ class KeySight_E5080B(VisaInstrument):
     """
     This is the qcodes driver for the Keysight E5080B Vector Network Analyzer
     """
-
-    def __init__(self, name, address, **kwargs):
-        super().__init__(name, address, **kwargs)
+    def __init__(self, name: str, address: str, **kwargs: Any) -> None:
+        super().__init__(name, address, terminator='\n', **kwargs)
 
         # Setting frequency range
         min_freq = 100e3
@@ -214,12 +213,21 @@ class KeySight_E5080B(VisaInstrument):
             vals=Enum("REAL,32", "REAL,64", "ASCii,0"),
         )
         """Parameter averages mode"""
-    
-    #Write only commands
 
     def clear_averages(self) -> None:
         """
         Clears and restarts averaging of the measurement data. Does NOT apply to point averaging.
         """
         self.write("SENS:AVER:CLE")
+    
+    def turn_on(self):
+        """Start an instrument."""
+        return self.write("OUTP ON")
 
+    def turn_off(self):
+        """Start an instrument."""
+        return self.write("OUTP OFF")
+    
+    # def set_timeout(self, value: float):
+    #     """Set timeout in mili seconds."""
+    #     self.timeout = value

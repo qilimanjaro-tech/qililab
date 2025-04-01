@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Class Keysight E5080B"""
-from qcodes.instrument_drivers.rohde_schwarz.SGS100A import RohdeSchwarz_SGS100A
 from qililab.instruments.keysight.keysight_e5080b import KeySight_E5080B
 from qililab.typings.instruments.device import Device
 

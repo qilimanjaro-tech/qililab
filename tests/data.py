@@ -843,7 +843,6 @@ class SauronVNA:
     keysight_e5080b_controller: dict[str, Any] = {
         "name": InstrumentControllerName.KEYSIGHT_E5080B,
         "alias": InstrumentControllerName.KEYSIGHT_E5080B.value,
-        Parameter.TIMEOUT.value: 10000,
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.1.254",

@@ -404,6 +404,7 @@ class Parameter(str, Enum):
     CLEAR_AVERAGES = "clear_averages"
     FORMAT_DATA = "format_data"
     SOURCE_POWER = "source_power"
+    AVERAGES_ENABLED = "averages_enabled"
 
 
     @classmethod
