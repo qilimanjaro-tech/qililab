@@ -11,13 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import datetime
+import os
 from typing import Any
 
 import h5py
 import numpy as np
 
+from qililab import DatabaseManager, serialize
+from qililab.platform import Platform
+from qililab.qprogram import QProgram
 
-def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
+
+class StreamArray:
     """Constructs a StreamArray instance.
 
     This methods serves as a constructor for user interface of the StreamArray class.
@@ -85,28 +91,32 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                 [1.   0.  ]])
 
     """
-    return StreamArray(shape=shape, path=path, loops=loops)
 
+    def __init__(
+        self,
+        shape,
+        loops,
+        platform: Platform,
+        qprogram: QProgram | None,
+        experiment_name: str,
+        db_manager: DatabaseManager,
+        optional_identifier: str | None,
+    ):
 
-class StreamArray:
-    """
-    Allows for real time saving of results from an experiment.
-
-    This class wraps a numpy array and adds a context manager to save results on real time while they are acquired by
-    the instruments.
-
-    Args:
-        shape (tuple): results array shape.
-        path (str): path to save results.
-        loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
-    """
-
-    def __init__(self, shape: tuple, path: str, loops: dict[str, np.ndarray]):
+        # from old stream array
         self.results = np.zeros(shape=shape)
-        self.path = path
+        self.path = None  # This is set in the __enter__ method
         self.loops = loops
         self._file: h5py.File | None = None
         self._dataset = None
+
+        # new vars
+        self.experiment_name = experiment_name
+        self.db_manager = db_manager
+        self.measurement = None
+        self.optional_identifier = optional_identifier
+        self.platform = platform
+        self.qprogram = qprogram
 
     def __setitem__(self, key: tuple, value: float):
         """Sets and item by key and value in the dataset.
@@ -120,12 +130,34 @@ class StreamArray:
         self.results[key] = value
 
     def __enter__(self):
-        self._file = h5py.File(name=self.path, mode="w")
+
+        start_time = datetime.datetime.now()  # NOTE we should probably move this logic to the measurement class
+        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
+        base_path = "/home/jupytershared/testing_db/data"
+        dir_path = f"{base_path}/{self.db_manager.current_sample}/{self.db_manager.current_cd}/{formatted_time}"
+        self.path = f"{dir_path}/{self.experiment_name}.h5"
+
+        self.measurement = self.db_manager.add_measurement(
+            experiment_name=self.experiment_name,
+            result_path=self.path,
+            experiment_completed=False,
+            start_time=start_time,
+            optional_identifier=self.optional_identifier,
+            platform=self.platform.to_dict(),
+            qprogram=(serialize(self.qprogram)),
+        )
+
+        folder = dir_path
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+
         # Save loops
+        self._file = h5py.File(name=self.path, mode="w")
+
         g = self._file.create_group(name="loops")
         for loop_name, array in self.loops.items():
             g.create_dataset(name=loop_name, data=array)
-        # Save results
+
         self._dataset = self._file.create_dataset("results", data=self.results)
 
         return self
@@ -135,6 +167,8 @@ class StreamArray:
         if self._file is not None:
             self._file.__exit__()
             self._file = None
+
+        self.measurement._end_experiment(self.db_manager.Session)
 
     def __getitem__(self, index: int):
         """Gets item by index.

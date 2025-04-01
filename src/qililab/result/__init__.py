@@ -34,8 +34,9 @@ Functions
     ~stream_results
 """
 
+from .database import Cooldown, DatabaseManager, Sample
 from .experiment_results import ExperimentResults
 from .result import Result
 from .stream_results import stream_results
 
-__all__ = ["ExperimentResults", "Result", "stream_results"]
+__all__ = ["Cooldown", "DatabaseManager", "ExperimentResults", "Result", "Sample", "stream_results"]
