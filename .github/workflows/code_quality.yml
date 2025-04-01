@@ -32,19 +32,19 @@ jobs:
         run: uv python install 3.10
 
       - name: Install the project
-        run: uv sync --all-extras --all-groups --dev --prerelease=allow
+        run: uv sync --all-extras --all-groups --dev
 
       - name: Ruff
-        run: uv run --prerelease=allow ruff check --output-format=github .
+        run: uv run ruff check --output-format=github .
 
       - name: Mypy
-        run: uv run --prerelease=allow mypy src --ignore-missing-imports
+        run: uv run mypy src --ignore-missing-imports
 
       - name: Mdformat
-        run: uv run --prerelease=allow mdformat .
+        run: uv run mdformat .
 
       - name: nbqa
         run: |
           # nbqa ruff .
-          uv run --prerelease=allow nbqa mypy . --ignore-missing-imports
-          uv run --prerelease=allow nbqa mdformat .
+          uv run nbqa mypy . --ignore-missing-imports
+          uv run nbqa mdformat .

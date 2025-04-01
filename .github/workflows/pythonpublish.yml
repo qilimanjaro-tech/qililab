@@ -36,7 +36,7 @@ jobs:
         run: uv python install 3.10
 
       - name: Install dependencies
-        run: uv sync --prerelease=allow
+        run: uv sync
 
       - name: Build wheels
         run: uv build
