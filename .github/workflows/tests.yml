@@ -32,11 +32,11 @@ jobs:
         run: uv python install 3.10
 
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: uv sync --all-extras
 
       - name: Run tests
         run: |
-          uv run pytest --cov=qililab --cov-report=xml tests
+          uv run pytest -n auto --dist loadfile --cov=qililab --cov-report=xml tests
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
