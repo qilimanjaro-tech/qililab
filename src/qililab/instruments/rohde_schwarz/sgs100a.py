@@ -140,7 +140,7 @@ class SGS100A(Instrument):
                 self.device.frequency(self.frequency)
             return
         if parameter == Parameter.RF_ON:
-            value = bool(value)
+            self.settings.rf_on = bool(value)
             if self.is_device_active():
                 if value:
                     self.turn_on()
@@ -242,7 +242,7 @@ class SGS100A(Instrument):
     def turn_on(self):
         """Start generating microwaves."""
         if not self.settings.rf_on:
-            self.device.off()
+            self.device.off() # this avoids the initialisation to overwrite the runcard
         else:
             self.device.on()
 
