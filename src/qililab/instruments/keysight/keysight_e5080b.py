@@ -23,6 +23,7 @@ class KeySight_E5080B(VisaInstrument):
         max_nop = 100003
         min_power = 0
         max_power = 10
+        # stop_freq_value = self.stop_freq.get_latest()
 
         # Sets the start frequency of the analyzer.
         self.start_freq: Parameter = self.add_parameter(
@@ -71,17 +72,17 @@ class KeySight_E5080B(VisaInstrument):
         )
         """Parameter center frequency step auto"""
 
-        # Sets the center frequency step size of the analyzer. This command sets the manual step size (only valid when STEP:AUTO is FALSE).
-        self.step_size: Parameter = self.add_parameter(
-            "center_step_size",
-            label="Center Frequency Step",
-            get_cmd="SENS:FREQ:CENT:STEP:SIZE?",
-            get_parser=float,
-            set_cmd="SENS:FREQ:CENT:STEP:SIZE {}",
-            unit="Hz",
-            vals=Numbers(min_value=0, max_value=self.stop.get_latest()),
-        )
-        """Parameter center frequency step"""
+        # # Sets the center frequency step size of the analyzer. This command sets the manual step size (only valid when STEP:AUTO is FALSE).
+        # self.step_size: Parameter = self.add_parameter(
+        #     "center_step_size",
+        #     label="Center Frequency Step",
+        #     get_cmd="SENS:FREQ:CENT:STEP:SIZE?",
+        #     get_parser=float,
+        #     set_cmd="SENS:FREQ:CENT:STEP:SIZE {}",
+        #     unit="Hz",
+        #     vals=Numbers(min_value=0, max_value=self.stop_freq.get_latest()),
+        # )
+        # """Parameter center frequency step"""
 
         # Sets the frequency span of the analyzer.
         self.span: Parameter = self.add_parameter(
@@ -212,6 +213,16 @@ class KeySight_E5080B(VisaInstrument):
             vals=Enum("REAL,32", "REAL,64", "ASCii,0"),
         )
         """Parameter averages mode"""
+            
+        # Sets the data format for transferring measurement data and frequency data. Default is ASCii,0.
+        self.rf_on: Parameter = self.add_parameter(
+            "rf_on",
+            label="RF ON",
+            # get_cmd="FORM:DATA?",
+            set_cmd="OUTP",
+            # vals=Enum("REAL,32", "REAL,64", "ASCii,0"),
+        )
+        """Parameter averages mode"""
 
     def clear_averages(self) -> None:
         """
@@ -222,6 +233,7 @@ class KeySight_E5080B(VisaInstrument):
     def turn_on(self):
         """Start an instrument."""
         return self.write("OUTP ON")
+
 
     def turn_off(self):
         """Start an instrument."""

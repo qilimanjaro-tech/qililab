@@ -252,7 +252,7 @@ class VNAAverageModes(str, Enum):
         * sweep
     """
 
-    POIN = "poin"
+    POIN = "point"
     SWEEP = "sweep"
 
 class VNAFormatData(str, Enum):
@@ -287,7 +287,7 @@ class InstrumentControllerName(str, Enum):
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
     QBLOX_SPIRACK = "qblox_spi_rack"
-    KEYSIGHT_E5080B = "keysight_e5080b_controller"
+    KEYSIGHT_E5080B = "keysight_e5080b"
     YOKOGAWA_GS200 = "yokogawa_gs200_controller"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
     QDEVIL_QDAC2 = "qdevil_qdac2"

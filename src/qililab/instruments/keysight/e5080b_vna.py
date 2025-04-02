@@ -62,6 +62,7 @@ class E5080B(Instrument):
         averages_mode: VNAAverageModes | None = None
         scattering_parameter: VNAScatteringParameters | None = None
         format_data: VNAFormatData | None = None
+        # rf_on: bool = True
         # timeout: float = DEFAULT_TIMEOUT
 
     settings: E5080BSettings
@@ -236,6 +237,12 @@ class E5080B(Instrument):
             self.settings.start_freq = float(value)
             if self.is_device_active():
                 self.device.start_freq(self.start_freq)
+            return
+        
+        if parameter == Parameter.RF_ON:
+            # self.settings.start_freq = float(value)
+            if self.is_device_active():
+                self.device.turn_on()
             return
 
         if parameter == Parameter.FREQUENCY_STOP:
