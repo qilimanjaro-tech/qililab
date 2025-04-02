@@ -2653,11 +2653,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/6d/82/1d96bf03ee4c0fdc3c0cbe61470070e659ca78dc0086fb88b66c185e2449/pytest_xdist-3.6.1-py3-none-any.whl", hash = "sha256:9ed4adfb68a016610848639bb7e02c9352d5d9f03d04809919e2dafc3be4cca7", size = 46108 },
 ]
 
-[package.optional-dependencies]
-psutil = [
-    { name = "psutil" },
-]
-
 [[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
@@ -2973,7 +2968,7 @@ dev = [
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
-    { name = "pytest-xdist", extra = ["psutil"] },
+    { name = "pytest-xdist" },
     { name = "ruff" },
 ]
 docs = [
@@ -3016,7 +3011,7 @@ dev = [
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
-    { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.6.1" },
+    { name = "pytest-xdist", specifier = ">=3.6.1" },
     { name = "ruff", specifier = ">=0.11.2" },
 ]
 docs = [
