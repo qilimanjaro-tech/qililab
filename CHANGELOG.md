@@ -82,7 +82,7 @@ platform.set_flux_to_zero()
 
 - Fixed an issue involving D5a initial setup where the channel id was not correctly set by id index.
 
-  [#918](https://github.com/qilimanjaro-tech/qililab/pull/918)
+  [#926](https://github.com/qilimanjaro-tech/qililab/pull/926)
 
 ## 0.29.1 (2025-03-27)
 
