@@ -10,7 +10,7 @@ In addition, the build process has been completely overhauled. The old build scr
 
 Publishing has also been improved with the integration of uv. The new process automates packaging and deployment, ensuring that artifacts are published in sync with the version specified in the configuration file. This automation minimizes manual intervention and helps maintain consistency in the release process.
 
-Developers should install Astral's uv globally (for example, running `curl -LsSf https://astral.sh/uv/install.sh | sh`). After installation, project management is handled through uv CLI. For additional details or troubleshooting, please refer to the official Astral's uv documentation at https://docs.astral.sh/uv/concepts/projects/.
+Developers should install Astral's uv globally (for example, running `curl -LsSf https://astral.sh/uv/install.sh | sh`). After installation, project management is handled through uv CLI. For additional details or troubleshooting, please refer to the official Astral's uv documentation at <https://docs.astral.sh/uv/concepts/projects/>.
 
 [#923](https://github.com/qilimanjaro-tech/qililab/pull/923)
 
@@ -78,6 +78,10 @@ platform.set_flux_to_zero()
 ### Bug fixes
 
 - Correction of bugs following the implementation of the qblox drawing class. The user can now play the same waveform twice in one play, and when gains are set as 0 in the qprogram they are no longer replaced by 1 but remain at 0. Some improvements added, the RF modules are now scaled properly instead of on 1, when plotting through qprogram the y axis now reads Amplitude \[a.u.\], and the subplots have been removed, all the lines plot in one plot.
+  [#918](https://github.com/qilimanjaro-tech/qililab/pull/918)
+
+- Fixed an issue involving D5a initial setup where the channel id was not correctly set by id index.
+
   [#918](https://github.com/qilimanjaro-tech/qililab/pull/918)
 
 ## 0.29.1 (2025-03-27)
@@ -764,7 +768,7 @@ platform.set_flux_to_zero()
 
   [#768](https://github.com/qilimanjaro-tech/qililab/pull/768)
 
-- Added loopbacks in the octave config file for qua following the documentation at https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Guides/octave/?h=octaves#setting-the-octaves-clock. By default only port 1 of the octave is linked with a local demodulator, to work with the rest of the ports at the back ports must be connected based on the Octave Block Diagram \[https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Hardware/octave/#octave-block-diagram\]. Where `Synth` is one of the possible 3 synths and `Dmd` is one of the 2 demodulators.
+- Added loopbacks in the octave config file for qua following the documentation at <https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Guides/octave/?h=octaves#setting-the-octaves-clock>. By default only port 1 of the octave is linked with a local demodulator, to work with the rest of the ports at the back ports must be connected based on the Octave Block Diagram \[<https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Hardware/octave/#octave-block-diagram\>]. Where `Synth` is one of the possible 3 synths and `Dmd` is one of the 2 demodulators.
 
   Example:
 
@@ -799,7 +803,7 @@ platform.set_flux_to_zero()
 ### Improvements
 
 - Improve Crosstalk matrix `from_buses` method so it can be a dictionary of buses and crosstalks coefficients.
-  \[#784\]https://github.com/qilimanjaro-tech/qililab/pull/784
+  \[#784\]<https://github.com/qilimanjaro-tech/qililab/pull/784>
 
 - Now platform.get_parameter works for QM without the need of connecting to the machine.
 
