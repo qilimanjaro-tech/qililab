@@ -24,7 +24,6 @@ class KeySight_E5080B(VisaInstrument):
         min_power = 0
         max_power = 10
 
-
         # Sets the start frequency of the analyzer.
         self.start_freq: Parameter = self.add_parameter(
             "start_freq",

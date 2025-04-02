@@ -337,9 +337,6 @@ class E5080B(Instrument):
         if parameter == Parameter.CLEAR_AVERAGES:
             self.device.clear_averages()
 
-        # if parameter == Parameter.DEVICE_TIMEOUT:
-        #     self.device_timeout = value
-
         raise ParameterNotFound(self, parameter)
 
 
@@ -415,6 +412,28 @@ class E5080B(Instrument):
         mode = self.settings.sweep_mode.name
         self.sweep_mode(mode)
 
+    def _wait_for_averaging(self):
+        self.set_parameter(Parameter.AVERAGES_ENABLED, True)
+        self.clear_averages()
+        status_avg = int(self.device.ask("STAT:OPER:COND?"))
+
+        while True:
+            status_avg = int(self.device.ask("STAT:OPER:COND?"))
+            if status_avg & (1 << 8):
+                print("averages are done running")
+                break
+            else:
+                print("averages are still running")
+
+        # self.set_parameter(Parameter)KC
+
+        # while True:
+        #     status = int(self.device.ask("STAT:OPER:AVER1:COND?"))
+        #     if status & 2:  # Check if Bit 1 (Averaging Complete) is set
+        #         break
+            # if time.time() - start_time > timeout:
+            #     raise TimeoutError("Averaging did not complete within the timeout period.")
+            # time.sleep(0.5)  # Poll every 500 ms
     def read_tracedata(self):
         """
         Return the current trace data.
@@ -422,11 +441,11 @@ class E5080B(Instrument):
         """
         self._pre_measurement()
         self._start_measurement()
-        if self._wait_until_ready():
+        if self._wait_for_averaging():
             trace = self._get_trace()
             self.release()
             return trace
-        raise TimeoutError("Timeout waiting for trace data")
+        # raise TimeoutError("Timeout waiting for trace data")
     
     def clear_averages(self):
         """ Clears and restarts averaging of the measurement data. Does NOT apply to point averaging."""
@@ -485,5 +504,3 @@ class E5080B(Instrument):
             query(str): Query to send the device
         """
         return self.device.send_binary_query(query)
-
-
