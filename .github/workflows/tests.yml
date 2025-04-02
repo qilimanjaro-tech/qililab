@@ -36,7 +36,7 @@ jobs:
 
       - name: Run tests
         run: |
-          uv run pytest -n logical --dist loadscope --cov=qililab --cov-report=xml tests
+          uv run pytest -n logical --dist loadfile --cov=qililab --cov-report=xml tests
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
