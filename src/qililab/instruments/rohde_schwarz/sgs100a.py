@@ -140,7 +140,7 @@ class SGS100A(Instrument):
                 self.device.frequency(self.frequency)
             return
         if parameter == Parameter.RF_ON:
-            value = bool(value)
+            self.settings.rf_on = bool(value)
             if self.is_device_active():
                 if value:
                     self.turn_on()
@@ -249,7 +249,6 @@ class SGS100A(Instrument):
     @check_device_initialized
     def turn_off(self):
         """Stop generating microwaves."""
-        self.settings.rf_on = False
         self.device.off()
 
     @check_device_initialized

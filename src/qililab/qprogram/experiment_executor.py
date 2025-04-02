@@ -25,6 +25,7 @@ from types import LambdaType
 from typing import TYPE_CHECKING, Callable
 from uuid import UUID
 
+
 import numpy as np
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
@@ -614,6 +615,8 @@ class ExperimentExecutor:
 
                 # Now write the execution time to the results writer
                 self._results_writer.execution_time = execution_time
+                
+        self.measurement = self.measurement._end_experiment(self.db_manager.Session) # we could make this match with the experiment class vars
 
         return results_path, self.measurement
     
