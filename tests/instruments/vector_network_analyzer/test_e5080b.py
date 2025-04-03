@@ -24,24 +24,6 @@ def fixture_e5080b() -> E5080B:
     e5080b = E5080B(
         {
             "alias": "vna",
-            Parameter.SOURCE_POWER.value: 10,
-            # Parameter.FREQUENCY_START.value: 1e6,
-            Parameter.FREQUENCY_STOP.value: 8e9,
-            Parameter.FREQUENCY_CENTER.value: 4e9,
-            Parameter.STEP_AUTO.value: False,
-            Parameter.STEP_SIZE.value: 1e6,
-            Parameter.SPAN.value: 7.99e9,
-            Parameter.CW_FREQUENCY.value: 4e9,
-            Parameter.NUMBER_POINTS.value: 201,
-            Parameter.SOURCE_POWER.value: 10,
-            Parameter.IF_BANDWIDTH.value: 1e3,
-            Parameter.SWEEP_TYPE.value: "lin",
-            Parameter.SWEEP_MODE.value: "cont",
-            Parameter.SCATTERING_PARAMETER.value: "S21",
-            Parameter.AVERAGES_ENABLED.value: True,
-            Parameter.NUMBER_AVERAGES.value: 16,
-            Parameter.AVERAGES_MODE.value: "Point",
-            Parameter.FORMAT_DATA.value: "real,32",
         }
     )
     e5080b.device = MagicMock()
@@ -98,12 +80,28 @@ def fixture_e5080b_settings():
 
 class TestE5080B:
     """Unit tests checking the E5080B attributes and methods"""
-  
 
     @pytest.mark.parametrize(
         "parameter, value",
         [
             (Parameter.SOURCE_POWER, 0.01),
+            (Parameter.FREQUENCY_START, 1e6),
+            (Parameter.FREQUENCY_STOP, 8e9),
+            (Parameter.FREQUENCY_CENTER, 4e9),
+            (Parameter.STEP_AUTO, False),
+            (Parameter.STEP_SIZE, 1e6),
+            (Parameter.FREQUENCY_SPAN, 7.99e9),
+            (Parameter.CW_FREQUENCY, 4e9),
+            (Parameter.NUMBER_POINTS, 201),
+            (Parameter.IF_BANDWIDTH, 1e3),
+            (Parameter.SWEEP_TYPE, "lin"),
+            (Parameter.SWEEP_MODE, "cont"),
+            (Parameter.SCATTERING_PARAMETER, "S21"),
+            (Parameter.AVERAGES_ENABLED, True),
+            (Parameter.NUMBER_AVERAGES, 16),
+            (Parameter.AVERAGES_MODE, "Point"),
+            (Parameter.FORMAT_DATA, "real,32"),
+            (Parameter.RF_ON, True),
         ],
     )
     def test_set_parameter_method(
@@ -112,10 +110,79 @@ class TestE5080B:
         parameter: Parameter,
         value: float,
     ):
-        """Test setup method"""
+        """Test setup parameter"""
         e5080b.set_parameter(parameter=parameter, value=value)
         if parameter == Parameter.SOURCE_POWER:
             assert e5080b.settings.source_power == value
+        if parameter == Parameter.FREQUENCY_START:
+            assert e5080b.settings.frequency_start == value
+        if parameter == Parameter.FREQUENCY_STOP:
+            assert e5080b.settings.frequency_stop == value
+        if parameter == Parameter.FREQUENCY_CENTER:
+            assert e5080b.settings.frequency_center == value
+        if parameter == Parameter.STEP_AUTO:
+            assert e5080b.settings.step_auto == value
+        if parameter == Parameter.STEP_SIZE:
+            assert e5080b.settings.step_size == value
+        if parameter == Parameter.FREQUENCY_SPAN:
+            assert e5080b.settings.frequency_span == value
+        if parameter == Parameter.CW_FREQUENCY:
+            assert e5080b.settings.cw_frequency == value
+        if parameter == Parameter.NUMBER_POINTS:
+            assert e5080b.settings.number_points == value
+        if parameter == Parameter.IF_BANDWIDTH:
+            assert e5080b.settings.if_bandwidth == value
+        if parameter == Parameter.SWEEP_TYPE:
+            assert e5080b.settings.sweep_type == value
+        if parameter == Parameter.SWEEP_MODE:
+            assert e5080b.settings.sweep_mode == value
+        if parameter == Parameter.SCATTERING_PARAMETER:
+            assert e5080b.settings.scattering_parameter == value
+        if parameter == Parameter.AVERAGES_ENABLED:
+            assert e5080b.settings.averages_enabled == value
+        if parameter == Parameter.NUMBER_AVERAGES:
+            assert e5080b.settings.number_averages == value
+        if parameter == Parameter.AVERAGES_MODE:
+            assert e5080b.settings.averages_mode == value
+        if parameter == Parameter.FORMAT_DATA:
+            assert e5080b.settings.format_data == value
+        if parameter == Parameter.RF_ON:
+            assert e5080b.settings.rf_on == value
+
+    @pytest.mark.parametrize(
+        "parameter_get, expected_value",
+        [
+           (Parameter.SOURCE_POWER, 0.01),
+            (Parameter.FREQUENCY_START, 1e6),
+            (Parameter.FREQUENCY_STOP, 8e9),
+            (Parameter.FREQUENCY_CENTER, 4e9),
+            (Parameter.STEP_AUTO, False),
+            (Parameter.STEP_SIZE, 1e6),
+            (Parameter.FREQUENCY_SPAN, 7.99e9),
+            (Parameter.CW_FREQUENCY, 4e9),
+            (Parameter.NUMBER_POINTS, 201),
+            (Parameter.IF_BANDWIDTH, 1e3),
+            (Parameter.SWEEP_TYPE, "lin"),
+            (Parameter.SWEEP_MODE, "cont"),
+            (Parameter.SCATTERING_PARAMETER, "S21"),
+            (Parameter.AVERAGES_ENABLED, True),
+            (Parameter.NUMBER_AVERAGES, 16),
+            (Parameter.AVERAGES_MODE, "Point"),
+            (Parameter.FORMAT_DATA, "real,32"),
+            (Parameter.RF_ON, True),
+        ],
+    )
+    def test_get_parameter_method(
+        self,
+        e5080b: E5080B,
+        parameter_get: Parameter,
+        expected_value: float,
+    ):
+        """Test get_parameter method"""
+        e5080b.set_parameter(parameter=parameter_get, value=expected_value)
+        value = e5080b.get_parameter(parameter=parameter_get)
+        assert value == expected_value
+
 
     def test_error_raises_when_no_modules(self, platform: Platform, e5080b_settings):
         """Test that ensures an error raises when there is no module specifyed
@@ -149,19 +216,4 @@ class TestE5080B:
     def test_reset_method(self, e5080b: E5080B):
         """Test reset method"""
         e5080b.reset()
-    
-    @pytest.mark.parametrize(
-        "parameter, expected_value",
-        [
-            (Parameter.SOURCE_POWER, 10),
-        ],
-    )
-    def test_get_parameter_method(
-        self,
-        e5080b: E5080B,
-        parameter: Parameter,
-        expected_value: float,
-    ):
-        """Test get_parameter method"""
-        value = e5080b.get_parameter(parameter=parameter)
-        assert value == expected_value
+

@@ -13,12 +13,10 @@
 # limitations under the License.
 
 """KeySight E5080B Instrument Controller"""
-import pyvisa
 
 from dataclasses import dataclass
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Sequence
-from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instruments.keysight.e5080b_vna import E5080B

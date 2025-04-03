@@ -19,8 +19,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from qililab.constants import DEFAULT_TIMEOUT
-from qililab.instruments.decorators import log_set_parameter
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.vna_result import VNAResult
@@ -45,20 +44,20 @@ class E5080B(Instrument):
             if_bandwidth (float): Intermediate frequency bandwidth.
         """
     
-        start_freq: float | None = None
-        stop_freq: float | None = None
-        center_freq: float | None = None
+        frequency_start: float | None = None
+        frequency_stop: float | None = None
+        frequency_center: float | None = None
         step_auto: bool | None = None
         step_size: float | None = None
-        span: float | None = None
-        cw: float | None = None
-        points: int | None = None
+        frequency_span: float | None = None
+        cw_frequency: float | None = None
+        number_points: int | None = None
         source_power: float | None = None
         if_bandwidth: float | None = None
         sweep_type: VNASweepTypes | None = None
         sweep_mode: VNASweepModes | None = None
         averages_enabled: bool | None = None
-        averages_count: int | None = None
+        number_averages: int | None = None
         averages_mode: VNAAverageModes | None = None
         scattering_parameter: VNAScatteringParameters | None = None
         format_data: VNAFormatData | None = None
@@ -76,7 +75,7 @@ class E5080B(Instrument):
         Returns:
             float: settings.start_freq.
         """
-        return self.settings.start_freq
+        return self.settings.frequency_start
     
     @property
     def stop_freq(self):
@@ -85,7 +84,7 @@ class E5080B(Instrument):
         Returns:
             float: settings.stop_freq.
         """
-        return self.settings.stop_freq
+        return self.settings.frequency_stop
 
     @property
     def center_freq(self):
@@ -94,7 +93,7 @@ class E5080B(Instrument):
         Returns:
             float: settings.center_freq.
         """
-        return self.settings.center_freq
+        return self.settings.frequency_center
     
     @property
     def step_auto(self):
@@ -122,7 +121,7 @@ class E5080B(Instrument):
         Returns:
             float: settings.span.
         """
-        return self.settings.span
+        return self.settings.frequency_span
     
     @property
     def cw(self):
@@ -131,7 +130,7 @@ class E5080B(Instrument):
         Returns:
             float: settings.cw.
         """
-        return self.settings.cw
+        return self.settings.cw_frequency
 
     @property
     def points(self):
@@ -140,7 +139,7 @@ class E5080B(Instrument):
         Returns:
             int: settings.points.
         """
-        return self.settings.points
+        return self.settings.number_points
     
     @property
     def source_power(self):
@@ -197,13 +196,13 @@ class E5080B(Instrument):
         return self.settings.averages_enabled
 
     @property
-    def averages_count(self):
+    def number_averages(self):
         """Sets the number of measurements to combine for an average. Must also set SENS:AVER[:STATe] ON
 
         Returns:
-            int: settings.averages_count.
+            int: settings.number_averages.
         """
-        return self.settings.averages_count
+        return self.settings.number_averages
 
     @property
     def averages_mode(self) -> VNAAverageModes:
@@ -243,7 +242,7 @@ class E5080B(Instrument):
         return self.settings.format_border
     
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue = None) -> None:
+    def set_parameter(self, parameter: Parameter, value: ParameterValue = None):
         """Get instrument parameter.
 
         Args:
@@ -260,19 +259,19 @@ class E5080B(Instrument):
             raise ValueError(f"Parameter {parameter} requires a value.")
         
         if parameter == Parameter.FREQUENCY_START:
-            self.settings.start_freq = float(value)
+            self.settings.frequency_start = float(value)
             if self.is_device_active():
                 self.device.start_freq(self.start_freq)
             return
         
         if parameter == Parameter.FREQUENCY_STOP:
-            self.settings.stop_freq = float(value)
+            self.settings.frequency_stop = float(value)
             if self.is_device_active():
                 self.device.stop_freq(self.stop_freq)
             return
         
         if parameter == Parameter.FREQUENCY_CENTER:
-            self.settings.center_freq = float(value)
+            self.settings.frequency_center = float(value)
             if self.is_device_active():
                 self.device.center_freq(self.center_freq)
             return
@@ -289,20 +288,20 @@ class E5080B(Instrument):
                 self.device.step_size(self.step_size)
             return
         
-        if parameter == Parameter.SPAN:
-            self.settings.span = float(value)
+        if parameter == Parameter.FREQUENCY_SPAN:
+            self.settings.frequency_span = float(value)
             if self.is_device_active():
                 self.device.span(self.span)
             return
         
         if parameter == Parameter.CW_FREQUENCY:
-            self.settings.cw = float(value)
+            self.settings.cw_frequency = float(value)
             if self.is_device_active():
                 self.device.cw(self.cw)
             return
         
         if parameter == Parameter.NUMBER_POINTS:
-            self.settings.points = int(value)
+            self.settings.number_points = int(value)
             if self.is_device_active():
                 self.device.points(self.points)
             return
@@ -344,9 +343,9 @@ class E5080B(Instrument):
             return
         
         if parameter == Parameter.NUMBER_AVERAGES:
-            self.settings.averages_count = int(value)
+            self.settings.number_averages = int(value)
             if self.is_device_active():
-                self.device.averages_count(self.averages_count)
+                self.device.averages_count(self.number_averages)
             return
         
         if parameter == Parameter.AVERAGES_MODE:
@@ -370,7 +369,7 @@ class E5080B(Instrument):
         raise ParameterNotFound(self, parameter)
 
 
-    def get_parameter(self, parameter: Parameter):
+    def get_parameter(self, parameter: Parameter) -> ParameterValue:
         """Get instrument parameter.
 
         Args:
@@ -378,21 +377,21 @@ class E5080B(Instrument):
         """
         
         if parameter == Parameter.FREQUENCY_START:
-            return self.settings.start_freq
+            return self.settings.frequency_start
         if parameter == Parameter.FREQUENCY_STOP:
-            return self.settings.stop_freq
+            return self.settings.frequency_stop
         if parameter == Parameter.FREQUENCY_CENTER:
-            return self.settings.center_freq
+            return self.settings.frequency_center
         if parameter == Parameter.STEP_AUTO:
             return self.settings.step_auto
         if parameter == Parameter.STEP_SIZE:
             return self.settings.step_size
-        if parameter == Parameter.SPAN:
-            return self.settings.span
+        if parameter == Parameter.FREQUENCY_SPAN:
+            return self.settings.frequency_span
         if parameter == Parameter.CW_FREQUENCY:
-            return self.settings.cw
+            return self.settings.cw_frequency
         if parameter == Parameter.NUMBER_POINTS:
-            return self.settings.points
+            return self.settings.number_points
         if parameter == Parameter.SOURCE_POWER:
             return self.settings.source_power
         if parameter == Parameter.IF_BANDWIDTH:
@@ -406,7 +405,7 @@ class E5080B(Instrument):
         if parameter == Parameter.AVERAGES_ENABLED:
             return self.settings.averages_enabled
         if parameter == Parameter.NUMBER_AVERAGES:
-            return self.settings.averages_count
+            return self.settings.number_averages
         if parameter == Parameter.AVERAGES_MODE:
             return self.settings.averages_mode
         if parameter == Parameter.FORMAT_DATA:
@@ -436,7 +435,7 @@ class E5080B(Instrument):
         """
         if not self.averages_enabled:
             self.averages_enabled = True
-            self.averages_count = 1
+            self.number_averages = 1
 
     def _start_measurement(self):
         """
