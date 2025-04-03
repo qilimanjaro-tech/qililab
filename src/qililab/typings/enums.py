@@ -208,6 +208,7 @@ class VNATriggerModes(str, Enum):
     INT = "INT"
     BUS = "BUS"
 
+
 class VNAFormatBorder(str, Enum):
     """Vector Network Analyzers Format Border
     Args:
@@ -219,6 +220,7 @@ class VNAFormatBorder(str, Enum):
     NORM = "norm"
     SWAP = "swap"
 
+
 class VNASweepTypes(str, Enum):
     """Vector Network Analyzers Sweep Types
     Args:
@@ -229,11 +231,13 @@ class VNASweepTypes(str, Enum):
         * cw
         * segm
     """
+
     LIN = "lin"
     LOG = "log"
     POW = "pow"
     CW = "cw"
     SEGM = "segm"
+
 
 class VNASweepModes(str, Enum):
     """Vector Network Analyzers Sweep Types
@@ -250,6 +254,7 @@ class VNASweepModes(str, Enum):
     SING = "single"
     GRO = "group"
 
+
 class VNAAverageModes(str, Enum):
     """Vector Network Analyzers Average Modes
     Args:
@@ -260,6 +265,7 @@ class VNAAverageModes(str, Enum):
 
     POIN = "poin"
     SWEEP = "sweep"
+
 
 class VNAFormatData(str, Enum):
     """Vector Network Analyzers Average Modes
@@ -272,6 +278,7 @@ class VNAFormatData(str, Enum):
     REAL_32 = "real,32"
     REAL_64 = "real,64"
     ASCii_0 = "ascii,0"
+
 
 class InstrumentControllerName(str, Enum):
     """Instrument Controller names.
@@ -415,7 +422,7 @@ class Parameter(str, Enum):
     SOURCE_POWER = "source_power"
     AVERAGES_ENABLED = "averages_enabled"
     FLUX = "flux"
-    FORMAT_BORDER= "format_border"
+    FORMAT_BORDER = "format_border"
 
     @classmethod
     def to_yaml(cls, representer, node):

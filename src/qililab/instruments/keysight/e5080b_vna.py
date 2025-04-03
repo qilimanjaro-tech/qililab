@@ -24,14 +24,23 @@ from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.vna_result import VNAResult
 from qililab.typings import InstrumentName, Parameter, ParameterValue
-from qililab.typings.enums import VNAScatteringParameters, VNAAverageModes, VNASweepTypes, VNASweepModes, VNAFormatData, VNAFormatBorder
+from qililab.typings.enums import (
+    VNAScatteringParameters,
+    VNAAverageModes,
+    VNASweepTypes,
+    VNASweepModes,
+    VNAFormatData,
+    VNAFormatBorder,
+)
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
+
 
 @InstrumentFactory.register
 class E5080B(Instrument):
     """KeySight Vector Network Analyzer E5080B"""
 
     name = InstrumentName.KEYSIGHT_E5080B
+
     @dataclass
     class E5080BSettings(Instrument.InstrumentSettings):
         """Contains the settings of the VNA.
@@ -43,7 +52,7 @@ class E5080B(Instrument):
             num_points (int): Number of measurement points.
             if_bandwidth (float): Intermediate frequency bandwidth.
         """
-    
+
         frequency_start: float | None = None
         frequency_stop: float | None = None
         frequency_center: float | None = None
@@ -76,7 +85,7 @@ class E5080B(Instrument):
             float: settings.start_freq.
         """
         return self.settings.frequency_start
-    
+
     @property
     def stop_freq(self):
         """Sets the stop frequency of the analyzer.
@@ -94,17 +103,17 @@ class E5080B(Instrument):
             float: settings.center_freq.
         """
         return self.settings.frequency_center
-    
+
     @property
     def step_auto(self):
-        """ Sets and reads how the center frequency step size is set. When TRUE, center steps by 5% of span. When FALSE, center steps by STEP:SIZE value.
+        """Sets and reads how the center frequency step size is set. When TRUE, center steps by 5% of span. When FALSE, center steps by STEP:SIZE value.
             Default is 40 Mhz. When STEP:AUTO is TRUE, this value is ignored.
 
         Returns:
             bool: settings.step_auto.
         """
         return self.settings.step_auto
-    
+
     @property
     def step_size(self):
         """Sets the center frequency step size of the analyzer. This command sets the manual step size (only valid when STEP:AUTO is FALSE).
@@ -122,7 +131,7 @@ class E5080B(Instrument):
             float: settings.span.
         """
         return self.settings.frequency_span
-    
+
     @property
     def cw(self):
         """Sets the Continuous Wave (or Fixed) frequency. Must also send SENS:SWEEP:TYPE CW to put the analyzer into CW sweep mode.
@@ -140,7 +149,7 @@ class E5080B(Instrument):
             int: settings.points.
         """
         return self.settings.number_points
-    
+
     @property
     def source_power(self):
         """Sets the RF power output level.
@@ -149,7 +158,7 @@ class E5080B(Instrument):
             float: settings.source_power.
         """
         return self.settings.source_power
-    
+
     @property
     def if_bandwidth(self):
         """Sets the bandwidth of the digital IF filter to be used in the measurement.
@@ -158,7 +167,7 @@ class E5080B(Instrument):
             float: settings.if_bandwidth.
         """
         return self.settings.if_bandwidth
-    
+
     @property
     def sweep_type(self) -> VNASweepTypes:
         """Sets the type of analyzer sweep mode. First set sweep type, then set sweep parameters such as frequency or power settings. Default is LIN
@@ -167,7 +176,7 @@ class E5080B(Instrument):
             Enum: settings.sweep_type.
         """
         return self.settings.sweep_type
-    
+
     @property
     def sweep_mode(self) -> VNASweepModes:
         """Sets the number of trigger signals the specified channel will ACCEPT. Default is Continuous
@@ -185,7 +194,7 @@ class E5080B(Instrument):
             Enum: settings.sweep_type.
         """
         return self.settings.scattering_parameter
-    
+
     @property
     def averages_enabled(self):
         """Turns trace averaging ON or OFF.
@@ -240,9 +249,9 @@ class E5080B(Instrument):
             Enum: settings.format_border.
         """
         return self.settings.format_border
-    
+
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue):
         """Get instrument parameter.
 
         Args:
@@ -250,56 +259,49 @@ class E5080B(Instrument):
             channel_id (int): Channel identifier of the parameter to update.
             port (int): Port identifier of the parameter to update.
         """
-        if parameter == Parameter.CLEAR_AVERAGES:
-            if self.is_device_active():
-                self.device.clear_averages()
-            return
-        
-        if value is None:
-            raise ValueError(f"Parameter {parameter} requires a value.")
-        
+
         if parameter == Parameter.FREQUENCY_START:
             self.settings.frequency_start = float(value)
             if self.is_device_active():
                 self.device.start_freq(self.start_freq)
             return
-        
+
         if parameter == Parameter.FREQUENCY_STOP:
             self.settings.frequency_stop = float(value)
             if self.is_device_active():
                 self.device.stop_freq(self.stop_freq)
             return
-        
+
         if parameter == Parameter.FREQUENCY_CENTER:
             self.settings.frequency_center = float(value)
             if self.is_device_active():
                 self.device.center_freq(self.center_freq)
             return
-        
+
         if parameter == Parameter.STEP_AUTO:
             self.settings.step_auto = bool(value)
             if self.is_device_active():
                 self.device.step_auto(self.step_auto)
             return
-        
+
         if parameter == Parameter.STEP_SIZE:
             self.settings.step_size = float(value)
             if self.is_device_active():
                 self.device.step_size(self.step_size)
             return
-        
+
         if parameter == Parameter.FREQUENCY_SPAN:
             self.settings.frequency_span = float(value)
             if self.is_device_active():
                 self.device.span(self.span)
             return
-        
+
         if parameter == Parameter.CW_FREQUENCY:
             self.settings.cw_frequency = float(value)
             if self.is_device_active():
                 self.device.cw(self.cw)
             return
-        
+
         if parameter == Parameter.NUMBER_POINTS:
             self.settings.number_points = int(value)
             if self.is_device_active():
@@ -311,63 +313,68 @@ class E5080B(Instrument):
             if self.is_device_active():
                 self.device.source_power(self.source_power)
             return
-        
+
         if parameter == Parameter.IF_BANDWIDTH:
             self.settings.if_bandwidth = float(value)
             if self.is_device_active():
                 self.device.if_bandwidth(self.if_bandwidth)
             return
-        
+
         if parameter == Parameter.SWEEP_TYPE:
             self.settings.sweep_type = value
             if self.is_device_active():
                 self.device.sweep_type(self.sweep_type)
             return
-        
+
         if parameter == Parameter.SWEEP_MODE:
-            self.settings.sweep_mode = value 
+            self.settings.sweep_mode = value
             if self.is_device_active():
                 self.device.sweep_mode(self.sweep_mode)
             return
-        
+
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = value
             if self.is_device_active():
                 self.device.scattering_parameter(self.scattering_parameter)
             return
-        
+
         if parameter == Parameter.AVERAGES_ENABLED:
             self.settings.averages_enabled = bool(value)
             if self.is_device_active():
                 self.device.averages_enabled(self.averages_enabled)
             return
-        
+
         if parameter == Parameter.NUMBER_AVERAGES:
             self.settings.number_averages = int(value)
             if self.is_device_active():
                 self.device.averages_count(self.number_averages)
             return
-        
+
         if parameter == Parameter.AVERAGES_MODE:
             self.settings.averages_mode = value
             if self.is_device_active():
                 self.device.averages_mode(self.averages_mode)
             return
-        
+
         if parameter == Parameter.FORMAT_DATA:
             self.settings.format_data = value
             if self.is_device_active():
                 self.device.format_data(self.format_data)
             return
-        
+
         if parameter == Parameter.RF_ON:
             self.settings.rf_on = value
             if self.is_device_active():
                 self.device.rf_on(self.rf_on)
             return
+
+        if parameter == Parameter.FORMAT_BORDER:
+            self.settings.format_border = value
+            if self.is_device_active():
+                self.device.format_border(self.format_border)
+            return
         
         raise ParameterNotFound(self, parameter)
-
 
     def get_parameter(self, parameter: Parameter) -> ParameterValue:
         """Get instrument parameter.
@@ -375,7 +382,7 @@ class E5080B(Instrument):
         Args:
             parameter (Parameter): Name of the parameter to get.
         """
-        
+
         if parameter == Parameter.FREQUENCY_START:
             return self.settings.frequency_start
         if parameter == Parameter.FREQUENCY_STOP:
@@ -412,8 +419,6 @@ class E5080B(Instrument):
             return self.settings.format_data
         if parameter == Parameter.RF_ON:
             return self.settings.rf_on
-        if parameter == Parameter.RF_ON:
-            return self.settings.rf_on
         if parameter == Parameter.FORMAT_BORDER:
             return self.settings.format_border
         raise ParameterNotFound(self, parameter)
@@ -421,7 +426,7 @@ class E5080B(Instrument):
     def _get_trace(self):
         """Get the data of the current trace."""
         self.device.format_data("REAL,32")
-        self.device.format_border("SWAPPED")# SWAPPED is for IBM Compatible computers
+        self.device.format_border("SWAPPED")  # SWAPPED is for IBM Compatible computers
         data = self.device.query_binary_values("CALC:MEAS:DATA:SDAT?")
         datareal = np.array(data[::2])  # Elements from data starting from 0 iterating by 2
         dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
@@ -442,13 +447,13 @@ class E5080B(Instrument):
         This function is called at the beginning of each single measurement in the spectroscopy script.
         Also, the averages need to be reset.
         """
-        self.device.clear_averages()
+        self.clear_averages()
         mode = self.settings.sweep_mode.name
         self.sweep_mode(mode)
 
     def _wait_for_averaging(self):
         self.set_parameter(Parameter.AVERAGES_ENABLED, True)
-        self.device.clear_averages()
+        self.clear_averages()
         status_avg = int(self.device.ask("STAT:OPER:COND?"))
 
         while True:
@@ -471,10 +476,10 @@ class E5080B(Instrument):
             self.release()
             return trace
         # raise TimeoutError("Timeout waiting for trace data")
-    
+
     def get_frequencies(self):
         """return freqpoints"""
-        self.device.write("FORM:DATA:REAL,64") #recommended to avoid frequency rounding errors
+        self.device.write("FORM:DATA:REAL,64")  # recommended to avoid frequency rounding errors
         return np.array(self.device.query("CALC:MEAS:X?"))
 
     def ready(self) -> bool:
@@ -490,7 +495,7 @@ class E5080B(Instrument):
     def release(self):
         """Bring the VNA back to a mode where it can be easily used by the operator."""
         mode = VNASweepModes("cont")
-        self.set_parameter(Parameter.SWEEP_MODE,mode)
+        self.set_parameter(Parameter.SWEEP_MODE, mode)
 
     def acquire_result(self):
         """Convert the data received from the device to a Result object."""
@@ -513,6 +518,9 @@ class E5080B(Instrument):
             query(str): Query to send the device
         """
         return self.device.send_binary_query(query)
+    
+    def clear_averages(self):
+            self.device.clear_averages()
 
     @check_device_initialized
     def turn_on(self):

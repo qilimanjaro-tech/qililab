@@ -11,6 +11,7 @@ from qililab.instruments.keysight import E5080B
 from qililab.typings.enums import Parameter
 from ruamel.yaml import YAML
 
+from qililab.instruments import ParameterNotFound
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.vector_network_analyzer import E5080BController
 from qililab.platform import Platform
@@ -66,17 +67,6 @@ def fixture_e5080b_settings():
         ],
     }
 
-# @pytest.fixture(name="e5080b")
-# @patch(
-#     "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.E5080BController",
-#     autospec=True,
-# )
-# def fixture_e5080b(mock_device: MagicMock, e5080b_controller: E5080BController):
-#     """Return connected instance of VectorNetworkAnalyzer class"""
-#     mock_instance = mock_device.return_value
-#     e5080b_controller.connect()
-#     mock_device.assert_called()
-#     return e5080b_controller.modules[0]
 
 class TestE5080B:
     """Unit tests checking the E5080B attributes and methods"""
@@ -101,7 +91,7 @@ class TestE5080B:
             (Parameter.NUMBER_AVERAGES, 16),
             (Parameter.AVERAGES_MODE, "Point"),
             (Parameter.FORMAT_DATA, "real,32"),
-            (Parameter.RF_ON, True),
+            (Parameter.FORMAT_BORDER, "swap"),
         ],
     )
     def test_set_parameter_method(
@@ -148,6 +138,20 @@ class TestE5080B:
             assert e5080b.settings.format_data == value
         if parameter == Parameter.RF_ON:
             assert e5080b.settings.rf_on == value
+        if parameter == Parameter.FORMAT_BORDER:
+            assert e5080b.settings.format_border == value
+
+    def test__clear_averages(
+            self,
+            e5080b: E5080B,
+        ):
+        e5080b.clear_averages()
+
+
+    def test_set_parameter_method_raises_error(self, e5080b: E5080B):
+        """Test setup method"""
+        with pytest.raises(ParameterNotFound):
+            e5080b.set_parameter(parameter=Parameter.BUS_FREQUENCY, value=123)
 
     @pytest.mark.parametrize(
         "parameter_get, expected_value",
@@ -169,7 +173,7 @@ class TestE5080B:
             (Parameter.NUMBER_AVERAGES, 16),
             (Parameter.AVERAGES_MODE, "Point"),
             (Parameter.FORMAT_DATA, "real,32"),
-            (Parameter.RF_ON, True),
+            (Parameter.FORMAT_BORDER, "swap"),
         ],
     )
     def test_get_parameter_method(

@@ -25,6 +25,7 @@ from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.typings.enums import ConnectionName
 
+
 @InstrumentControllerFactory.register
 class E5080BController(SingleInstrumentController):
     """KeySight E5080B Instrument Controller
@@ -39,12 +40,11 @@ class E5080BController(SingleInstrumentController):
     device: KeysightE5080B
 
     modules: Sequence[E5080B]
-    
 
     @dataclass
     class E5080BControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific E5080B Controller."""
- 
+
         # timeout: float = DEFAULT_TIMEOUT
         def __post_init__(self):
             super().__post_init__()
@@ -61,7 +61,7 @@ class E5080BController(SingleInstrumentController):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
 
-        self.device =  KeysightE5080B(
+        self.device = KeysightE5080B(
             name=f"{self.name.value}_{self.alias}", address=f"TCPIP::{self.address}::INSTR", visalib="@py"
         )
 

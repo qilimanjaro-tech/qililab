@@ -1,18 +1,20 @@
-#This file is meant to be qcode
+# This file is meant to be qcode
 from typing import Any
 from qcodes import VisaInstrument
 from qcodes.parameters import (
     Parameter,
 )
-from qcodes.validators import Arrays, Bool, Enum, Ints, Numbers
+from qcodes.validators import Enum, Numbers
 from qcodes.parameters import create_on_off_val_mapping
 
-class KeySight_E5080B(VisaInstrument):
+
+class Driver_KeySight_E5080B(VisaInstrument):
     """
     This is the qcodes driver for the Keysight E5080B Vector Network Analyzer
     """
+
     def __init__(self, name: str, address: str, **kwargs: Any) -> None:
-        super().__init__(name, address, terminator='\n', **kwargs)
+        super().__init__(name, address, terminator="\n", **kwargs)
 
         # Setting frequency range
         min_freq = 100e3
@@ -23,7 +25,6 @@ class KeySight_E5080B(VisaInstrument):
         max_nop = 100003
         min_power = 0
         max_power = 10
-        stop_freq_value = self.stop_freq.get_latest()
 
         # Sets the start frequency of the analyzer.
         self.start_freq: Parameter = self.add_parameter(
@@ -78,7 +79,7 @@ class KeySight_E5080B(VisaInstrument):
             label="Step size",
             get_cmd="SENS:FREQ:CENT:STEP:SIZE?",
             set_cmd="SENS:FREQ:CENT:STEP:SIZE {}",
-            vals=Numbers(min_value=1, max_value=stop_freq_value),
+            vals=Numbers(min_value=1, max_value=self.stop_freq.get_latest()),
         )
         """Parameter step size"""
 
@@ -104,7 +105,7 @@ class KeySight_E5080B(VisaInstrument):
             unit="Hz",
         )
         """Parameter Continuous wave"""
-        
+
         # Sets the number of data points for the measurement.
         self.points: Parameter = self.add_parameter(
             "points",
@@ -123,7 +124,7 @@ class KeySight_E5080B(VisaInstrument):
             label="source_power",
             unit="dBm",
             get_cmd="SOUR:POW?",
-            set_cmd= "SENS:POW {}",
+            set_cmd="SENS:POW {}",
             get_parser=float,
             vals=Numbers(min_value=min_power, max_value=max_power),
         )
@@ -167,7 +168,7 @@ class KeySight_E5080B(VisaInstrument):
             label="scattering_parameter",
             get_cmd="CALC:MEAS:PAR?",
             set_cmd="CALC:MEAS:PAR {}",
-            vals=Enum("S11","S12","S21","S22"),
+            vals=Enum("S11", "S12", "S21", "S22"),
         )
         """Parameter scattering_parameter"""
 
@@ -211,7 +212,7 @@ class KeySight_E5080B(VisaInstrument):
             vals=Enum("REAL,32", "REAL,64", "ASCii,0"),
         )
         """Parameter averages mode"""
-            
+
         # Turns RF power from the source ON or OFF.
         self.rf_on: Parameter = self.add_parameter(
             "rf_on",
@@ -224,7 +225,7 @@ class KeySight_E5080B(VisaInstrument):
 
         # Set the byte order used for GPIB data transfer.
         # Some computers read data from the analyzer in the reverse order. This command is only implemented if FORMAT:DATA is set to :REAL.
-        self.rf_on: Parameter = self.add_parameter(
+        self.format_border: Parameter = self.add_parameter(
             "format_border",
             label="Format Border",
             get_cmd="FORM:BORD?",
@@ -232,17 +233,17 @@ class KeySight_E5080B(VisaInstrument):
             vals=Enum("NORM", "SWAP"),
         )
         """Parameter Format Border"""
-    
-        self.add_function('clear_averages', call_cmd='SENS:AVER:CLE')
+
+        self.add_function("clear_averages", call_cmd="SENS:AVER:CLE")
 
         # Clear Status
         # Clears the instrument status byte by emptying the error queue and clearing all event registers. Also cancels any preceding *OPC command or query
-        self.add_function('cls', call_cmd='*CLS')
+        self.add_function("cls", call_cmd="*CLS")
 
         # Operation complete command
         # Generates the OPC message in the standard event status register when all pending overlapped operations have been completed (for example, a sweep, or a Default)
-        self.add_function('opc', call_cmd='*OPC')
+        self.add_function("opc", call_cmd="*OPC")
 
         # System Reset
-        # Deletes all traces, measurements, and windows. 
-        self.add_function('system_reset', call_cmd='SYST:PRES')
+        # Deletes all traces, measurements, and windows.
+        self.add_function("system_reset", call_cmd="SYST:PRES")
