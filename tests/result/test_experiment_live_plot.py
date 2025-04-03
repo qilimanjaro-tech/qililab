@@ -251,11 +251,16 @@ class TestExperimentResultsWriterLivePlot:
     @patch("qililab.result.experiment_live_plot.ExperimentLivePlot.live_plot_figures", autospec=True)
     def test_set_live_plot(self, mocker_live_plot_figures: MagicMock, metadata):
         """Test setters"""
-        with ExperimentResultsWriter(path="mock_path", metadata=metadata, live_plot=True, slurm_execution=True):
+        test_file_path = "mock_path"
+        with ExperimentResultsWriter(path=test_file_path, metadata=metadata, live_plot=True, slurm_execution=True):
             pass  # Just initializing should create the file structure
 
         # test ExperimentLivePlot call
         mocker_live_plot_figures.assert_called_once()
+
+        path = Path(test_file_path)
+        if path.exists():
+            path.unlink()
 
 
 class TestSlurmDashSetup:
