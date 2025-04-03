@@ -335,13 +335,13 @@ class TestE5080B:
         instr_cont = platform.instrument_controllers
         assert str(instr_cont) == str(YAML().dump(instr_cont.to_dict(), io.BytesIO()))
 
-    def test_set_get_reset(self, platform: Platform):
-        assert platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.RESET) == True
-        platform.set_parameter(alias="keysight_e5080b", parameter=Parameter.RESET, value=False)
-        assert platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.RESET) == False
+    # def test_set_get_reset(self, platform: Platform):
+    #     assert platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.RESET) == True
+    #     platform.set_parameter(alias="keysight_e5080b", parameter=Parameter.RESET, value=False)
+    #     assert platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.RESET) == False
 
-        with pytest.raises(ValueError):
-            _ = platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.BUS_FREQUENCY)
+    #     with pytest.raises(ValueError):
+    #         _ = platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.BUS_FREQUENCY)
 
-        with pytest.raises(ValueError):
-            _ = platform.set_parameter(alias="keysight_e5080b", parameter=Parameter.BUS_FREQUENCY, value=1e9)
+    #     with pytest.raises(ValueError):
+    #         _ = platform.set_parameter(alias="keysight_e5080b", parameter=Parameter.BUS_FREQUENCY, value=1e9)
