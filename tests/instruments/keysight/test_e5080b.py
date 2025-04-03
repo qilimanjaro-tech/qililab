@@ -79,6 +79,25 @@ def fixture_e5080b_settings():
         ],
     }
 
+@pytest.fixture(name="vna_settings")
+def fixture_vna_settings():
+    """Fixture that returns an instance of a dummy vna."""
+    return {
+        RUNCARD.NAME: InstrumentControllerName.KEYSIGHT_E5080B,
+        RUNCARD.ALIAS: "keysight_e5080",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "169.254.150.105",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "vna",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+
 
 class TestE5080B:
     """Unit tests checking the E5080B attributes and methods"""
@@ -293,13 +312,6 @@ class TestE5080B:
         with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
             e5080b.read_tracedata(timeout)
 
-    # def test_read_tracedata(self, e5080b: E5080B):
-    #     e5080b.read_tracedata()
-
-    # def test_read_tracedata_averages_enabled(self, e5080b: E5080B):
-    #     e5080b.set_parameter(Parameter.AVERAGES_ENABLED,True)
-    #     e5080b.read_tracedata()
-
     def test_get_frequencies_method(self, e5080b: E5080B):
         """Test the get frequencies method"""
         e5080b.get_frequencies()
@@ -307,3 +319,29 @@ class TestE5080B:
     def test_initial_setup(self, e5080b: E5080B):
         """Test the get frequencies method"""
         e5080b.initial_setup()
+
+
+
+    #Test the controller
+
+    def test_error_raises_when_no_modules(self, platform: Platform, vna_settings):
+        vna_settings[INSTRUMENTCONTROLLER.MODULES] = []
+        name = vna_settings.pop(RUNCARD.NAME)
+        with pytest.raises(ValueError, match=f"The {name.value} Instrument Controller requires at least ONE module."):
+            E5080BController(settings=vna_settings, loaded_instruments=platform.instruments)
+
+    def test_print_instrument_controllers(self, platform: Platform):
+        """Test print instruments."""
+        instr_cont = platform.instrument_controllers
+        assert str(instr_cont) == str(YAML().dump(instr_cont.to_dict(), io.BytesIO()))
+
+    def test_set_get_reset(self, platform: Platform):
+        assert platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.RESET) == True
+        platform.set_parameter(alias="keysight_e5080b", parameter=Parameter.RESET, value=False)
+        assert platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.RESET) == False
+
+        with pytest.raises(ValueError):
+            _ = platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.BUS_FREQUENCY)
+
+        with pytest.raises(ValueError):
+            _ = platform.set_parameter(alias="keysight_e5080b", parameter=Parameter.BUS_FREQUENCY, value=1e9)

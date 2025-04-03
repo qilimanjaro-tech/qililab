@@ -923,6 +923,7 @@ class SauronVNA:
                 "slot_id": 0,
             }
         ],
+        INSTRUMENTCONTROLLER.RESET: True,
     }
 
     keysight_e5080b: dict[str, Any] = {
