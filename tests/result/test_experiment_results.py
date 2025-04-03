@@ -555,3 +555,21 @@ class TestExperimentResultsWriter:
             # write again to assert that HDF5 old partition is deleted correctly
             exp_writer.execution_time = 4.56
             assert exp_writer.execution_time == 4.56
+
+    @patch("qililab.result.experiment_live_plot.ExperimentLivePlot.live_plot")
+    @patch("qililab.result.experiment_live_plot.ExperimentLivePlot.live_plot_figures")
+    def test_setitem_calls_live_plot(self, mock_figures, mock_live_plot, metadata):
+        """Test that __setitem__ calls results_liveplot.live_plot when live_plot is True"""
+        path = "test_live_plot_writer.h5"  # ✅ temp path
+
+        with ExperimentResultsWriter(
+            path=str(path), metadata=metadata, live_plot=True, slurm_execution=False
+        ) as writer:
+            writer["QProgram_0", "Measurement_0", 0, 0, 0] = 1.0
+
+            # Assert live_plot was called
+            mock_live_plot.assert_called_once()
+
+        path_obj = Path(path)
+        if path_obj.exists():
+            path_obj.unlink()
