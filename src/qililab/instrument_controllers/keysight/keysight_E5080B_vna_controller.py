@@ -15,7 +15,6 @@
 """KeySight E5080B Instrument Controller"""
 
 from dataclasses import dataclass
-from dataclasses import dataclass
 from typing import Sequence
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings

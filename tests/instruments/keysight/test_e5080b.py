@@ -107,8 +107,6 @@ def fixture_e5080b_controller_mock(mock_device: MagicMock, e5080b_controller: E5
     mock_controller = MagicMock(spec=E5080BController)
     mock_controller.connect.return_value = None
     e5080b_controller = mock_device.return_value
-    # e5080b_controller.connect()
-    # mock_device.assert_called()
     return e5080b_controller.modules[0]
 
 
@@ -329,9 +327,9 @@ class TestE5080B:
         """Test the get frequencies method"""
         e5080b.get_frequencies()
 
-    def test_initial_setup(self, e5080b_controller_mock: E5080B):
+    def test_initial_setup(self, e5080b: E5080B):
         """Test the get frequencies method"""
-        e5080b_controller_mock.initial_setup()
+        e5080b.initial_setup()
 
 
     def test_error_raises_when_no_modules(self, platform: Platform, vna_settings):
@@ -344,3 +342,7 @@ class TestE5080B:
         """Test print instruments."""
         instr_cont = platform.instrument_controllers
         assert str(instr_cont) == str(YAML().dump(instr_cont.to_dict(), io.BytesIO()))
+
+    def test_init_controller(self, e5080b_controller: E5080BController):
+        e5080b_controller.initial_setup()
+        e5080b_controller._initialize_device()

@@ -35,6 +35,7 @@ from qililab.typings.enums import (
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 from qililab.constants import DEFAULT_TIMEOUT
 
+
 @InstrumentFactory.register
 class E5080B(Instrument):
     """KeySight Vector Network Analyzer E5080B"""
@@ -73,7 +74,6 @@ class E5080B(Instrument):
         format_data: VNAFormatData | None = None
         format_border: VNAFormatBorder | None = None
         rf_on: bool | None = None
-
 
     settings: E5080BSettings
     device: KeysightE5080B
@@ -375,7 +375,7 @@ class E5080B(Instrument):
             if self.is_device_active():
                 self.device.format_border(self.format_border)
             return
-        
+
         raise ParameterNotFound(self, parameter)
 
     def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
@@ -453,7 +453,7 @@ class E5080B(Instrument):
         mode = self.settings.sweep_mode
         self.device.sweep_mode(mode)
 
-    def _wait_for_averaging(self, timeout:int=DEFAULT_TIMEOUT):
+    def _wait_for_averaging(self, timeout: int = DEFAULT_TIMEOUT):
         self.set_parameter(Parameter.AVERAGES_ENABLED, True)
         self.clear_averages()
         status_avg = int(self.device.ask("STAT:OPER:COND?"))
@@ -469,7 +469,7 @@ class E5080B(Instrument):
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
 
-    def read_tracedata(self, timeout:int=DEFAULT_TIMEOUT):
+    def read_tracedata(self, timeout: int = DEFAULT_TIMEOUT):
         """
         Return the current trace data.
         It already releases the VNA after finishing the required number of averages.
@@ -491,7 +491,7 @@ class E5080B(Instrument):
         mode = VNASweepModes("cont")
         self.device.sweep_mode(mode)
 
-    def acquire_result(self,timeout:int=DEFAULT_TIMEOUT):
+    def acquire_result(self, timeout: int = DEFAULT_TIMEOUT):
         """Convert the data received from the device to a Result object."""
         return VNAResult(data=self.read_tracedata(timeout))
 
@@ -503,9 +503,9 @@ class E5080B(Instrument):
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
         return dict(super().to_dict().items())
-    
+
     def clear_averages(self):
-            self.device.clear_averages()
+        self.device.clear_averages()
 
     @check_device_initialized
     def turn_on(self):
