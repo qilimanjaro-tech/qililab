@@ -97,6 +97,17 @@ def fixture_vna_settings():
         ],
     }
 
+@pytest.fixture(name="e5080b_controller_mock")
+@patch(
+    "qililab.instrument_controllers.keysight.keysight_E5080B_vna_controller",
+    autospec=True,
+)
+def fixture_e5080b_controller(mock_device: MagicMock, e5080b_controller: E5080BController):
+    """Return connected instance of VectorNetworkAnalyzer class"""
+    mock_instance = mock_device.return_value
+    e5080b_controller.connect()
+    mock_device.assert_called()
+    return e5080b_controller.modules[0]
 
 
 class TestE5080B:
@@ -316,13 +327,9 @@ class TestE5080B:
         """Test the get frequencies method"""
         e5080b.get_frequencies()
 
-    def test_initial_setup(self, e5080b: E5080B):
+    def test_initial_setup(self, e5080b_controller_mock: E5080B):
         """Test the get frequencies method"""
-        e5080b.initial_setup()
-
-
-
-    #Test the controller
+        e5080b_controller_mock.initial_setup()
 
     def test_error_raises_when_no_modules(self, platform: Platform, vna_settings):
         vna_settings[INSTRUMENTCONTROLLER.MODULES] = []
@@ -334,14 +341,4 @@ class TestE5080B:
         """Test print instruments."""
         instr_cont = platform.instrument_controllers
         assert str(instr_cont) == str(YAML().dump(instr_cont.to_dict(), io.BytesIO()))
-
-    # def test_set_get_reset(self, platform: Platform):
-    #     assert platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.RESET) == True
-    #     platform.set_parameter(alias="keysight_e5080b", parameter=Parameter.RESET, value=False)
-    #     assert platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.RESET) == False
-
-    #     with pytest.raises(ValueError):
-    #         _ = platform.get_parameter(alias="keysight_e5080b", parameter=Parameter.BUS_FREQUENCY)
-
-    #     with pytest.raises(ValueError):
-    #         _ = platform.set_parameter(alias="keysight_e5080b", parameter=Parameter.BUS_FREQUENCY, value=1e9)
+ 
