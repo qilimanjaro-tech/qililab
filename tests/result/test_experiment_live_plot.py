@@ -210,3 +210,49 @@ class TestExperimentResultsWriterLivePlot:
 
         # test ExperimentLivePlot call
         mocker_live_plot_figures.assert_called_once()
+
+
+class TestSlurmDashSetup:
+    """Test the Slurm Dash Setuo"""
+
+    @patch("qililab.result.experiment_live_plot.Dash")
+    @patch("qililab.result.experiment_live_plot.html.Div")
+    @patch("qililab.result.experiment_live_plot.dcc.Graph")
+    @patch("qililab.result.experiment_live_plot.dcc.Interval")
+    def test_slurm_dash_setup(
+        self,
+        mock_interval,
+        mock_graph,
+        mock_div,
+        mock_dash,
+    ):
+
+        path = "mock_plot.h5"
+        fig_mock = MagicMock()
+
+        # Mock go.Figure and update it inside the function
+        with patch("qililab.result.experiment_live_plot.go.Figure", return_value=fig_mock):
+            live_plot = ExperimentLivePlot(path=path, slurm_execution=True, port_number=None)
+
+            dims_dict = {("QProgram_0", "Measurement_0"): MagicMock()}
+
+            # Set return values for 1D mock dims
+            dims_mock = dims_dict[("QProgram_0", "Measurement_0")]
+            dims_mock.__len__.return_value = 2
+            dims_mock[0].label = "x"
+            dims_mock[0].values.return_value = [np.linspace(0, 1, 10)]
+
+            live_plot.live_plot_figures(dims_dict)
+
+            mock_div.assert_called_once()
+            args, _ = mock_div.call_args
+
+            assert isinstance(args[0], list)
+            assert mock_graph.return_value in args[0]
+            assert mock_interval.return_value in args[0]
+
+            fig_mock.set_subplots.assert_called()
+            fig_mock.update_layout.assert_called()
+            fig_mock.update_xaxes.assert_called()
+            fig_mock.add_scatter.assert_called()
+            mock_dash.return_value.run.assert_called_once_with(debug=False, host="0.0.0.0", port=8050)
