@@ -51,9 +51,7 @@ class E5080BController(SingleInstrumentController):
         def __post_init__(self):
             super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
-            # resource_manager = pyvisa.ResourceManager("@py")
-            # self.driver = resource_manager.open_resource(f"TCPIP::{self.address}::INSTR")
-            # self.driver.timeout = self.timeout
+
     settings: E5080BControllerSettings
 
     @SingleInstrumentController.CheckConnected
@@ -69,7 +67,6 @@ class E5080BController(SingleInstrumentController):
             name=f"{self.name.value}_{self.alias}", address=f"TCPIP::{self.address}::INSTR", visalib="@py"
         )
 
-
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
         for module in self.modules:
@@ -78,18 +75,3 @@ class E5080BController(SingleInstrumentController):
                     f"Instrument {type(module)} not supported."
                     + f"The only supported instrument is {InstrumentName.KEYSIGHT_E5080B}"
                 )
-
-    # @property
-    # def timeout(self):
-    #     """VectorNetworkAnalyzer 'timeout' property.
-
-    #     Returns:
-    #         float: settings.timeout.
-    #     """
-    #     return self.settings.timeout
-
-    # @timeout.setter
-    # def timeout(self, value: float):
-    #     """sets the timeout"""
-    #     self.settings.timeout = value
-    #     self.device.set_timeout(value=self.settings.timeout)

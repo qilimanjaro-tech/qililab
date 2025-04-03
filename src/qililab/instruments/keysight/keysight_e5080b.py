@@ -179,7 +179,7 @@ class KeySight_E5080B(VisaInstrument):
             label="Averages Enabled",
             get_cmd="SENS:AVER?",
             set_cmd="SENS:AVER {}",
-            val_mapping={True: "1", False: "0"},
+            val_mapping=create_on_off_val_mapping(on_val="1", off_val="0"),
         )
         """Parameter averages_enabled"""
 
@@ -214,31 +214,37 @@ class KeySight_E5080B(VisaInstrument):
         )
         """Parameter averages mode"""
             
-        # Sets the data format for transferring measurement data and frequency data. Default is ASCii,0.
+        # Turns RF power from the source ON or OFF.
         self.rf_on: Parameter = self.add_parameter(
             "rf_on",
             label="RF ON",
-            # get_cmd="FORM:DATA?",
-            set_cmd="OUTP",
-            # vals=Enum("REAL,32", "REAL,64", "ASCii,0"),
+            get_cmd="OUTP?",
+            set_cmd="OUTP {}",
+            val_mapping=create_on_off_val_mapping(on_val="1", off_val="0"),
         )
-        """Parameter averages mode"""
+        """Parameter RF Power Source"""
 
-    def clear_averages(self) -> None:
-        """
-        Clears and restarts averaging of the measurement data. Does NOT apply to point averaging.
-        """
-        self.write("SENS:AVER:CLE")
+        # Set the byte order used for GPIB data transfer.
+        # Some computers read data from the analyzer in the reverse order. This command is only implemented if FORMAT:DATA is set to :REAL.
+        self.rf_on: Parameter = self.add_parameter(
+            "format_border",
+            label="Format Border",
+            get_cmd="FORM:BORD?",
+            set_cmd="FORM:BORD {}",
+            vals=Enum("NORM", "SWAP"),
+        )
+        """Parameter Format Border"""
     
-    def turn_on(self):
-        """Start an instrument."""
-        return self.write("OUTP ON")
+        self.add_function('clear_averages', call_cmd='SENS:AVER:CLE')
 
+        # Clear Status
+        # Clears the instrument status byte by emptying the error queue and clearing all event registers. Also cancels any preceding *OPC command or query
+        self.add_function('cls', call_cmd='*CLS')
 
-    def turn_off(self):
-        """Start an instrument."""
-        return self.write("OUTP OFF")
-    
-    # def set_timeout(self, value: float):
-    #     """Set timeout in mili seconds."""
-    #     self.timeout = value
+        # Operation complete command
+        # Generates the OPC message in the standard event status register when all pending overlapped operations have been completed (for example, a sweep, or a Default)
+        self.add_function('opc', call_cmd='*OPC')
+
+        # System Reset
+        # Deletes all traces, measurements, and windows. 
+        self.add_function('system_reset', call_cmd='SYST:PRES')

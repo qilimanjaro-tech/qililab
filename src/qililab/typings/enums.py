@@ -13,10 +13,6 @@
 # limitations under the License.
 
 
-#TODO: FIX VNAFormatData
-#revuew all of the bootom of the code (ie the preexisitjng one)
-#check out the NB i found on keysight to determine how to deal with the wait
-
 """Enum classes"""
 
 from enum import Enum
@@ -212,6 +208,16 @@ class VNATriggerModes(str, Enum):
     INT = "INT"
     BUS = "BUS"
 
+class VNAFormatBorder(str, Enum):
+    """Vector Network Analyzers Format Border
+    Args:
+        enum (str): Available types of trigger modes:
+        * NORMal
+        * SWAPped
+    """
+
+    NORM = "norm"
+    SWAP = "swap"
 
 class VNASweepTypes(str, Enum):
     """Vector Network Analyzers Sweep Types
@@ -252,7 +258,7 @@ class VNAAverageModes(str, Enum):
         * sweep
     """
 
-    POIN = "point"
+    POIN = "poin"
     SWEEP = "sweep"
 
 class VNAFormatData(str, Enum):
@@ -409,7 +415,7 @@ class Parameter(str, Enum):
     SOURCE_POWER = "source_power"
     AVERAGES_ENABLED = "averages_enabled"
     FLUX = "flux"
-
+    FORMAT_BORDER= "format_border"
 
     @classmethod
     def to_yaml(cls, representer, node):

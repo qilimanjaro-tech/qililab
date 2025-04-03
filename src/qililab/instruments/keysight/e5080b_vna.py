@@ -25,7 +25,7 @@ from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.vna_result import VNAResult
 from qililab.typings import InstrumentName, Parameter, ParameterValue
-from qililab.typings.enums import VNAScatteringParameters, VNAAverageModes, VNASweepTypes, VNASweepModes, VNAFormatData
+from qililab.typings.enums import VNAScatteringParameters, VNAAverageModes, VNASweepTypes, VNASweepModes, VNAFormatData, VNAFormatBorder
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 
 @InstrumentFactory.register
@@ -62,8 +62,8 @@ class E5080B(Instrument):
         averages_mode: VNAAverageModes | None = None
         scattering_parameter: VNAScatteringParameters | None = None
         format_data: VNAFormatData | None = None
-        # rf_on: bool = True
-        # timeout: float = DEFAULT_TIMEOUT
+        format_border: VNAFormatBorder | None = None
+        rf_on: bool | None = None
 
     settings: E5080BSettings
     device: KeysightE5080B
@@ -222,9 +222,28 @@ class E5080B(Instrument):
             Enum: settings.format_data.
         """
         return self.settings.format_data
+
+    @property
+    def rf_on(self):
+        """Turns RF power from the source ON or OFF. Default is ON.
+
+        Returns:
+            bool: settings.rf_on
+        """
+        return self.settings.rf_on
+
+    @property
+    def format_border(self) -> VNAFormatBorder:
+        """Set the byte order used for GPIB data transfer. Some computers read data from the analyzer in the reverse order.
+            This command is only implemented if FORMAT:DATA is set to :REAL.
+
+        Returns:
+            Enum: settings.format_border.
+        """
+        return self.settings.format_border
     
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue) -> None:
+    def set_parameter(self, parameter: Parameter, value: ParameterValue = None) -> None:
         """Get instrument parameter.
 
         Args:
@@ -232,6 +251,13 @@ class E5080B(Instrument):
             channel_id (int): Channel identifier of the parameter to update.
             port (int): Port identifier of the parameter to update.
         """
+        if parameter == Parameter.CLEAR_AVERAGES:
+            if self.is_device_active():
+                self.device.clear_averages()
+            return
+        
+        if value is None:
+            raise ValueError(f"Parameter {parameter} requires a value.")
         
         if parameter == Parameter.FREQUENCY_START:
             self.settings.start_freq = float(value)
@@ -239,12 +265,6 @@ class E5080B(Instrument):
                 self.device.start_freq(self.start_freq)
             return
         
-        if parameter == Parameter.RF_ON:
-            # self.settings.start_freq = float(value)
-            if self.is_device_active():
-                self.device.turn_on()
-            return
-
         if parameter == Parameter.FREQUENCY_STOP:
             self.settings.stop_freq = float(value)
             if self.is_device_active():
@@ -300,13 +320,13 @@ class E5080B(Instrument):
             return
         
         if parameter == Parameter.SWEEP_TYPE:
-            self.settings.sweep_type = value  # Assuming Enum type
+            self.settings.sweep_type = value
             if self.is_device_active():
                 self.device.sweep_type(self.sweep_type)
             return
         
         if parameter == Parameter.SWEEP_MODE:
-            self.settings.sweep_mode = value  # Assuming Enum type
+            self.settings.sweep_mode = value 
             if self.is_device_active():
                 self.device.sweep_mode(self.sweep_mode)
             return
@@ -341,9 +361,12 @@ class E5080B(Instrument):
                 self.device.format_data(self.format_data)
             return
         
-        if parameter == Parameter.CLEAR_AVERAGES:
-            self.device.clear_averages()
-
+        if parameter == Parameter.RF_ON:
+            self.settings.rf_on = value
+            if self.is_device_active():
+                self.device.rf_on(self.rf_on)
+            return
+        
         raise ParameterNotFound(self, parameter)
 
 
@@ -388,13 +411,18 @@ class E5080B(Instrument):
             return self.settings.averages_mode
         if parameter == Parameter.FORMAT_DATA:
             return self.settings.format_data
+        if parameter == Parameter.RF_ON:
+            return self.settings.rf_on
+        if parameter == Parameter.RF_ON:
+            return self.settings.rf_on
+        if parameter == Parameter.FORMAT_BORDER:
+            return self.settings.format_border
         raise ParameterNotFound(self, parameter)
-
 
     def _get_trace(self):
         """Get the data of the current trace."""
-        self.device.write("FORM:DATA:REAL,32")
-        self.device.write("FORM:BORD:SWAPPED")  # SWAPPED is for IBM Compatible computers
+        self.device.format_data("REAL,32")
+        self.device.format_border("SWAPPED")# SWAPPED is for IBM Compatible computers
         data = self.device.query_binary_values("CALC:MEAS:DATA:SDAT?")
         datareal = np.array(data[::2])  # Elements from data starting from 0 iterating by 2
         dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
@@ -415,13 +443,13 @@ class E5080B(Instrument):
         This function is called at the beginning of each single measurement in the spectroscopy script.
         Also, the averages need to be reset.
         """
-        self.clear_averages()
+        self.device.clear_averages()
         mode = self.settings.sweep_mode.name
         self.sweep_mode(mode)
 
     def _wait_for_averaging(self):
         self.set_parameter(Parameter.AVERAGES_ENABLED, True)
-        self.clear_averages()
+        self.device.clear_averages()
         status_avg = int(self.device.ask("STAT:OPER:COND?"))
 
         while True:
@@ -432,15 +460,6 @@ class E5080B(Instrument):
             else:
                 print("averages are still running")
 
-        # self.set_parameter(Parameter)KC
-
-        # while True:
-        #     status = int(self.device.ask("STAT:OPER:AVER1:COND?"))
-        #     if status & 2:  # Check if Bit 1 (Averaging Complete) is set
-        #         break
-            # if time.time() - start_time > timeout:
-            #     raise TimeoutError("Averaging did not complete within the timeout period.")
-            # time.sleep(0.5)  # Poll every 500 ms
     def read_tracedata(self):
         """
         Return the current trace data.
@@ -454,10 +473,6 @@ class E5080B(Instrument):
             return trace
         # raise TimeoutError("Timeout waiting for trace data")
     
-    def clear_averages(self):
-        """ Clears and restarts averaging of the measurement data. Does NOT apply to point averaging."""
-        self.device.clear_averages()
-
     def get_frequencies(self):
         """return freqpoints"""
         self.device.write("FORM:DATA:REAL,64") #recommended to avoid frequency rounding errors
@@ -483,25 +498,13 @@ class E5080B(Instrument):
         return VNAResult(data=self.read_tracedata())
 
     def initial_setup(self):
-        self.device.write("FORM:DATA REAL,32")
-        self.device.write("*CLS")
+        self.device.format_data("REAL,32")
+        self.device.cls()
         self.reset()
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
         return dict(super().to_dict().items())
-
-    def reset(self):
-        """Reset instrument settings."""
-        self.device.write("SYST:PRES; *OPC?")
-
-    def turn_on(self):
-        """Stop an instrument."""
-        return self.device.turn_on()
-
-    def turn_off(self):
-        """Stop an instrument."""
-        return self.device.turn_off()
 
     def send_binary_query(self, query: str):
         """
@@ -511,3 +514,17 @@ class E5080B(Instrument):
             query(str): Query to send the device
         """
         return self.device.send_binary_query(query)
+
+    @check_device_initialized
+    def turn_on(self):
+        """Turn on an instrument."""
+
+    @check_device_initialized
+    def turn_off(self):
+        """Turn off an instrument."""
+
+    @check_device_initialized
+    def reset(self):
+        """Reset instrument settings."""
+        self.device.system_reset()
+        self.device.opc()
