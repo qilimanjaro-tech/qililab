@@ -265,24 +265,34 @@ class TestSlurmDashSetup:
     @patch("qililab.result.experiment_live_plot.html.Div")
     @patch("qililab.result.experiment_live_plot.dcc.Graph")
     @patch("qililab.result.experiment_live_plot.dcc.Interval")
+    @patch("qililab.result.experiment_live_plot.callback")
     def test_slurm_dash_setup(
         self,
+        mock_callback,
         mock_interval,
         mock_graph,
         mock_div,
         mock_dash,
     ):
-
+        """Test slurm dash setup"""
         path = "mock_plot.h5"
         fig_mock = MagicMock()
 
-        # Mock go.Figure and update it inside the function
+        captured_callback = {}
+
+        def capture_callback(*args, **kwargs):
+            def wrapper(fn):
+                captured_callback["fn"] = fn
+                return fn
+
+            return wrapper
+
+        mock_callback.side_effect = capture_callback
+
         with patch("qililab.result.experiment_live_plot.go.Figure", return_value=fig_mock):
             live_plot = ExperimentLivePlot(path=path, slurm_execution=True, port_number=None)
 
             dims_dict = {("QProgram_0", "Measurement_0"): MagicMock()}
-
-            # Set return values for 1D mock dims
             dims_mock = dims_dict[("QProgram_0", "Measurement_0")]
             dims_mock.__len__.return_value = 2
             dims_mock[0].label = "x"
@@ -290,9 +300,11 @@ class TestSlurmDashSetup:
 
             live_plot.live_plot_figures(dims_dict)
 
+            result = captured_callback["fn"](n_intervals=1)
+            assert result == fig_mock
+
             mock_div.assert_called_once()
             args, _ = mock_div.call_args
-
             assert isinstance(args[0], list)
             assert mock_graph.return_value in args[0]
             assert mock_interval.return_value in args[0]
