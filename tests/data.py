@@ -915,7 +915,7 @@ class SauronVNA:
         "alias": InstrumentControllerName.KEYSIGHT_E5080B.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.1.254",
+            CONNECTION.ADDRESS: "169.254.150.105",
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
