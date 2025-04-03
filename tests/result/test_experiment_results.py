@@ -69,7 +69,9 @@ def sample_metadata():
 @pytest.fixture(name="experiment_results")
 def mock_experiment_results(metadata):
     """Create a mock HDF5 file structure for testing"""
-    with ExperimentResultsWriter(path=EXPERIMENT_RESULTS_PATH, metadata=metadata):
+    with ExperimentResultsWriter(
+        path=EXPERIMENT_RESULTS_PATH, metadata=metadata, live_plot=False, slurm_execution=False
+    ):
         ...
     yield EXPERIMENT_RESULTS_PATH
     Path(EXPERIMENT_RESULTS_PATH).unlink()
@@ -503,15 +505,17 @@ class TestExperimentResultsWriter:
     def test_create_results_file(self, mock_h5file, metadata):
         """Test file creation"""
         # Test that the results file is created with the correct structure
-        with ExperimentResultsWriter(path="mock_path", metadata=metadata):
+        with ExperimentResultsWriter(path="mock_path", metadata=metadata, live_plot=False, slurm_execution=False):
             pass  # Just initializing should create the file structure
 
         assert mock_h5file.called
-        mock_h5file.assert_called_with("mock_path", mode="w")
+        mock_h5file.assert_called_with("mock_path", mode="w", libver="latest")
 
     def test_setters(self, experiment_results):
         """Test setters"""
-        with ExperimentResultsWriter(path=experiment_results, metadata={}) as exp_writer:
+        with ExperimentResultsWriter(
+            path=experiment_results, metadata={}, live_plot=False, slurm_execution=False
+        ) as exp_writer:
             # test experiment property
             exp_writer.experiment = "new_experiment"
             assert exp_writer.experiment == "new_experiment"
@@ -551,3 +555,21 @@ class TestExperimentResultsWriter:
             # write again to assert that HDF5 old partition is deleted correctly
             exp_writer.execution_time = 4.56
             assert exp_writer.execution_time == 4.56
+
+    @patch("qililab.result.experiment_live_plot.ExperimentLivePlot.live_plot")
+    @patch("qililab.result.experiment_live_plot.ExperimentLivePlot.live_plot_figures")
+    def test_setitem_calls_live_plot(self, mock_figures, mock_live_plot, metadata):
+        """Test that __setitem__ calls results_liveplot.live_plot when live_plot is True"""
+        path = "test_live_plot_writer.h5"  # ✅ temp path
+
+        with ExperimentResultsWriter(
+            path=str(path), metadata=metadata, live_plot=True, slurm_execution=False
+        ) as writer:
+            writer["QProgram_0", "Measurement_0", 0, 0, 0] = 1.0
+
+            # Assert live_plot was called
+            mock_live_plot.assert_called_once()
+
+        path_obj = Path(path)
+        if path_obj.exists():
+            path_obj.unlink()
