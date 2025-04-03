@@ -33,13 +33,14 @@ from qililab.typings.enums import (
     VNAFormatBorder,
 )
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
-
+from qililab.constants import DEFAULT_TIMEOUT
 
 @InstrumentFactory.register
 class E5080B(Instrument):
     """KeySight Vector Network Analyzer E5080B"""
 
     name = InstrumentName.KEYSIGHT_E5080B
+    timeout: int = DEFAULT_TIMEOUT
 
     @dataclass
     class E5080BSettings(Instrument.InstrumentSettings):
@@ -72,6 +73,7 @@ class E5080B(Instrument):
         format_data: VNAFormatData | None = None
         format_border: VNAFormatBorder | None = None
         rf_on: bool | None = None
+
 
     settings: E5080BSettings
     device: KeysightE5080B
@@ -439,8 +441,8 @@ class E5080B(Instrument):
         Averaging has to be enabled.
         """
         if not self.averages_enabled:
-            self.averages_enabled = True
-            self.number_averages = 1
+            self.device.averages_enabled(True)
+            self.device.number_averages(1)
 
     def _start_measurement(self):
         """
@@ -448,13 +450,14 @@ class E5080B(Instrument):
         Also, the averages need to be reset.
         """
         self.clear_averages()
-        mode = self.settings.sweep_mode.name
-        self.sweep_mode(mode)
+        mode = self.settings.sweep_mode
+        self.device.sweep_mode(mode)
 
-    def _wait_for_averaging(self):
+    def _wait_for_averaging(self, timeout:int=DEFAULT_TIMEOUT):
         self.set_parameter(Parameter.AVERAGES_ENABLED, True)
         self.clear_averages()
         status_avg = int(self.device.ask("STAT:OPER:COND?"))
+        start_time = time.time()
 
         while True:
             status_avg = int(self.device.ask("STAT:OPER:COND?"))
@@ -463,43 +466,34 @@ class E5080B(Instrument):
                 break
             else:
                 print("averages are still running")
+            if time.time() - start_time > timeout:
+                raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
 
-    def read_tracedata(self):
+    def read_tracedata(self, timeout:int=DEFAULT_TIMEOUT):
         """
         Return the current trace data.
         It already releases the VNA after finishing the required number of averages.
         """
         self._pre_measurement()
         self._start_measurement()
-        if self._wait_for_averaging():
+        if self._wait_for_averaging(timeout):
             trace = self._get_trace()
             self.release()
             return trace
-        # raise TimeoutError("Timeout waiting for trace data")
 
     def get_frequencies(self):
         """return freqpoints"""
         self.device.write("FORM:DATA:REAL,64")  # recommended to avoid frequency rounding errors
         return np.array(self.device.query("CALC:MEAS:X?"))
 
-    def ready(self) -> bool:
-        """
-        This is a proxy function.
-        Returns True if the VNA is on HOLD after finishing the required number of averages.
-        """
-        try:  # the VNA sometimes throws an error here, we just ignore it
-            return self.get_parameter(Parameter.SWEEP_MODE) == "HOLD"
-        except Exception:  # noqa: BLE001
-            return False
-
     def release(self):
         """Bring the VNA back to a mode where it can be easily used by the operator."""
         mode = VNASweepModes("cont")
-        self.set_parameter(Parameter.SWEEP_MODE, mode)
+        self.device.sweep_mode(mode)
 
-    def acquire_result(self):
+    def acquire_result(self,timeout:int=DEFAULT_TIMEOUT):
         """Convert the data received from the device to a Result object."""
-        return VNAResult(data=self.read_tracedata())
+        return VNAResult(data=self.read_tracedata(timeout))
 
     def initial_setup(self):
         self.device.format_data("REAL,32")
@@ -509,15 +503,6 @@ class E5080B(Instrument):
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
         return dict(super().to_dict().items())
-
-    def send_binary_query(self, query: str):
-        """
-        Send a binary query directly to the device.
-
-        Input:
-            query(str): Query to send the device
-        """
-        return self.device.send_binary_query(query)
     
     def clear_averages(self):
             self.device.clear_averages()

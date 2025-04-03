@@ -13,7 +13,7 @@ from ruamel.yaml import YAML
 
 from qililab.instruments import ParameterNotFound
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
-from qililab.instrument_controllers.vector_network_analyzer import E5080BController
+from qililab.instrument_controllers.keysight import E5080BController
 from qililab.platform import Platform
 from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter
 from tests.data import SauronVNA
@@ -21,13 +21,25 @@ from tests.test_utils import build_platform
 
 @pytest.fixture(name="e5080b")
 def fixture_e5080b() -> E5080B:
-    """Fixture that returns an instance of a dummy QDAC-II."""
+    """Fixture that returns an instance of a dummy keysight E5080B."""
     e5080b = E5080B(
         {
             "alias": "vna",
         }
     )
     e5080b.device = MagicMock()
+    return e5080b
+
+@pytest.fixture(name="e5080b_mocked_binary_return")
+def fixture_e5080b_mocked_binary_return() -> E5080B:
+    """Fixture that returns an instance of a dummy keysight E5080B."""
+    e5080b = E5080B(
+        {
+            "alias": "vna",
+        }
+    )
+    e5080b.device = MagicMock()
+    e5080b.device.ask.return_value = "256"
     return e5080b
 
 @pytest.fixture(name="platform")
@@ -92,6 +104,7 @@ class TestE5080B:
             (Parameter.AVERAGES_MODE, "Point"),
             (Parameter.FORMAT_DATA, "real,32"),
             (Parameter.FORMAT_BORDER, "swap"),
+            (Parameter.RF_ON, False),
         ],
     )
     def test_set_parameter_method(
@@ -156,6 +169,22 @@ class TestE5080B:
     @pytest.mark.parametrize(
         "parameter_get, expected_value",
         [
+            (Parameter.SOURCE_POWER, 0.01),
+            (Parameter.FREQUENCY_START, 1e6),
+            (Parameter.FREQUENCY_STOP, 8e9),
+        ],
+    )
+
+    def test_get_parameter_method_raises_error(self, e5080b: E5080B, parameter_get: Parameter, expected_value: float):
+        """Test setup method"""
+        with pytest.raises(ParameterNotFound):
+            e5080b.set_parameter(parameter=parameter_get, value=expected_value)
+            e5080b.get_parameter(parameter=Parameter.BUS_FREQUENCY)
+
+
+    @pytest.mark.parametrize(
+        "parameter_get, expected_value",
+        [
            (Parameter.SOURCE_POWER, 0.01),
             (Parameter.FREQUENCY_START, 1e6),
             (Parameter.FREQUENCY_STOP, 8e9),
@@ -174,6 +203,7 @@ class TestE5080B:
             (Parameter.AVERAGES_MODE, "Point"),
             (Parameter.FORMAT_DATA, "real,32"),
             (Parameter.FORMAT_BORDER, "swap"),
+            (Parameter.RF_ON, False),
         ],
     )
     def test_get_parameter_method(
@@ -221,3 +251,59 @@ class TestE5080B:
         """Test reset method"""
         e5080b.reset()
 
+    def test_get_trace(self, e5080b: E5080B):
+        e5080b._get_trace()
+
+    def test_pre_measurement(self, e5080b: E5080B):
+        e5080b._pre_measurement()
+
+    def test_start_measurement(self, e5080b: E5080B):
+        e5080b._start_measurement()
+
+    def test_release(self, e5080b: E5080B):
+        e5080b.release()
+
+    def test_acquire_result(self, e5080b: E5080B):
+        timeout = 0.001
+        with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
+            e5080b.acquire_result(timeout)
+    
+    def test_wait_for_averaging(self, e5080b: E5080B):
+        timeout = 0.001
+        with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
+            e5080b._wait_for_averaging(timeout)
+
+    def test_wait_for_averaging_no_timeout(self, e5080b_mocked_binary_return: E5080B):
+        timeout = 0.001
+        e5080b_mocked_binary_return._wait_for_averaging(timeout)
+
+    def test_read_tracedata(self, e5080b: E5080B):
+        timeout = 0.001
+        with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
+            e5080b.read_tracedata(timeout)
+    
+    def test_read_tracedata_averages_enabled(self, e5080b: E5080B):
+        e5080b.set_parameter(Parameter.AVERAGES_ENABLED,True)
+        timeout = 0.001
+        with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
+            e5080b.read_tracedata(timeout)
+
+    def test_read_tracedata(self, e5080b: E5080B):
+        timeout = 0.001
+        with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
+            e5080b.read_tracedata(timeout)
+
+    # def test_read_tracedata(self, e5080b: E5080B):
+    #     e5080b.read_tracedata()
+
+    # def test_read_tracedata_averages_enabled(self, e5080b: E5080B):
+    #     e5080b.set_parameter(Parameter.AVERAGES_ENABLED,True)
+    #     e5080b.read_tracedata()
+
+    def test_get_frequencies_method(self, e5080b: E5080B):
+        """Test the get frequencies method"""
+        e5080b.get_frequencies()
+
+    def test_initial_setup(self, e5080b: E5080B):
+        """Test the get frequencies method"""
+        e5080b.initial_setup()
