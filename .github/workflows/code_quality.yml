@@ -32,7 +32,7 @@ jobs:
         run: uv python install 3.10
 
       - name: Install the project
-        run: uv sync --all-extras --all-groups --dev
+        run: uv sync --all-extras
 
       - name: Ruff
         run: uv run ruff check --output-format=github .
