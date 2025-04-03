@@ -199,32 +199,49 @@ class TestExperimentLivePlot:
             experiment_live_plot.live_plot_figures(dims_dict)
 
     def test_live_plot_decibels_1d(self):
-        """Test live_plot"""
-        path = "test.h5"
+        """Test live_plot for 1d"""
+        path = "test_1_d.h5"
         live_plot = ExperimentLivePlot(str(path), slurm_execution=False)
 
-        # Create a dummy figure with a scatter trace
         fig_mock = MagicMock()
         scatter = MagicMock()
         fig_mock.data = [scatter]
         live_plot._live_plot_fig = fig_mock
-
-        # Map ("QProgram_0", "Measurement_0") to index 0
         live_plot.live_plot_dict = {("QProgram_0", "Measurement_0"): 0}
-
-        # Input data: 1D shape (n_points, 2) where last dim is (real, imag)
-        # Include a 0j value to trigger the `s21 == 0j` condition
-        raw_data = np.array([[1.0, 0.0], [0.0, 0.0]])  # second row becomes 0j
+        raw_data = np.array([[1.0, 0.0], [0.0, 0.0]])
 
         with patch.object(fig_mock, "write_image") as mock_write:
             live_plot.live_plot(raw_data, "QProgram_0", "Measurement_0")
 
-        # Assert the y-values were updated (1D case)
         assert scatter.y is not None
         assert scatter.y.shape == (2,)
-        assert np.isnan(scatter.y[1]) or scatter.y[1] < -100  # nan or very negative due to log10(0)
+        assert np.isnan(scatter.y[1]) or scatter.y[1] < -100
 
-        # Confirm image write was called
+        mock_write.assert_called_once()
+
+    def test_live_plot_decibels_2d(self):
+        """Test live_plot for 2d"""
+        path = "test_2_d.h5"
+        live_plot = ExperimentLivePlot(str(path), slurm_execution=False)
+
+        fig_mock = MagicMock()
+        heatmap = MagicMock()
+        fig_mock.data = [heatmap]
+        live_plot._live_plot_fig = fig_mock
+        live_plot.live_plot_dict = {("QProgram_0", "Measurement_0"): 0}
+        raw_data = np.array(
+            [
+                [[1.0, 0.0], [0.0, 0.0]],
+                [[0.0, 1.0], [1.0, 1.0]],
+            ]
+        )
+
+        with patch.object(fig_mock, "write_image") as mock_write:
+            live_plot.live_plot(raw_data, "QProgram_0", "Measurement_0")
+
+        assert heatmap.z is not None
+        assert heatmap.z.shape == (2, 2) or heatmap.z.T.shape == (2, 2)  # just to be safe
+
         mock_write.assert_called_once()
 
 
