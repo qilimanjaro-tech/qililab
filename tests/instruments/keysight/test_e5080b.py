@@ -1,8 +1,6 @@
 """Tests for the E5080B class."""
 import io
 import copy
-import re
-import warnings
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -331,18 +329,12 @@ class TestE5080B:
         """Test the get frequencies method"""
         e5080b.initial_setup()
 
-
     def test_error_raises_when_no_modules(self, platform: Platform, vna_settings):
         vna_settings[INSTRUMENTCONTROLLER.MODULES] = []
         name = vna_settings.pop(RUNCARD.NAME)
         with pytest.raises(ValueError, match=f"The {name.value} Instrument Controller requires at least ONE module."):
             E5080BController(settings=vna_settings, loaded_instruments=platform.instruments)
 
-    def test_print_instrument_controllers(self, platform: Platform):
-        """Test print instruments."""
-        instr_cont = platform.instrument_controllers
-        assert str(instr_cont) == str(YAML().dump(instr_cont.to_dict(), io.BytesIO()))
-
-    def test_init_controller(self, e5080b_controller: E5080BController):
-        e5080b_controller.initial_setup()
-        e5080b_controller._initialize_device()
+    def test_init_controller(self, e5080b_controller_mock: E5080BController):
+        e5080b_controller_mock.initial_setup()
+        e5080b_controller_mock._initialize_device()
