@@ -2709,6 +2709,21 @@ wheels = [
 ]
 
 [[package]]
+name = "pyvisa-sim"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyvisa" },
+    { name = "pyyaml" },
+    { name = "stringparser" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/72/71/c17bb267adcaa32aa588fd1e2ba16337054bae69a31a562b0150b4d2d898/PyVISA-sim-0.6.0.tar.gz", hash = "sha256:9076a16912a8114b43c44b1d32894fc1f132d4389d8b2b719af62241e42161c1", size = 51682 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d5/36/ed26aeaa10f9ab80dd30d437b46e1be4c30a277386ee052c0a0eed6194a7/PyVISA_sim-0.6.0-py3-none-any.whl", hash = "sha256:ae4343b0ab0ec8245988652eda8fe78f79ee143d90ccf90f01903b8089584ccb", size = 34608 },
+]
+
+[[package]]
 name = "pywin32"
 version = "310"
 source = { registry = "https://pypi.org/simple" }
@@ -2969,6 +2984,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
+    { name = "pyvisa-sim" },
     { name = "ruff" },
 ]
 docs = [
@@ -3012,6 +3028,7 @@ dev = [
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
+    { name = "pyvisa-sim", specifier = ">=0.6.0" },
     { name = "ruff", specifier = ">=0.11.2" },
 ]
 docs = [
@@ -3715,6 +3732,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521 },
+]
+
+[[package]]
+name = "stringparser"
+version = "0.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ac/c0/57c5e808f68ed9a822d83413a3516f06a7751dc35e7039252e25994bf654/stringparser-0.7.tar.gz", hash = "sha256:bf37aac0166fc8f5705b450cc332f0d323e2d8b8191017bbfebe1f489f18f64d", size = 10211 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/33/8d/1ce822279ed69e5e5e83826b9f61d37ea146ffaf54b615d34ca363eb0aaa/stringparser-0.7-py3-none-any.whl", hash = "sha256:44678ca6067a5c0cb4c45da38448e1971e2b6fb136b82bfb6a798bdbda7dd71f", size = 7866 },
 ]
 
 [[package]]

@@ -16,18 +16,17 @@
 
 from dataclasses import dataclass
 from typing import Sequence
-
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
-from qililab.instrument_controllers.vector_network_analyzer.vector_network_analyzer_controller import (
-    VectorNetworkAnalyzerController,
-)
+from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instruments.keysight.e5080b_vna import E5080B
 from qililab.typings.enums import InstrumentControllerName, InstrumentName
-from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
+from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
+from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
+from qililab.typings.enums import ConnectionName
 
 
 @InstrumentControllerFactory.register
-class E5080BController(VectorNetworkAnalyzerController):
+class E5080BController(SingleInstrumentController):
     """KeySight E5080B Instrument Controller
 
     Args:
@@ -37,19 +36,32 @@ class E5080BController(VectorNetworkAnalyzerController):
     """
 
     name = InstrumentControllerName.KEYSIGHT_E5080B
-    device: VectorNetworkAnalyzerDriver
+    device: KeysightE5080B
+
     modules: Sequence[E5080B]
 
     @dataclass
-    class E5080BControllerSettings(VectorNetworkAnalyzerController.VectorNetworkAnalyzerControllerSettings):
+    class E5080BControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific E5080B Controller."""
+
+        # timeout: float = DEFAULT_TIMEOUT
+        def __post_init__(self):
+            super().__post_init__()
+            self.connection.name = ConnectionName.TCP_IP
 
     settings: E5080BControllerSettings
 
+    @SingleInstrumentController.CheckConnected
+    def initial_setup(self):
+        """Initial setup of the instrument."""
+        # self.device.set_timeout(self.settings.timeout)
+        super().initial_setup()
+
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = VectorNetworkAnalyzerDriver(
-            name=f"{self.name.value}_{self.alias}", address=self.address, timeout=self.timeout
+
+        self.device = KeysightE5080B(
+            name=f"{self.name.value}_{self.alias}", address=f"TCPIP::{self.address}::INSTR", visalib="@py"
         )
 
     def _check_supported_modules(self):
