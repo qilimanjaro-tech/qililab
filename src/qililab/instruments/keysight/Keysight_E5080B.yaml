@@ -1,118 +1,67 @@
+# SIMULATED INSTRUMENT FOR Keysight E5080B
 spec: "1.0"
 devices:
-  KeysightE5080B:
-    eom:
-      GPIB INSTR:
-        q: "\n"
-        r: "\n"
-    error: ERROR
+  Keysight_E5080B:
     dialogues:
-      - q: "*RST"
-      - q: "*CLS"
-      - q: "*OPC"
-      - q: "SYST:PRES"
-      - q: "FORM:DATA REAL,64"
-      - q: "FORM:BORD SWAP"
       - q: "*IDN?"
-        r: "Keysight Technologies,E5080B,1000,0.1"
-
+        r: "QCoDeS, Keysight_E5080B_simulated, simulated, 0.0.1"
     properties:
-
       start_freq:
-        default: 100e3
+        default: 1000000
         getter:
           q: "SENS:FREQ:STAR?"
           r: "{}"
         setter:
           q: "SENS:FREQ:STAR {}"
-        specs:
-          type: float
-          min: 100e3
-          max: 53e9
-
       stop_freq:
-        default: 53e9
+        default: 2000000
         getter:
           q: "SENS:FREQ:STOP?"
           r: "{}"
         setter:
           q: "SENS:FREQ:STOP {}"
-        specs:
-          type: float
-          min: 100e3
-          max: 53e9
-
       center_freq:
-        default: 1e9
+        default: 1500000
         getter:
           q: "SENS:FREQ:CENT?"
           r: "{}"
         setter:
           q: "SENS:FREQ:CENT {}"
-        specs:
-          type: float
-          min: 100e3
-          max: 53e9
-
       center_step_auto:
-        default: "OFF"
+        default: "1"
         getter:
           q: "SENS:FREQ:CENT:STEP:AUTO?"
           r: "{}"
         setter:
           q: "SENS:FREQ:CENT:STEP:AUTO {}"
-        specs:
-          type: str
-          valid: ["ON", "OFF"]
-
       step_size:
-        default: 40e6
+        default: 50000
         getter:
           q: "SENS:FREQ:CENT:STEP:SIZE?"
           r: "{}"
         setter:
           q: "SENS:FREQ:CENT:STEP:SIZE {}"
-        specs:
-          type: float
-          min: 1
-          max: 53e9
-
       span:
-        default: 1e9
+        default: 1000000
         getter:
           q: "SENS:FREQ:SPAN?"
           r: "{}"
         setter:
           q: "SENS:FREQ:SPAN {}"
-        specs:
-          type: float
-          min: 100e3
-          max: 53e9
-
       cw:
-        default: 1e9
+        default: 0
         getter:
           q: "SENS:FREQ:CW?"
           r: "{}"
         setter:
           q: "SENS:FREQ:CW {}"
-        specs:
-          type: float
-          min: 100e3
-          max: 53e9
-
       points:
-        default: 1001
+        default: 101
         getter:
           q: "SENS:SWE:POIN?"
           r: "{}"
         setter:
           q: "SENS:SWE:POIN {}"
-        specs:
-          type: int
-          min: 11
-          max: 100003
-
       source_power:
         default: 0
         getter:
@@ -120,23 +69,13 @@ devices:
           r: "{}"
         setter:
           q: "SENS:POW {}"
-        specs:
-          type: float
-          min: 0
-          max: 10
-
       if_bandwidth:
-        default: 1
+        default: 1000
         getter:
           q: "SENS:BWID?"
           r: "{}"
         setter:
           q: "SENS:BWID {}"
-        specs:
-          type: float
-          min: 1
-          max: 15e6
-
       sweep_type:
         default: "LIN"
         getter:
@@ -144,10 +83,6 @@ devices:
           r: "{}"
         setter:
           q: "SENS:SWE:TYPE {}"
-        specs:
-          type: str
-          valid: ["LIN", "LOG", "POW", "CW", "SEGM"]
-
       sweep_mode:
         default: "CONT"
         getter:
@@ -155,10 +90,6 @@ devices:
           r: "{}"
         setter:
           q: "SENS:SWE:MODE {}"
-        specs:
-          type: str
-          valid: ["HOLD", "CONT", "GRO", "SING"]
-
       scattering_parameter:
         default: "S11"
         getter:
@@ -166,21 +97,13 @@ devices:
           r: "{}"
         setter:
           q: "CALC:MEAS:PAR {}"
-        specs:
-          type: str
-          valid: ["S11", "S12", "S21", "S22"]
-
       averages_enabled:
-        default: "OFF"
+        default: "0"
         getter:
           q: "SENS:AVER?"
           r: "{}"
         setter:
           q: "SENS:AVER {}"
-        specs:
-          type: str
-          valid: ["ON", "OFF"]
-
       averages_count:
         default: 1
         getter:
@@ -188,11 +111,6 @@ devices:
           r: "{}"
         setter:
           q: "SENS:AVER:COUN {}"
-        specs:
-          type: int
-          min: 1
-          max: 65536
-
       averages_mode:
         default: "SWEEP"
         getter:
@@ -200,10 +118,6 @@ devices:
           r: "{}"
         setter:
           q: "SENS:AVER:MODE {}"
-        specs:
-          type: str
-          valid: ["POIN", "SWEEP"]
-
       format_data:
         default: "ASCii,0"
         getter:
@@ -211,21 +125,13 @@ devices:
           r: "{}"
         setter:
           q: "FORM:DATA {}"
-        specs:
-          type: str
-          valid: ["REAL,32", "REAL,64", "ASCii,0"]
-
       rf_on:
-        default: "OFF"
+        default: "0"
         getter:
           q: "OUTP?"
           r: "{}"
         setter:
           q: "OUTP {}"
-        specs:
-          type: str
-          valid: ["ON", "OFF"]
-
       format_border:
         default: "NORM"
         getter:
@@ -233,10 +139,15 @@ devices:
           r: "{}"
         setter:
           q: "FORM:BORD {}"
-        specs:
-          type: str
-          valid: ["NORM", "SWAP"]
-
-    resources:
-      GPIB::1::INSTR:
-        device: KeysightE5080B
+    functions:
+      clear_averages:
+        call: "SENS:AVER:CLE"
+      cls:
+        call: "*CLS"
+      opc:
+        call: "*OPC"
+      system_reset:
+        call: "SYST:PRES"
+resources:
+  TCPIP::192.168.0.10::INSTR:
+    device: Keysight_E5080B

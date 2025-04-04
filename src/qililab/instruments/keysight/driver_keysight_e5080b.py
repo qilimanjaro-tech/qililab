@@ -93,7 +93,8 @@ class Driver_KeySight_E5080B(VisaInstrument):
             label="Step size",
             get_cmd="SENS:FREQ:CENT:STEP:SIZE?",
             set_cmd="SENS:FREQ:CENT:STEP:SIZE {}",
-            vals=Numbers(min_value=1, max_value=self.stop_freq.get_latest()),
+            # vals=Numbers(min_value=1, max_value=self.stop_freq.get_latest()),
+            vals=Numbers(min_value=1, max_value=max_freq),
         )
         """Parameter step size"""
 
