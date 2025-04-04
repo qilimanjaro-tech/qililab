@@ -85,7 +85,7 @@ class Bus:
     """
 
     def __init__(self, settings: dict, platform_instruments: Instruments):
-        self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)
+        self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore[call-arg]
 
     @property
     def alias(self):

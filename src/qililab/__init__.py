@@ -15,10 +15,17 @@
 """Top level module from which all Qililab basic functions and classes can be directly imported."""
 
 # isort: skip_file
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("qililab")
+except PackageNotFoundError:
+    __version__ = "0.0.0"
+
 import contextlib
 
 from .about import about
-from .config import __version__, logger
+from .config import logger
 from .data_management import build_platform, save_platform
 from .execute_circuit import execute
 from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment

@@ -352,9 +352,8 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element, value=current_value_of_variable[
-                                    element.value.uuid
-                                ]: self.platform.set_parameter(
+                                lambda operation=element,
+                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     value=value,
@@ -394,7 +393,9 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: store_results(
+                            lambda operation=element,
+                            call_parameters=call_parameters,
+                            qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram(
                                         **{
@@ -470,7 +471,7 @@ class ExperimentExecutor:
         decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
 
         # Calculate the number of steps
-        num_steps = int(round((stop - start) / step)) + 1
+        num_steps = round((stop - start) / step) + 1
 
         # Use linspace and then round to avoid floating-point inaccuracies
         result = np.linspace(start, stop, num_steps)
