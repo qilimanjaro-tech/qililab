@@ -65,6 +65,7 @@ from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
 
@@ -77,6 +78,7 @@ if TYPE_CHECKING:
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result
+    from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
     from qililab.settings.digital.gate_event_settings import GateEventSettings
 
@@ -1589,3 +1591,32 @@ class Platform:
         result = qblox_draw.draw(sequencer, runcard_data, averages_displayed)
 
         return result
+
+    def stream_array(
+        self,
+        shape: tuple,
+        loops: dict[str, np.ndarray],
+        experiment_name: str,
+        db_manager: DatabaseManager,  # get rid
+        qprogram: QProgram | None = None,
+        optional_identifier: str | None = None,
+    ):
+        """
+        Allows for real time saving of results from an experiment.
+
+        This class wraps a numpy array and adds a context manager to save results and database metadata on real time
+        while they are acquired by the instruments.
+
+        Args:
+            shape (tuple): results array shape.
+            loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
+        """
+        return StreamArray(
+            shape=shape,
+            loops=loops,
+            platform=self,
+            qprogram=qprogram,
+            experiment_name=experiment_name,
+            db_manager=db_manager,
+            optional_identifier=optional_identifier,
+        )
