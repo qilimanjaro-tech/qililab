@@ -58,64 +58,64 @@ def test_start_freq(vnaks):
 def test_stop_freq(vnaks):
     verify_property(vnaks, "stop_freq", [1e6, 2e6, 3e9, 20e9])
 
-# def test_center_freq(vnaks):
-#     verify_property(vnaks, "center_freq", [1e6, 2e6, 3e9, 20e9])
+def test_center_freq(vnaks):
+    verify_property(vnaks, "center_freq", [1e6, 2e6, 3e9, 20e9])
 
-# def test_center_step_auto(vnaks):
-#     # Valid values based on your val_mapping ("1" for on, "0" for off)
-#     verify_property(vnaks, "center_step_auto", ["1", "0"])
+def test_center_step_auto(vnaks):
+    # Valid values based on your val_mapping ("1" for on, "0" for off)
+    verify_property(vnaks, "center_step_auto", [True, False])
 
-# def test_step_size(vnaks):
-#     # Test with a few values within the range
-#     verify_property(vnaks, "step_size", [1, 50e6, 100e6, 1e9])
+def test_step_size(vnaks):
+    # Test with a few values within the range
+    verify_property(vnaks, "step_size", [1e6, 2e6, 3e9, 20e9])
 
-# def test_span(vnaks):
-#     verify_property(vnaks, "span", [1e6, 2e6, 3e9, 20e9])
+def test_span(vnaks):
+    verify_property(vnaks, "span", [1e6, 2e6, 3e9, 20e9])
 
-# def test_cw(vnaks):
-#     # Test the continuous wave frequency, including a zero value
-#     verify_property(vnaks, "cw", [0, 1e6, 5e6])
+def test_cw(vnaks):
+    # Test the continuous wave frequency, including a zero value
+    verify_property(vnaks, "cw", [0, 1e6, 5e6])
 
-# def test_points(vnaks):
-#     verify_property(vnaks, "points", [11, 101, 1000])
+def test_points(vnaks):
+    verify_property(vnaks, "points", [11, 101, 1000])
 
-# def test_source_power(vnaks):
-#     verify_property(vnaks, "source_power", [0, 5, 10])
+def test_source_power(vnaks):
+    verify_property(vnaks, "source_power", [0, 5, 10])
 
-# def test_if_bandwidth(vnaks):
-#     verify_property(vnaks, "if_bandwidth", [1, 1000, 5000, 15000000])
+def test_if_bandwidth(vnaks):
+    verify_property(vnaks, "if_bandwidth", [1, 1000, 5000, 15000000])
 
-# def test_sweep_type(vnaks):
-#     # Valid enum values: "LIN", "LOG", "POW", "CW", "SEGM"
-#     verify_property(vnaks, "sweep_type", ["LIN", "LOG", "POW"])
+def test_sweep_type(vnaks):
+    # Valid enum values: "LIN", "LOG", "POW", "CW", "SEGM"
+    verify_property(vnaks, "sweep_type", ["LIN", "LOG", "POW"])
 
-# def test_sweep_mode(vnaks):
-#     # Valid enum values: "HOLD", "CONT", "GRO", "SING"
-#     verify_property(vnaks, "sweep_mode", ["HOLD", "CONT"])
+def test_sweep_mode(vnaks):
+    # Valid enum values: "HOLD", "CONT", "GRO", "SING"
+    verify_property(vnaks, "sweep_mode", ["HOLD", "CONT"])
 
-# def test_scattering_parameter(vnaks):
-#     # Valid enum values: "S11", "S12", "S21", "S22"
-#     verify_property(vnaks, "scattering_parameter", ["S11", "S21"])
+def test_scattering_parameter(vnaks):
+    # Valid enum values: "S11", "S12", "S21", "S22"
+    verify_property(vnaks, "scattering_parameter", ["S11", "S21"])
 
-# def test_averages_enabled(vnaks):
-#     # Valid values for averages_enabled: "1" for on, "0" for off
-#     verify_property(vnaks, "averages_enabled", ["1", "0"])
+def test_averages_enabled(vnaks):
+    # Valid values for averages_enabled: "1" for on, "0" for off
+    verify_property(vnaks, "averages_enabled", [True, False])
 
-# def test_averages_count(vnaks):
-#     verify_property(vnaks, "averages_count", [1, 100, 1000])
+def test_averages_count(vnaks):
+    verify_property(vnaks, "averages_count", [1, 100, 1000])
 
-# def test_averages_mode(vnaks):
-#     # Valid enum values: "POIN", "SWEEP"
-#     verify_property(vnaks, "averages_mode", ["POIN", "SWEEP"])
+def test_averages_mode(vnaks):
+    # Valid enum values: "POIN", "SWEEP"
+    verify_property(vnaks, "averages_mode", ["POIN", "SWEEP"])
 
-# def test_format_data(vnaks):
-#     # Valid enum values: "REAL,32", "REAL,64", "ASCii,0"
-#     verify_property(vnaks, "format_data", ["REAL,32", "ASCii,0"])
+def test_format_data(vnaks):
+    # Valid enum values: "REAL,32", "REAL,64", "ASCii,0"
+    verify_property(vnaks, "format_data", ["REAL,32", "ASCii,0"])
 
-# def test_rf_on(vnaks):
-#     # Valid values for rf_on: "1" for on, "0" for off
-#     verify_property(vnaks, "rf_on", ["1", "0"])
+def test_rf_on(vnaks):
+    # Valid values for rf_on: "1" for on, "0" for off
+    verify_property(vnaks, "rf_on", [True, False])
 
-# def test_format_border(vnaks):
-#     # Valid enum values: "NORM", "SWAP"
-#     verify_property(vnaks, "format_border", ["NORM", "SWAP"])
+def test_format_border(vnaks):
+    # Valid enum values: "NORM", "SWAP"
+    verify_property(vnaks, "format_border", ["NORM", "SWAP"])

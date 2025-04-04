@@ -77,24 +77,6 @@ def fixture_e5080b_settings():
         ],
     }
 
-@pytest.fixture(name="vna_settings")
-def fixture_vna_settings():
-    """Fixture that returns an instance of a dummy vna."""
-    return {
-        RUNCARD.NAME: InstrumentControllerName.KEYSIGHT_E5080B,
-        RUNCARD.ALIAS: "keysight_e5080",
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            RUNCARD.NAME: ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "169.254.150.105",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": "vna",
-                "slot_id": 0,
-            }
-        ],
-    }
-
 @pytest.fixture(name="e5080b_controller_mock")
 @patch(
     "qililab.instrument_controllers.keysight.keysight_E5080B_vna_controller",
@@ -257,7 +239,6 @@ class TestE5080B:
         with pytest.raises(ValueError, match=f"The {name.value} Instrument Controller requires at least ONE module."):
             E5080BController(settings=e5080b_settings, loaded_instruments=platform.instruments)
 
-
     def test_print_instrument_controllers(self, platform: Platform):
         """Test print instruments."""
         instr_cont = platform.instrument_controllers
@@ -316,11 +297,6 @@ class TestE5080B:
         with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
             e5080b.read_tracedata(timeout)
 
-    def test_read_tracedata(self, e5080b: E5080B):
-        timeout = 0.001
-        with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
-            e5080b.read_tracedata(timeout)
-
     def test_get_frequencies_method(self, e5080b: E5080B):
         """Test the get frequencies method"""
         e5080b.get_frequencies()
@@ -328,12 +304,6 @@ class TestE5080B:
     def test_initial_setup(self, e5080b: E5080B):
         """Test the get frequencies method"""
         e5080b.initial_setup()
-
-    def test_error_raises_when_no_modules(self, platform: Platform, vna_settings):
-        vna_settings[INSTRUMENTCONTROLLER.MODULES] = []
-        name = vna_settings.pop(RUNCARD.NAME)
-        with pytest.raises(ValueError, match=f"The {name.value} Instrument Controller requires at least ONE module."):
-            E5080BController(settings=vna_settings, loaded_instruments=platform.instruments)
 
     def test_init_controller(self, e5080b_controller_mock: E5080BController):
         e5080b_controller_mock.initial_setup()
