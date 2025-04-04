@@ -62,7 +62,6 @@ from qililab.qprogram import (
 )
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
-from qililab.result.database import DatabaseManager
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -79,6 +78,7 @@ if TYPE_CHECKING:
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result
+    from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
     from qililab.settings.digital.gate_event_settings import GateEventSettings
 
@@ -1584,7 +1584,7 @@ class Platform:
         shape: tuple,
         loops: dict[str, np.ndarray],
         experiment_name: str,
-        db_manager: DatabaseManager,
+        db_manager: DatabaseManager,  # get rid
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):

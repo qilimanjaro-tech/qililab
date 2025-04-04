@@ -11,16 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import datetime
-import os
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import h5py
 import numpy as np
 
-from qililab import DatabaseManager, serialize
-from qililab.platform import Platform
 from qililab.qprogram import QProgram
+from qililab.result.database import DatabaseManager, Measurement
+from qililab.utils.serialization import serialize
+
+if TYPE_CHECKING:
+    from qililab.platform import Platform
 
 
 class StreamArray:
@@ -92,28 +93,26 @@ class StreamArray:
 
     """
 
+    path: str
+    _dataset: h5py.Dataset
+    measurement: Measurement | None = None
+    _file: h5py.File | None = None
+
     def __init__(
         self,
-        shape,
-        loops,
-        platform: Platform,
-        qprogram: QProgram | None,
+        shape: list | tuple,
+        loops: dict[str, list],
+        platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
-        optional_identifier: str | None,
+        qprogram: QProgram | None = None,
+        optional_identifier: str | None = None,
     ):
 
-        # from old stream array
         self.results = np.zeros(shape=shape)
-        self.path = None  # This is set in the __enter__ method
         self.loops = loops
-        self._file: h5py.File | None = None
-        self._dataset = None
-
-        # new vars
         self.experiment_name = experiment_name
         self.db_manager = db_manager
-        self.measurement = None
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
@@ -131,25 +130,14 @@ class StreamArray:
 
     def __enter__(self):
 
-        start_time = datetime.datetime.now()  # NOTE we should probably move this logic to the measurement class
-        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
-        base_path = "/home/jupytershared/testing_db/data"
-        dir_path = f"{base_path}/{self.db_manager.current_sample}/{self.db_manager.current_cd}/{formatted_time}"
-        self.path = f"{dir_path}/{self.experiment_name}.h5"
-
         self.measurement = self.db_manager.add_measurement(
             experiment_name=self.experiment_name,
             result_path=self.path,
             experiment_completed=False,
-            start_time=start_time,
             optional_identifier=self.optional_identifier,
             platform=self.platform.to_dict(),
             qprogram=(serialize(self.qprogram)),
         )
-
-        folder = dir_path
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
 
         # Save loops
         self._file = h5py.File(name=self.path, mode="w")
@@ -168,7 +156,7 @@ class StreamArray:
             self._file.__exit__()
             self._file = None
 
-        self.measurement._end_experiment(self.db_manager.Session)
+        self.measurement.end_experiment(self.db_manager.Session)
 
     def __getitem__(self, index: int):
         """Gets item by index.
