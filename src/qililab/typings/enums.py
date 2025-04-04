@@ -489,6 +489,7 @@ class InstrumentTypeName(str, Enum):
     QBLOX_S4G = "QbloxS4g"
     YOKOGAWA_GS200 = "YokogawaGS200"
     QDEVIL_QDAC2 = "QDevilQDac2"
+    KEYSIGHT_E5080B = "keysight_e5080b"
 
 
 class ResetMethod(str, Enum):
