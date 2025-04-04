@@ -71,16 +71,17 @@ class Sample(base):
     sample_name: Column = Column("sample_name", String, primary_key=True)
     manufacturer: Column = Column("manufacturer", String)
     wafer: Column = Column("wafer", String)
+    fab_run: Column = Column("fab_run", String)
     sample: Column = Column("sample", String)
     device_design: Column = Column("device_design", String)
     n_qubits_per_device: Column = Column("n_qubits_per_device", ARRAY(Integer))
     additional_info: Column = Column("additional_info", String)
     manufacturer: Column = Column("manufacturer", String)
-
+    
     def __init__(
         self,
         sample_name,
-        fabrication_run,
+        fab_run,
         wafer,
         sample,
         device_design,
@@ -89,7 +90,7 @@ class Sample(base):
         manufacturer,
     ):
         self.sample_name = sample_name
-        self.fabrication_run = fabrication_run
+        self.fab_run = fab_run
         self.wafer = wafer
         self.sample = sample
         self.device_design = device_design
@@ -294,14 +295,17 @@ class DatabaseManager:
                 session.rollback()
                 raise e
 
-    def add_sample(self, sample_name: str, manufacturer: str):
+    def add_sample(self, sample_name: str, manufacturer: str, wafer: str, sample: str, fab_run: str,
+                   device_design: str, n_qubits_per_device: list[int], additional_info: str | None = None):
         """Add sample metadata
 
         Args:
             sample_name (str): Sample name id.
             manufacturer (str): Sample manufacturer.
         """
-        sample_obj = Sample(sample_name=sample_name, manufacturer=manufacturer)
+        sample_obj = Sample(sample_name=sample_name, manufacturer=manufacturer, wafer=wafer, sample=sample,
+                            fab_run=fab_run, device_design=device_design, 
+                            n_qubits_per_device=n_qubits_per_device, additional_info=additional_info)
         with self.Session() as session:
             session.add(sample_obj)
             try:
