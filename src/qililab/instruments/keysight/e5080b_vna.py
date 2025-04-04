@@ -462,10 +462,10 @@ class E5080B(Instrument):
         while True:
             status_avg = int(self.device.ask("STAT:OPER:COND?"))
             if status_avg & (1 << 8):
-                print("averages are done running")
+                print("averages are done running") # to be removed once tested in HW
                 break
             else:
-                print("averages are still running")
+                print("averages are still running") # to be removed once tested in HW
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
 

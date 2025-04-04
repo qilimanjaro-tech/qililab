@@ -4,7 +4,7 @@
 from qililab.instruments.keysight.driver_keysight_e5080b import Driver_KeySight_E5080B
 import pytest
 import numpy as np
-import pyvisa_sim
+import pyvisa
 
 @pytest.fixture(scope="function", name="vnaks")
 def _make_vnaks():
