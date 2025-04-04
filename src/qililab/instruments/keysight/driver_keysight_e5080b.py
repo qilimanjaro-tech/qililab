@@ -37,8 +37,8 @@ class Driver_KeySight_E5080B(VisaInstrument):
         max_if_bandwidth = 15e6
         min_nop = 11
         max_nop = 100003
-        min_power = 0
-        max_power = 10
+        min_power = -100
+        max_power = 20
 
         # Sets the start frequency of the analyzer.
         self.start_freq: Parameter = self.add_parameter(
@@ -79,7 +79,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
         # Sets and reads how the center frequency step size is set. When TRUE, center steps by 5% of span. When FALSE, center steps by STEP:SIZE value.
         # Default is 40 Mhz. When STEP:AUTO is TRUE, this value is ignored.
         self.step_auto: Parameter = self.add_parameter(
-            "center_step_auto",
+            "step_auto",
             label="Center Frequency Step Auto",
             get_cmd="SENS:FREQ:CENT:STEP:AUTO?",
             set_cmd="SENS:FREQ:CENT:STEP:AUTO {}",
@@ -140,7 +140,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
             label="source_power",
             unit="dBm",
             get_cmd="SOUR:POW?",
-            set_cmd="SENS:POW {}",
+            set_cmd="SOUR:POW {}",
             get_parser=float,
             vals=Numbers(min_value=min_power, max_value=max_power),
         )
