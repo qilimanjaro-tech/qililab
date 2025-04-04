@@ -372,7 +372,7 @@ class DatabaseManager:
     def add_measurement(
         self,
         experiment_name: str,
-        result_path: str,
+        # result_path: str,
         experiment_completed: bool,
         cooldown: str | None = None,
         sample_name: str | None = None,
@@ -398,7 +398,7 @@ class DatabaseManager:
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
         base_path = "/home/jupytershared/testing_db/data"
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
-        self.path = f"{dir_path}/{experiment_name}.h5"
+        result_path = f"{dir_path}/{experiment_name}.h5"
 
         folder = dir_path
         if not os.path.isdir(folder):

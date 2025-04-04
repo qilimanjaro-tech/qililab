@@ -132,12 +132,13 @@ class StreamArray:
 
         self.measurement = self.db_manager.add_measurement(
             experiment_name=self.experiment_name,
-            result_path=self.path,
+            # result_path=self.path,
             experiment_completed=False,
             optional_identifier=self.optional_identifier,
             platform=self.platform.to_dict(),
             qprogram=(serialize(self.qprogram)),
         )
+        self.path = self.measurement.result_path
 
         # Save loops
         self._file = h5py.File(name=self.path, mode="w")
@@ -156,7 +157,7 @@ class StreamArray:
             self._file.__exit__()
             self._file = None
 
-        self.measurement.end_experiment(self.db_manager.Session)
+        self.measurement = self.measurement.end_experiment(self.db_manager.Session)
 
     def __getitem__(self, index: int):
         """Gets item by index.
