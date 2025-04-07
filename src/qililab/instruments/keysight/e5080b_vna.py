@@ -54,7 +54,7 @@ class E5080B(Instrument):
             num_points (int): Number of measurement points.
             if_bandwidth (float): Intermediate frequency bandwidth.
         """
-
+       
         frequency_start: float | None = None
         frequency_stop: float | None = None
         frequency_center: float | None = None
@@ -499,6 +499,34 @@ class E5080B(Instrument):
         self.device.format_data("REAL,32")
         self.device.cls()
         self.reset()
+        self.device.source_power(self.source_power)
+        self.device.sweep_type(self.sweep_type)
+        self.device.sweep_mode(self.sweep_mode)
+        self.device.points(self.points)
+        self.device.if_bandwidth(self.if_bandwidth)
+        self.device.scattering_parameter(self.scattering_parameter)
+        self.device.rf_on(self.rf_on)
+        self.device.averages_enabled(self.averages_enabled)
+        self.device.step_auto(self.step_auto)
+
+        if self.sweep_type is not "SEGM":
+            self.device.start_freq(self.start_freq)
+            self.device.center_freq(self.center_freq)
+            self.device.stop_freq(self.stop_freq)
+            self.device.span(self.span)
+
+        if self.sweep_type is "CW":
+            self.device.cw(self.cw)
+
+        if self.averages_enabled is True:
+            self.device.averages_count(self.number_averages)
+            self.device.averages_mode(self.averages_mode)
+
+        if self.step_auto is False:
+            self.device.step_size(self.step_size)
+
+        self.device.format_data(self.format_data)
+        self.device.format_border(self.format_border)
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""

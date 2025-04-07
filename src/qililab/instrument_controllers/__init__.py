@@ -25,6 +25,7 @@ from .rohde_schwarz import SGS100AController
 from .single_instrument_controller import SingleInstrumentController
 from .utils import InstrumentControllerFactory
 from .yokogawa import GS200Controller
+from .keysight import E5080BController
 
 __all__ = [
     "GS200Controller",
@@ -39,4 +40,5 @@ __all__ = [
     "QuantumMachinesClusterController",
     "SGS100AController",
     "SingleInstrumentController",
+    "keysight_E5080B_vna_controller",
 ]

@@ -197,18 +197,6 @@ class VNAScatteringParameters(str, Enum):
     S21 = "S21"
 
 
-class VNATriggerModes(str, Enum):
-    """Vector Network Analyzers Trigger Modes
-    Args:
-        enum (str): Available types of trigger modes:
-        * INT
-        * BUS
-    """
-
-    INT = "INT"
-    BUS = "BUS"
-
-
 class VNAFormatBorder(str, Enum):
     """Vector Network Analyzers Format Border
     Args:
@@ -489,7 +477,7 @@ class InstrumentTypeName(str, Enum):
     QBLOX_S4G = "QbloxS4g"
     YOKOGAWA_GS200 = "YokogawaGS200"
     QDEVIL_QDAC2 = "QDevilQDac2"
-    KEYSIGHT_E5080B = "keysight_e5080b"
+    KEYSIGHT_E5080B = "E5080B"
 
 
 class ResetMethod(str, Enum):
