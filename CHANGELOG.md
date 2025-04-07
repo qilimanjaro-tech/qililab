@@ -11,7 +11,8 @@
   [#925](https://github.com/qilimanjaro-tech/qililab/pull/925)
 
 ### Bug fixes
-- For the rohde SGS100A, a line was missing in the driver causing the settings to not be updated when being set, this has been fixed.
+
+- For the Rohde & Schwarz SGS100A, a missing line in the driver prevented the settings from updating when set. This issue has been fixed.
 [#927](https://github.com/qilimanjaro-tech/qililab/pull/927)
 
 - Qblox-instruments version updated to the right one.
