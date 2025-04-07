@@ -44,7 +44,7 @@ from qililab.result.result_management import load_results
 base = declarative_base()
 
 
-class Cooldown(base):
+class Cooldown(base):  # type: ignore
     """Creates and manipulates CoolDown metadata database"""
 
     __tablename__ = "cooldowns"
@@ -63,7 +63,7 @@ class Cooldown(base):
         return f"{self.cooldown} {self.date} {self.fridge} {self.active}"
 
 
-class Sample(base):
+class Sample(base):  # type: ignore
     """Creates and manipulates Sample metadata database"""
 
     __tablename__ = "samples"
@@ -101,7 +101,7 @@ class Sample(base):
         return f"{self.sample_name} {self.manufacturer} {self.additional_info}"
 
 
-class Measurement(base):
+class Measurement(base):  # type: ignore
     """Creates and manipulates Measurement metadata database"""
 
     __tablename__ = "measurements"
@@ -240,8 +240,8 @@ class DatabaseManager:
         """
         self.engine = get_engine(user, passwd, host, port, database)
         self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
-        self.current_cd = None
-        self.current_sample = None
+        self.current_cd: str | None = None
+        self.current_sample: str | None = None
 
     def set_sample_and_cooldown(self, sample: str, cooldown: str | None = None):
         """Set sample and cooldown of the database

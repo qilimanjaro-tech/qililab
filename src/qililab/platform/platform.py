@@ -1647,5 +1647,5 @@ class Platform:
 
         with stream_array:
             for index in range(shape[0]):
-                stream_array[index,] = results[index, ...]  # ask Adri what to put instead of tuple
+                stream_array[index,] = results[index, ...]  # type: ignore
         return stream_array.path
