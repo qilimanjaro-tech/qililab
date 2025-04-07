@@ -20,24 +20,6 @@ def _make_vnaks():
     yield driver
     driver.close()
 
-# def verify_property(vnaks, param_name, vals: "Sequence[Any]"):
-#     print(vnaks.parameters)
-#     print(param_name)
-#     # param = getattr(vnaks, param_name)
-#     param = vnaks.parameters["start_freq"]
-#     print(param)
-#     for val in vals:
-#         param(val)
-#         new_val = param()
-#         if isinstance(new_val, float):
-#             assert np.isclose(new_val, val)
-#         else:
-#             assert new_val == val
-
-# def test_frequency(vnaks) -> None:
-#     verify_property(vnaks, "start_freq", [1e6, 2e6, 3e9, 20e9])
-
-
 def verify_property(vnaks, param_name, vals):
     """
     For each value in vals, set the parameter and verify that it returns the expected value.
@@ -63,7 +45,7 @@ def test_center_freq(vnaks):
 
 def test_center_step_auto(vnaks):
     # Valid values based on your val_mapping ("1" for on, "0" for off)
-    verify_property(vnaks, "center_step_auto", [True, False])
+    verify_property(vnaks, "step_auto", [True, False])
 
 def test_step_size(vnaks):
     # Test with a few values within the range
@@ -80,7 +62,7 @@ def test_points(vnaks):
     verify_property(vnaks, "points", [11, 101, 1000])
 
 def test_source_power(vnaks):
-    verify_property(vnaks, "source_power", [0, 5, 10])
+    verify_property(vnaks, "source_power", [0, 5, -4])
 
 def test_if_bandwidth(vnaks):
     verify_property(vnaks, "if_bandwidth", [1, 1000, 5000, 15000000])

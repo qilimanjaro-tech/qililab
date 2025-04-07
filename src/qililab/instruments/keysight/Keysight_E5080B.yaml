@@ -27,7 +27,7 @@ devices:
           r: "{}"
         setter:
           q: "SENS:FREQ:CENT {}"
-      center_step_auto:
+      step_auto:
         default: "1"
         getter:
           q: "SENS:FREQ:CENT:STEP:AUTO?"
@@ -68,7 +68,7 @@ devices:
           q: "SOUR:POW?"
           r: "{}"
         setter:
-          q: "SENS:POW {}"
+          q: "SOUR:POW {}"
       if_bandwidth:
         default: 1000
         getter:
