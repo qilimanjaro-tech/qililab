@@ -801,7 +801,9 @@ class TestMethods:
             results_path = platform.execute_experiment(experiment=mock_experiment)
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
-            MockExecutor.assert_called_once_with(platform=platform, experiment=mock_experiment)
+            MockExecutor.assert_called_once_with(
+                platform=platform, experiment=mock_experiment, live_plot=True, slurm_execution=True, port_number=None
+            )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
             mock_executor_instance.execute.assert_called_once()
