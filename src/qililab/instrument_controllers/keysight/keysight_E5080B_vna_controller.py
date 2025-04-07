@@ -54,7 +54,6 @@ class E5080BController(SingleInstrumentController):
     @SingleInstrumentController.CheckConnected
     def initial_setup(self):
         """Initial setup of the instrument."""
-        # self.device.set_timeout(self.settings.timeout)
         super().initial_setup()
 
     def _initialize_device(self):

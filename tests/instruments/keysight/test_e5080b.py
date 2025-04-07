@@ -304,16 +304,10 @@ class TestE5080B:
         """Test the get frequencies method"""
         e5080b.get_frequencies()
 
-    # def test_initial_setup(self, e5080b: E5080B):
-    #     """Test the get frequencies method"""
-    #     e5080b.initial_setup()
-
     def test_init_controller(self, e5080b_controller_mock: E5080BController):
         e5080b_controller_mock.initial_setup()
         e5080b_controller_mock._initialize_device()
 
-    # def test_runcard_sets_value(self, platform: Platform):
-    #     """Test that the runcard sets the value at the initial setup"""
 
     def test_initial_setup_non_segm(self, e5080b: E5080B):
         """Test the initial setup when sweep_type is not 'SEGM'."""
@@ -324,33 +318,70 @@ class TestE5080B:
         e5080b.device.stop_freq.assert_called_once_with(e5080b.stop_freq)
         e5080b.device.span.assert_called_once_with(e5080b.span)
 
+    def test_initial_setup_avg_enabled(self, e5080b: E5080B):
+        """Test the initial setup when averages are enabled."""
+        e5080b.set_parameter(Parameter.AVERAGES_ENABLED, True)
+        e5080b.initial_setup()  # This should call start_freq, center_freq, stop_freq, span
+        e5080b.device.averages_count.assert_called_once_with(e5080b.number_averages)
+        e5080b.device.averages_mode.assert_called_once_with(e5080b.averages_mode)
+
+    def test_initial_setup_step_auto_off(self, e5080b: E5080B):
+        """Test the initial setup when averages are enabled."""
+        e5080b.set_parameter(Parameter.STEP_AUTO, False)
+        e5080b.initial_setup()  # This should call start_freq, center_freq, stop_freq, span
+        e5080b.device.step_size.assert_called_once_with(e5080b.step_size)
+
     def test_initial_setup_cw(self, e5080b: E5080B):
         """Test the initial setup when sweep_type is 'CW'."""
         e5080b.set_parameter(Parameter.SWEEP_TYPE, "CW")  # Set sweep type to CW
         e5080b.initial_setup()  # This should call cw_frequency
         e5080b.device.cw.assert_called_once_with(e5080b.cw)
 
-    def test_initial_setup_calls_super_initial_setup(self, e5080b_controller_mock: E5080BController):
-        """Test that initial_setup calls the parent class's initial_setup."""
-        # Mock the parent's initial_setup method
-        e5080b_controller_mock.__class__.initial_setup = MagicMock()
-        e5080b_controller_mock.__class__.initialize_device = MagicMock()
+    @patch("qililab.instrument_controllers.keysight.keysight_E5080B_vna_controller.KeysightE5080B", autospec=True)
+    @pytest.mark.parametrize("controller_alias", ["keysight_e5080b"])
+    def test_initial_setup(self, device_mock: MagicMock, platform: Platform, controller_alias: str):
+        """Test QDAC-II controller initializes device correctly."""
+        controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
+        device_mock.return_value.system_reset = MagicMock()
+        device_mock.return_value.opc = MagicMock()
+        device_mock.return_value.format_data = MagicMock()
+        device_mock.return_value.cls = MagicMock()
+        device_mock.return_value.source_power = MagicMock()
+        device_mock.return_value.sweep_type = MagicMock()
+        device_mock.return_value.sweep_mode = MagicMock()
+        device_mock.return_value.points = MagicMock()
+        device_mock.return_value.if_bandwidth = MagicMock()
+        device_mock.return_value.scattering_parameter = MagicMock()
+        device_mock.return_value.rf_on = MagicMock()
+        device_mock.return_value.averages_enabled = MagicMock()
+        device_mock.return_value.step_auto = MagicMock()
+        device_mock.return_value.start_freq = MagicMock()
+        device_mock.return_value.center_freq = MagicMock()
+        device_mock.return_value.stop_freq = MagicMock()
+        device_mock.return_value.span = MagicMock()
+        device_mock.return_value.cw = MagicMock()
+        device_mock.return_value.averages_count = MagicMock()
+        device_mock.return_value.averages_mode = MagicMock()
+        device_mock.return_value.step_size = MagicMock()
+        device_mock.return_value.format_border = MagicMock()
+        controller_instance.connect()
+        # controller_instance.device.system_reset = MagicMock()
+        # controller_instance.device.reference_source = MagicMock()
+        controller_instance.initial_setup()
 
-        e5080b_controller_mock.initial_setup()
-        e5080b_controller_mock._initialize_device()
-        # Check that the parent class's initial_setup was called
-        e5080b_controller_mock.__class__.initial_setup.assert_called_once()
+        # controller_instance.device.reference_source.assert_called_once_with(controller_instance.reference_clock.value)
 
-    # def test_initialize_device_creates_keysight_e5080b(self, e5080b_controller_mock: E5080BController):
-    #     """Test that the device is correctly instantiated."""
-    #     with patch('qililab.instrument_controllers.keysight.keysight_E50808B_vna_controller.E5080BController') as MockDevice:
-    #         # Call the _initialize_device method
-    #         e5080b_controller_mock._initialize_device()
-    #         e5080b_controller_mock._initialize_device()
+    @patch("qililab.instrument_controllers.keysight.keysight_E5080B_vna_controller.KeysightE5080B", autospec=True)
+    @pytest.mark.parametrize("controller_alias", ["keysight_e5080b"])
+    def test_initialize_device(self, device_mock: MagicMock, platform: Platform, controller_alias: str):
+        """Test QDAC-II controller initializes device correctly."""
+        controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
 
-    #         # Check that KeysightE5080B is instantiated with the expected arguments
-    #         MockDevice.assert_called_once_with(
-    #             name=f"{e5080b_controller_mock.name.value}_{e5080b_controller_mock.alias}", 
-    #             address=f"TCPIP::{e5080b_controller_mock.settings.connection.address}::INSTR", 
-    #             visalib="@py"
-    #         )
+        controller_instance._initialize_device()
+
+        name = f"{controller_instance.name.value}_{controller_instance.alias}"
+        address = (
+            f"TCPIP::{controller_instance.address}::INSTR"
+        )
+        device_mock.assert_called_once_with(name=name, address=address, visalib="@py")
+
