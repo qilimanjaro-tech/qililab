@@ -20,16 +20,19 @@ from dataclasses import dataclass
 import numpy as np
 
 from qililab.constants import DEFAULT_TIMEOUT
-from qililab.instruments.decorators import (check_device_initialized,
-                                            log_set_parameter)
+from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.vna_result import VNAResult
-from qililab.typings import (ChannelID, InstrumentName, Parameter,
-                             ParameterValue)
-from qililab.typings.enums import (VNAAverageModes, VNAFormatBorder,
-                                   VNAFormatData, VNAScatteringParameters,
-                                   VNASweepModes, VNASweepTypes)
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings.enums import (
+    VNAAverageModes,
+    VNAFormatBorder,
+    VNAFormatData,
+    VNAScatteringParameters,
+    VNASweepModes,
+    VNASweepTypes,
+)
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 
 
@@ -459,12 +462,13 @@ class E5080B(Instrument):
         while True:
             status_avg = int(self.device.ask("STAT:OPER:COND?"))
             if status_avg & (1 << 8):
-                print("averages are done running") #  to be removed once tested in HW
+                print("averages are done running")  #  to be removed once tested in HW
                 break
 
-            print("averages are still running") #  to be removed once tested in HW
+            print("averages are still running")  #  to be removed once tested in HW
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
+        return
 
     def read_tracedata(self, timeout: int = DEFAULT_TIMEOUT):
         """

@@ -16,6 +16,7 @@
 
 from .instrument_controller import InstrumentController
 from .instrument_controllers import InstrumentControllers
+from .keysight import E5080BController
 from .keithley import Keithley2600Controller
 from .mini_circuits import MiniCircuitsController
 from .qblox import QbloxClusterController, QbloxSPIRackController
@@ -25,9 +26,9 @@ from .rohde_schwarz import SGS100AController
 from .single_instrument_controller import SingleInstrumentController
 from .utils import InstrumentControllerFactory
 from .yokogawa import GS200Controller
-from .keysight import E5080BController
 
 __all__ = [
+    "E5080BController",
     "GS200Controller",
     "InstrumentController",
     "InstrumentControllerFactory",
@@ -40,5 +41,4 @@ __all__ = [
     "QuantumMachinesClusterController",
     "SGS100AController",
     "SingleInstrumentController",
-    "E5080BController",
 ]

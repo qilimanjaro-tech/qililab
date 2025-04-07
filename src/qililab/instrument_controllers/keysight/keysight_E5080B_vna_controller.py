@@ -21,8 +21,7 @@ from qililab.instrument_controllers.instrument_controller import InstrumentContr
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.keysight.e5080b_vna import E5080B
-from qililab.typings.enums import (ConnectionName, InstrumentControllerName,
-                                   InstrumentName)
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentName
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 
 
