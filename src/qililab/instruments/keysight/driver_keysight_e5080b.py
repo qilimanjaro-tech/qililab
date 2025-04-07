@@ -14,12 +14,10 @@
 
 # This file is meant to be qcode
 from typing import Any
+
 from qcodes import VisaInstrument
-from qcodes.parameters import (
-    Parameter,
-)
+from qcodes.parameters import Parameter, create_on_off_val_mapping
 from qcodes.validators import Enum, Numbers
-from qcodes.parameters import create_on_off_val_mapping
 
 
 class Driver_KeySight_E5080B(VisaInstrument):

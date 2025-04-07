@@ -19,21 +19,18 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from qililab.instruments.decorators import check_device_initialized, log_set_parameter
+from qililab.constants import DEFAULT_TIMEOUT
+from qililab.instruments.decorators import (check_device_initialized,
+                                            log_set_parameter)
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.vna_result import VNAResult
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
-from qililab.typings.enums import (
-    VNAScatteringParameters,
-    VNAAverageModes,
-    VNASweepTypes,
-    VNASweepModes,
-    VNAFormatData,
-    VNAFormatBorder,
-)
+from qililab.typings import (ChannelID, InstrumentName, Parameter,
+                             ParameterValue)
+from qililab.typings.enums import (VNAAverageModes, VNAFormatBorder,
+                                   VNAFormatData, VNAScatteringParameters,
+                                   VNASweepModes, VNASweepTypes)
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
-from qililab.constants import DEFAULT_TIMEOUT
 
 
 @InstrumentFactory.register
@@ -54,7 +51,7 @@ class E5080B(Instrument):
             num_points (int): Number of measurement points.
             if_bandwidth (float): Intermediate frequency bandwidth.
         """
-       
+
         frequency_start: float | None = None
         frequency_stop: float | None = None
         frequency_center: float | None = None
@@ -462,10 +459,10 @@ class E5080B(Instrument):
         while True:
             status_avg = int(self.device.ask("STAT:OPER:COND?"))
             if status_avg & (1 << 8):
-                print("averages are done running") # to be removed once tested in HW
+                print("averages are done running") #  to be removed once tested in HW
                 break
-            else:
-                print("averages are still running") # to be removed once tested in HW
+
+            print("averages are still running") #  to be removed once tested in HW
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
 
@@ -490,6 +487,7 @@ class E5080B(Instrument):
         """Bring the VNA back to a mode where it can be easily used by the operator."""
         mode = VNASweepModes("cont")
         self.device.sweep_mode(mode)
+        return
 
     def acquire_result(self, timeout: int = DEFAULT_TIMEOUT):
         """Convert the data received from the device to a Result object."""
@@ -509,13 +507,13 @@ class E5080B(Instrument):
         self.device.averages_enabled(self.averages_enabled)
         self.device.step_auto(self.step_auto)
 
-        if self.sweep_type is not "SEGM":
+        if self.sweep_type != "SEGM":
             self.device.start_freq(self.start_freq)
             self.device.center_freq(self.center_freq)
             self.device.stop_freq(self.stop_freq)
             self.device.span(self.span)
 
-        if self.sweep_type is "CW":
+        if self.sweep_type == "CW":
             self.device.cw(self.cw)
 
         if self.averages_enabled is True:

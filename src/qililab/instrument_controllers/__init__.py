@@ -40,5 +40,5 @@ __all__ = [
     "QuantumMachinesClusterController",
     "SGS100AController",
     "SingleInstrumentController",
-    "keysight_E5080B_vna_controller",
+    "E5080BController",
 ]
