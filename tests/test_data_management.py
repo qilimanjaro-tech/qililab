@@ -7,12 +7,13 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-
-import qililab as ql
-from qililab.data_management import load_results, save_platform, save_results
-from qililab.platform import Platform
 from tests.data import Galadriel
 from tests.test_utils import build_platform
+
+import qililab as ql
+from qililab.data_management import save_platform
+from qililab.platform import Platform
+from qililab.result.result_management import load_results, save_results
 
 
 @patch("ruamel.yaml.YAML.load", return_value=copy.deepcopy(Galadriel.runcard))
@@ -92,12 +93,9 @@ class TestBuildPlatformCornerCases:
         saved_platform_dict = saved_platform.to_dict()
         new_saved_platform_dict = new_saved_platform.to_dict()
 
-        assert (
-            original_platform_dict
-            == saved_platform_dict
-            == new_saved_platform_dict
-        )
+        assert original_platform_dict == saved_platform_dict == new_saved_platform_dict
         os.remove(path)  # Cleaning generated file
+
 
 @patch("qililab.data_management.os.makedirs")
 @patch("qililab.data_management.h5py.File")

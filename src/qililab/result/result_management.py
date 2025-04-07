@@ -123,7 +123,10 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
                 0.88, 0.9 , 0.92, 0.94, 0.96, 0.98])}
     """
     with h5py.File(path, "r") as hf:
-        loops: dict[str, np.ndarray] = {name: data[:] for name, data in hf["loops"].items()}  # type: ignore
+        loops: dict[str, np.ndarray] = {
+            name: data[:] if isinstance(data, (list, np.ndarray)) else np.array(data)  # type: ignore
+            for name, data in hf["loops"].items()
+        }
         results = hf["results"][:]  # type: ignore
 
     return results, loops  # type: ignore

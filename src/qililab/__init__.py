@@ -61,6 +61,7 @@ __all__ = [
     "QbloxCompiler",
     "QuantumMachinesCompiler",
     "Ramp",
+    "Sample",
     "Square",
     "Wait",
     "Waveform",
@@ -73,12 +74,10 @@ __all__ = [
     "get_db_manager",
     "load_results",
     "logger",
-    "Sample",
     "save_platform",
     "save_results",
     "serialize",
     "serialize_to",
-    "stream_results",
 ]
 
 

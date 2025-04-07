@@ -101,7 +101,7 @@ class StreamArray:
     def __init__(
         self,
         shape: list | tuple,
-        loops: dict[str, list],
+        loops: dict[str, np.ndarray],
         platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
@@ -132,7 +132,6 @@ class StreamArray:
 
         self.measurement = self.db_manager.add_measurement(
             experiment_name=self.experiment_name,
-            # result_path=self.path,
             experiment_completed=False,
             optional_identifier=self.optional_identifier,
             platform=self.platform.to_dict(),

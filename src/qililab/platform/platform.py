@@ -1620,3 +1620,32 @@ class Platform:
             db_manager=db_manager,
             optional_identifier=optional_identifier,
         )
+
+    def save_measurement_results(
+        self,
+        experiment_name: str,
+        results: np.ndarray,
+        loops: dict[str, np.ndarray],
+        db_manager: DatabaseManager,
+        qprogram: QProgram | None = None,
+        optional_identifier: str | None = None,
+    ):
+
+        shape = results.shape
+
+        # Check that loops have the same shape as results
+
+        stream_array = StreamArray(
+            shape=shape,
+            loops=loops,
+            platform=self,
+            qprogram=qprogram,
+            experiment_name=experiment_name,
+            db_manager=db_manager,
+            optional_identifier=optional_identifier,
+        )
+
+        with stream_array:
+            for index in range(shape[0]):
+                stream_array[index,] = results[index, ...]  # ask Adri what to put instead of tuple
+        return stream_array.path

@@ -76,8 +76,7 @@ class Sample(base):
     device_design: Column = Column("device_design", String)
     n_qubits_per_device: Column = Column("n_qubits_per_device", ARRAY(Integer))
     additional_info: Column = Column("additional_info", String)
-    manufacturer: Column = Column("manufacturer", String)
-    
+
     def __init__(
         self,
         sample_name,
@@ -295,17 +294,33 @@ class DatabaseManager:
                 session.rollback()
                 raise e
 
-    def add_sample(self, sample_name: str, manufacturer: str, wafer: str, sample: str, fab_run: str,
-                   device_design: str, n_qubits_per_device: list[int], additional_info: str | None = None):
+    def add_sample(
+        self,
+        sample_name: str,
+        manufacturer: str,
+        wafer: str,
+        sample: str,
+        fab_run: str,
+        device_design: str,
+        n_qubits_per_device: list[int],
+        additional_info: str | None = None,
+    ):
         """Add sample metadata
 
         Args:
             sample_name (str): Sample name id.
             manufacturer (str): Sample manufacturer.
         """
-        sample_obj = Sample(sample_name=sample_name, manufacturer=manufacturer, wafer=wafer, sample=sample,
-                            fab_run=fab_run, device_design=device_design, 
-                            n_qubits_per_device=n_qubits_per_device, additional_info=additional_info)
+        sample_obj = Sample(
+            sample_name=sample_name,
+            manufacturer=manufacturer,
+            wafer=wafer,
+            sample=sample,
+            fab_run=fab_run,
+            device_design=device_design,
+            n_qubits_per_device=n_qubits_per_device,
+            additional_info=additional_info,
+        )
         with self.Session() as session:
             session.add(sample_obj)
             try:
@@ -340,8 +355,7 @@ class DatabaseManager:
 
             if pandas_output:
                 return read_sql(query.statement, con=con)
-            else:
-                return query.all()
+            return query.all()
 
     def head(
         self,
@@ -366,13 +380,11 @@ class DatabaseManager:
 
             if pandas_output:
                 return read_sql(query.statement, con=con)
-            else:
-                return query.all()
+            return query.all()
 
     def add_measurement(
         self,
         experiment_name: str,
-        # result_path: str,
         experiment_completed: bool,
         cooldown: str | None = None,
         sample_name: str | None = None,
@@ -432,7 +444,7 @@ class DatabaseManager:
                 raise e
 
 
-def _load_config(filename="~/database.ini", section="postgresql"):
+def _load_config(filename=os.path.expanduser("~/database.ini"), section="postgresql"):
     parser = ConfigParser()
     parser.read(filename)
 
@@ -442,9 +454,8 @@ def _load_config(filename="~/database.ini", section="postgresql"):
         params = parser.items(section)
         for param in params:
             config[param[0]] = param[1]
-    else:
-        raise Exception("Section {0} not found in the {1} file".format(section, filename))
-    return config
+        return config
+    raise Exception("Section {0} not found in the {1} file".format(section, filename))
 
 
 def get_db_manager():
