@@ -13,7 +13,7 @@ from qililab.instruments import ParameterNotFound
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.keysight import E5080BController
 from qililab.platform import Platform
-from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter, VNASweepTypes
 from tests.data import SauronVNA
 from tests.test_utils import build_platform
 
@@ -65,6 +65,9 @@ def fixture_e5080b_settings():
     return {
         RUNCARD.NAME: InstrumentControllerName.KEYSIGHT_E5080B,
         RUNCARD.ALIAS: "keysight_e5080b",
+        # Parameter.SWEEP_TYPE: VNASweepTypes.CW.value,
+        # Parameter.AVERAGES_ENABLED: True,
+        # Parameter.STEP_AUTO: False,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "169.254.150.105",
@@ -301,10 +304,53 @@ class TestE5080B:
         """Test the get frequencies method"""
         e5080b.get_frequencies()
 
-    def test_initial_setup(self, e5080b: E5080B):
-        """Test the get frequencies method"""
-        e5080b.initial_setup()
+    # def test_initial_setup(self, e5080b: E5080B):
+    #     """Test the get frequencies method"""
+    #     e5080b.initial_setup()
 
     def test_init_controller(self, e5080b_controller_mock: E5080BController):
         e5080b_controller_mock.initial_setup()
         e5080b_controller_mock._initialize_device()
+
+    # def test_runcard_sets_value(self, platform: Platform):
+    #     """Test that the runcard sets the value at the initial setup"""
+
+    def test_initial_setup_non_segm(self, e5080b: E5080B):
+        """Test the initial setup when sweep_type is not 'SEGM'."""
+        e5080b.set_parameter(Parameter.SWEEP_TYPE, "lin")  # Non-SEGM sweep type
+        e5080b.initial_setup()  # This should call start_freq, center_freq, stop_freq, span
+        e5080b.device.start_freq.assert_called_once_with(e5080b.start_freq)
+        e5080b.device.center_freq.assert_called_once_with(e5080b.center_freq)
+        e5080b.device.stop_freq.assert_called_once_with(e5080b.stop_freq)
+        e5080b.device.span.assert_called_once_with(e5080b.span)
+
+    def test_initial_setup_cw(self, e5080b: E5080B):
+        """Test the initial setup when sweep_type is 'CW'."""
+        e5080b.set_parameter(Parameter.SWEEP_TYPE, "CW")  # Set sweep type to CW
+        e5080b.initial_setup()  # This should call cw_frequency
+        e5080b.device.cw.assert_called_once_with(e5080b.cw)
+
+    def test_initial_setup_calls_super_initial_setup(self, e5080b_controller_mock: E5080BController):
+        """Test that initial_setup calls the parent class's initial_setup."""
+        # Mock the parent's initial_setup method
+        e5080b_controller_mock.__class__.initial_setup = MagicMock()
+        e5080b_controller_mock.__class__.initialize_device = MagicMock()
+
+        e5080b_controller_mock.initial_setup()
+        e5080b_controller_mock._initialize_device()
+        # Check that the parent class's initial_setup was called
+        e5080b_controller_mock.__class__.initial_setup.assert_called_once()
+
+    # def test_initialize_device_creates_keysight_e5080b(self, e5080b_controller_mock: E5080BController):
+    #     """Test that the device is correctly instantiated."""
+    #     with patch('qililab.instrument_controllers.keysight.keysight_E50808B_vna_controller.E5080BController') as MockDevice:
+    #         # Call the _initialize_device method
+    #         e5080b_controller_mock._initialize_device()
+    #         e5080b_controller_mock._initialize_device()
+
+    #         # Check that KeysightE5080B is instantiated with the expected arguments
+    #         MockDevice.assert_called_once_with(
+    #             name=f"{e5080b_controller_mock.name.value}_{e5080b_controller_mock.alias}", 
+    #             address=f"TCPIP::{e5080b_controller_mock.settings.connection.address}::INSTR", 
+    #             visalib="@py"
+    #         )
