@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## 0.29.3 (2025-04-07)
+
+### Improvements
+
+- The tests for `QbloxDraw` have been modified such that the plots don't open on the user's browser when running pytests via VSCode.
+  [#924](https://github.com/qilimanjaro-tech/qililab/pull/924)
+
+- Github Actions now use `pytest-xdist` plugin to run tests in parallel. To run tests in parallel locally use `uv run pytest -n auto --dist loadfile`. The `--dist loadfile` flag is mandatory to avoid conflicts between tests that edit shared data, and should be planned for removal in the future.
+  [#925](https://github.com/qilimanjaro-tech/qililab/pull/925)
+
+### Bug fixes
+
+- For the Rohde & Schwarz SGS100A, a missing line in the driver prevented the settings from updating when set. This issue has been fixed.
+[#927](https://github.com/qilimanjaro-tech/qililab/pull/927)
+
+- Qblox-instruments version updated to the right one.
+[#929](https://github.com/qilimanjaro-tech/qililab/pull/929)
+
 ## 0.29.2 (2025-03-31)
 
 ### New features since last release
