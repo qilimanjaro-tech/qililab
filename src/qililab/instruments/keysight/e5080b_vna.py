@@ -481,6 +481,7 @@ class E5080B(Instrument):
             trace = self._get_trace()
             self.release()
             return trace
+        return None
 
     def get_frequencies(self):
         """return freqpoints"""
