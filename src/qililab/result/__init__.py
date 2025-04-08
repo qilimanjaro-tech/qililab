@@ -31,7 +31,8 @@ Functions
 .. autosummary::
     :toctree: api
 
-    ~stream_results
+    ~load_results
+    ~save_results
 """
 # isort: skip_file
 from .experiment_results import ExperimentResults
