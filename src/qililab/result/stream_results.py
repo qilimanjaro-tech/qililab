@@ -117,25 +117,14 @@ class StreamArray:
         self.platform = platform
         self.qprogram = qprogram
 
-    def __setitem__(self, key: tuple, value: float):
-        """Sets and item by key and value in the dataset.
-
-        Args:
-            key (tuple): key for the item to save.
-            value (float): value to save.
-        """
-        if self._file is not None and self._dataset is not None:
-            self._dataset[key] = value
-        self.results[key] = value
-
     def __enter__(self):
 
         self.measurement = self.db_manager.add_measurement(
             experiment_name=self.experiment_name,
             experiment_completed=False,
             optional_identifier=self.optional_identifier,
-            platform=self.platform.to_dict(),
-            qprogram=(serialize(self.qprogram)),
+            platform=serialize(self.platform.to_dict()),
+            qprogram=serialize(self.qprogram),
         )
         self.path = self.measurement.result_path
 
@@ -149,6 +138,17 @@ class StreamArray:
         self._dataset = self._file.create_dataset("results", data=self.results)
 
         return self
+
+    def __setitem__(self, key: tuple, value: float):
+        """Sets and item by key and value in the dataset.
+
+        Args:
+            key (tuple): key for the item to save.
+            value (float): value to save.
+        """
+        if self._file is not None and self._dataset is not None:
+            self._dataset[key] = value
+        self.results[key] = value
 
     def __exit__(self, *args):
         """Exits the context manager."""
