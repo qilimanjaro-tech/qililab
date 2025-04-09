@@ -428,8 +428,8 @@ class E5080B(Instrument):
     def _get_trace(self):
         """Get the data of the current trace."""
         self.device.format_data("REAL,32")
-        self.device.format_border("SWAPPED")  # SWAPPED is for IBM Compatible computers
-        data = self.device.query_binary_values("CALC:MEAS:DATA:SDAT?")
+        self.device.format_border("SWAP")  # SWAPPED is for IBM Compatible computers
+        data = self.device.visa_handle.query_binary_values("CALC:MEAS:DATA:SDAT?")
         datareal = np.array(data[::2])  # Elements from data starting from 0 iterating by 2
         dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
 
@@ -442,7 +442,9 @@ class E5080B(Instrument):
         """
         if not self.averages_enabled:
             self.device.averages_enabled(True)
-            self.device.number_averages(1)
+            # self.device.averages_count(1)
+            if self.settings.number_averages is not None:
+                self.device.averages_count(self.settings.number_averages)
 
     def _start_measurement(self):
         """
@@ -456,18 +458,37 @@ class E5080B(Instrument):
     def _wait_for_averaging(self, timeout: int = DEFAULT_TIMEOUT):
         self.set_parameter(Parameter.AVERAGES_ENABLED, True)
         self.clear_averages()
-        status_avg = int(self.device.ask("STAT:OPER:COND?"))
+        # self.set_parameter(Parameter.AVERAGES_ENABLED, True)
+        # self.device.averages_count(5)
+        # self.clear_averages()
+        # status_avg = int(self.device.ask("STAT:OPER:COND?"))
         start_time = time.time()
 
         while True:
             status_avg = int(self.device.ask("STAT:OPER:COND?"))
+            print(status_avg)
             if status_avg & (1 << 8):
-                print("averages are done running")  #  to be removed once tested in HW
+                print("done runnging avg")
                 break
-
-            print("averages are still running")  #  to be removed once tested in HW
             if time.time() - start_time > timeout:
+                print("timeout")
                 raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
+
+        # for i in range(100):
+        #     i = i+1
+        #     status_avgg = self.device.ask("STAT:OPER:COND?")
+        #     print(self.device.ask("STAT:OPER:COND?"))
+
+        #     status_avg = int(self.device.ask("STAT:OPER:COND?"))
+        #     print(status_avg)
+        #     if status_avg & (1 << 8):
+        #         print("done runnging avg")
+        #         # break
+        #     else:
+        #         print("not done")
+        #     if time.time() - start_time > timeout:
+        #         print("timeout")
+        #         raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
         return
 
     def read_tracedata(self, timeout: int = DEFAULT_TIMEOUT):
@@ -475,22 +496,31 @@ class E5080B(Instrument):
         Return the current trace data.
         It already releases the VNA after finishing the required number of averages.
         """
+        # self._pre_measurement()
+        # self._start_measurement()
+        # if self._wait_for_averaging(timeout):
+        #     trace = self._get_trace()
+        #     self.release()
+        #     return trace
+        # return None
+    
         self._pre_measurement()
         self._start_measurement()
-        if self._wait_for_averaging(timeout):
-            trace = self._get_trace()
-            self.release()
-            return trace
-        return None
+        self._wait_for_averaging(timeout)
+        trace = self._get_trace()
+        print(trace)
+        self.release()
+        return trace
+        
 
     def get_frequencies(self):
         """return freqpoints"""
         self.device.write("FORM:DATA:REAL,64")  # recommended to avoid frequency rounding errors
-        return np.array(self.device.query("CALC:MEAS:X?"))
+        return np.array(self.device.visa_handle.query_binary_values("CALC:MEAS:X?"))
 
     def release(self):
         """Bring the VNA back to a mode where it can be easily used by the operator."""
-        mode = VNASweepModes("cont")
+        mode = "CONT"
         self.device.sweep_mode(mode)
         return
 
@@ -502,34 +532,88 @@ class E5080B(Instrument):
         self.device.format_data("REAL,32")
         self.device.cls()
         self.reset()
-        self.device.source_power(self.source_power)
-        self.device.sweep_type(self.sweep_type)
-        self.device.sweep_mode(self.sweep_mode)
-        self.device.points(self.points)
-        self.device.if_bandwidth(self.if_bandwidth)
-        self.device.scattering_parameter(self.scattering_parameter)
-        self.device.rf_on(self.rf_on)
-        self.device.averages_enabled(self.averages_enabled)
-        self.device.step_auto(self.step_auto)
+        # self.device.source_power(self.source_power)
+        # self.device.sweep_type(self.sweep_type)
+        # self.device.sweep_mode(self.sweep_mode)
+        # # self.device.points(self.points)
 
-        if self.sweep_type != "SEGM":
-            self.device.start_freq(self.start_freq)
-            self.device.center_freq(self.center_freq)
-            self.device.stop_freq(self.stop_freq)
-            self.device.span(self.span)
+        # self.device.if_bandwidth(self.if_bandwidth)
+        # self.device.scattering_parameter(self.scattering_parameter)
+        # self.device.rf_on(self.rf_on)
+        # self.device.averages_enabled(self.averages_enabled)
+        # self.device.step_auto(self.step_auto)
 
-        if self.sweep_type == "CW":
-            self.device.cw(self.cw)
+        # if self.sweep_type != "SEGM":
+        #     self.device.start_freq(self.settings.frequency_start)
+        # #     self.device.center_freq(self.center_freq)
+        # #     self.device.stop_freq(self.stop_freq)
+        # #     self.device.span(self.span)
 
-        if self.averages_enabled is True:
-            self.device.averages_count(self.number_averages)
-            self.device.averages_mode(self.averages_mode)
+        # if self.sweep_type == "CW":
+        #     self.device.cw(self.cw)
 
-        if self.step_auto is False:
-            self.device.step_size(self.step_size)
+        # if self.averages_enabled is True:
+        #     self.device.averages_count(self.number_averages)
+        #     # self.device.averages_mode(self.averages_mode)
 
-        self.device.format_data(self.format_data)
-        self.device.format_border(self.format_border)
+        # if self.step_auto is False:
+        #     self.device.step_size(self.step_size)
+
+        # # self.device.format_data(self.format_data)
+        # # self.device.format_border(self.format_border)
+
+
+        # Non-conditional settings:
+        if self.settings.source_power is not None:
+            self.device.source_power(self.settings.source_power)
+        if self.settings.sweep_type is not None:
+            self.device.sweep_type(self.settings.sweep_type)
+        if self.settings.sweep_mode is not None:
+            self.device.sweep_mode(self.settings.sweep_mode)
+        if self.settings.number_points is not None:
+            self.device.points(self.settings.number_points)
+        if self.settings.if_bandwidth is not None:
+            self.device.if_bandwidth(self.settings.if_bandwidth)
+        if self.settings.scattering_parameter is not None:
+            self.device.scattering_parameter(self.settings.scattering_parameter)
+        if self.settings.rf_on is not None:
+            self.device.rf_on(self.settings.rf_on)
+        # if self.settings.averages_enabled is not None:
+        #     self.device.averages_enabled(self.settings.averages_enabled)
+        # if self.settings.step_auto is not None:
+        #     self.device.step_auto(self.settings.step_auto)
+        if self.settings.format_data is not None:
+            self.device.format_data(self.settings.format_data)
+        if self.settings.format_border is not None:
+            self.device.format_border(self.settings.format_border)
+
+        # Frequency settings: these depend on the sweep type.
+        if self.settings.sweep_type is not None:
+            # If sweep type is not SEGM, apply the frequency settings.
+            if self.settings.sweep_type != "SEGM":
+                if self.settings.frequency_start is not None:
+                    self.device.start_freq(self.settings.frequency_start)
+                if self.settings.frequency_center is not None:
+                    self.device.center_freq(self.settings.frequency_center)
+                if self.settings.frequency_stop is not None:
+                    self.device.stop_freq(self.settings.frequency_stop)
+                if self.settings.frequency_span is not None:
+                    self.device.span(self.settings.frequency_span)
+            # If sweep type is CW, set the CW frequency.
+            if self.settings.sweep_type == "CW" and self.settings.cw_frequency is not None:
+                self.device.cw(self.settings.cw_frequency)
+
+        # Averages settings: only set if averages_enabled is True.
+        # if self.settings.averages_enabled is True:
+        if self.settings.number_averages is not None:
+            self.device.averages_count(self.settings.number_averages)
+        if self.settings.averages_mode is not None:
+            self.device.averages_mode(self.settings.averages_mode)
+
+        # Step size: set only if step_auto is False.
+        if self.settings.step_auto is False:
+            if self.settings.step_size is not None:
+                self.device.step_size(self.settings.step_size)
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
