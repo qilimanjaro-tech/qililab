@@ -2954,9 +2954,11 @@ dependencies = [
     { name = "qualang-tools" },
     { name = "rich" },
     { name = "ruamel-yaml" },
+    { name = "sqlalchemy" },
     { name = "submitit" },
     { name = "tqdm" },
     { name = "urllib3" },
+    { name = "xarray" },
 ]
 
 [package.dev-dependencies]
@@ -2997,9 +2999,11 @@ requires-dist = [
     { name = "qualang-tools", specifier = ">=0.19.3" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
+    { name = "sqlalchemy", specifier = ">=2.0.40" },
     { name = "submitit", specifier = ">=1.5.2" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "urllib3", specifier = ">=2.3.0" },
+    { name = "xarray", specifier = ">=2024.3.0" },
 ]
 
 [package.metadata.requires-dev]

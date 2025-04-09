@@ -38,9 +38,11 @@ dependencies = [
     "qualang-tools>=0.19.3",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
+    "sqlalchemy>=2.0.40",
     "submitit>=1.5.2",
     "tqdm>=4.67.1",
     "urllib3>=2.3.0",
+    "xarray>=2024.3.0",
 ]
 
 [dependency-groups]
