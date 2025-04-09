@@ -15,6 +15,8 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
+from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
+from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -37,8 +39,6 @@ from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
-from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
@@ -1359,3 +1359,91 @@ class TestMethods:
 
         with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
             platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
+
+    def test_stream_array(self, platform: Platform):
+        """Test stream_array function to save database from platform"""
+
+        shape = (2, 2)
+        loops = {"test_amp_loop": np.arange(0, 1, 2)}
+        experiment_name = "test_stream_array"
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        stream_array = platform.stream_array(shape, loops, experiment_name, db_manager, qprogram, optional_identifier)
+
+        assert stream_array.loops == loops
+        assert stream_array.results.shape == shape
+        assert stream_array.optional_identifier == optional_identifier
+        assert stream_array.platform == platform
+        assert stream_array.qprogram == qprogram
+        assert stream_array.db_manager == mock_database
+        assert stream_array.experiment_name == experiment_name
+
+    @patch("h5py.File")
+    def test_save_measurement_results(self, mock_h5file, platform: Platform):
+        """Test save_measurement_results functionto save from database from Platform"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 1)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        platform.save_measurement_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+
+        assert mock_h5file.called
+
+    @patch("h5py.File")
+    def test_save_measurement_results_raise_error_incorrect_loops(self, mock_h5file, platform: Platform):
+        """Test save_measurement_results functionto save from database from Platform"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 1), "test_freq_loop": np.arange(0, 1e6)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        error_string = "Number of loops must be the same as the number of dimensions of the results except for IQ"
+        with pytest.raises(ValueError, match=error_string):
+            platform.save_measurement_results(
+                experiment_name, results, loops, db_manager, qprogram, optional_identifier
+            )
+
+    @patch("h5py.File")
+    def test_save_measurement_results_raise_error_incorrect_loops_size(self, mock_h5file, platform: Platform):
+        """Test save_measurement_results functionto save from database from Platform"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 1, 2, 3, 4)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
+        with pytest.raises(ValueError, match=error_string):
+            platform.save_measurement_results(
+                experiment_name, results, loops, db_manager, qprogram, optional_identifier
+            )
