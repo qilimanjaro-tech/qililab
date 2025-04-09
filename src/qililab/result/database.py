@@ -123,7 +123,7 @@ class Measurement(base):  # type: ignore
     calibration: Column = Column("calibration", JSONB)
     parameters: Column = Column("parameters", JSONB)
     data_shape: Column = Column("data_shape", ARRAY(Integer))
-    debug_file = Column("debug_file", Text)  # for saving debug_qm_execution, or debug_qblox_execution
+    debug_file = Column("debug_file", Text)
     created_by = Column("created_by", String, server_default=text("current_user"))
 
     def end_experiment(self, Session):

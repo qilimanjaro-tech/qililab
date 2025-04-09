@@ -1633,7 +1633,16 @@ class Platform:
 
         shape = results.shape
 
-        # Check that loops have the same shape as results
+        if len(loops) != len(shape) - 1:
+            raise ValueError(
+                "Number of loops must be the same as the number of dimensions of the results except for IQ"
+            )
+
+        for iteration, (loop_name, loop_array) in enumerate(loops.items()):
+            if loop_array.shape[0] != shape[iteration]:
+                raise ValueError(
+                    f"Loops dimensions must be the same than the array instroduced, {loop_name} as {loop_array.shape[0]} != {shape[iteration]}"
+                )
 
         stream_array = StreamArray(
             shape=shape,
