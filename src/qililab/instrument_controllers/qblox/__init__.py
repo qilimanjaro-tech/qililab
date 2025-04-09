@@ -12,24 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""__init__.py"""
+"""Qblox Instrument Controllers"""
 
-from .decorators import check_device_initialized, log_set_parameter
-from .instrument import Instrument
+from .qblox_cluster_controller import QbloxClusterController
+from .qblox_spi_rack_controller import QbloxSPIRackController
 
-__all__ = [
-    "Instrument",
-    # "QDevilQDAC2",
-    # "QbloxControlModule",
-    # "QbloxD5A",
-    # "QbloxModule",
-    # "QbloxQCM",
-    # "QbloxQCMRF",
-    # "QbloxQRM",
-    # "QbloxQRMRF",
-    # "QbloxS4G",
-    # "QuantumMachinesOPX",
-    # "RohdeSchwarzSG100",
-    "check_device_initialized",
-    "log_set_parameter",
-]
+__all__ = ["QbloxClusterController", "QbloxSPIRackController"]

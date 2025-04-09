@@ -15,17 +15,10 @@
 """Instrument Controllers module."""
 
 from .instrument_controller import InstrumentController
-from .qblox_cluster_controller import QbloxClusterController
-from .qblox_spi_rack_controller import QbloxSPIRackController
-from .qdevil_qdac2_controller import QDevilQDAC2Controller
-from .quantum_machines_cluster_controller import QuantumMachinesClusterController
-from .rohde_schwarz_sg100_controller import RohdeSchwarzSGS100AController
+from .qblox import QbloxClusterController, QbloxSPIRackController
 
 __all__ = [
     "InstrumentController",
-    "QDevilQDAC2Controller",
     "QbloxClusterController",
     "QbloxSPIRackController",
-    "QuantumMachinesClusterController",
-    "RohdeSchwarzSGS100AController",
 ]

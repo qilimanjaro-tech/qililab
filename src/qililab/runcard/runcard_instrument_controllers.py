@@ -18,7 +18,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 from qililab.instrument_controllers.instrument_controller_type import InstrumentControllerType
-from qililab.settings.instrument_controllers import (  # QbloxSPIRackControllerSettings,; QDevilQDAC2ControllerSettings,; QuantumMachinesClusterControllerSettings,; RohdeSchwarzSG100ControllerSettings,
+from qililab.settings.instrument_controllers import (  QbloxSPIRackControllerSettings,; QDevilQDAC2ControllerSettings,; QuantumMachinesClusterControllerSettings,; RohdeSchwarzSG100ControllerSettings,
     QbloxClusterControllerSettings,
 )
 
@@ -28,11 +28,11 @@ class QbloxClusterRuncardInstrumentController(BaseModel):
     settings: QbloxClusterControllerSettings
 
 
-# class QbloxSPIRackRuncardInstrumentController(BaseModel):
-#     type: Literal[InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER] = (
-#         InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER
-#     )
-#     settings: QbloxSPIRackControllerSettings
+class QbloxSPIRackRuncardInstrumentController(BaseModel):
+    type: Literal[InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER] = (
+        InstrumentControllerType.QBLOX_SPI_RACK_CONTROLLER
+    )
+    settings: QbloxSPIRackControllerSettings
 
 
 # class QDevilQDAC2RuncardInstrumentController(BaseModel):

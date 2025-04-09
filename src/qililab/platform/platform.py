@@ -21,9 +21,6 @@ import ast
 import io
 import re
 import tempfile
-import time
-import traceback
-import warnings
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Callable, cast
 
@@ -38,10 +35,7 @@ from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
-from qililab.instruments.qblox_module import QbloxModule
-from qililab.instruments.qblox_qcm_rf import QbloxQCMRF
-from qililab.instruments.qblox_qrm_rf import QbloxQRMRF
-from qililab.instruments.quantum_machines_opx import QuantumMachinesOPX
+from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.pulse.qblox_compiler import ModuleSequencer
 from qililab.pulse.qblox_compiler import QbloxCompiler as PulseQbloxCompiler
@@ -65,17 +59,11 @@ from qililab.utils import hash_qpy_sequence
 if TYPE_CHECKING:
     from queue import Queue
 
-    from qibo.transpiler.placer import Placer
-    from qibo.transpiler.router import Router
     from qpysequence import Sequence as QpySequence
 
     from qililab.buses.bus import Bus
-    from qililab.instrument_controllers.instrument_controller import InstrumentController
+    from qililab.instrument_controllers import InstrumentController
     from qililab.instruments.instrument import Instrument
-    from qililab.result import Result
-    from qililab.runcard import Runcard
-    from qililab.settings.analog import AnalogCompilationSettings
-    from qililab.settings.digital import DigitalCompilationSettings
 
 
 class Platform:
