@@ -1,24 +1,21 @@
 """Tests for the Qblox Module class."""
 
-import copy
-import re
-from unittest.mock import MagicMock, patch, create_autospec
+from typing import cast
+from unittest.mock import MagicMock
 
-import numpy as np
 import pytest
+from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
+from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
-from qililab.instrument_controllers.qblox.qblox_cluster_controller import QbloxClusterController
+from qililab.data_management import build_platform
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQCMRF
 from qililab.platform import Platform
-from qililab.data_management import build_platform
 from qililab.typings import Parameter
-from typing import cast
-from qblox_instruments.qcodes_drivers.sequencer import Sequencer
-from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 
 MAX_ATTENUATION = 30
+
 
 @pytest.fixture(name="platform")
 def fixture_platform():
@@ -27,8 +24,8 @@ def fixture_platform():
 
 
 @pytest.fixture(name="qcm_rf")
-def fixture_qrm(platform: Platform):
-    qcm_rf = cast(QbloxQCMRF, platform.get_element(alias="qcm-rf"))
+def fixture_qrm():
+    qcm_rf = QbloxQCMRF()
 
     sequencer_mock_spec = [
         *Sequencer._get_required_parent_attr_names(),
@@ -51,7 +48,7 @@ def fixture_qrm(platform: Platform):
         "connect_out3",
         "marker_ovr_en",
         "offset_awg_path0",
-        "offset_awg_path1"
+        "offset_awg_path1",
     ]
 
     module_mock_spec = [
@@ -75,7 +72,7 @@ def fixture_qrm(platform: Platform):
         "arm_sequencer",
         "start_sequencer",
         "reset",
-        "set"
+        "set",
     ]
 
     # Create a mock device using create_autospec to follow the interface of the expected device
@@ -84,10 +81,7 @@ def fixture_qrm(platform: Platform):
     qcm_rf.device._get_max_out_att_0 = MagicMock(return_value=MAX_ATTENUATION)
     qcm_rf.device._get_max_out_att_1 = MagicMock(return_value=MAX_ATTENUATION)
 
-    qcm_rf.device.sequencers = {
-        0: MagicMock(),
-        1: MagicMock()
-    }
+    qcm_rf.device.sequencers = {0: MagicMock(), 1: MagicMock()}
 
     for sequencer in qcm_rf.device.sequencers:
         qcm_rf.device.sequencers[sequencer].mock_add_spec(sequencer_mock_spec)
@@ -97,7 +91,7 @@ def fixture_qrm(platform: Platform):
 
 class TestQbloxQCMRF:
     def test_init(self, qcm_rf: QbloxQCMRF):
-        assert qcm_rf.alias == "qcm-rf"
+        assert qcm_rf.settings.alias == "qcm-rf"
         assert len(qcm_rf.awg_sequencers) == 2
 
     @pytest.mark.parametrize(
@@ -106,27 +100,20 @@ class TestQbloxQCMRF:
             # Test GAIN setting
             (Parameter.GAIN, 2.0),
             (Parameter.GAIN, 3.5),
-
             # Test GAIN_I and GAIN_Q settings
             (Parameter.GAIN_I, 1.5),
             (Parameter.GAIN_Q, 1.5),
-
             # Test OFFSET_I and OFFSET_Q settings
             (Parameter.OFFSET_I, 0.1),
             (Parameter.OFFSET_Q, 0.2),
-
             # Test IF setting (intermediate frequency)
             (Parameter.IF, 100e6),
-
             # Test HARDWARE_MODULATION setting
             (Parameter.HARDWARE_MODULATION, True),
-
             # Test GAIN_IMBALANCE setting
             (Parameter.GAIN_IMBALANCE, 0.05),
-
             # Test PHASE_IMBALANCE setting
             (Parameter.PHASE_IMBALANCE, 0.02),
-
             # QCM-RF specific
             (Parameter.LO_FREQUENCY, 5e9),
             (Parameter.OUT0_LO_FREQ, 5e9),
@@ -139,7 +126,7 @@ class TestQbloxQCMRF:
             (Parameter.OUT1_ATT, 0.6),
             (Parameter.OUT1_OFFSET_PATH0, 0.6),
             (Parameter.OUT1_OFFSET_PATH1, 0.6),
-        ]
+        ],
     )
     def test_set_parameter(self, qcm_rf: QbloxQCMRF, parameter, value):
         """Test setting parameters for QCM sequencers using parameterized values."""
@@ -198,10 +185,10 @@ class TestQbloxQCMRF:
             qcm_rf.set_parameter(Parameter.LO_FREQUENCY, value=5e9, channel_id=None)
 
         with pytest.raises(Exception):
-            qcm_rf.set_parameter(Parameter.OUT0_ATT, value=MAX_ATTENUATION+10, channel_id=None)
+            qcm_rf.set_parameter(Parameter.OUT0_ATT, value=MAX_ATTENUATION + 10, channel_id=None)
 
         with pytest.raises(Exception):
-            qcm_rf.set_parameter(Parameter.OUT1_ATT, value=MAX_ATTENUATION+10, channel_id=None)
+            qcm_rf.set_parameter(Parameter.OUT1_ATT, value=MAX_ATTENUATION + 10, channel_id=None)
 
     @pytest.mark.parametrize(
         "parameter, expected_value",
@@ -209,25 +196,19 @@ class TestQbloxQCMRF:
             # Test GAIN_I and GAIN_Q settings
             (Parameter.GAIN_I, 1.0),
             (Parameter.GAIN_Q, 1.0),
-
             # Test OFFSET_I and OFFSET_Q settings
             (Parameter.OFFSET_I, 0.0),
             (Parameter.OFFSET_Q, 0.0),
-
             # Test IF setting (intermediate frequency)
             (Parameter.IF, 100e6),
-
             # Test HARDWARE_MODULATION setting
             (Parameter.HARDWARE_MODULATION, True),
-
             # Test GAIN_IMBALANCE setting
             (Parameter.GAIN_IMBALANCE, 0.05),
-
             # Test PHASE_IMBALANCE setting
             (Parameter.PHASE_IMBALANCE, 0.02),
-
             # QCM-RF specific
-            (Parameter.LO_FREQUENCY, 3e9), # Same as OUT0_LO_FREQ since we test for channel=0
+            (Parameter.LO_FREQUENCY, 3e9),  # Same as OUT0_LO_FREQ since we test for channel=0
             (Parameter.OUT0_LO_FREQ, 3e9),
             (Parameter.OUT0_LO_EN, True),
             (Parameter.OUT0_ATT, 10),
@@ -238,7 +219,7 @@ class TestQbloxQCMRF:
             (Parameter.OUT1_ATT, 6),
             (Parameter.OUT1_OFFSET_PATH0, 0.1),
             (Parameter.OUT1_OFFSET_PATH1, 0.6),
-        ]
+        ],
     )
     def test_get_parameter(self, qcm_rf: QbloxQCMRF, parameter, expected_value):
         """Test setting parameters for QCM sequencers using parameterized values."""
@@ -258,7 +239,7 @@ class TestQbloxQCMRF:
         [
             (0, None),  # Valid channel ID
             (5, Exception),  # Invalid channel ID
-        ]
+        ],
     )
     def test_invalid_channel(self, qcm_rf: QbloxQCMRF, channel_id, expected_error):
         """Test handling invalid channel IDs when setting parameters."""
@@ -282,7 +263,9 @@ class TestQbloxQCMRF:
 
     def test_run(self, qcm_rf: QbloxQCMRF):
         """Test running the QCM module."""
-        qcm_rf.sequences[0] = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qcm_rf.sequences[0] = Sequence(
+            program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights()
+        )
         qcm_rf.run(channel_id=0)
 
         sequencer = qcm_rf.get_sequencer(0)

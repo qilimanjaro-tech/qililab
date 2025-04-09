@@ -36,7 +36,7 @@ select = [
     "SLOT",
     # "SIM",
     "TID",
-    "TCH",
+    "TC",
     # "PTH",
     # "TD",
     # "PL",
@@ -92,6 +92,9 @@ ignore-names = ["test_*"]
 
 [tool.ruff.lint.flake8-import-conventions.extend-aliases]
 "qililab" = "ql"
+
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 
 [tool.ruff.format]
 docstring-code-format = true

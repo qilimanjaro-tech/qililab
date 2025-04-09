@@ -14,20 +14,15 @@
 
 """PulseBusSchedule class."""
 
-from __future__ import annotations
-
 from bisect import insort
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 from qililab.constants import PULSEBUSSCHEDULE
+from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.utils import Waveforms
-
-if TYPE_CHECKING:
-    from qililab.pulse.pulse import Pulse
 
 
 @dataclass

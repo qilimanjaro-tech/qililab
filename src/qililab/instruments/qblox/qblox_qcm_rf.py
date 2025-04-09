@@ -11,146 +11,135 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
-"""This file contains the QbloxQCMRF class."""
-
-from dataclasses import dataclass, field
-from typing import ClassVar
-
-from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
-
-from qililab.instruments.decorators import check_device_initialized, log_set_parameter
-from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
-
-from .qblox_qcm import QbloxQCM
+from qililab.instruments.instrument_factory import InstrumentFactory
+from qililab.instruments.instrument_type import InstrumentType
+from qililab.instruments.qblox.qblox_module import QbloxControlModule
+from qililab.runcard.runcard_instruments import QbloxQCMRFRuncardInstrument, RuncardInstrument
+from qililab.settings.instruments import QbloxQCMRFSettings, QbloxSequencerSettings
 
 
-@InstrumentFactory.register
-class QbloxQCMRF(QbloxQCM):
-    """Qblox QCM-RF driver."""
+@InstrumentFactory.register(InstrumentType.QBLOX_QCM_RF)
+class QbloxQCMRF(QbloxControlModule[QbloxQCMRFSettings]):
+    """
+    Class for the Qblox QCM-RF instrument.
+    """
 
-    name = InstrumentName.QCMRF
-    device: QcmQrm
+    @classmethod
+    def get_default_settings(cls) -> QbloxQCMRFSettings:
+        """
+        Get default settings.
 
-    @dataclass
-    class QbloxQCMRFSettings(QbloxQCM.QbloxQCMSettings):
-        """Contains the settings of a specific Qblox QCM-RF module."""
+        Returns:
+            QbloxQCMRFSettings: QBlox QCM-RF default settings.
+        """
+        return QbloxQCMRFSettings(alias="qcm-rf", channels=[QbloxSequencerSettings(id=index) for index in range(6)])
 
-        out0_lo_freq: float
-        out0_lo_en: bool
-        out0_att: int  # must be a multiple of 2!
-        out0_offset_path0: float
-        out0_offset_path1: float
-        out1_lo_freq: float
-        out1_lo_en: bool
-        out1_att: int  # must be a multiple of 2!
-        out1_offset_path0: float
-        out1_offset_path1: float
-        out_offsets: list[float] = field(
-            init=False,
-            default_factory=list,  # QCM-RF module doesn't have an `out_offsets` parameter
-        )
+    def to_runcard(self) -> RuncardInstrument:
+        """
+        Convert to runcard instrument.
 
-    settings: QbloxQCMRFSettings
-    # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
-    # al the settable parameters of an instrument.
-    parameters: ClassVar[set[Parameter]] = {
-        Parameter.OUT0_LO_FREQ,
-        Parameter.OUT0_LO_EN,
-        Parameter.OUT0_ATT,
-        Parameter.OUT0_OFFSET_PATH0,
-        Parameter.OUT0_OFFSET_PATH1,
-        Parameter.OUT1_LO_FREQ,
-        Parameter.OUT1_LO_EN,
-        Parameter.OUT1_ATT,
-        Parameter.OUT1_OFFSET_PATH0,
-        Parameter.OUT1_OFFSET_PATH1,
-    }
+        Returns:
+            QbloxQCMRFRuncardInstrument: QBlox QCM-RF runcard instrument.
+        """
+        return QbloxQCMRFRuncardInstrument(settings=self.settings)
 
-    @check_device_initialized
     def initial_setup(self):
-        """Initial setup"""
+        """Set initial instrument settings."""
         super().initial_setup()
-        for parameter in self.parameters:
-            self.set_parameter(parameter, getattr(self.settings, parameter.value))
 
-    def _map_connections(self):
-        """Disable all connections and map sequencer paths with output/input channels."""
-        # Disable all connections
+        for output in self.settings.outputs:
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_lo_enabled",
+                settings_field="output_lo_enabled",
+                get_device_value=self._get_output_lo_enabled,
+                set_device_value=self._set_output_lo_enabled,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_lo_frequency",
+                settings_field="output_lo_frequency",
+                get_device_value=self._get_output_lo_frequency,
+                set_device_value=self._set_output_lo_frequency,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_attenuation",
+                settings_field="output_attenuation",
+                get_device_value=self._get_output_attenuation,
+                set_device_value=self._set_output_attenuation,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_offset_i",
+                settings_field="output_offset_i",
+                get_device_value=self._get_output_offset_i,
+                set_device_value=self._set_output_offset_i,
+            )
+            self.add_output_parameter(
+                output_id=output.port,
+                name="output_offset_q",
+                settings_field="output_offset_q",
+                get_device_value=self._get_output_offset_q,
+                set_device_value=self._set_output_offset_q,
+            )
+
+            self._set_output_lo_enabled(value=output.lo_enabled, output=output.port)
+            self._set_output_lo_frequency(value=output.lo_frequency, output=output.port)
+            self._set_output_attenuation(value=output.attenuation, output=output.port)
+            self._set_output_offset_i(value=output.offset_i, output=output.port)
+            self._set_output_offset_q(value=output.offset_q, output=output.port)
+
+    def _map_output_connections(self):
+        """Disable all connections and map channels paths with output channels."""
         self.device.disconnect_outputs()
 
-        for sequencer in self.awg_sequencers:
-            device_sequencer = self.device.sequencers[sequencer.identifier]
-            getattr(device_sequencer, f"connect_out{sequencer.outputs[0]}")("IQ")
+        for channel in self.settings.channels:
+            operations = {
+                0: self.device.sequencers[channel.id].connect_out0,
+                1: self.device.sequencers[channel.id].connect_out1,
+            }
+            output = channel.outputs[0]
+            operations[output]("IQ")
 
-    @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
-        """Set a parameter of the Qblox QCM-RF module.
+    def _get_output_lo_enabled(self, output: int):
+        operations = {0: self.device.out0_lo_en, 1: self.device.out1_lo_en}
+        return operations[output]()
 
-        Args:
-            parameter (Parameter): Parameter name.
-            value (float | str | bool): Value to set.
-            channel_id (int | None, optional): ID of the sequencer. Defaults to None.
-        """
-        if parameter == Parameter.LO_FREQUENCY:
-            if channel_id is not None:
-                sequencer = self.get_sequencer(sequencer_id=int(channel_id))
-            else:
-                raise Exception(
-                    "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
-                    "Please specify the sequencer index or use the specific Qblox parameter."
-                )
+    def _set_output_lo_enabled(self, value: bool, output: int):
+        operations = {0: self.device.out0_lo_en, 1: self.device.out1_lo_en}
+        operations[output](value)
 
-            parameter = Parameter(f"out{sequencer.outputs[0]}_lo_freq")
+    def _get_output_lo_frequency(self, output: int):
+        operations = {0: self.device.out0_lo_freq, 1: self.device.out1_lo_freq}
+        return operations[output]()
 
-        if parameter == Parameter.OUT0_ATT:
-            max_att = self.device._get_max_out_att_0()
-            if value > max_att:
-                raise Exception(
-                    f"`{Parameter.OUT0_ATT}` for this module cannot be higher than {max_att}dB.\n"
-                    "Please specify an attenuation level, multiple of 2, below this value."
-                )
+    def _set_output_lo_frequency(self, value: float, output: int):
+        operations = {0: self.device.out0_lo_freq, 1: self.device.out1_lo_freq}
+        operations[output](value)
 
-        if parameter == Parameter.OUT1_ATT:
-            max_att = self.device._get_max_out_att_1()
-            if value > max_att:
-                raise Exception(
-                    f"`{Parameter.OUT1_ATT}` for this module cannot be higher than {max_att}dB.\n"
-                    "Please specify an attenuation level, multiple of 2, below this value."
-                )
+    def _get_output_attenuation(self, output: int):
+        operations = {0: self.device.out0_att, 1: self.device.out1_att}
+        return operations[output]()
 
-        if parameter in self.parameters:
-            setattr(self.settings, parameter.value, value)
-            if self.is_device_active():
-                self.device.set(parameter.value, value)
-            return
-        super().set_parameter(parameter, value, channel_id)
+    def _set_output_attenuation(self, value: float, output: int):
+        operations = {0: self.device.out0_att, 1: self.device.out1_att}
+        operations[output](value)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
-        """Set a parameter of the Qblox QCM-RF module.
+    def _get_output_offset_i(self, output: int):
+        operations = {0: self.device.out0_offset_path0, 1: self.device.out1_offset_path0}
+        return operations[output]()
 
-        Args:
-            parameter (Parameter): Parameter name.
-            value (float | str | bool): Value to set.
-            channel_id (int | None, optional): ID of the sequencer. Defaults to None.
-        """
-        if parameter == Parameter.LO_FREQUENCY:
-            if channel_id is not None:
-                sequencer = self.get_sequencer(sequencer_id=int(channel_id))
-            else:
-                raise Exception(
-                    "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
-                    "Please specify the sequencer index or use the specific Qblox parameter."
-                )
-            parameter = Parameter(f"out{sequencer.outputs[0]}_lo_freq")
+    def _set_output_offset_i(self, value: float, output: int):
+        operations = {0: self.device.out0_offset_path0, 1: self.device.out1_offset_path0}
+        operations[output](value)
 
-        if parameter in self.parameters:
-            return getattr(self.settings, parameter.value)
-        return super().get_parameter(parameter, channel_id)
+    def _get_output_offset_q(self, output: int):
+        operations = {0: self.device.out0_offset_path1, 1: self.device.out1_offset_path1}
+        return operations[output]()
 
-    def to_dict(self):
-        """Return a dict representation of an `QCM-RF` instrument."""
-        dictionary = super().to_dict()
-        dictionary.pop("out_offsets")
-        return dictionary
+    def _set_output_offset_q(self, value: float, output: int):
+        operations = {0: self.device.out0_offset_path1, 1: self.device.out1_offset_path1}
+        operations[output](value)

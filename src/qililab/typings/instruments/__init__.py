@@ -14,28 +14,30 @@
 
 """Instruments module"""
 
-from .cluster import Cluster
 from .device import Device
 from .keithley_2600 import Keithley2600Driver
 from .mini_circuits import MiniCircuitsDriver
-from .qblox_d5a import QbloxD5a
-from .qblox_s4g import QbloxS4g
-from .qcm_qrm import QcmQrm
-from .qdevil_qdac2 import QDevilQDac2
-from .qmm_driver import QMMDriver
-from .rohde_schwarz import RohdeSchwarzSGS100A
+from .qblox_cluster import QbloxClusterDevice
+from .qblox_d5a import QbloxD5ADevice
+from .qblox_module import QbloxModuleDevice
+from .qblox_s4g import QbloxS4GDevice
+from .qblox_spi_rack import QbloxSPIRackDevice
+from .qdevil_qdac2 import QDevilQDAC2Device
+from .quantum_machines_opx import QuantumMachinesDevice
+from .rohde_schwarz import RohdeSchwarzSGS100ADevice
 from .yokogawa_gs200 import YokogawaGS200
 
 __all__ = [
-    "Cluster",
     "Device",
     "Keithley2600Driver",
     "MiniCircuitsDriver",
-    "QDevilQDac2",
-    "QMMDriver",
-    "QbloxD5a",
-    "QbloxS4g",
-    "QcmQrm",
-    "RohdeSchwarzSGS100A",
+    "QDevilQDAC2Device",
+    "QbloxClusterDevice",
+    "QbloxD5ADevice",
+    "QbloxModuleDevice",
+    "QbloxS4GDevice",
+    "QbloxSPIRackDevice",
+    "QuantumMachinesDevice",
+    "RohdeSchwarzSGS100ADevice",
     "YokogawaGS200",
 ]

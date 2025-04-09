@@ -21,12 +21,7 @@ import ast
 import io
 import re
 import tempfile
-import time
-import traceback
-import warnings
 from contextlib import contextmanager
-from copy import deepcopy
-from dataclasses import asdict
 from typing import TYPE_CHECKING, Callable, cast
 
 import numpy as np
@@ -40,15 +35,7 @@ from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
-from qililab.instrument_controllers import InstrumentController, InstrumentControllers
-from qililab.instrument_controllers.utils import InstrumentControllerFactory
-from qililab.instruments.instrument import Instrument
-from qililab.instruments.instruments import Instruments
-from qililab.instruments.qblox import QbloxModule
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
-from qililab.instruments.utils import InstrumentFactory
-from qililab.platform.components.bus import Bus
-from qililab.platform.components.buses import Buses
+from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.pulse.qblox_compiler import ModuleSequencer
 from qililab.pulse.qblox_compiler import QbloxCompiler as PulseQbloxCompiler
@@ -66,20 +53,17 @@ from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
     from queue import Queue
 
-    from qibo.transpiler.placer import Placer
-    from qibo.transpiler.router import Router
     from qpysequence import Sequence as QpySequence
 
-    from qililab.instrument_controllers.instrument_controller import InstrumentController
+    from qililab.buses.bus import Bus
+    from qililab.instrument_controllers import InstrumentController
     from qililab.instruments.instrument import Instrument
-    from qililab.result import Result
-    from qililab.settings import Runcard
 
 
 class Platform:
@@ -299,27 +283,23 @@ class Platform:
         TODO: !!! Change this results for the actual sinusoidal ones (change wait_times of execution if needed) !!!
     """
 
-    def __init__(self, runcard: Runcard):
-        self.name = runcard.name
+    def __init__(self, name: str):
+        self.name = name
         """Name of the platform (``str``) """
 
-        self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
-        """All the instruments of the platform and their necessary settings (``dataclass``). Each individual instrument is contained in a list within the dataclass."""
+        self.instruments: list[Instrument] = []
+        """Instruments of the platform"""
 
-        self.instrument_controllers = InstrumentControllers(
-            elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
-        )
-        """All the instrument controllers of the platform and their necessary settings (``dataclass``). Each individual instrument controller is contained in a list within the dataclass."""
+        self.instrument_controllers: list[InstrumentController] = []
+        """Instrument controllers of the platform"""
 
-        self.buses = Buses(
-            elements=[Bus(settings=asdict(bus), platform_instruments=self.instruments) for bus in runcard.buses]
-        )
-        """All the buses of the platform and their necessary settings (``dataclass``). Each individual bus is contained in a list within the dataclass."""
+        self.buses: list[Bus] = []
+        """Buses of the platform"""
 
-        self.digital_compilation_settings = runcard.digital
+        self.digital_compilation_settings: DigitalCompilationSettings | None = None
         """Gate settings and definitions (``dataclass``). These setting contain how to decompose gates into pulses."""
 
-        self.analog_compilation_settings = runcard.analog
+        self.analog_compilation_settings: AnalogCompilationSettings | None = None
         """Flux to bus mapping for analog control"""
 
         self._connected_to_instruments: bool = False
@@ -334,6 +314,31 @@ class Platform:
         self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
         """Format of the experiment results path."""
 
+    @classmethod
+    def load_from(cls, runcard: Runcard):
+        platform = cls(name=runcard.name)
+        platform.instruments = runcard.get_instruments()
+        platform.instrument_controllers = runcard.get_instrument_controllers(loaded_instruments=platform.instruments)
+        platform.buses = runcard.get_buses(loaded_instruments=platform.instruments)
+        platform.digital_compilation_settings = runcard.digital.model_copy(deep=True)
+        platform.analog_compilation_settings = runcard.analog.model_copy(deep=True)
+        return platform
+
+    def get_bus(self, alias: str) -> Bus:
+        return next((bus for bus in self.buses if bus.alias == alias))
+
+    def get_instrument(self, alias: str) -> Instrument:
+        return next((instrument for instrument in self.instruments if instrument.alias == alias))
+
+    def get_instrument_controller(self, alias: str) -> InstrumentController:
+        return next(
+            (
+                instrument_controller
+                for instrument_controller in self.instrument_controllers
+                if instrument_controller.alias == alias
+            )
+        )
+
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
 
@@ -345,7 +350,9 @@ class Platform:
             logger.info("Already connected to the instruments")
             return
 
-        self.instrument_controllers.connect()
+        for instrument_controller in self.instrument_controllers:
+            instrument_controller.connect()
+
         self._connected_to_instruments = True
         logger.info("Connected to the instruments")
 
@@ -363,7 +370,10 @@ class Platform:
         """
         if not self._connected_to_instruments:
             raise AttributeError("Can not do initial_setup without being connected to the instruments.")
-        self.instrument_controllers.initial_setup()
+
+        for instrument_controller in self.instrument_controllers:
+            instrument_controller.initial_setup()
+
         logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
@@ -373,7 +383,8 @@ class Platform:
 
         We recommend you to do this always after a connection and a setup, to ensure that everything is ready for an execution.
         """
-        self.instrument_controllers.turn_on_instruments()
+        for instrument_controller in self.instrument_controllers:
+            instrument_controller.turn_on()
         logger.info("Instruments turned on")
 
     def turn_off_instruments(self):
@@ -381,7 +392,8 @@ class Platform:
 
         This does not actually turn the laboratory instruments off, it only closes their signal output generation.
         """
-        self.instrument_controllers.turn_off_instruments()
+        for instrument_controller in self.instrument_controllers:
+            instrument_controller.turn_off()
         logger.info("Instruments turned off")
 
     def disconnect(self):
@@ -389,7 +401,8 @@ class Platform:
         if not self._connected_to_instruments:
             logger.info("Already disconnected from the instruments")
             return
-        self.instrument_controllers.disconnect()
+        for instrument_controller in self.instrument_controllers:
+            instrument_controller.disconnect()
         self._connected_to_instruments = False
         logger.info("Disconnected from instruments")
 
@@ -429,26 +442,14 @@ class Platform:
                 None,
             )
             if bus_alias is not None:
-                return self.buses.get(alias=bus_alias)
+                return self.get_bus(alias=bus_alias)
 
-        element = self.instruments.get_instrument(alias=alias)
+        element = self.get_instrument(alias=alias)
         if element is None:
-            element = self.instrument_controllers.get_instrument_controller(alias=alias)
+            element = self.get_instrument_controller(alias=alias)  # type: ignore
         if element is None:
-            element = self.buses.get(alias=alias)
+            element = self.get_bus(alias=alias)  # type: ignore
         return element
-
-    def _get_bus_by_alias(self, alias: str) -> Bus | None:
-        """Gets buses given their alias.
-
-        Args:
-            alias (str | None, optional): Bus alias to identify it. Defaults to None.
-
-        Returns:
-            :class:`Bus`: Bus corresponding to the given alias. If none is found `None` is returned.
-
-        """
-        return self.buses.get(alias=alias)
 
     def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None):
         """Get platform parameter.
@@ -501,41 +502,6 @@ class Platform:
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
-    def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
-        """Instantiates all instrument classes from their respective dictionaries.
-
-        Args:
-            instruments_dict (list[dict]): List of dictionaries containing the settings of each instrument.
-
-        Returns:
-            list[Instrument]: List of instantiated instrument classes.
-        """
-        instruments = []
-        for instrument in instruments_dict:
-            local_dict = deepcopy(instrument)
-            instruments.append(InstrumentFactory.get(local_dict.pop(RUNCARD.NAME))(settings=local_dict))
-        return instruments
-
-    def _load_instrument_controllers(self, instrument_controllers_dict: list[dict]) -> list[InstrumentController]:
-        """Instantiates all instrument controller classes from their respective dictionaries.
-
-        Args:
-            instrument_controllers_dict (list[dict]): List of dictionaries containing
-            the settings of each instrument controller.
-
-        Returns:
-            list[InstrumentController]: List of instantiated instrument controller classes.
-        """
-        instrument_controllers = []
-        for instrument_controller in instrument_controllers_dict:
-            local_dict = deepcopy(instrument_controller)
-            instrument_controllers.append(
-                InstrumentControllerFactory.get(local_dict.pop(RUNCARD.NAME))(
-                    settings=local_dict, loaded_instruments=self.instruments
-                )
-            )
-        return instrument_controllers
-
     def to_dict(self):
         """Returns all platform information as a dictionary, called the :ref:`runcard <runcards>`. Used for the platform serialization.
 
@@ -543,17 +509,23 @@ class Platform:
             dict: Dictionary of the serialized platform
         """
         name_dict = {RUNCARD.NAME: self.name}
-        instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict()}
-        instrument_controllers_dict = {RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()}
-        buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
+        instrument_dict = {RUNCARD.INSTRUMENTS: [instrument.settings.model_dump() for instrument in self.instruments]}
+        instrument_controllers_dict = {
+            RUNCARD.INSTRUMENT_CONTROLLERS: [
+                instrument_controller.settings.model_dump() for instrument_controller in self.instrument_controllers
+            ]
+        }
+        buses_dict = {RUNCARD.BUSES: [bus.settings.model_dump() for bus in self.buses]}
         digital_dict = {
             RUNCARD.DIGITAL: (
-                self.digital_compilation_settings.to_dict() if self.digital_compilation_settings is not None else None
+                self.digital_compilation_settings.model_dump()
+                if self.digital_compilation_settings is not None
+                else None
             )
         }
         analog_dict = {
             RUNCARD.ANALOG: (
-                self.analog_compilation_settings.to_dict() if self.analog_compilation_settings is not None else None
+                self.analog_compilation_settings.model_dump() if self.analog_compilation_settings is not None else None
             )
         }
 
@@ -776,12 +748,12 @@ class Platform:
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
     ) -> QbloxCompilationOutput | QuantumMachinesCompilationOutput:
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
-        buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]
+        buses = [self.get_bus(alias=bus_alias) for bus_alias in bus_aliases]
         instruments = {
             instrument
             for bus in buses
             for instrument in bus.instruments
-            if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
+            if isinstance(instrument, (QbloxModule, QuantumMachinesOPX))
         }
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             # Retrieve the time of flight parameter from settings
@@ -793,14 +765,14 @@ class Platform:
             # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
             for bus in buses:
-                for instrument, channel in zip(bus.instruments, bus.channels):
+                for instrument, channel in bus.instruments_and_channels():
                     if isinstance(instrument, QbloxModule):
-                        sequencer = instrument.get_sequencer(sequencer_id=channel)
-                        if instrument.name == InstrumentName.QCMRF:
+                        sequencer = instrument.get_channel_settings(channel=cast("int", channel))
+                        if isinstance(instrument, QbloxQCMRF):
                             markers[bus.alias] = "".join(
                                 ["1" if i in [0, 1] and i in sequencer.outputs else "0" for i in range(4)]
                             )[::-1]
-                        elif instrument.name == InstrumentName.QRMRF:
+                        elif isinstance(instrument, QbloxQRMRF):
                             markers[bus.alias] = "".join(
                                 ["1" if i in [1] and i - 1 in sequencer.outputs else "0" for i in range(4)]
                             )[::-1]
@@ -815,7 +787,7 @@ class Platform:
                 delays=delays,
                 markers=markers,
             )
-        if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
+        if all(isinstance(instrument, QuantumMachinesOPX) for instrument in instruments):
             if len(instruments) != 1:
                 raise NotImplementedError(
                     "Executing QProgram in more than one Quantum Machines Cluster is not supported."
@@ -850,23 +822,24 @@ class Platform:
         if isinstance(output, QbloxCompilationOutput):
             return self._execute_qblox_compilation_output(output=output, debug=debug)
 
-        buses = [self.buses.get(alias=bus_alias) for bus_alias in output.qprogram.buses]
+        buses = [self.get_bus(alias=bus_alias) for bus_alias in output.qprogram.buses]
         instruments = {instrument for bus in buses for instrument in bus.instruments if bus.has_adc()}
         if len(instruments) != 1:
             raise NotImplementedError("Executing QProgram in more than one Quantum Machines Cluster is not supported.")
-        cluster: QuantumMachinesCluster = cast(QuantumMachinesCluster, next(iter(instruments)))
+        cluster: QuantumMachinesOPX = cast("QuantumMachinesOPX", next(iter(instruments)))
         return self._execute_quantum_machines_compilation_output(
             output=output, cluster=cluster, timeout_tries=timeout_tries, debug=debug
         )
 
     def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
         sequences, acquisitions = output.sequences, output.acquisitions
-        buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
-        for bus_alias, bus in buses.items():
-            if bus.distortions:
-                for distortion in bus.distortions:
-                    for waveform in sequences[bus_alias]._waveforms._waveforms:
-                        sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
+        buses = {bus_alias: self.get_bus(alias=bus_alias) for bus_alias in sequences}
+        # TODO: Add distortions
+        # for bus_alias, bus in buses.items():
+        #     if bus.distortions:
+        #         for distortion in bus.distortions:
+        #             for waveform in sequences[bus_alias]._waveforms._waveforms:
+        #                 sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
         if debug:
             with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
                 for bus_alias, sequence in sequences.items():
@@ -912,7 +885,7 @@ class Platform:
     def _execute_quantum_machines_compilation_output(
         self,
         output: QuantumMachinesCompilationOutput,
-        cluster: QuantumMachinesCluster,
+        cluster: QuantumMachinesOPX,
         timeout_tries: int = 3,
         debug: bool = False,
     ):
@@ -923,7 +896,7 @@ class Platform:
 
                 if debug:
                     with open("debug_qm_execution.py", "w", encoding="utf-8") as sourceFile:
-                        print(generate_qua_script(qua, cluster.config), file=sourceFile)
+                        print(generate_qua_script(qua, cluster._qua_config), file=sourceFile)
 
                 compiled_program_id = cluster.compile(program=qua)
                 job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
@@ -1059,12 +1032,12 @@ class Platform:
 
         # Upload pulse schedule
         for bus_alias in programs:
-            bus = self.buses.get(alias=bus_alias)
+            bus = self.get_bus(alias=bus_alias)
             bus.upload()
 
         # Execute pulse schedule
         for bus_alias in programs:
-            bus = self.buses.get(alias=bus_alias)
+            bus = self.get_bus(alias=bus_alias)
             bus.run()
 
         # Acquire results
@@ -1077,7 +1050,7 @@ class Platform:
             if not np.all(np.isnan(result.array)):
                 results.append(result)
 
-        for instrument in self.instruments.elements:
+        for instrument in self.instruments:
             if isinstance(instrument, QbloxModule):
                 instrument.desync_sequencers()
 
@@ -1213,11 +1186,11 @@ class Platform:
             )
 
         module_and_sequencer_per_bus: dict[str, ModuleSequencer] = {
-            element.bus_alias: ModuleSequencer(module=instrument, sequencer=instrument.get_sequencer(channel))
-            for element in pulse_schedule.elements
-            for instrument, channel in zip(
-                self.buses.get(alias=element.bus_alias).instruments, self.buses.get(alias=element.bus_alias).channels
+            element.bus_alias: ModuleSequencer(
+                module=instrument, sequencer=instrument.get_channel_settings(channel=cast("int", channel))
             )
+            for element in pulse_schedule.elements
+            for instrument, channel in self.get_bus(alias=element.bus_alias).instruments_and_channels()
             if isinstance(instrument, QbloxModule)
         }
 

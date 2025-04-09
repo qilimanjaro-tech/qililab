@@ -1,0 +1,104 @@
+name: opx_lab
+instruments:
+- type: opx
+  settings:
+    alias: opx
+    outputs:
+    - port: 0
+      connected_to:
+        controller: con1
+        port: 1
+      offset: 0.0
+      delay: 0
+    - port: 1
+      connected_to:
+        controller: con1
+        port: 2
+      offset: 0.0
+      delay: 0
+    - port: 2
+      connected_to:
+        controller: con1
+        port: 3
+      offset: 0.0
+      delay: 0
+    - port: 3
+      connected_to:
+        controller: con1
+        port: 4
+      offset: 0.0
+      delay: 0
+    - port: 4
+      connected_to:
+        octave: octave1
+        port: 1
+      connection_i:
+        controller: con1
+        port: 5
+      connection_q:
+        controller: con1
+        port: 6
+      offset_i: 0.0
+      offset_q: 0.0
+      gain: 0.0
+      lo_frequency: 10000000000.0
+    - port: 5
+      connected_to:
+        octave: octave1
+        port: 2
+      connection_i:
+        controller: con1
+        port: 7
+      connection_q:
+        controller: con1
+        port: 8
+      offset_i: 0.0
+      offset_q: 0.0
+      gain: 0.0
+      lo_frequency: 10000000000.0
+    - port: 6
+      connected_to:
+        octave: octave1
+        port: 3
+      connection_i:
+        controller: con1
+        port: 9
+      connection_q:
+        controller: con1
+        port: 10
+      offset_i: 0.0
+      offset_q: 0.0
+      gain: 0.0
+      lo_frequency: 10000000000.0
+    elements:
+    - id: flux_q0
+      output: 0
+    - id: flux_q1
+      output: 1
+    - id: iq_0
+      output_i: 2
+      output_q: 3
+      intermediate_frequency: 100000000.0
+      lo_frequency: 10000000000.0
+      mixer_correction:
+      - 1.0
+      - 0.0
+      - 0.0
+      - 1.0
+    - id: drive_q0
+      output: 4
+      intermediate_frequency: 50000000.0
+    - id: drive_q1
+      output: 5
+      intermediate_frequency: 100000000.0
+    - id: readout_q0
+      output: 6
+      intermediate_frequency: 60000000.0
+      time_of_flight: 0
+      smearing: 0
+    - id: readout_q1
+      output: 6
+      intermediate_frequency: 120000000.0
+      time_of_flight: 0
+      smearing: 0
+instrument_controllers: []

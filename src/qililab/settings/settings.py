@@ -14,15 +14,11 @@
 
 """Settings class."""
 
-from dataclasses import dataclass
-
-from qililab.utils.castings import cast_enum_fields
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(kw_only=True)
-class Settings:
-    """Settings class."""
+# Base settings model
+class Settings(BaseModel):
+    """Base settings model for instruments."""
 
-    def __post_init__(self):
-        """Cast all enum attributes to its corresponding Enum class."""
-        cast_enum_fields(obj=self)
+    model_config = ConfigDict(validate_assignment=True, validate_default=True)

@@ -14,8 +14,6 @@
 
 """Qblox Scope Acquisitions Result"""
 
-from __future__ import annotations
-
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -48,7 +46,7 @@ class QbloxScopeAcquisitions(Acquisitions):
         self._acquisitions = [Acquisition(integration_length=self.pulse_length, i_values=i_values, q_values=q_values)]
         self.data_dataframe_indices = set().union(*[acq.data_dataframe_indices for acq in self._acquisitions])
 
-    def demodulated(self, frequency: float, phase_offset: float = 0.0) -> QbloxScopeAcquisitions:
+    def demodulated(self, frequency: float, phase_offset: float = 0.0) -> "QbloxScopeAcquisitions":
         """Returns a demodulated QbloxScopeAcquisitions object.
 
         Args:
@@ -70,7 +68,9 @@ class QbloxScopeAcquisitions(Acquisitions):
         demod_scope_data = ScopeData(path0=i_demod_pathdata, path1=q_demod_pathdata)
         return QbloxScopeAcquisitions(scope=demod_scope_data, pulse_length=self.pulse_length)
 
-    def integrated(self, integrate_from: int = 0, integrate_to: int = SCOPE_ACQ_MAX_DURATION) -> QbloxScopeAcquisitions:
+    def integrated(
+        self, integrate_from: int = 0, integrate_to: int = SCOPE_ACQ_MAX_DURATION
+    ) -> "QbloxScopeAcquisitions":
         """Returns an integrated QbloxScopeAcquisitions object.
 
         Args:
