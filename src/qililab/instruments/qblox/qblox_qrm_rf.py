@@ -87,9 +87,11 @@ class QbloxQRMRF(QbloxQRM):
             channel_id (int, optional): ID of the sequencer. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
+            value = int(value)
             parameter = Parameter.OUT0_IN0_LO_FREQ
 
         if parameter == Parameter.OUT0_ATT:
+            value = float(value)
             max_att = self.device._get_max_out_att_0()
             if value > max_att:
                 raise Exception(
