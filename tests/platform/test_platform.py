@@ -407,8 +407,8 @@ class TestPlatform:
     def test_set_parameter_no_instrument_connection_QBLOX(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""
         platform._connected_to_instruments = False
-        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14, channel_id=0)
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14e6, channel_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14e6
 
         platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}}))
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
