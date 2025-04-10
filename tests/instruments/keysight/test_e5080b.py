@@ -65,9 +65,6 @@ def fixture_e5080b_settings():
     return {
         RUNCARD.NAME: InstrumentControllerName.KEYSIGHT_E5080B,
         RUNCARD.ALIAS: "keysight_e5080b",
-        # Parameter.SWEEP_TYPE: VNASweepTypes.CW.value,
-        # Parameter.AVERAGES_ENABLED: True,
-        # Parameter.STEP_AUTO: False,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "169.254.150.105",
@@ -103,8 +100,6 @@ class TestE5080B:
             (Parameter.FREQUENCY_START, 1e6),
             (Parameter.FREQUENCY_STOP, 8e9),
             (Parameter.FREQUENCY_CENTER, 4e9),
-            (Parameter.STEP_AUTO, False),
-            (Parameter.STEP_SIZE, 1e6),
             (Parameter.FREQUENCY_SPAN, 7.99e9),
             (Parameter.CW_FREQUENCY, 4e9),
             (Parameter.NUMBER_POINTS, 201),
@@ -136,10 +131,6 @@ class TestE5080B:
             assert e5080b.settings.frequency_stop == value
         if parameter == Parameter.FREQUENCY_CENTER:
             assert e5080b.settings.frequency_center == value
-        if parameter == Parameter.STEP_AUTO:
-            assert e5080b.settings.step_auto == value
-        if parameter == Parameter.STEP_SIZE:
-            assert e5080b.settings.step_size == value
         if parameter == Parameter.FREQUENCY_SPAN:
             assert e5080b.settings.frequency_span == value
         if parameter == Parameter.CW_FREQUENCY:
@@ -202,8 +193,6 @@ class TestE5080B:
             (Parameter.FREQUENCY_START, 1e6),
             (Parameter.FREQUENCY_STOP, 8e9),
             (Parameter.FREQUENCY_CENTER, 4e9),
-            (Parameter.STEP_AUTO, False),
-            (Parameter.STEP_SIZE, 1e6),
             (Parameter.FREQUENCY_SPAN, 7.99e9),
             (Parameter.CW_FREQUENCY, 4e9),
             (Parameter.NUMBER_POINTS, 201),
@@ -309,33 +298,26 @@ class TestE5080B:
         e5080b_controller_mock._initialize_device()
 
 
-    def test_initial_setup_non_segm(self, e5080b: E5080B):
+    @pytest.mark.parametrize(
+        "parameter, value, method",
+        [
+            (Parameter.FREQUENCY_START, 1e6, "start_freq"),
+            (Parameter.FREQUENCY_STOP, 8e9, "stop_freq"),
+            (Parameter.FREQUENCY_CENTER, 4e9, "center_freq"),
+            (Parameter.FREQUENCY_SPAN, 7.99e9, "span"),
+            (Parameter.AVERAGES_MODE, 7.99e9, "averages_mode"),
+            (Parameter.NUMBER_AVERAGES, 7.99e9, "averages_count"),
+            (Parameter.SWEEP_TYPE, "CW", "sweep_type"),
+            (Parameter.CW_FREQUENCY, 1e6, "cw"),
+        ],
+    )
+    def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):
         """Test the initial setup when sweep_type is not 'SEGM'."""
-        e5080b.set_parameter(Parameter.SWEEP_TYPE, "lin")  # Non-SEGM sweep type
-        e5080b.initial_setup()  # This should call start_freq, center_freq, stop_freq, span
-        e5080b.device.start_freq.assert_called_once_with(e5080b.start_freq)
-        e5080b.device.center_freq.assert_called_once_with(e5080b.center_freq)
-        e5080b.device.stop_freq.assert_called_once_with(e5080b.stop_freq)
-        e5080b.device.span.assert_called_once_with(e5080b.span)
-
-    def test_initial_setup_avg_enabled(self, e5080b: E5080B):
-        """Test the initial setup when averages are enabled."""
-        e5080b.set_parameter(Parameter.AVERAGES_ENABLED, True)
-        e5080b.initial_setup()  # This should call start_freq, center_freq, stop_freq, span
-        e5080b.device.averages_count.assert_called_once_with(e5080b.number_averages)
-        e5080b.device.averages_mode.assert_called_once_with(e5080b.averages_mode)
-
-    def test_initial_setup_step_auto_off(self, e5080b: E5080B):
-        """Test the initial setup when averages are enabled."""
-        e5080b.set_parameter(Parameter.STEP_AUTO, False)
-        e5080b.initial_setup()  # This should call start_freq, center_freq, stop_freq, span
-        e5080b.device.step_size.assert_called_once_with(e5080b.step_size)
-
-    def test_initial_setup_cw(self, e5080b: E5080B):
-        """Test the initial setup when sweep_type is 'CW'."""
-        e5080b.set_parameter(Parameter.SWEEP_TYPE, "CW")  # Set sweep type to CW
-        e5080b.initial_setup()  # This should call cw_frequency
-        e5080b.device.cw.assert_called_once_with(e5080b.cw)
+        e5080b.set_parameter(parameter=parameter, value=value)
+        e5080b.set_parameter(Parameter.SWEEP_TYPE, "CW")
+        e5080b.device.reset_mock()
+        e5080b.initial_setup()
+        getattr(e5080b.device, method).assert_called_once_with(value)
 
     @patch("qililab.instrument_controllers.keysight.keysight_E5080B_vna_controller.KeysightE5080B", autospec=True)
     @pytest.mark.parametrize("controller_alias", ["keysight_e5080b"])
@@ -354,7 +336,6 @@ class TestE5080B:
         device_mock.return_value.scattering_parameter = MagicMock()
         device_mock.return_value.rf_on = MagicMock()
         device_mock.return_value.averages_enabled = MagicMock()
-        device_mock.return_value.step_auto = MagicMock()
         device_mock.return_value.start_freq = MagicMock()
         device_mock.return_value.center_freq = MagicMock()
         device_mock.return_value.stop_freq = MagicMock()
@@ -362,14 +343,9 @@ class TestE5080B:
         device_mock.return_value.cw = MagicMock()
         device_mock.return_value.averages_count = MagicMock()
         device_mock.return_value.averages_mode = MagicMock()
-        device_mock.return_value.step_size = MagicMock()
         device_mock.return_value.format_border = MagicMock()
         controller_instance.connect()
-        # controller_instance.device.system_reset = MagicMock()
-        # controller_instance.device.reference_source = MagicMock()
         controller_instance.initial_setup()
-
-        # controller_instance.device.reference_source.assert_called_once_with(controller_instance.reference_clock.value)
 
     @patch("qililab.instrument_controllers.keysight.keysight_E5080B_vna_controller.KeysightE5080B", autospec=True)
     @pytest.mark.parametrize("controller_alias", ["keysight_e5080b"])

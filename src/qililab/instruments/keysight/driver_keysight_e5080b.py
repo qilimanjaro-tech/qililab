@@ -74,29 +74,6 @@ class Driver_KeySight_E5080B(VisaInstrument):
         )
         """Parameter center_freq"""
 
-        # Sets and reads how the center frequency step size is set. When TRUE, center steps by 5% of span. When FALSE, center steps by STEP:SIZE value.
-        # Default is 40 Mhz. When STEP:AUTO is TRUE, this value is ignored.
-        self.step_auto: Parameter = self.add_parameter(
-            "step_auto",
-            label="Center Frequency Step Auto",
-            get_cmd="SENS:FREQ:CENT:STEP:AUTO?",
-            set_cmd="SENS:FREQ:CENT:STEP:AUTO {}",
-            val_mapping=create_on_off_val_mapping(on_val="1", off_val="0"),
-        )
-        """Parameter center frequency step auto"""
-
-        # Sets the center frequency step size of the analyzer. This command sets the manual step size (only valid when STEP:AUTO is FALSE).
-        self.step_size: Parameter = self.add_parameter(
-            "step_size",
-            label="Step size",
-            get_parser=float,
-            get_cmd="SENS:FREQ:CENT:STEP:SIZE?",
-            set_cmd="SENS:FREQ:CENT:STEP:SIZE {}",
-            # vals=Numbers(min_value=1, max_value=self.stop_freq.get_latest()),
-            vals=Numbers(min_value=min_freq, max_value=max_freq),
-        )
-        """Parameter step size"""
-
         # Sets the frequency span of the analyzer.
         self.span: Parameter = self.add_parameter(
             "span",

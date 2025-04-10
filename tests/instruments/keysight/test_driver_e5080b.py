@@ -43,14 +43,6 @@ def test_stop_freq(vnaks):
 def test_center_freq(vnaks):
     verify_property(vnaks, "center_freq", [1e6, 2e6, 3e9, 20e9])
 
-def test_center_step_auto(vnaks):
-    # Valid values based on your val_mapping ("1" for on, "0" for off)
-    verify_property(vnaks, "step_auto", [True, False])
-
-def test_step_size(vnaks):
-    # Test with a few values within the range
-    verify_property(vnaks, "step_size", [1e6, 2e6, 3e9, 20e9])
-
 def test_span(vnaks):
     verify_property(vnaks, "span", [1e6, 2e6, 3e9, 20e9])
 

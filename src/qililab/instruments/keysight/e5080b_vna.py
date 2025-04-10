@@ -58,8 +58,6 @@ class E5080B(Instrument):
         frequency_start: float | None = None
         frequency_stop: float | None = None
         frequency_center: float | None = None
-        step_auto: bool | None = None
-        step_size: float | None = None
         frequency_span: float | None = None
         cw_frequency: float | None = None
         number_points: int | None = None
@@ -107,25 +105,6 @@ class E5080B(Instrument):
         return self.settings.frequency_center
 
     @property
-    def step_auto(self):
-        """Sets and reads how the center frequency step size is set. When TRUE, center steps by 5% of span. When FALSE, center steps by STEP:SIZE value.
-            Default is 40 Mhz. When STEP:AUTO is TRUE, this value is ignored.
-
-        Returns:
-            bool: settings.step_auto.
-        """
-        return self.settings.step_auto
-
-    @property
-    def step_size(self):
-        """Sets the center frequency step size of the analyzer. This command sets the manual step size (only valid when STEP:AUTO is FALSE).
-
-        Returns:
-            float: settings.step_size.
-        """
-        return self.settings.step_size
-
-    @property
     def span(self):
         """Sets the frequency span of the analyzer.
 
@@ -146,9 +125,10 @@ class E5080B(Instrument):
     @property
     def points(self):
         """Sets the number of data points for the measurement.
+        REQ THE VNA TO BE RESETTED IF USING SET_PARAMETER IF VALUE IS CHANGED
 
         Returns:
-            int: settings.points.
+            int: settings.number_points.
         """
         return self.settings.number_points
 
@@ -190,10 +170,10 @@ class E5080B(Instrument):
 
     @property
     def scattering_parameter(self) -> VNAScatteringParameters:
-        """Sets the type of analyzer sweep mode. First set sweep type, then set sweep parameters such as frequency or power settings. Default is LIN
+        """Set/get a measurement parameter for the specified measurement.
 
         Returns:
-            Enum: settings.sweep_type.
+            Enum: settings.scattering_parameter.
         """
         return self.settings.scattering_parameter
 
@@ -278,18 +258,6 @@ class E5080B(Instrument):
             self.settings.frequency_center = float(value)
             if self.is_device_active():
                 self.device.center_freq(self.center_freq)
-            return
-
-        if parameter == Parameter.STEP_AUTO:
-            self.settings.step_auto = bool(value)
-            if self.is_device_active():
-                self.device.step_auto(self.step_auto)
-            return
-
-        if parameter == Parameter.STEP_SIZE:
-            self.settings.step_size = float(value)
-            if self.is_device_active():
-                self.device.step_size(self.step_size)
             return
 
         if parameter == Parameter.FREQUENCY_SPAN:
@@ -442,9 +410,8 @@ class E5080B(Instrument):
         """
         if not self.averages_enabled:
             self.device.averages_enabled(True)
-            # self.device.averages_count(1)
-            if self.settings.number_averages is not None:
-                self.device.averages_count(self.settings.number_averages)
+        if self.settings.number_averages is not None:
+            self.device.averages_count(self.settings.number_averages)
 
     def _start_measurement(self):
         """
@@ -458,37 +425,14 @@ class E5080B(Instrument):
     def _wait_for_averaging(self, timeout: int = DEFAULT_TIMEOUT):
         self.set_parameter(Parameter.AVERAGES_ENABLED, True)
         self.clear_averages()
-        # self.set_parameter(Parameter.AVERAGES_ENABLED, True)
-        # self.device.averages_count(5)
-        # self.clear_averages()
-        # status_avg = int(self.device.ask("STAT:OPER:COND?"))
         start_time = time.time()
 
         while True:
             status_avg = int(self.device.ask("STAT:OPER:COND?"))
-            print(status_avg)
             if status_avg & (1 << 8):
-                print("done runnging avg")
                 break
             if time.time() - start_time > timeout:
-                print("timeout")
                 raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
-
-        # for i in range(100):
-        #     i = i+1
-        #     status_avgg = self.device.ask("STAT:OPER:COND?")
-        #     print(self.device.ask("STAT:OPER:COND?"))
-
-        #     status_avg = int(self.device.ask("STAT:OPER:COND?"))
-        #     print(status_avg)
-        #     if status_avg & (1 << 8):
-        #         print("done runnging avg")
-        #         # break
-        #     else:
-        #         print("not done")
-        #     if time.time() - start_time > timeout:
-        #         print("timeout")
-        #         raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
         return
 
     def read_tracedata(self, timeout: int = DEFAULT_TIMEOUT):
@@ -496,22 +440,12 @@ class E5080B(Instrument):
         Return the current trace data.
         It already releases the VNA after finishing the required number of averages.
         """
-        # self._pre_measurement()
-        # self._start_measurement()
-        # if self._wait_for_averaging(timeout):
-        #     trace = self._get_trace()
-        #     self.release()
-        #     return trace
-        # return None
-    
         self._pre_measurement()
         self._start_measurement()
         self._wait_for_averaging(timeout)
         trace = self._get_trace()
-        print(trace)
         self.release()
         return trace
-        
 
     def get_frequencies(self):
         """return freqpoints"""
@@ -530,40 +464,8 @@ class E5080B(Instrument):
 
     def initial_setup(self):
         self.device.format_data("REAL,32")
-        self.device.cls()
-        self.reset()
-        # self.device.source_power(self.source_power)
-        # self.device.sweep_type(self.sweep_type)
-        # self.device.sweep_mode(self.sweep_mode)
-        # # self.device.points(self.points)
-
-        # self.device.if_bandwidth(self.if_bandwidth)
-        # self.device.scattering_parameter(self.scattering_parameter)
-        # self.device.rf_on(self.rf_on)
-        # self.device.averages_enabled(self.averages_enabled)
-        # self.device.step_auto(self.step_auto)
-
-        # if self.sweep_type != "SEGM":
-        #     self.device.start_freq(self.settings.frequency_start)
-        # #     self.device.center_freq(self.center_freq)
-        # #     self.device.stop_freq(self.stop_freq)
-        # #     self.device.span(self.span)
-
-        # if self.sweep_type == "CW":
-        #     self.device.cw(self.cw)
-
-        # if self.averages_enabled is True:
-        #     self.device.averages_count(self.number_averages)
-        #     # self.device.averages_mode(self.averages_mode)
-
-        # if self.step_auto is False:
-        #     self.device.step_size(self.step_size)
-
-        # # self.device.format_data(self.format_data)
-        # # self.device.format_border(self.format_border)
-
-
-        # Non-conditional settings:
+        self.cls()
+        self._system_reset()
         if self.settings.source_power is not None:
             self.device.source_power(self.settings.source_power)
         if self.settings.sweep_type is not None:
@@ -578,46 +480,62 @@ class E5080B(Instrument):
             self.device.scattering_parameter(self.settings.scattering_parameter)
         if self.settings.rf_on is not None:
             self.device.rf_on(self.settings.rf_on)
-        # if self.settings.averages_enabled is not None:
-        #     self.device.averages_enabled(self.settings.averages_enabled)
-        # if self.settings.step_auto is not None:
-        #     self.device.step_auto(self.settings.step_auto)
         if self.settings.format_data is not None:
             self.device.format_data(self.settings.format_data)
         if self.settings.format_border is not None:
             self.device.format_border(self.settings.format_border)
 
-        # Frequency settings: these depend on the sweep type.
-        if self.settings.sweep_type is not None:
-            # If sweep type is not SEGM, apply the frequency settings.
-            if self.settings.sweep_type != "SEGM":
-                if self.settings.frequency_start is not None:
-                    self.device.start_freq(self.settings.frequency_start)
-                if self.settings.frequency_center is not None:
-                    self.device.center_freq(self.settings.frequency_center)
-                if self.settings.frequency_stop is not None:
-                    self.device.stop_freq(self.settings.frequency_stop)
-                if self.settings.frequency_span is not None:
-                    self.device.span(self.settings.frequency_span)
-            # If sweep type is CW, set the CW frequency.
-            if self.settings.sweep_type == "CW" and self.settings.cw_frequency is not None:
-                self.device.cw(self.settings.cw_frequency)
+        if self.settings.sweep_type != "SEGM":
+            if self.settings.frequency_start is not None:
+                self.device.start_freq(self.settings.frequency_start)
+            if self.settings.frequency_center is not None:
+                self.device.center_freq(self.settings.frequency_center)
+            if self.settings.frequency_stop is not None:
+                self.device.stop_freq(self.settings.frequency_stop)
+            if self.settings.frequency_span is not None:
+                self.device.span(self.settings.frequency_span)
+        if self.settings.sweep_type == "CW" and self.settings.cw_frequency is not None:
+            self.device.cw(self.settings.cw_frequency)
 
-        # Averages settings: only set if averages_enabled is True.
-        # if self.settings.averages_enabled is True:
         if self.settings.number_averages is not None:
             self.device.averages_count(self.settings.number_averages)
         if self.settings.averages_mode is not None:
             self.device.averages_mode(self.settings.averages_mode)
 
-        # Step size: set only if step_auto is False.
-        if self.settings.step_auto is False:
-            if self.settings.step_size is not None:
-                self.device.step_size(self.settings.step_size)
+    def refresh_settings(self):
+        self.settings.frequency_start = self.device.start_freq.get()
+        self.settings.frequency_stop = self.device.stop_freq.get()
+        self.settings.frequency_center = self.device.center_freq.get()
+        self.settings.frequency_span = self.device.span.get()
+        self.settings.cw_frequency = self.device.cw.get()
+        self.settings.number_points = self.device.points.get()
+        self.settings.source_power = self.device.source_power.get()
+        self.settings.if_bandwidth = self.device.if_bandwidth.get()
+        self.settings.sweep_type = self.device.sweep_type.get()
+        self.settings.sweep_mode = self.device.sweep_mode.get()
+        self.settings.scattering_parameter = self.device.scattering_parameter.get()
+        self.settings.averages_enabled = self.device.averages_enabled.get()
+        self.settings.number_averages = self.device.averages_count.get()
+        self.settings.averages_mode = self.device.averages_mode.get()
+        self.settings.format_data = self.device.format_data.get()
+        self.settings.rf_on = self.device.rf_on.get()
+        self.settings.format_border = self.device.format_border.get()
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
         return dict(super().to_dict().items())
+
+    def cls(self):
+        """Clear Status."""
+        self.device.cls()
+
+    def opc(self):
+        """Operation complete command."""
+        self.device.opc()
+
+    def _system_reset(self):
+        """System Reset"""
+        self.device.system_reset()
 
     def clear_averages(self):
         self.device.clear_averages()
@@ -633,5 +551,6 @@ class E5080B(Instrument):
     @check_device_initialized
     def reset(self):
         """Reset instrument settings."""
-        self.device.system_reset()
-        self.device.opc()
+        self._system_reset()
+        self.opc()
+        self.refresh_settings()

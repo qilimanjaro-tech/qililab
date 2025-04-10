@@ -914,9 +914,6 @@ class SauronVNA:
     keysight_e5080b_controller: dict[str, Any] = {
         "name": InstrumentControllerName.KEYSIGHT_E5080B,
         "alias": InstrumentControllerName.KEYSIGHT_E5080B.value,
-        # "sweep_type": VNASweepTypes.CW.value,
-        # "averages_enabled": True,
-        # "step_auto": False,
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "169.254.150.105",
