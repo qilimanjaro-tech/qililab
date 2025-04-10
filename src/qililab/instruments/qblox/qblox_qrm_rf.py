@@ -91,7 +91,7 @@ class QbloxQRMRF(QbloxQRM):
             parameter = Parameter.OUT0_IN0_LO_FREQ
 
         if parameter == Parameter.OUT0_ATT:
-            value = float(value)
+            value = int(value)
             max_att = self.device._get_max_out_att_0()
             if value > max_att:
                 raise Exception(

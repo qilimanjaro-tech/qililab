@@ -110,7 +110,7 @@ class QbloxQCMRF(QbloxQCM):
             parameter = Parameter(f"out{sequencer.outputs[0]}_lo_freq")
 
         if parameter == Parameter.OUT0_ATT:
-            value = float(value)
+            value = int(value)
             max_att = self.device._get_max_out_att_0()
             if value > max_att:
                 raise Exception(
@@ -119,7 +119,7 @@ class QbloxQCMRF(QbloxQCM):
                 )
 
         if parameter == Parameter.OUT1_ATT:
-            value = float(value)
+            value = int(value)
             max_att = self.device._get_max_out_att_1()
             if value > max_att:
                 raise Exception(

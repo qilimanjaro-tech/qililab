@@ -123,7 +123,7 @@ class StreamArray:
             experiment_name=self.experiment_name,
             experiment_completed=False,
             optional_identifier=self.optional_identifier,
-            platform=serialize(self.platform.to_dict()),
+            platform=self.platform.to_dict(),
             qprogram=serialize(self.qprogram),
         )
         self.path = self.measurement.result_path
