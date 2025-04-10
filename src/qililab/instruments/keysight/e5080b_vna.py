@@ -16,6 +16,7 @@
 
 import time
 from dataclasses import dataclass
+from typing import cast
 
 import numpy as np
 
@@ -151,7 +152,7 @@ class E5080B(Instrument):
         return self.settings.if_bandwidth
 
     @property
-    def sweep_type(self):
+    def sweep_type(self) -> VNASweepTypes | None:
         """Sets the type of analyzer sweep mode. First set sweep type, then set sweep parameters such as frequency or power settings. Default is LIN
 
         Returns:
@@ -160,7 +161,7 @@ class E5080B(Instrument):
         return self.settings.sweep_type
 
     @property
-    def sweep_mode(self):
+    def sweep_mode(self) -> VNASweepModes | None:
         """Sets the number of trigger signals the specified channel will ACCEPT. Default is Continuous
 
         Returns:
@@ -169,7 +170,7 @@ class E5080B(Instrument):
         return self.settings.sweep_mode
 
     @property
-    def scattering_parameter(self):
+    def scattering_parameter(self) -> VNAScatteringParameters | None:
         """Set/get a measurement parameter for the specified measurement.
 
         Returns:
@@ -196,7 +197,7 @@ class E5080B(Instrument):
         return self.settings.number_averages
 
     @property
-    def averages_mode(self):
+    def averages_mode(self) -> VNAAverageModes | None:
         """Sets the type of averaging to perform: Point or Sweep (default is sweep).
 
         Returns:
@@ -205,7 +206,7 @@ class E5080B(Instrument):
         return self.settings.averages_mode
 
     @property
-    def format_data(self):
+    def format_data(self) -> VNAFormatData | None:
         """Sets the data format for transferring measurement data and frequency data. Default is ASCii,0.
 
         Returns:
@@ -223,7 +224,7 @@ class E5080B(Instrument):
         return self.settings.rf_on
 
     @property
-    def format_border(self):
+    def format_border(self) -> VNAFormatBorder | None:
         """Set the byte order used for GPIB data transfer. Some computers read data from the analyzer in the reverse order.
             This command is only implemented if FORMAT:DATA is set to :REAL.
 
@@ -291,19 +292,19 @@ class E5080B(Instrument):
             return
 
         if parameter == Parameter.SWEEP_TYPE:
-            self.settings.sweep_type = value
+            self.settings.sweep_type = VNASweepTypes(value)
             if self.is_device_active():
                 self.device.sweep_type(self.sweep_type)
             return
 
         if parameter == Parameter.SWEEP_MODE:
-            self.settings.sweep_mode = value
+            self.settings.sweep_mode = VNASweepModes(value)
             if self.is_device_active():
                 self.device.sweep_mode(self.sweep_mode)
             return
 
         if parameter == Parameter.SCATTERING_PARAMETER:
-            self.settings.scattering_parameter = value
+            self.settings.scattering_parameter = VNAScatteringParameters(value)
             if self.is_device_active():
                 self.device.scattering_parameter(self.scattering_parameter)
             return
@@ -321,25 +322,25 @@ class E5080B(Instrument):
             return
 
         if parameter == Parameter.AVERAGES_MODE:
-            self.settings.averages_mode = value
+            self.settings.averages_mode = VNAAverageModes(value)
             if self.is_device_active():
                 self.device.averages_mode(self.averages_mode)
             return
 
         if parameter == Parameter.FORMAT_DATA:
-            self.settings.format_data = value
+            self.settings.format_data = VNAFormatData(value)
             if self.is_device_active():
                 self.device.format_data(self.format_data)
             return
 
         if parameter == Parameter.RF_ON:
-            self.settings.rf_on = value
+            self.settings.rf_on = bool(value)
             if self.is_device_active():
                 self.device.rf_on(self.rf_on)
             return
 
         if parameter == Parameter.FORMAT_BORDER:
-            self.settings.format_border = value
+            self.settings.format_border = VNAFormatBorder(value)
             if self.is_device_active():
                 self.device.format_border(self.format_border)
             return
@@ -354,39 +355,40 @@ class E5080B(Instrument):
         """
 
         if parameter == Parameter.FREQUENCY_START:
-            return self.settings.frequency_start
+            return cast(ParameterValue, self.settings.frequency_start)
         if parameter == Parameter.FREQUENCY_STOP:
-            return self.settings.frequency_stop
+            return cast(ParameterValue, self.settings.frequency_stop)
         if parameter == Parameter.FREQUENCY_CENTER:
-            return self.settings.frequency_center
+            return cast(ParameterValue, self.settings.frequency_center)
         if parameter == Parameter.FREQUENCY_SPAN:
-            return self.settings.frequency_span
+            return cast(ParameterValue, self.settings.frequency_span)
         if parameter == Parameter.CW_FREQUENCY:
-            return self.settings.cw_frequency
+            return cast(ParameterValue, self.settings.cw_frequency)
         if parameter == Parameter.NUMBER_POINTS:
-            return self.settings.number_points
+            return cast(ParameterValue, self.settings.number_points)
         if parameter == Parameter.SOURCE_POWER:
-            return self.settings.source_power
+            return cast(ParameterValue, self.settings.source_power)
         if parameter == Parameter.IF_BANDWIDTH:
-            return self.settings.if_bandwidth
+            return cast(ParameterValue, self.settings.if_bandwidth)
         if parameter == Parameter.SWEEP_TYPE:
-            return self.settings.sweep_type
+            return cast(ParameterValue, self.settings.sweep_type)
         if parameter == Parameter.SWEEP_MODE:
-            return self.settings.sweep_mode
+            return cast(ParameterValue, self.settings.sweep_mode)
         if parameter == Parameter.SCATTERING_PARAMETER:
-            return self.settings.scattering_parameter
+            return cast(ParameterValue, self.settings.scattering_parameter)
         if parameter == Parameter.AVERAGES_ENABLED:
-            return self.settings.averages_enabled
+            return cast(ParameterValue, self.settings.averages_enabled)
         if parameter == Parameter.NUMBER_AVERAGES:
-            return self.settings.number_averages
+            return cast(ParameterValue, self.settings.number_averages)
         if parameter == Parameter.AVERAGES_MODE:
-            return self.settings.averages_mode
+            return cast(ParameterValue, self.settings.averages_mode)
         if parameter == Parameter.FORMAT_DATA:
-            return self.settings.format_data
+            return cast(ParameterValue, self.settings.format_data)
         if parameter == Parameter.RF_ON:
-            return self.settings.rf_on
+            return cast(ParameterValue, self.settings.rf_on)
         if parameter == Parameter.FORMAT_BORDER:
-            return self.settings.format_border
+            return cast(ParameterValue, self.settings.format_border)
+
         raise ParameterNotFound(self, parameter)
 
     def _get_trace(self):
