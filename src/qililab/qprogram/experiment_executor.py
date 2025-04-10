@@ -204,10 +204,12 @@ class ExperimentExecutor:
                 self._metadata["qprograms"][qprogram_name] = QProgramMetadata(
                     variables=[
                         VariableMetadata(label=variable.label, values=variable.values)
-                        for sublist in self._experiment_variables_stack
+                        for sublist in self._experiment_variables_stack[::-1]
                         for variable in sublist
                     ],
-                    dims=[[variable.label for variable in sublist] for sublist in self._experiment_variables_stack],
+                    dims=[
+                        [variable.label for variable in sublist] for sublist in self._experiment_variables_stack[::-1]
+                    ],
                     measurements={},
                 )
 
@@ -215,14 +217,14 @@ class ExperimentExecutor:
             self._metadata["qprograms"][qprogram_name]["measurements"][measurement_name] = MeasurementMetadata(
                 variables=[
                     VariableMetadata(label=variable.label, values=variable.values)
-                    for sublist in self._qprogram_variables_stack
+                    for sublist in self._qprogram_variables_stack[::-1]
                     for variable in sublist
                 ],
-                dims=[[variable.label for variable in sublist] for sublist in self._qprogram_variables_stack],
+                dims=[[variable.label for variable in sublist] for sublist in self._qprogram_variables_stack[::-1]],
                 shape=(
                     *tuple(
                         len(sublist[0].values)
-                        for sublist in self._experiment_variables_stack + self._qprogram_variables_stack
+                        for sublist in self._experiment_variables_stack[::-1] + self._qprogram_variables_stack[::-1]
                     ),
                     2,
                 ),
@@ -352,8 +354,9 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element,
-                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
+                                lambda operation=element, value=current_value_of_variable[
+                                    element.value.uuid
+                                ]: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     value=value,
@@ -393,9 +396,7 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element,
-                            call_parameters=call_parameters,
-                            qprogram_index=qprogram_index: store_results(
+                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram(
                                         **{
