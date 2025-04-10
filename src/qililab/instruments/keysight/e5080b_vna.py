@@ -483,7 +483,7 @@ class E5080B(Instrument):
         if self.settings.format_border is not None:
             self.device.format_border(self.settings.format_border)
 
-        if self.settings.sweep_type !=  VNASweepTypes.SEGM:
+        if self.settings.sweep_type != VNASweepTypes.SEGM:
             if self.settings.frequency_start is not None:
                 self.device.start_freq(self.settings.frequency_start)
             if self.settings.frequency_center is not None:
