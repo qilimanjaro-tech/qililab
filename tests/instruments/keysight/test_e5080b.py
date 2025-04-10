@@ -13,7 +13,8 @@ from qililab.instruments import ParameterNotFound
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.keysight import E5080BController
 from qililab.platform import Platform
-from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter, VNAAverageModes, VNAFormatBorder, VNAFormatData, VNAScatteringParameters, VNASweepModes, VNASweepTypes
+
 from tests.data import SauronVNA
 from tests.test_utils import build_platform
 
@@ -104,14 +105,14 @@ class TestE5080B:
             (Parameter.CW_FREQUENCY, 4e9),
             (Parameter.NUMBER_POINTS, 201),
             (Parameter.IF_BANDWIDTH, 1e3),
-            (Parameter.SWEEP_TYPE, "lin"),
-            (Parameter.SWEEP_MODE, "cont"),
-            (Parameter.SCATTERING_PARAMETER, "S21"),
+            (Parameter.SWEEP_TYPE, VNASweepTypes.LIN),
+            (Parameter.SWEEP_MODE, VNASweepModes.CONT),
+            (Parameter.SCATTERING_PARAMETER, VNAScatteringParameters.S21),
             (Parameter.AVERAGES_ENABLED, True),
             (Parameter.NUMBER_AVERAGES, 16),
-            (Parameter.AVERAGES_MODE, "Point"),
-            (Parameter.FORMAT_DATA, "real,32"),
-            (Parameter.FORMAT_BORDER, "swap"),
+            (Parameter.AVERAGES_MODE, VNAAverageModes.POIN),
+            (Parameter.FORMAT_DATA, VNAFormatData.REAL_32),
+            (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
             (Parameter.RF_ON, False),
         ],
     )
@@ -197,14 +198,14 @@ class TestE5080B:
             (Parameter.CW_FREQUENCY, 4e9),
             (Parameter.NUMBER_POINTS, 201),
             (Parameter.IF_BANDWIDTH, 1e3),
-            (Parameter.SWEEP_TYPE, "lin"),
-            (Parameter.SWEEP_MODE, "cont"),
-            (Parameter.SCATTERING_PARAMETER, "S21"),
+            (Parameter.SWEEP_TYPE, VNASweepTypes.LIN),
+            (Parameter.SWEEP_MODE, VNASweepModes.CONT),
+            (Parameter.SCATTERING_PARAMETER, VNAScatteringParameters.S21),
             (Parameter.AVERAGES_ENABLED, True),
             (Parameter.NUMBER_AVERAGES, 16),
-            (Parameter.AVERAGES_MODE, "Point"),
-            (Parameter.FORMAT_DATA, "real,32"),
-            (Parameter.FORMAT_BORDER, "swap"),
+            (Parameter.AVERAGES_MODE, VNAAverageModes.POIN),
+            (Parameter.FORMAT_DATA, VNAFormatData.REAL_32),
+            (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
             (Parameter.RF_ON, False),
         ],
     )
@@ -322,16 +323,16 @@ class TestE5080B:
             (Parameter.FREQUENCY_STOP, 8e9, "stop_freq"),
             (Parameter.FREQUENCY_CENTER, 4e9, "center_freq"),
             (Parameter.FREQUENCY_SPAN, 7.99e9, "span"),
-            (Parameter.AVERAGES_MODE, 7.99e9, "averages_mode"),
+            (Parameter.AVERAGES_MODE, VNAAverageModes.SWEEP, "averages_mode"),
             (Parameter.NUMBER_AVERAGES, 7.99e9, "averages_count"),
-            (Parameter.SWEEP_TYPE, "CW", "sweep_type"),
+            (Parameter.SWEEP_TYPE, VNASweepTypes.CW, "sweep_type"),
             (Parameter.CW_FREQUENCY, 1e6, "cw"),
         ],
     )
     def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):
         """Test the initial setup when sweep_type is not 'SEGM'."""
         e5080b.set_parameter(parameter=parameter, value=value)
-        e5080b.set_parameter(Parameter.SWEEP_TYPE, "CW")
+        e5080b.set_parameter(Parameter.SWEEP_TYPE, VNASweepTypes.CW)
         e5080b.device.reset_mock()
         e5080b.initial_setup()
         getattr(e5080b.device, method).assert_called_once_with(value)

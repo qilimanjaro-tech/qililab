@@ -355,39 +355,39 @@ class E5080B(Instrument):
         """
 
         if parameter == Parameter.FREQUENCY_START:
-            return cast(ParameterValue, self.settings.frequency_start)
+            return cast("ParameterValue", self.settings.frequency_start)
         if parameter == Parameter.FREQUENCY_STOP:
-            return cast(ParameterValue, self.settings.frequency_stop)
+            return cast("ParameterValue", self.settings.frequency_stop)
         if parameter == Parameter.FREQUENCY_CENTER:
-            return cast(ParameterValue, self.settings.frequency_center)
+            return cast("ParameterValue", self.settings.frequency_center)
         if parameter == Parameter.FREQUENCY_SPAN:
-            return cast(ParameterValue, self.settings.frequency_span)
+            return cast("ParameterValue", self.settings.frequency_span)
         if parameter == Parameter.CW_FREQUENCY:
-            return cast(ParameterValue, self.settings.cw_frequency)
+            return cast("ParameterValue", self.settings.cw_frequency)
         if parameter == Parameter.NUMBER_POINTS:
-            return cast(ParameterValue, self.settings.number_points)
+            return cast("ParameterValue", self.settings.number_points)
         if parameter == Parameter.SOURCE_POWER:
-            return cast(ParameterValue, self.settings.source_power)
+            return cast("ParameterValue", self.settings.source_power)
         if parameter == Parameter.IF_BANDWIDTH:
-            return cast(ParameterValue, self.settings.if_bandwidth)
+            return cast("ParameterValue", self.settings.if_bandwidth)
         if parameter == Parameter.SWEEP_TYPE:
-            return cast(ParameterValue, self.settings.sweep_type)
+            return cast("ParameterValue", self.settings.sweep_type)
         if parameter == Parameter.SWEEP_MODE:
-            return cast(ParameterValue, self.settings.sweep_mode)
+            return cast("ParameterValue", self.settings.sweep_mode)
         if parameter == Parameter.SCATTERING_PARAMETER:
-            return cast(ParameterValue, self.settings.scattering_parameter)
+            return cast("ParameterValue", self.settings.scattering_parameter)
         if parameter == Parameter.AVERAGES_ENABLED:
-            return cast(ParameterValue, self.settings.averages_enabled)
+            return cast("ParameterValue", self.settings.averages_enabled)
         if parameter == Parameter.NUMBER_AVERAGES:
-            return cast(ParameterValue, self.settings.number_averages)
+            return cast("ParameterValue", self.settings.number_averages)
         if parameter == Parameter.AVERAGES_MODE:
-            return cast(ParameterValue, self.settings.averages_mode)
+            return cast("ParameterValue", self.settings.averages_mode)
         if parameter == Parameter.FORMAT_DATA:
-            return cast(ParameterValue, self.settings.format_data)
+            return cast("ParameterValue", self.settings.format_data)
         if parameter == Parameter.RF_ON:
-            return cast(ParameterValue, self.settings.rf_on)
+            return cast("ParameterValue", self.settings.rf_on)
         if parameter == Parameter.FORMAT_BORDER:
-            return cast(ParameterValue, self.settings.format_border)
+            return cast("ParameterValue", self.settings.format_border)
 
         raise ParameterNotFound(self, parameter)
 
@@ -483,7 +483,7 @@ class E5080B(Instrument):
         if self.settings.format_border is not None:
             self.device.format_border(self.settings.format_border)
 
-        if self.settings.sweep_type != "SEGM":
+        if self.settings.sweep_type !=  VNASweepTypes.SEGM:
             if self.settings.frequency_start is not None:
                 self.device.start_freq(self.settings.frequency_start)
             if self.settings.frequency_center is not None:
@@ -492,7 +492,7 @@ class E5080B(Instrument):
                 self.device.stop_freq(self.settings.frequency_stop)
             if self.settings.frequency_span is not None:
                 self.device.span(self.settings.frequency_span)
-        if self.settings.sweep_type == "CW" and self.settings.cw_frequency is not None:
+        if self.settings.sweep_type == VNASweepTypes.CW and self.settings.cw_frequency is not None:
             self.device.cw(self.settings.cw_frequency)
 
         if self.settings.number_averages is not None:
