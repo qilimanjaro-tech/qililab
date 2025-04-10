@@ -151,7 +151,7 @@ class E5080B(Instrument):
         return self.settings.if_bandwidth
 
     @property
-    def sweep_type(self) -> VNASweepTypes:
+    def sweep_type(self):
         """Sets the type of analyzer sweep mode. First set sweep type, then set sweep parameters such as frequency or power settings. Default is LIN
 
         Returns:
@@ -160,7 +160,7 @@ class E5080B(Instrument):
         return self.settings.sweep_type
 
     @property
-    def sweep_mode(self) -> VNASweepModes:
+    def sweep_mode(self):
         """Sets the number of trigger signals the specified channel will ACCEPT. Default is Continuous
 
         Returns:
@@ -169,7 +169,7 @@ class E5080B(Instrument):
         return self.settings.sweep_mode
 
     @property
-    def scattering_parameter(self) -> VNAScatteringParameters:
+    def scattering_parameter(self):
         """Set/get a measurement parameter for the specified measurement.
 
         Returns:
@@ -196,7 +196,7 @@ class E5080B(Instrument):
         return self.settings.number_averages
 
     @property
-    def averages_mode(self) -> VNAAverageModes:
+    def averages_mode(self):
         """Sets the type of averaging to perform: Point or Sweep (default is sweep).
 
         Returns:
@@ -205,7 +205,7 @@ class E5080B(Instrument):
         return self.settings.averages_mode
 
     @property
-    def format_data(self) -> VNAFormatData:
+    def format_data(self):
         """Sets the data format for transferring measurement data and frequency data. Default is ASCii,0.
 
         Returns:
@@ -223,7 +223,7 @@ class E5080B(Instrument):
         return self.settings.rf_on
 
     @property
-    def format_border(self) -> VNAFormatBorder:
+    def format_border(self):
         """Set the byte order used for GPIB data transfer. Some computers read data from the analyzer in the reverse order.
             This command is only implemented if FORMAT:DATA is set to :REAL.
 
