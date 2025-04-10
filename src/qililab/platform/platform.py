@@ -1639,7 +1639,7 @@ class Platform:
             )
 
         for iteration, (loop_name, loop_array) in enumerate(loops.items()):
-            if loop_array.shape[0] != shape[iteration]:
+            if loop_array.shape[0] != shape[iteration] - 1:
                 raise ValueError(
                     f"Loops dimensions must be the same than the array instroduced, {loop_name} as {loop_array.shape[0]} != {shape[iteration]}"
                 )

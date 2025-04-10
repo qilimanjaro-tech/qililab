@@ -1364,7 +1364,7 @@ class TestMethods:
         """Test stream_array function to save database from platform"""
 
         shape = (2, 2)
-        loops = {"test_amp_loop": np.arange(0, 1, 2)}
+        loops = {"test_amp_loop": np.arange(0, 2)}
         experiment_name = "test_stream_array"
         mock_database = MagicMock()
         db_manager = mock_database
@@ -1409,7 +1409,7 @@ class TestMethods:
         """Test save_measurement_results functionto save from database from Platform"""
 
         experiment_name = "experiment_name"
-        loops = {"test_amp_loop": np.arange(0, 1), "test_freq_loop": np.arange(0, 1e6)}
+        loops = {"test_amp_loop": np.arange(0, 1), "test_freq_loop": np.arange(0, 1e6, 1e6)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
@@ -1431,7 +1431,7 @@ class TestMethods:
         """Test save_measurement_results functionto save from database from Platform"""
 
         experiment_name = "experiment_name"
-        loops = {"test_amp_loop": np.arange(0, 1, 2, 3, 4)}
+        loops = {"test_amp_loop": np.arange(0, 4)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
