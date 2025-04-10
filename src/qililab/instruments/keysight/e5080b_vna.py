@@ -359,10 +359,6 @@ class E5080B(Instrument):
             return self.settings.frequency_stop
         if parameter == Parameter.FREQUENCY_CENTER:
             return self.settings.frequency_center
-        if parameter == Parameter.STEP_AUTO:
-            return self.settings.step_auto
-        if parameter == Parameter.STEP_SIZE:
-            return self.settings.step_size
         if parameter == Parameter.FREQUENCY_SPAN:
             return self.settings.frequency_span
         if parameter == Parameter.CW_FREQUENCY:

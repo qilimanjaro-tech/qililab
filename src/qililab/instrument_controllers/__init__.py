@@ -16,8 +16,8 @@
 
 from .instrument_controller import InstrumentController
 from .instrument_controllers import InstrumentControllers
-from .keysight import E5080BController
 from .keithley import Keithley2600Controller
+from .keysight import E5080BController
 from .mini_circuits import MiniCircuitsController
 from .qblox import QbloxClusterController, QbloxSPIRackController
 from .qdevil import QDevilQDac2Controller

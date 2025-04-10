@@ -13,7 +13,7 @@ from qililab.instruments import ParameterNotFound
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.keysight import E5080BController
 from qililab.platform import Platform
-from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter, VNASweepTypes
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter
 from tests.data import SauronVNA
 from tests.test_utils import build_platform
 
@@ -258,6 +258,10 @@ class TestE5080B:
     def test_pre_measurement(self, e5080b: E5080B):
         e5080b._pre_measurement()
 
+    def test_pre_measurement_with_nb_avg(self, e5080b: E5080B):
+        e5080b.set_parameter(Parameter.NUMBER_AVERAGES,10)
+        e5080b._pre_measurement()
+
     def test_start_measurement(self, e5080b: E5080B):
         e5080b._start_measurement()
 
@@ -278,12 +282,25 @@ class TestE5080B:
         timeout = 0.001
         e5080b_mocked_binary_return._wait_for_averaging(timeout)
 
-    def test_read_tracedata(self, e5080b: E5080B):
+    def test_read_tracedata_success(self, e5080b: E5080B):
+        timeout=100
+        with patch.object(e5080b, '_wait_for_averaging', return_value=None) as mock_wait_for_averaging, \
+            patch.object(e5080b, '_get_trace', return_value='fake_trace_data') as mock_get_trace, \
+            patch.object(e5080b, 'release') as mock_release:
+            
+            # Call the method
+            trace = e5080b.read_tracedata(timeout)
+            
+            # Assert the trace is as expected and release was called
+            assert trace == 'fake_trace_data'
+            mock_release.assert_called_once()
+
+    def test_read_tracedata_timeout(self, e5080b: E5080B):
         timeout = 0.001
         with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
             e5080b.read_tracedata(timeout)
 
-    def test_read_tracedata_averages_enabled(self, e5080b: E5080B):
+    def test_read_tracedata_averages_enabled_timeout(self, e5080b: E5080B):
         e5080b.set_parameter(Parameter.AVERAGES_ENABLED,True)
         timeout = 0.001
         with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
