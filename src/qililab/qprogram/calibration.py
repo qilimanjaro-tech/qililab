@@ -13,14 +13,13 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+
+import numpy as np
 
 from qililab.qprogram.blocks import Block
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
-
-if TYPE_CHECKING:
-    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 
 
 @yaml.register_class
@@ -186,4 +185,24 @@ class Calibration:
         data = yaml.load(Path(file))
         if not isinstance(data, cls):
             raise TypeError("The loaded data is not an instance of the Calibration class.")
+
+        if isinstance(data.crosstalk_matrix, CrosstalkMatrix):
+            if isinstance(data.crosstalk_matrix.matrix, list):
+                if not data.crosstalk_matrix.bus_list or len(data.crosstalk_matrix.bus_list) != len(
+                    data.crosstalk_matrix.matrix
+                ):
+                    raise ValueError("Bus list is empty or has the wrong dimensions")
+                data.crosstalk_matrix.matrix = CrosstalkMatrix.from_array(
+                    buses=data.crosstalk_matrix.bus_list, matrix_array=np.array(data.crosstalk_matrix.matrix)
+                )
+
+            if isinstance(data.crosstalk_matrix.flux_offsets, list):
+                if not data.crosstalk_matrix.bus_list or len(data.crosstalk_matrix.bus_list) != len(
+                    data.crosstalk_matrix.flux_offsets
+                ):
+                    raise ValueError("Bus list is empty or has the wrong dimensions")
+                offset_list = data.crosstalk_matrix.flux_offsets.copy()
+                data.crosstalk_matrix.flux_offsets = {}
+                for bus, value in zip(data.crosstalk_matrix.bus_list, offset_list):
+                    data.crosstalk_matrix.flux_offsets[bus] = value
         return data

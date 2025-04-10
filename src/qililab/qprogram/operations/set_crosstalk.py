@@ -12,5 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Version number (major.minor.patch[-label])"""
-__version__ = "0.28.0"
+
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.operations.operation import Operation
+from qililab.yaml import yaml
+
+
+@yaml.register_class
+class SetCrosstalk(Operation):
+    def __init__(self, crosstalk: CrosstalkMatrix) -> None:
+        super().__init__()
+        self.crosstalk: CrosstalkMatrix = crosstalk

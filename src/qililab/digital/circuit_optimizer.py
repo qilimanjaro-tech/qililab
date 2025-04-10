@@ -32,7 +32,7 @@ class CircuitOptimizer:
 
     Args:
         settings (DigitalCompilationSettings): Object containing the Digital Compilations Settings and the info on chip's physical qubits.
-            It can be obtained from the `digital_compilation_settings` attribute of a `Platform` object.
+            It can be obtained from the ``digital_compilation_settings`` attribute of a ``Platform`` object.
     """
 
     def __init__(self, settings: DigitalCompilationSettings):
@@ -345,7 +345,7 @@ class CircuitOptimizer:
             )
             # If  gate fulfills the condition, and has no gate before, we remove gate:
             if is_gate_to_remove_OR_has_control_q and all(qubit not in finished_qubits for qubit in gate.qubits):
-                CircuitOptimizer._make_gate_None_in_queue(gate, idx, queue, wire_names)
+                CircuitOptimizer._make_gate_None_in_queue(gate, idx, queue, wire_names)  # type: ignore[arg-type]
             # If gate not fulfills the condition, or has another non-removed gate before, we stop for that qubit:
             else:
                 finished_qubits.update(gate.qubits)

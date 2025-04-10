@@ -16,13 +16,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict
 
 import numpy as np
-from qpysequence import Acquisitions, Program, Waveforms, Weights
+from qpysequence import Acquisitions, Program, Waveforms
 from qpysequence import Sequence as QpySequence
+from qpysequence.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Register
 from qpysequence.program.instructions import (
     Acquire,
-    AcquireWeighed,
     Move,
     Play,
     ResetPh,
@@ -33,7 +33,6 @@ from qpysequence.program.instructions import (
     UpdParam,
     Wait,
 )
-from qpysequence.utils.constants import AWG_MAX_GAIN, INST_MAX_WAIT
 
 from qililab.config import logger
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
@@ -157,8 +156,7 @@ class QbloxCompiler:
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions(pulse_bus_schedule=pulse_bus_schedule)
         program = self._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms)
-        weights = self._generate_weights(bus=self.buses[pulse_bus_schedule.bus_alias])
-        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions)
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
@@ -276,8 +274,6 @@ class QbloxCompiler:
                     loop=bin_loop,
                     bin_index=bin_loop.counter_register,
                     acq_index=i,
-                    bus=bus,
-                    weight_regs=weight_registers,
                     wait=wait_time - MIN_WAIT if (i < len(timeline) - 1) else MIN_WAIT,
                 )
 
@@ -293,47 +289,22 @@ class QbloxCompiler:
         logger.info("Q1ASM program: \n %s", repr(program))
         return program
 
-    def _generate_weights(self, bus: DigitalCompilationBusSettings) -> Weights:  # type: ignore
-        """Generate acquisition weights.
-
-        Returns:
-            Weights: Acquisition weights.
-        """
-        weights = Weights()
-
-        if bus.is_readout():
-            pair = ([float(w) for w in bus.weights_i], [float(w) for w in bus.weights_q])
-            weights.add_pair(pair=pair, indices=(0, 1))
-        return weights
-
     def _append_acquire_instruction(
         self,
         loop: Loop,
         bin_index: Register | int,
         acq_index: int,
-        bus: DigitalCompilationBusSettings,
-        weight_regs: tuple[Register, Register],
         wait: int,
     ):
         """Append an acquire instruction to the loop."""
-        acq_instruction = (
-            AcquireWeighed(
-                acq_index=acq_index,
-                bin_index=bin_index,
-                weight_index_0=weight_regs[0],
-                weight_index_1=weight_regs[1],
-                wait_time=wait,
-            )
-            if bus.weighed_acq_enabled
-            else Acquire(
+        # TODO: implement time of flight properly to remove this hack
+        loop.append_component(Wait(wait_time=220))
+        loop.append_component(Acquire(
                 acq_index=acq_index,
                 bin_index=bin_index,
                 wait_time=wait,
             )
         )
-        # TODO: implement time of flight properly to remove this hack
-        loop.append_component(Wait(wait_time=220))
-        loop.append_component(acq_instruction)
 
     def _init_weights_registers(self, registers: tuple[Register, Register], program: Program):
         """Initialize the weights `registers` and place the required instructions in the setup block of the `program`."""

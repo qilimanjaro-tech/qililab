@@ -55,6 +55,9 @@ class SGS100A(Instrument):
 
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
+    freq_top_limit: float
+    freq_bot_limit: float
+    device_initialized: bool = False
 
     @property
     def power(self):
@@ -63,6 +66,11 @@ class SGS100A(Instrument):
         Returns:
             float: settings.power.
         """
+        if self.device_initialized:
+            if not -120 <= self.settings.power <= 25:
+                raise ValueError(
+                    f"Value set for power is outside of the allowed range [-120,25]: {self.settings.power}"
+                )
         return self.settings.power
 
     @property
@@ -72,6 +80,11 @@ class SGS100A(Instrument):
         Returns:
             float: settings.frequency.
         """
+        if self.device_initialized:
+            if not self.freq_bot_limit <= self.settings.frequency <= self.freq_top_limit:
+                raise ValueError(
+                    f"Value set for frequency is outside of the allowed range [{self.freq_bot_limit}, {self.freq_top_limit}]: {self.settings.frequency}"
+                )
         return self.settings.frequency
 
     @property
@@ -127,7 +140,7 @@ class SGS100A(Instrument):
                 self.device.frequency(self.frequency)
             return
         if parameter == Parameter.RF_ON:
-            value = bool(value)
+            self.settings.rf_on = bool(value)
             if self.is_device_active():
                 if value:
                     self.turn_on()
@@ -183,14 +196,22 @@ class SGS100A(Instrument):
     @check_device_initialized
     def initial_setup(self):
         """performs an initial setup"""
+        self.device_initialized = True
+        device_mixer = self.get_rs_options().split(",")[-1]
+        if device_mixer == "SGS-B112" or device_mixer == "SGS-B112V":
+            self.freq_top_limit = 12.75e9
+        elif device_mixer == "SGS-B106" or device_mixer == "SGS-B106V":
+            self.freq_top_limit = 6e9
+        if device_mixer == "SGS-B112" or device_mixer == "SGS-B106":
+            self.freq_bot_limit = 1e6
+        elif device_mixer == "SGS-B112V" or device_mixer == "SGS-B106V":
+            self.freq_bot_limit = 80e6
         self.device.power(self.power)
         self.device.frequency(self.frequency)
         if self.alc:
             self.device.write(":SOUR:POW:ALC:STAT ONT")
         else:
             self.device.write(":SOUR:POW:ALC:STAT OFF")
-
-        device_mixer = self.get_rs_options().split(",")[-1]
         if device_mixer == "SGS-B112V" and self.iq_modulation:
             self.device.IQ_state(self.iq_modulation)
             if self.iq_wideband:
@@ -221,7 +242,7 @@ class SGS100A(Instrument):
     def turn_on(self):
         """Start generating microwaves."""
         if not self.settings.rf_on:
-            self.device.off()
+            self.device.off()  # this avoids the initialisation to overwrite the runcard
         else:
             self.device.on()
 

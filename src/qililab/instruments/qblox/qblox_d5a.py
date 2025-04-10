@@ -59,21 +59,6 @@ class QbloxD5a(VoltageSource):
         """
         return getattr(self.device, f"dac{dac_index}")
 
-    def _channel_setup(self, dac_index: int) -> None:
-        """Setup for a specific dac channel
-
-        Args:
-            dac_index (int): dac specific index channel
-        """
-        channel = self.dac(dac_index=dac_index)
-        channel.ramping_enabled(self.ramping_enabled[dac_index])
-        channel.ramp_rate(self.ramp_rate[dac_index])
-        channel.span(self.span[dac_index])
-        channel.voltage(self.voltage[dac_index])
-        logger.debug("SPI voltage set to %f", channel.voltage())
-        while channel.is_ramping():
-            sleep(0.1)
-
     @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set Qblox instrument calibration settings."""
@@ -82,10 +67,10 @@ class QbloxD5a(VoltageSource):
             raise ValueError(f"channel not specified to update instrument {self.name.value}")
 
         channel_id = int(channel_id)
-        if channel_id > 3:
+        if channel_id > 15:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."
-                + " Number of dacs is 4 -> maximum channel_id should be 3."
+                + " Number of dacs is 16 -> maximum channel_id should be 15."
             )
 
         channel = self.dac(dac_index=channel_id) if self.is_device_active() else None
@@ -115,10 +100,10 @@ class QbloxD5a(VoltageSource):
             raise ValueError(f"channel not specified to update instrument {self.name.value}")
 
         channel_id = int(channel_id)
-        if channel_id > 3:
+        if channel_id > 15:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."
-                + " Number of dacs is 4 -> maximum channel_id should be 3."
+                + " Number of dacs is 16 -> maximum channel_id should be 15."
             )
         if hasattr(self.settings, parameter.value):
             return getattr(self.settings, parameter.value)[channel_id]
@@ -151,8 +136,16 @@ class QbloxD5a(VoltageSource):
     @check_device_initialized
     def initial_setup(self):
         """performs an initial setup."""
-        for dac_index in self.dacs:
-            self._channel_setup(dac_index=dac_index)
+        for channel_id in self.dacs:
+            index = self.dacs.index(channel_id)
+            channel = self.dac(dac_index=channel_id)
+            channel.ramping_enabled(self.ramping_enabled[index])
+            channel.ramp_rate(self.ramp_rate[index])
+            channel.span(self.span[index])
+            channel.voltage(self.voltage[index])
+            logger.debug("SPI voltage set to %f", channel.voltage())
+            while channel.is_ramping():
+                sleep(0.1)
 
     @check_device_initialized
     def turn_on(self):

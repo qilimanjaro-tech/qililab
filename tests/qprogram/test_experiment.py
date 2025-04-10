@@ -1,17 +1,19 @@
 import os
+from unittest.mock import patch
 
 import pytest
+from tests.qprogram.test_structured_program import TestStructuredProgram
 
+from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, SetParameter
+from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain
 from qililab.typings.enums import Parameter
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 from qililab.waveforms import IQPair, Square
-from tests.qprogram.test_structured_program import (
-    TestStructuredProgram,
-)
 
 
 class TestExperiment(TestStructuredProgram):
@@ -32,8 +34,21 @@ class TestExperiment(TestStructuredProgram):
         assert instance._body.elements[0].parameter == Parameter.VOLTAGE
         assert instance._body.elements[0].value == 0.5
 
+    def test_set_parameter_flux(self, instance: Experiment):
+        """Test set_parameter method with FLUX parameter and crosstalk"""
+        instance.set_crosstalk(CrosstalkMatrix.from_buses({"flux_bus": {"flux_bus": 1.0}}))
+        instance.set_parameter(alias="flux_bus", parameter=Parameter.FLUX, value=0.5)
+
+        assert len(instance._active_block.elements) == 2
+        assert len(instance._body.elements) == 2
+        assert isinstance(instance._body.elements[1], SetParameter)
+        assert isinstance(instance._body.elements[0], SetCrosstalk)
+        assert instance._body.elements[1].alias == "flux_bus"
+        assert instance._body.elements[1].parameter == Parameter.FLUX
+        assert instance._body.elements[1].value == 0.5
+
     def test_execute_qprogram(self, instance: Experiment):
-        """Test set_awg_gain method"""
+        """Test execute_qprogram method"""
         qp = QProgram()
         instance.execute_qprogram(qprogram=qp)
 

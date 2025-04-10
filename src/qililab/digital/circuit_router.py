@@ -37,10 +37,10 @@ class CircuitRouter:
 
     Args:
         connectivity (nx.graph): Chip connectivity.
-        placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): `Placer` instance, or subclass `type[Placer]` to
-            use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `ReverseTraversal`.
-        router (Router | type[Router] | tuple[type[Router], dict], optional): `Router` instance, or subclass `type[Router]` to
-            use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to `Sabre`.
+        placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
+            use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``ReverseTraversal``.
+        router (Router | type[Router] | tuple[type[Router], dict], optional): ``Router`` instance, or subclass ``type[Router]`` to
+            use, with optionally, its kwargs dict (other than connectivity), both in a tuple. Defaults to ``Sabre``.
     """
 
     def __init__(
