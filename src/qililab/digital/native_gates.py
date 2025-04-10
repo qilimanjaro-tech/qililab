@@ -70,7 +70,7 @@ class Drag(_Un_):
         gate.
         """
         encoded_simple = super().raw
-        encoded_simple["init_kwargs"] |= self.init_kwargs
+        encoded_simple["init_kwargs"] = self.init_kwargs
         return encoded_simple
 
 
@@ -102,7 +102,7 @@ class Wait(ParametrizedGate):
         gate.
         """
         encoded_simple = super().raw
-        encoded_simple["init_kwargs"] |= self.init_kwargs
+        encoded_simple["init_kwargs"] = self.init_kwargs
         return encoded_simple
 
 
