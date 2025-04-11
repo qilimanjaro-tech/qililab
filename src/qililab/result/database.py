@@ -16,7 +16,10 @@ import datetime
 import os
 import warnings
 from configparser import ConfigParser
+from typing import TYPE_CHECKING
 
+import h5py
+import numpy as np
 from pandas import read_hdf, read_sql
 from sqlalchemy import (
     ARRAY,
@@ -40,6 +43,12 @@ from xarray import DataArray
 
 from qililab.result.experiment_results import ExperimentResults
 from qililab.result.result_management import load_results
+
+if TYPE_CHECKING:
+    from qililab.platform.platform import Platform
+    from qililab.qprogram.calibration import Calibration
+    from qililab.qprogram.experiment import Experiment
+    from qililab.qprogram.qprogram import QProgram
 
 base = declarative_base()
 
@@ -390,11 +399,11 @@ class DatabaseManager:
         sample_name: str | None = None,
         optional_identifier: str | None = None,
         end_time: datetime.datetime | None = None,
-        run_length=None,
-        platform=None,
-        experiment=None,
-        qprogram=None,
-        calibration=None,
+        run_length: float | None = None,
+        platform: "Platform" = None,
+        experiment: "Experiment" = None,
+        qprogram: "QProgram" = None,
+        calibration: "Calibration" = None,
         parameters=None,
         data_shape=None,
     ):
@@ -433,6 +442,73 @@ class DatabaseManager:
             calibration=calibration,
             parameters=parameters,
             data_shape=data_shape,
+        )
+        with self.Session() as session:
+            session.add(measurement)
+            try:
+                session.commit()
+                return measurement
+            except Exception as e:
+                session.rollback()
+                raise e
+
+    def add_results(
+        self,
+        experiment_name: str,
+        results: np.ndarray,
+        loops: dict[str, np.ndarray],
+        cooldown: str | None = None,
+        sample_name: str | None = None,
+        optional_identifier: str | None = None,
+        platform: "Platform" = None,
+        experiment: "Experiment" = None,
+        qprogram: "QProgram" = None,
+        calibration: "Calibration" = None,
+        parameters=None,
+    ):
+        if sample_name is None:
+            if self.current_sample:
+                sample_name = self.current_sample
+            else:
+                raise Exception("Please set at least a sample using set_sample_and_cooldown(...)")
+        if cooldown is None:
+            cooldown = self.current_cd
+
+        start_time = datetime.datetime.now()
+        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
+        base_path = "/home/jupytershared/data"
+        dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
+        result_path = f"{dir_path}/{experiment_name}.h5"
+
+        folder = dir_path
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+            warnings.warn(f"Data folder did not exist. Created one at {folder}")
+
+        # Save results
+        _file = h5py.File(name=result_path, mode="w")
+        g = _file.create_group(name="loops")
+        for loop_name, array in loops.items():
+            g.create_dataset(name=loop_name, data=array)
+
+        _file.create_dataset("results", data=results)
+        _file.__exit__()
+
+        measurement = Measurement(
+            experiment_name=experiment_name,
+            sample_name=sample_name,
+            result_path=result_path,
+            experiment_completed=True,
+            start_time=start_time,
+            cooldown=cooldown,
+            optional_identifier=optional_identifier,
+            end_time=datetime.datetime.now(),
+            platform=platform,
+            experiment=experiment,
+            qprogram=qprogram,
+            calibration=calibration,
+            parameters=parameters,
+            data_shape=results.shape,
         )
         with self.Session() as session:
             session.add(measurement)
