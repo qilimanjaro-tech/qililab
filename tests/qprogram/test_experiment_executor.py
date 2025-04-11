@@ -139,6 +139,22 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
     return experiment
 
 
+@pytest.fixture(name="experiment_two_loops")
+def fixture_experiment_two_loops(qprogram):
+    """Fixture to create a mock Experiment with two loops."""
+    experiment_two_loops = Experiment(label="experiment")
+    bias = experiment_two_loops.variable(label="Bias (mV)", domain=Domain.Voltage)
+    frequency = experiment_two_loops.variable(label="Frequency (Hz)", domain=Domain.Frequency)
+
+    with experiment_two_loops.for_loop(bias, 0.0, 1.0, 0.5):
+        experiment_two_loops.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=bias)
+        with experiment_two_loops.loop(frequency, values=np.array([2e9, 3e9])):
+            experiment_two_loops.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=frequency)
+            experiment_two_loops.execute_qprogram(qprogram)
+
+    return experiment_two_loops
+
+
 class TestExperimentExecutor:
     """Test ExperimentExecutor class"""
 
@@ -240,3 +256,12 @@ class TestExperimentExecutor:
 
         # If you want to ensure the exact sequence across all calls
         platform.assert_has_calls(expected_calls, any_order=False)
+
+    def test_execute_check_metadata(self, platform, experiment_two_loops):
+        """Tets to validate the correct order of the results"""
+        executor = ExperimentExecutor(platform=platform, experiment=experiment_two_loops)
+        _ = executor.execute()
+
+        results_metadata_shape = executor._metadata["qprograms"]["QProgram_0"]["measurements"]["Measurement_0"]["shape"]
+
+        assert (2, 3, 11, 2) == results_metadata_shape
