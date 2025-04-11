@@ -400,10 +400,10 @@ class DatabaseManager:
         optional_identifier: str | None = None,
         end_time: datetime.datetime | None = None,
         run_length: float | None = None,
-        platform: "Platform" = None,
-        experiment: "Experiment" = None,
-        qprogram: "QProgram" = None,
-        calibration: "Calibration" = None,
+        platform: "Platform" = None,  # type: ignore
+        experiment: "Experiment" = None,  # type: ignore
+        qprogram: "QProgram" = None,  # type: ignore
+        calibration: "Calibration" = None,  # type: ignore
         parameters=None,
         data_shape=None,
     ):
@@ -460,10 +460,10 @@ class DatabaseManager:
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
-        platform: "Platform" = None,
-        experiment: "Experiment" = None,
-        qprogram: "QProgram" = None,
-        calibration: "Calibration" = None,
+        platform: "Platform" = None,  # type: ignore
+        experiment: "Experiment" = None,  # type: ignore
+        qprogram: "QProgram" = None,  # type: ignore
+        calibration: "Calibration" = None,  # type: ignore
         parameters=None,
     ):
         if sample_name is None:
