@@ -1,12 +1,13 @@
 """Test StreamArray"""
 
 import copy
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from tests.data import Galadriel
 
-from qililab.result import stream_results
+import qililab as ql
 from qililab.result.stream_results import StreamArray
 
 AMP_VALUES = np.arange(0, 1, 2)
@@ -20,10 +21,15 @@ def fixture_stream_array():
         stream_array: StreamArray
     """
     shape = (2, 2)
-    path = "test_stream_array.hdf5"
     loops = {"test_amp_loop": AMP_VALUES}
+    platform = ql.build_platform(runcard=copy.deepcopy(Galadriel.runcard))
+    experiment_name = "test_stream_array"
+    mock_database = MagicMock()
+    db_manager = mock_database
 
-    return stream_results(shape=shape, path=path, loops=loops)
+    return StreamArray(
+        shape=shape, loops=loops, platform=platform, experiment_name=experiment_name, db_manager=db_manager
+    )
 
 
 class MockGroup:
@@ -59,7 +65,6 @@ class TestStreamArray:
         """Tests the instantiation of a StreamArray object."""
         assert stream_array.results.shape == (2, 2)
         assert (stream_array.results == np.empty(shape=(2, 2))).all
-        assert stream_array.path == "test_stream_array.hdf5"
         assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
     @patch("h5py.File", return_value=MockFile())
@@ -67,8 +72,6 @@ class TestStreamArray:
         """Tests context manager real time saving."""
         # test adding outside the context manager
         stream_array[0, 0] = -2
-
-        assert stream_array._dataset is None
 
         # test adding inside the context manager
         with stream_array:
@@ -78,9 +81,6 @@ class TestStreamArray:
             stream_array[1, 1] = 4
 
         assert (stream_array.results == [[1, 2], [3, 4]]).all
-        assert stream_array._dataset is not None
-        assert (stream_array._dataset == [[1, 2], [3, 4]]).all
-        assert stream_array._dataset[0, 0] == 1
 
         assert len(stream_array) == 2
         assert sum(1 for _ in iter(stream_array)) == 2

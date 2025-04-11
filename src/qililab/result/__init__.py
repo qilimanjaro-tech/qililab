@@ -31,11 +31,27 @@ Functions
 .. autosummary::
     :toctree: api
 
-    ~stream_results
+    ~load_results
+    ~save_results
 """
-
+# isort: skip_file
 from .experiment_results import ExperimentResults
 from .result import Result
-from .stream_results import stream_results
+from .result_management import load_results, save_results
 
-__all__ = ["ExperimentResults", "Result", "stream_results"]
+# Moving database here to avoid circular imports
+from .database import Cooldown, DatabaseManager, Sample, get_db_manager, Measurement
+from .stream_results import StreamArray
+
+__all__ = [
+    "Cooldown",
+    "DatabaseManager",
+    "ExperimentResults",
+    "Measurement",
+    "Result",
+    "Sample",
+    "StreamArray",
+    "get_db_manager",
+    "load_results",
+    "save_results",
+]

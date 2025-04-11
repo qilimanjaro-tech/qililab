@@ -98,6 +98,7 @@ class QbloxQCMRF(QbloxQCM):
             channel_id (int, optional): ID of the sequencer. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
+            value = int(value)
             if channel_id is not None:
                 sequencer = self.get_sequencer(sequencer_id=int(channel_id))
             else:
@@ -109,6 +110,7 @@ class QbloxQCMRF(QbloxQCM):
             parameter = Parameter(f"out{sequencer.outputs[0]}_lo_freq")
 
         if parameter == Parameter.OUT0_ATT:
+            value = int(value)
             max_att = self.device._get_max_out_att_0()
             if value > max_att:
                 raise Exception(
@@ -117,6 +119,7 @@ class QbloxQCMRF(QbloxQCM):
                 )
 
         if parameter == Parameter.OUT1_ATT:
+            value = int(value)
             max_att = self.device._get_max_out_att_1()
             if value > max_att:
                 raise Exception(

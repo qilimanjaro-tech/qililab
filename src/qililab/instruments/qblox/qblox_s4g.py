@@ -79,16 +79,16 @@ class QbloxS4g(CurrentSource):
         channel = self.dac(dac_index=channel_id) if self.is_device_active() else None
 
         if parameter == Parameter.CURRENT:
-            self._set_current(value=value, channel_id=channel_id, channel=channel)
+            self._set_current(value=float(value), channel_id=channel_id, channel=channel)
             return
         if parameter == Parameter.SPAN:
-            self._set_span(value=value, channel_id=channel_id, channel=channel)
+            self._set_span(value=float(value), channel_id=channel_id, channel=channel)
             return
         if parameter == Parameter.RAMPING_ENABLED:
-            self._set_ramping_enabled(value=value, channel_id=channel_id, channel=channel)
+            self._set_ramping_enabled(value=bool(value), channel_id=channel_id, channel=channel)
             return
         if parameter == Parameter.RAMPING_RATE:
-            self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel)
+            self._set_ramping_rate(value=float(value), channel_id=channel_id, channel=channel)
             return
         raise ParameterNotFound(self, parameter)
 

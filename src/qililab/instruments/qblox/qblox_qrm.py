@@ -287,7 +287,7 @@ class QbloxQRM(QbloxModule):
 
         channel_id = int(channel_id)
         if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
-            self._set_scope_hardware_averaging(value=value, sequencer_id=channel_id)
+            self._set_scope_hardware_averaging(value=float(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.HARDWARE_DEMODULATION:
             self._set_hardware_demodulation(value=value, sequencer_id=channel_id)
@@ -296,31 +296,31 @@ class QbloxQRM(QbloxModule):
             self._set_acquisition_mode(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.INTEGRATION_LENGTH:
-            self._set_integration_length(value=value, sequencer_id=channel_id)
+            self._set_integration_length(value=int(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.SAMPLING_RATE:
-            self._set_sampling_rate(value=value, sequencer_id=channel_id)
+            self._set_sampling_rate(value=float(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.INTEGRATION_MODE:
             self._set_integration_mode(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.SEQUENCE_TIMEOUT:
-            self._set_sequence_timeout(value=value, sequencer_id=channel_id)
+            self._set_sequence_timeout(value=int(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.ACQUISITION_TIMEOUT:
-            self._set_acquisition_timeout(value=value, sequencer_id=channel_id)
+            self._set_acquisition_timeout(value=int(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.SCOPE_STORE_ENABLED:
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.THRESHOLD:
-            self._set_threshold(value=value, sequencer_id=channel_id)
+            self._set_threshold(value=float(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
-            self._set_threshold_rotation(value=value, sequencer_id=channel_id)
+            self._set_threshold_rotation(value=float(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.TIME_OF_FLIGHT:
-            self._set_time_of_flight(value=value, sequencer_id=channel_id)
+            self._set_time_of_flight(value=int(value), sequencer_id=channel_id)
             return
         super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
