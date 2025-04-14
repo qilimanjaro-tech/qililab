@@ -159,6 +159,7 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
+        # self._
 
     def compile(
         self,
@@ -196,7 +197,12 @@ class QbloxCompiler:
                                         element=Wait(bus=other_buses, duration=-self._buses[bus].delay), delay=True
                                     )
                     delay_implemented = True
+                # if isinstance(element, Measure) and element.active_reset:
+                #     self._handle_sync(element=Sync(buses=None), delay=True)
+                #     self._handle_active_reset(element)
                 handler = self._handlers.get(type(element))
+                if isinstance(element, Measure) and element.active_reset:
+                    self._handle_sync(element=Sync(buses=None), delay=True)
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
                 appended = handler(element)
@@ -242,6 +248,11 @@ class QbloxCompiler:
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
             self._buses[bus].static_duration += 4
 
+        # Pre-processing: Flag control_modules involved in the active reset
+        #TODO: consider the case where more than 1QCM and more than 1 QRM - also could be 1 QRM for multiple QCM and vice versa
+        # for bus in self._buses:
+
+        # self._qprogram.active_reset
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
 
@@ -566,6 +577,8 @@ class QbloxCompiler:
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         self._handle_play(play)
         self._handle_acquire(acquire)
+        if element.active_reset:
+            self._handle_active_reset(element)
 
     def _handle_acquire(self, element: Acquire):
         # TODO: unify with measure when time of flight is implemented
@@ -632,6 +645,37 @@ class QbloxCompiler:
         self._buses[element.bus].next_acquisition_index += 1
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
+
+    def _handle_active_reset(self, element: Measure):
+        #TODO: add docstring
+        readout_bus, control_bus = self._qprogram.active_reset[0]
+        
+        # #Handles the readout bus
+        # self._buses[readout_bus].qpy_block_stack[-1].append_component(
+        #         component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
+        #     )
+        # active reset    need to add a wait to synch here in QProgram
+        #         play reaodut waveform    #added for active reset, do i need this play or can i just acquire straight away
+        #         wait for readout to return? not sure how to implement it, maybe a synch could do?
+        #         acquire #could be a different acquire type than the one already used in qprogram, need to have more of a look at the documentation
+        
+        #Handles the control bus
+        self._buses[control_bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.SetLatchEn(1,4) #4 SHOULDNT BE HARDCODED
+            )
+        self._buses[control_bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.LatchRst(4)
+            )
+        self._buses[control_bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.SetCond(1,2048,0,4) #2048 is the bit mask, SHOULDNT BE HARDCODED
+            )
+        # self._buses[control_bus].qpy_block_stack[-1].append_component(
+        #         component=QPyInstructions.Play(1,2048,0,4)
+        #     )
+        # self._handle_sync()
+        self._buses[readout_bus].marked_for_sync = True
+        self._buses[control_bus].marked_for_sync = True
+        
 
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()
