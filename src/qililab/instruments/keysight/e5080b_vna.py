@@ -29,7 +29,6 @@ from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings.enums import (
     VNAAverageModes,
     VNAFormatBorder,
-    VNAFormatData,
     VNAScatteringParameters,
     VNASweepModes,
     VNASweepTypes,
@@ -71,7 +70,6 @@ class E5080B(Instrument):
         number_averages: int | None = None
         averages_mode: VNAAverageModes | None = None
         scattering_parameter: VNAScatteringParameters | None = None
-        format_data: VNAFormatData | None = None
         format_border: VNAFormatBorder | None = None
         rf_on: bool | None = None
 
@@ -206,15 +204,6 @@ class E5080B(Instrument):
         return self.settings.averages_mode
 
     @property
-    def format_data(self) -> VNAFormatData | None:
-        """Sets the data format for transferring measurement data and frequency data. Default is ASCii,0.
-
-        Returns:
-            Enum: settings.format_data.
-        """
-        return self.settings.format_data
-
-    @property
     def rf_on(self):
         """Turns RF power from the source ON or OFF. Default is ON.
 
@@ -327,12 +316,6 @@ class E5080B(Instrument):
                 self.device.averages_mode(self.averages_mode)
             return
 
-        if parameter == Parameter.FORMAT_DATA:
-            self.settings.format_data = VNAFormatData(value)
-            if self.is_device_active():
-                self.device.format_data(self.format_data)
-            return
-
         if parameter == Parameter.RF_ON:
             self.settings.rf_on = bool(value)
             if self.is_device_active():
@@ -382,8 +365,6 @@ class E5080B(Instrument):
             return cast("ParameterValue", self.settings.number_averages)
         if parameter == Parameter.AVERAGES_MODE:
             return cast("ParameterValue", self.settings.averages_mode)
-        if parameter == Parameter.FORMAT_DATA:
-            return cast("ParameterValue", self.settings.format_data)
         if parameter == Parameter.RF_ON:
             return cast("ParameterValue", self.settings.rf_on)
         if parameter == Parameter.FORMAT_BORDER:
@@ -478,8 +459,6 @@ class E5080B(Instrument):
                 self.device.scattering_parameter(self.scattering_parameter)
             if self.settings.rf_on is not None:
                 self.device.rf_on(self.settings.rf_on)
-            if self.settings.format_data is not None:
-                self.device.format_data(VNAFormatData[self.settings.format_data])
             if self.settings.format_border is not None:
                 self.device.format_border(self.settings.format_border)
 
@@ -516,7 +495,6 @@ class E5080B(Instrument):
         self.settings.averages_enabled = self.device.averages_enabled.get()
         self.settings.number_averages = self.device.averages_count.get()
         self.settings.averages_mode = self.device.averages_mode.get().strip('"').strip()
-        self.settings.format_data = self.device.format_data.get().strip('"').strip()
         self.settings.rf_on = self.device.rf_on.get()
         self.settings.format_border = self.device.format_border.get().strip('"').strip()
 

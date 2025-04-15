@@ -13,7 +13,7 @@ from qililab.instruments import ParameterNotFound
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.keysight import E5080BController
 from qililab.platform import Platform
-from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter, VNAAverageModes, VNAFormatBorder, VNAFormatData, VNAScatteringParameters, VNASweepModes, VNASweepTypes
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter, VNAAverageModes, VNAFormatBorder, VNAScatteringParameters, VNASweepModes, VNASweepTypes
 
 from tests.data import SauronVNA
 from tests.test_utils import build_platform
@@ -111,7 +111,6 @@ class TestE5080B:
             (Parameter.AVERAGES_ENABLED, True),
             (Parameter.NUMBER_AVERAGES, 16),
             (Parameter.AVERAGES_MODE, VNAAverageModes.POIN),
-            (Parameter.FORMAT_DATA, VNAFormatData.REAL_32),
             (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
             (Parameter.RF_ON, False),
         ],
@@ -152,8 +151,6 @@ class TestE5080B:
             assert e5080b.settings.number_averages == value
         if parameter == Parameter.AVERAGES_MODE:
             assert e5080b.settings.averages_mode == value
-        if parameter == Parameter.FORMAT_DATA:
-            assert e5080b.settings.format_data == value
         if parameter == Parameter.RF_ON:
             assert e5080b.settings.rf_on == value
         if parameter == Parameter.FORMAT_BORDER:
@@ -204,7 +201,6 @@ class TestE5080B:
             (Parameter.AVERAGES_ENABLED, True),
             (Parameter.NUMBER_AVERAGES, 16),
             (Parameter.AVERAGES_MODE, VNAAverageModes.POIN),
-            (Parameter.FORMAT_DATA, VNAFormatData.REAL_32),
             (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
             (Parameter.RF_ON, False),
         ],
@@ -327,6 +323,12 @@ class TestE5080B:
             (Parameter.NUMBER_AVERAGES, 7.99e9, "averages_count"),
             (Parameter.SWEEP_TYPE, VNASweepTypes.CW, "sweep_type"),
             (Parameter.CW_FREQUENCY, 1e6, "cw"),
+            (Parameter.SWEEP_MODE, VNASweepModes.CONT, "sweep_mode"),
+            (Parameter.NUMBER_POINTS, 140, "points"),
+            (Parameter.IF_BANDWIDTH, 1e6, "if_bandwidth"),
+            (Parameter.SCATTERING_PARAMETER, VNAScatteringParameters.S22, "scattering_parameter"),
+            (Parameter.RF_ON, True, "rf_on"),
+            (Parameter.FORMAT_BORDER, VNAFormatBorder.NORM, "format_border"),
         ],
     )
     def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):

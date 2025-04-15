@@ -255,19 +255,6 @@ class VNAAverageModes(str, Enum):
     SWE = "swe"
 
 
-class VNAFormatData(str, Enum):
-    """Vector Network Analyzers Average Modes
-    Args:
-        enum (str): Available types of average modes:
-        * point
-        * sweep
-    """
-
-    REAL_32 = "REAL,32"
-    REAL_64 = "REAL,64"
-    ASCii_0 = "ASCii,0"
-
-
 class InstrumentControllerName(str, Enum):
     """Instrument Controller names.
 
