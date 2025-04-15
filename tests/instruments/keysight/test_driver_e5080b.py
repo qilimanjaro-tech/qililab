@@ -80,7 +80,7 @@ def test_averages_count(vnaks):
 
 def test_averages_mode(vnaks):
     # Valid enum values: "POIN", "SWEEP"
-    verify_property(vnaks, "averages_mode", ["POIN", "SWEEP"])
+    verify_property(vnaks, "averages_mode", ["POIN", "SWE"])
 
 def test_format_data(vnaks):
     # Valid enum values: "REAL,32", "REAL,64", "ASCii,0"

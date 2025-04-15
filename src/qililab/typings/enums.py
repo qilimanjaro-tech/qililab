@@ -252,7 +252,7 @@ class VNAAverageModes(str, Enum):
     """
 
     POIN = "poin"
-    SWEEP = "sweep"
+    SWE = "swe"
 
 
 class VNAFormatData(str, Enum):
@@ -263,9 +263,9 @@ class VNAFormatData(str, Enum):
         * sweep
     """
 
-    REAL_32 = "real,32"
-    REAL_64 = "real,64"
-    ASCii_0 = "ascii,0"
+    REAL_32 = "REAL,32"
+    REAL_64 = "REAL,64"
+    ASCii_0 = "ASCii,0"
 
 
 class InstrumentControllerName(str, Enum):

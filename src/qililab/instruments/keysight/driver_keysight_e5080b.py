@@ -14,11 +14,10 @@
 
 # This file is meant to be qcode
 from typing import Any
-
+import qcodes.validators as vals
 from qcodes import VisaInstrument
 from qcodes.parameters import Parameter, create_on_off_val_mapping
 from qcodes.validators import Enum, Numbers
-
 
 class Driver_KeySight_E5080B(VisaInstrument):
     """
@@ -159,7 +158,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
             label="scattering_parameter",
             get_cmd="CALC:MEAS:PAR?",
             set_cmd="CALC:MEAS:PAR {}",
-            vals=Enum("S11", "S12", "S21", "S22"),
+            vals=vals.Enum("S11", "S12", "S21", "S22"),
         )
         """Parameter scattering_parameter"""
 
@@ -190,7 +189,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
             label="Averages Mode",
             get_cmd="SENS:AVER:MODE?",
             set_cmd="SENS:AVER:MODE {}",
-            vals=Enum("POIN", "SWEEP"),
+            vals=Enum("POIN", "SWE"),
         )
         """Parameter averages mode"""
 

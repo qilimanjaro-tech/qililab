@@ -323,7 +323,7 @@ class TestE5080B:
             (Parameter.FREQUENCY_STOP, 8e9, "stop_freq"),
             (Parameter.FREQUENCY_CENTER, 4e9, "center_freq"),
             (Parameter.FREQUENCY_SPAN, 7.99e9, "span"),
-            (Parameter.AVERAGES_MODE, VNAAverageModes.SWEEP, "averages_mode"),
+            (Parameter.AVERAGES_MODE, VNAAverageModes.SWE, "averages_mode"),
             (Parameter.NUMBER_AVERAGES, 7.99e9, "averages_count"),
             (Parameter.SWEEP_TYPE, VNASweepTypes.CW, "sweep_type"),
             (Parameter.CW_FREQUENCY, 1e6, "cw"),
@@ -331,8 +331,9 @@ class TestE5080B:
     )
     def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):
         """Test the initial setup when sweep_type is not 'SEGM'."""
+        e5080b.reset()
         e5080b.set_parameter(parameter=parameter, value=value)
-        e5080b.set_parameter(Parameter.SWEEP_TYPE, VNASweepTypes.CW)
+        e5080b.set_parameter(Parameter.SWEEP_TYPE, "cw")
         e5080b.device.reset_mock()
         e5080b.initial_setup()
         getattr(e5080b.device, method).assert_called_once_with(value)
