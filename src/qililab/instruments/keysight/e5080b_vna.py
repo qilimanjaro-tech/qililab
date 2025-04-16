@@ -510,10 +510,6 @@ class E5080B(Instrument):
         """Operation complete command."""
         self.device.opc()
 
-    def _system_reset(self):
-        """System Reset"""
-        self.device.system_reset()
-
     def clear_averages(self):
         self.device.clear_averages()
         """Restart averages."""
@@ -528,7 +524,4 @@ class E5080B(Instrument):
 
     @check_device_initialized
     def reset(self):
-        """Reset instrument settings."""
-        self._system_reset()
-        self.opc()
-        self.reset_flag = True
+        pass
