@@ -93,6 +93,9 @@ class QbloxQRM(QbloxModule):
             self._set_threshold_rotation(
                 value=cast("QbloxADCSequencer", sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
+            self._set_parameters_active_reset(
+                value=cast("QbloxADCSequencer", sequencer).trigger_address, sequencer_id=sequencer_id
+            )
 
     def _map_connections(self):
         """Disable all connections and map sequencer paths with output/input channels."""
@@ -225,6 +228,15 @@ class QbloxQRM(QbloxModule):
         self.device.scope_acq_trigger_mode_path0(mode.value)
         self.device.scope_acq_trigger_mode_path1(mode.value)
 
+    def _set_device_parameters_active_reset(self, trigger_address: int, sequencer_id: int):
+        #TODO: Add docstring
+
+        #will need to be moved - should only be used when the active reset is needed, and 12 should not be hardcoded
+        #the feedback exmple in qblox has smthg abt trigger12 - no idea what this does
+        self.device.sequencers[sequencer_id].thresholded_acq_trigger_en(True)
+        self.device.sequencers[sequencer_id].thresholded_acq_trigger_address(trigger_address)
+        self.device.sequencers[sequencer_id].thresholded_acq_trigger_invert(False)
+
     def _set_device_integration_length(self, value: int, sequencer_id: int):
         """set integration_length for the specific channel
 
@@ -322,6 +334,9 @@ class QbloxQRM(QbloxModule):
         if parameter == Parameter.TIME_OF_FLIGHT:
             self._set_time_of_flight(value=value, sequencer_id=channel_id)
             return
+        if parameter == Parameter.TRIGGER_ADDRESS:
+            self._set_parameters_active_reset(value=value, sequencer_id=channel_id)
+            return
         super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     def _set_scope_hardware_averaging(self, value: float | str | bool, sequencer_id: int):
@@ -375,6 +390,13 @@ class QbloxQRM(QbloxModule):
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).hardware_demodulation = bool(value)
         if self.is_device_active():
             self._set_device_hardware_demodulation(value=bool(value), sequencer_id=sequencer_id)
+
+    def _set_parameters_active_reset(self, value: int, sequencer_id: int):
+        #TODO: add the docstring
+
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).trigger_address = int(value)
+        if self.is_device_active():
+            self._set_device_parameters_active_reset(trigger_address=int(value), sequencer_id=sequencer_id)
 
     def _set_acquisition_mode(self, value: float | str | bool | AcquireTriggerMode, sequencer_id: int):
         """set acquisition_mode for the specific channel

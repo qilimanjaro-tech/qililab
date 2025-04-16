@@ -334,7 +334,7 @@ class QProgram(StructuredProgram):
         self._buses.add(bus)
 
     @overload
-    def measure(self, bus: str, waveform: IQPair, weights: IQPair, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None):
+    def measure(self, bus: str, waveform: IQPair, weights: IQPair, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None, pi_pulse: IQPair = None):
         """Play a pulse and acquire results.
 
         Args:
@@ -345,7 +345,7 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def measure(self, bus: str, waveform: str, weights: IQPair, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None):
+    def measure(self, bus: str, waveform: str, weights: IQPair, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None, pi_pulse: str = None):
         """Play a named pulse and acquire results.
 
         Args:
@@ -356,7 +356,7 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def measure(self, bus: str, waveform: IQPair, weights: str, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None):
+    def measure(self, bus: str, waveform: IQPair, weights: str, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None, pi_pulse: IQPair = None):
         """Play a named pulse and acquire results.
 
         Args:
@@ -367,7 +367,7 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def measure(self, bus: str, waveform: str, weights: str, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None):
+    def measure(self, bus: str, waveform: str, weights: str, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None, pi_pulse: str = None):
         """Play a named pulse and acquire results.
 
         Args:
@@ -377,7 +377,7 @@ class QProgram(StructuredProgram):
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
 
-    def measure(self, bus: str, waveform: IQPair | str, weights: IQPair | str, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None):
+    def measure(self, bus: str, waveform: IQPair | str, weights: IQPair | str, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None, pi_pulse: IQPair | str = None):
         """Play a pulse and acquire results.
 
         Args:
@@ -396,14 +396,14 @@ class QProgram(StructuredProgram):
 
         #TODO: might need to do that for the calibrated wf, weights and waveformweight. Should give out an error if active reset is true and control bus not provided, and say only qblox no qm
         if isinstance(waveform, IQPair) and isinstance(weights, IQPair):
-            operation = Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=active_reset, control_bus_reset=control_bus_reset)
+            operation = Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=active_reset, control_bus_reset=control_bus_reset, pi_pulse=pi_pulse)
         elif isinstance(waveform, str) and isinstance(weights, IQPair):
-            operation = MeasureWithCalibratedWaveform(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=True, control_bus_reset=control_bus_reset)
+            operation = MeasureWithCalibratedWaveform(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=True, control_bus_reset=control_bus_reset, pi_pulse=pi_pulse)
         elif isinstance(waveform, IQPair) and isinstance(weights, str):
-            operation = MeasureWithCalibratedWeights(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=True, control_bus_reset=control_bus_reset)
+            operation = MeasureWithCalibratedWeights(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=True, control_bus_reset=control_bus_reset, pi_pulse=pi_pulse)
         elif isinstance(waveform, str) and isinstance(weights, str):
             operation = MeasureWithCalibratedWaveformWeights(
-                bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=True, control_bus_reset=control_bus_reset
+                bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=True, control_bus_reset=control_bus_reset, pi_pulse=pi_pulse
             )
         self._active_block.append(operation)
         self._buses.add(bus)

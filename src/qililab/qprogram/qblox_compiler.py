@@ -573,6 +573,7 @@ class QbloxCompiler:
             element (Measure): measure operation
         """
         time_of_flight = self._buses[element.bus].time_of_flight
+        print("measure",element.waveform)
         play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         self._handle_play(play)
@@ -649,7 +650,7 @@ class QbloxCompiler:
     def _handle_active_reset(self, element: Measure):
         #TODO: add docstring
         readout_bus, control_bus = self._qprogram.active_reset[0]
-        
+        mask = 2**(12-1) #get it from the runcard
         # #Handles the readout bus
         # self._buses[readout_bus].qpy_block_stack[-1].append_component(
         #         component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
@@ -667,16 +668,18 @@ class QbloxCompiler:
                 component=QPyInstructions.LatchRst(4)
             )
         self._buses[control_bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.SetCond(1,2048,0,4) #2048 is the bit mask, SHOULDNT BE HARDCODED
+                component=QPyInstructions.SetCond(1,mask,0,4) #2048 is the bit mask, SHOULDNT BE HARDCODED
             )
-        # self._buses[control_bus].qpy_block_stack[-1].append_component(
-        #         component=QPyInstructions.Play(1,2048,0,4)
-        #     )
+        #play the pi pulse
+        time_of_flight = self._buses[element.bus].time_of_flight
+        print("pi",element.pi_pulse)
+        play = Play(bus=control_bus, waveform=element.pi_pulse, wait_time=time_of_flight)
+        self._handle_play(play)
+
         # self._handle_sync()
         self._buses[readout_bus].marked_for_sync = True
         self._buses[control_bus].marked_for_sync = True
         
-
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
