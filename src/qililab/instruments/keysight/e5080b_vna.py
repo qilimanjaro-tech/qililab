@@ -391,6 +391,7 @@ class E5080B(Instrument):
             self.device.averages_enabled(True)
         if self.settings.number_averages is not None:
             self.device.averages_count(self.settings.number_averages)
+        self.device.rf_on(True) #  Turn the power on
 
     def _start_measurement(self):
         """
@@ -443,6 +444,9 @@ class E5080B(Instrument):
 
     def initial_setup(self):
         self.cls()
+
+        self.device.rf_on(False)
+
         if self.reset_flag:
             self.device.format_data("REAL,32")
             if self.settings.source_power is not None:
@@ -457,8 +461,6 @@ class E5080B(Instrument):
                 self.device.if_bandwidth(self.settings.if_bandwidth)
             if self.settings.scattering_parameter is not None:
                 self.device.scattering_parameter(self.scattering_parameter)
-            if self.settings.rf_on is not None:
-                self.device.rf_on(self.settings.rf_on)
             if self.settings.format_border is not None:
                 self.device.format_border(self.settings.format_border)
 
