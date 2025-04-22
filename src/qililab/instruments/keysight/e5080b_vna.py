@@ -42,7 +42,6 @@ class E5080B(Instrument):
 
     name = InstrumentName.KEYSIGHT_E5080B
     timeout: int = DEFAULT_TIMEOUT
-    reset_flag: bool = False
 
     @dataclass
     class E5080BSettings(Instrument.InstrumentSettings):
@@ -338,38 +337,69 @@ class E5080B(Instrument):
         """
 
         if parameter == Parameter.FREQUENCY_START:
+            self.settings.frequency_start = self.device.start_freq.get()
             return cast("ParameterValue", self.settings.frequency_start)
+        
         if parameter == Parameter.FREQUENCY_STOP:
+            self.settings.frequency_stop = self.device.stop_freq.get()
             return cast("ParameterValue", self.settings.frequency_stop)
+        
         if parameter == Parameter.FREQUENCY_CENTER:
+            self.settings.frequency_center = self.device.center_freq.get()
             return cast("ParameterValue", self.settings.frequency_center)
+        
         if parameter == Parameter.FREQUENCY_SPAN:
+            self.settings.frequency_span = self.device.span.get()
             return cast("ParameterValue", self.settings.frequency_span)
+        
         if parameter == Parameter.CW_FREQUENCY:
+            self.settings.cw_frequency = self.device.cw.get()
             return cast("ParameterValue", self.settings.cw_frequency)
+        
         if parameter == Parameter.NUMBER_POINTS:
+            self.settings.number_points = self.device.points.get()
             return cast("ParameterValue", self.settings.number_points)
+        
         if parameter == Parameter.SOURCE_POWER:
+            self.settings.source_power = self.device.source_power.get()
             return cast("ParameterValue", self.settings.source_power)
+        
         if parameter == Parameter.IF_BANDWIDTH:
+            self.settings.if_bandwidth = self.device.if_bandwidth.get()
             return cast("ParameterValue", self.settings.if_bandwidth)
+        
         if parameter == Parameter.SWEEP_TYPE:
+            self.settings.sweep_type = self.device.sweep_type.get().strip('"').strip()
             return cast("ParameterValue", self.settings.sweep_type)
+        
         if parameter == Parameter.SWEEP_MODE:
+            self.settings.sweep_mode = self.device.sweep_mode.get().strip('"').strip()
             return cast("ParameterValue", self.settings.sweep_mode)
+        
         if parameter == Parameter.SCATTERING_PARAMETER:
+            self.settings.scattering_parameter = self.device.scattering_parameter.get().strip('"').strip()
             return cast("ParameterValue", self.settings.scattering_parameter)
+        
         if parameter == Parameter.AVERAGES_ENABLED:
+            self.settings.averages_enabled = self.device.averages_enabled.get()
             return cast("ParameterValue", self.settings.averages_enabled)
+        
         if parameter == Parameter.NUMBER_AVERAGES:
+            self.settings.number_averages = self.device.averages_count.get()
             return cast("ParameterValue", self.settings.number_averages)
+        
         if parameter == Parameter.AVERAGES_MODE:
+            self.settings.averages_mode = self.device.averages_mode.get().strip('"').strip()
             return cast("ParameterValue", self.settings.averages_mode)
+        
         if parameter == Parameter.RF_ON:
+            self.settings.rf_on = self.device.rf_on.get()
             return cast("ParameterValue", self.settings.rf_on)
+        
         if parameter == Parameter.FORMAT_BORDER:
+            self.settings.format_border = self.device.format_border.get().strip('"').strip()
             return cast("ParameterValue", self.settings.format_border)
-
+        
         raise ParameterNotFound(self, parameter)
 
     def _get_trace(self):
@@ -382,48 +412,43 @@ class E5080B(Instrument):
 
         return datareal + 1j * dataimag
 
-    def _pre_measurement(self):
+    def _turn_power_on(self, power):
         """
-        Set everything needed for the measurement
-        Averaging has to be enabled.
+        Set the power on
         """
-        if not self.averages_enabled:
-            self.device.averages_enabled(True)
-        if self.settings.number_averages is not None:
-            self.device.averages_count(self.settings.number_averages)
-        self.device.rf_on(True) #  Turn the power on
-
-    def _start_measurement(self):
-        """
-        This function is called at the beginning of each single measurement in the spectroscopy script.
-        Also, the averages need to be reset.
-        """
-        self.clear_averages()
-        mode = self.settings.sweep_mode
-        self.device.sweep_mode(mode)
+        self.device.source_power(power)
+        while True: # TEST IT
+            time.sleep(1)
+            if self.get_parameter(Parameter.SOURCE_POWER) == power:
+                self.device.rf_on(True) #  Turn the power on
+                break
 
     def _wait_for_averaging(self, timeout: int = DEFAULT_TIMEOUT):
+        number_averages = self.get_parameter(Parameter.NUMBER_AVERAGES)
         self.set_parameter(Parameter.AVERAGES_ENABLED, True)
         self.clear_averages()
         start_time = time.time()
-
         while True:
             status_avg = int(self.device.ask("STAT:OPER:COND?"))
-            if status_avg & (1 << 8):
+            if status_avg & (1 << 8) and number_averages > 1:
+                break
+            elif status_avg & (1 << 10) and number_averages == 1:
                 break
             if time.time() - start_time > timeout:
                 raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
         return
 
-    def read_tracedata(self, timeout: int = DEFAULT_TIMEOUT):
+    def read_tracedata(self, power, timeout: int = DEFAULT_TIMEOUT):
         """
-        Return the current trace data.
+        Return the current data.
         It already releases the VNA after finishing the required number of averages.
         """
-        self._pre_measurement()
-        self._start_measurement()
+        time.sleep(5)
+        self.cls()
+        self._turn_power_on(power)
         self._wait_for_averaging(timeout)
         trace = self._get_trace()
+        self.device.rf_on(False)
         self.release()
         return trace
 
@@ -438,67 +463,48 @@ class E5080B(Instrument):
         self.device.sweep_mode(mode)
         return
 
-    def acquire_result(self, timeout: int = DEFAULT_TIMEOUT):
+    def acquire_result(self, power, timeout: int = DEFAULT_TIMEOUT):
         """Convert the data received from the device to a Result object."""
-        return VNAResult(data=self.read_tracedata(timeout))
+        return VNAResult(data=self.read_tracedata(power, timeout))
 
     def initial_setup(self):
-        self.cls()
-
         self.device.rf_on(False)
+        # Ensure the power is set as off before setting the parameters of the runcard
+        while True:
+            time.sleep(1)
+            if self.get_parameter(Parameter.RF_ON) is False:
+                self.device.format_data("REAL,32")
+                self.cls()
+                if self.settings.sweep_type is not None:
+                    self.device.sweep_type(self.settings.sweep_type)
+                if self.settings.sweep_mode is not None:
+                    self.device.sweep_mode(self.settings.sweep_mode)
+                if self.settings.number_points is not None:
+                    self.device.points(self.settings.number_points)
+                if self.settings.if_bandwidth is not None:
+                    self.device.if_bandwidth(self.settings.if_bandwidth)
+                if self.settings.scattering_parameter is not None:
+                    self.device.scattering_parameter(self.scattering_parameter)
+                if self.settings.format_border is not None:
+                    self.device.format_border(self.settings.format_border)
 
-        if self.reset_flag:
-            self.device.format_data("REAL,32")
-            if self.settings.source_power is not None:
-                self.device.source_power(self.settings.source_power)
-            if self.settings.sweep_type is not None:
-                self.device.sweep_type(self.settings.sweep_type)
-            if self.settings.sweep_mode is not None:
-                self.device.sweep_mode(self.settings.sweep_mode)
-            if self.settings.number_points is not None:
-                self.device.points(self.settings.number_points)
-            if self.settings.if_bandwidth is not None:
-                self.device.if_bandwidth(self.settings.if_bandwidth)
-            if self.settings.scattering_parameter is not None:
-                self.device.scattering_parameter(self.scattering_parameter)
-            if self.settings.format_border is not None:
-                self.device.format_border(self.settings.format_border)
+                if self.settings.sweep_type != VNASweepTypes.SEGM:
+                    if self.settings.frequency_start is not None:
+                        self.device.start_freq(self.settings.frequency_start)
+                    if self.settings.frequency_center is not None:
+                        self.device.center_freq(self.settings.frequency_center)
+                    if self.settings.frequency_stop is not None:
+                        self.device.stop_freq(self.settings.frequency_stop)
+                    if self.settings.frequency_span is not None:
+                        self.device.span(self.settings.frequency_span)
 
-            if self.settings.sweep_type != VNASweepTypes.SEGM:
-                if self.settings.frequency_start is not None:
-                    self.device.start_freq(self.settings.frequency_start)
-                if self.settings.frequency_center is not None:
-                    self.device.center_freq(self.settings.frequency_center)
-                if self.settings.frequency_stop is not None:
-                    self.device.stop_freq(self.settings.frequency_stop)
-                if self.settings.frequency_span is not None:
-                    self.device.span(self.settings.frequency_span)
-            if self.settings.sweep_type == VNASweepTypes.CW and self.settings.cw_frequency is not None:
-                self.device.cw(self.settings.cw_frequency)
-
-            if self.settings.number_averages is not None:
-                self.device.averages_count(self.settings.number_averages)
-            if self.settings.averages_mode is not None:
-                self.device.averages_mode(self.settings.averages_mode)
-        self.refresh_settings()
-
-    def refresh_settings(self):
-        self.settings.frequency_start = self.device.start_freq.get()
-        self.settings.frequency_stop = self.device.stop_freq.get()
-        self.settings.frequency_center = self.device.center_freq.get()
-        self.settings.frequency_span = self.device.span.get()
-        self.settings.cw_frequency = self.device.cw.get()
-        self.settings.number_points = self.device.points.get()
-        self.settings.source_power = self.device.source_power.get()
-        self.settings.if_bandwidth = self.device.if_bandwidth.get()
-        self.settings.sweep_type = self.device.sweep_type.get().strip('"').strip()
-        self.settings.sweep_mode = self.device.sweep_mode.get().strip('"').strip()
-        self.settings.scattering_parameter = self.device.scattering_parameter.get().strip('"').strip()
-        self.settings.averages_enabled = self.device.averages_enabled.get()
-        self.settings.number_averages = self.device.averages_count.get()
-        self.settings.averages_mode = self.device.averages_mode.get().strip('"').strip()
-        self.settings.rf_on = self.device.rf_on.get()
-        self.settings.format_border = self.device.format_border.get().strip('"').strip()
+                if self.settings.sweep_type == VNASweepTypes.CW and self.settings.cw_frequency is not None:
+                    self.device.cw(self.settings.cw_frequency)
+                if self.settings.number_averages is not None:
+                    self.device.averages_count(self.settings.number_averages)
+                if self.settings.averages_mode is not None:
+                    self.device.averages_mode(self.settings.averages_mode)
+                break
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
@@ -513,8 +519,8 @@ class E5080B(Instrument):
         self.device.opc()
 
     def clear_averages(self):
-        self.device.clear_averages()
         """Restart averages."""
+        self.device.clear_averages()
 
     @check_device_initialized
     def turn_on(self):
@@ -526,4 +532,4 @@ class E5080B(Instrument):
 
     @check_device_initialized
     def reset(self):
-        pass
+        """The wrapper doesn't allow a reset for this instrument"""

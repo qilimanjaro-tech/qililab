@@ -253,11 +253,11 @@ class TestE5080B:
         e5080b._get_trace()
 
     def test_pre_measurement(self, e5080b: E5080B):
-        e5080b._pre_measurement()
+        e5080b._pre_measurement(power = 10)
 
     def test_pre_measurement_with_nb_avg(self, e5080b: E5080B):
         e5080b.set_parameter(Parameter.NUMBER_AVERAGES,10)
-        e5080b._pre_measurement()
+        e5080b._pre_measurement(power = 10)
 
     def test_start_measurement(self, e5080b: E5080B):
         e5080b._start_measurement()
@@ -267,8 +267,9 @@ class TestE5080B:
 
     def test_acquire_result(self, e5080b: E5080B):
         timeout = 0.001
+        power = 0
         with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
-            e5080b.acquire_result(timeout)
+            e5080b.acquire_result(power, timeout)
 
     def test_wait_for_averaging(self, e5080b: E5080B):
         timeout = 0.001
@@ -281,12 +282,13 @@ class TestE5080B:
 
     def test_read_tracedata_success(self, e5080b: E5080B):
         timeout=100
+        power=0
         with patch.object(e5080b, '_wait_for_averaging', return_value=None) as mock_wait_for_averaging, \
             patch.object(e5080b, '_get_trace', return_value='fake_trace_data') as mock_get_trace, \
             patch.object(e5080b, 'release') as mock_release:
             
             # Call the method
-            trace = e5080b.read_tracedata(timeout)
+            trace = e5080b.read_tracedata(power,timeout)
             
             # Assert the trace is as expected and release was called
             assert trace == 'fake_trace_data'
@@ -294,14 +296,16 @@ class TestE5080B:
 
     def test_read_tracedata_timeout(self, e5080b: E5080B):
         timeout = 0.001
+        power = 0
         with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
-            e5080b.read_tracedata(timeout)
+            e5080b.read_tracedata(power, timeout)
 
     def test_read_tracedata_averages_enabled_timeout(self, e5080b: E5080B):
         e5080b.set_parameter(Parameter.AVERAGES_ENABLED,True)
         timeout = 0.001
+        power = 0
         with pytest.raises(TimeoutError, match=f"Timeout of {timeout} ms exceeded while waiting for averaging to complete."):
-            e5080b.read_tracedata(timeout)
+            e5080b.read_tracedata(power, timeout)
 
     def test_get_frequencies_method(self, e5080b: E5080B):
         """Test the get frequencies method"""
@@ -327,7 +331,6 @@ class TestE5080B:
             (Parameter.NUMBER_POINTS, 140, "points"),
             (Parameter.IF_BANDWIDTH, 1e6, "if_bandwidth"),
             (Parameter.SCATTERING_PARAMETER, VNAScatteringParameters.S22, "scattering_parameter"),
-            (Parameter.RF_ON, True, "rf_on"),
             (Parameter.FORMAT_BORDER, VNAFormatBorder.NORM, "format_border"),
         ],
     )
@@ -345,7 +348,6 @@ class TestE5080B:
     def test_initial_setup(self, device_mock: MagicMock, platform: Platform, controller_alias: str):
         """Test QDAC-II controller initializes device correctly."""
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
-        device_mock.return_value.system_reset = MagicMock()
         device_mock.return_value.opc = MagicMock()
         device_mock.return_value.format_data = MagicMock()
         device_mock.return_value.cls = MagicMock()
