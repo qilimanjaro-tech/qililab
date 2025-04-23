@@ -412,23 +412,13 @@ class E5080B(Instrument):
 
         return datareal + 1j * dataimag
 
-    def _turn_power_on(self, power):
-        """
-        Set the power on
-        """
-        self.device.source_power(power)
-        while True: # TEST IT
-            time.sleep(1)
-            if self.get_parameter(Parameter.SOURCE_POWER) == power:
-                self.device.rf_on(True) #  Turn the power on
-                break
-
     def _wait_for_averaging(self, timeout: int = DEFAULT_TIMEOUT):
         number_averages = self.get_parameter(Parameter.NUMBER_AVERAGES)
         self.set_parameter(Parameter.AVERAGES_ENABLED, True)
         self.clear_averages()
         start_time = time.time()
         while True:
+            time.sleep(0.5)
             status_avg = int(self.device.ask("STAT:OPER:COND?"))
             if status_avg & (1 << 8) and number_averages > 1:
                 break
@@ -438,17 +428,15 @@ class E5080B(Instrument):
                 raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
         return
 
-    def read_tracedata(self, power, timeout: int = DEFAULT_TIMEOUT):
+    def read_tracedata(self, timeout: int = DEFAULT_TIMEOUT):
         """
         Return the current data.
         It already releases the VNA after finishing the required number of averages.
         """
         time.sleep(5)
         self.cls()
-        self._turn_power_on(power)
         self._wait_for_averaging(timeout)
         trace = self._get_trace()
-        self.device.rf_on(False)
         self.release()
         return trace
 
@@ -463,48 +451,46 @@ class E5080B(Instrument):
         self.device.sweep_mode(mode)
         return
 
-    def acquire_result(self, power, timeout: int = DEFAULT_TIMEOUT):
+    def acquire_result(self, timeout: int = DEFAULT_TIMEOUT):
         """Convert the data received from the device to a Result object."""
-        return VNAResult(data=self.read_tracedata(power, timeout))
+        return VNAResult(data=self.read_tracedata(timeout))
 
     def initial_setup(self):
-        self.device.rf_on(False)
-        # Ensure the power is set as off before setting the parameters of the runcard
-        while True:
-            time.sleep(1)
-            if self.get_parameter(Parameter.RF_ON) is False:
-                self.device.format_data("REAL,32")
-                self.cls()
-                if self.settings.sweep_type is not None:
-                    self.device.sweep_type(self.settings.sweep_type)
-                if self.settings.sweep_mode is not None:
-                    self.device.sweep_mode(self.settings.sweep_mode)
-                if self.settings.number_points is not None:
-                    self.device.points(self.settings.number_points)
-                if self.settings.if_bandwidth is not None:
-                    self.device.if_bandwidth(self.settings.if_bandwidth)
-                if self.settings.scattering_parameter is not None:
-                    self.device.scattering_parameter(self.scattering_parameter)
-                if self.settings.format_border is not None:
-                    self.device.format_border(self.settings.format_border)
+        self.device.format_data("REAL,32")
+        self.cls()
+        if self.settings.sweep_type is not None:
+            self.device.sweep_type(self.settings.sweep_type)
+        if self.settings.sweep_mode is not None:
+            self.device.sweep_mode(self.settings.sweep_mode)
+        if self.settings.number_points is not None:
+            self.device.points(self.settings.number_points)
+        if self.settings.if_bandwidth is not None:
+            self.device.if_bandwidth(self.settings.if_bandwidth)
+        if self.settings.scattering_parameter is not None:
+            self.device.scattering_parameter(self.scattering_parameter)
+        if self.settings.format_border is not None:
+            self.device.format_border(self.settings.format_border)
 
-                if self.settings.sweep_type != VNASweepTypes.SEGM:
-                    if self.settings.frequency_start is not None:
-                        self.device.start_freq(self.settings.frequency_start)
-                    if self.settings.frequency_center is not None:
-                        self.device.center_freq(self.settings.frequency_center)
-                    if self.settings.frequency_stop is not None:
-                        self.device.stop_freq(self.settings.frequency_stop)
-                    if self.settings.frequency_span is not None:
-                        self.device.span(self.settings.frequency_span)
+        if self.settings.sweep_type != VNASweepTypes.SEGM:
+            if self.settings.frequency_start is not None:
+                self.device.start_freq(self.settings.frequency_start)
+            if self.settings.frequency_center is not None:
+                self.device.center_freq(self.settings.frequency_center)
+            if self.settings.frequency_stop is not None:
+                self.device.stop_freq(self.settings.frequency_stop)
+            if self.settings.frequency_span is not None:
+                self.device.span(self.settings.frequency_span)
 
-                if self.settings.sweep_type == VNASweepTypes.CW and self.settings.cw_frequency is not None:
-                    self.device.cw(self.settings.cw_frequency)
-                if self.settings.number_averages is not None:
-                    self.device.averages_count(self.settings.number_averages)
-                if self.settings.averages_mode is not None:
-                    self.device.averages_mode(self.settings.averages_mode)
-                break
+        if self.settings.sweep_type == VNASweepTypes.CW and self.settings.cw_frequency is not None:
+            self.device.cw(self.settings.cw_frequency)
+        if self.settings.number_averages is not None:
+            self.device.averages_count(self.settings.number_averages)
+        if self.settings.averages_mode is not None:
+            self.device.averages_mode(self.settings.averages_mode)
+        if self.settings.source_power is not None:
+            self.device.source_power(self.settings.source_power)
+        if self.settings.rf_on is not None:
+            self.device.rf_on(self.settings.rf_on)
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""

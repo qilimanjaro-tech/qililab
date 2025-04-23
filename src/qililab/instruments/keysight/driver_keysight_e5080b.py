@@ -32,12 +32,6 @@ class Driver_KeySight_E5080B(VisaInstrument):
         # Setting frequency range
         min_freq = 100e3
         max_freq = 53e9
-        min_if_bandwidth = 1
-        max_if_bandwidth = 15e6
-        min_nop = 11
-        max_nop = 100003
-        min_power = -100
-        max_power = 20
 
         # Sets the start frequency of the analyzer.
         self.start_freq: Parameter = self.add_parameter(
@@ -106,7 +100,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
             get_parser=int,
             set_cmd="SENS:SWE:POIN {}",
             unit="",
-            vals=Numbers(min_value=min_nop, max_value=max_nop),
+            vals=Numbers(min_value=11, max_value=100003),
         )
         """Parameter points"""
 
@@ -118,7 +112,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
             get_cmd="SOUR:POW?",
             set_cmd="SOUR:POW {}",
             get_parser=float,
-            vals=Numbers(min_value=min_power, max_value=max_power),
+            vals=Numbers(min_value=-100, max_value=20),
         )
         """Parameter source_power"""
 
@@ -130,7 +124,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
             get_cmd="SENS:BWID?",
             set_cmd="SENS:BWID {}",
             get_parser=float,
-            vals=Numbers(min_value=min_if_bandwidth, max_value=max_if_bandwidth),
+            vals=Numbers(min_value=1, max_value=15e6),
         )
         """Parameter if_bandwidth"""
 
@@ -226,14 +220,16 @@ class Driver_KeySight_E5080B(VisaInstrument):
         )
         """Parameter Format Border"""
 
+        # Clear averages
+        # Clears and restarts averaging of the measurement data. Does NOT apply to point averaging.
         self.add_function("clear_averages", call_cmd="SENS:AVER:CLE")
 
         # Clear Status
-        # Clears the instrument status byte by emptying the error queue and clearing all event registers. Also cancels any preceding *OPC command or query
+        # Clears the instrument status byte by emptying the error queue and clearing all event registers. Also cancels any preceding *OPC command or query.
         self.add_function("cls", call_cmd="*CLS")
 
         # Operation complete command
-        # Generates the OPC message in the standard event status register when all pending overlapped operations have been completed (for example, a sweep, or a Default)
+        # Generates the OPC message in the standard event status register when all pending overlapped operations have been completed (for example, a sweep, or a Default).
         self.add_function("opc", call_cmd="*OPC")
 
         # System Reset
