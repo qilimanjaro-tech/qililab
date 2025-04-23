@@ -234,7 +234,7 @@ class QbloxQRM(QbloxModule):
         #will need to be moved - should only be used when the active reset is needed, and 12 should not be hardcoded
         #the feedback exmple in qblox has smthg abt trigger12 - no idea what this does
         self.device.sequencers[sequencer_id].thresholded_acq_trigger_en(True)
-        self.device.sequencers[sequencer_id].thresholded_acq_trigger_address(trigger_address)
+        self.device.sequencers[sequencer_id].thresholded_acq_trigger_address(12)
         self.device.sequencers[sequencer_id].thresholded_acq_trigger_invert(False)
 
     def _set_device_integration_length(self, value: int, sequencer_id: int):

@@ -437,6 +437,9 @@ class QbloxCompiler:
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
         )
+        self._buses["drive_q13_bus"].qpy_block_stack[-1].append_component(
+        component=QPyInstructions.SetLatchEn(1,4) #4 SHOULDNT BE HARDCODED
+        )
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset):
@@ -578,6 +581,7 @@ class QbloxCompiler:
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         self._handle_play(play)
         self._handle_acquire(acquire)
+        self._handle_add_waits("drive_q13_bus",1200)
         if element.active_reset:
             self._handle_active_reset(element)
 
@@ -650,6 +654,8 @@ class QbloxCompiler:
     def _handle_active_reset(self, element: Measure):
         #TODO: add docstring
         readout_bus, control_bus = self._qprogram.active_reset[0]
+        control_bus = "drive_q13_bus"
+        print("in the loop")
         mask = 2**(12-1) #get it from the runcard
         # #Handles the readout bus
         # self._buses[readout_bus].qpy_block_stack[-1].append_component(
@@ -661,9 +667,9 @@ class QbloxCompiler:
         #         acquire #could be a different acquire type than the one already used in qprogram, need to have more of a look at the documentation
         
         #Handles the control bus
-        self._buses[control_bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.SetLatchEn(1,4) #4 SHOULDNT BE HARDCODED
-            )
+        # self._buses[control_bus].qpy_block_stack[-1].append_component(
+        #         component=QPyInstructions.SetLatchEn(1,4) #4 SHOULDNT BE HARDCODED
+        #     )
         self._buses[control_bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.LatchRst(4)
             )
@@ -675,6 +681,11 @@ class QbloxCompiler:
         print("pi",element.pi_pulse)
         play = Play(bus=control_bus, waveform=element.pi_pulse, wait_time=time_of_flight)
         self._handle_play(play)
+        self._handle_add_waits(control_bus,200)
+
+        self._buses[control_bus].qpy_block_stack[-1].append_component(
+        component=QPyInstructions.SetCond(0,mask,0,4) #2048 is the bit mask, SHOULDNT BE HARDCODED
+        )
 
         # self._handle_sync()
         self._buses[readout_bus].marked_for_sync = True

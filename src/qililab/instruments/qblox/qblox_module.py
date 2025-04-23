@@ -193,9 +193,9 @@ class QbloxModule(Instrument):
         if parameter == Parameter.IF:
             self._set_frequency(value=value, sequencer_id=channel_id)
             return
-        if parameter == Parameter.TRIGGER_ADDRESS:
-            self._set_frequency(value=value, sequencer_id=channel_id)
-            return
+        # if parameter == Parameter.TRIGGER_ADDRESS:
+        #     self._set_frequency(value=value, sequencer_id=channel_id)
+        #     return
         if parameter == Parameter.HARDWARE_MODULATION:
             self._set_hardware_modulation(value=value, sequencer_id=channel_id)
             return
