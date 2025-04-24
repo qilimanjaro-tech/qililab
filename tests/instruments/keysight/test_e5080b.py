@@ -457,3 +457,23 @@ def test_wait_for_averaging_breaks_on_bit10(monkeypatch, e5080b):
     e5080b.device.operation_status.get.return_value = 1 << 10
 
     e5080b._wait_for_averaging(timeout=1.0)
+
+def test_wait_for_averaging_raises_timeout(monkeypatch, e5080b):
+    # patch sleep again
+    monkeypatch.setattr(f"{MODULE_PATH}.time.sleep", lambda _: None)
+
+    # now pretend NUMBER_AVERAGES == 1
+    monkeypatch.setattr(e5080b, "get_parameter", lambda p: 2)
+
+    # return a status word with bit‐10 set
+    e5080b.device.operation_status.get.return_value = 0
+
+    # 4) Make time.time() jump past the timeout on the first loop iteration
+    times = iter([0.0, 2.0])  # start_time = 0.0, then time.time() = 2.0 > timeout=1.0
+    monkeypatch.setattr(f"{MODULE_PATH}.time.time", lambda: next(times))
+
+    # 5) Should raise a TimeoutError with the right message
+    with pytest.raises(TimeoutError) as exc:
+        e5080b._wait_for_averaging(timeout=1.0)
+
+    assert "Timeout of 1.0 seconds exceeded" in str(exc.value)
