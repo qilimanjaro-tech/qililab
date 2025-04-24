@@ -398,6 +398,7 @@ class Parameter(str, Enum):
     AVERAGES_ENABLED = "averages_enabled"
     FLUX = "flux"
     FORMAT_BORDER = "format_border"
+    OPERATION_STATUS = "operation_status"
 
     @classmethod
     def to_yaml(cls, representer, node):

@@ -13,8 +13,10 @@
 # limitations under the License.
 
 # This file is meant to be qcode
+import time
 from typing import Any
 
+import numpy as np
 import qcodes.validators as vals
 from qcodes import VisaInstrument
 from qcodes.parameters import Parameter, create_on_off_val_mapping
@@ -25,6 +27,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
     """
     This is the qcodes driver for the Keysight E5080B Vector Network Analyzer
     """
+    time.sleep(5)  # Required sleep to ensure the instruments can start being queried - NOT HAPPY WITH THIS, does this wait every time or just at the connexion, needs to be tested
 
     def __init__(self, name: str, address: str, **kwargs: Any) -> None:
         super().__init__(name, address, terminator="\n", **kwargs)
@@ -220,6 +223,16 @@ class Driver_KeySight_E5080B(VisaInstrument):
         )
         """Parameter Format Border"""
 
+        # Status Operation
+        # Summarizes conditions in the Averaging and Operation:Define:User<1|2|3> event registers.
+        self.operation_status: Parameter = self.add_parameter(
+            "operation_status",
+            label="Operation Status",
+            get_cmd="STAT:OPER:COND?",
+            get_parser=int,
+        )
+        """Status Operation"""
+
         # Clear averages
         # Clears and restarts averaging of the measurement data. Does NOT apply to point averaging.
         self.add_function("clear_averages", call_cmd="SENS:AVER:CLE")
@@ -235,3 +248,12 @@ class Driver_KeySight_E5080B(VisaInstrument):
         # System Reset
         # Deletes all traces, measurements, and windows.
         self.add_function("system_reset", call_cmd="SYST:PRES")
+
+    def get_data(self):
+        """Retrieve the complex measurement data"""
+        return self.visa_handle.query_binary_values("CALC:MEAS:DATA:SDAT?")
+
+    def get_frequencies(self):
+        """return freqpoints"""
+        self.format_data("REAL,64")  # recommended to avoid frequency rounding errors
+        return np.array(self.visa_handle.query_binary_values("CALC:MEAS:X?"))

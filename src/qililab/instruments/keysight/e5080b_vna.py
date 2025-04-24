@@ -71,6 +71,7 @@ class E5080B(Instrument):
         scattering_parameter: VNAScatteringParameters | None = None
         format_border: VNAFormatBorder | None = None
         rf_on: bool | None = None
+        operation_status: int | None = None
 
     settings: E5080BSettings
     device: KeysightE5080B
@@ -339,74 +340,77 @@ class E5080B(Instrument):
         if parameter == Parameter.FREQUENCY_START:
             self.settings.frequency_start = self.device.start_freq.get()
             return cast("ParameterValue", self.settings.frequency_start)
-        
+
         if parameter == Parameter.FREQUENCY_STOP:
             self.settings.frequency_stop = self.device.stop_freq.get()
             return cast("ParameterValue", self.settings.frequency_stop)
-        
+
         if parameter == Parameter.FREQUENCY_CENTER:
             self.settings.frequency_center = self.device.center_freq.get()
             return cast("ParameterValue", self.settings.frequency_center)
-        
+
         if parameter == Parameter.FREQUENCY_SPAN:
             self.settings.frequency_span = self.device.span.get()
             return cast("ParameterValue", self.settings.frequency_span)
-        
+
         if parameter == Parameter.CW_FREQUENCY:
             self.settings.cw_frequency = self.device.cw.get()
             return cast("ParameterValue", self.settings.cw_frequency)
-        
+
         if parameter == Parameter.NUMBER_POINTS:
             self.settings.number_points = self.device.points.get()
             return cast("ParameterValue", self.settings.number_points)
-        
+
         if parameter == Parameter.SOURCE_POWER:
             self.settings.source_power = self.device.source_power.get()
             return cast("ParameterValue", self.settings.source_power)
-        
+
         if parameter == Parameter.IF_BANDWIDTH:
             self.settings.if_bandwidth = self.device.if_bandwidth.get()
             return cast("ParameterValue", self.settings.if_bandwidth)
-        
+
         if parameter == Parameter.SWEEP_TYPE:
             self.settings.sweep_type = self.device.sweep_type.get().strip('"').strip()
             return cast("ParameterValue", self.settings.sweep_type)
-        
+
         if parameter == Parameter.SWEEP_MODE:
             self.settings.sweep_mode = self.device.sweep_mode.get().strip('"').strip()
             return cast("ParameterValue", self.settings.sweep_mode)
-        
+
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = self.device.scattering_parameter.get().strip('"').strip()
             return cast("ParameterValue", self.settings.scattering_parameter)
-        
+
         if parameter == Parameter.AVERAGES_ENABLED:
             self.settings.averages_enabled = self.device.averages_enabled.get()
             return cast("ParameterValue", self.settings.averages_enabled)
-        
+
         if parameter == Parameter.NUMBER_AVERAGES:
             self.settings.number_averages = self.device.averages_count.get()
             return cast("ParameterValue", self.settings.number_averages)
-        
+
         if parameter == Parameter.AVERAGES_MODE:
             self.settings.averages_mode = self.device.averages_mode.get().strip('"').strip()
             return cast("ParameterValue", self.settings.averages_mode)
-        
+
         if parameter == Parameter.RF_ON:
             self.settings.rf_on = self.device.rf_on.get()
             return cast("ParameterValue", self.settings.rf_on)
-        
+
         if parameter == Parameter.FORMAT_BORDER:
             self.settings.format_border = self.device.format_border.get().strip('"').strip()
             return cast("ParameterValue", self.settings.format_border)
-        
+
+        if parameter == Parameter.OPERATION_STATUS:
+            self.settings.operation_status = self.device.operation_status.get()
+            return cast("ParameterValue", self.settings.operation_status)
         raise ParameterNotFound(self, parameter)
 
     def _get_trace(self):
         """Get the data of the current trace."""
         self.device.format_data("REAL,32")
         self.device.format_border("SWAP")  # SWAPPED is for IBM Compatible computers
-        data = self.device.visa_handle.query_binary_values("CALC:MEAS:DATA:SDAT?")
+        data = self.get_data()
         datareal = np.array(data[::2])  # Elements from data starting from 0 iterating by 2
         dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
 
@@ -419,13 +423,13 @@ class E5080B(Instrument):
         start_time = time.time()
         while True:
             time.sleep(0.5)
-            status_avg = int(self.device.ask("STAT:OPER:COND?"))
+            status_avg = self.device.operation_status.get()
             if status_avg & (1 << 8) and number_averages > 1:
                 break
-            elif status_avg & (1 << 10) and number_averages == 1:
+            if status_avg & (1 << 10) and number_averages == 1:
                 break
             if time.time() - start_time > timeout:
-                raise TimeoutError(f"Timeout of {timeout} ms exceeded while waiting for averaging to complete.")
+                raise TimeoutError(f"Timeout of {timeout} seconds exceeded while waiting for averaging to complete.")
         return
 
     def read_tracedata(self, timeout: int = DEFAULT_TIMEOUT):
@@ -433,17 +437,11 @@ class E5080B(Instrument):
         Return the current data.
         It already releases the VNA after finishing the required number of averages.
         """
-        time.sleep(5)
         self.cls()
         self._wait_for_averaging(timeout)
         trace = self._get_trace()
         self.release()
         return trace
-
-    def get_frequencies(self):
-        """return freqpoints"""
-        self.device.write("FORM:DATA:REAL,64")  # recommended to avoid frequency rounding errors
-        return np.array(self.device.visa_handle.query_binary_values("CALC:MEAS:X?"))
 
     def release(self):
         """Bring the VNA back to a mode where it can be easily used by the operator."""
@@ -499,6 +497,14 @@ class E5080B(Instrument):
     def cls(self):
         """Clear Status."""
         self.device.cls()
+
+    def get_data(self):
+        """Clear Status."""
+        return self.device.get_data()
+
+    def get_frequencies(self):
+        """return freqpoints"""
+        return self.device.get_frequencies()
 
     def opc(self):
         """Operation complete command."""
