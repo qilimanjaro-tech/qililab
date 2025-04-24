@@ -417,7 +417,7 @@ class E5080B(Instrument):
         return datareal + 1j * dataimag
 
     def _wait_for_averaging(self, timeout: int = DEFAULT_TIMEOUT):
-        number_averages = self.get_parameter(Parameter.NUMBER_AVERAGES)
+        number_averages = int(self.get_parameter(Parameter.NUMBER_AVERAGES))
         self.set_parameter(Parameter.AVERAGES_ENABLED, True)
         self.clear_averages()
         start_time = time.time()

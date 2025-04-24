@@ -93,3 +93,37 @@ def test_rf_on(vnaks):
 def test_format_border(vnaks):
     # Valid enum values: "NORM", "SWAP"
     verify_property(vnaks, "format_border", ["NORM", "SWAP"])
+
+
+def test_get_data(vnaks, monkeypatch):
+    # Arrange: have query_binary_values return a known list of floats
+    expected = [0.1, -0.2, 0.3, -0.4]
+    monkeypatch.setattr(vnaks.visa_handle, 'query_binary_values', lambda cmd: expected)
+
+    # Act
+    data = vnaks.get_data()
+
+    # Assert
+    assert data == expected
+
+def test_get_frequencies_calls_format_and_returns_array(vnaks, monkeypatch):
+    # Arrange
+    # 1) Spy on format_data
+    calls = []
+    def fake_format(fmt):
+        calls.append(fmt)
+    monkeypatch.setattr(vnaks, 'format_data', fake_format)
+
+    # 2) Simulate VISA returning a list of freqs
+    freqs = [1e6, 2e6, 3e6]
+    monkeypatch.setattr(vnaks.visa_handle, 'query_binary_values', lambda cmd: freqs)
+
+    # Act
+    out = vnaks.get_frequencies()
+
+    # Assert
+    # - format_data was called exactly once, with the right argument
+    assert calls == ["REAL,64"]
+    # - output is a numpy array of the returned freqs
+    assert isinstance(out, np.ndarray)
+    assert np.allclose(out, freqs)

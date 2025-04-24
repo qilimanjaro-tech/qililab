@@ -4,6 +4,7 @@ import copy
 from unittest.mock import MagicMock, patch
 
 import pytest
+import time
 
 from qililab.instruments.keysight import E5080B
 from qililab.typings.enums import Parameter
@@ -215,6 +216,7 @@ class TestE5080B:
             (Parameter.AVERAGES_MODE, VNAAverageModes.POIN),
             (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
             (Parameter.RF_ON, False),
+            (Parameter.OPERATION_STATUS, 0),
         ],
     )
     def test_get_parameter_method(
@@ -240,6 +242,7 @@ class TestE5080B:
         Parameter.AVERAGES_MODE:        "averages_mode",
         Parameter.FORMAT_BORDER:        "format_border",
         Parameter.RF_ON:                "rf_on",
+        Parameter.OPERATION_STATUS:     "operation_status",
     }
         raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
         getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
@@ -269,6 +272,10 @@ class TestE5080B:
     def test_turn_on_method(self, e5080b: E5080B):
         """Test turn_on method"""
         e5080b.turn_on()
+
+    def test_opc(self, e5080b: E5080B):
+        """Test opc method"""
+        e5080b.opc()
 
     def test_turn_off_method(self, e5080b: E5080B):
         """Test turn_off method"""
@@ -367,6 +374,8 @@ class TestE5080B:
             (Parameter.IF_BANDWIDTH, 1e6, "if_bandwidth"),
             (Parameter.SCATTERING_PARAMETER, VNAScatteringParameters.S22, "scattering_parameter"),
             (Parameter.FORMAT_BORDER, VNAFormatBorder.NORM, "format_border"),
+            (Parameter.SOURCE_POWER, -10, "source_power"),
+            (Parameter.RF_ON, True, "rf_on"),
         ],
     )
     def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):
@@ -383,7 +392,6 @@ class TestE5080B:
     def test_initial_setup(self, device_mock: MagicMock, platform: Platform, controller_alias: str):
         """Test QDAC-II controller initializes device correctly."""
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
-        device_mock.return_value.opc = MagicMock()
         device_mock.return_value.format_data = MagicMock()
         device_mock.return_value.cls = MagicMock()
         device_mock.return_value.source_power = MagicMock()
@@ -402,6 +410,8 @@ class TestE5080B:
         device_mock.return_value.averages_count = MagicMock()
         device_mock.return_value.averages_mode = MagicMock()
         device_mock.return_value.format_border = MagicMock()
+        device_mock.return_value.source_power = MagicMock()
+        device_mock.return_value.rf_on = MagicMock()
         controller_instance.connect()
         controller_instance.initial_setup()
 
@@ -419,3 +429,31 @@ class TestE5080B:
         )
         device_mock.assert_called_once_with(name=name, address=address, visalib="@py")
 
+# note: string-based monkeypatch targets the module-level import
+MODULE_PATH = "qililab.instruments.keysight.e5080b_vna"
+
+def test_wait_for_averaging_breaks_on_bit8(monkeypatch, e5080b):
+    # 1) patch out the sleep in YOUR module so we don't actually pause
+    monkeypatch.setattr(f"{MODULE_PATH}.time.sleep", lambda _: None)
+
+    # 2) pretend NUMBER_AVERAGES is >1
+    monkeypatch.setattr(e5080b, "get_parameter", lambda p: 2)
+
+    # 3) return a status word with bit‐8 set
+    e5080b.device.operation_status.get.return_value = 1 << 8
+
+    # 4) should exit immediately (no exception)
+    e5080b._wait_for_averaging(timeout=1.0)
+
+
+def test_wait_for_averaging_breaks_on_bit10(monkeypatch, e5080b):
+    # patch sleep again
+    monkeypatch.setattr(f"{MODULE_PATH}.time.sleep", lambda _: None)
+
+    # now pretend NUMBER_AVERAGES == 1
+    monkeypatch.setattr(e5080b, "get_parameter", lambda p: 1)
+
+    # return a status word with bit‐10 set
+    e5080b.device.operation_status.get.return_value = 1 << 10
+
+    e5080b._wait_for_averaging(timeout=1.0)
