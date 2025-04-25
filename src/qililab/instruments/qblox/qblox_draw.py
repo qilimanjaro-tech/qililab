@@ -311,7 +311,7 @@ class QbloxDraw:
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
-    def draw(self, sequencer, runcard_data=None, averages_displayed=False) -> dict:
+    def draw(self, sequencer, runcard_data=None, timeout=None, averages_displayed=False) -> dict:
         """Parses the program dictionary of the sequence, plots the waveforms and generates waveform data.
         Args:
             sequencer: The compiled qprogram, either at the platform or qprogram level.
@@ -364,11 +364,12 @@ class QbloxDraw:
             parameters[bus]["q1asm_offset_q"] = [0]
             parameters[bus]["phase"] = [0]
 
-            # flags to determine if the phase or freq has been updated
+            # flags to determine if the phase or freq has been updated and the timeout
             parameters[bus]["phase_new"] = True
             parameters[bus]["intermediate_frequency_new"] = True
             parameters[bus]["q1asm_offset_i_new"] = True
             parameters[bus]["q1asm_offset_q_new"] = True
+            parameters[bus]["timeout_reached"] = False
 
             wf1: list[float] = []
             wf2: list[float] = []
@@ -401,38 +402,51 @@ class QbloxDraw:
                 sorted_labels = sorted(loop_info.items(), key=lambda x: x[1][0])
 
             for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
-
+                if parameters[bus]["timeout_reached"]:
+                    break
                 def process_loop(recursive_input, i):
-                    (label, [start, end, value]) = recursive_input
-                    if label not in label_done:
-                        label_done.append(label)
-                    for x in range(register[value], 0, -1):
-                        current_idx = start
-                        while current_idx <= end:
-                            item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
-                            wf = Q1ASM_ordered[bus]["waveforms"].items()
-                            _, value, label, _ = item
-                            for la in label:
-                                if la not in label_done:  # nested loop
-                                    new_label = la
-                                    result = next(
-                                        (element for element in sorted_labels if element[0] == new_label), None
-                                    )  # retrieve the start/end/variable of the new label
-                                    current_idx = process_loop(result, current_idx)
-                                    label_index = {}
-                                    # check if there is a nested loop, if yes need to remove it from label_dne, otherwise it wont loop over in the next iteration of the parent
-                                    for a in label_done:
-                                        element = next((e for e in sorted_labels if e[0] == a), None)[1][0]
-                                        label_index[a] = int(element)
-                                    max_value = max(label_index.values())
-                                    max_keys = [key for key, value in label_index.items() if value == max_value]
-                                    label_done.remove(max_keys[0])
+                    if not parameters[bus]["timeout_reached"]:
+                        (label, [start, end, value]) = recursive_input
+                        if label not in label_done:
+                            label_done.append(label)
+                        for x in range(register[value], 0, -1):
+                            if parameters[bus]["timeout_reached"]:
+                                return current_idx
+                            current_idx = start
+                            while current_idx <= end:
+                                if parameters[bus]["timeout_reached"]:
+                                    return current_idx
+                                item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
+                                wf = Q1ASM_ordered[bus]["waveforms"].items()
+                                _, value, label, _ = item
+                                for la in label:
+                                    if parameters[bus]["timeout_reached"]:
+                                        return current_idx
+                                    if la not in label_done:  # nested loop
+                                        if parameters[bus]["timeout_reached"]:
+                                            return current_idx
+                                        new_label = la
+                                        result = next(
+                                            (element for element in sorted_labels if element[0] == new_label), None
+                                        )  # retrieve the start/end/variable of the new label
+                                        current_idx = process_loop(result, current_idx)
+                                        label_index = {}
+                                        # check if there is a nested loop, if yes need to remove it from label_dne, otherwise it wont loop over in the next iteration of the parent
+                                        for a in label_done:
+                                            element = next((e for e in sorted_labels if e[0] == a), None)[1][0]
+                                            label_index[a] = int(element)
+                                        max_value = max(label_index.values())
+                                        max_keys = [key for key, value in label_index.items() if value == max_value]
+                                        label_done.remove(max_keys[0])
 
-                            item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
-                            wf = Q1ASM_ordered[bus]["waveforms"].items()
-                            instructions_ran.append(item[-1])
-                            self._call_handlers(item, param, register, data_draw[bus], wf)
-                            current_idx += 1
+                                item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
+                                wf = Q1ASM_ordered[bus]["waveforms"].items()
+                                instructions_ran.append(item[-1])
+                                self._call_handlers(item, param, register, data_draw[bus], wf)
+                                if timeout is not None and len(data_draw[bus][0])>= timeout:
+                                    parameters[bus]["timeout_reached"] = True
+                                    return current_idx
+                                current_idx += 1
                     return current_idx
 
                 if (
@@ -447,6 +461,9 @@ class QbloxDraw:
 
                 elif Q1ASM_line[-1] not in instructions_ran:  # run if no loop label
                     self._call_handlers(Q1ASM_line, param, register, data_draw[bus], wf)
+                    if timeout is not None and len(data_draw[bus][0])>= timeout:
+                        parameters[bus]["timeout_reached"] = True
+                        break
 
             # remove the latest freq, phase and offset data points if nothing played after
             for key in ["intermediate_frequency", "phase", "q1asm_offset_i", "q1asm_offset_q"]:
@@ -543,7 +560,7 @@ class QbloxDraw:
 
         # Update layout
         fig.update_layout(
-            height=200 * len(data_keys),
+            height=600,
             width=1100,
             title_text="QBlox Oscillator simulation",
             showlegend=True,
