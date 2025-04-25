@@ -17,6 +17,7 @@
 from .instrument_controller import InstrumentController
 from .instrument_controllers import InstrumentControllers
 from .keithley import Keithley2600Controller
+from .keysight import E5080BController
 from .mini_circuits import MiniCircuitsController
 from .qblox import QbloxClusterController, QbloxSPIRackController
 from .qdevil import QDevilQDac2Controller
@@ -27,6 +28,7 @@ from .utils import InstrumentControllerFactory
 from .yokogawa import GS200Controller
 
 __all__ = [
+    "E5080BController",
     "GS200Controller",
     "InstrumentController",
     "InstrumentControllerFactory",

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Enum classes"""
 
 from enum import Enum
@@ -161,7 +162,6 @@ class InstrumentName(str, Enum):
         * qblox_D5a
         * qblox_S4g
         * keysight_e5080b
-        * agilent_e5071B
         * yokogawa_gs200
         * OPX -> Exactly as Quantum Machines InstrumentType
     """
@@ -175,7 +175,6 @@ class InstrumentName(str, Enum):
     QBLOX_D5A = "D5a"
     QBLOX_S4G = "S4g"
     KEYSIGHT_E5080B = "keysight_e5080b"
-    AGILENT_E5071B = "agilent_e5071B"
     YOKOGAWA_GS200 = "yokogawa_gs200"
     QCMRF = "QCM-RF"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster"
@@ -198,22 +197,40 @@ class VNAScatteringParameters(str, Enum):
     S21 = "S21"
 
 
-class VNATriggerModes(str, Enum):
-    """Vector Network Analyzers Trigger Modes
+class VNAFormatBorder(str, Enum):
+    """Vector Network Analyzers Format Border
     Args:
         enum (str): Available types of trigger modes:
-        * INT
-        * BUS
+        * NORMal
+        * SWAPped
     """
 
-    INT = "INT"
-    BUS = "BUS"
+    NORM = "norm"
+    SWAP = "swap"
+
+
+class VNASweepTypes(str, Enum):
+    """Vector Network Analyzers Sweep Types
+    Args:
+        enum (str): Available types of sweeping types:
+        * lin
+        * log
+        * pow
+        * cw
+        * segm
+    """
+
+    LIN = "lin"
+    LOG = "log"
+    POW = "pow"
+    CW = "cw"
+    SEGM = "segm"
 
 
 class VNASweepModes(str, Enum):
-    """Vector Network Analyzers Sweep Modes
+    """Vector Network Analyzers Sweep Types
     Args:
-        enum (str): Available types of sweeping modes:
+        enum (str): Available types of sweeping types:
         * hold
         * cont
         * single
@@ -224,6 +241,18 @@ class VNASweepModes(str, Enum):
     CONT = "cont"
     SING = "single"
     GRO = "group"
+
+
+class VNAAverageModes(str, Enum):
+    """Vector Network Analyzers Average Modes
+    Args:
+        enum (str): Available types of average modes:
+        * point
+        * sweep
+    """
+
+    POIN = "poin"
+    SWE = "swe"
 
 
 class InstrumentControllerName(str, Enum):
@@ -237,7 +266,6 @@ class InstrumentControllerName(str, Enum):
         * mini_circuits
         * keithley_2600
         * keysight_e5080b
-        * agilent_e5071B
         * yokogawa
         * qmm
     """
@@ -247,8 +275,7 @@ class InstrumentControllerName(str, Enum):
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
     QBLOX_SPIRACK = "qblox_spi_rack"
-    KEYSIGHT_E5080B = "keysight_e5080b_controller"
-    AGILENT_E5071B = "agilent_e5071B_controller"
+    KEYSIGHT_E5080B = "keysight_e5080b"
     YOKOGAWA_GS200 = "yokogawa_gs200_controller"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
     QDEVIL_QDAC2 = "qdevil_qdac2"
@@ -330,7 +357,7 @@ class Parameter(str, Enum):
     RF_ON = "rf_on"
     OPERATION_PARAMETER = "operation_parameter"
     DEVICE_TIMEOUT = "device_timeout"
-    SWEEP_MODE = "sweep_mode"
+    SWEEP_TYPE = "sweep_type"
     ELECTRICAL_DELAY = "electrical_delay"
     TIMEOUT = "timeout"
     NUM_FLIPS = "num_flips"
@@ -360,7 +387,18 @@ class Parameter(str, Enum):
     B = "b"
     T_PHI = "t_phi"
     GATE_OPTIONS = "options"
+    STEP_AUTO = "step_auto"
+    STEP_SIZE = "step_size"
+    CW_FREQUENCY = "cw_frequency"
+    AVERAGES_MODE = "averages_mode"
+    SWEEP_MODE = "sweep_mode"
+    CLEAR_AVERAGES = "clear_averages"
+    FORMAT_DATA = "format_data"
+    SOURCE_POWER = "source_power"
+    AVERAGES_ENABLED = "averages_enabled"
     FLUX = "flux"
+    FORMAT_BORDER = "format_border"
+    OPERATION_STATUS = "operation_status"
 
     @classmethod
     def to_yaml(cls, representer, node):
@@ -427,6 +465,7 @@ class InstrumentTypeName(str, Enum):
     QBLOX_S4G = "QbloxS4g"
     YOKOGAWA_GS200 = "YokogawaGS200"
     QDEVIL_QDAC2 = "QDevilQDac2"
+    KEYSIGHT_E5080B = "E5080B"
 
 
 class ResetMethod(str, Enum):

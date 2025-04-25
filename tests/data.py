@@ -10,6 +10,7 @@ from qililab.typings.enums import (
     InstrumentName,
     IntegrationMode,
     Parameter,
+    VNASweepTypes,
 )
 
 
@@ -913,10 +914,9 @@ class SauronVNA:
     keysight_e5080b_controller: dict[str, Any] = {
         "name": InstrumentControllerName.KEYSIGHT_E5080B,
         "alias": InstrumentControllerName.KEYSIGHT_E5080B.value,
-        Parameter.TIMEOUT.value: 10000,
         INSTRUMENTCONTROLLER.CONNECTION: {
             "name": ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.1.254",
+            CONNECTION.ADDRESS: "169.254.150.105",
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
@@ -929,48 +929,15 @@ class SauronVNA:
     keysight_e5080b: dict[str, Any] = {
         "name": InstrumentName.KEYSIGHT_E5080B,
         "alias": InstrumentName.KEYSIGHT_E5080B.value,
-        Parameter.POWER.value: -60.0,
     }
 
-    agilent_e5071b_controller: dict[str, Any] = {
-        "name": InstrumentControllerName.AGILENT_E5071B,
-        "alias": InstrumentControllerName.AGILENT_E5071B.value,
-        Parameter.TIMEOUT.value: 10000,
-        INSTRUMENTCONTROLLER.CONNECTION: {
-            "name": ConnectionName.TCP_IP.value,
-            CONNECTION.ADDRESS: "192.168.1.254",
-        },
-        INSTRUMENTCONTROLLER.MODULES: [
-            {
-                "alias": InstrumentName.AGILENT_E5071B.value,
-                "slot_id": 0,
-            }
-        ],
-    }
-
-    agilent_e5071b: dict[str, Any] = {
-        "name": InstrumentName.AGILENT_E5071B,
-        "alias": InstrumentName.AGILENT_E5071B.value,
-        Parameter.POWER.value: -60.0,
-    }
-
-    instruments = [keysight_e5080b, agilent_e5071b]
+    instruments = [keysight_e5080b]
     instrument_controllers = [
         keysight_e5080b_controller,
-        agilent_e5071b_controller,
     ]
 
     buses: list[dict[str, Any]] = [
-        {
-            RUNCARD.ALIAS: "keysight_e5080b_bus",
-            RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
-            RUNCARD.CHANNELS: [0],
-        },
-        {
-            RUNCARD.ALIAS: "agilent_e5071b_bus",
-            RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
-            RUNCARD.CHANNELS: [0],
-        },
+        {RUNCARD.ALIAS: "keysight_e5080b_bus", RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value], RUNCARD.CHANNELS: [0]},
     ]
 
     runcard = {
