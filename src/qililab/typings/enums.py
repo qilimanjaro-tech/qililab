@@ -230,7 +230,7 @@ class VNASweepTypes(str, Enum):
 class VNASweepModes(str, Enum):
     """Vector Network Analyzers Sweep Types
     Args:
-        enum (str): Available types of sweeping modes:
+        enum (str): Available types of sweeping types:
         * hold
         * cont
         * single
