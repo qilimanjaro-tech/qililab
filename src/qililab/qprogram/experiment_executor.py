@@ -265,7 +265,7 @@ class ExperimentExecutor:
         operations: list[Callable] = []
 
         # A mapping from block UUID to the index of the current value of its variable
-        loop_indices: dict[Block, int] = {}
+        self.loop_indices: dict[UUID, int] = {}
 
         # A mapping from variable UUID to current value of the variable
         current_value_of_variable: dict[UUID, int | float] = {}
@@ -285,7 +285,7 @@ class ExperimentExecutor:
                 task_ids[block.uuid] = loop_task_id  # Store the task ID associated with this loop block
 
                 # Track the index for this loop
-                loop_indices[block] = 0
+                self.loop_indices[block.uuid] = 0
 
                 return loop_task_id
 
@@ -301,7 +301,7 @@ class ExperimentExecutor:
 
             def advance_loop_index() -> None:
                 # Update the loop index
-                loop_indices[block] += 1
+                self.loop_indices[block.uuid] += 1
 
             uuids = [variable.uuid for variable in self._variables_per_block[block]]
             values = [variable.values for variable in self._variables_per_block[block]]
@@ -319,7 +319,7 @@ class ExperimentExecutor:
 
             def remove_progress_bar():
                 progress.remove_task(task_ids[block.uuid])
-                del loop_indices[block]
+                del self.loop_indices[block.uuid]
 
             loop_operations.append(remove_progress_bar)
 
@@ -449,7 +449,7 @@ class ExperimentExecutor:
             """Store the result in the correct location within the ExperimentResultsWriter."""
             # Determine the index based on current loop indices and store the results in the ExperimentResultsWriter
             for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
-                indices = (qprogram_index, measurement_index, *tuple(index for _, index in loop_indices.items()))
+                indices = (qprogram_index, measurement_index, *tuple(index for _, index in self.loop_indices.items()))
                 self._results_writer[indices] = measurement_result.array.T  # type: ignore
 
         if isinstance(block, (Loop, ForLoop, Parallel)):
@@ -611,5 +611,7 @@ class ExperimentExecutor:
 
                 # Now write the execution time to the results writer
                 self._results_writer.execution_time = execution_time
+
+        del self.loop_indices
 
         return results_path
