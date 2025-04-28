@@ -7,14 +7,14 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 from qpysequence import Sequence
-from qpysequence.utils.constants import AWG_MAX_GAIN
+from qpysequence.constants import AWG_MAX_GAIN
 
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseSchedule, QbloxCompiler, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
-from qililab.typings import Parameter, AcquireTriggerMode, IntegrationMode
-from qililab.typings.enums import Line
 from qililab.settings.digital.digital_compilation_bus_settings import DigitalCompilationBusSettings
+from qililab.typings import AcquireTriggerMode, IntegrationMode, Parameter
+from qililab.typings.enums import Line
 
 
 class DummyQCM(QbloxQCM):
@@ -200,9 +200,6 @@ def fixture_buses() -> dict[str, DigitalCompilationBusSettings]:
         "readout_q0": DigitalCompilationBusSettings(
             line=Line.READOUT,
             qubits=[0],
-            weights_i=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-            weights_q=[1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-            weighed_acq_enabled=True,
         ),
         "readout_q1": DigitalCompilationBusSettings(
             line=Line.READOUT,
@@ -518,7 +515,7 @@ class TestQbloxCompiler:
                         set_ph           191690305
                         play             0, 1, 4
                         wait             220
-                        acquire_weighed  0, R3, R0, R1, 4
+                        acquire          0, R3, 4
         long_wait_1:
                         move             3, R4
         long_wait_1_loop:
@@ -530,7 +527,7 @@ class TestQbloxCompiler:
                         set_ph           191690305
                         play             0, 1, 4
                         wait             220
-                        acquire_weighed  1, R3, R0, R1, 4
+                        acquire          1, R3, 4
         long_wait_2:
                         move             3, R5
         long_wait_2_loop:

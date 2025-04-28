@@ -31,6 +31,7 @@ from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedCo
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
+from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
     ExperimentMetadata,
@@ -116,6 +117,10 @@ class ExperimentExecutor:
 
         # Mapping from each ExecuteQProgram operation to its execution index (order of execution)
         self._qprogram_execution_indices: dict[ExecuteQProgram, int] = {}
+
+        # Variables that uses flux for further processing and saving the right bias
+        # TODO: implement a way to save the bias based on the same principle as HW loops Xtalk
+        self._flux_variables: dict[str, np.ndarray] = {}
 
         # Stack to keep track of variables in the experiment context (outside QPrograms)
         self._experiment_variables_stack: list[list[VariableInfo]] = []
@@ -247,7 +252,7 @@ class ExperimentExecutor:
         operations: list[Callable] = []
 
         # A mapping from block UUID to the index of the current value of its variable
-        loop_indices: dict[Block, int] = {}
+        self.loop_indices: dict[UUID, int] = {}
 
         # A mapping from variable UUID to current value of the variable
         current_value_of_variable: dict[UUID, int | float] = {}
@@ -267,7 +272,7 @@ class ExperimentExecutor:
                 task_ids[block.uuid] = loop_task_id  # Store the task ID associated with this loop block
 
                 # Track the index for this loop
-                loop_indices[block] = 0
+                self.loop_indices[block.uuid] = 0
 
                 return loop_task_id
 
@@ -283,7 +288,7 @@ class ExperimentExecutor:
 
             def advance_loop_index() -> None:
                 # Update the loop index
-                loop_indices[block] += 1
+                self.loop_indices[block.uuid] += 1
 
             uuids = [variable.uuid for variable in self._variables_per_block[block]]
             values = [variable.values for variable in self._variables_per_block[block]]
@@ -301,7 +306,7 @@ class ExperimentExecutor:
 
             def remove_progress_bar():
                 progress.remove_task(task_ids[block.uuid])
-                del loop_indices[block]
+                del self.loop_indices[block.uuid]
 
             loop_operations.append(remove_progress_bar)
 
@@ -326,6 +331,10 @@ class ExperimentExecutor:
                                 )
                             }
                         )
+                    )
+                if isinstance(element, SetCrosstalk):
+                    elements_operations.append(
+                        lambda operation=element: self.platform.set_crosstalk(crosstalk=operation.crosstalk)
                     )
                 if isinstance(element, SetParameter):
                     # Append a lambda that will call the `platform.set_parameter` method
@@ -428,7 +437,7 @@ class ExperimentExecutor:
             """Store the result in the correct location within the ExperimentResultsWriter."""
             # Determine the index based on current loop indices and store the results in the ExperimentResultsWriter
             for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
-                indices = (qprogram_index, measurement_index, *tuple(index for _, index in loop_indices.items()))
+                indices = (qprogram_index, measurement_index, *tuple(index for _, index in self.loop_indices.items()))
                 self._results_writer[indices] = measurement_result.array.T  # type: ignore
 
         if isinstance(block, (Loop, ForLoop, Parallel)):
@@ -462,7 +471,7 @@ class ExperimentExecutor:
         decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
 
         # Calculate the number of steps
-        num_steps = int(round((stop - start) / step)) + 1
+        num_steps = round((stop - start) / step) + 1
 
         # Use linspace and then round to avoid floating-point inaccuracies
         result = np.linspace(start, stop, num_steps)
@@ -576,14 +585,15 @@ class ExperimentExecutor:
                     operations = self._prepare_operations(self.experiment.body, progress)
                     self._execute_operations(operations, progress)
 
-            # Signal that the execution has completed
-            execution_completed.set()
+                # Signal that the execution has completed
+                execution_completed.set()
 
-            # Retrieve the execution time from the Future
-            execution_time = execution_time_future.result()
+                # Retrieve the execution time from the Future
+                execution_time = execution_time_future.result()
 
-            # Now write the execution time to the results writer
-            with self._results_writer:
+                # Now write the execution time to the results writer
                 self._results_writer.execution_time = execution_time
+
+        del self.loop_indices
 
         return results_path

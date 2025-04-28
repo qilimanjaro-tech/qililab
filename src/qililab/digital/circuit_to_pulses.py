@@ -37,7 +37,7 @@ class CircuitToPulses:
 
     Args:
         settings (DigitalCompilationSettings): Object containing the Digital Compilations Settings and the info on chip's physical qubits.
-            It can be obtained from the `digital_compilation_settings` attribute of a `Platform` object.
+            It can be obtained from the ``digital_compilation_settings`` attribute of a ``Platform`` object.
     """
 
     def __init__(self, settings: DigitalCompilationSettings):
