@@ -264,9 +264,44 @@ class QbloxCompiler:
             self._buses[bus].static_duration += 4
             self._buses[bus].qpy_sequence._program.compile()
 
+            if bus == "drive":
+                self._buses[bus].qpy_sequence._program = """
+                        set_latch_en 1, 4
+                        wait_sync 4       #Wait for sequencers to synchronize
+                        upd_param 1000
+                        move 100, R0
+                        nop
+                    loop_0:
+                        latch_rst 1400 #tof + length of the wf, pi_duration in my nb, 200+40, actually no putting it as the duration of the readout (1200)
+                        wait 300 #left it because qblox had it but not sure, could be a trigger network wait the inout or the 200ns smthg
+                        set_cond 1, 1, 0, 700 # Enable conditional commands
+                        play 6, 7, 700 ## play the pi pulse ------------------------------------change wf nb
+                        set_cond 0, 1, 0, 700 # Disable conditional commands again
+
+                        loop R0, @loop_0
+                        stop
+                """
+
+            if bus == "readout":
+                self._buses[bus].qpy_sequence._program ="""
+                        wait_sync 4       #Wait for sequencers to synchronize
+                        upd_param 1000
+                        move 100, R0
+                        nop
+                    loop_0:
+                        play 2,3,1200 #play readout pulse which results are sent on the trigger network
+                        acquire 0, R0, 1200 #1200 is my readout duration
+                        wait 700
+
+                        loop R0, @loop_0
+                        stop              #Stop program
+                """
+
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
         sequences = {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
         acquisitions = {bus: bus_info.acquisitions for bus, bus_info in self._buses.items()}
+
+
         return QbloxCompilationOutput(qprogram=self._qprogram, sequences=sequences, acquisitions=acquisitions)
 
     def _populate_buses(self):
@@ -437,9 +472,6 @@ class QbloxCompiler:
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
         )
-        self._buses["drive_q13_bus"].qpy_block_stack[-1].append_component(
-        component=QPyInstructions.SetLatchEn(1,4) #4 SHOULDNT BE HARDCODED
-        )
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset):
@@ -581,7 +613,8 @@ class QbloxCompiler:
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         self._handle_play(play)
         self._handle_acquire(acquire)
-        self._handle_add_waits("drive_q13_bus",1200)
+        self._handle_add_waits("drive_q13_bus",1600)
+        self._handle_add_waits("readout_q13_bus",1600)
         if element.active_reset:
             self._handle_active_reset(element)
 
@@ -670,9 +703,14 @@ class QbloxCompiler:
         # self._buses[control_bus].qpy_block_stack[-1].append_component(
         #         component=QPyInstructions.SetLatchEn(1,4) #4 SHOULDNT BE HARDCODED
         #     )
+        self._buses["drive_q13_bus"].qpy_block_stack[-1].append_component(
+        component=QPyInstructions.SetLatchEn(1,4) #4 SHOULDNT BE HARDCODED
+        )
+
         self._buses[control_bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.LatchRst(4)
             )
+        
         self._buses[control_bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.SetCond(1,mask,0,4) #2048 is the bit mask, SHOULDNT BE HARDCODED
             )
@@ -681,10 +719,10 @@ class QbloxCompiler:
         print("pi",element.pi_pulse)
         play = Play(bus=control_bus, waveform=element.pi_pulse, wait_time=time_of_flight)
         self._handle_play(play)
-        self._handle_add_waits(control_bus,200)
+        self._handle_add_waits(control_bus,1800)
 
         self._buses[control_bus].qpy_block_stack[-1].append_component(
-        component=QPyInstructions.SetCond(0,mask,0,4) #2048 is the bit mask, SHOULDNT BE HARDCODED
+        component=QPyInstructions.SetCond(0,mask,0,1800) #2048 is the bit mask, SHOULDNT BE HARDCODED
         )
 
         # self._handle_sync()
