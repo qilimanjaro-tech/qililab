@@ -49,6 +49,8 @@ class QbloxDraw:
             data_draw = self._handle_wait_draw(data_draw, program_line, param)
         elif action_type == "add":
             self._handle_add_draw(register, program_line)
+        elif action_type == "move":
+            self._handle_move_draw(register, program_line)
         return param, register, data_draw
 
     def _calculate_scaling_and_offsets(self, param, i_or_q):
@@ -214,17 +216,31 @@ class QbloxDraw:
         return param
 
     def _handle_add_draw(self, register, program_line):
-        """Updates the register dictionary when a line of the parsed program has a move command.
+        """Updates the register dictionary when a line of the parsed program has an add command.
 
         Args:
             register (dictionary): registers of the Q1ASM.
-            program_line (tuple): line of the Q1ASM program parsed with a freq or phase instruction.
+            program_line (tuple): line of the Q1ASM program.
 
         Returns:
             Updated register.
         """
         a, b, destination = program_line[1].split(", ")
         register[destination] = self._get_value(a, register) + self._get_value(b, register)
+        return register
+
+    def _handle_move_draw(self, register, program_line):
+        """Updates the register dictionary when a line of the parsed program has a move command.
+
+        Args:
+            register (dictionary): registers of the Q1ASM.
+            program_line (tuple): line of the Q1ASM program parsed.
+
+        Returns:
+            Updated register.
+        """
+        new_value, destination = program_line[1].split(", ")
+        register[destination] = int(self._get_value(new_value, register))
         return register
 
     def _get_value(self, x, register):
@@ -234,7 +250,7 @@ class QbloxDraw:
             register (dictionary): registers of the Q1ASM.
 
         Returns:
-            If the input is a number it returns a float; if the input is a key of the registery it returns th evalue as a float
+            If the input is a number it returns a float; if the input is a key of the registery it returns the value as a float
         """
         if x is not None:
             if x.isdigit():
@@ -512,7 +528,7 @@ class QbloxDraw:
                 )
                 data_draw[key][0] = waveform_flux
                 data_draw[key][1] = None
-                fig.add_trace(go.Scatter(y=waveform_flux, mode="lines", name="Flux"))
+                fig.add_trace(go.Scatter(y=waveform_flux, mode="lines", name=f"{key} Flux"))
             else:
                 ac_offset_i, ac_offset_q = (
                     ac_offset_i * volt_bounds / np.sqrt(2),
