@@ -45,6 +45,8 @@ class QbloxDraw:
             data_draw = self._handle_play_draw(data_draw, program_line, waveform_seq, param)
         elif action_type == "wait":
             data_draw = self._handle_wait_draw(data_draw, program_line, param)
+        elif action_type == "acquire_weighed":
+            data_draw = self._handle_wait_draw(data_draw, program_line, param, 4)
         elif action_type == "upd_param":
             data_draw = self._handle_wait_draw(data_draw, program_line, param)
         elif action_type == "add":
@@ -109,7 +111,7 @@ class QbloxDraw:
                 param[key].extend([param[key][-1]] * len(scaled_array))
         return data_draw
 
-    def _handle_wait_draw(self, data_draw, program_line, param):
+    def _handle_wait_draw(self, data_draw, program_line, param, time = None):
         """Play a wwait by appending the stored data list.
 
         Args:
@@ -121,8 +123,10 @@ class QbloxDraw:
             Appended data_draw considering the wait and the offset.
             And appended the IF and phase keys of the param dictionary. Each of these is a np array where 1 data point represents 1 ns (same as the waveforms).
         """
-
-        y_wait = np.linspace(0, 0, int(program_line[1]))
+        if time is not None:
+            y_wait = np.linspace(0, 0, int(time)) #  add a clock cycle - used for acquisitions
+        else:
+            y_wait = np.linspace(0, 0, int(program_line[1]))
         data_draw[0] = np.append(data_draw[0], (y_wait))
         data_draw[1] = np.append(data_draw[1], (y_wait))
 
@@ -327,7 +331,7 @@ class QbloxDraw:
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
-    def draw(self, sequencer, runcard_data=None, timeout=None, averages_displayed=False) -> dict:
+    def draw(self, sequencer, runcard_data=None, time_window=None, averages_displayed=False) -> dict:
         """Parses the program dictionary of the sequence, plots the waveforms and generates waveform data.
         Args:
             sequencer: The compiled qprogram, either at the platform or qprogram level.
@@ -380,12 +384,12 @@ class QbloxDraw:
             parameters[bus]["q1asm_offset_q"] = [0]
             parameters[bus]["phase"] = [0]
 
-            # flags to determine if the phase or freq has been updated and the timeout
+            # flags to determine if the phase or freq has been updated and the time_window
             parameters[bus]["phase_new"] = True
             parameters[bus]["intermediate_frequency_new"] = True
             parameters[bus]["q1asm_offset_i_new"] = True
             parameters[bus]["q1asm_offset_q_new"] = True
-            parameters[bus]["timeout_reached"] = False
+            parameters[bus]["time_reached"] = False
 
             wf1: list[float] = []
             wf2: list[float] = []
@@ -418,28 +422,28 @@ class QbloxDraw:
                 sorted_labels = sorted(loop_info.items(), key=lambda x: x[1][0])
 
             for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
-                if parameters[bus]["timeout_reached"]:
+                if parameters[bus]["time_reached"]:
                     break
                 def process_loop(recursive_input, i):
-                    if not parameters[bus]["timeout_reached"]:
+                    if not parameters[bus]["time_reached"]:
                         (label, [start, end, value]) = recursive_input
                         if label not in label_done:
                             label_done.append(label)
                         for x in range(register[value], 0, -1):
-                            if parameters[bus]["timeout_reached"]:
+                            if parameters[bus]["time_reached"]:
                                 return current_idx
                             current_idx = start
                             while current_idx <= end:
-                                if parameters[bus]["timeout_reached"]:
+                                if parameters[bus]["time_reached"]:
                                     return current_idx
                                 item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                                 wf = Q1ASM_ordered[bus]["waveforms"].items()
                                 _, value, label, _ = item
                                 for la in label:
-                                    if parameters[bus]["timeout_reached"]:
+                                    if parameters[bus]["time_reached"]:
                                         return current_idx
                                     if la not in label_done:  # nested loop
-                                        if parameters[bus]["timeout_reached"]:
+                                        if parameters[bus]["time_reached"]:
                                             return current_idx
                                         new_label = la
                                         result = next(
@@ -459,8 +463,8 @@ class QbloxDraw:
                                 wf = Q1ASM_ordered[bus]["waveforms"].items()
                                 instructions_ran.append(item[-1])
                                 self._call_handlers(item, param, register, data_draw[bus], wf)
-                                if timeout is not None and len(data_draw[bus][0])>= timeout:
-                                    parameters[bus]["timeout_reached"] = True
+                                if time_window is not None and len(data_draw[bus][0])>= time_window:
+                                    parameters[bus]["time_reached"] = True
                                     return current_idx
                                 current_idx += 1
                     return current_idx
@@ -477,8 +481,8 @@ class QbloxDraw:
 
                 elif Q1ASM_line[-1] not in instructions_ran:  # run if no loop label
                     self._call_handlers(Q1ASM_line, param, register, data_draw[bus], wf)
-                    if timeout is not None and len(data_draw[bus][0])>= timeout:
-                        parameters[bus]["timeout_reached"] = True
+                    if time_window is not None and len(data_draw[bus][0])>= time_window:
+                        parameters[bus]["time_reached"] = True
                         break
 
             # remove the latest freq, phase and offset data points if nothing played after
