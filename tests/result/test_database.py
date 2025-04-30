@@ -2,18 +2,13 @@
 
 # pylint: disable=protected-access
 import datetime
-import os
-import re
-from types import MethodType
-from unittest.mock import MagicMock, create_autospec, patch
+from unittest.mock import MagicMock, patch
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from pandas import DataFrame
 
-from qililab.result.database import DatabaseManager, Measurement
+from qililab.result.database import DatabaseManager, Measurement, _load_config, get_db_manager, get_engine
 
 mpl.use("Agg")  # Use non-interactive backend for testing
 
@@ -36,6 +31,108 @@ def fixture_db_manager():
             dbm = DatabaseManager("user", "pass", "host", "5432", "db")
             dbm._mock_session = mock_session  # Add reference for testing
             return dbm
+
+
+@pytest.fixture(name="measurement")
+def fixture_measurement():
+    return Measurement(
+        experiment_name="test_experiment",
+        sample_name="sampleA",
+        result_path="/test/result.h5",
+        experiment_completed=False,
+        start_time=datetime.datetime(2023, 1, 1, 12, 0, 0),
+        cooldown="CDX",
+    )
+
+
+class TestMeasurement:
+    """Test Measurement class"""
+
+    @patch("qililab.result.database.datetime")
+    def test_end_experiment(self, mock_datetime, measurement):
+        fixed_now = datetime.datetime(2023, 1, 1, 14, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = measurement
+
+        result = measurement.end_experiment(lambda: mock_session_context)
+
+        assert result.end_time == fixed_now
+        assert result.experiment_completed is True
+        assert result.run_length == fixed_now - measurement.start_time
+        assert mock_session.commit.called_once()
+
+    @patch("qililab.result.database.ExperimentResults")
+    def test_read_experiment(self, mock_experiment_results, measurement):
+        mock_instance = MagicMock()
+        mock_instance.get.return_value = ("data", "dims")
+        mock_experiment_results.return_value.__enter__.return_value = mock_instance
+
+        data, dims = measurement.read_experiment()
+
+        assert data == "data"
+        assert dims == "dims"
+        assert mock_experiment_results.called_once_with(measurement.result_path)
+
+    @patch("qililab.result.database.ExperimentResults")
+    @patch("qililab.result.database.DataArray")
+    def test_read_experiment_xarray(self, mock_data_array, mock_experiment_results, measurement):
+        mock_results = MagicMock()
+        dims_mock = [
+            MagicMock(labels=["x"], values=[[0, 1]]),
+            MagicMock(labels=["I/Q"], values=[[0, 1]]),
+        ]
+        data_mock = MagicMock()
+        data_mock.take.side_effect = [np.array([[1.0]]), np.array([[2.0]])]
+
+        mock_results.get.return_value = (data_mock, dims_mock)
+        mock_experiment_results.return_value.__enter__.return_value = mock_results
+
+        measurement.read_experiment_xarray()
+
+        assert data_mock.take.any_call(indices=0, axis=1)
+        assert data_mock.take.any_call(indices=1, axis=1)
+        assert mock_data_array.called_once()
+
+    @patch("qililab.result.database.load_results")
+    def test_load_old_h5(self, mock_load_results, measurement):
+        measurement.load_old_h5()
+        assert mock_load_results.called_once_with(measurement.result_path)
+
+    @patch("qililab.result.database.read_hdf")
+    def test_load_df(self, mock_read_hdf, measurement):
+        measurement.load_df()
+        assert mock_read_hdf.called_once_with(measurement.result_path)
+
+    @patch("qililab.result.database.read_hdf")
+    def test_load_xarray(self, mock_read_hdf, measurement):
+        mock_df = MagicMock()
+        mock_read_hdf.return_value = mock_df
+        measurement.load_xarray()
+        assert mock_df.to_xarray.called_once()
+
+    @patch("qililab.result.database.read_hdf")
+    def test_read_numpy(self, mock_read_hdf, measurement):
+        mock_da = MagicMock()
+        mock_da.dims = ["batch", "x", "y"]
+        mock_da.coords = {"x": MagicMock(values=np.array([1, 2])), "y": MagicMock(values=np.array([3, 4]))}
+        mock_da.to_numpy.return_value = np.array([[[1, 2], [3, 4]]])
+
+        mock_xr = MagicMock()
+        mock_xr.to_dataarray.return_value = mock_da
+        mock_df = MagicMock()
+        mock_df.to_xarray.return_value = mock_xr
+
+        mock_read_hdf.return_value = mock_df
+
+        arr, labels = measurement.read_numpy()
+
+        assert isinstance(arr, np.ndarray)
+        assert "x" in labels and "y" in labels
+        assert mock_read_hdf.called_once()
 
 
 class Testdatabase:
@@ -85,15 +182,6 @@ class Testdatabase:
         db_manager.load_by_id(123)
         assert db_manager.Session().query.called
 
-    # def test_tail(self, db_manager: DatabaseManager):
-    #     db_manager.tail(exp_name="exp_name", current_sample=True, order_limit=5, pandas_output=True)
-    #     assert db_manager.Session().query(Measurement).filter.called
-    #     # assert db_manager.Session().query(Measurement).order_by.called
-    #     assert db_manager.Session().query(Measurement).all.called
-
-    #     tail_output = db_manager.tail(exp_name="exp_name", current_sample=True, order_limit=None, pandas_output=False)
-    #     assert db_manager.Session().query(Measurement).order_by.called
-    #     # assert isinstance(tail_output, DataFrame)
     @patch("qililab.result.database.read_sql")
     def test_tail(self, mock_read_sql, db_manager: DatabaseManager):
         db_manager.current_sample = "sampleA"
@@ -224,3 +312,54 @@ class Testdatabase:
         db_manager._mock_session.add.called_once()
         db_manager._mock_session.commit.called_once()
         mock_makedirs.called_once()  # make sure directory was attempted to be created
+
+
+@patch("qililab.result.database.ConfigParser")
+def test_load_config_success(mock_config_parser):
+    mock_parser = MagicMock()
+    mock_parser.has_section.return_value = True
+    mock_parser.items.return_value = [("host", "localhost"), ("database", "testdb")]
+    mock_config_parser.return_value = mock_parser
+
+    result = _load_config(filename="fakefile.ini", section="postgresql")
+
+    assert result == {"host": "localhost", "database": "testdb"}
+    mock_parser.read.assert_called_once_with("fakefile.ini")
+    mock_parser.has_section.assert_called_once_with("postgresql")
+
+
+@patch("qililab.result.database.ConfigParser")
+def test_load_config_missing_section(mock_config_parser):
+    mock_parser = MagicMock()
+    mock_parser.has_section.return_value = False
+    mock_config_parser.return_value = mock_parser
+
+    with pytest.raises(Exception, match="Section section not found in the failfile.ini file"):
+        _load_config(filename="failfile.ini", section="section")
+
+
+@patch("qililab.result.database._load_config")
+@patch("qililab.result.database.DatabaseManager")
+def test_get_db_manager(mock_db_manager, mock_load_config):
+    mock_load_config.return_value = {
+        "host": "localhost",
+        "user": "user",
+        "password": "pass",
+        "port": "5432",
+        "database": "testdb",
+    }
+    get_db_manager()
+    mock_db_manager.assert_called_once_with(**mock_load_config.return_value)
+
+
+@patch("qililab.result.database.create_engine")
+def test_get_engine(mock_create_engine):
+    user = "user"
+    passwd = "password"
+    host = "localhost"
+    port = "5432"
+    database = "mydb"
+    expected_url = f"postgresql://{user}:{passwd}@{host}:{port}/{database}"
+
+    get_engine(user, passwd, host, port, database)
+    mock_create_engine.assert_called_once_with(expected_url)
