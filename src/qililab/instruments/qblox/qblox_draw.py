@@ -432,20 +432,12 @@ class QbloxDraw:
                             label_done.append(label)
                         for x in range(register[value], 0, -1):
                             current_idx = start
-                            if parameters[bus]["time_reached"]:
-                                return current_idx
                             while current_idx <= end:
-                                if parameters[bus]["time_reached"]:
-                                    return current_idx
                                 item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
                                 wf = Q1ASM_ordered[bus]["waveforms"].items()
                                 _, value, label, _ = item
                                 for la in label:
-                                    if parameters[bus]["time_reached"]:
-                                        return current_idx
                                     if la not in label_done:  # nested loop
-                                        if parameters[bus]["time_reached"]:
-                                            return current_idx
                                         new_label = la
                                         result = next(
                                             (element for element in sorted_labels if element[0] == new_label), None
