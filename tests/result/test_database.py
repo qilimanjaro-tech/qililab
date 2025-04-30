@@ -168,25 +168,17 @@ class Testdatabase:
         assert db_manager.current_cd == "CD1"
 
     def test_set_sample_and_cooldown_warn_inactive_cd(self, db_manager: DatabaseManager):
-        # Create a mock session and properly mock __enter__ to return itself
-        mock_session = MagicMock()
+        mock_session = db_manager.Session()
         mock_session.__enter__.return_value = mock_session
-        mock_session.__exit__.return_value = None
 
-        # First query: check if sample exists → returns True
-        mock_sample_query = MagicMock()
-        mock_sample_query.scalar.return_value = True
+        # Mock sample and cooldown
+        mock_sample = MagicMock()
+        mock_sample.scalar.return_value = True
+        mock_cd_object = MagicMock(active=False)  # Mocking CD active as false
+        mock_cd = MagicMock()
+        mock_cd.filter.return_value.one_or_none.return_value = mock_cd_object
 
-        # Second query: fetch cooldown object with active=False
-        mock_cd_object = MagicMock(active=False)
-        mock_cd_query = MagicMock()
-        mock_cd_query.filter.return_value.one_or_none.return_value = mock_cd_object
-
-        # Simulate the two different query calls via side_effect
-        mock_session.query.side_effect = [mock_sample_query, mock_cd_query]
-
-        # Patch Session() to return mock_session
-        db_manager.Session = MagicMock(return_value=mock_session)
+        mock_session.query.side_effect = [mock_sample, mock_cd]
 
         # Patch warnings.warn and assert correct call
         with patch("warnings.warn") as mock_warn:
