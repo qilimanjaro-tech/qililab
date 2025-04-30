@@ -111,7 +111,7 @@ class QbloxDraw:
                 param[key].extend([param[key][-1]] * len(scaled_array))
         return data_draw
 
-    def _handle_wait_draw(self, data_draw, program_line, param, time = None):
+    def _handle_wait_draw(self, data_draw, program_line, param, time=None):
         """Play a wwait by appending the stored data list.
 
         Args:
@@ -124,7 +124,7 @@ class QbloxDraw:
             And appended the IF and phase keys of the param dictionary. Each of these is a np array where 1 data point represents 1 ns (same as the waveforms).
         """
         if time is not None:
-            y_wait = np.linspace(0, 0, int(time)) #  add a clock cycle - used for acquisitions
+            y_wait = np.linspace(0, 0, int(time))  # add a clock cycle - used for acquisitions
         else:
             y_wait = np.linspace(0, 0, int(program_line[1]))
         data_draw[0] = np.append(data_draw[0], (y_wait))
@@ -424,15 +424,16 @@ class QbloxDraw:
             for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
                 if parameters[bus]["time_reached"]:
                     break
+
                 def process_loop(recursive_input, i):
                     if not parameters[bus]["time_reached"]:
                         (label, [start, end, value]) = recursive_input
                         if label not in label_done:
                             label_done.append(label)
                         for x in range(register[value], 0, -1):
+                            current_idx = start
                             if parameters[bus]["time_reached"]:
                                 return current_idx
-                            current_idx = start
                             while current_idx <= end:
                                 if parameters[bus]["time_reached"]:
                                     return current_idx
@@ -463,7 +464,7 @@ class QbloxDraw:
                                 wf = Q1ASM_ordered[bus]["waveforms"].items()
                                 instructions_ran.append(item[-1])
                                 self._call_handlers(item, param, register, data_draw[bus], wf)
-                                if time_window is not None and len(data_draw[bus][0])>= time_window:
+                                if time_window is not None and len(data_draw[bus][0]) >= time_window:
                                     parameters[bus]["time_reached"] = True
                                     return current_idx
                                 current_idx += 1
@@ -481,7 +482,7 @@ class QbloxDraw:
 
                 elif Q1ASM_line[-1] not in instructions_ran:  # run if no loop label
                     self._call_handlers(Q1ASM_line, param, register, data_draw[bus], wf)
-                    if time_window is not None and len(data_draw[bus][0])>= time_window:
+                    if time_window is not None and len(data_draw[bus][0]) >= time_window:
                         parameters[bus]["time_reached"] = True
                         break
 

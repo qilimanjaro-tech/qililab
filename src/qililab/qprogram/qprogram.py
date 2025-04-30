@@ -718,7 +718,7 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-    def draw(self, time_window = None, averages_displayed=False):
+    def draw(self, time_window=None, averages_displayed=False):
         """Draw the QProgram using QBlox Compiler
 
         Args:

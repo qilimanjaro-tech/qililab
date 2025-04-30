@@ -1575,7 +1575,7 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, time_window: int = None, averages_displayed: bool = False):
+    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False):
         """Draw the QProgram using QBlox Compiler
 
         Args:
