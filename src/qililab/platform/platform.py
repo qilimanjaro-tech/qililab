@@ -1575,7 +1575,7 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, averages_displayed: bool = False):
+    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -1585,7 +1585,8 @@ class Platform:
 
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        sequencer = self.compile_qprogram(qprogram)
-        result = qblox_draw.draw(sequencer, runcard_data, averages_displayed)
+        compiler = QbloxCompiler()
+        sequencer = compiler.compile(qprogram)
+        result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed)
 
         return result
