@@ -155,6 +155,7 @@ class Measurement(base):  # type: ignore
         return data, dims
 
     def read_experiment_xarray(self):
+
         with ExperimentResults(self.result_path) as results:
             data, dims = results.get()
 
@@ -464,7 +465,6 @@ class DatabaseManager:
         qprogram: "QProgram" = None,  # type: ignore
         calibration: "Calibration" = None,  # type: ignore
         parameters=None,
-        base_path: str = "/home/jupytershared/data",
     ):
         if sample_name is None:
             if self.current_sample:
@@ -476,6 +476,7 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
+        base_path = "/home/jupytershared/data"
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         result_path = f"{dir_path}/{experiment_name}.h5"
 

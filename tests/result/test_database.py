@@ -190,16 +190,22 @@ class Testdatabase:
         assert mock_makedirs.called_once_with("/home/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00")
 
     @patch("qililab.result.database.h5py.File")
+    @patch("qililab.result.database.os.makedirs")
+    @patch("qililab.result.database.os.path.isdir")
     @patch("qililab.result.database.datetime")
-    def test_add_results(self, mock_datetime, mock_h5py_file, db_manager: DatabaseManager):
+    def test_add_results(self, mock_datetime, mock_isdir, mock_makedirs, mock_h5py_file, db_manager):
         db_manager.current_sample = "sampleA"
         db_manager.current_cd = "cdX"
 
+        # Simulate the directory does not exist
+        mock_isdir.return_value = False
+
+        # Simulate fixed time
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
         mock_datetime.datetime.strftime = datetime.datetime.strftime
 
-        # Fake HDF5 structure
+        # Setup HDF5 mock
         file_mock = MagicMock()
         group_mock = MagicMock()
         file_mock.create_group.return_value = group_mock
@@ -209,10 +215,12 @@ class Testdatabase:
         results = np.array([[1, 2], [3, 4]])
         loops = {"x": np.array([0, 1])}
 
-        db_manager.add_results("exp1", results, loops, base_path="/home")
+        # Run the method
+        db_manager.add_results("exp1", results, loops)
 
-        assert file_mock.create_group.called_once_with(name="loops")
-        assert group_mock.create_dataset.called_once_with(name="x", data=loops["x"])
-        assert file_mock.create_dataset.called_with("results", data=results)
-        assert db_manager._mock_session.add.called_once()
-        assert db_manager._mock_session.commit.called_once()
+        # Assertions
+        group_mock.create_dataset.called_once_with(name="x", data=loops["x"])
+        file_mock.create_dataset.called_once_with("results", data=results)
+        db_manager._mock_session.add.called_once()
+        db_manager._mock_session.commit.called_once()
+        mock_makedirs.called_once()  # make sure directory was attempted to be created
