@@ -175,7 +175,7 @@ class Testdatabase:
         mock_cd_object = MagicMock()
         mock_cd_object.active = False  # Simulate cooldown is not active
         mock_session.query.return_value.filter.return_value.one_or_none.return_value = mock_cd_object
-
+        db_manager.set_sample_and_cooldown(sample="sample1", cooldown="cooldown1")
         # Expected warning when cooldown is inactive
         with patch("warnings.warn") as mock_warn:
             db_manager.set_sample_and_cooldown(sample="sample1", cooldown="cooldown1")
