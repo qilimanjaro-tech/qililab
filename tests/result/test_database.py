@@ -190,10 +190,14 @@ class Testdatabase:
         assert mock_makedirs.called_once_with("/home/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00")
 
     @patch("qililab.result.database.h5py.File")
+    @patch("qililab.result.database.os.path.isdir")
     @patch("qililab.result.database.datetime")
-    def test_add_results(self, mock_datetime, mock_h5py_file, db_manager: DatabaseManager):
+    def test_add_results(mock_datetime, mock_isdir, mock_h5py_file, db_manager: DatabaseManager):
         db_manager.current_sample = "sampleA"
         db_manager.current_cd = "cdX"
+
+        # Simulate the directory does not exist
+        mock_isdir.return_value = False
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
@@ -208,9 +212,6 @@ class Testdatabase:
         # Simulated data
         results = np.array([[1, 2], [3, 4]])
         loops = {"x": np.array([0, 1])}
-
-        mock_session = db_manager.Session()
-        mock_session.commit = MagicMock()
 
         db_manager.add_results("exp1", results, loops)
 
