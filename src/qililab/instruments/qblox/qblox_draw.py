@@ -112,7 +112,7 @@ class QbloxDraw:
         return data_draw
 
     def _handle_wait_draw(self, data_draw, program_line, param, time=None):
-        """Play a wwait by appending the stored data list.
+        """Play a wait by appending the stored data list.
 
         Args:
             data_draw (list): nested list for each waveform, data points until current time.
