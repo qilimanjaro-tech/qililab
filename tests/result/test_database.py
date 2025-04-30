@@ -169,17 +169,18 @@ class Testdatabase:
 
     def test_set_sample_and_cooldown_warn_inactive_cd(self, db_manager: DatabaseManager):
         mock_session = db_manager.Session()
+        db_manager.Session = MagicMock(return_value=mock_session)
         mock_session.query.return_value.scalar.return_value = True
 
         # Mock the Cooldown query for the given cooldown
         mock_cd_object = MagicMock()
         mock_cd_object.active = False  # Simulate cooldown is not active
         mock_session.query.return_value.filter.return_value.one_or_none.return_value = mock_cd_object
-        db_manager.set_sample_and_cooldown(sample="sample1", cooldown="cooldown1")
+
         # Expected warning when cooldown is inactive
         with patch("warnings.warn") as mock_warn:
             db_manager.set_sample_and_cooldown(sample="sample1", cooldown="cooldown1")
-            assert mock_warn.called_with(
+            assert mock_warn.called_once_with(
                 "Cooldown 'cooldown1' is not active. Make sure you have set the right cooldown."
             )
 
