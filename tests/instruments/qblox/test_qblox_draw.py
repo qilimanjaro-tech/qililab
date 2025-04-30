@@ -73,6 +73,14 @@ def fixture_qp_draw_with_time_window() -> QProgram:
         qp.measure(bus="readout_q13_bus", waveform =square_wf, weights= IQPair(I=weights_shape, Q=weights_shape))
     return qp
 
+@pytest.fixture(name="qp_draw_with_timeout_no_loop")
+def fixture_qp_draw_with_timeout_no_loop() -> QProgram:
+    qp = QProgram()
+    qp.wait("drive",10)
+    qp.play("drive", Square(amplitude=1, duration=20))
+    qp.wait("drive",10)
+    return qp
+
 @pytest.fixture(name="qp_plat_draw_qcmrf_offset")
 def fixture_qp_plat_draw_qcmrf_offset() -> QProgram:
     qp = QProgram()
@@ -243,6 +251,20 @@ class TestQBloxDraw:
         data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, averages_displayed = True, time_window=40)
         np.testing.assert_allclose(data_draw["readout_q13_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["readout_q13_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+
+    def test_qp_draw_with_timeout_no_loop(self, qp_draw_with_timeout_no_loop: QProgram):
+        data_draw = qp_draw_with_timeout_no_loop.draw()
+        expected_data_draw_i = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+
+        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+
+        compiler = QbloxCompiler()
+        qblox_draw = QbloxDraw()
+        results = compiler.compile(qp_draw_with_timeout_no_loop)
+        pio.renderers.default = "json"
+        data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, time_window=10)
+        np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
 
     def test_qp_draw_with_acquire(self, qp_draw_with_acquire: QProgram):
