@@ -65,6 +65,22 @@ class TestMeasurement:
         assert result.run_length == fixed_now - measurement.start_time
         assert mock_session.commit.called_once()
 
+    @patch("qililab.result.database.datetime")
+    def test_end_experiment_raises_exception(self, mock_datetime, measurement):
+        fixed_now = datetime.datetime(2023, 1, 1, 14, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = measurement
+        mock_session.commit.side_effect = Exception("Measurement error")
+
+        with pytest.raises(Exception, match="Measurement error"):
+            result = measurement.end_experiment(lambda: mock_session_context)
+
+        assert mock_session.rollback.called_once
+
     @patch("qililab.result.database.ExperimentResults")
     def test_read_experiment(self, mock_experiment_results, measurement):
         mock_instance = MagicMock()
@@ -138,16 +154,27 @@ class TestMeasurement:
 class Testdatabase:
     """Test database class"""
 
-    def test_set_sample_and_cooldown_valid_sample_only(self, db_manager: DatabaseManager):
+    def test_set_sample_and_cooldown(self, db_manager: DatabaseManager):
         mock_session = db_manager.Session()
         mock_session.query.return_value.scalar.return_value = True
-        db_manager.set_sample_and_cooldown("sample1")
+        db_manager.set_sample_and_cooldown("sample1", "CD1")
         assert db_manager.current_sample == "sample1"
+        assert db_manager.current_cd == "CD1"
 
     def test_set_sample_and_cooldown_invalid_sample(self, db_manager: DatabaseManager):
+        # Sample does not exist
         db_manager._mock_session.query.return_value.scalar.return_value = False
         with pytest.raises(Exception, match="Sample entry 'sample1' does not exist. Add it with add_sample()"):
             db_manager.set_sample_and_cooldown("sample1")
+
+    def test_set_sample_and_cooldown_invalid_cooldown(self, db_manager: DatabaseManager):
+        # Sample exists
+        db_manager._mock_session.query.return_value.scalar.return_value = True
+        # Cooldown does not exist
+        db_manager._mock_session.query.return_value.filter.return_value.one_or_none.return_value = None
+
+        with pytest.raises(Exception, match="CD entry 'CD1' does not exist. Add it with add_cooldown()"):
+            db_manager.set_sample_and_cooldown("sample1", "CD1")
 
     def test_add_cooldown(self, db_manager: DatabaseManager):
         cooldown_data = {
@@ -160,6 +187,24 @@ class Testdatabase:
 
         assert db_manager._mock_session.add.called
         assert db_manager._mock_session.commit.called
+
+    def test_add_cooldown_raises_exception(self, db_manager: DatabaseManager):
+        cooldown_data = {
+            "cooldown": "c1",
+            "date": datetime.date.today(),
+            "fridge": "f1",
+        }
+
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_session
+        mock_session.commit.side_effect = Exception("DB error")
+
+        db_manager.Session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(Exception, match="DB error"):
+            db_manager.add_cooldown(**cooldown_data)
+
+        assert mock_session.rollback.called_once
 
     def test_add_sample(self, db_manager: DatabaseManager):
         sample_data = {
@@ -177,6 +222,29 @@ class Testdatabase:
 
         assert db_manager._mock_session.add.called
         assert db_manager._mock_session.commit.called
+
+    def test_add_sample_raises_exception(self, db_manager: DatabaseManager):
+        sample_data = {
+            "sample_name": "s1",
+            "manufacturer": "mfg",
+            "wafer": "w1",
+            "sample": "sam1",
+            "fab_run": "run42",
+            "device_design": "designX",
+            "n_qubits_per_device": [5, 5],
+            "additional_info": "test info",
+        }
+
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_session
+        mock_session.commit.side_effect = Exception("DB error")
+
+        db_manager.Session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(Exception, match="DB error"):
+            db_manager.add_sample(**sample_data)
+
+        assert mock_session.rollback.called_once
 
     def test_load_by_id(self, db_manager: DatabaseManager):
         db_manager.load_by_id(123)
@@ -196,7 +264,7 @@ class Testdatabase:
         mock_session.query.return_value = query_mock
 
         # Call the method
-        result = db_manager.tail()
+        result = db_manager.tail(exp_name="test")
 
         # Assertions
         mock_session.query.assert_called_with(Measurement)
@@ -233,7 +301,7 @@ class Testdatabase:
         mock_session.query.return_value = query_mock
 
         # Call the method
-        result = db_manager.head()
+        result = db_manager.head(exp_name="test")
 
         # Assertions
         mock_session.query.assert_called_with(Measurement)
@@ -277,11 +345,39 @@ class Testdatabase:
         assert db_manager._mock_session.commit.called_once
         assert mock_makedirs.called_once_with("/home/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00")
 
+    def test_add_measurement_raises_exception_no_sample(self, db_manager: DatabaseManager):
+        # Set current_sample to None to simulate no sample set
+        db_manager.current_sample = None
+
+        with pytest.raises(Exception, match="Please set at least a sample using set_sample_and_cooldown(...)"):
+            db_manager.add_measurement(experiment_name="exp1", experiment_completed=True)
+
+    @patch("qililab.result.database.os.makedirs")
+    @patch("qililab.result.database.datetime")
+    def test_add_measurement_raises_exception(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
+        db_manager.current_sample = "sampleA"
+        db_manager.current_cd = "cdX"
+
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_session
+        mock_session.commit.side_effect = Exception("DB error")
+
+        db_manager.Session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(Exception, match="DB error"):
+            _ = db_manager.add_measurement("exp1", experiment_completed=True)
+
+        assert mock_session.rollback.called_once
+
     @patch("qililab.result.database.h5py.File")
     @patch("qililab.result.database.os.makedirs")
     @patch("qililab.result.database.os.path.isdir")
     @patch("qililab.result.database.datetime")
-    def test_add_results(self, mock_datetime, mock_isdir, mock_makedirs, mock_h5py_file, db_manager):
+    def test_add_results(self, mock_datetime, mock_isdir, mock_makedirs, mock_h5py_file, db_manager: DatabaseManager):
         db_manager.current_sample = "sampleA"
         db_manager.current_cd = "cdX"
 
@@ -312,6 +408,55 @@ class Testdatabase:
         db_manager._mock_session.add.called_once()
         db_manager._mock_session.commit.called_once()
         mock_makedirs.called_once()  # make sure directory was attempted to be created
+
+    def test_add_results_raises_exception_no_sample(self, db_manager: DatabaseManager):
+        # Set current_sample to None to simulate no sample set
+        db_manager.current_sample = None
+
+        results = np.array([[1, 2], [3, 4]])
+        loops = {"x": np.array([0, 1])}
+
+        with pytest.raises(Exception, match="Please set at least a sample using set_sample_and_cooldown(...)"):
+            db_manager.add_results(experiment_name="exp1", results=results, loops=loops)
+
+    @patch("qililab.result.database.h5py.File")
+    @patch("qililab.result.database.os.makedirs")
+    @patch("qililab.result.database.os.path.isdir")
+    @patch("qililab.result.database.datetime")
+    def test_add_results_raises_exception(
+        self, mock_datetime, mock_isdir, mock_makedirs, mock_h5py_file, db_manager: DatabaseManager
+    ):
+        db_manager.current_sample = "sampleA"
+        db_manager.current_cd = "cdX"
+
+        # Simulate the directory does not exist
+        mock_isdir.return_value = False
+
+        # Simulate fixed time
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        mock_datetime.datetime.strftime = datetime.datetime.strftime
+
+        # Setup HDF5 mock
+        file_mock = MagicMock()
+        group_mock = MagicMock()
+        file_mock.create_group.return_value = group_mock
+        mock_h5py_file.return_value = file_mock
+
+        # Simulated data
+        results = np.array([[1, 2], [3, 4]])
+        loops = {"x": np.array([0, 1])}
+
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_session
+        mock_session.commit.side_effect = Exception("DB error")
+
+        db_manager.Session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(Exception, match="DB error"):
+            db_manager.add_results("exp1", results, loops)
+
+        assert mock_session.rollback.called_once
 
 
 @patch("qililab.result.database.ConfigParser")
