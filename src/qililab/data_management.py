@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-from datetime import datetime
 from pathlib import Path
 
 import h5py
@@ -22,6 +21,7 @@ from ruamel.yaml import YAML
 
 from .platform import Platform
 from .settings import Runcard
+from .utils import timestamp_system as tsys
 
 
 def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: str, name: str | None = None) -> str:
@@ -69,17 +69,20 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
         Imagine we call the cell above on August 22nd of 2023, at 15:14:12. The file will then be saved
         to: ``data/20230822/151412_rabi/results.h5``.
     """
-    now = datetime.now()
+    timestamp = tsys.get_timestamp()
+    timestamp = timestamp.split('_')
+    date_str = timestamp[0]
+    time_str = timestamp[1]
 
     # Generate path to the daily folder
-    daily_path = Path(data_path) / f"{now.year}{now.month:02d}{now.day:02d}"
+    daily_path = Path(data_path) / date_str
 
     # Check if folder exists, if not create one
     if not os.path.exists(daily_path):
         os.makedirs(daily_path)
 
     # Generate path to the results folder
-    now_path = str(daily_path / f"{now.hour:02d}{now.minute:02d}{now.second:02d}")
+    now_path = str(daily_path / time_str)
 
     if name is not None:
         now_path = f"{now_path}_{name}"
