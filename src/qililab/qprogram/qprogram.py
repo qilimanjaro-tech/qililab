@@ -21,6 +21,7 @@ from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
+    LatchReset,
     Measure,
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
@@ -28,6 +29,7 @@ from qililab.qprogram.operations import (
     Play,
     PlayWithCalibratedWaveform,
     ResetPhase,
+    SetConditional,
     SetFrequency,
     SetGain,
     SetMarkers,
@@ -429,6 +431,22 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
         """
         operation = ResetPhase(bus=bus)
+        self._active_block.append(operation)
+        self._buses.add(bus)
+
+    @requires_domain("duration", Domain.Time)
+    def latch_rst(self, bus: str, duration: int):
+        #TODO: add docstring
+        #TODO: move to the qblox interface
+        operation = LatchReset(bus=bus, duration=duration)
+        self._active_block.append(operation)
+        self._buses.add(bus)
+
+    @requires_domain("duration", Domain.Time)
+    def set_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
+        #TODO: add docstring
+        #TODO: move to the qblox interface
+        operation = SetConditional(bus=bus, enable=enable, mask=mask, operator=operator, else_duration=else_duration)
         self._active_block.append(operation)
         self._buses.add(bus)
 

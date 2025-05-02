@@ -29,10 +29,12 @@ from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop,
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
+    LatchReset,
     Measure,
     Operation,
     Play,
     ResetPhase,
+    SetConditional,
     SetFrequency,
     SetGain,
     SetMarkers,
@@ -141,6 +143,7 @@ class QbloxCompiler:
             Parallel: self._handle_parallel,
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
+            LatchReset: self._handle_latch_rst,
             Loop: self._handle_loop,
             SetFrequency: self._handle_set_frequency,
             SetPhase: self._handle_set_phase,
@@ -154,6 +157,7 @@ class QbloxCompiler:
             Acquire: self._handle_acquire,
             Play: self._handle_play,
             Block: self._handle_block,
+            SetConditional: self._handle_conditional,
         }
 
         self._qprogram: QProgram
@@ -201,8 +205,8 @@ class QbloxCompiler:
                 #     self._handle_sync(element=Sync(buses=None), delay=True)
                 #     self._handle_active_reset(element)
                 handler = self._handlers.get(type(element))
-                if isinstance(element, Measure) and element.active_reset:
-                    self._handle_sync(element=Sync(buses=None), delay=True)
+                # if isinstance(element, Measure) and element.active_reset:
+                #     self._handle_sync(element=Sync(buses=None), delay=True)
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
                 appended = handler(element)
@@ -246,6 +250,7 @@ class QbloxCompiler:
             mask = markers[bus] if markers is not None and bus in markers else "0000"
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
+            self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1,4))
             self._buses[bus].static_duration += 4
 
         # Pre-processing: Flag control_modules involved in the active reset
@@ -264,39 +269,55 @@ class QbloxCompiler:
             self._buses[bus].static_duration += 4
             self._buses[bus].qpy_sequence._program.compile()
 
-            if bus == "drive":
-                self._buses[bus].qpy_sequence._program = """
-                        set_latch_en 1, 4
-                        wait_sync 4       #Wait for sequencers to synchronize
-                        upd_param 1000
-                        move 100, R0
-                        nop
-                    loop_0:
-                        latch_rst 1400 #tof + length of the wf, pi_duration in my nb, 200+40, actually no putting it as the duration of the readout (1200)
-                        wait 300 #left it because qblox had it but not sure, could be a trigger network wait the inout or the 200ns smthg
-                        set_cond 1, 1, 0, 700 # Enable conditional commands
-                        play 6, 7, 700 ## play the pi pulse ------------------------------------change wf nb
-                        set_cond 0, 1, 0, 700 # Disable conditional commands again
+#             if bus == "drive_q13_bus":
+#                 self._buses[bus].qpy_sequence._program = """
+# main:
+# set_latch_en 1, 4
+# wait_sync 4       #Wait for sequencers to synchronize
+# upd_param 1000
+# move 100, R0
+# nop
+# loop_0:
+# latch_rst 1400 #tof + length of the wf, pi_duration in my nb, 200+40, actually no putting it as the duration of the readout (1200)
+# wait 300 #left it because qblox had it but not sure, could be a trigger network wait the inout or the 200ns smthg
+# set_cond 1, 1, 0, 700 # Enable conditional commands
+# play 6, 7, 700 ## play the pi pulse ------------------------------------change wf nb
+# set_cond 0, 1, 0, 700 # Disable conditional commands again
 
-                        loop R0, @loop_0
-                        stop
-                """
+# loop R0, @loop_0
+# stop
+#                 """
 
-            if bus == "readout":
-                self._buses[bus].qpy_sequence._program ="""
-                        wait_sync 4       #Wait for sequencers to synchronize
-                        upd_param 1000
-                        move 100, R0
-                        nop
-                    loop_0:
-                        play 2,3,1200 #play readout pulse which results are sent on the trigger network
-                        acquire 0, R0, 1200 #1200 is my readout duration
-                        wait 700
+#             if bus == "readout_q13_bus":
+#                 self._buses[bus].qpy_sequence._program ="""setup:
+#                 wait_sync        4              
+#                 set_mrk          0              
+#                 upd_param        4              
 
-                        loop R0, @loop_0
-                        stop              #Stop program
-                """
+# main:
+#                 move 100, R0
+#                 nop           
+# loop_0:
+#                 play 2,3,1200
+#                 acquire 0, R0, 1200
+#                 wait 700
+#                 loop R0, @loop_0                                      
+#                 stop"""             
+#                 # #                 self._buses[bus].qpy_sequence._program ="""
+                # # main:
+                # # wait_sync 4       #Wait for sequencers to synchronize
+                # # upd_param 1000
+                # # move 100, R0
+                # # nop
+                # # loop_0:
+                # # play 2,3,1200 #play readout pulse which results are sent on the trigger network
+                # # acquire 0, R0, 1200 #1200 is my readout duration
+                # # wait 700
 
+                # # loop R0, @loop_0
+                # # stop              #Stop program
+                # #                 """
+        
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
         sequences = {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
         acquisitions = {bus: bus_info.acquisitions for bus, bus_info in self._buses.items()}
@@ -458,6 +479,13 @@ class QbloxCompiler:
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
 
+    def _handle_latch_rst(self, element: LatchReset):
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.LatchRst(wait_time=element.duration)
+        )
+        self._buses[element.bus].marked_for_sync = True
+        self._buses[element.bus].static_duration += element.duration
+
     def _handle_set_gain(self, element: SetGain):
         convert = QbloxCompiler._convert_value(element)
         gain = (
@@ -613,10 +641,6 @@ class QbloxCompiler:
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
         self._handle_play(play)
         self._handle_acquire(acquire)
-        self._handle_add_waits("drive_q13_bus",1600)
-        self._handle_add_waits("readout_q13_bus",1600)
-        if element.active_reset:
-            self._handle_active_reset(element)
 
     def _handle_acquire(self, element: Acquire):
         # TODO: unify with measure when time of flight is implemented
@@ -684,50 +708,22 @@ class QbloxCompiler:
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
 
-    def _handle_active_reset(self, element: Measure):
+    def _handle_conditional(self, element: SetConditional):
         #TODO: add docstring
-        readout_bus, control_bus = self._qprogram.active_reset[0]
-        control_bus = "drive_q13_bus"
-        print("in the loop")
-        mask = 2**(12-1) #get it from the runcard
-        # #Handles the readout bus
-        # self._buses[readout_bus].qpy_block_stack[-1].append_component(
-        #         component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
-        #     )
-        # active reset    need to add a wait to synch here in QProgram
-        #         play reaodut waveform    #added for active reset, do i need this play or can i just acquire straight away
-        #         wait for readout to return? not sure how to implement it, maybe a synch could do?
-        #         acquire #could be a different acquire type than the one already used in qprogram, need to have more of a look at the documentation
-        
-        #Handles the control bus
-        # self._buses[control_bus].qpy_block_stack[-1].append_component(
-        #         component=QPyInstructions.SetLatchEn(1,4) #4 SHOULDNT BE HARDCODED
-        #     )
-        self._buses["drive_q13_bus"].qpy_block_stack[-1].append_component(
-        component=QPyInstructions.SetLatchEn(1,4) #4 SHOULDNT BE HARDCODED
-        )
+        #TODO: mask should be assigned by the software
+        #TODO: this method shouldnt be accessed by the user, they should just do qp.measure and have the conditional called there
+        enable = element.enable
+        mask = element.mask
+        operator = element.operator
+        else_duration= element.else_duration
+        # mask = 2**(12-1) #get it from the runcard? - will need to be
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.SetCond(enable,mask,operator,else_duration)
+                )
 
-        self._buses[control_bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.LatchRst(4)
-            )
-        
-        self._buses[control_bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.SetCond(1,mask,0,4) #2048 is the bit mask, SHOULDNT BE HARDCODED
-            )
-        #play the pi pulse
-        time_of_flight = self._buses[element.bus].time_of_flight
-        print("pi",element.pi_pulse)
-        play = Play(bus=control_bus, waveform=element.pi_pulse, wait_time=time_of_flight)
-        self._handle_play(play)
-        self._handle_add_waits(control_bus,1800)
+        # self._buses[element.bus].static_duration += duration
+        self._buses[element.bus].marked_for_sync = True
 
-        self._buses[control_bus].qpy_block_stack[-1].append_component(
-        component=QPyInstructions.SetCond(0,mask,0,1800) #2048 is the bit mask, SHOULDNT BE HARDCODED
-        )
-
-        # self._handle_sync()
-        self._buses[readout_bus].marked_for_sync = True
-        self._buses[control_bus].marked_for_sync = True
         
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()
