@@ -20,6 +20,7 @@ from .qblox_draw import QbloxDraw
 from .qblox_module import QbloxModule
 from .qblox_qcm import QbloxQCM
 from .qblox_qcm_rf import QbloxQCMRF
+from .qblox_qrc import QbloxQRC
 from .qblox_qrm import QbloxQRM
 from .qblox_qrm_rf import QbloxQRMRF
 from .qblox_s4g import QbloxS4g
@@ -32,6 +33,7 @@ __all__ = [
     "QbloxModule",
     "QbloxQCM",
     "QbloxQCMRF",
+    "QbloxQRC",
     "QbloxQRM",
     "QbloxQRMRF",
     "QbloxS4g",

@@ -154,6 +154,7 @@ class InstrumentName(str, Enum):
     Args:
         enum (str): Available instrument element names:
         * QCM -> Exactly as Qblox InstrumentType
+        * QRC -> Exactly as Qblox InstrymentType
         * QRM -> Exactly as Qblox InstrumentType
         * rohde_schwarz
         * mini_circuits
@@ -167,6 +168,7 @@ class InstrumentName(str, Enum):
     """
 
     QBLOX_QCM = "QCM"
+    QBLOX_QRC = "QRC"
     QBLOX_QRM = "QRM"
     QRMRF = "QRM-RF"
     ROHDE_SCHWARZ = "rohde_schwarz"
@@ -231,7 +233,6 @@ class InstrumentControllerName(str, Enum):
 
     Args:
         enum (str): Available instrument controller element names:
-        * qblox_pulsar
         * qblox_cluster
         * rohde_schwarz
         * mini_circuits
@@ -408,6 +409,7 @@ class InstrumentTypeName(str, Enum):
     Args:
         enum (str): Available instrument type element names:
         * QbloxQCM
+        * QbloxQRC
         * QbloxQRM
         * SGS100A
         * Attenuator
@@ -419,6 +421,7 @@ class InstrumentTypeName(str, Enum):
     """
 
     QBLOX_QCM = "QbloxQCM"
+    QBLOX_QRC = "QbloxQRC"
     QBLOX_QRM = "QbloxQRM"
     ROHDE_SCHWARZ = "SGS100A"
     MINI_CIRCUITS = "Attenuator"

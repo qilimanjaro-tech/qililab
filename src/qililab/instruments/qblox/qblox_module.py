@@ -33,7 +33,7 @@ class QbloxModule(Instrument):
 
     Args:
         device (QcmQrm): Instance of the Qblox QcmQrm class used to connect to the instrument.
-        settings (QbloxPulsarSettings): Settings of the instrument.
+        settings (QbloxModuleSettings): Settings of the instrument.
     """
 
     _MAX_BINS: int = 131072

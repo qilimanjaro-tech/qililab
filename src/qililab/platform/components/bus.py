@@ -21,7 +21,7 @@ from qpysequence import Sequence as QpySequence
 
 from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, Instruments, ParameterNotFound
-from qililab.instruments.qblox import QbloxQCM, QbloxQRM
+from qililab.instruments.qblox import QbloxQCM, QbloxQRC, QbloxQRM
 from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
@@ -201,14 +201,14 @@ class Bus:
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
         for instrument, instrument_channel in zip(self.instruments, self.channels):
-            if isinstance(instrument, (QbloxQCM, QbloxQRM)):
+            if isinstance(instrument, (QbloxQCM, QbloxQRC, QbloxQRM)):
                 instrument.upload(channel_id=instrument_channel)
                 return
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
         for instrument, instrument_channel in zip(self.instruments, self.channels):
-            if isinstance(instrument, (QbloxQCM, QbloxQRM)):
+            if isinstance(instrument, (QbloxQCM, QbloxQRC, QbloxQRM)):
                 instrument.run(channel_id=instrument_channel)  # type: ignore
                 return
 
@@ -221,7 +221,7 @@ class Bus:
         # TODO: Support acquisition from multiple instruments
         results: list[Result] = []
         for instrument in self.instruments:
-            if isinstance(instrument, QbloxQRM):
+            if isinstance(instrument, QbloxQRC | QbloxQRM):
                 result = instrument.acquire_result()
                 if result is not None:
                     results.append(result)
@@ -248,7 +248,7 @@ class Bus:
         # TODO: Support acquisition from multiple instruments
         total_results: list[list[MeasurementResult]] = []
         for instrument in self.instruments:
-            if isinstance(instrument, QbloxQRM):
+            if isinstance(instrument, QbloxQRC | QbloxQRM):
                 instrument_results = instrument.acquire_qprogram_results(
                     acquisitions=acquisitions, channel_id=channel_id
                 )

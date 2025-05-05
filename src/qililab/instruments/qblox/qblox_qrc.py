@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Qblox QRM class"""
+"""Qblox QRC class"""
 
 from dataclasses import dataclass
 from typing import Sequence, cast
@@ -29,21 +29,54 @@ from qililab.typings import AcquireTriggerMode, ChannelID, InstrumentName, Integ
 
 
 @InstrumentFactory.register
-class QbloxQRM(QbloxModule):
-    """Qblox QRM class.
+class QbloxQRC(QbloxModule):
+    """Qblox QRC class.
 
     Args:
-        settings (QBloxQRMSettings): Settings of the instrument.
+        settings (QBloxQRCSettings): Settings of the instrument.
     """
 
-    name = InstrumentName.QBLOX_QRM
+    name = InstrumentName.QBLOX_QRC
     _scoping_sequencer: int | None = None
 
     @dataclass
-    class QbloxQRMSettings(QbloxModule.QbloxModuleSettings):
-        """Contains the settings of a specific QRM."""
+    class QbloxQRCSettings(QbloxModule.QbloxModuleSettings):
+        """Contains the settings of a specific QRC."""
 
         awg_sequencers: Sequence[QbloxADCSequencer]
+        
+        out_ch_comb_en: int
+        out_dsa_1: int
+        out_mix_dds: int
+        out_mix_x2: int
+        out_nyq_sel: int
+        out_out_sel: int
+        out_nyquist_filter: str
+        out_mixer_filter_bank: str
+        in_amp_iso_fw: int
+        in_ch_splt_en: int
+        in_dsa_1: int
+        in_dsa_2: int
+        in_mix_dds: int
+        in_mix_x2: int
+        in_nyq_sel: int
+        in_nyquist_filter: str
+        out_lo_frequency: float
+        out_lo_power: int
+        out_att: float
+        in_att1: float
+        in_att2: int
+        max_out_att: int
+        out_freq: int
+        output_mode: str
+        input_mode: str
+        mixer_settings_freq_dac: int
+        mixer_settings_coarse_delay_dac: int
+        rfdc_nyquist_zone: int
+        inv_sync_filter: int
+        dac_current: int
+        decoder_mode: int
+
 
         def __post_init__(self):
             """build AWGQbloxADCSequencer"""
@@ -58,7 +91,7 @@ class QbloxQRM(QbloxModule):
             ]
             super().__post_init__()
 
-    settings: QbloxQRMSettings
+    settings: QbloxQRCSettings
 
     def is_awg(self) -> bool:
         """Returns True if instrument is an AWG."""

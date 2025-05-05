@@ -20,6 +20,7 @@ from typing import Sequence
 from qililab.instrument_controllers.instrument_controller import InstrumentController, InstrumentControllerSettings
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.qblox.qblox_qcm import QbloxQCM
+from qililab.instruments.qblox.qblox_qrc import QbloxQRC
 from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.typings.enums import (
     ConnectionName,
@@ -44,7 +45,7 @@ class QbloxClusterController(InstrumentController):
     name = InstrumentControllerName.QBLOX_CLUSTER
     number_available_modules = 20
     device: Cluster
-    modules: Sequence[QbloxQCM | QbloxQRM]
+    modules: Sequence[QbloxQCM | QbloxQRM | QbloxQRC]
 
     @dataclass
     class QbloxClusterControllerSettings(InstrumentControllerSettings):

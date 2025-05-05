@@ -33,7 +33,7 @@ class QbloxQCM(QbloxModule):
 
     @dataclass
     class QbloxQCMSettings(QbloxModule.QbloxModuleSettings):
-        """Contains the settings of a specific pulsar."""
+        """Contains the settings of a specific QCM."""
 
     settings: QbloxQCMSettings
 
