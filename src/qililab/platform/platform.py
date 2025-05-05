@@ -930,7 +930,7 @@ class Platform:
         )
         return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
-    def execute_experiment(self, experiment: Experiment, calibration: Calibration | None = None) -> str:
+    def execute_experiment(self, experiment: Experiment, base_path: str | None = None) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
@@ -963,7 +963,7 @@ class Platform:
             - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment)
+        executor = ExperimentExecutor(platform=self, experiment=experiment, base_path=base_path)
         return executor.execute()
 
     def compile_qprogram(
@@ -1630,7 +1630,6 @@ class Platform:
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
-
         shape = results.shape
 
         if len(loops) != len(shape) - 1:

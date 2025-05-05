@@ -105,7 +105,7 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment):
+    def __init__(self, platform: "Platform", experiment: Experiment, base_path: str | None = None):
         self.platform = platform
         self.experiment = experiment
 
@@ -142,6 +142,9 @@ class ExperimentExecutor:
 
         # ExperimentResultsWriter object responsible for saving experiment results to file in real-time.
         self._results_writer: ExperimentResultsWriter
+
+        # Base path string for the place where to save the experiment folder structure. Default None (temporal path).
+        self.base_path: str | None = base_path
 
     def _prepare_metadata(self, executed_at: datetime):
         """Prepares the loop values and result shape before execution."""
@@ -510,7 +513,11 @@ class ExperimentExecutor:
 
     def _create_results_path(self, executed_at: datetime):
         # Get base path and path format from platform
-        base_path = self.platform.experiment_results_base_path
+
+        if self.base_path:
+            base_path = self.base_path
+        else:
+            base_path = self.platform.experiment_results_base_path
         path_format = self.platform.experiment_results_path_format
 
         # Format date and time for directory names

@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+import warnings
 from typing import TYPE_CHECKING, Any
 
 import h5py
@@ -94,9 +96,13 @@ class StreamArray:
     """
 
     path: str
+    local_path: str
+    local_result_path: str
     _dataset: h5py.Dataset
+    _local_dataset: h5py.Dataset
     measurement: Measurement | None = None
     _file: h5py.File | None = None
+    _local_file: h5py.File | None = None
 
     def __init__(
         self,
@@ -105,10 +111,11 @@ class StreamArray:
         platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
+        base_path: str,
+        local_base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
-
         self.results = np.zeros(shape=shape)
         self.loops = loops
         self.experiment_name = experiment_name
@@ -116,17 +123,26 @@ class StreamArray:
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
+        self.base_path = base_path
+        self.local_base_path = local_base_path
 
     def __enter__(self):
-
         self.measurement = self.db_manager.add_measurement(
             experiment_name=self.experiment_name,
             experiment_completed=False,
+            base_path=self.base_path,
             optional_identifier=self.optional_identifier,
             platform=self.platform.to_dict(),
             qprogram=serialize(self.qprogram),
         )
         self.path = self.measurement.result_path
+        self.local_path = f"{self.local_base_path}/{self.db_manager.relative_dir_path}"
+        self.local_result_path = f"{self.local_base_path}/{self.db_manager.relative_result_path}"
+
+        # Create folder for local data
+        if not os.path.isdir(self.local_path):
+            os.makedirs(self.local_path)
+            warnings.warn(f"Data folder did not exist. Created one at {self.local_path}")
 
         # Save loops
         self._file = h5py.File(name=self.path, mode="w")
@@ -136,6 +152,15 @@ class StreamArray:
             g.create_dataset(name=loop_name, data=array)
 
         self._dataset = self._file.create_dataset("results", data=self.results)
+
+        # Save loops inside a local database
+        self._local_file = h5py.File(name=self.local_result_path, mode="w")
+
+        g = self._local_file.create_group(name="loops")
+        for loop_name, array in self.loops.items():
+            g.create_dataset(name=loop_name, data=array)
+
+        self._local_dataset = self._local_file.create_dataset("results", data=self.results)
 
         return self
 
@@ -148,13 +173,20 @@ class StreamArray:
         """
         if self._file is not None and self._dataset is not None:
             self._dataset[key] = value
+        if self._local_file is not None and self._dataset is not None:
+            self._local_dataset[key] = value
         self.results[key] = value
 
     def __exit__(self, *args):
         """Exits the context manager."""
         if self._file is not None:
+            self._dataset = self.results
             self._file.__exit__()
             self._file = None
+
+        if self._local_file is not None:
+            self._local_file.__exit__()
+            self._local_file = None
 
         self.measurement = self.measurement.end_experiment(self.db_manager.Session)
 
