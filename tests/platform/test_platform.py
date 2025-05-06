@@ -798,10 +798,10 @@ class TestMethods:
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
-            results_path = platform.execute_experiment(experiment=mock_experiment)
+            results_path = platform.execute_experiment(experiment=mock_experiment, base_path="base_path")
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
-            MockExecutor.assert_called_once_with(platform=platform, experiment=mock_experiment)
+            MockExecutor.assert_called_once_with(platform=platform, experiment=mock_experiment, base_path="base_path")
 
             # Ensure the execute method was called on the ExperimentExecutor instance
             mock_executor_instance.execute.assert_called_once()

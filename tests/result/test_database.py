@@ -360,21 +360,21 @@ class Testdatabase:
         mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
 
         # Act
-        measurement = db_manager.add_measurement("exp1", base_path="base_path", experiment_completed=True)
+        measurement = db_manager.add_measurement("exp1", base_path="/base_path", experiment_completed=True)
 
         # Assert
-        expected_path = "/home/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+        expected_path = "/base_path/data/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
         assert measurement.result_path == expected_path
         assert db_manager._mock_session.add.called_once
         assert db_manager._mock_session.commit.called_once
-        assert mock_makedirs.called_once_with("/home/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00")
+        assert mock_makedirs.called_once_with("/base_path/data/sampleA/cdX/2023-01-01/12_00_00")
 
     def test_add_measurement_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set
         db_manager.current_sample = None
 
         with pytest.raises(Exception, match="Please set at least a sample using set_sample_and_cooldown(...)"):
-            db_manager.add_measurement(experiment_name="exp1", experiment_completed=True)
+            db_manager.add_measurement(experiment_name="exp1", experiment_completed=True, base_path="/base_path")
 
     @patch("qililab.result.database.os.makedirs")
     @patch("qililab.result.database.datetime")
@@ -393,7 +393,7 @@ class Testdatabase:
         db_manager.Session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
-            _ = db_manager.add_measurement("exp1", experiment_completed=True)
+            _ = db_manager.add_measurement("exp1", experiment_completed=True, base_path="/base_path")
 
         assert mock_session.rollback.called_once
 
