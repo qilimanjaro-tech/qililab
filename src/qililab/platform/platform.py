@@ -1602,15 +1602,51 @@ class Platform:
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
-        """
-        Allows for real time saving of results from an experiment.
+        """Allows for real time saving of results from an experiment.
 
         This class wraps a numpy array and adds a context manager to save results and database metadata on real time
         while they are acquired by the instruments.
 
+        Example usage of this function:
+
+        ```
+        db_manager = ql.get_db_manager()
+        db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
+
+        platform = ql.build_platform(runcard=runcard)
+        platform.connect()
+        platform.initial_setup()
+        platform.turn_on_instruments()
+
+        ... (defining the experiment)
+
+        stream_array = platform.stream_array(
+            shape=(len(if_sweep), 2),
+            loops={"frequency": if_sweep},
+            platform=platform,
+            experiment_name="resonator_spectroscopy_cw",
+            db_manager=db_manager,
+            base_path="/base_path",
+            qprogram=qprogram,
+            optional_identifier="optional text"
+        )
+
+        with stream_array:
+            results = platform.execute_qprogram(qprogram).results
+            stream_array[()] = results[readout_bus][0].array.T
+        ```
+
         Args:
             shape (tuple): results array shape.
-            loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
+            loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
+            experiment_name (str): Name of the experiment.
+            db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
+            base_path (str): base path for the results data folder structure.
+            qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
+            optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
+
+        Returns:
+            StreamArray: StreamArray class to process and save the data
         """
         return StreamArray(
             shape=shape,
@@ -1631,7 +1667,17 @@ class Platform:
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
+        """Uses the same StreamArray class as for live saving but it saves full chunks of data in the same format as platform.stream_array.
 
+        Args:
+            experiment_name (str): Name of the experiment.
+            results (np.ndarray): Experiment data.
+            loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
+            db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
+            base_path (str): base path for the results data folder structure.
+            qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
+            optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
+        """
         shape = results.shape
 
         if len(loops) != len(shape) - 1:
