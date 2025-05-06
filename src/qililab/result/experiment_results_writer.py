@@ -19,6 +19,7 @@ import h5py
 import numpy as np
 
 from qililab.result.experiment_results import ExperimentResults
+from qililab.utils.serialization import serialize
 
 
 class VariableMetadata(TypedDict):
@@ -184,6 +185,13 @@ class ExperimentResultsWriter(ExperimentResults):
         self._file = h5py.File(self.path, mode="w")
         self._create_results_file()
         self._create_resuts_access()
+        self.measurement = self.db_manager.add_measurement(
+            experiment_name=self.experiment_name,
+            experiment_completed=False,
+            optional_identifier=self.optional_identifier,
+            platform=self.platform.to_dict(),
+            qprogram=serialize(self._metadata["qprograms"]),
+        )
 
         return self
 
@@ -200,6 +208,7 @@ class ExperimentResultsWriter(ExperimentResults):
         if isinstance(measurement_name, int):
             measurement_name = f"Measurement_{measurement_name}"
         self.data[qprogram_name, measurement_name][tuple(indices)] = value
+        # save the data and metadata here and before
 
     @ExperimentResults.platform.setter
     def platform(self, platform: str):
