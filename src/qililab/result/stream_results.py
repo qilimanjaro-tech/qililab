@@ -149,39 +149,54 @@ class StreamArray:
 
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
     """Constructs a StreamArray instance.
+
     This methods serves as a constructor for user interface of the StreamArray class.
+
     Args:
         shape (tuple): results array shape.
         path (str): path to save results.
         loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
+
     Examples:
+
         You have the option to save your results in real-time using this feature.
         This ensures that in the event of a runtime failure, you can still access results up to the point of failure
         from a resulting file. You have to specify the desired shape of the results, the loops to include,
         and the path to the resulting file. Then you can start saving results in real-time by doing:
+
+
         .. code-block:: python
+
             import numpy as np
             import qililab as ql
+
             LOOP_VALUES = np.linspace(0, 1, 5)
             stream_array = ql.stream_results(shape=(5, 2), loops={"loop_name": LOOP_VALUES}, path="results.h5")
+
             with stream_array:
                 for i, value in enumerate(LOOP_VALUES):
                     stream_array[(i, 0)] = value
+
         >>> stream_array
         [[0.   0.  ]
          [0.25 0.  ]
          [0.5  0.  ]
          [0.75 0.  ]
          [1.   0.  ]]
+
         >>> ql.load_results("results.h5")
         (array([[0., 0.],
                [0.25, 0.],
                [0.5, 0.],
                [0.75, 0.],
                [1., 0.]]), {'loop_name': array([0.  , 0.25, 0.5 , 0.75, 1.  ])})
+
     .. note::
+
         The output of `stream_results` is not picklable, thus it cannot be returned in a SLURM job. In this scenario we suggest copying the array with the data into a different variable and returning that variable instead:
+
         .. code-block:: python
+
             %%submit_job -o results -d galadriel
             LOOP_VALUES = np.linspace(0, 1, 5)
             stream_array = ql.stream_results(shape=(5, 2), loops={"loop_name": LOOP_VALUES}, path="results.h5")
@@ -189,7 +204,9 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                 for i, value in enumerate(LOOP_VALUES):
                     # Here you can execute any algorithm you want
                     stream_array[(i, 0)] = value
+
             results = stream_array.results
+
         >>> results.result()
         (array([[0.   0.  ]
                 [0.25 0.  ]
