@@ -73,6 +73,20 @@ def fixture_qp_draw_with_time_window() -> QProgram:
         qp.measure(bus="readout_q13_bus", waveform =square_wf, weights= IQPair(I=weights_shape, Q=weights_shape))
     return qp
 
+@pytest.fixture(name="qp_draw_with_time_window_nested_loop")
+def fixture_qp_draw_with_time_window_nested_loop() -> QProgram:
+    qp = QProgram()
+    frequency = qp.variable(label="drive", domain=Domain.Frequency)
+    ampl = qp.variable("drive", domain=Domain.Voltage)
+    with qp.average(3):
+        with qp.for_loop(frequency, 0, 100e6, 100e6):
+            with qp.for_loop(ampl, 0, 1, 0.3):
+                qp.set_gain("drive",ampl)
+                qp.set_frequency("drive",frequency) #will do nothing for the plotting via the platform as HM is disabled
+                qp.play(bus="drive", waveform= Square(amplitude=1, duration=10))
+                qp.wait("drive",5)
+    return qp
+
 @pytest.fixture(name="qp_draw_with_timeout_no_loop")
 def fixture_qp_draw_with_timeout_no_loop() -> QProgram:
     qp = QProgram()
@@ -251,6 +265,72 @@ class TestQBloxDraw:
         data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, averages_displayed = True, time_window=40)
         np.testing.assert_allclose(data_draw["readout_q13_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["readout_q13_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+
+    def test_qp_draw_with_timeout_nested_loop(self, qp_draw_with_time_window_nested_loop: QProgram):
+        data_draw = qp_draw_with_time_window_nested_loop.draw()
+        expected_data_draw_i = [ 0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+          0.23569507,  0.23569507,  0.23569507,  0.23569507,  0.23569507,
+          0.23569507,  0.23569507,  0.23569507,  0.23569507,  0.23569507,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+          0.47139013,  0.47139013,  0.47139013,  0.47139013,  0.47139013,
+          0.47139013,  0.47139013,  0.47139013,  0.47139013,  0.47139013,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+          0.7070852 ,  0.7070852 ,  0.7070852 ,  0.7070852 ,  0.7070852 ,
+          0.7070852 ,  0.7070852 ,  0.7070852 ,  0.7070852 ,  0.7070852 ,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+         -0.23569507, -0.19068131, -0.07283378,  0.07283378,  0.19068131,
+          0.23569507,  0.19068131,  0.07283378, -0.07283378, -0.19068131,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+          0.47139013,  0.38136263,  0.14566756, -0.14566756, -0.38136263,
+         -0.47139013, -0.38136263, -0.14566756,  0.14566756,  0.38136263,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+         -0.7070852 , -0.57204394, -0.21850134,  0.21850134,  0.57204394,
+          0.7070852 ,  0.57204394,  0.21850134, -0.21850134, -0.57204394,
+          0.        ,  0.        ,  0.        ,  0.        ,  0.        ]
+
+        expected_data_draw_q = [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.27032190e-15,
+         -1.38538084e-01, -2.24159329e-01, -2.24159329e-01, -1.38538084e-01,
+         -4.61829135e-16,  1.38538084e-01,  2.24159329e-01,  2.24159329e-01,
+          1.38538084e-01,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00, -4.38854391e-15,  2.77076169e-01,
+          4.48318659e-01,  4.48318659e-01,  2.77076169e-01,  2.77155837e-15,
+         -2.77076169e-01, -4.48318659e-01, -4.48318659e-01, -2.77076169e-01,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  9.35466602e-15, -4.15614253e-01, -6.72477988e-01,
+         -6.72477988e-01, -4.15614253e-01, -6.92918772e-15,  4.15614253e-01,
+          6.72477988e-01,  6.72477988e-01,  4.15614253e-01,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00]
+
+        compiler = QbloxCompiler()
+        qblox_draw = QbloxDraw()
+        results = compiler.compile(qp_draw_with_time_window_nested_loop)
+        pio.renderers.default = "json"
+        data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, time_window=200)
+        np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout_no_loop(self, qp_draw_with_timeout_no_loop: QProgram):
         data_draw = qp_draw_with_timeout_no_loop.draw()
