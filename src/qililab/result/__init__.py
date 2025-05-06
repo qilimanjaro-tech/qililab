@@ -34,6 +34,7 @@ Functions
     ~load_results
     ~save_results
 """
+
 # isort: skip_file
 from .experiment_results import ExperimentResults
 from .result import Result
@@ -41,7 +42,7 @@ from .result_management import load_results, save_results
 
 # Moving database here to avoid circular imports
 from .database import Cooldown, DatabaseManager, Sample, get_db_manager, Measurement
-from .stream_results import StreamArray
+from .stream_results import StreamArray, stream_results
 
 __all__ = [
     "Cooldown",
@@ -54,4 +55,5 @@ __all__ = [
     "get_db_manager",
     "load_results",
     "save_results",
+    "stream_results",
 ]
