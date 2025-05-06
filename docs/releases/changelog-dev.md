@@ -7,6 +7,9 @@
 - An additional argument has been added, to Qblox Draw, time_window. It allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the exact number of ns inputted. For example, if the time_window is 100 ns but there is a play operation of 150 ns, the plots will display the data until 150 ns.
 [#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
 
+- Add base_path as an input for stream_array and an optional parameter for the experiment class, qililab cannot have the data path hardcoded.
+[#936](https://github.com/qilimanjaro-tech/qililab/pull/936)
+
 ### Breaking changes
 
 ### Deprecations / Removals
