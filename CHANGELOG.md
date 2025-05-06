@@ -13,10 +13,10 @@
 ### Bug fixes
 
 - For the Rohde & Schwarz SGS100A, a missing line in the driver prevented the settings from updating when set. This issue has been fixed.
-[#927](https://github.com/qilimanjaro-tech/qililab/pull/927)
+  [#927](https://github.com/qilimanjaro-tech/qililab/pull/927)
 
 - Qblox-instruments version updated to the right one.
-[#929](https://github.com/qilimanjaro-tech/qililab/pull/929)
+  [#929](https://github.com/qilimanjaro-tech/qililab/pull/929)
 
 ## 0.29.2 (2025-03-31)
 
@@ -389,7 +389,7 @@ platform.set_flux_to_zero()
   ### Using the transpiler directly:
   ### (If using the routing from this points of the stack, you can route with a different topology from the platform one)
   # Create transpiler:
-  transpiler = CircuitTranspiler(platform)
+  transpiler = CircuitTranspiler(platform.digital_compilation_settings)
   # Default Transpilation (ReverseTraversal, Sabre and Platform connectivity):
   routed_circ, qubits, final_layouts = transpiler.route_circuit(c)
   # With Non-Default Random placer, specifying the kwargs, for the router, and different coupling_map:
@@ -514,7 +514,8 @@ platform.set_flux_to_zero()
 ### Breaking changes
 
 - Renamed the platform's `execute_anneal_program()` method to `execute_annealing_program()` and updated its parameters. The method now expects `preparation_block` and `measurement_block`, which are strings used to retrieve blocks from the `Calibration`. These blocks are inserted before and after the annealing schedule, respectively.
-  [#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
+
+[#816](https://github.com/qilimanjaro-tech/qililab/pull/816)
 
 - **Major reorganization of the library structure and runcard functionality**. Key updates include:
 
@@ -786,7 +787,7 @@ platform.set_flux_to_zero()
 
   [#768](https://github.com/qilimanjaro-tech/qililab/pull/768)
 
-- Added loopbacks in the octave config file for qua following the documentation at <https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Guides/octave/?h=octaves#setting-the-octaves-clock>. By default only port 1 of the octave is linked with a local demodulator, to work with the rest of the ports at the back ports must be connected based on the Octave Block Diagram \[<https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Hardware/octave/#octave-block-diagram\>]. Where `Synth` is one of the possible 3 synths and `Dmd` is one of the 2 demodulators.
+- Added loopbacks in the octave config file for qua following the documentation at <https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Guides/octave/?h=octaves#setting-the-octaves-clock>. By default only port 1 of the octave is linked with a local demodulator, to work with the rest of the ports at the back ports must be connected based on the Octave Block Diagram \[<https://docs.quantum-machines.co/1.2.0/qm-qua-sdk/docs/Hardware/octave/#octave-block-diagram%5C>\]. Where `Synth` is one of the possible 3 synths and `Dmd` is one of the 2 demodulators.
 
   Example:
 

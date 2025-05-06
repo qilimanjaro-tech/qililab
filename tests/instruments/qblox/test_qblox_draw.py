@@ -5,7 +5,7 @@ import pytest
 import plotly.io as pio
 from tests.data import Galadriel, SauronQuantumMachines
 
-from qililab import Domain, QbloxCompiler, QProgram, Square
+from qililab import Domain, QbloxCompiler, QProgram, Square, IQPair
 from qililab.data_management import build_platform
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.platform import Platform
@@ -44,6 +44,42 @@ def fixture_qp_draw() -> QProgram:
     qp.set_frequency(bus="drive", frequency=frequency)
     return qp
 
+@pytest.fixture(name="qp_draw_with_acquire")
+def fixture_qp_draw_with_acquire() -> QProgram:
+    qp = QProgram()
+    square_wf = IQPair(
+        I=Square(amplitude=0.5, duration=5),
+        Q=Square(amplitude=0, duration=5),
+    )
+    weights_shape = Square(amplitude=1, duration=20)
+    bins = qp.variable(label="bins", domain=Domain.Scalar, type=int)
+    with qp.for_loop(variable=bins, start=1, stop=3):
+        qp.wait("readout_q13_bus",10)
+        qp.measure(bus="readout_q13_bus", waveform =square_wf, weights= IQPair(I=weights_shape, Q=weights_shape))
+    return qp
+
+
+@pytest.fixture(name="qp_draw_with_time_window")
+def fixture_qp_draw_with_time_window() -> QProgram:
+    qp = QProgram()
+    square_wf = IQPair(
+        I=Square(amplitude=0.5, duration=5),
+        Q=Square(amplitude=0, duration=5),
+    )
+    weights_shape = Square(amplitude=1, duration=20)
+    bins = qp.variable(label="bins", domain=Domain.Scalar, type=int)
+    with qp.for_loop(variable=bins, start=1, stop=3):
+        qp.wait("readout_q13_bus",10)
+        qp.measure(bus="readout_q13_bus", waveform =square_wf, weights= IQPair(I=weights_shape, Q=weights_shape))
+    return qp
+
+@pytest.fixture(name="qp_draw_with_timeout_no_loop")
+def fixture_qp_draw_with_timeout_no_loop() -> QProgram:
+    qp = QProgram()
+    qp.wait("drive",10)
+    qp.play("drive", Square(amplitude=1, duration=20))
+    qp.wait("drive",10)
+    return qp
 
 @pytest.fixture(name="qp_plat_draw_qcmrf_offset")
 def fixture_qp_plat_draw_qcmrf_offset() -> QProgram:
@@ -136,198 +172,128 @@ class TestQBloxDraw:
 
     def test_qp_draw(self, qp_draw: QProgram):
         data_draw = qp_draw.draw()
-        expected_data_draw_i = [
-            7.07106781e-01,
-            5.72061403e-01,
-            2.18508012e-01,
-            -2.18508012e-01,
-            -5.72061403e-01,
-            -0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            7.07106781e-01,
-            5.72061403e-01,
-            2.18508012e-01,
-            -2.18508012e-01,
-            -5.72061403e-01,
-            -7.07106781e-01,
-            -5.72061403e-01,
-            -2.18508012e-01,
-            2.18508012e-01,
-            5.72061403e-01,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            -0.00000000e00,
-            -0.00000000e00,
-            -7.07106781e-01,
-            -5.72061403e-01,
-            -2.18508012e-01,
-            2.18508012e-01,
-            5.72061403e-01,
-            -7.07106781e-01,
-            -4.15626938e-01,
-            2.18508012e-01,
-            6.72498512e-01,
-            5.72061403e-01,
-            -0.00000000e00,
-            -0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            7.07106781e-01,
-            4.15626938e-01,
-            -2.18508012e-01,
-            -6.72498512e-01,
-            -5.72061403e-01,
-            -2.42511464e-15,
-            5.72061403e-01,
-            6.72498512e-01,
-            2.18508012e-01,
-            -4.15626938e-01,
-            -0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            1.72753526e-16,
-            -5.72061403e-01,
-            -6.72498512e-01,
-            -2.18508012e-01,
-            4.15626938e-01,
-            7.07106781e-01,
-            2.18508012e-01,
-            -5.72061403e-01,
-            -5.72061403e-01,
-            2.18508012e-01,
-            0.00000000e00,
-            0.00000000e00,
-            -0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            7.07106781e-01,
-            2.18508012e-01,
-            -5.72061403e-01,
-            -5.72061403e-01,
-            2.18508012e-01,
-            7.07106781e-01,
-            2.18508012e-01,
-            -5.72061403e-01,
-            -5.72061403e-01,
-            2.18508012e-01,
-            0.00000000e00,
-            0.00000000e00,
-            -0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            7.07106781e-01,
-            2.18508012e-01,
-            -5.72061403e-01,
-            -5.72061403e-01,
-            2.18508012e-01,
-        ]
-        expected_data_draw_q = [
-            0.00000000e00,
-            4.15626938e-01,
-            6.72498512e-01,
-            6.72498512e-01,
-            4.15626938e-01,
-            0.00000000e00,
-            -0.00000000e00,
-            -0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            -1.73191211e-16,
-            4.15626938e-01,
-            6.72498512e-01,
-            6.72498512e-01,
-            4.15626938e-01,
-            1.51586078e-15,
-            -4.15626938e-01,
-            -6.72498512e-01,
-            -6.72498512e-01,
-            -4.15626938e-01,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            1.68905200e-15,
-            -4.15626938e-01,
-            -6.72498512e-01,
-            -6.72498512e-01,
-            -4.15626938e-01,
-            3.29150838e-15,
-            -5.72061403e-01,
-            -6.72498512e-01,
-            -2.18508012e-01,
-            4.15626938e-01,
-            0.00000000e00,
-            0.00000000e00,
-            -0.00000000e00,
-            -0.00000000e00,
-            0.00000000e00,
-            -1.03914727e-15,
-            5.72061403e-01,
-            6.72498512e-01,
-            2.18508012e-01,
-            -4.15626938e-01,
-            -7.07106781e-01,
-            -4.15626938e-01,
-            2.18508012e-01,
-            6.72498512e-01,
-            5.72061403e-01,
-            0.00000000e00,
-            -0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            7.07106781e-01,
-            4.15626938e-01,
-            -2.18508012e-01,
-            -6.72498512e-01,
-            -5.72061403e-01,
-            -1.21268863e-14,
-            6.72498512e-01,
-            4.15626938e-01,
-            -4.15626938e-01,
-            -6.72498512e-01,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            -0.00000000e00,
-            0.00000000e00,
-            -2.42467696e-15,
-            6.72498512e-01,
-            4.15626938e-01,
-            -4.15626938e-01,
-            -6.72498512e-01,
-            -7.62216404e-15,
-            6.72498512e-01,
-            4.15626938e-01,
-            -4.15626938e-01,
-            -6.72498512e-01,
-            0.00000000e00,
-            0.00000000e00,
-            0.00000000e00,
-            -0.00000000e00,
-            0.00000000e00,
-            -1.80171382e-14,
-            6.72498512e-01,
-            4.15626938e-01,
-            -4.15626938e-01,
-            -6.72498512e-01,
-        ]
+        expected_data_draw_i = [ 7.07106781e-01,  5.72061403e-01,  2.18508012e-01, -2.18508012e-01,
+         -5.72061403e-01,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  7.07106781e-01,  5.72061403e-01,
+          2.18508012e-01, -2.18508012e-01, -5.72061403e-01, -7.07106781e-01,
+         -5.72061403e-01, -2.18508012e-01,  2.18508012e-01,  5.72061403e-01,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00, -7.07106781e-01, -5.72061403e-01, -2.18508012e-01,
+          2.18508012e-01,  5.72061403e-01, -7.07106781e-01, -4.15626938e-01,
+          2.18508012e-01,  6.72498512e-01,  5.72061403e-01,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          7.07106781e-01,  4.15626938e-01, -2.18508012e-01, -6.72498512e-01,
+         -5.72061403e-01, -2.42511464e-15,  5.72061403e-01,  6.72498512e-01,
+          2.18508012e-01, -4.15626938e-01,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.72753526e-16,
+         -5.72061403e-01, -6.72498512e-01, -2.18508012e-01,  4.15626938e-01,
+          7.07106781e-01,  2.18508012e-01, -5.72061403e-01, -5.72061403e-01,
+          2.18508012e-01,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  7.07106781e-01,  2.18508012e-01,
+         -5.72061403e-01, -5.72061403e-01,  2.18508012e-01,  7.07106781e-01,
+          2.18508012e-01, -5.72061403e-01, -5.72061403e-01,  2.18508012e-01,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  7.07106781e-01,  2.18508012e-01, -5.72061403e-01,
+         -5.72061403e-01,  2.18508012e-01]
+        expected_data_draw_q = [ 0.00000000e+00,  4.15626938e-01,  6.72498512e-01,  6.72498512e-01,
+          4.15626938e-01,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00, -1.73191211e-16,  4.15626938e-01,
+          6.72498512e-01,  6.72498512e-01,  4.15626938e-01,  1.51586078e-15,
+         -4.15626938e-01, -6.72498512e-01, -6.72498512e-01, -4.15626938e-01,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  1.68905200e-15, -4.15626938e-01, -6.72498512e-01,
+         -6.72498512e-01, -4.15626938e-01,  3.29150838e-15, -5.72061403e-01,
+         -6.72498512e-01, -2.18508012e-01,  4.15626938e-01,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+         -1.03914727e-15,  5.72061403e-01,  6.72498512e-01,  2.18508012e-01,
+         -4.15626938e-01, -7.07106781e-01, -4.15626938e-01,  2.18508012e-01,
+          6.72498512e-01,  5.72061403e-01,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  7.07106781e-01,
+          4.15626938e-01, -2.18508012e-01, -6.72498512e-01, -5.72061403e-01,
+         -1.21268863e-14,  6.72498512e-01,  4.15626938e-01, -4.15626938e-01,
+         -6.72498512e-01,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00, -2.42467696e-15,  6.72498512e-01,
+          4.15626938e-01, -4.15626938e-01, -6.72498512e-01, -7.62216404e-15,
+          6.72498512e-01,  4.15626938e-01, -4.15626938e-01, -6.72498512e-01,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00, -1.80171382e-14,  6.72498512e-01,  4.15626938e-01,
+         -4.15626938e-01, -6.72498512e-01]
 
         compiler = QbloxCompiler()
         qblox_draw = QbloxDraw()
         results = compiler.compile(qp_draw)
         pio.renderers.default = "json"
-        data_draw = qblox_draw.draw(results, None, True)
+        data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, averages_displayed = True)
         np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+
+    def test_qp_draw_with_timeout(self, qp_draw_with_time_window: QProgram):
+        data_draw = qp_draw_with_time_window.draw()
+        expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.35355339,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.35355339,
+       0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.        ]
+
+        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+       0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+       0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+
+        compiler = QbloxCompiler()
+        qblox_draw = QbloxDraw()
+        results = compiler.compile(qp_draw_with_time_window)
+        pio.renderers.default = "json"
+        data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, averages_displayed = True, time_window=40)
+        np.testing.assert_allclose(data_draw["readout_q13_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["readout_q13_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+
+    def test_qp_draw_with_timeout_no_loop(self, qp_draw_with_timeout_no_loop: QProgram):
+        data_draw = qp_draw_with_timeout_no_loop.draw()
+        expected_data_draw_i = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+
+        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+
+        compiler = QbloxCompiler()
+        qblox_draw = QbloxDraw()
+        results = compiler.compile(qp_draw_with_timeout_no_loop)
+        pio.renderers.default = "json"
+        data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, time_window=10)
+        np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+
+
+    def test_qp_draw_with_acquire(self, qp_draw_with_acquire: QProgram):
+        data_draw = qp_draw_with_acquire.draw()
+        expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.35355339,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.35355339,
+       0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.        , 0.        , 0.        ,
+       0.        , 0.        , 0.        , 0.35355339, 0.35355339,
+       0.35355339, 0.35355339, 0.35355339, 0.        , 0.        ,
+       0.        , 0.        ]
+        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+       0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+       0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+       0., 0., 0., 0., 0., 0.]
+        compiler = QbloxCompiler()
+        qblox_draw = QbloxDraw()
+        results = compiler.compile(qp_draw_with_acquire)
+        pio.renderers.default = "json"
+        data_draw = qblox_draw.draw(sequencer=results, runcard_data= None)
+
+        np.testing.assert_allclose(data_draw["readout_q13_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["readout_q13_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+
 
     def test_platform_draw_qcmrf(self, qp_plat_draw_qcmrf: QProgram, platform: Platform):
         expected_data_draw_i = [0.20155136, 0.20075692, 0.19967336, 0.19871457, 0.19824677,
