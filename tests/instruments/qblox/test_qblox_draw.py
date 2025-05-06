@@ -242,7 +242,7 @@ class TestQBloxDraw:
         np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout(self, qp_draw_with_time_window: QProgram):
-        data_draw = qp_draw_with_time_window.draw()
+        data_draw = qp_draw_with_time_window.draw(time_window=40)
         expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
        0.        , 0.        , 0.        , 0.        , 0.        ,
        0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.35355339,
@@ -267,7 +267,7 @@ class TestQBloxDraw:
         np.testing.assert_allclose(data_draw["readout_q13_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout_nested_loop(self, qp_draw_with_time_window_nested_loop: QProgram):
-        data_draw = qp_draw_with_time_window_nested_loop.draw()
+        data_draw = qp_draw_with_time_window_nested_loop.draw(time_window=200)
         expected_data_draw_i = [ 0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
           0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
           0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
