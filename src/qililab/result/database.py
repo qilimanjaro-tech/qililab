@@ -417,10 +417,8 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
-        self.relative_dir_path = f"{self.current_sample}/{self.current_cd}/{formatted_time}"
-        self.relative_result_path = f"{self.relative_dir_path}/{experiment_name}.h5"
-        dir_path = f"{base_path}/{self.relative_dir_path}"
-        result_path = f"{base_path}/{self.relative_result_path}"
+        dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
+        result_path = f"{dir_path}/{experiment_name}.h5"
 
         folder = dir_path
         if not os.path.isdir(folder):
