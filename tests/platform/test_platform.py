@@ -1369,12 +1369,13 @@ class TestMethods:
         mock_database = MagicMock()
         db_manager = mock_database
         optional_identifier = "optional_identifier"
+        base_path="base_path"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        stream_array = platform.stream_array(shape, loops, experiment_name, db_manager, qprogram, optional_identifier)
+        stream_array = platform.stream_array(shape, loops, experiment_name, db_manager, base_path, qprogram, optional_identifier)
 
         assert stream_array.loops == loops
         assert stream_array.results.shape == shape
@@ -1383,6 +1384,7 @@ class TestMethods:
         assert stream_array.qprogram == qprogram
         assert stream_array.db_manager == mock_database
         assert stream_array.experiment_name == experiment_name
+        assert stream_array.base_path == base_path
 
     @patch("h5py.File")
     def test_save_measurement_results(self, mock_h5file, platform: Platform):
@@ -1391,6 +1393,7 @@ class TestMethods:
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 1)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path="base_path"
 
         mock_database = MagicMock()
         db_manager = mock_database
@@ -1400,7 +1403,7 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.save_measurement_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+        platform.save_measurement_results(experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier)
 
         assert mock_h5file.called
 

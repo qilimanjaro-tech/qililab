@@ -26,9 +26,10 @@ def fixture_stream_array():
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
     db_manager = mock_database
+    base_path = "base_path"
 
     return StreamArray(
-        shape=shape, loops=loops, platform=platform, experiment_name=experiment_name, db_manager=db_manager
+        shape=shape, loops=loops, platform=platform, experiment_name=experiment_name, db_manager=db_manager, base_path=base_path
     )
 
 

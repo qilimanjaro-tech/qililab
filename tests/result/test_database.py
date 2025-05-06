@@ -360,7 +360,7 @@ class Testdatabase:
         mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
 
         # Act
-        measurement = db_manager.add_measurement("exp1", experiment_completed=True)
+        measurement = db_manager.add_measurement("exp1", base_path="base_path", experiment_completed=True)
 
         # Assert
         expected_path = "/home/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"

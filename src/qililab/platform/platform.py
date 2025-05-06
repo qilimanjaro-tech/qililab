@@ -1597,7 +1597,8 @@ class Platform:
         shape: tuple,
         loops: dict[str, np.ndarray],
         experiment_name: str,
-        db_manager: DatabaseManager,  # get rid
+        db_manager: DatabaseManager,
+        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -1619,6 +1620,7 @@ class Platform:
             experiment_name=experiment_name,
             db_manager=db_manager,
             optional_identifier=optional_identifier,
+            base_path=base_path,
         )
 
     def save_measurement_results(
@@ -1627,6 +1629,7 @@ class Platform:
         results: np.ndarray,
         loops: dict[str, np.ndarray],
         db_manager: DatabaseManager,
+        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -1651,6 +1654,7 @@ class Platform:
             experiment_name=experiment_name,
             db_manager=db_manager,
             optional_identifier=optional_identifier,
+            base_path=base_path,
         )
 
         with stream_array:
