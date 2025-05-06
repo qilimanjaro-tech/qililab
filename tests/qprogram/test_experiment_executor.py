@@ -271,3 +271,11 @@ class TestExperimentExecutor:
             qprogram2_measurement1_data, _ = experiment_results.get(2, 1)
             assert qprogram2_measurement1_data.shape == (3, 11, 2)
             assert np.allclose(qprogram2_measurement1_data, measurement_data[None, :, :])
+    def test_execute_set_base_path(self, platform, experiment, qprogram, crosstalk):
+        """Test the execute method to ensure the experiment is executed correctly and results are stored."""
+        executor = ExperimentExecutor(platform=platform, experiment=experiment, base_path=tempfile.gettempdir())
+        resuls_path = executor.execute()
+
+        # Check if the correct file path is returned
+        assert resuls_path.startswith(os.path.abspath(tempfile.gettempdir()))
+        assert resuls_path.endswith(".h5")
