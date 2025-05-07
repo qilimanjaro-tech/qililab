@@ -17,3 +17,6 @@
 - For Qblox Draw, the move commands  of the Q1ASM were being read correctly once but were not being updated after - this caused problem with loops.
 - A 4ns has been added when an acquire_weighed command is added to account for the extra clock cycle
 [#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
+
+- Qblox Draw: Corrected bug with time window and nested loops- now after the code exits the recursive loop, the code checks the time window flag status and exits if needed.
+[#937](https://github.com/qilimanjaro-tech/qililab/pull/937)
