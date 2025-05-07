@@ -101,7 +101,7 @@ class TestStreamArray:
         assert (stream_array.results == np.empty(shape=(2, 2))).all
         assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
-    def test_stream_array_instantiation(self, stream_array_dict_loops: StreamArray):
+    def test_stream_array_with_loop_dict(self, stream_array_dict_loops: StreamArray):
         """Tests the instantiation of a StreamArray object."""
         assert stream_array_dict_loops.loops == {
             "test_amp_loop": {

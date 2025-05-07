@@ -1405,6 +1405,28 @@ class TestMethods:
         assert mock_h5file.called
 
     @patch("h5py.File")
+    def test_save_measurement_results_loop_dict(self, mock_h5file, platform: Platform):
+        """Test save_measurement_results functionto save from database from Platform"""
+
+        experiment_name = "experiment_name"
+        loops = {
+            "test_amp_loop": {"bus": "readout", "units": "V", "parameter": Parameter.VOLTAGE, "array": np.arange(0, 1)}
+        }
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        platform.save_measurement_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+
+        assert mock_h5file.called
+
+    @patch("h5py.File")
     def test_save_measurement_results_raise_error_incorrect_loops(self, mock_h5file, platform: Platform):
         """Test save_measurement_results functionto save from database from Platform"""
 
