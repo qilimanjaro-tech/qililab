@@ -1609,32 +1609,33 @@ class Platform:
 
         Example usage of this function:
 
-        ```
-        db_manager = ql.get_db_manager()
-        db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
+            .. code-block:: python
 
-        platform = ql.build_platform(runcard=runcard)
-        platform.connect()
-        platform.initial_setup()
-        platform.turn_on_instruments()
+                db_manager = ql.get_db_manager()
+                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
 
-        ... (defining the experiment)
+                platform = ql.build_platform(runcard=runcard)
+                platform.connect()
+                platform.initial_setup()
+                platform.turn_on_instruments()
 
-        stream_array = platform.stream_array(
-            shape=(len(if_sweep), 2),
-            loops={"frequency": if_sweep},
-            platform=platform,
-            experiment_name="resonator_spectroscopy_cw",
-            db_manager=db_manager,
-            base_path="/base_path",
-            qprogram=qprogram,
-            optional_identifier="optional text"
-        )
+                (experiment definition)
 
-        with stream_array:
-            results = platform.execute_qprogram(qprogram).results
-            stream_array[()] = results[readout_bus][0].array.T
-        ```
+                stream_array = platform.stream_array(
+                    shape=(len(if_sweep), 2),
+                    loops={"frequency": if_sweep},
+                    platform=platform,
+                    experiment_name="resonator_spectroscopy_cw",
+                    db_manager=db_manager,
+                    base_path="/base_path",
+                    qprogram=qprogram,
+                    optional_identifier="optional text"
+                )
+
+                with stream_array:
+                    results = platform.execute_qprogram(qprogram).results
+                    stream_array[()] = results[readout_bus][0].array.T
+
 
         Args:
             shape (tuple): results array shape.
