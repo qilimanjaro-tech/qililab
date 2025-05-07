@@ -403,6 +403,7 @@ class QbloxDraw:
             register = {}
             register["avg_no_loop"] = 1
             loop_info = {}
+
             for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
                 if Q1ASM_line[0] == "move":
                     reg = Q1ASM_line[1].split(",")[1].strip()
@@ -420,49 +421,47 @@ class QbloxDraw:
                         if l.startswith("avg") and not averages_displayed:
                             loop_info[l][2] = "avg_no_loop"
                 sorted_labels = sorted(loop_info.items(), key=lambda x: x[1][0])
+            def process_loop(recursive_input, i):
+                if not parameters[bus]["time_reached"]:
+                    (label, [start, end, value]) = recursive_input
+                    if label not in label_done:
+                        label_done.append(label)
+                    for x in range(register[value], 0, -1):
+                        current_idx = start
+                        while current_idx <= end:
+                            item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
+                            wf = Q1ASM_ordered[bus]["waveforms"].items()
+                            _, value, label, _ = item
+                            for la in label:
+                                if la not in label_done:  # nested loop
+                                    new_label = la
+                                    result = next(
+                                        (element for element in sorted_labels if element[0] == new_label), None
+                                    )  # retrieve the start/end/variable of the new label
+                                    current_idx = process_loop(result, current_idx)
+                                    if parameters[bus]["time_reached"] is True:
+                                        return current_idx
+                                    label_index = {}
+                                    # check if there is a nested loop, if yes need to remove it from label_dne, otherwise it wont loop over in the next iteration of the parent
+                                    for a in label_done:
+                                        element = next((e for e in sorted_labels if e[0] == a), None)[1][0]
+                                        label_index[a] = int(element)
+                                    max_value = max(label_index.values())
+                                    max_keys = [key for key, value in label_index.items() if value == max_value]
+                                    label_done.remove(max_keys[0])
 
+                            item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
+                            wf = Q1ASM_ordered[bus]["waveforms"].items()
+                            instructions_ran.append(item[-1])
+                            self._call_handlers(item, param, register, data_draw[bus], wf)
+                            if time_window is not None and len(data_draw[bus][0]) >= time_window:
+                                parameters[bus]["time_reached"] = True
+                                return current_idx
+                            current_idx += 1
+                return current_idx
             for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
                 if parameters[bus]["time_reached"]:
                     break
-
-                def process_loop(recursive_input, i):
-                    if not parameters[bus]["time_reached"]:
-                        (label, [start, end, value]) = recursive_input
-                        if label not in label_done:
-                            label_done.append(label)
-                        for x in range(register[value], 0, -1):
-                            current_idx = start
-                            while current_idx <= end:
-                                item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
-                                wf = Q1ASM_ordered[bus]["waveforms"].items()
-                                _, value, label, _ = item
-                                for la in label:
-                                    if la not in label_done:  # nested loop
-                                        new_label = la
-                                        result = next(
-                                            (element for element in sorted_labels if element[0] == new_label), None
-                                        )  # retrieve the start/end/variable of the new label
-                                        current_idx = process_loop(result, current_idx)
-                                        if parameters[bus]["time_reached"] is True:
-                                            return current_idx
-                                        label_index = {}
-                                        # check if there is a nested loop, if yes need to remove it from label_dne, otherwise it wont loop over in the next iteration of the parent
-                                        for a in label_done:
-                                            element = next((e for e in sorted_labels if e[0] == a), None)[1][0]
-                                            label_index[a] = int(element)
-                                        max_value = max(label_index.values())
-                                        max_keys = [key for key, value in label_index.items() if value == max_value]
-                                        label_done.remove(max_keys[0])
-
-                                item = Q1ASM_ordered[bus]["program"]["main"][current_idx]
-                                wf = Q1ASM_ordered[bus]["waveforms"].items()
-                                instructions_ran.append(item[-1])
-                                self._call_handlers(item, param, register, data_draw[bus], wf)
-                                if time_window is not None and len(data_draw[bus][0]) >= time_window:
-                                    parameters[bus]["time_reached"] = True
-                                    return current_idx
-                                current_idx += 1
-                    return current_idx
 
                 if (
                     Q1ASM_line[2] and Q1ASM_line[-1] not in instructions_ran

@@ -1585,8 +1585,9 @@ class Platform:
 
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        compiler = QbloxCompiler()
-        sequencer = compiler.compile(qprogram)
+        # compiler = QbloxCompiler()
+        # sequencer = compiler.compile(qprogram)
+        sequencer = self.compile_qprogram(qprogram)
         result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed)
 
         return result
