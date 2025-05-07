@@ -24,7 +24,7 @@ import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 import numpy as np
 from qibo.gates import M
@@ -1593,7 +1593,7 @@ class Platform:
 
         return result
 
-    def stream_database(
+    def stream_array(
         self,
         shape: tuple,
         loops: dict[str, np.ndarray],
@@ -1621,9 +1621,10 @@ class Platform:
 
                 (experiment definition)
 
-                stream_database = platform.stream_database(
+                stream_array = platform.stream_array(
                     shape=(len(if_sweep), 2),
                     loops={"frequency": if_sweep},
+                    platform=platform,
                     experiment_name="resonator_spectroscopy_cw",
                     db_manager=db_manager,
                     base_path="/base_path",
@@ -1631,9 +1632,9 @@ class Platform:
                     optional_identifier="optional text"
                 )
 
-                with stream_database:
+                with stream_array:
                     results = platform.execute_qprogram(qprogram).results
-                    stream_database[()] = results[readout_bus][0].array.T
+                    stream_array[()] = results[readout_bus][0].array.T
 
 
         Args:
@@ -1662,38 +1663,12 @@ class Platform:
         self,
         experiment_name: str,
         results: np.ndarray,
-        loops: dict[str, np.ndarray],
+        loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
         db_manager: DatabaseManager,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
         """Uses the same StreamArray class as for live saving but it saves full chunks of data in the same format as platform.stream_array.
-        
-        Example usage of this function:
-
-            .. code-block:: python
-
-                db_manager = ql.get_db_manager()
-                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
-
-                platform = ql.build_platform(runcard=runcard)
-                platform.connect()
-                platform.initial_setup()
-                platform.turn_on_instruments()
-
-                (experiment definition)
-                
-                results = "Experiment results array after a measure that not require/allow for stream_dataset or from old data"
-
-                saved_results_path = platform.save_measurement_results(
-                    experiment_name="resonator_spectroscopy_cw",
-                    results = results, # as long as results.shape == (if_sweep, 2)
-                    loops={"frequency": if_sweep},
-                    db_manager=db_manager,
-                    base_path="/base_path",
-                    qprogram=qprogram,
-                    optional_identifier="optional text"
-                )
 
         Args:
             experiment_name (str): Name of the experiment.

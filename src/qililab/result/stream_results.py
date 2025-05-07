@@ -51,7 +51,7 @@ class StreamArray:
     def __init__(
         self,
         shape: list | tuple,
-        loops: dict[str, np.ndarray],
+        loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
         platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
@@ -86,7 +86,13 @@ class StreamArray:
 
         g = self._file.create_group(name="loops")
         for loop_name, array in self.loops.items():
-            g.create_dataset(name=loop_name, data=array)
+            if isinstance(array, dict):
+                g_dataset = g.create_dataset(name=loop_name, data=array["array"])
+                g_dataset["bus"] = array["bus"]
+                g_dataset["parameter"] = array["parameter"]
+                g_dataset["units"] = array["units"]
+            else:
+                g.create_dataset(name=loop_name, data=array)
 
         self._dataset = self._file.create_dataset("results", data=self.results)
 
