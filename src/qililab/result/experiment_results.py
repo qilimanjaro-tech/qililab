@@ -49,6 +49,7 @@ class ExperimentResults:
 
         Args:
             path (str): The file path to the HDF5 results file.
+            slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
         """
         self.path = path
         self.data: dict[tuple[str, str], Any] = {}  # To hold links to the data of the results for in-memory access
@@ -63,7 +64,7 @@ class ExperimentResults:
         Returns:
             ExperimentResults: The ExperimentResults instance.
         """
-        self._file = h5py.File(self.path, mode="r")
+        self._file = h5py.File(self.path, mode="r", libver="latest")
 
         # Prepare access to each results dataset and its dimensions
         for qprogram_name in self._file[ExperimentResults.QPROGRAMS_PATH]:
