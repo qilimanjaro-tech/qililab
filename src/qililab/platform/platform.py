@@ -1625,7 +1625,7 @@ class Platform:
                     shape=(len(if_sweep), 2),
                     loops={"frequency": if_sweep},
                     platform=platform,
-                    experiment_name="resonator_spectroscopy_cw",
+                    experiment_name="resonator_spectroscopy",
                     db_manager=db_manager,
                     base_path="/base_path",
                     qprogram=qprogram,
