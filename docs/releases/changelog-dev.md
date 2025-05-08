@@ -7,6 +7,15 @@
 - An additional argument has been added, to Qblox Draw, time_window. It allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the exact number of ns inputted. For example, if the time_window is 100 ns but there is a play operation of 150 ns, the plots will display the data until 150 ns.
 [#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
 
+- Added measurements databases into the results saving structure all the architecture for them is located inside `results/database.py`. Added functionality for stream array using databases through `platform.database_saving` and through the class `StreaArray`, legacy `stream_array()` function still works as usual for retrocompatibility.
+[#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
+
+- Added SQLAlchemy and xarray (usefull tool for measurements) to the dependencies as they are required for databases.
+[#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
+
+- Relocated save_results and load_results from data_management to result/result_management.py for structure consistency. The load_results functions has been slightly changed to take into account different structures of data.
+[#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
+
 ### Breaking changes
 
 ### Deprecations / Removals
