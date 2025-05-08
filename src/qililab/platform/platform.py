@@ -1689,9 +1689,9 @@ class Platform:
         for iteration, (loop_name, loop_array) in enumerate(loops.items()):
             if isinstance(loop_array, dict):
                 loop_array = loop_array["array"]
-            if loop_array.shape[0] != shape[iteration] - 1: # type: ignore
+            if loop_array.shape[0] != shape[iteration] - 1:  # type: ignore
                 raise ValueError(
-                    f"Loops dimensions must be the same than the array instroduced, {loop_name} as {loop_array.shape[0]} != {shape[iteration]}" #  type: ignore
+                    f"Loops dimensions must be the same than the array instroduced, {loop_name} as {loop_array.shape[0]} != {shape[iteration]}"  # type: ignore
                 )
 
         stream_array = StreamArray(
