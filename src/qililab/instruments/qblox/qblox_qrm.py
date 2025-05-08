@@ -94,8 +94,8 @@ class QbloxQRM(QbloxModule):
                 value=cast("QbloxADCSequencer", sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
             self._set_parameters_active_reset(
-                value=cast("QbloxADCSequencer", sequencer).trigger_address, sequencer_id=sequencer_id
-            )
+                sequencer_id=sequencer_id)
+                # value=cast("QbloxADCSequencer", sequencer).trigger_address, sequencer_id=sequencer_id)
 
     def _map_connections(self):
         """Disable all connections and map sequencer paths with output/input channels."""
@@ -228,7 +228,8 @@ class QbloxQRM(QbloxModule):
         self.device.scope_acq_trigger_mode_path0(mode.value)
         self.device.scope_acq_trigger_mode_path1(mode.value)
 
-    def _set_device_parameters_active_reset(self, trigger_address: int, sequencer_id: int):
+    # def _set_device_parameters_active_reset(self, trigger_address: int, sequencer_id: int):
+    def _set_device_parameters_active_reset(self, sequencer_id: int):
         #TODO: Add docstring
 
         #will need to be moved - should only be used when the active reset is needed, and 12 should not be hardcoded
@@ -391,12 +392,14 @@ class QbloxQRM(QbloxModule):
         if self.is_device_active():
             self._set_device_hardware_demodulation(value=bool(value), sequencer_id=sequencer_id)
 
-    def _set_parameters_active_reset(self, value: int, sequencer_id: int):
+    # def _set_parameters_active_reset(self, value: int, sequencer_id: int):
+    def _set_parameters_active_reset(self, sequencer_id: int):
         #TODO: add the docstring
 
-        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).trigger_address = int(value)
+        # cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).trigger_address = int(value)
         if self.is_device_active():
-            self._set_device_parameters_active_reset(trigger_address=int(value), sequencer_id=sequencer_id)
+            self._set_device_parameters_active_reset(sequencer_id=sequencer_id)
+            # self._set_device_parameters_active_reset(trigger_address=int(value), sequencer_id=sequencer_id)
 
     def _set_acquisition_mode(self, value: float | str | bool | AcquireTriggerMode, sequencer_id: int):
         """set acquisition_mode for the specific channel

@@ -248,10 +248,19 @@ class QbloxCompiler:
         # Pre-processing: Set markers ON/OFF
         for bus in self._buses:
             mask = markers[bus] if markers is not None and bus in markers else "0000"
-            self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
-            self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
-            self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1,4))
-            self._buses[bus].static_duration += 4
+            # self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
+            # self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
+            # self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1,4))
+            # self._buses[bus].static_duration += 4
+
+            if bus.startswith("drive"):
+                self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
+                self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1,4),1)
+                self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.Wait(1000),1)
+            # self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
+            else:
+                self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(1000))
+            self._buses[bus].static_duration += 1000
 
         # Pre-processing: Flag control_modules involved in the active reset
         #TODO: consider the case where more than 1QCM and more than 1 QRM - also could be 1 QRM for multiple QCM and vice versa
