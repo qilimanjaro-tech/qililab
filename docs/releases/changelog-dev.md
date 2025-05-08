@@ -3,6 +3,9 @@
 ### New features since last release
 
 ### Improvements
+- For the plots outputted by Qblox Draw, the name legend will now be a concatenation of the bus name and "Flux", similar to I and Q when hardware modulation is enabled.
+- An additional argument has been added, to Qblox Draw, time_window. It allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the exact number of ns inputted. For example, if the time_window is 100 ns but there is a play operation of 150 ns, the plots will display the data until 150 ns.
+[#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
 
 ### Breaking changes
 
@@ -11,3 +14,9 @@
 ### Documentation
 
 ### Bug fixes
+- For Qblox Draw, the move commands  of the Q1ASM were being read correctly once but were not being updated after - this caused problem with loops.
+- A 4ns has been added when an acquire_weighed command is added to account for the extra clock cycle
+[#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
+
+- Qblox Draw: Corrected bug with time window and nested loops- now after the code exits the recursive loop, the code checks the time window flag status and exits if needed.
+[#937](https://github.com/qilimanjaro-tech/qililab/pull/937)
