@@ -1360,12 +1360,12 @@ class TestMethods:
         with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
             platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
 
-    def test_stream_array(self, platform: Platform):
-        """Test stream_array function to save database from platform"""
+    def test_database_saving(self, platform: Platform):
+        """Test database_saving function to save database from platform"""
 
         shape = (2, 2)
         loops = {"test_amp_loop": np.arange(0, 2)}
-        experiment_name = "test_stream_array"
+        experiment_name = "test_database_saving"
         mock_database = MagicMock()
         db_manager = mock_database
         optional_identifier = "optional_identifier"
@@ -1374,15 +1374,15 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        stream_array = platform.stream_array(shape, loops, experiment_name, db_manager, qprogram, optional_identifier)
+        database_saving = platform.database_saving(shape, loops, experiment_name, db_manager, qprogram, optional_identifier)
 
-        assert stream_array.loops == loops
-        assert stream_array.results.shape == shape
-        assert stream_array.optional_identifier == optional_identifier
-        assert stream_array.platform == platform
-        assert stream_array.qprogram == qprogram
-        assert stream_array.db_manager == mock_database
-        assert stream_array.experiment_name == experiment_name
+        assert database_saving.loops == loops
+        assert database_saving.results.shape == shape
+        assert database_saving.optional_identifier == optional_identifier
+        assert database_saving.platform == platform
+        assert database_saving.qprogram == qprogram
+        assert database_saving.db_manager == mock_database
+        assert database_saving.experiment_name == experiment_name
 
     @patch("h5py.File")
     def test_save_measurement_results(self, mock_h5file, platform: Platform):
