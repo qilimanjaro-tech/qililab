@@ -1593,7 +1593,7 @@ class Platform:
 
         return result
 
-    def stream_array(
+    def database_saving(
         self,
         shape: tuple,
         loops: dict[str, np.ndarray],
@@ -1621,7 +1621,7 @@ class Platform:
 
                 (experiment definition)
 
-                stream_array = platform.stream_array(
+                stream_array = platform.database_saving(
                     shape=(len(if_sweep), 2),
                     loops={"frequency": if_sweep},
                     platform=platform,
