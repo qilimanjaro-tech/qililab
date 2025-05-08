@@ -53,6 +53,8 @@ class QbloxDraw:
             self._handle_add_draw(register, program_line)
         elif action_type == "move":
             self._handle_move_draw(register, program_line)
+        elif action_type == "latch_rst":
+            data_draw = self._handle_wait_draw(data_draw, program_line, param, program_line[1])
         return param, register, data_draw
 
     def _calculate_scaling_and_offsets(self, param, i_or_q):
