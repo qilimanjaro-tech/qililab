@@ -274,7 +274,13 @@ class TestExperimentExecutor:
 
     def test_execute_set_base_path(self, platform, experiment):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        executor = ExperimentExecutor(platform=platform, experiment=experiment)
+        executor = ExperimentExecutor(
+            platform=platform,
+            experiment=experiment,
+            base_path=tempfile.gettempdir(),
+            live_plot=False,
+            slurm_execution=False,
+        )
         resuls_path = executor.execute()
 
         # Check if the correct file path is returned
