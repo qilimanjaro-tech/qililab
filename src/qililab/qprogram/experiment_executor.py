@@ -74,6 +74,9 @@ class ExperimentExecutor:
         platform (Platform): The platform on which the experiment is to be executed.
         experiment (Experiment): The experiment object defining the sequence of operations and loops.
         base_data_path (str): The base directory path where the experiment results will be stored.
+        live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+        slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
+        port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
 
     Example:
         .. code-block::
@@ -105,9 +108,19 @@ class ExperimentExecutor:
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
 
-    def __init__(self, platform: "Platform", experiment: Experiment):
+    def __init__(
+        self,
+        platform: "Platform",
+        experiment: Experiment,
+        live_plot: bool = True,
+        slurm_execution: bool = True,
+        port_number: int | None = None,
+    ):
         self.platform = platform
         self.experiment = experiment
+        self._live_plot = live_plot
+        self._slurm_execution = slurm_execution
+        self._port_number = port_number
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -252,7 +265,7 @@ class ExperimentExecutor:
         operations: list[Callable] = []
 
         # A mapping from block UUID to the index of the current value of its variable
-        loop_indices: dict[Block, int] = {}
+        self.loop_indices: dict[UUID, int] = {}
 
         # A mapping from variable UUID to current value of the variable
         current_value_of_variable: dict[UUID, int | float] = {}
@@ -272,7 +285,7 @@ class ExperimentExecutor:
                 task_ids[block.uuid] = loop_task_id  # Store the task ID associated with this loop block
 
                 # Track the index for this loop
-                loop_indices[block] = 0
+                self.loop_indices[block.uuid] = 0
 
                 return loop_task_id
 
@@ -288,7 +301,7 @@ class ExperimentExecutor:
 
             def advance_loop_index() -> None:
                 # Update the loop index
-                loop_indices[block] += 1
+                self.loop_indices[block.uuid] += 1
 
             uuids = [variable.uuid for variable in self._variables_per_block[block]]
             values = [variable.values for variable in self._variables_per_block[block]]
@@ -306,7 +319,7 @@ class ExperimentExecutor:
 
             def remove_progress_bar():
                 progress.remove_task(task_ids[block.uuid])
-                del loop_indices[block]
+                del self.loop_indices[block.uuid]
 
             loop_operations.append(remove_progress_bar)
 
@@ -352,8 +365,9 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element,
-                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
+                                lambda operation=element, value=current_value_of_variable[
+                                    element.value.uuid
+                                ]: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     value=value,
@@ -393,9 +407,7 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element,
-                            call_parameters=call_parameters,
-                            qprogram_index=qprogram_index: store_results(
+                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram(
                                         **{
@@ -437,7 +449,7 @@ class ExperimentExecutor:
             """Store the result in the correct location within the ExperimentResultsWriter."""
             # Determine the index based on current loop indices and store the results in the ExperimentResultsWriter
             for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
-                indices = (qprogram_index, measurement_index, *tuple(index for _, index in loop_indices.items()))
+                indices = (qprogram_index, measurement_index, *tuple(index for _, index in self.loop_indices.items()))
                 self._results_writer[indices] = measurement_result.array.T  # type: ignore
 
         if isinstance(block, (Loop, ForLoop, Parallel)):
@@ -566,7 +578,13 @@ class ExperimentExecutor:
         self._prepare_metadata(executed_at=executed_at)
 
         # Create the ExperimentResultsWriter for storing results
-        self._results_writer = ExperimentResultsWriter(path=results_path, metadata=self._metadata)
+        self._results_writer = ExperimentResultsWriter(
+            path=results_path,
+            metadata=self._metadata,
+            live_plot=self._live_plot,
+            slurm_execution=self._slurm_execution,
+            port_number=self._port_number,
+        )
 
         # Event to signal that the execution has completed
         execution_completed = threading.Event()
@@ -593,5 +611,7 @@ class ExperimentExecutor:
 
                 # Now write the execution time to the results writer
                 self._results_writer.execution_time = execution_time
+
+        del self.loop_indices
 
         return results_path

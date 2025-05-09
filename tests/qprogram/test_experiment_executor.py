@@ -11,6 +11,7 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.experiment_executor import ExperimentExecutor
+from qililab.result.experiment_results import ExperimentResults
 from qililab.qprogram.qprogram import Domain, QProgram
 from qililab.result.qprogram import QProgramResults, QuantumMachinesMeasurementResult
 from qililab.typings.enums import Parameter
@@ -144,7 +145,7 @@ class TestExperimentExecutor:
 
     def test_execute(self, platform, experiment, qprogram, crosstalk):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        executor = ExperimentExecutor(platform=platform, experiment=experiment)
+        executor = ExperimentExecutor(platform=platform, experiment=experiment, live_plot=False, slurm_execution=False)
         resuls_path = executor.execute()
 
         # Check if the correct file path is returned
@@ -240,3 +241,33 @@ class TestExperimentExecutor:
 
         # If you want to ensure the exact sequence across all calls
         platform.assert_has_calls(expected_calls, any_order=False)
+
+        with ExperimentResults(resuls_path) as experiment_results:
+            measurement_data = np.column_stack((np.arange(0, 11), np.arange(100, 111)))
+
+            # Single QProgram
+            qprogram0_measurement0_data, _ = experiment_results.get(0, 0)
+            assert qprogram0_measurement0_data.shape == (11, 2)
+            assert np.allclose(qprogram0_measurement0_data, measurement_data[:, :])
+
+            qprogram0_measurement1_data, _ = experiment_results.get(0, 1)
+            assert qprogram0_measurement1_data.shape == (11, 2)
+            assert np.allclose(qprogram0_measurement1_data, measurement_data[:, :])
+
+            # QProgram within nested loops
+            qprogram1_measurement0_data, _ = experiment_results.get(1, 0)
+            assert qprogram1_measurement0_data.shape == (3, 2, 11, 2)
+            assert np.allclose(qprogram1_measurement0_data, measurement_data[None, None, :, :])
+
+            qprogram1_measurement1_data, _ = experiment_results.get(1, 1)
+            assert qprogram1_measurement1_data.shape == (3, 2, 11, 2)
+            assert np.allclose(qprogram1_measurement1_data, measurement_data[None, None, :, :])
+
+            # QProgram within parallel loops
+            qprogram2_measurement0_data, _ = experiment_results.get(2, 0)
+            assert qprogram2_measurement0_data.shape == (3, 11, 2)
+            assert np.allclose(qprogram2_measurement0_data, measurement_data[None, :, :])
+
+            qprogram2_measurement1_data, _ = experiment_results.get(2, 1)
+            assert qprogram2_measurement1_data.shape == (3, 11, 2)
+            assert np.allclose(qprogram2_measurement1_data, measurement_data[None, :, :])
