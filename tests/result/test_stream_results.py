@@ -62,15 +62,8 @@ def fixture_stream_results():
     shape = (2, 2)
     path = "test_stream_array.hdf5"
     loops = {"test_amp_loop": AMP_VALUES}
-    platform = ql.build_platform(runcard=copy.deepcopy(Galadriel.runcard))
-    experiment_name = "test_stream_array"
-    mock_database = MagicMock()
-    db_manager = mock_database
-    base_path = "base_path"
 
-    return StreamArray(
-        shape=shape, loops=loops, platform=platform, experiment_name=experiment_name, db_manager=db_manager, base_path=base_path
-    )
+    return stream_results(shape=shape, path=path, loops=loops)
 
 
 class MockGroup:
