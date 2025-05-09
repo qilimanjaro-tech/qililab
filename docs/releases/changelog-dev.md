@@ -21,6 +21,9 @@
 
 ### Breaking changes
 
+- Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
+[#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
+
 ### Deprecations / Removals
 
 ### Documentation
