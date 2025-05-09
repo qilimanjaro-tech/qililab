@@ -1362,12 +1362,12 @@ class TestMethods:
         with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
             platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
 
-    def test_database_saving(self, platform: Platform):
-        """Test database_saving function to save database from platform"""
+    def test_db_real_time_saving(self, platform: Platform):
+        """Test db_real_time_saving function to save database from platform"""
 
         shape = (2, 2)
         loops = {"test_amp_loop": np.arange(0, 2)}
-        experiment_name = "test_database_saving"
+        experiment_name = "test_db_real_time_saving"
         mock_database = MagicMock()
         db_manager = mock_database
         optional_identifier = "optional_identifier"
@@ -1376,19 +1376,19 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        database_saving = platform.database_saving(shape, loops, experiment_name, db_manager, qprogram, optional_identifier)
+        db_real_time_saving = platform.db_real_time_saving(shape, loops, experiment_name, db_manager, qprogram, optional_identifier)
 
-        assert database_saving.loops == loops
-        assert database_saving.results.shape == shape
-        assert database_saving.optional_identifier == optional_identifier
-        assert database_saving.platform == platform
-        assert database_saving.qprogram == qprogram
-        assert database_saving.db_manager == mock_database
-        assert database_saving.experiment_name == experiment_name
+        assert db_real_time_saving.loops == loops
+        assert db_real_time_saving.results.shape == shape
+        assert db_real_time_saving.optional_identifier == optional_identifier
+        assert db_real_time_saving.platform == platform
+        assert db_real_time_saving.qprogram == qprogram
+        assert db_real_time_saving.db_manager == mock_database
+        assert db_real_time_saving.experiment_name == experiment_name
 
     @patch("h5py.File")
-    def test_save_measurement_results(self, mock_h5file, platform: Platform):
-        """Test save_measurement_results functionto save from database from Platform"""
+    def test_db_save_results(self, mock_h5file, platform: Platform):
+        """Test db_save_results functionto save from database from Platform"""
 
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 1)}
@@ -1402,13 +1402,13 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.save_measurement_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
 
         assert mock_h5file.called
 
     @patch("h5py.File")
-    def test_save_measurement_results_loop_dict(self, mock_h5file, platform: Platform):
-        """Test save_measurement_results functionto save from database from Platform"""
+    def test_db_save_results_loop_dict(self, mock_h5file, platform: Platform):
+        """Test db_save_results functionto save from database from Platform"""
 
         experiment_name = "experiment_name"
         loops = {
@@ -1424,13 +1424,13 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.save_measurement_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
 
         assert mock_h5file.called
 
     @patch("h5py.File")
-    def test_save_measurement_results_raise_error_incorrect_loops(self, mock_h5file, platform: Platform):
-        """Test save_measurement_results functionto save from database from Platform"""
+    def test_db_save_results_raise_error_incorrect_loops(self, mock_h5file, platform: Platform):
+        """Test db_save_results functionto save from database from Platform"""
 
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 1), "test_freq_loop": np.arange(0, 1e6, 1e6)}
@@ -1446,13 +1446,13 @@ class TestMethods:
 
         error_string = "Number of loops must be the same as the number of dimensions of the results except for IQ"
         with pytest.raises(ValueError, match=error_string):
-            platform.save_measurement_results(
+            platform.db_save_results(
                 experiment_name, results, loops, db_manager, qprogram, optional_identifier
             )
 
     @patch("h5py.File")
-    def test_save_measurement_results_raise_error_incorrect_loops_size(self, mock_h5file, platform: Platform):
-        """Test save_measurement_results functionto save from database from Platform"""
+    def test_db_save_results_raise_error_incorrect_loops_size(self, mock_h5file, platform: Platform):
+        """Test db_save_results functionto save from database from Platform"""
 
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 4)}
@@ -1468,6 +1468,6 @@ class TestMethods:
 
         error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
-            platform.save_measurement_results(
+            platform.db_save_results(
                 experiment_name, results, loops, db_manager, qprogram, optional_identifier
             )

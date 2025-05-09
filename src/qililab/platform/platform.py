@@ -1610,7 +1610,7 @@ class Platform:
 
         return result
 
-    def database_saving(
+    def db_real_time_saving(
         self,
         shape: tuple,
         loops: dict[str, np.ndarray],
@@ -1675,7 +1675,7 @@ class Platform:
             optional_identifier=optional_identifier,
         )
 
-    def save_measurement_results(
+    def db_save_results(
         self,
         experiment_name: str,
         results: np.ndarray,
@@ -1685,7 +1685,7 @@ class Platform:
         optional_identifier: str | None = None,
     ):
         """Uses the same StreamArray class as for live saving but it saves full chunks of data in the same format as platform.stream_array.
-        
+
         Example usage of this function:
 
             .. code-block:: python
