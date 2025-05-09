@@ -55,6 +55,7 @@ class StreamArray:
         platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
+        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -65,6 +66,7 @@ class StreamArray:
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
+        self.base_path = base_path
 
     def __enter__(self):
         """The execution while the with StreamArray is created.
@@ -75,6 +77,7 @@ class StreamArray:
         self.measurement = self.db_manager.add_measurement(
             experiment_name=self.experiment_name,
             experiment_completed=False,
+            base_path=self.base_path,
             optional_identifier=self.optional_identifier,
             platform=self.platform.to_dict(),
             qprogram=serialize(self.qprogram),
@@ -153,11 +156,7 @@ class StreamArray:
         return item in self.results
 
 
-if TYPE_CHECKING:
-    from qililab.platform import Platform
-
-
-class StreamArray:
+def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
     """Constructs a StreamArray instance.
 
     This methods serves as a constructor for user interface of the StreamArray class.
@@ -226,30 +225,6 @@ class StreamArray:
     """
     return RawStreamArray(shape=shape, path=path, loops=loops)
 
-    path: str
-    _dataset: h5py.Dataset
-    measurement: Measurement | None = None
-    _file: h5py.File | None = None
-
-    def __init__(
-        self,
-        shape: list | tuple,
-        loops: dict[str, np.ndarray],
-        platform: "Platform",
-        experiment_name: str,
-        db_manager: DatabaseManager,
-        base_path: str,
-        qprogram: QProgram | None = None,
-        optional_identifier: str | None = None,
-    ):
-        self.results = np.zeros(shape=shape)
-        self.loops = loops
-        self.experiment_name = experiment_name
-        self.db_manager = db_manager
-        self.optional_identifier = optional_identifier
-        self.platform = platform
-        self.qprogram = qprogram
-        self.base_path = base_path
 
 class RawStreamArray:
     """
@@ -262,9 +237,11 @@ class RawStreamArray:
         loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
     """
 
-        self._dataset = self._file.create_dataset("results", data=self.results)
-
-        return self
+    def __init__(self, shape: tuple, path: str, loops: dict[str, np.ndarray]):
+        self.results = np.zeros(shape=shape)
+        self.path = path
+        self.loops = loops
+        self._file: h5py.File | None = None
 
     def __setitem__(self, key: tuple, value: float):
         """Sets and item by key and value in the dataset.
@@ -276,13 +253,22 @@ class RawStreamArray:
             self._dataset[key] = value
         self.results[key] = value
 
+        def __enter__(self):
+        self._file = h5py.File(name=self.path, mode="w")
+        # Save loops
+        g = self._file.create_group(name="loops")
+        for loop_name, array in self.loops.items():
+            g.create_dataset(name=loop_name, data=array)
+        # Save results
+        self._dataset = self._file.create_dataset("results", data=self.results)
+
+        return self
+
     def __exit__(self, *args):
         """Exits the context manager."""
         if self._file is not None:
             self._file.__exit__()
             self._file = None
-
-        self.measurement = self.measurement.end_experiment(self.db_manager.Session)
 
     def __getitem__(self, index: int):
         """Gets item by index.
