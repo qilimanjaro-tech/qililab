@@ -253,7 +253,7 @@ class RawStreamArray:
             self._dataset[key] = value
         self.results[key] = value
 
-        def __enter__(self):
+    def __enter__(self):
         self._file = h5py.File(name=self.path, mode="w")
         # Save loops
         g = self._file.create_group(name="loops")
