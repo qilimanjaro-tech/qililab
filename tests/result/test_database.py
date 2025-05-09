@@ -363,11 +363,11 @@ class Testdatabase:
         measurement = db_manager.add_measurement("exp1", experiment_completed=True)
 
         # Assert
-        expected_path = "/home/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+        expected_path = "/mnt/home.local/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
         assert measurement.result_path == expected_path
         assert db_manager._mock_session.add.called_once
         assert db_manager._mock_session.commit.called_once
-        assert mock_makedirs.called_once_with("/home/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00")
+        assert mock_makedirs.called_once_with("/mnt/home.local/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00/exp1.h5")
 
     def test_add_measurement_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set

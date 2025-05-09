@@ -36,6 +36,7 @@ Functions
 """
 
 # isort: skip_file
+from .experiment_live_plot import ExperimentLivePlot
 from .experiment_results import ExperimentResults
 from .result import Result
 from .result_management import load_results, save_results
@@ -47,6 +48,7 @@ from .stream_results import StreamArray, stream_results
 __all__ = [
     "Cooldown",
     "DatabaseManager",
+    "ExperimentLivePlot",
     "ExperimentResults",
     "Measurement",
     "Result",
