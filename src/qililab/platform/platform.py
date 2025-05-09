@@ -24,7 +24,7 @@ import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 import numpy as np
 from qibo.gates import M
@@ -65,6 +65,7 @@ from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
 
@@ -77,6 +78,7 @@ if TYPE_CHECKING:
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result import Result
+    from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
     from qililab.settings.digital.gate_event_settings import GateEventSettings
 
@@ -1607,3 +1609,144 @@ class Platform:
         result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed)
 
         return result
+
+    def db_real_time_saving(
+        self,
+        shape: tuple,
+        loops: dict[str, np.ndarray],
+        experiment_name: str,
+        db_manager: DatabaseManager,  # get rid
+        qprogram: QProgram | None = None,
+        optional_identifier: str | None = None,
+    ):
+        """Allows for real time saving of results from an experiment.
+
+        This class wraps a numpy array and adds a context manager to save results and database metadata on real time
+        while they are acquired by the instruments.
+
+        Example usage of this function:
+
+            .. code-block:: python
+
+                db_manager = ql.get_db_manager()
+                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
+
+                platform = ql.build_platform(runcard=runcard)
+                platform.connect()
+                platform.initial_setup()
+                platform.turn_on_instruments()
+
+                (experiment definition)
+
+                stream_array = platform.database_saving(
+                    shape=(len(if_sweep), 2),
+                    loops={"frequency": if_sweep},
+                    experiment_name="resonator_spectroscopy",
+                    db_manager=db_manager,
+                    base_path="/base_path",
+                    qprogram=qprogram,
+                    optional_identifier="optional text"
+                )
+
+                with stream_array:
+                    results = platform.execute_qprogram(qprogram).results
+                    stream_array[()] = results[readout_bus][0].array.T
+
+
+        Args:
+            shape (tuple): results array shape.
+            loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
+            experiment_name (str): Name of the experiment.
+            db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
+            base_path (str): base path for the results data folder structure.
+            qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
+            optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
+
+        Returns:
+            StreamArray: StreamArray class to process and save the data
+        """
+        return StreamArray(
+            shape=shape,
+            loops=loops,
+            platform=self,
+            qprogram=qprogram,
+            experiment_name=experiment_name,
+            db_manager=db_manager,
+            optional_identifier=optional_identifier,
+        )
+
+    def db_save_results(
+        self,
+        experiment_name: str,
+        results: np.ndarray,
+        loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
+        db_manager: DatabaseManager,
+        qprogram: QProgram | None = None,
+        optional_identifier: str | None = None,
+    ):
+        """Uses the same StreamArray class as for live saving but it saves full chunks of data in the same format as platform.stream_array.
+
+        Example usage of this function:
+
+            .. code-block:: python
+
+                db_manager = ql.get_db_manager()
+                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
+
+                platform = ql.build_platform(runcard=runcard)
+                platform.connect()
+                platform.initial_setup()
+                platform.turn_on_instruments()
+
+                results = Create experiment results without live saving, either not needed or incapable (VNA data)
+                or
+                results = old results to be saved inside the database
+
+                saving_path = platform.save_measurement_results(
+                    experiment_name="resonator_spectroscopy",
+                    results = results
+                    loops={"frequency": if_sweep},
+                    db_manager=db_manager,
+                    base_path="/base_path",
+                    qprogram=qprogram,
+                    optional_identifier="optional text"
+                )
+
+        Args:
+            experiment_name (str): Name of the experiment.
+            results (np.ndarray): Experiment data.
+            loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
+            db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
+            base_path (str): base path for the results data folder structure.
+            qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
+            optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
+        """
+        shape = results.shape
+
+        if len(loops) != len(shape) - 1:
+            raise ValueError(
+                "Number of loops must be the same as the number of dimensions of the results except for IQ"
+            )
+
+        for iteration, (loop_name, loop_array) in enumerate(loops.items()):
+            if isinstance(loop_array, dict):
+                loop_array = loop_array["array"]
+            if loop_array.shape[0] != shape[iteration] - 1:  # type: ignore
+                raise ValueError(
+                    f"Loops dimensions must be the same than the array instroduced, {loop_name} as {loop_array.shape[0]} != {shape[iteration]}"  # type: ignore
+                )
+
+        stream_array = StreamArray(
+            shape=shape,
+            loops=loops,
+            platform=self,
+            qprogram=qprogram,
+            experiment_name=experiment_name,
+            db_manager=db_manager,
+            optional_identifier=optional_identifier,
+        )
+
+        with stream_array:
+            for index in range(shape[0]):
+                stream_array[index,] = results[index, ...]  # type: ignore
+        return stream_array.path
