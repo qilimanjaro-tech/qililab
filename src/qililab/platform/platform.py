@@ -933,6 +933,7 @@ class Platform:
     def execute_experiment(
         self,
         experiment: Experiment,
+        base_path: str | None = None,
         live_plot: bool = True,
         slurm_execution: bool = True,
         port_number: int | None = None,
@@ -977,6 +978,7 @@ class Platform:
         executor = ExperimentExecutor(
             platform=self,
             experiment=experiment,
+            base_path=base_path,
             live_plot=live_plot,
             slurm_execution=slurm_execution,
             port_number=port_number,
@@ -1615,7 +1617,8 @@ class Platform:
         shape: tuple,
         loops: dict[str, np.ndarray],
         experiment_name: str,
-        db_manager: DatabaseManager,  # get rid
+        db_manager: DatabaseManager,
+        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -1673,6 +1676,7 @@ class Platform:
             experiment_name=experiment_name,
             db_manager=db_manager,
             optional_identifier=optional_identifier,
+            base_path=base_path,
         )
 
     def db_save_results(
@@ -1681,6 +1685,7 @@ class Platform:
         results: np.ndarray,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
         db_manager: DatabaseManager,
+        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -1744,6 +1749,7 @@ class Platform:
             experiment_name=experiment_name,
             db_manager=db_manager,
             optional_identifier=optional_identifier,
+            base_path=base_path,
         )
 
         with stream_array:

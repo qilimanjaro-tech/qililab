@@ -798,11 +798,16 @@ class TestMethods:
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
-            results_path = platform.execute_experiment(experiment=mock_experiment)
+            results_path = platform.execute_experiment(experiment=mock_experiment, base_path="base_path")
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
             MockExecutor.assert_called_once_with(
-                platform=platform, experiment=mock_experiment, live_plot=True, slurm_execution=True, port_number=None
+                platform=platform,
+                experiment=mock_experiment,
+                base_path="base_path",
+                live_plot=True,
+                slurm_execution=True,
+                port_number=None,
             )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
@@ -1371,12 +1376,15 @@ class TestMethods:
         mock_database = MagicMock()
         db_manager = mock_database
         optional_identifier = "optional_identifier"
+        base_path = "base_path"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        db_real_time_saving = platform.db_real_time_saving(shape, loops, experiment_name, db_manager, qprogram, optional_identifier)
+        db_real_time_saving = platform.db_real_time_saving(
+            shape, loops, experiment_name, db_manager, base_path, qprogram, optional_identifier
+        )
 
         assert db_real_time_saving.loops == loops
         assert db_real_time_saving.results.shape == shape
@@ -1385,6 +1393,7 @@ class TestMethods:
         assert db_real_time_saving.qprogram == qprogram
         assert db_real_time_saving.db_manager == mock_database
         assert db_real_time_saving.experiment_name == experiment_name
+        assert db_real_time_saving.base_path == base_path
 
     @patch("h5py.File")
     def test_db_save_results(self, mock_h5file, platform: Platform):
@@ -1393,6 +1402,7 @@ class TestMethods:
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 1)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path = "base_path"
 
         mock_database = MagicMock()
         db_manager = mock_database
@@ -1402,7 +1412,7 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier)
 
         assert mock_h5file.called
 
@@ -1415,6 +1425,7 @@ class TestMethods:
             "test_amp_loop": {"bus": "readout", "units": "V", "parameter": Parameter.VOLTAGE, "array": np.arange(0, 1)}
         }
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path = "base_path"
 
         mock_database = MagicMock()
         db_manager = mock_database
@@ -1424,7 +1435,7 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier)
 
         assert mock_h5file.called
 
@@ -1435,6 +1446,7 @@ class TestMethods:
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 1), "test_freq_loop": np.arange(0, 1e6, 1e6)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path = "base_path"
 
         mock_database = MagicMock()
         db_manager = mock_database
@@ -1447,7 +1459,7 @@ class TestMethods:
         error_string = "Number of loops must be the same as the number of dimensions of the results except for IQ"
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(
-                experiment_name, results, loops, db_manager, qprogram, optional_identifier
+                experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier
             )
 
     @patch("h5py.File")
@@ -1457,6 +1469,7 @@ class TestMethods:
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 4)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path = "base_path"
 
         mock_database = MagicMock()
         db_manager = mock_database
@@ -1469,5 +1482,5 @@ class TestMethods:
         error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(
-                experiment_name, results, loops, db_manager, qprogram, optional_identifier
+                experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier
             )
