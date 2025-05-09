@@ -229,7 +229,7 @@ class CircuitTranspiler:
             coupling_map = platform.digital_compilation_settings.topology
 
             # Create transpiler:
-            transpiler = CircuitTranspiler(platform)
+            transpiler = CircuitTranspiler(platform.digital_compilation_settings)
 
         Now we can transpile like:
 

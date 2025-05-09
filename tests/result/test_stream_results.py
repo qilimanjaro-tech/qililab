@@ -10,6 +10,7 @@ from tests.data import Galadriel
 from qililab.data_management import build_platform
 from qililab.result import stream_results
 from qililab.result.stream_results import RawStreamArray, StreamArray
+from qililab.typings.enums import Parameter
 
 AMP_VALUES = np.arange(0, 1, 2)
 
@@ -25,11 +26,42 @@ def fixture_stream_array():
     loops = {"test_amp_loop": AMP_VALUES}
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
+    base_path = "base_path"
     mock_database = MagicMock()
     db_manager = mock_database
 
     return StreamArray(
-        shape=shape, loops=loops, platform=platform, experiment_name=experiment_name, db_manager=db_manager
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        base_path=base_path,
+    )
+
+
+@pytest.fixture(name="stream_array_dict_loops")
+def fixture_stream_array_dict_loops():
+    """fixture_stream_array
+
+    Returns:
+        stream_array: StreamArray
+    """
+    shape = (2, 2)
+    loops = {"test_amp_loop": {"bus": "readout", "units": "V", "parameter": Parameter.VOLTAGE, "array": AMP_VALUES}}
+    platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
+    experiment_name = "test_stream_array"
+    base_path = "base_path"
+    mock_database = MagicMock()
+    db_manager = mock_database
+
+    return StreamArray(
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        base_path=base_path,
     )
 
 
@@ -80,6 +112,17 @@ class TestStreamArray:
         assert stream_array.results.shape == (2, 2)
         assert (stream_array.results == np.empty(shape=(2, 2))).all
         assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
+
+    def test_stream_array_with_loop_dict(self, stream_array_dict_loops: StreamArray):
+        """Tests the instantiation of a StreamArray object."""
+        assert stream_array_dict_loops.loops == {
+            "test_amp_loop": {
+                "bus": "readout",
+                "units": "V",
+                "parameter": Parameter.VOLTAGE,
+                "array": np.arange(0, 1, 2),
+            }
+        }
 
     @patch("h5py.File", return_value=MockFile())
     def test_context_manager(self, mock_h5py: MockFile, stream_array: StreamArray):

@@ -18,6 +18,7 @@ from typing import TypedDict
 import h5py
 import numpy as np
 
+from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
 from qililab.utils.serialization import serialize
 
@@ -89,15 +90,28 @@ class ExperimentResultsWriter(ExperimentResults):
     Inherits from `ExperimentResults` to support both read and write operations.
     """
 
-    def __init__(self, path: str, metadata: ExperimentMetadata):
+    def __init__(
+        self,
+        path: str,
+        metadata: ExperimentMetadata,
+        live_plot: bool = True,
+        slurm_execution: bool = True,
+        port_number: int | None = None,
+    ):
         """Initializes the ExperimentResultsWriter instance.
 
         Args:
             path (str): The file path to save the HDF5 results file.
             metadata (ExperimentMetadata): The metadata describing the experiment structure.
+            live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+            slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
+            port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
         """
         super().__init__(path)
         self._metadata = metadata
+        self._live_plot_true = live_plot
+        self._slurm_execution = slurm_execution
+        self._port_number = port_number
 
     # pylint: disable=too-many-locals
     def _create_results_file(self):
@@ -122,6 +136,10 @@ class ExperimentResultsWriter(ExperimentResults):
         if "qprograms" in self._metadata:
             # Create the group for QPrograms
             qprograms_group = self._file.create_group(ExperimentResultsWriter.QPROGRAMS_PATH)
+
+            # Create dictionary for plot dimensions
+            if self._live_plot_true:
+                dims_dict = {}
 
             # Iterate through QPrograms and measurements in the structure
             for qprogram_name, qprogram_data in self._metadata["qprograms"].items():
@@ -167,6 +185,15 @@ class ExperimentResultsWriter(ExperimentResults):
                     # Attach the extra dimension (usually for I/Q) to the results dataset
                     results_ds.dims[len(qprogram_data["dims"]) + len(measurement_data["dims"])].label = "I/Q"
 
+                    # Fill plot dictionary with dimensions
+                    if self._live_plot_true:
+                        dims_dict[qprogram_name, measurement_name] = results_ds.dims
+
+            # Generate live plot figures
+            if self._live_plot_true:
+                self.results_liveplot = ExperimentLivePlot(self.path, self._slurm_execution, self._port_number)
+                self.results_liveplot.live_plot_figures(dims_dict)
+
     def _create_resuts_access(self):
         """Sets up internal data structures to allow for real-time data writing to the HDF5 file."""
         if "qprograms" in self._metadata:
@@ -182,7 +209,7 @@ class ExperimentResultsWriter(ExperimentResults):
         Returns:
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
-        self._file = h5py.File(self.path, mode="w")
+        self._file = h5py.File(self.path, mode="w", libver="latest")
         self._create_results_file()
         self._create_resuts_access()
         self.measurement = self.db_manager.add_measurement(
@@ -192,6 +219,7 @@ class ExperimentResultsWriter(ExperimentResults):
             platform=self.platform.to_dict(),
             qprogram=serialize(self._metadata["qprograms"]),
         )
+        self._append_mode = True
 
         return self
 
@@ -208,7 +236,8 @@ class ExperimentResultsWriter(ExperimentResults):
         if isinstance(measurement_name, int):
             measurement_name = f"Measurement_{measurement_name}"
         self.data[qprogram_name, measurement_name][tuple(indices)] = value
-        # save the data and metadata here and before
+        if self._live_plot_true:
+            self.results_liveplot.live_plot(self.data[qprogram_name, measurement_name], qprogram_name, measurement_name)
 
     @ExperimentResults.platform.setter
     def platform(self, platform: str):

@@ -28,69 +28,19 @@ class StreamArray:
     """Constructs a StreamArray instance.
 
     This methods serves as a constructor for user interface of the StreamArray class.
+    This class allows to save the experiment inside the database as the Software loop progresses
+    This ensures that in the event of a runtime failure, you can still access results up to the point of failure
+    from a resulting file.
 
     Args:
-        shape (tuple): results array shape.
-        path (str): path to save results.
-        loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
-
-    Examples:
-
-        You have the option to save your results in real-time using this feature.
-        This ensures that in the event of a runtime failure, you can still access results up to the point of failure
-        from a resulting file. You have to specify the desired shape of the results, the loops to include,
-        and the path to the resulting file. Then you can start saving results in real-time by doing:
-
-
-        .. code-block:: python
-
-            import numpy as np
-            import qililab as ql
-
-            LOOP_VALUES = np.linspace(0, 1, 5)
-            stream_array = ql.stream_results(shape=(5, 2), loops={"loop_name": LOOP_VALUES}, path="results.h5")
-
-            with stream_array:
-                for i, value in enumerate(LOOP_VALUES):
-                    stream_array[(i, 0)] = value
-
-        >>> stream_array
-        [[0.   0.  ]
-         [0.25 0.  ]
-         [0.5  0.  ]
-         [0.75 0.  ]
-         [1.   0.  ]]
-
-        >>> ql.load_results("results.h5")
-        (array([[0., 0.],
-               [0.25, 0.],
-               [0.5, 0.],
-               [0.75, 0.],
-               [1., 0.]]), {'loop_name': array([0.  , 0.25, 0.5 , 0.75, 1.  ])})
-
-    .. note::
-
-        The output of `stream_results` is not picklable, thus it cannot be returned in a SLURM job. In this scenario we suggest copying the array with the data into a different variable and returning that variable instead:
-
-        .. code-block:: python
-
-            %%submit_job -o results -d galadriel
-            LOOP_VALUES = np.linspace(0, 1, 5)
-            stream_array = ql.stream_results(shape=(5, 2), loops={"loop_name": LOOP_VALUES}, path="results.h5")
-            with stream_array:
-                for i, value in enumerate(LOOP_VALUES):
-                    # Here you can execute any algorithm you want
-                    stream_array[(i, 0)] = value
-
-            results = stream_array.results
-
-        >>> results.result()
-        (array([[0.   0.  ]
-                [0.25 0.  ]
-                [0.5  0.  ]
-                [0.75 0.  ]
-                [1.   0.  ]])
-
+        shape (list | tuple): Shape of the results array.
+        loops (dict[str, np.ndarray]): dictionary of loops with the name of the loop and the array.
+        platform (Platform): platform where the experiment was executed
+        experiment_name (str): Name of the experiment.
+        db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
+        base_path (str): base path for the results data folder structure.
+        qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
+        optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
     """
 
     path: str
@@ -101,10 +51,11 @@ class StreamArray:
     def __init__(
         self,
         shape: list | tuple,
-        loops: dict[str, np.ndarray],
+        loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
         platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
+        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -115,11 +66,18 @@ class StreamArray:
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
+        self.base_path = base_path
 
     def __enter__(self):
+        """The execution while the with StreamArray is created.
+
+        Returns:
+            StreamArray: StreamArray class created
+        """
         self.measurement = self.db_manager.add_measurement(
             experiment_name=self.experiment_name,
             experiment_completed=False,
+            base_path=self.base_path,
             optional_identifier=self.optional_identifier,
             platform=self.platform.to_dict(),
             qprogram=serialize(self.qprogram),
@@ -131,7 +89,13 @@ class StreamArray:
 
         g = self._file.create_group(name="loops")
         for loop_name, array in self.loops.items():
-            g.create_dataset(name=loop_name, data=array)
+            if isinstance(array, dict):
+                g_dataset = g.create_dataset(name=loop_name, data=array["array"])
+                g_dataset["bus"] = array["bus"]
+                g_dataset["parameter"] = array["parameter"]
+                g_dataset["units"] = array["units"]
+            else:
+                g.create_dataset(name=loop_name, data=array)
 
         self._dataset = self._file.create_dataset("results", data=self.results)
 
@@ -194,39 +158,54 @@ class StreamArray:
 
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
     """Constructs a StreamArray instance.
+
     This methods serves as a constructor for user interface of the StreamArray class.
+
     Args:
         shape (tuple): results array shape.
         path (str): path to save results.
         loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
+
     Examples:
+
         You have the option to save your results in real-time using this feature.
         This ensures that in the event of a runtime failure, you can still access results up to the point of failure
         from a resulting file. You have to specify the desired shape of the results, the loops to include,
         and the path to the resulting file. Then you can start saving results in real-time by doing:
+
+
         .. code-block:: python
+
             import numpy as np
             import qililab as ql
+
             LOOP_VALUES = np.linspace(0, 1, 5)
             stream_array = ql.stream_results(shape=(5, 2), loops={"loop_name": LOOP_VALUES}, path="results.h5")
+
             with stream_array:
                 for i, value in enumerate(LOOP_VALUES):
                     stream_array[(i, 0)] = value
+
         >>> stream_array
         [[0.   0.  ]
          [0.25 0.  ]
          [0.5  0.  ]
          [0.75 0.  ]
          [1.   0.  ]]
+
         >>> ql.load_results("results.h5")
         (array([[0., 0.],
                [0.25, 0.],
                [0.5, 0.],
                [0.75, 0.],
                [1., 0.]]), {'loop_name': array([0.  , 0.25, 0.5 , 0.75, 1.  ])})
+
     .. note::
+
         The output of `stream_results` is not picklable, thus it cannot be returned in a SLURM job. In this scenario we suggest copying the array with the data into a different variable and returning that variable instead:
+
         .. code-block:: python
+
             %%submit_job -o results -d galadriel
             LOOP_VALUES = np.linspace(0, 1, 5)
             stream_array = ql.stream_results(shape=(5, 2), loops={"loop_name": LOOP_VALUES}, path="results.h5")
@@ -234,13 +213,15 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                 for i, value in enumerate(LOOP_VALUES):
                     # Here you can execute any algorithm you want
                     stream_array[(i, 0)] = value
+
             results = stream_array.results
+
         >>> results.result()
         (array([[0.   0.  ]
                 [0.25 0.  ]
                 [0.5  0.  ]
                 [0.75 0.  ]
-                [1.   0.  ]])
+                [1.   0.  ]]))
     """
     return RawStreamArray(shape=shape, path=path, loops=loops)
 
@@ -248,10 +229,8 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
 class RawStreamArray:
     """
     Allows for real time saving of results from an experiment.
-
     This class wraps a numpy array and adds a context manager to save results on real time while they are acquired by
     the instruments.
-
     Args:
         shape (tuple): results array shape.
         path (str): path to save results.

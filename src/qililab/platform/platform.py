@@ -24,7 +24,7 @@ import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 import numpy as np
 from qibo.gates import M
@@ -930,13 +930,25 @@ class Platform:
         )
         return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
-    def execute_experiment(self, experiment: Experiment, calibration: Calibration | None = None) -> str:
+    def execute_experiment(
+        self,
+        experiment: Experiment,
+        base_path: str | None = None,
+        live_plot: bool = True,
+        slurm_execution: bool = True,
+        port_number: int | None = None,
+    ) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
+            live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+            slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell.
+                                    Defaults to True.
+            port_number (int|None): Optional parameter for when slurm_execution is True.
+                                    It defines the port number of the Dash server. Defaults to None.
 
         Returns:
             str: The path to the file where the results are stored.
@@ -963,7 +975,14 @@ class Platform:
             - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
-        executor = ExperimentExecutor(platform=self, experiment=experiment)
+        executor = ExperimentExecutor(
+            platform=self,
+            experiment=experiment,
+            base_path=base_path,
+            live_plot=live_plot,
+            slurm_execution=slurm_execution,
+            port_number=port_number,
+        )
         return executor.execute()
 
     def compile_qprogram(
@@ -1593,24 +1612,61 @@ class Platform:
 
         return result
 
-    def stream_array(
+    def db_real_time_saving(
         self,
         shape: tuple,
         loops: dict[str, np.ndarray],
         experiment_name: str,
-        db_manager: DatabaseManager,  # get rid
+        db_manager: DatabaseManager,
+        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
-        """
-        Allows for real time saving of results from an experiment.
+        """Allows for real time saving of results from an experiment.
 
         This class wraps a numpy array and adds a context manager to save results and database metadata on real time
         while they are acquired by the instruments.
 
+        Example usage of this function:
+
+            .. code-block:: python
+
+                db_manager = ql.get_db_manager()
+                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
+
+                platform = ql.build_platform(runcard=runcard)
+                platform.connect()
+                platform.initial_setup()
+                platform.turn_on_instruments()
+
+                (experiment definition)
+
+                stream_array = platform.database_saving(
+                    shape=(len(if_sweep), 2),
+                    loops={"frequency": if_sweep},
+                    experiment_name="resonator_spectroscopy",
+                    db_manager=db_manager,
+                    base_path="/base_path",
+                    qprogram=qprogram,
+                    optional_identifier="optional text"
+                )
+
+                with stream_array:
+                    results = platform.execute_qprogram(qprogram).results
+                    stream_array[()] = results[readout_bus][0].array.T
+
+
         Args:
             shape (tuple): results array shape.
-            loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
+            loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
+            experiment_name (str): Name of the experiment.
+            db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
+            base_path (str): base path for the results data folder structure.
+            qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
+            optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
+
+        Returns:
+            StreamArray: StreamArray class to process and save the data
         """
         return StreamArray(
             shape=shape,
@@ -1620,18 +1676,56 @@ class Platform:
             experiment_name=experiment_name,
             db_manager=db_manager,
             optional_identifier=optional_identifier,
+            base_path=base_path,
         )
 
-    def save_measurement_results(
+    def db_save_results(
         self,
         experiment_name: str,
         results: np.ndarray,
-        loops: dict[str, np.ndarray],
+        loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
         db_manager: DatabaseManager,
+        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
+        """Uses the same StreamArray class as for live saving but it saves full chunks of data in the same format as platform.stream_array.
 
+        Example usage of this function:
+
+            .. code-block:: python
+
+                db_manager = ql.get_db_manager()
+                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
+
+                platform = ql.build_platform(runcard=runcard)
+                platform.connect()
+                platform.initial_setup()
+                platform.turn_on_instruments()
+
+                results = Create experiment results without live saving, either not needed or incapable (VNA data)
+                or
+                results = old results to be saved inside the database
+
+                saving_path = platform.save_measurement_results(
+                    experiment_name="resonator_spectroscopy",
+                    results = results
+                    loops={"frequency": if_sweep},
+                    db_manager=db_manager,
+                    base_path="/base_path",
+                    qprogram=qprogram,
+                    optional_identifier="optional text"
+                )
+
+        Args:
+            experiment_name (str): Name of the experiment.
+            results (np.ndarray): Experiment data.
+            loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
+            db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
+            base_path (str): base path for the results data folder structure.
+            qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
+            optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
+        """
         shape = results.shape
 
         if len(loops) != len(shape) - 1:
@@ -1640,9 +1734,11 @@ class Platform:
             )
 
         for iteration, (loop_name, loop_array) in enumerate(loops.items()):
-            if loop_array.shape[0] != shape[iteration] - 1:
+            if isinstance(loop_array, dict):
+                loop_array = loop_array["array"]
+            if loop_array.shape[0] != shape[iteration] - 1:  # type: ignore
                 raise ValueError(
-                    f"Loops dimensions must be the same than the array instroduced, {loop_name} as {loop_array.shape[0]} != {shape[iteration]}"
+                    f"Loops dimensions must be the same than the array instroduced, {loop_name} as {loop_array.shape[0]} != {shape[iteration]}"  # type: ignore
                 )
 
         stream_array = StreamArray(
@@ -1653,6 +1749,7 @@ class Platform:
             experiment_name=experiment_name,
             db_manager=db_manager,
             optional_identifier=optional_identifier,
+            base_path=base_path,
         )
 
         with stream_array:
