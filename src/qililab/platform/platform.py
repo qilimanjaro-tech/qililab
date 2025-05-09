@@ -1624,7 +1624,6 @@ class Platform:
                 stream_array = platform.database_saving(
                     shape=(len(if_sweep), 2),
                     loops={"frequency": if_sweep},
-                    platform=platform,
                     experiment_name="resonator_spectroscopy",
                     db_manager=db_manager,
                     base_path="/base_path",
@@ -1669,6 +1668,32 @@ class Platform:
         optional_identifier: str | None = None,
     ):
         """Uses the same StreamArray class as for live saving but it saves full chunks of data in the same format as platform.stream_array.
+        
+        Example usage of this function:
+
+            .. code-block:: python
+
+                db_manager = ql.get_db_manager()
+                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
+
+                platform = ql.build_platform(runcard=runcard)
+                platform.connect()
+                platform.initial_setup()
+                platform.turn_on_instruments()
+
+                results = Create experiment results without live saving, either not needed or incapable (VNA data)
+                or
+                results = old results to be saved inside the database
+
+                saving_path = platform.save_measurement_results(
+                    experiment_name="resonator_spectroscopy",
+                    results = results
+                    loops={"frequency": if_sweep},
+                    db_manager=db_manager,
+                    base_path="/base_path",
+                    qprogram=qprogram,
+                    optional_identifier="optional text"
+                )
 
         Args:
             experiment_name (str): Name of the experiment.
