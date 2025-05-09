@@ -802,7 +802,12 @@ class TestMethods:
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
             MockExecutor.assert_called_once_with(
-                platform=platform, experiment=mock_experiment, base_path="base_path", live_plot=True, slurm_execution=True, port_number=None
+                platform=platform,
+                experiment=mock_experiment,
+                base_path="base_path",
+                live_plot=True,
+                slurm_execution=True,
+                port_number=None,
             )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
@@ -1371,13 +1376,15 @@ class TestMethods:
         mock_database = MagicMock()
         db_manager = mock_database
         optional_identifier = "optional_identifier"
-        base_path="base_path"
+        base_path = "base_path"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        db_real_time_saving = platform.db_real_time_saving(shape, loops, experiment_name, db_manager, qprogram, optional_identifier)
+        db_real_time_saving = platform.db_real_time_saving(
+            shape, loops, experiment_name, db_manager, base_path, qprogram, optional_identifier
+        )
 
         assert db_real_time_saving.loops == loops
         assert db_real_time_saving.results.shape == shape
@@ -1395,7 +1402,7 @@ class TestMethods:
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 1)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
-        base_path="base_path"
+        base_path = "base_path"
 
         mock_database = MagicMock()
         db_manager = mock_database

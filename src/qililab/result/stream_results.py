@@ -221,7 +221,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                 [0.25 0.  ]
                 [0.5  0.  ]
                 [0.75 0.  ]
-                [1.   0.  ]])
+                [1.   0.  ]]))
     """
     return RawStreamArray(shape=shape, path=path, loops=loops)
 
@@ -242,6 +242,7 @@ class RawStreamArray:
         self.path = path
         self.loops = loops
         self._file: h5py.File | None = None
+        self._dataset = None
 
     def __setitem__(self, key: tuple, value: float):
         """Sets and item by key and value in the dataset.
