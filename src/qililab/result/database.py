@@ -136,6 +136,9 @@ class Measurement(base):  # type: ignore
     created_by = Column("created_by", String, server_default=text("current_user"))
 
     def end_experiment(self, Session):
+        """Function to end measurement of the experiment. The function sets inside the database information
+        about the end of the experiment: the finishing time, completeness status and experiment length."""
+
         with Session() as session:
             # Merge the detached instance into the current session
             persistent_instance = session.merge(self)
@@ -150,11 +153,15 @@ class Measurement(base):  # type: ignore
                 raise e
 
     def read_experiment(self):
+        """Reads current experiment."""
+
         with ExperimentResults(self.result_path) as results:
             data, dims = results.get()
         return data, dims
 
     def read_experiment_xarray(self):
+        """Rewads current experiment in Xarray format."""
+
         with ExperimentResults(self.result_path) as results:
             data, dims = results.get()
 
@@ -173,16 +180,20 @@ class Measurement(base):  # type: ignore
         return data_xr
 
     def load_old_h5(self):
+        """Load old experiment data from h5 files."""
         return load_results(self.result_path)
 
     def load_df(self):
+        """Loads experiments data from hdf files."""
         return read_hdf(self.result_path)
 
     def load_xarray(self):
+        """Loads experiments data from hdf files into Xarray format."""
         df = read_hdf(self.result_path)
         return df.to_xarray().to_dataarray()
 
     def read_numpy(self):
+        """Loads experiments data from hdf files into numpy array format."""
         df = read_hdf(self.result_path)
         da = df.to_xarray().to_dataarray()
         arr = da.to_numpy()[0,]
@@ -257,10 +268,6 @@ class DatabaseManager:
         Args:
             sample (str): Sample name, mandatory parameter as allways needed unlike cooldown
             cooldown (str | None, optional): Cooldown name, contains multiple sample instances. Defaults to None.
-
-        Raises:
-            Exception: _description_
-            Exception: _description_
         """
         with self.Session() as session:
             sample_exists = session.query(exists().where(Sample.sample_name == sample)).scalar()
@@ -316,8 +323,14 @@ class DatabaseManager:
         """Add sample metadata
 
         Args:
-            sample_name (str): Sample name id.
+            sample_name (str): Sample id.
             manufacturer (str): Sample manufacturer.
+            wafer (str): Wafer id.
+            sample (str): Sample id.
+            fab_run (str): Fabrication information.
+            device_design (str): Design information.
+            n_qubits_per_device (list[int]): Number of Qbits inside the sample.
+            additional_info (str | None, optional): Optional additional information. Defaults to None.
         """
         sample_obj = Sample(
             sample_name=sample_name,
@@ -338,6 +351,7 @@ class DatabaseManager:
                 raise e
 
     def load_by_id(self, id):
+        """Load measurement by its measurement_id."""
         return self.Session().query(Measurement).where(Measurement.measurement_id == id).one_or_none()
 
     def tail(
@@ -347,6 +361,14 @@ class DatabaseManager:
         order_limit: int | None = 5,
         pandas_output: bool = False,
     ):
+        """Add an index at the end of the database.
+
+        Args:
+            exp_name (str | None, optional): Experiment name. Defaults to None.
+            current_sample (bool, optional): Conditional to define if the sample is currently on use. Defaults to True.
+            order_limit (int | None, optional): Limit of the order by query. Defaults to 5.
+            pandas_output (bool, optional): If True, read database table into a DataFrame. Defaults to False.
+        """
         with self.engine.connect() as con:
             query = self.Session().query(Measurement)
 
@@ -372,6 +394,14 @@ class DatabaseManager:
         order_limit: int | None = 5,
         pandas_output: bool = False,
     ):
+        """Add an index at the beginning of the database.
+
+        Args:
+            exp_name (str | None, optional): Experiment name. Defaults to None.
+            current_sample (bool, optional): Conditional to define if the sample is currently on use. Defaults to True.
+            order_limit (int | None, optional): Limit of the order by query. Defaults to 5.
+            pandas_output (bool, optional): If True, read database table into a DataFrame. Defaults to False.
+        """
         with self.engine.connect() as con:
             query = self.Session().query(Measurement)
 
@@ -404,9 +434,26 @@ class DatabaseManager:
         experiment: "Experiment" = None,  # type: ignore
         qprogram: "QProgram" = None,  # type: ignore
         calibration: "Calibration" = None,  # type: ignore
-        parameters=None,
-        data_shape=None,
+        parameters: list[str] | None = None,
+        data_shape: np.ndarray | None = None,
     ):
+        """Add measurement metadata and data path
+
+        Args:
+            experiment_name (str): Experiment name.
+            experiment_completed (bool): Status of the experiment.
+            cooldown (str | None, optional): Cooldown id. Defaults to None.
+            sample_name (str | None, optional): Sample id. Defaults to None.
+            optional_identifier (str | None, optional): Optional additional information. Defaults to None.
+            end_time (datetime.datetime | None, optional): Finishing time of the experiment. Defaults to None.
+            run_length (float | None, optional): Time length of the experiment. Defaults to None.
+            platform (Platform, optional): Platform used on the experiment. Defaults to None.
+            experiment (Experiment | None, optional): Experiment class used on the experiment. Defaults to None.
+            qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.
+            calibration (Calibration | None, optional): Calibration used on the experiment. Defaults to None.
+            parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
+            data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
+        """
         if sample_name is None:
             if self.current_sample:
                 sample_name = self.current_sample
@@ -456,6 +503,7 @@ class DatabaseManager:
         experiment_name: str,
         results: np.ndarray,
         loops: dict[str, np.ndarray],
+        base_path: str,
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
@@ -463,8 +511,23 @@ class DatabaseManager:
         experiment: "Experiment" = None,  # type: ignore
         qprogram: "QProgram" = None,  # type: ignore
         calibration: "Calibration" = None,  # type: ignore
-        parameters=None,
+        parameters: list[str] | None = None,
     ):
+        """Add measurement metadata, data path and results from a finished experiment.
+
+        Args:
+            experiment_name (str): Experiment name.
+            results (np.ndarray): Results array of a completed measurement.
+            loops (dict[str, np.ndarray]): Dictionary of loops used in the experiment.
+            cooldown (str | None, optional): Cooldown id. Defaults to None.
+            sample_name (str | None, optional): Sample id. Defaults to None.
+            optional_identifier (str | None, optional): Optional additional information. Defaults to None.
+            platform (Platform, optional): Platform used on the experiment. Defaults to None.
+            experiment (Experiment | None, optional): Experiment class used on the experiment. Defaults to None.
+            qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.
+            calibration (Calibration | None, optional): Calibration used on the experiment. Defaults to None.
+            parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
+        """
         if sample_name is None:
             if self.current_sample:
                 sample_name = self.current_sample
@@ -475,7 +538,6 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
-        base_path = "/home/jupytershared/data"
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         result_path = f"{dir_path}/{experiment_name}.h5"
 
@@ -520,10 +582,11 @@ class DatabaseManager:
 
 
 def _load_config(filename=os.path.expanduser("~/database.ini"), section="postgresql"):
+    """Load database configuration based on postrgreSQL"""
     parser = ConfigParser()
     parser.read(filename)
 
-    # get section, default to postgresql
+    # Get section, default to postgresql
     config = {}
     if parser.has_section(section):
         params = parser.items(section)
@@ -534,6 +597,7 @@ def _load_config(filename=os.path.expanduser("~/database.ini"), section="postgre
 
 
 def get_db_manager():
+    """Automatic DatabaseManager generator based on default load_config"""
     return DatabaseManager(**_load_config())
 
 
