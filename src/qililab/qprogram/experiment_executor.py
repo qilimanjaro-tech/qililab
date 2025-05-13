@@ -33,7 +33,9 @@ from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.variable import Variable
+from qililab.result.database import DatabaseManager, get_db_manager
 from qililab.result.experiment_results_writer import (
+    ExperimentDataBaseMetadata,
     ExperimentMetadata,
     ExperimentResultsWriter,
     MeasurementMetadata,
@@ -107,11 +109,15 @@ class ExperimentExecutor:
         - Ensure that the platform and experiment are properly configured before execution.
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
+
     def __init__(
         self,
         platform: "Platform",
         experiment: Experiment,
+        database: bool = True,
+        db_manager: DatabaseManager | None = None,
         base_path: str | None = None,
+        optional_identifier: str | None = None,
         live_plot: bool = True,
         slurm_execution: bool = True,
         port_number: int | None = None,
@@ -153,11 +159,35 @@ class ExperimentExecutor:
         # Metadata dictionary containing information about the experiment structure and variables.
         self._metadata: ExperimentMetadata
 
+        # DatabaseMetadata dictionary containing information about the experiment structure and variables.
+        self._db_metadata: ExperimentDataBaseMetadata | None = None
+
         # ExperimentResultsWriter object responsible for saving experiment results to file in real-time.
         self._results_writer: ExperimentResultsWriter
 
+        # Condition to determine if the exiperiment must be save on a database or not.
+        self.database: bool = database
+
+        # Optional Database Manager for database storage.
+        self.db_manager: DatabaseManager | None = db_manager
+
         # Base path string for the place where to save the experiment folder structure. Default None (temporal path).
         self.base_path: str | None = base_path
+
+        # Optional identifier / information for database storage.
+        self.optional_identifier: str | None = optional_identifier
+
+    def _create_database(
+        self,
+    ):
+        if not self.db_manager:
+            try:
+                self.db_manager = get_db_manager()
+            except:
+                raise ReferenceError("Missing initialization information at the desired database '.ini' path.")
+
+        self.sample = self.db_manager.current_sample
+        self.cooldown = self.db_manager.current_cd
 
     def _prepare_metadata(self, executed_at: datetime):
         """Prepares the loop values and result shape before execution."""
@@ -255,6 +285,14 @@ class ExperimentExecutor:
             execution_time=0.0,
             qprograms={},
         )
+        if self.database:
+            self._db_metadata = ExperimentDataBaseMetadata(
+                experiment_name=self.experiment.label,
+                base_path=self.base_path,  # type: ignore
+                cooldown=self.cooldown,
+                sample_name=self.sample,
+                optional_identifier=self.optional_identifier,
+            )
         traverse_experiment(self.experiment.body)
         self._all_variables = dict(self._all_variables)
 
@@ -581,6 +619,10 @@ class ExperimentExecutor:
         # Create file path to store results
         results_path = self._create_results_path(executed_at=executed_at)
 
+        # Load / Create database manager, cooldown and sample names
+        if self.database:
+            self._create_database()
+
         # Prepare the results metadata
         self._prepare_metadata(executed_at=executed_at)
 
@@ -588,6 +630,8 @@ class ExperimentExecutor:
         self._results_writer = ExperimentResultsWriter(
             path=results_path,
             metadata=self._metadata,
+            db_metadata=self._db_metadata,
+            db_manager=self.db_manager,
             live_plot=self._live_plot,
             slurm_execution=self._slurm_execution,
             port_number=self._port_number,

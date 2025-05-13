@@ -18,6 +18,7 @@ from typing import TypedDict
 import h5py
 import numpy as np
 
+from qililab.result.database import DatabaseManager
 from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
 from qililab.utils.serialization import serialize
@@ -83,6 +84,24 @@ class ExperimentMetadata(TypedDict, total=False):
     qprograms: dict[str, QProgramMetadata]
 
 
+class ExperimentDataBaseMetadata(TypedDict, total=False):
+    """Metadata for an experiment database.
+
+    Attributes:
+        platform (str): Platform information.
+        experiment (str): Experiment description.
+        executed_at (datetime): Timestamp when the experiment started execution.
+        execution_time (float): Time taken for the execution in seconds.
+        qprograms (dict[str, QProgramMetadata]): Quantum programs included in the experiment.
+    """
+
+    experiment_name: str
+    base_path: str
+    cooldown: str | None
+    sample_name: str | None
+    optional_identifier: str | None
+
+
 class ExperimentResultsWriter(ExperimentResults):
     """
     Allows for real-time saving of results from an experiment using the provided metadata information.
@@ -94,6 +113,8 @@ class ExperimentResultsWriter(ExperimentResults):
         self,
         path: str,
         metadata: ExperimentMetadata,
+        db_metadata: ExperimentDataBaseMetadata | None,
+        db_manager: DatabaseManager | None,
         live_plot: bool = True,
         slurm_execution: bool = True,
         port_number: int | None = None,
@@ -109,6 +130,8 @@ class ExperimentResultsWriter(ExperimentResults):
         """
         super().__init__(path)
         self._metadata = metadata
+        self._db_metadata = db_metadata
+        self._db_manager = db_manager
         self._live_plot_true = live_plot
         self._slurm_execution = slurm_execution
         self._port_number = port_number
@@ -212,16 +235,26 @@ class ExperimentResultsWriter(ExperimentResults):
         self._file = h5py.File(self.path, mode="w", libver="latest")
         self._create_results_file()
         self._create_resuts_access()
-        self.measurement = self.db_manager.add_measurement(
-            experiment_name=self.experiment_name,
-            experiment_completed=False,
-            optional_identifier=self.optional_identifier,
-            platform=self.platform.to_dict(),
-            qprogram=serialize(self._metadata["qprograms"]),
-        )
+        if self._db_metadata:
+            self.measurement = self._db_manager.add_measurement(
+                experiment_name=self._metadata["experiment_name"],
+                experiment_completed=False,
+                base_path=self._metadata["base_path"],
+                cooldown=self._metadata["cooldown"],
+                sample_name=self._metadata["sample_name"],
+                optional_identifier=self._metadata["optional_identifier"],
+                platform=self.platform.to_dict(),
+                experiment=serialize(self.experiment),
+                qprogram=serialize(self._metadata["qprograms"]),
+            )
         self._append_mode = True
 
         return self
+
+    def __exit__(self, *args):
+        """_summary_"""
+        if self._db_metadata:
+            self.measurement = self.measurement.end_experiment(self._db_manager.Session)
 
     def __setitem__(self, key: tuple, value: float):
         """Sets an item in the results dataset.

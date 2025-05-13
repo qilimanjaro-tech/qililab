@@ -62,6 +62,7 @@ from qililab.qprogram import (
 )
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
+from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -343,6 +344,9 @@ class Platform:
 
         self.flux_parameter: dict[str, int | float | bool | str] = {}
         """Flux dictionary with information for the get parameter (only used on FLUX parameters)"""
+
+        self.db_manager: DatabaseManager | None = None
+        """Database manager for experiment class and db stream array"""
 
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
@@ -934,6 +938,8 @@ class Platform:
         self,
         experiment: Experiment,
         base_path: str | None = None,
+        database: bool = True,
+        optional_identifier: str | None = None,
         live_plot: bool = True,
         slurm_execution: bool = True,
         port_number: int | None = None,
@@ -967,7 +973,28 @@ class Platform:
                 platform.experiment_results_base_path = "/data/experiments"
 
                 # Execute the experiment on the platform
-                results_path = platform.execute_experiment(experiment=experiment)
+                results_path = platform.execute_experiment(experiment=experiment, database=False)
+                print(f"Results saved to {results_path}")
+
+        Example with database:
+            .. code-block:: python
+
+                from qililab import Experiment
+
+                # Initialize your experiment
+                experiment = Experiment(label="my_experiment")
+                # Add variables, loops, and operations to the experiment
+                # ...
+
+                # Define the base path for storing experiment results
+                platform.experiment_results_base_path = "/data/experiments"
+
+                # Define the database manager. Optional, as this ca be done inside execute_experiment
+                db_manager = platform.load_db_manager(db_manager_ini_path)
+                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
+
+                # Execute the experiment on the platform
+                results_path = platform.execute_experiment(experiment=experiment, database=True)
                 print(f"Results saved to {results_path}")
 
         Note:
@@ -978,7 +1005,10 @@ class Platform:
         executor = ExperimentExecutor(
             platform=self,
             experiment=experiment,
+            database=database,
+            db_manager=self.db_manager,
             base_path=base_path,
+            optional_identifier=optional_identifier,
             live_plot=live_plot,
             slurm_execution=slurm_execution,
             port_number=port_number,
@@ -1612,12 +1642,27 @@ class Platform:
 
         return result
 
+    def load_db_manager(self, db_ini_path: str | None = None):
+        """Load Database Manager from an .ini path containing user DB user information or if no path is given
+        it uses '~/database.ini'.
+
+        Args:
+            db_ini_path (str | None, optional): Database manager initialization file path. Defaults to None.
+
+        Returns:
+            DatabaseManager: Database manager class
+        """
+        if db_ini_path:
+            self.db_manager = get_db_manager(db_ini_path)
+        else:
+            self.db_manager = get_db_manager()
+        return self.db_manager
+
     def db_real_time_saving(
         self,
         shape: tuple,
         loops: dict[str, np.ndarray],
         experiment_name: str,
-        db_manager: DatabaseManager,
         base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
@@ -1631,13 +1676,13 @@ class Platform:
 
             .. code-block:: python
 
-                db_manager = ql.get_db_manager()
-                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
-
                 platform = ql.build_platform(runcard=runcard)
                 platform.connect()
                 platform.initial_setup()
                 platform.turn_on_instruments()
+
+                db_manager = platform.load_db_manager(db_manager_ini_path)
+                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
 
                 (experiment definition)
 
@@ -1645,7 +1690,6 @@ class Platform:
                     shape=(len(if_sweep), 2),
                     loops={"frequency": if_sweep},
                     experiment_name="resonator_spectroscopy",
-                    db_manager=db_manager,
                     base_path="/base_path",
                     qprogram=qprogram,
                     optional_identifier="optional text"
@@ -1668,13 +1712,17 @@ class Platform:
         Returns:
             StreamArray: StreamArray class to process and save the data
         """
+
+        if not self.db_manager:
+            raise ReferenceError("Missing db_manager, try using platform.load_db_manager().")
+
         return StreamArray(
             shape=shape,
             loops=loops,
             platform=self,
             qprogram=qprogram,
             experiment_name=experiment_name,
-            db_manager=db_manager,
+            db_manager=self.db_manager,
             optional_identifier=optional_identifier,
             base_path=base_path,
         )
@@ -1684,7 +1732,6 @@ class Platform:
         experiment_name: str,
         results: np.ndarray,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
-        db_manager: DatabaseManager,
         base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
@@ -1695,13 +1742,13 @@ class Platform:
 
             .. code-block:: python
 
-                db_manager = ql.get_db_manager()
-                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
-
                 platform = ql.build_platform(runcard=runcard)
                 platform.connect()
                 platform.initial_setup()
                 platform.turn_on_instruments()
+
+                db_manager = platform.load_db_manager(db_manager_ini_path)
+                db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
 
                 results = Create experiment results without live saving, either not needed or incapable (VNA data)
                 or
@@ -1711,7 +1758,6 @@ class Platform:
                     experiment_name="resonator_spectroscopy",
                     results = results
                     loops={"frequency": if_sweep},
-                    db_manager=db_manager,
                     base_path="/base_path",
                     qprogram=qprogram,
                     optional_identifier="optional text"
@@ -1726,6 +1772,10 @@ class Platform:
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
             optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
         """
+
+        if not self.db_manager:
+            raise ReferenceError("Missing db_manager, try using platform.load_db_manager().")
+
         shape = results.shape
 
         if len(loops) != len(shape) - 1:
@@ -1747,7 +1797,7 @@ class Platform:
             platform=self,
             qprogram=qprogram,
             experiment_name=experiment_name,
-            db_manager=db_manager,
+            db_manager=self.db_manager,
             optional_identifier=optional_identifier,
             base_path=base_path,
         )
