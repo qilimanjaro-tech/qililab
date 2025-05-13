@@ -183,7 +183,7 @@ class ExperimentExecutor:
         if not self.db_manager:
             try:
                 self.db_manager = get_db_manager()
-            except:
+            except ReferenceError:
                 raise ReferenceError("Missing initialization information at the desired database '.ini' path.")
 
         self.sample = self.db_manager.current_sample

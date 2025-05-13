@@ -989,7 +989,7 @@ class Platform:
                 # Define the base path for storing experiment results
                 platform.experiment_results_base_path = "/data/experiments"
 
-                # Define the database manager. Optional, as this ca be done inside execute_experiment
+                # Define the database manager. Optional, as this can be done inside execute_experiment
                 db_manager = platform.load_db_manager(db_manager_ini_path)
                 db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
 

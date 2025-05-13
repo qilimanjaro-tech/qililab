@@ -594,7 +594,7 @@ def _load_config(filename, section="postgresql"):
         for param in params:
             config[param[0]] = param[1]
         return config
-    raise Exception("Section {0} not found in the {1} file".format(section, filename))
+    raise ReferenceError("Section {0} not found in the {1} file".format(section, filename))
 
 
 def get_db_manager(path: str = "~/database.ini"):
