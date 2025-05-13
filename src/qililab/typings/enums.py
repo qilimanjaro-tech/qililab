@@ -361,6 +361,7 @@ class Parameter(str, Enum):
     T_PHI = "t_phi"
     GATE_OPTIONS = "options"
     FLUX = "flux"
+    TRIGGER_ADDRESS = "trigger_address"
 
     @classmethod
     def to_yaml(cls, representer, node):
