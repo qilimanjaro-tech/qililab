@@ -145,7 +145,9 @@ class TestExperimentExecutor:
 
     def test_execute(self, platform, experiment, qprogram, crosstalk):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, live_plot=False, slurm_execution=False)
+        executor = ExperimentExecutor(
+            platform=platform, experiment=experiment, live_plot=False, slurm_execution=False, database=False
+        )
         resuls_path = executor.execute()
 
         # Check if the correct file path is returned
@@ -280,6 +282,7 @@ class TestExperimentExecutor:
             base_path=tempfile.gettempdir(),
             live_plot=False,
             slurm_execution=False,
+            database=False,
         )
         resuls_path = executor.execute()
 

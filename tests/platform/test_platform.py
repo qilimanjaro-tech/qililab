@@ -787,6 +787,10 @@ class TestMethods:
         # Manually set the execute_experiment method to the real one
         platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
 
+        # Mock database manager
+        mock_database = MagicMock()
+        platform.db_manager = mock_database
+
         # Create an autospec of the Experiment class and Calibration class
         mock_experiment = create_autospec(Experiment)
 
@@ -798,13 +802,17 @@ class TestMethods:
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
+            platform.db_manager = None
             results_path = platform.execute_experiment(experiment=mock_experiment, base_path="base_path")
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
             MockExecutor.assert_called_once_with(
                 platform=platform,
                 experiment=mock_experiment,
+                database=True,
+                db_manager=None,
                 base_path="base_path",
+                optional_identifier=None,
                 live_plot=True,
                 slurm_execution=True,
                 port_number=None,
@@ -1374,7 +1382,7 @@ class TestMethods:
         loops = {"test_amp_loop": np.arange(0, 2)}
         experiment_name = "test_db_real_time_saving"
         mock_database = MagicMock()
-        db_manager = mock_database
+        platform.db_manager = mock_database
         optional_identifier = "optional_identifier"
         base_path = "base_path"
 
@@ -1383,7 +1391,7 @@ class TestMethods:
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
         db_real_time_saving = platform.db_real_time_saving(
-            shape, loops, experiment_name, db_manager, base_path, qprogram, optional_identifier
+            shape, loops, experiment_name, base_path, qprogram, optional_identifier
         )
 
         assert db_real_time_saving.loops == loops
@@ -1405,14 +1413,14 @@ class TestMethods:
         base_path = "base_path"
 
         mock_database = MagicMock()
-        db_manager = mock_database
+        platform.db_manager = mock_database
         optional_identifier = "optional_identifier"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
 
         assert mock_h5file.called
 
@@ -1428,14 +1436,14 @@ class TestMethods:
         base_path = "base_path"
 
         mock_database = MagicMock()
-        db_manager = mock_database
+        platform.db_manager = mock_database
         optional_identifier = "optional_identifier"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
 
         assert mock_h5file.called
 
@@ -1449,7 +1457,7 @@ class TestMethods:
         base_path = "base_path"
 
         mock_database = MagicMock()
-        db_manager = mock_database
+        platform.db_manager = mock_database
         optional_identifier = "optional_identifier"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1458,9 +1466,7 @@ class TestMethods:
 
         error_string = "Number of loops must be the same as the number of dimensions of the results except for IQ"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(
-                experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier
-            )
+            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
 
     @patch("h5py.File")
     def test_db_save_results_raise_error_incorrect_loops_size(self, mock_h5file, platform: Platform):
@@ -1472,7 +1478,7 @@ class TestMethods:
         base_path = "base_path"
 
         mock_database = MagicMock()
-        db_manager = mock_database
+        platform.db_manager = mock_database
         optional_identifier = "optional_identifier"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1481,6 +1487,4 @@ class TestMethods:
 
         error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(
-                experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier
-            )
+            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
