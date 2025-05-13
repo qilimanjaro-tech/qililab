@@ -488,7 +488,7 @@ class Platform:
         instruments = {
             instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
         }
-        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+        if instruments and all(isinstance(instrument, QbloxModule) for instrument in instruments):
             for bus in buses:
                 for instrument, _ in zip(bus.instruments, bus.channels):
                     if isinstance(instrument, QbloxModule):
@@ -533,8 +533,13 @@ class Platform:
                                         elif out == 1:
                                             dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
                                             dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+                                
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
+
+                        if instrument.name == InstrumentName.QRMRF or instrument.name == InstrumentName.QBLOX_QRM:
+                            integration_length = bus.get_parameter(Parameter.INTEGRATION_LENGTH)
+                            data_oscilloscope[bus.alias]["integration_length"] = integration_length
         else:
             # TODO: the same information could be generated with a Quantum Machine runcard, even if the QBlox Compiler is used in the background.
             raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
@@ -1575,7 +1580,7 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False):
+    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = False):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -1585,9 +1590,7 @@ class Platform:
 
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        # compiler = QbloxCompiler()
-        # sequencer = compiler.compile(qprogram)
         sequencer = self.compile_qprogram(qprogram)
-        result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed)
+        result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
 
         return result
