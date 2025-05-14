@@ -23,11 +23,13 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
 ]
 dependencies = [
+    "dash>=3.0.2",
     "dill>=0.3.9",
     "h5py>=3.13.0",
     "networkx>=3.4.2",
     "pandas==1.5.3",
     "papermill>=2.6.0",
+    "psycopg2-binary>=2.9.10",
     "pyvisa-py>=0.7.2",
     "qblox-instruments==0.14.2",
     "qcodes>=0.51.0",
@@ -38,9 +40,11 @@ dependencies = [
     "qualang-tools>=0.19.3",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
+    "sqlalchemy>=2.0.40",
     "submitit>=1.5.2",
     "tqdm>=4.67.1",
     "urllib3>=2.3.0",
+    "xarray>=2024.3.0",
 ]
 
 [dependency-groups]

@@ -176,22 +176,22 @@ class QbloxModule(Instrument):
 
         channel_id = int(channel_id)
         if parameter == Parameter.GAIN:
-            self._set_gain(value=value, sequencer_id=channel_id)
+            self._set_gain(value=float(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.GAIN_I:
-            self._set_gain_i(value=value, sequencer_id=channel_id)
+            self._set_gain_i(value=float(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.GAIN_Q:
-            self._set_gain_q(value=value, sequencer_id=channel_id)
+            self._set_gain_q(value=float(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.OFFSET_I:
-            self._set_offset_i(value=value, sequencer_id=channel_id)
+            self._set_offset_i(value=float(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.OFFSET_Q:
-            self._set_offset_q(value=value, sequencer_id=channel_id)
+            self._set_offset_q(value=float(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.IF:
-            self._set_frequency(value=value, sequencer_id=channel_id)
+            self._set_frequency(value=int(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.HARDWARE_MODULATION:
             self._set_hardware_modulation(value=value, sequencer_id=channel_id)
