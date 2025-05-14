@@ -64,6 +64,7 @@ class QbloxDraw:
                 param["real_time_counter"] = 0 #nope
 
         elif action_type == "acquire_weighed":
+            param["acquire_idx"] += 1  
             #TODO: need to deal with classical case and deal with qp
             classical_duration_acquire = self._get_value(program_line[1].split(',')[-1].strip(), register)
             #If plotting from qp - assume that the integration_length is the classical duration of the Q1ASM command
@@ -72,14 +73,17 @@ class QbloxDraw:
                 integration_length = classical_duration_acquire
             if param["real_time_counter"] != 0:
                 real_acquire_wait = integration_length - param["real_time_counter"]
-                param["acquiring_status"][-param["real_time_counter"]:] = 1
+                param["acquiring_status"][-param["real_time_counter"]:] = param["acquire_idx"]
+                # param["acquiring_status"][-param["real_time_counter"]:] = 1
+                
             else:
                 real_acquire_wait = integration_length
               
             if len(param["acquiring_status"]) != len(param["intermediate_frequency"]): #  essentially interrupting the previous acquire that is still running
                 param["acquiring_status"] = param["acquiring_status"][:len(param["intermediate_frequency"])]
             # param["real_time_counter"] = integration_length - classical_duration_acquire NEEDS FIXING
-            extend_acquire = np.ones(int(real_acquire_wait), dtype=int)
+            # extend_acquire = np.ones(int(real_acquire_wait), dtype=int)
+            extend_acquire = np.full(int(real_acquire_wait), param["acquire_idx"], dtype=int)
             param["acquiring_status"] = np.concatenate([param["acquiring_status"], extend_acquire])
 
             if classical_duration_acquire - param["real_time_counter"] > 0:
@@ -88,8 +92,6 @@ class QbloxDraw:
                 param["real_time_counter"] = 0
             
             # if classical_duration <
-
-
         elif action_type == "upd_param":
             upd_duration = int(program_line[1])
             data_draw = self._handle_wait_draw(data_draw, param, upd_duration)
@@ -478,6 +480,7 @@ class QbloxDraw:
             parameters[bus]["q1asm_offset_i_new"] = True
             parameters[bus]["q1asm_offset_q_new"] = True
             parameters[bus]["time_reached"] = False
+            parameters[bus]["acquire_idx"] = 0
 
 
             wf1: list[float] = []
@@ -596,19 +599,26 @@ class QbloxDraw:
         Note:
             This function also **plots** the waveforms using the generated data.
         """
+        #not working - to be fixed
         def range_acquire(nparray):
             ranges = []
             start = None
+            idx_acquire = 1
             for idx,value in enumerate(nparray):
-                if value == 1 and start is None:
-                    start = idx + 1
-                elif value == 0 and start is not None:
-                    ranges.append([start, idx])
+                if value == idx_acquire and start is None:
+                    start = idx
+                elif value != idx_acquire and start is not None:
+                    ranges.append([start, idx-1])
+                    idx_acquire += 1
                     start= None
-                elif value == 1 and idx == len(nparray) - 1:
+                    if value != 0:
+                        start = idx
+                elif value == idx_acquire and idx == len(nparray) - 1:
                     ranges.append([start, idx+1])
+            print(ranges)
+
             return ranges
-        
+
         def adjust_color_hex(color_hex, factor):
             rgb_color = [int(color_hex[i:i+2], 16) for i in (1, 3, 5)]
             adjusted_color = ['{0:02x}'.format(int(min(255, max(0, c * factor)))) for c in rgb_color]
@@ -696,10 +706,7 @@ class QbloxDraw:
                             opacity=0.2,
                             line_width=0,
                             name=f"{key} Acquisition" if i == 0 else f"{key} Acquisition {i}",
-                            # name=f"{key} Acquisition {i}",
-                            # showlegend=True,
                             showlegend=(i == 0),
-                            # showlegend=f"{key} Acquisition",
                             legendgroup=f"{key} Acquisition"
                         ))
 
