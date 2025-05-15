@@ -424,6 +424,7 @@ class DatabaseManager:
         self,
         experiment_name: str,
         experiment_completed: bool,
+        base_path: str,
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
@@ -463,7 +464,6 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
-        base_path = "/mnt/home.local/jupytershared/data"
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         result_path = f"{dir_path}/{experiment_name}.h5"
 
@@ -503,6 +503,7 @@ class DatabaseManager:
         experiment_name: str,
         results: np.ndarray,
         loops: dict[str, np.ndarray],
+        base_path: str,
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
@@ -537,7 +538,6 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
-        base_path = "/mnt/home.local/jupytershared/data"
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         result_path = f"{dir_path}/{experiment_name}.h5"
 
