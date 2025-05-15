@@ -55,6 +55,7 @@ class StreamArray:
         platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
+        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -65,6 +66,7 @@ class StreamArray:
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
+        self.base_path = base_path
 
     def __enter__(self):
         """The execution while the with StreamArray is created.
@@ -75,6 +77,7 @@ class StreamArray:
         self.measurement = self.db_manager.add_measurement(
             experiment_name=self.experiment_name,
             experiment_completed=False,
+            base_path=self.base_path,
             optional_identifier=self.optional_identifier,
             platform=self.platform.to_dict(),
             qprogram=serialize(self.qprogram),
@@ -218,7 +221,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                 [0.25 0.  ]
                 [0.5  0.  ]
                 [0.75 0.  ]
-                [1.   0.  ]])
+                [1.   0.  ]]))
     """
     return RawStreamArray(shape=shape, path=path, loops=loops)
 

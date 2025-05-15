@@ -1,18 +1,15 @@
 # pylint: disable=protected-access
-import os
 from datetime import datetime
 from pathlib import Path
 from types import MethodType
 from unittest.mock import MagicMock, create_autospec, patch
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import pytest
 
 from qililab.result.experiment_live_plot import ExperimentLivePlot
-from qililab.result.experiment_results import DimensionInfo
 from qililab.result.experiment_results_writer import ExperimentMetadata, ExperimentResultsWriter
 
 mpl.use("Agg")  # Use non-interactive backend for testing
@@ -51,7 +48,14 @@ def sample_metadata():
 @pytest.fixture(name="experiment_live_plot")
 def mock_experiment_live_plot(metadata):
     """Create a mock ExperimentResultsWriter structure for testing"""
-    with ExperimentResultsWriter(path=PLOT_RESULTS_PATH, metadata=metadata, live_plot=True, slurm_execution=False):
+    with ExperimentResultsWriter(
+        path=PLOT_RESULTS_PATH,
+        metadata=metadata,
+        live_plot=True,
+        slurm_execution=False,
+        db_metadata=None,
+        db_manager=None,
+    ):
         ...
     yield PLOT_RESULTS_PATH
     Path(PLOT_RESULTS_PATH).unlink()
@@ -60,7 +64,14 @@ def mock_experiment_live_plot(metadata):
 @pytest.fixture(name="experiment_live_plot_slurm")
 def mock_experiment_live_plot_slurm(metadata):
     """Create a mock ExperimentResultsWriter structure for testing"""
-    with ExperimentResultsWriter(path=PLOT_RESULTS_PATH, metadata=metadata, live_plot=True, slurm_execution=True):
+    with ExperimentResultsWriter(
+        path=PLOT_RESULTS_PATH,
+        metadata=metadata,
+        live_plot=True,
+        slurm_execution=True,
+        db_metadata=None,
+        db_manager=None,
+    ):
         ...
     yield PLOT_RESULTS_PATH
     Path(PLOT_RESULTS_PATH).unlink()
@@ -252,7 +263,14 @@ class TestExperimentResultsWriterLivePlot:
     def test_set_live_plot(self, mocker_live_plot_figures: MagicMock, metadata):
         """Test setters"""
         test_file_path = "mock_path"
-        with ExperimentResultsWriter(path=test_file_path, metadata=metadata, live_plot=True, slurm_execution=True):
+        with ExperimentResultsWriter(
+            path=test_file_path,
+            metadata=metadata,
+            live_plot=True,
+            slurm_execution=True,
+            db_metadata=None,
+            db_manager=None,
+        ):
             pass  # Just initializing should create the file structure
 
         # test ExperimentLivePlot call
