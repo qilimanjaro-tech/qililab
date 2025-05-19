@@ -45,15 +45,18 @@ class QbloxDraw:
             param = self._handle_offset(program_line, param)
         elif action_type == "set_awg_gain":
             param = self._handle_gain_draw(program_line, param, register)
-        elif action_type == "wait":
+        elif action_type == "wait" or action_type == "upd_param":
             wait_duration = int(program_line[1])
             real_wait = wait_duration - param["real_time_counter"]
-            if real_wait<=0:
-                pass
+            if real_wait <= 0:
+                param["real_time_counter"] = param["real_time_counter"] + real_wait #  update the real time counter
             else:
-                data_draw = self._handle_wait_draw(data_draw, param,real_wait)
+                data_draw = self._handle_wait_draw(data_draw, param, real_wait)
         elif action_type == "play":
+            #TODO: play interrupts each other like acquire - not implemented as I believe qililab does not allow for this - actually you can by playing measure after each other wiht a long enough play
             #TODO: play should consider the real_time_counter. Not implemented yet as I cannot think of a case where a play would be played in parallel after an acquire
+            
+  
             data_draw, wf_length, classical_duration_play = self._handle_play_draw(data_draw, program_line, waveform_seq, param)
             if wf_length > classical_duration_play:
                 real_time_counter = wf_length - classical_duration_play
@@ -63,38 +66,64 @@ class QbloxDraw:
                 data_draw = self._handle_wait_draw(data_draw, param, real_play_wait)
                 param["real_time_counter"] = 0 #nope
 
+            
+            # data_draw, wf_length, classical_duration_play = self._handle_play_draw(data_draw, program_line, waveform_seq, param)
+            # #  Essentially interrupting the previous acquire that is still running and extend the acquiring status to the current acquire
+            # if len(param["acquiring_status"]) != len(param["intermediate_frequency"]):
+            #     param["acquiring_status"] = param["acquiring_status"][:len(param["intermediate_frequency"])]
+
+            # # Determine the real acquire wait which is used to extend the acquiriing status dictionary
+            # if param["real_time_counter"] != 0:
+            #     real_acquire_wait = integration_length - param["real_time_counter"]
+            #     param["acquiring_status"][-param["real_time_counter"]:] = param["acquire_idx"] # go back in time, if a play had started, this allows overlapping the acquire
+            # else:
+            #     real_acquire_wait = integration_length
+
+            # extend_acquire = np.full(int(real_acquire_wait), param["acquire_idx"], dtype=int)
+            # param["acquiring_status"] = np.concatenate([param["acquiring_status"], extend_acquire])
+
+            # #  Add wait if needed and reset the real time counter
+            # if classical_duration_acquire - param["real_time_counter"] >= 0:
+            #     #  add a wait if needed and reset the real time counter to 0
+            #     real_acquire_wait = classical_duration_acquire - param["real_time_counter"]
+            #     if real_acquire_wait > 0:
+            #         data_draw = self._handle_wait_draw(data_draw, param, real_acquire_wait)
+            #     param["real_time_counter"] = 0
+            # elif classical_duration_acquire - param["real_time_counter"] < 0:
+            #     param["real_time_counter"] = param["real_time_counter"] - classical_duration_acquire
+
         elif action_type == "acquire_weighed":
-            param["acquire_idx"] += 1  
-            #TODO: need to deal with classical case and deal with qp
+            param["acquire_idx"] += 1
             classical_duration_acquire = self._get_value(program_line[1].split(',')[-1].strip(), register)
             #If plotting from qp - assume that the integration_length is the classical duration of the Q1ASM command
             integration_length = param.get("integration_length")
             if integration_length is None:
                 integration_length = classical_duration_acquire
+
+            #  Essentially interrupting the previous acquire that is still running and extend the acquiring status to the current acquire
+            if len(param["acquiring_status"]) != len(param["intermediate_frequency"]):
+                param["acquiring_status"] = param["acquiring_status"][:len(param["intermediate_frequency"])]
+
+            # Determine the real acquire wait which is used to extend the acquiriing status dictionary
             if param["real_time_counter"] != 0:
                 real_acquire_wait = integration_length - param["real_time_counter"]
-                param["acquiring_status"][-param["real_time_counter"]:] = param["acquire_idx"]
-                # param["acquiring_status"][-param["real_time_counter"]:] = 1
-                
+                param["acquiring_status"][-param["real_time_counter"]:] = param["acquire_idx"] # go back in time, if a play had started, this allows overlapping the acquire
             else:
                 real_acquire_wait = integration_length
-              
-            if len(param["acquiring_status"]) != len(param["intermediate_frequency"]): #  essentially interrupting the previous acquire that is still running
-                param["acquiring_status"] = param["acquiring_status"][:len(param["intermediate_frequency"])]
-            # param["real_time_counter"] = integration_length - classical_duration_acquire NEEDS FIXING
-            # extend_acquire = np.ones(int(real_acquire_wait), dtype=int)
+
             extend_acquire = np.full(int(real_acquire_wait), param["acquire_idx"], dtype=int)
             param["acquiring_status"] = np.concatenate([param["acquiring_status"], extend_acquire])
 
-            if classical_duration_acquire - param["real_time_counter"] > 0:
+            #  Add wait if needed and reset the real time counter
+            if classical_duration_acquire - param["real_time_counter"] >= 0:
+                #  add a wait if needed and reset the real time counter to 0
                 real_acquire_wait = classical_duration_acquire - param["real_time_counter"]
-                data_draw = self._handle_wait_draw(data_draw, param, real_acquire_wait)
+                if real_acquire_wait > 0:
+                    data_draw = self._handle_wait_draw(data_draw, param, real_acquire_wait)
                 param["real_time_counter"] = 0
-            
-            # if classical_duration <
-        elif action_type == "upd_param":
-            upd_duration = int(program_line[1])
-            data_draw = self._handle_wait_draw(data_draw, param, upd_duration)
+            elif classical_duration_acquire - param["real_time_counter"] < 0:
+                param["real_time_counter"] = param["real_time_counter"] - classical_duration_acquire
+
         elif action_type == "add":
             self._handle_add_draw(register, program_line)
         elif action_type == "move":
@@ -155,15 +184,7 @@ class QbloxDraw:
                     modified_waveform = np.clip(scaled_array * gain, -max_voltage, max_voltage)
                     data_draw[idx] = np.append(data_draw[idx], modified_waveform)
         wf_length = len(modified_waveform)
-        # if len(waveform_value["data"]) > classical_duration:
-        #     # length_wait = wall_time - len(waveform_value["data"])
-        #     # data_draw = self._handle_wait_draw(data_draw, program_line,param,length_wait)
-        #     real_time_counter = len(waveform_value["data"]) - classical_duration
-        #     param["real_time_counter"] = real_time_counter
-
-        # elif len(waveform_value["data"]) < classical_duration:
-        #     #TODO: add a wait
-
+        
         # extend the IF and phase by the length of the wf
         for key in ["intermediate_frequency", "phase", "q1asm_offset_i", "q1asm_offset_q"]:
             if param.get(f"{key}_new", False) is True:
@@ -171,7 +192,8 @@ class QbloxDraw:
                 param[f"{key}_new"] = False
             else:
                 param[key].extend([param[key][-1]] * len(scaled_array))
-            
+        
+        #need to check if this is useful
         if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
             extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
             param["acquiring_status"] = np.concatenate([param["acquiring_status"], np.zeros(extension_length, dtype=int)])
@@ -415,7 +437,7 @@ class QbloxDraw:
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
-    def draw(self, sequencer, runcard_data=None, time_window=None, averages_displayed=False, acquisition_showing = False) -> dict:
+    def draw(self, sequencer, runcard_data=None, time_window=None, averages_displayed=False, acquisition_showing=True) -> dict:
         """Parses the program dictionary of the sequence, plots the waveforms and generates waveform data.
         Args:
             sequencer: The compiled qprogram, either at the platform or qprogram level.
