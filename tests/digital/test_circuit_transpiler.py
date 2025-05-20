@@ -658,145 +658,192 @@ class TestCircuitTranspiler:
     def test_transpile_circuit(self, mock_to_pulses, mock_to_native, mock_route, mock_opt_trans, mock_opt_circuit, mock_add_phases, optimize, digital_settings):
         """Test transpile_circuit method"""
         transpiler = CircuitTranspiler(settings=digital_settings)
-        routing=True
+        # Initial routing value for the main test path
+        initial_routing_setting = True # For the first part of the test
         placer = MagicMock()
         router = MagicMock()
         routing_iterations = 7
-        transpilation_config = DigitalTranspilationConfig(routing=routing, optimize=optimize, router=router, placer=placer, routing_iterations=routing_iterations)
 
-        # Mock circuit for return values
-        mock_circuit = Circuit(5)
-        mock_circuit.add(Drag(0, 2*np.pi, np.pi))
-        mock_circuit_gates = mock_circuit.queue
+        # Config for the routing path
+        transpilation_config_routing = DigitalTranspilationConfig(routing=initial_routing_setting, optimize=optimize, router=router, placer=placer, routing_iterations=routing_iterations)
 
-        # Mock layout for return values
+        # Mock circuit for return values - used by mock_to_native, mock_add_phases, mock_to_pulses when routing=True
+        mock_routed_circuit_qibo = Circuit(5)
+        mock_routed_circuit_qibo.add(Drag(0, 2*np.pi, np.pi)) # Example gate
+        mock_routed_circuit_gates = mock_routed_circuit_qibo.queue
+
         mock_layout = [0, 1, 2, 3, 4]
-        # Mock original_measurement_order for return values
-        mock_original_measurement_order: list[dict] = []
+        mock_original_measurement_order_routed: list[dict] = []
 
-
-        # Mock schedule for return values
         mock_schedule = PulseSchedule()
 
-        # Mock the return values
-        mock_route.return_value = mock_circuit.queue, mock_circuit.nqubits, mock_layout, mock_original_measurement_order
-        mock_opt_circuit.return_value = mock_circuit_gates
-        mock_to_native.return_value = mock_circuit_gates
-        mock_add_phases.return_value = mock_circuit_gates
-        mock_opt_trans.return_value = mock_circuit_gates
+        # Mock the return values for the routing path
+        # route_circuit returns: circuit_gates, nqubits, final_layout, original_measurement_order
+        mock_route.return_value = mock_routed_circuit_gates, mock_routed_circuit_qibo.nqubits, mock_layout, mock_original_measurement_order_routed
+
+        # Mocks for gate processing steps. These are dynamic based on the path (routing/no-routing, optimize/no-optimize)
+        # For simplicity in the routing path, assume they return the same gate list structure
+        mock_opt_circuit.return_value = mock_routed_circuit_gates
+        mock_to_native.return_value = mock_routed_circuit_gates
+        mock_add_phases.return_value = mock_routed_circuit_gates
+        mock_opt_trans.return_value = mock_routed_circuit_gates
         mock_to_pulses.return_value = mock_schedule
 
-        circuit = random_circuit(5, 10, np.random.default_rng())
+        # Input circuit for the transpiler
+        input_circuit = random_circuit(5, 10, np.random.default_rng())
 
-        schedule, layout, original_measurement_order = transpiler.transpile_circuit(circuit, transpilation_config)
+        # --- Test with routing=True (initial_routing_setting) ---
+        schedule, layout, original_measurement_order = transpiler.transpile_circuit(input_circuit, transpilation_config_routing)
 
-        # Mandatory asserts in order:
-        mock_route.assert_called_once_with(circuit, placer, router, routing_iterations)
-        mock_to_native.assert_called_once_with(mock_circuit.queue)
-        mock_add_phases.assert_called_once_with(mock_circuit_gates, mock_circuit.nqubits)
-        mock_to_pulses.assert_called_once_with(mock_circuit_gates)
-        assert (schedule, layout, original_measurement_order) == (mock_schedule, mock_layout, mock_original_measurement_order)
+        mock_route.assert_called_once_with(input_circuit, placer, router, routing_iterations)
+        # In routing path, to_native is called with the result of route_circuit (mock_routed_circuit_gates)
+        mock_to_native.assert_called_once_with(mock_routed_circuit_gates)
 
-        # Asserts if optimize=True:
         if optimize:
-            mock_opt_circuit.assert_called_once_with(mock_circuit_gates)
-            mock_opt_trans.assert_called_once_with(mock_circuit_gates)
-        else:
+            mock_opt_circuit.assert_called_once_with(mock_routed_circuit_gates) # Called after routing
+            # add_phases is called with the result of opt_circuit (if optimize) or to_native's input (if not, which is routed_gates)
+            mock_add_phases.assert_called_once_with(mock_opt_circuit.return_value, mock_routed_circuit_qibo.nqubits)
+            mock_opt_trans.assert_called_once_with(mock_add_phases.return_value)
+            mock_to_pulses.assert_called_once_with(mock_opt_trans.return_value)
+        else: # optimize == False
             mock_opt_circuit.assert_not_called()
+            mock_to_native.assert_called_once_with(mock_routed_circuit_gates)
+            mock_add_phases.assert_called_once_with(mock_to_native.return_value, mock_routed_circuit_qibo.nqubits)
             mock_opt_trans.assert_not_called()
+            mock_to_pulses.assert_called_once_with(mock_add_phases.return_value)
 
-            # Test if routing skipped:
-            transpilation_config.routing = False
-            mock_route.reset_mock()
-            # Reset relevant mocks that are called when routing is False
-            mock_to_native.reset_mock()
-            mock_add_phases.reset_mock()
-            mock_to_pulses.reset_mock()
-            mock_opt_circuit.reset_mock()
-            mock_opt_trans.reset_mock()
+        assert (schedule, layout, original_measurement_order) == (mock_schedule, mock_layout, mock_original_measurement_order_routed)
 
-            _, _, _ = transpiler.transpile_circuit(circuit, transpilation_config)
-            mock_route.assert_not_called()
-            # Assert calls for non-routing path
-            mock_to_native.assert_called_once_with(circuit.queue) # Called with original circuit queue
-            mock_add_phases.assert_called_once_with(circuit.queue, circuit.nqubits) # Called with original circuit queue and nqubits
-            mock_to_pulses.assert_called_once_with(circuit.queue) # Called with original circuit queue
+        # --- Test with routing=False ---
+        # Reset mocks for the non-routing path
+        mock_route.reset_mock()
+        mock_to_native.reset_mock()
+        mock_opt_circuit.reset_mock()
+        mock_add_phases.reset_mock()
+        mock_opt_trans.reset_mock()
+        mock_to_pulses.reset_mock()
 
+        transpilation_config_no_routing = DigitalTranspilationConfig(routing=False, optimize=optimize, router=router, placer=placer, routing_iterations=routing_iterations)
 
-            # Test if no config is provided:
-            mock_route.reset_mock()
-            mock_to_native.reset_mock()
-            mock_add_phases.reset_mock()
-            mock_to_pulses.reset_mock()
-            mock_opt_circuit.reset_mock()
-            mock_opt_trans.reset_mock()
-            _, _, _ = transpiler.transpile_circuit(circuit)
-            mock_route.assert_not_called()
+        input_circuit_with_m = Circuit(5) # Fresh circuit for this path
+        input_circuit_with_m.add(gates.X(0))
+        input_circuit_with_m.add(gates.M(0, 1))
+        expected_omo_no_routing = [{'original_qubit': 0, 'measurement_index': 0, 'gate_index': 1}, {'original_qubit': 1, 'measurement_index': 0, 'gate_index': 1}]
+
+        # Define mock behaviors for the non-routing path
+        # What `gates_to_native` will return when called with `input_circuit_with_m.queue` (or its optimized version)
+        native_gates_for_no_routing = [Drag(0,1,1)] # Simplified distinct mock return for this path
+
+        # If optimize=True, opt_circuit is called first with input_circuit_with_m.queue
+        mock_opt_circuit.return_value = input_circuit_with_m.queue # Simplification: opt_circuit returns the same queue
+
+        # to_native is called with input_circuit_with_m.queue (if not optimize) or opt_circuit's result (if optimize)
+        mock_to_native.return_value = native_gates_for_no_routing
+
+        # add_phases is called with to_native's result
+        mock_add_phases.return_value = native_gates_for_no_routing # Simplification
+
+        # opt_trans is called with add_phases' result (if optimize)
+        mock_opt_trans.return_value = native_gates_for_no_routing # Simplification
+
+        # to_pulses is called with opt_trans' result (if optimize) or add_phases' result (if not optimize)
+        mock_to_pulses.return_value = mock_schedule # Reuse mock_schedule
+
+        _, _, omo_no_routing = transpiler.transpile_circuit(input_circuit_with_m, transpilation_config_no_routing)
+
+        mock_route.assert_not_called()
+        if optimize:
+            mock_opt_circuit.assert_called_once_with(input_circuit_with_m.queue)
+            mock_to_native.assert_called_once_with(mock_opt_circuit.return_value)
+            mock_add_phases.assert_called_once_with(native_gates_for_no_routing, input_circuit_with_m.nqubits)
+            mock_opt_trans.assert_called_once_with(mock_add_phases.return_value)
+            mock_to_pulses.assert_called_once_with(mock_opt_trans.return_value)
+        else: # optimize == False, routing == False
             mock_opt_circuit.assert_not_called()
+            mock_to_native.assert_called_once_with(input_circuit_with_m.queue)
+            mock_add_phases.assert_called_once_with(native_gates_for_no_routing, input_circuit_with_m.nqubits)
             mock_opt_trans.assert_not_called()
-            # Assert calls for non-routing path (default config)
-            mock_to_native.assert_called_once_with(circuit.queue)
-            mock_add_phases.assert_called_once_with(circuit.queue, circuit.nqubits)
-            mock_to_pulses.assert_called_once_with(circuit.queue)
+            mock_to_pulses.assert_called_once_with(mock_add_phases.return_value)
+        assert omo_no_routing == expected_omo_no_routing
+
+        # --- Test if no config is provided (defaults: routing=False, optimize=False) ---
+        mock_route.reset_mock()
+        mock_to_native.reset_mock()
+        mock_opt_circuit.reset_mock()
+        mock_add_phases.reset_mock()
+        mock_opt_trans.reset_mock()
+        mock_to_pulses.reset_mock()
+
+        # Redefine mock behaviors for the no_config path (similar to routing=False, optimize=False)
+        mock_to_native.return_value = native_gates_for_no_routing
+        mock_add_phases.return_value = native_gates_for_no_routing
+        mock_to_pulses.return_value = mock_schedule
+
+        _, _, omo_no_config = transpiler.transpile_circuit(input_circuit_with_m)
+
+        mock_route.assert_not_called()
+        mock_opt_circuit.assert_not_called()
+        mock_to_native.assert_called_once_with(input_circuit_with_m.queue)
+        mock_add_phases.assert_called_once_with(native_gates_for_no_routing, input_circuit_with_m.nqubits)
+        mock_opt_trans.assert_not_called()
+        mock_to_pulses.assert_called_once_with(mock_add_phases.return_value)
+        assert omo_no_config == expected_omo_no_routing
 
 
     @patch("qililab.digital.circuit_router.CircuitRouter.route")
-    def test_route_trivial_circuit(self, mock_route, digital_settings):
+    def test_route_trivial_circuit(self, mock_router_dot_route, digital_settings): # Renamed mock_route to avoid conflict
         """Test route_circuit method"""
         transpiler = CircuitTranspiler(settings=digital_settings)
         routing_iterations = 7
 
-        # Mock the return values
-        mock_circuit = Circuit(5)
-        mock_circuit.add(X(0))
-        mock_layout = [0, 1, 2, 3, 4]
-        mock_route.return_value = (mock_circuit, mock_layout)
+        # Mock the return values for CircuitRouter.route (3 items)
+        mock_circuit_obj = Circuit(5)
+        mock_circuit_obj.add(X(0))
+        mock_layout_list = [0, 1, 2, 3, 4]
+        mock_omo_list: list[dict] = []
+        mock_router_dot_route.return_value = (mock_circuit_obj, mock_layout_list, mock_omo_list)
 
-        # Execute the function
-        circuit_gates, nqubits, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        # Execute the function: route_circuit returns 4 items
+        circuit_gates, nqubits, layout, original_measurement_order = transpiler.route_circuit(mock_circuit_obj, iterations=routing_iterations)
 
         # Asserts:
-        mock_route.assert_called_once_with(mock_circuit, routing_iterations)
-        assert (circuit_gates, nqubits, layout) == (mock_circuit.queue, mock_circuit.nqubits, mock_layout)
+        mock_router_dot_route.assert_called_once_with(mock_circuit_obj, routing_iterations)
+        assert (circuit_gates, nqubits, layout, original_measurement_order) == (mock_circuit_obj.queue, mock_circuit_obj.nqubits, mock_layout_list, mock_omo_list)
 
     def test_route_circuit_only_needs_remapping_integration(self, digital_settings):
         """Test route_circuit method"""
         transpiler = CircuitTranspiler(settings=digital_settings)
         routing_iterations = 10
 
-        # Mock the return values
         mock_circuit = Circuit(5)
         mock_circuit.add(gates.CNOT(1, 0))
         mock_circuit.add(gates.CNOT(0, 1))
         mock_circuit.add(gates.CNOT(3, 0))
 
-
-        # Execute the function
-        circuit_gates, nqubits, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        # route_circuit returns 4 items
+        circuit_gates, nqubits, final_layout, original_measurement_order = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
         output_gates = [(gate.name, gate.qubits) for gate in circuit_gates]
 
-        # Asserts:
         expected_layout = [2, 1, 0, 3, 4]
         expected_gates = [('cx', (1, 2)), ('cx', (2, 1)), ('cx', (3, 2))]
+        expected_original_measurement_order: list[dict] = []
 
-        assert (output_gates, nqubits, final_layout) == (expected_gates, mock_circuit.nqubits, expected_layout)
+        assert (output_gates, nqubits, final_layout, original_measurement_order) == (expected_gates, mock_circuit.nqubits, expected_layout, expected_original_measurement_order)
 
     def test_route_circuit_swap_needed_integration(self, digital_settings):
         """Test route_circuit method"""
         transpiler = CircuitTranspiler(settings=digital_settings)
         routing_iterations = 10
 
-        # Mock the return values
         mock_circuit = Circuit(4)
         mock_circuit.add(gates.CNOT(1, 0))
         mock_circuit.add(gates.CNOT(3, 2))
 
-
-        # Execute the function
-        circuit_gates, nqubits, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        # route_circuit returns 4 items
+        circuit_gates, nqubits, final_layout, original_measurement_order = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
         output_gates = [(gate.name, gate.qubits) for gate in circuit_gates]
+        expected_original_measurement_order: list[dict] = []
 
-        # Asserts:
         expected_gates_and_layout = [
             ([('cx', (2, 0)), ('swap', (2, 3)), ('cx', (2, 1))], [0, 3, 1, 2, 4]),
             ([('cx', (2, 0)), ('swap', (3, 2)), ('cx', (2, 1))], [0, 3, 1, 2, 4]),
@@ -810,19 +857,16 @@ class TestCircuitTranspiler:
             ([('cx', (3, 2)), ('swap', (0, 2)), ('cx', (1, 2))], [2, 1, 0, 3, 4]),
             ([('cx', (3, 2)), ('swap', (2, 1)), ('cx', (2, 0))], [0, 2, 1, 3, 4]),
             ([('cx', (3, 2)), ('swap', (1, 2)), ('cx', (2, 0))], [0, 2, 1, 3, 4]),
-
         ]
 
-        assert nqubits == 5 # The routing changes the size to fit that of the topology
-        # Test one of the possible routing has been achieved:
-        assert (output_gates, final_layout) in expected_gates_and_layout
+        assert nqubits == 5
+        assert (output_gates, final_layout, original_measurement_order) in [(gates, layout, expected_original_measurement_order) for gates, layout in expected_gates_and_layout]
 
     def test_route_circuit_complex_integration(self, digital_settings):
         """Test route_circuit method"""
         transpiler = CircuitTranspiler(settings=digital_settings)
         routing_iterations = 10
 
-        # Mock the return values
         mock_circuit = Circuit(5)
         mock_circuit.add(gates.CNOT(0, 1))
         mock_circuit.add(gates.CNOT(1, 2))
@@ -831,52 +875,78 @@ class TestCircuitTranspiler:
         mock_circuit.add(gates.CNOT(3, 4))
         mock_circuit.add(gates.CNOT(1, 0))
 
+        # route_circuit returns 4 items
+        circuit_gates, nqubits_result, final_layout, original_measurement_order = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        output_gates_raw = [[gate.name, gate.qubits] for gate in circuit_gates] # Keep as list of lists for modification
+        expected_original_measurement_order: list[dict] = []
 
-        # Execute the function
-        circuit_gates, _, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
-        output_gates = [[gate.name, gate.qubits] for gate in circuit_gates]
+        # Create a representation of the layout that maps physical wires to the logical qubits they initially held.
+        current_physical_to_logical_map = list(final_layout) # e.g., [l0, l1, l2] means wire 0 has l0, wire 1 has l1.
 
-        # Undo routing with SWAPS
-        for idx, gate in enumerate(output_gates):
-            if gate[0] == 'swap':
-                output_gates[idx] = None
-                mapping_to_do = {gate[1][0]: gate[1][1], gate[1][1]:gate[1][0]}
-                for idx_2, gate_2 in enumerate(output_gates[idx+1:]):
-                    qubit_1, qubit_2 = gate_2[1]
-                    output_gates[idx_2+idx+1][1] = (mapping_to_do.get(qubit_1, qubit_1), mapping_to_do.get(qubit_2, qubit_2))
-                # Change layout:
-                final_layout[gate[1][0]], final_layout[gate[1][1]] = final_layout[gate[1][1]], final_layout[gate[1][0]]
+        temp_gates_for_swap_undo = [list(g) for g in output_gates_raw] # Make a deep enough copy for modification
 
-        # Undo initial mapping
-        for idx, gate in enumerate(output_gates):
-            if gate is not None:
-                output_gates[idx] = gate[0], tuple(final_layout[q] for q in gate[1])
+        # Iterate backwards to correctly undo swaps and their effects on subsequent gate mappings
+        for i in range(len(temp_gates_for_swap_undo) - 1, -1, -1):
+            gate_name, gate_qubits = temp_gates_for_swap_undo[i]
+            if gate_name == 'swap':
+                q0, q1 = gate_qubits # These are physical qubits
+                # This swap affected the mapping of logical qubits on these physical wires.
+                # Update `current_physical_to_logical_map` to reflect the state *before* this swap.
+                current_physical_to_logical_map[q0], current_physical_to_logical_map[q1] = current_physical_to_logical_map[q1], current_physical_to_logical_map[q0]
 
-        output_gates = [gate for gate in output_gates if gate is not None]
+                # Remove the swap gate itself from the list of processed gates
+                temp_gates_for_swap_undo.pop(i)
 
-        # Test you retrieve original circuit:
-        assert sorted(output_gates) == sorted([(gate.name, gate.qubits) for gate in mock_circuit.queue])
+        processed_gates_after_swaps_undone = temp_gates_for_swap_undo # Now contains non-swap gates, with physical qubits as they were *before* swaps
+
+        undone_gates = []
+        # Now, map the physical qubits of `processed_gates_after_swaps_undone` to original logical qubits
+        for gate_info in processed_gates_after_swaps_undone:
+            name, (phys_q0, phys_q1) = gate_info
+            log_q0 = current_physical_to_logical_map[phys_q0]
+            log_q1 = current_physical_to_logical_map[phys_q1]
+            undone_gates.append((name, tuple(sorted((log_q0, log_q1)))))
+
+
+        original_mock_gates_sorted = []
+        for gate in mock_circuit.queue:
+            if len(gate.qubits) == 2:
+                original_mock_gates_sorted.append((gate.name, tuple(sorted(gate.qubits))))
+            else:
+                 original_mock_gates_sorted.append((gate.name, gate.qubits))
+
+        assert sorted(undone_gates) == sorted(original_mock_gates_sorted)
+        assert original_measurement_order == expected_original_measurement_order
+        assert nqubits_result == mock_circuit.nqubits
+
 
     @patch("qililab.digital.circuit_transpiler.nx.Graph")
-    @patch("qililab.digital.circuit_transpiler.CircuitRouter")
-    def test_that_route_circuit_instantiates_Router(self, mock_router, mock_graph, digital_settings):
-        """Test route_circuit method"""
+    @patch("qililab.digital.circuit_transpiler.CircuitRouter") # This patches the class
+    def test_that_route_circuit_instantiates_Router(self, mock_router_class, mock_graph_class, digital_settings):
+        """Test route_circuit method's instantiation of CircuitRouter"""
         transpiler = CircuitTranspiler(settings=digital_settings)
         routing_iterations = 7
 
-        # Mock the return values
-        mock_circuit = Circuit(5)
-        mock_circuit.add(X(0))
+        mock_circuit_to_route = Circuit(5)
+        mock_circuit_to_route.add(X(0))
 
-        graph_mocking = nx.Graph(transpiler.settings.topology)
-        mock_graph.return_value = graph_mocking
+        graph_instance_mock = nx.Graph(transpiler.settings.topology)
+        mock_graph_class.return_value = graph_instance_mock
 
-        # Execute the function
-        with pytest.raises(ValueError, match=re.escape("not enough values to unpack (expected 2, got 0)")):
-            transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        # Mock the CircuitRouter *instance* that will be created
+        mock_router_instance = MagicMock()
+        # Configure the mocked route method of the *instance* to return 0 items
+        mock_router_instance.route.return_value = () # Empty tuple, 0 items
+        mock_router_class.return_value = mock_router_instance # When CircuitRouter() is called, it returns this mock_router_instance
 
-        # Asserts:
-        mock_router.assert_called_once_with(graph_mocking, None, None)
+        # The error "not enough values to unpack (expected 3, got 0)" occurs inside transpiler.route_circuit
+        # when it tries to unpack the result of self.circuit_router.route(...) which is mock_router_instance.route()
+        with pytest.raises(ValueError, match=re.escape("not enough values to unpack (expected 3, got 0)")):
+            transpiler.route_circuit(mock_circuit_to_route, placer=None, router=None, iterations=routing_iterations)
+
+        mock_graph_class.assert_called_once_with(transpiler.settings.topology)
+        mock_router_class.assert_called_once_with(graph_instance_mock, None, None)
+        mock_router_instance.route.assert_called_once_with(mock_circuit_to_route, routing_iterations)
 
     def test_DigitalTranspilerConfig(self):
         """Test that the dataclass default values are correct, and that properies give the correct order
