@@ -1562,14 +1562,19 @@ class Platform:
                 f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
             )
 
-        module_and_sequencer_per_bus: dict[str, ModuleSequencer] = {
-            element.bus_alias: ModuleSequencer(module=instrument, sequencer=instrument.get_sequencer(channel))
-            for element in pulse_schedule.elements
-            for instrument, channel in zip(
-                self.buses.get(alias=element.bus_alias).instruments, self.buses.get(alias=element.bus_alias).channels
-            )
-            if isinstance(instrument, QbloxModule)
-        }
+        module_and_sequencer_per_bus: dict[str, ModuleSequencer] = {}
+        for element in pulse_schedule.elements:
+            bus = self.buses.get(alias=element.bus_alias)
+            if bus is None:
+                # Raise error if bus in PulseSchedule is not found in the platform's runcard
+                raise ValueError(
+                    f"Bus with alias '{element.bus_alias}' in PulseSchedule not found in platform runcard."
+                )
+            for instrument, channel in zip(bus.instruments, bus.channels):
+                if isinstance(instrument, QbloxModule):
+                    module_and_sequencer_per_bus[element.bus_alias] = ModuleSequencer(
+                        module=instrument, sequencer=instrument.get_sequencer(channel)
+                    )
 
         compiler = PulseQbloxCompiler(
             buses=self.digital_compilation_settings.buses,

@@ -27,6 +27,7 @@ from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
+from qililab.instruments.instrument import Instrument
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
@@ -35,9 +36,9 @@ from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
+from qililab.typings.enums import InstrumentName, Parameter, InstrumentControllerName, PulseShapeName
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
-from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
 
 
@@ -705,6 +706,40 @@ class TestMethods:
         )
 
         self._compile_and_assert(platform, pulse_schedule, 2)
+
+    def test_compile_pulse_schedule_with_bus_not_in_runcard(self, platform: Platform):
+        """
+        Test that compiling a pulse schedule with a bus not in the runcard raises an error
+        and not only compiles sequences for buses present in the runcard.
+        """
+        pulse_schedule = PulseSchedule()
+        dummy_bus_alias = "dummy_bus"  # This bus is not in the runcard
+        valid_bus_alias = "drive_line_q0_bus"  # This bus is assumed to be in the runcard
+
+        pulse_schedule.add_event(
+            PulseEvent(
+                pulse=Pulse(amplitude=1, phase=0, duration=100, frequency=1e9, pulse_shape=Rectangular()),
+                start_time=0,
+            ),
+            bus_alias=dummy_bus_alias,
+            delay=0,
+        )
+        # Add another event with a valid bus to ensure the compilation doesn't fail entirely
+        pulse_schedule.add_event(
+            PulseEvent(
+                pulse=Pulse(amplitude=1, phase=0, duration=100, frequency=1e9, pulse_shape=Rectangular()),
+                start_time=0,
+            ),
+            bus_alias=valid_bus_alias,
+            delay=0,
+        )
+        with pytest.raises(ValueError, match=re.escape(f"Bus with alias '{dummy_bus_alias}' in PulseSchedule not found in platform runcard.")):
+            platform.compile(
+                program=pulse_schedule,
+                num_avg=1000,
+                repetition_duration=200_000,
+                num_bins=1,
+            )
 
     def _compile_and_assert(
         self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize: bool = False
