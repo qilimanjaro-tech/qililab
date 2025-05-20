@@ -671,12 +671,15 @@ class TestCircuitTranspiler:
 
         # Mock layout for return values
         mock_layout = [0, 1, 2, 3, 4]
+        # Mock original_measurement_order for return values
+        mock_original_measurement_order: list[dict] = []
+
 
         # Mock schedule for return values
         mock_schedule = PulseSchedule()
 
         # Mock the return values
-        mock_route.return_value = mock_circuit.queue, mock_circuit.nqubits, mock_layout
+        mock_route.return_value = mock_circuit.queue, mock_circuit.nqubits, mock_layout, mock_original_measurement_order
         mock_opt_circuit.return_value = mock_circuit_gates
         mock_to_native.return_value = mock_circuit_gates
         mock_add_phases.return_value = mock_circuit_gates
@@ -685,14 +688,14 @@ class TestCircuitTranspiler:
 
         circuit = random_circuit(5, 10, np.random.default_rng())
 
-        schedule, layout = transpiler.transpile_circuit(circuit, transpilation_config)
+        schedule, layout, original_measurement_order = transpiler.transpile_circuit(circuit, transpilation_config)
 
         # Mandatory asserts in order:
         mock_route.assert_called_once_with(circuit, placer, router, routing_iterations)
         mock_to_native.assert_called_once_with(mock_circuit.queue)
         mock_add_phases.assert_called_once_with(mock_circuit_gates, mock_circuit.nqubits)
         mock_to_pulses.assert_called_once_with(mock_circuit_gates)
-        assert (schedule, layout) == (mock_schedule, mock_layout)
+        assert (schedule, layout, original_measurement_order) == (mock_schedule, mock_layout, mock_original_measurement_order)
 
         # Asserts if optimize=True:
         if optimize:
@@ -705,15 +708,36 @@ class TestCircuitTranspiler:
             # Test if routing skipped:
             transpilation_config.routing = False
             mock_route.reset_mock()
-            _, _ = transpiler.transpile_circuit(circuit, transpilation_config)
+            # Reset relevant mocks that are called when routing is False
+            mock_to_native.reset_mock()
+            mock_add_phases.reset_mock()
+            mock_to_pulses.reset_mock()
+            mock_opt_circuit.reset_mock()
+            mock_opt_trans.reset_mock()
+
+            _, _, _ = transpiler.transpile_circuit(circuit, transpilation_config)
             mock_route.assert_not_called()
+            # Assert calls for non-routing path
+            mock_to_native.assert_called_once_with(circuit.queue) # Called with original circuit queue
+            mock_add_phases.assert_called_once_with(circuit.queue, circuit.nqubits) # Called with original circuit queue and nqubits
+            mock_to_pulses.assert_called_once_with(circuit.queue) # Called with original circuit queue
+
 
             # Test if no config is provided:
             mock_route.reset_mock()
-            _, _ = transpiler.transpile_circuit(circuit)
+            mock_to_native.reset_mock()
+            mock_add_phases.reset_mock()
+            mock_to_pulses.reset_mock()
+            mock_opt_circuit.reset_mock()
+            mock_opt_trans.reset_mock()
+            _, _, _ = transpiler.transpile_circuit(circuit)
             mock_route.assert_not_called()
             mock_opt_circuit.assert_not_called()
             mock_opt_trans.assert_not_called()
+            # Assert calls for non-routing path (default config)
+            mock_to_native.assert_called_once_with(circuit.queue)
+            mock_add_phases.assert_called_once_with(circuit.queue, circuit.nqubits)
+            mock_to_pulses.assert_called_once_with(circuit.queue)
 
 
     @patch("qililab.digital.circuit_router.CircuitRouter.route")

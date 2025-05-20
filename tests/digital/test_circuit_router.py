@@ -70,17 +70,20 @@ class TestCircuitRouterIntegration:
 
     def test_route_doesnt_affect_already_routed_circuit(self):
         """Test the routing of a circuit"""
-        routed_circuit, final_layout = CircuitRouter(linear_topology).route(linear_circuit)
+        # CircuitRouter.route returns 3 values: routed_circuit, final_layout, original_measurement_order
+        routed_circuit, final_layout, original_measurement_order = CircuitRouter(linear_topology).route(linear_circuit)
 
         assert final_layout == [0, 1, 2, 3, 4]
         assert routed_circuit.nqubits == linear_circuit.nqubits
         assert routed_circuit.depth == linear_circuit.depth
         assert [(gate.name, gate.qubits) for gate in routed_circuit.queue] == [(gate.name, gate.qubits)  for gate in linear_circuit.queue]
+        # Assuming linear_circuit has no M gates, original_measurement_order should be empty list
+        assert original_measurement_order == []
 
     def test_route_affects_non_routed_circuit(self):
         """Test the routing of a circuit"""
-
-        routed_circuit, final_layout = CircuitRouter(star_topology).route(linear_circuit)
+        # CircuitRouter.route returns 3 values
+        routed_circuit, final_layout, original_measurement_order = CircuitRouter(star_topology).route(linear_circuit)
 
         # Assert that the circuit was routed:
         assert final_layout != [0, 1, 2, 3, 4]
@@ -88,6 +91,9 @@ class TestCircuitRouterIntegration:
         assert routed_circuit.depth > linear_circuit.depth
         assert [(gate.name, gate.qubits) for gate in routed_circuit.queue] != [(gate.name, gate.qubits)  for gate in linear_circuit.queue]
         assert {gate.name for gate in routed_circuit.queue} >= {gate.name for gate in linear_circuit.queue} # Assert more gates
+        # Assert original_measurement_order (e.g., if linear_circuit has M gates, this would be populated)
+        # For linear_circuit as defined (no M gates), it should be empty.
+        assert original_measurement_order == []
 
 
 ##################
@@ -109,14 +115,18 @@ class TestCircuitRouterUnit:
     @patch("qililab.digital.circuit_router.CircuitRouter._iterate_routing")
     def test_route(self, mock_iterate, mock_logger_info, type, circuit, layout, least_swaps):
         """Test the routing of a circuit."""
-        # Set the mock returns to the parametrized test values:
-        mock_iterate.return_value = (circuit, least_swaps, layout)
+        # _iterate_routing is assumed to return 4 values based on other error messages
+        # (circuit, least_swaps, layout, original_measurement_order)
+        # circuit_test has H(0) - no M gates, so omo should be []
+        mock_original_measurement_order = []
+        mock_iterate.return_value = (circuit, least_swaps, layout, mock_original_measurement_order)
 
-        # Execute the routing:
+        # Execute the routing: CircuitRouter.route returns 3 values
         if type in ["good", "none_swaps"]:
-            routed_circuit, final_layout = self.circuit_router.route(linear_circuit)
-            # Assert you return the same outputs as the mocked _iterate_routing
-            assert (routed_circuit, final_layout) ==(circuit_test, test_layout)
+            routed_circuit, final_layout, returned_omo = self.circuit_router.route(linear_circuit)
+            # Assert you return the same outputs as the mocked _iterate_routing for circuit and layout
+            assert (routed_circuit, final_layout) == (circuit_test, test_layout)
+            assert returned_omo == mock_original_measurement_order
 
         # Assert that the logger is called properly
         if type == "good":
@@ -155,12 +165,13 @@ class TestCircuitRouterUnit:
     def test_iterate_routing_with_and_without_swaps(self, mock_qibo_routing, mock_removing_swaps, mock_apply_initial_remap, type, circuit, qibo_layout, layout, least_swaps, iterations):
         """ Test the iterate routing of a circuit, with and without swaps."""
         # Add the mock return value to the parametrized test values:
-        mock_qibo_routing.return_value = (circuit, qibo_layout)
+        mock_qibo_routing.return_value = (circuit, qibo_layout) # qibo's router returns (circuit, layout_dict)
         mock_removing_swaps.return_value = circuit
         mock_apply_initial_remap.return_value = circuit
 
-        # Execute the iterate_routing:
-        routed_circuit, least_swaps, final_layout = self.circuit_router._iterate_routing(self.circuit_router.pipeline, circuit, iterations)
+        # Execute the iterate_routing: assume it returns 4 values
+        # (routed_circuit, actual_least_swaps, final_layout, actual_original_measurement_order)
+        routed_circuit, actual_least_swaps, final_layout, actual_original_measurement_order = self.circuit_router._iterate_routing(self.circuit_router.pipeline, circuit, iterations)
 
         # Assert calls on the routing algorithm:
         if type == "with_swaps":
@@ -172,10 +183,14 @@ class TestCircuitRouterUnit:
             # Assert only called once, since there are no swaps:
             mock_qibo_routing.assert_called_once_with(circuit)
             mock_removing_swaps.assert_called_once_with(circuit, gates.SWAP)
-            expected_least_swaps = iterations = 0 # Since there are no swaps, no iterations have been needed
+            # In the original test, least_swaps is None for "without_swaps" case,
+            # but _iterate_routing likely calculates it as 0 if no swaps are added.
+            expected_least_swaps = 0
 
         # Assert you return the correct outputs:
-        assert (routed_circuit, least_swaps, final_layout) == (circuit, expected_least_swaps, layout)
+        assert (routed_circuit, actual_least_swaps, final_layout) == (circuit, expected_least_swaps, layout)
+        # The input circuits (circuit_test, circuit_w_swap_test) have no M gates.
+        assert actual_original_measurement_order == []
 
     def test_if_star_algorithms_for_nonstar_connectivity(self):
         """Test the routing of a circuit"""
