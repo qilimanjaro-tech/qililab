@@ -35,9 +35,22 @@ from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
+from qililab.settings import (
+    PlatformSettings,
+    ChipSettings,
+    BusSettings,
+    PortSettings,
+    InstrumentSettings,
+    InstrumentControllerSettings,
+    GateSettings,
+    PulseSettings,
+    PulseShapeSettings,
+)
+from qililab.typings.enums import InstrumentName, Parameter, InstrumentControllerName, PulseShapeName
+from qililab.instruments.base_instrument import BaseInstrument
+
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
-from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
 
 
@@ -707,14 +720,20 @@ class TestMethods:
         self._compile_and_assert(platform, pulse_schedule, 2)
 
     def test_compile_pulse_schedule_with_bus_not_in_runcard(self, platform: Platform):
-        """Test that compiling a pulse schedule with a bus not in the runcard doesn't raise an error."""
+        """
+        Test that compiling a pulse schedule with a bus not in the runcard doesn't raise an error
+        and only compiles sequences for buses present in the runcard.
+        """
         pulse_schedule = PulseSchedule()
+        dummy_bus_alias = "dummy_bus"  # This bus is not in the runcard
+        valid_bus_alias = "drive_line_q0_bus"  # This bus is assumed to be in the runcard
+
         pulse_schedule.add_event(
             PulseEvent(
                 pulse=Pulse(amplitude=1, phase=0, duration=100, frequency=1e9, pulse_shape=Rectangular()),
                 start_time=0,
             ),
-            bus_alias="dummy_bus",  # This bus is not in the runcard
+            bus_alias=dummy_bus_alias,
             delay=0,
         )
         # Add another event with a valid bus to ensure the compilation doesn't fail entirely
@@ -723,12 +742,13 @@ class TestMethods:
                 pulse=Pulse(amplitude=1, phase=0, duration=100, frequency=1e9, pulse_shape=Rectangular()),
                 start_time=0,
             ),
-            bus_alias="drive_line_q0_bus",  # This bus is in the runcard
+            bus_alias=valid_bus_alias,
             delay=0,
         )
 
+        sequences_w_alias = None
         try:
-            _, _ = platform.compile(
+            sequences_w_alias, _ = platform.compile(
                 program=pulse_schedule,
                 num_avg=1000,
                 repetition_duration=200_000,
@@ -736,6 +756,198 @@ class TestMethods:
             )
         except Exception as e:
             pytest.fail(f"Compiling a pulse schedule with a bus not in the runcard raised an exception: {e}")
+
+        assert sequences_w_alias is not None, "platform.compile should return sequences."
+
+        # Check that the dummy bus (not in runcard) is not in the compiled sequences
+        assert dummy_bus_alias not in sequences_w_alias, \
+            f"Compiled sequences should NOT include '{dummy_bus_alias}' as it's not in the runcard."
+
+        # Check that the valid bus (in runcard) IS in the compiled sequences
+        assert valid_bus_alias in sequences_w_alias, \
+            f"Compiled sequences SHOULD include '{valid_bus_alias}' as it's in the runcard."
+
+        # Check that there is content for the valid bus
+        assert len(sequences_w_alias.get(valid_bus_alias, [])) > 0, \
+            f"Expected compiled sequence data for '{valid_bus_alias}'."
+
+    def test_platform_initialization_respects_runcard_definitions(self):
+        """
+        Test that the Platform correctly initializes its qubits and buses based ONLY on the
+        definitions provided in the runcard (via PlatformSettings).
+        It should not create or assume qubits/buses that are not explicitly in the settings.
+        """
+        # Define minimal settings for a platform with only qubit 0 configured.
+        # Qubit 1 and its buses will be intentionally omitted.
+        chip_settings = ChipSettings(
+            qubits=[0],  # Only qubit 0 is defined
+            resonators=[], # Assuming resonators might be needed
+            nodes=[] # Assuming nodes might be needed
+        )
+
+        # Define buses only for qubit 0
+        # Minimal valid port settings
+        port_settings = PortSettings(alias="port_alias", id=0)
+        bus_settings_q0_drive = BusSettings(
+            alias="drive_line_q0_bus",
+            system_control="system_control_q0_drive", # Placeholder, real system control needed
+            port=port_settings,
+            distortions=[],
+            delay=0,
+            instrument_module=None # Placeholder
+        )
+        bus_settings_q0_flux = BusSettings(
+            alias="flux_line_q0_bus",
+            system_control="system_control_q0_flux", # Placeholder
+            port=port_settings,
+            distortions=[],
+            delay=0,
+            instrument_module=None # Placeholder
+        )
+        bus_settings_q0_feedline = BusSettings(
+            alias="feedline_q0_bus",
+            system_control="system_control_q0_feedline", # Placeholder
+            port=port_settings,
+            distortions=[],
+            delay=0,
+            instrument_module=None # Placeholder
+        )
+
+        # Assume some minimal instrument and controller settings are needed for Platform instantiation
+        # These would typically be more complete in a real runcard.
+        # For this test, we primarily care about buses and qubits.
+        # We might need to mock instrument loading if it's too complex.
+        # However, let's try with minimal settings first.
+
+        # Minimal InstrumentControllerSettings
+        instrument_controller_settings = InstrumentControllerSettings(
+            name=InstrumentControllerName.QBLOX,
+            modules=[
+                {"name": InstrumentName.QCM, "address": "qcm_0", "module_type": "QCM"},
+                {"name": InstrumentName.QRM, "address": "qrm_0", "module_type": "QRM"},
+            ],
+            connection=None, # Placeholder
+            settings=None # Placeholder
+        )
+
+        # Minimal InstrumentSettings - linking to the bus system_control names
+        instrument_settings = [
+            InstrumentSettings(
+                name=InstrumentName.QCM, # Corresponds to a QCM
+                alias="system_control_q0_drive", # Matches bus_settings_q0_drive.system_control
+                category="control", # Placeholder
+                instrument_controller_name=InstrumentControllerName.QBLOX,
+                address="qcm_0", # Matches module in InstrumentControllerSettings
+                firmware="0.0.0", # Placeholder
+                num_sequencers=1, # Placeholder
+                parameters={Parameter.REFERENCE_CLOCK.value: "internal"} # Example parameter
+            ),
+            InstrumentSettings(
+                name=InstrumentName.QCM, # Corresponds to a QCM for flux
+                alias="system_control_q0_flux", # Matches bus_settings_q0_flux.system_control
+                category="control", # Placeholder
+                instrument_controller_name=InstrumentControllerName.QBLOX,
+                address="qcm_0", # Can share QCM or be different
+                firmware="0.0.0",
+                num_sequencers=1,
+                parameters={Parameter.REFERENCE_CLOCK.value: "internal"}
+            ),
+            InstrumentSettings(
+                name=InstrumentName.QRM, # Corresponds to a QRM
+                alias="system_control_q0_feedline", # Matches bus_settings_q0_feedline.system_control
+                category="readout", # Placeholder
+                instrument_controller_name=InstrumentControllerName.QBLOX,
+                address="qrm_0", # Matches module in InstrumentControllerSettings
+                firmware="0.0.0",
+                num_sequencers=1,
+                parameters={Parameter.REFERENCE_CLOCK.value: "internal"}
+            )
+        ]
+
+        # Minimal GateSettings (can be empty if not strictly needed for bus/qubit loading)
+        # For simplicity, let's assume an empty dict is acceptable if not testing gates.
+        # However, Platform init might require some default gates for defined qubits.
+        # Let's add a dummy gate for qubit 0.
+        gate_settings = {
+            "M(0)": [GateSettings(
+                name="M",
+                qubits=[0],
+                pulse=PulseSettings(
+                    amplitude=1.0,
+                    phase=0.0,
+                    duration=1000,
+                    frequency=100e6,
+                    shape=PulseShapeSettings(name=PulseShapeName.RECTANGULAR)
+                )
+            )]
+        }
+
+
+        platform_settings = PlatformSettings(
+            chip=chip_settings,
+            buses=[bus_settings_q0_drive, bus_settings_q0_flux, bus_settings_q0_feedline],
+            instruments=instrument_settings,
+            instrument_controllers=[instrument_controller_settings],
+            gates=gate_settings,
+            schema_version="0.1.0", # Placeholder
+            analog_compilation_settings=None, # Placeholder
+            digital_compilation_settings=None # Placeholder
+        )
+
+        # Mock the actual instrument connection/loading if it's problematic for a unit test
+        # For now, let's assume the Platform can be instantiated if settings are structurally valid.
+        # If this fails due to instrument loading, we'd need to patch `_load_instruments` or similar.
+        with patch("qililab.platform.platform.Platform._load_instruments") as mock_load_instruments, \
+             patch("qililab.platform.platform.Platform._load_instrument_controllers") as mock_load_instrument_controllers:
+
+            # Create dummy instrument objects that _load_instruments would return
+            # This avoids needing real instrument controller connections for this test
+            mock_instruments_dict = {}
+            for inst_setting in instrument_settings:
+                # Create a MagicMock for each instrument based on its alias
+                # The actual type might be BaseInstrument or specific like QbloxQCM
+                mock_instruments_dict[inst_setting.alias] = MagicMock(spec=BaseInstrument)
+                                                                    # Use BaseInstrument or a more specific type if available
+                                                                    # and if spec is needed for attribute access later by Platform.
+                # Ensure the mock instrument has a 'name' attribute if Platform._load_buses uses it.
+                mock_instruments_dict[inst_setting.alias].name = inst_setting.name
+            mock_load_instruments.return_value = mock_instruments_dict
+
+            # Mock instrument controllers similarly if needed by _load_instruments or _load_buses
+            mock_instrument_controllers_dict = {}
+            for ic_setting in platform_settings.instrument_controllers:
+                 mock_instrument_controllers_dict[ic_setting.name.value] = MagicMock()
+            mock_load_instrument_controllers.return_value = mock_instrument_controllers_dict
+
+
+            platform_instance = Platform(settings=platform_settings)
+
+        # 1. Check configured qubits
+        # Assuming platform.chip.qubits reflects the configured qubits from settings
+        assert hasattr(platform_instance, 'chip'), "Platform instance should have a 'chip' attribute."
+        assert hasattr(platform_instance.chip, 'qubits'), "Platform chip should have a 'qubits' attribute."
+        assert platform_instance.chip.qubits == [0], \
+            f"Platform should only know about qubit 0, but found: {platform_instance.chip.qubits}"
+
+        # 2. Check loaded buses
+        assert "drive_line_q0_bus" in platform_instance.buses, \
+            "Bus for configured qubit 0 (drive_line_q0_bus) should be loaded."
+        assert "flux_line_q0_bus" in platform_instance.buses, \
+            "Bus for configured qubit 0 (flux_line_q0_bus) should be loaded."
+        assert "feedline_q0_bus" in platform_instance.buses, \
+            "Bus for configured qubit 0 (feedline_q0_bus) should be loaded."
+
+        # Assert that buses for the OMITTED qubit 1 are NOT loaded
+        assert "drive_line_q1_bus" not in platform_instance.buses, \
+            "Bus for omitted qubit 1 (drive_line_q1_bus) should NOT be loaded."
+        assert "flux_line_q1_bus" not in platform_instance.buses, \
+            "Bus for omitted qubit 1 (flux_line_q1_bus) should NOT be loaded."
+        assert "feedline_q1_bus" not in platform_instance.buses, \
+            "Bus for omitted qubit 1 (feedline_q1_bus) should NOT be loaded."
+
+        # 3. Check get_element for an omitted bus
+        with pytest.raises(KeyError, match="Element drive_line_q1_bus not found in platform."):
+            platform_instance.get_element("drive_line_q1_bus")
 
     def _compile_and_assert(
         self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize: bool = False
@@ -1075,8 +1287,8 @@ class TestMethods:
 
         # Define circuit
         c = Circuit(2)
-        c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
-        # the order from qblox qrm will be M(0),M(0),M(1),M(1)
+        c.add([gates.M(1), gates.M(0), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
+        # the order from qblox qrm will be M(0),M(0),M(0),M(1),M(1)
 
         # compile will return nothing and thus
         # readout_buses = [
