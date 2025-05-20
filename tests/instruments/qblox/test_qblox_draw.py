@@ -73,6 +73,20 @@ def fixture_qp_draw_with_time_window() -> QProgram:
         qp.measure(bus="readout_q13_bus", waveform =square_wf, weights= IQPair(I=weights_shape, Q=weights_shape))
     return qp
 
+@pytest.fixture(name="qp_draw_with_time_window_nested_loop")
+def fixture_qp_draw_with_time_window_nested_loop() -> QProgram:
+    qp = QProgram()
+    frequency = qp.variable(label="drive", domain=Domain.Frequency)
+    ampl = qp.variable("drive", domain=Domain.Voltage)
+    with qp.average(3):
+        with qp.for_loop(frequency, 0, 100e6, 100e6):
+            with qp.for_loop(ampl, 0, 1, 0.3):
+                qp.set_gain("drive",ampl)
+                qp.set_frequency("drive",frequency) #will do nothing for the plotting via the platform as HM is disabled
+                qp.play(bus="drive", waveform= Square(amplitude=1, duration=10))
+                qp.wait("drive",5)
+    return qp
+
 @pytest.fixture(name="qp_draw_with_timeout_no_loop")
 def fixture_qp_draw_with_timeout_no_loop() -> QProgram:
     qp = QProgram()
@@ -228,7 +242,7 @@ class TestQBloxDraw:
         np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout(self, qp_draw_with_time_window: QProgram):
-        data_draw = qp_draw_with_time_window.draw()
+        data_draw = qp_draw_with_time_window.draw(time_window=40)
         expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
        0.        , 0.        , 0.        , 0.        , 0.        ,
        0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.35355339,
@@ -251,6 +265,25 @@ class TestQBloxDraw:
         data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, averages_displayed = True, time_window=40)
         np.testing.assert_allclose(data_draw["readout_q13_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["readout_q13_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+
+    def test_qp_draw_with_timeout_nested_loop(self, qp_draw_with_time_window_nested_loop: QProgram):
+        data_draw = qp_draw_with_time_window_nested_loop.draw(time_window=20)
+        expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
+         0.        , 0.        , 0.        , 0.        , 0.        ,
+         0.        , 0.        , 0.        , 0.        , 0.        ,
+         0.23569507, 0.23569507, 0.23569507, 0.23569507, 0.23569507,
+         0.23569507, 0.23569507, 0.23569507, 0.23569507, 0.23569507]
+
+        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+         0., 0., 0., 0., 0., 0., 0., 0.]
+
+        compiler = QbloxCompiler()
+        qblox_draw = QbloxDraw()
+        results = compiler.compile(qp_draw_with_time_window_nested_loop)
+        pio.renderers.default = "json"
+        data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, time_window=20)
+        np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout_no_loop(self, qp_draw_with_timeout_no_loop: QProgram):
         data_draw = qp_draw_with_timeout_no_loop.draw()

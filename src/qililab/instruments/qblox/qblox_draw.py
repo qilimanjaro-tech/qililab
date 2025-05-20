@@ -443,6 +443,8 @@ class QbloxDraw:
                                             (element for element in sorted_labels if element[0] == new_label), None
                                         )  # retrieve the start/end/variable of the new label
                                         current_idx = process_loop(result, current_idx)
+                                        if parameters[bus]["time_reached"] is True:
+                                            return current_idx
                                         label_index = {}
                                         # check if there is a nested loop, if yes need to remove it from label_dne, otherwise it wont loop over in the next iteration of the parent
                                         for a in label_done:
