@@ -799,8 +799,8 @@ class TestMethods:
 
     def test_compile_pulse_schedule_with_bus_not_in_runcard(self, platform: Platform):
         """
-        Test that compiling a pulse schedule with a bus not in the runcard doesn't raise an error
-        and only compiles sequences for buses present in the runcard.
+        Test that compiling a pulse schedule with a bus not in the runcard raises an error
+        and not only compiles sequences for buses present in the runcard.
         """
         pulse_schedule = PulseSchedule()
         dummy_bus_alias = "dummy_bus"  # This bus is not in the runcard
@@ -825,16 +825,13 @@ class TestMethods:
         )
 
         sequences_w_alias = None
-        try:
+        with pytest.raises(ValueError):
             sequences_w_alias, _ = platform.compile(
                 program=pulse_schedule,
                 num_avg=1000,
                 repetition_duration=200_000,
                 num_bins=1,
             )
-        except Exception as e:
-            pytest.fail(f"Compiling a pulse schedule with a bus not in the runcard raised an exception: {e}")
-
         assert sequences_w_alias is not None, "platform.compile should return sequences."
 
         # Check that the dummy bus (not in runcard) is not in the compiled sequences
