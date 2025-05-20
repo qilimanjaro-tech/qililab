@@ -585,15 +585,8 @@ class TestPlatform:
 
             mock_instruments_instance = create_autospec(Instruments, instance=True)
 
-            def side_effect_get_instrument(alias_requested):
-                if alias_requested == "instrument1_alias":
-                    return mock_instrument1
-                if alias_requested == "instrument2_alias":
-                    return mock_instrument2
-                # Raise an error for unexpected calls to make debugging easier if the test fails.
-                raise ValueError(f"Mock Instruments.get_instrument called with unexpected alias: {alias_requested}")
-
-            mock_instruments_instance.get_instrument.side_effect = side_effect_get_instrument
+            # Set the elements attribute to a list of the mocked instruments
+            mock_instruments_instance.elements = [mock_instrument1, mock_instrument2]
             mock_load_instruments.return_value = mock_instruments_instance
 
             # Initialize the Platform. This will call the real _build method,
