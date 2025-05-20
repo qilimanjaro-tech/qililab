@@ -1287,8 +1287,8 @@ class TestMethods:
 
         # Define circuit
         c = Circuit(2)
-        c.add([gates.M(1), gates.M(0), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
-        # the order from qblox qrm will be M(0),M(0),M(0),M(1),M(1)
+        c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
+        # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
         # compile will return nothing and thus
         # readout_buses = [
