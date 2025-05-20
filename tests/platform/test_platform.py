@@ -805,28 +805,13 @@ class TestMethods:
             bus_alias=valid_bus_alias,
             delay=0,
         )
-
-        sequences_w_alias = None
         with pytest.raises(ValueError, match=re.escape(f"Bus with alias '{dummy_bus_alias}' in PulseSchedule not found in platform runcard.")):
-            sequences_w_alias, _ = platform.compile(
+            platform.compile(
                 program=pulse_schedule,
                 num_avg=1000,
                 repetition_duration=200_000,
                 num_bins=1,
             )
-        assert sequences_w_alias is not None, "platform.compile should return sequences."
-
-        # Check that the dummy bus (not in runcard) is not in the compiled sequences
-        assert dummy_bus_alias not in sequences_w_alias, \
-            f"Compiled sequences should NOT include '{dummy_bus_alias}' as it's not in the runcard."
-
-        # Check that the valid bus (in runcard) IS in the compiled sequences
-        assert valid_bus_alias in sequences_w_alias, \
-            f"Compiled sequences SHOULD include '{valid_bus_alias}' as it's in the runcard."
-
-        # Check that there is content for the valid bus
-        assert len(sequences_w_alias.get(valid_bus_alias, [])) > 0, \
-            f"Expected compiled sequence data for '{valid_bus_alias}'."
 
     def _compile_and_assert(
         self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize: bool = False
