@@ -7,7 +7,7 @@ import warnings
 from pathlib import Path
 from queue import Queue
 from types import MethodType
-from unittest.mock import MagicMock, create_autospec, patch
+from unittest.mock import ANY, MagicMock, create_autospec, patch  # Added ANY
 
 import numpy as np
 import pytest
@@ -15,6 +15,7 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
+from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
 from tests.test_utils import build_platform
 
@@ -31,9 +32,7 @@ from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.result.qblox_results import QbloxResult
-from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+from qililab.result import Acquisition, Acquisitions, QbloxResult, QProgramResults  # Added Acquisition, Acquisitions
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
@@ -915,7 +914,7 @@ class TestMethods:
 
         assert "readout_q0_rf" in first_execution_results.results
         assert len(first_execution_results.results["readout_q0_rf"]) == 1
-        assert isinstance(first_execution_results.results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
+        assert isinstance(first_execution_results.results["readout_q0_rf"][0], QuantumMachinesMeasurementResult())
         np.testing.assert_array_equal(first_execution_results.results["readout_q0_rf"][0].I, np.array([1, 2, 3]))
         np.testing.assert_array_equal(first_execution_results.results["readout_q0_rf"][0].Q, np.array([4, 5, 6]))
 
@@ -934,8 +933,7 @@ class TestMethods:
 
         error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
         escaped_error_str = re.escape(error_string)
-        platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform_quantum_machines.compile.return_value = Exception(escaped_error_str)
+        platform_quantum_machines.compile = MagicMock(side_effect=Exception(escaped_error_str))  # type: ignore
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
@@ -963,21 +961,42 @@ class TestMethods:
         pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
         pulse_schedule.add_event(
             PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
-        )
-        qblox_result = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
+        )  # This corresponds to M(0)
+
+        raw_qblox_result_for_mock = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
+
         with patch.object(Bus, "upload") as upload:
             with patch.object(Bus, "run") as run:
                 with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers") as desync:
-                        acquire_result.return_value = qblox_result
-                        result = platform.execute(
-                            program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
+                    with patch.object(QbloxModule, "desync_sequencer") as desync:
+                        platform.compile = MagicMock()
+                        mock_compiled_programs = {
+                            "drive_line_q0_bus": [MagicMock(spec=Sequence)],
+                            "feedline_input_output_bus": [MagicMock(spec=Sequence)],
+                        }
+                        mock_final_layout = None
+                        mock_original_measurement_order = [{"qubit_index": 0}]
+                        platform.compile.return_value = (
+                            mock_compiled_programs,
+                            mock_final_layout,
+                            mock_original_measurement_order,
                         )
 
-        assert upload.call_count == len(pulse_schedule.elements)
-        assert run.call_count == len(pulse_schedule.elements)
-        acquire_result.assert_called_once_with()
-        assert result == qblox_result
+                        acquire_result.return_value = raw_qblox_result_for_mock
+                        result = platform.execute(
+                            program=pulse_schedule, num_avg=1000, repetition_duration=200, num_bins=1, save_experiment=False
+                        )
+
+        assert upload.call_count == len(mock_compiled_programs)
+        assert run.call_count == len(mock_compiled_programs)
+        readout_buses_in_mock = [
+            bus_alias for bus_alias in mock_compiled_programs if "feedline" in bus_alias
+        ]
+        assert acquire_result.call_count == len(readout_buses_in_mock)
+
+        expected_acquisitions = Acquisitions()
+        expected_acquisitions.add(Acquisition(qubit_idx=0, measurement=ANY))
+        assert result == expected_acquisitions
         desync.assert_called()
 
     def test_execute_with_queue(self, platform: Platform, qblox_results: list[dict]):
@@ -988,23 +1007,44 @@ class TestMethods:
             PulseEvent(
                 pulse=Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular()),
                 start_time=200,
-                qubit=0,
+                qubit=0,  # This corresponds to M(0)
             ),
-            bus_alias="feedline_input_output_bus",
+            bus_alias="feedline_input_output_bus",  # Readout bus
             delay=0,
         )
-        qblox_result = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
+        raw_qblox_result_for_mock = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
+
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers") as desync:
-                        acquire_result.return_value = qblox_result
-                        _ = platform.execute(
-                            program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
+                    with patch.object(QbloxModule, "desync_sequencer") as desync:
+                        platform.compile = MagicMock()
+                        mock_compiled_programs = {"feedline_input_output_bus": [MagicMock(spec=Sequence)]}
+                        mock_final_layout = None
+                        mock_original_measurement_order = [{"qubit_index": 0}]
+                        platform.compile.return_value = (
+                            mock_compiled_programs,
+                            mock_final_layout,
+                            mock_original_measurement_order,
+                        )
+
+                        acquire_result.return_value = raw_qblox_result_for_mock
+
+                        platform.execute(
+                            program=pulse_schedule,
+                            num_avg=1000,
+                            repetition_duration=200,
+                            num_bins=1,
+                            save_experiment=False,
+                            queue=queue,
                         )
 
         assert len(queue.queue) == 1
-        assert queue.get() == qblox_result
+        result_from_queue = queue.get()
+
+        expected_acquisitions = Acquisitions()
+        expected_acquisitions.add(Acquisition(qubit_idx=0, measurement=ANY))
+        assert result_from_queue == expected_acquisitions
         desync.assert_called()
 
     def test_execute_returns_ordered_measurements(self, platform: Platform, qblox_results: list[dict]):
@@ -1016,27 +1056,37 @@ class TestMethods:
         c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
         # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
-        for idx, final_layout in enumerate([{0: 0, 1: 1}, {0: 1, 1: 0}]):
-            platform.compile = MagicMock()  # type: ignore # don't care about compilation
-            platform.compile.return_value = {"feedline_input_output_bus": None}, final_layout
+        mock_original_measurement_order = [
+            {"qubit_index": 1},  # Corresponds to M(1)
+            {"qubit_index": 0},  # Corresponds to M(0)
+            {"qubit_index": 0},  # Corresponds to the Q0 part of M(0,1)
+            {"qubit_index": 1},  # Corresponds to the Q1 part of M(0,1)
+        ]
+
+        for final_layout in [{0: 0, 1: 1}, {0: 1, 1: 0}]:
+            platform.compile = MagicMock()  # type: ignore
+            platform.compile.return_value = (
+                {"feedline_input_output_bus": [MagicMock(spec=Sequence)]},
+                final_layout,
+                mock_original_measurement_order,
+            )
             with patch.object(Bus, "upload"):
                 with patch.object(Bus, "run"):
                     with patch.object(Bus, "acquire_result") as acquire_result:
-                        with patch.object(QbloxModule, "desync_sequencers"):
-                            acquire_result.return_value = QbloxResult(
-                                qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
+                        with patch.object(QbloxModule, "desync_sequencer") as desync:
+                            qblox_result_mock = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
+                            acquire_result.return_value = qblox_result_mock
+                            result = platform.execute(
+                                program=c, num_avg=1000, repetition_duration=200, num_bins=1, save_experiment=False
                             )
-                            result = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
 
-            # check that the order of #measurement # qubit is the same as in the circuit
-            order_measurement_qubit = [(result["qubit"], result["measurement"]) for result in result.qblox_raw_results]  # type: ignore
-
-            # Change the qubit mappings, given the final_layout:
-            assert (
-                order_measurement_qubit == [(1, 0), (0, 0), (0, 1), (1, 1)]
-                if idx == 0
-                else [(0, 0), (1, 0), (1, 1), (0, 1)]
-            )
+            expected_acquisitions = Acquisitions()
+            expected_acquisitions.add(Acquisition(qubit_idx=1, measurement=ANY))  # M(1)
+            expected_acquisitions.add(Acquisition(qubit_idx=0, measurement=ANY))  # M(0)
+            expected_acquisitions.add(Acquisition(qubit_idx=0, measurement=ANY))  # M(0,1) - first part
+            expected_acquisitions.add(Acquisition(qubit_idx=1, measurement=ANY))  # M(0,1) - second part
+            assert result == expected_acquisitions
+            desync.assert_called()
 
     def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):
         """Test that executing with some circuit returns acquisitions with multiple measurements in same order
@@ -1044,16 +1094,12 @@ class TestMethods:
 
         # Define circuit
         c = Circuit(2)
-        c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
-        # the order from qblox qrm will be M(0),M(0),M(1),M(1)
+        c.add([gates.M(1), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
+        # the order from qblox qrm will be M(0),M(1),M(1)
+        n_m = len([qubit for gate in c.queue for qubit in gate.qubits if isinstance(gate, gates.M)])
 
-        # compile will return nothing and thus
-        # readout_buses = [
-        #     bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl) and bus.alias in programs
-        # ]
-        # in platform will be empty
-        platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"drive_line_q0_bus": None}, {"q0": 0}
+        platform.compile = MagicMock()  # type: ignore[method-assign]
+        platform.compile.return_value = {"drive_line_q0_bus": None}, {"q0": 0}, None
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
@@ -1075,8 +1121,8 @@ class TestMethods:
         # the order from qblox qrm will be M(0),M(1),M(1)
         n_m = len([qubit for gate in c.queue for qubit in gate.qubits if isinstance(gate, gates.M)])
 
-        platform.compile = MagicMock()  # type: ignore[method-assign] # don't care about compilation
-        platform.compile.return_value = {"feedline_input_output_bus": None}, {"q0": 0}
+        platform.compile = MagicMock()  # type: ignore[method-assign]
+        platform.compile.return_value = {"feedline_input_output_bus": None}, {"q0": 0}, None
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
@@ -1128,6 +1174,7 @@ class TestMethods:
         platform.compile.return_value = (
             {"feedline_input_output_bus": None, "feedline_input_output_bus_2": None},
             {"q0": 0},
+            None,
         )
         # mock execution
         with patch.object(Bus, "upload"):
