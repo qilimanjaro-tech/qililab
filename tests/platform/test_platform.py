@@ -715,6 +715,7 @@ class TestMethods:
                 start_time=0,
             ),
             bus_alias="dummy_bus",  # This bus is not in the runcard
+            delay=0,
         )
         # Add another event with a valid bus to ensure the compilation doesn't fail entirely
         pulse_schedule.add_event(
@@ -723,6 +724,7 @@ class TestMethods:
                 start_time=0,
             ),
             bus_alias="drive_line_q0_bus",  # This bus is in the runcard
+            delay=0,
         )
 
         try:
