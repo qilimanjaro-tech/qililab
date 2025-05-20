@@ -23,7 +23,7 @@ EXPERIMENT_FILENAME = "experiment.yml"
 
 DEFAULT_PLATFORM_NAME = "galadriel"
 
-DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
+DEFAULT_TIMEOUT = 259200  # 3 days
 
 GATE_ALIAS_REGEX = r"(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
 

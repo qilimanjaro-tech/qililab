@@ -15,6 +15,8 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
+from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
+from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -37,8 +39,6 @@ from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
-from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
-from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
@@ -407,8 +407,8 @@ class TestPlatform:
     def test_set_parameter_no_instrument_connection_QBLOX(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""
         platform._connected_to_instruments = False
-        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14, channel_id=0)
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=0.14e6, channel_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=0) == 0.14e6
 
         platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"drive_line_q0_bus": {"drive_line_q0_bus": 0.1}}))
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FLUX, value=0.14, channel_id=0)
@@ -801,7 +801,9 @@ class TestMethods:
             results_path = platform.execute_experiment(experiment=mock_experiment)
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
-            MockExecutor.assert_called_once_with(platform=platform, experiment=mock_experiment)
+            MockExecutor.assert_called_once_with(
+                platform=platform, experiment=mock_experiment, live_plot=True, slurm_execution=True, port_number=None
+            )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
             mock_executor_instance.execute.assert_called_once()
@@ -1359,3 +1361,113 @@ class TestMethods:
 
         with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
             platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
+
+    def test_db_real_time_saving(self, platform: Platform):
+        """Test db_real_time_saving function to save database from platform"""
+
+        shape = (2, 2)
+        loops = {"test_amp_loop": np.arange(0, 2)}
+        experiment_name = "test_db_real_time_saving"
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        db_real_time_saving = platform.db_real_time_saving(shape, loops, experiment_name, db_manager, qprogram, optional_identifier)
+
+        assert db_real_time_saving.loops == loops
+        assert db_real_time_saving.results.shape == shape
+        assert db_real_time_saving.optional_identifier == optional_identifier
+        assert db_real_time_saving.platform == platform
+        assert db_real_time_saving.qprogram == qprogram
+        assert db_real_time_saving.db_manager == mock_database
+        assert db_real_time_saving.experiment_name == experiment_name
+
+    @patch("h5py.File")
+    def test_db_save_results(self, mock_h5file, platform: Platform):
+        """Test db_save_results functionto save from database from Platform"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 1)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+
+        assert mock_h5file.called
+
+    @patch("h5py.File")
+    def test_db_save_results_loop_dict(self, mock_h5file, platform: Platform):
+        """Test db_save_results functionto save from database from Platform"""
+
+        experiment_name = "experiment_name"
+        loops = {
+            "test_amp_loop": {"bus": "readout", "units": "V", "parameter": Parameter.VOLTAGE, "array": np.arange(0, 1)}
+        }
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+
+        assert mock_h5file.called
+
+    @patch("h5py.File")
+    def test_db_save_results_raise_error_incorrect_loops(self, mock_h5file, platform: Platform):
+        """Test db_save_results functionto save from database from Platform"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 1), "test_freq_loop": np.arange(0, 1e6, 1e6)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        error_string = "Number of loops must be the same as the number of dimensions of the results except for IQ"
+        with pytest.raises(ValueError, match=error_string):
+            platform.db_save_results(
+                experiment_name, results, loops, db_manager, qprogram, optional_identifier
+            )
+
+    @patch("h5py.File")
+    def test_db_save_results_raise_error_incorrect_loops_size(self, mock_h5file, platform: Platform):
+        """Test db_save_results functionto save from database from Platform"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 4)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
+        with pytest.raises(ValueError, match=error_string):
+            platform.db_save_results(
+                experiment_name, results, loops, db_manager, qprogram, optional_identifier
+            )
