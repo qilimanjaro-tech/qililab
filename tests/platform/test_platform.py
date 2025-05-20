@@ -706,6 +706,35 @@ class TestMethods:
 
         self._compile_and_assert(platform, pulse_schedule, 2)
 
+    def test_compile_pulse_schedule_with_bus_not_in_runcard(self, platform: Platform):
+        """Test that compiling a pulse schedule with a bus not in the runcard doesn't raise an error."""
+        pulse_schedule = PulseSchedule()
+        pulse_schedule.add_event(
+            PulseEvent(
+                pulse=Pulse(amplitude=1, phase=0, duration=100, frequency=1e9, pulse_shape=Rectangular()),
+                start_time=0,
+            ),
+            bus_alias="dummy_bus",  # This bus is not in the runcard
+        )
+        # Add another event with a valid bus to ensure the compilation doesn't fail entirely
+        pulse_schedule.add_event(
+            PulseEvent(
+                pulse=Pulse(amplitude=1, phase=0, duration=100, frequency=1e9, pulse_shape=Rectangular()),
+                start_time=0,
+            ),
+            bus_alias="drive_line_q0_bus",  # This bus is in the runcard
+        )
+
+        try:
+            _, _ = platform.compile(
+                program=pulse_schedule,
+                num_avg=1000,
+                repetition_duration=200_000,
+                num_bins=1,
+            )
+        except Exception as e:
+            pytest.fail(f"Compiling a pulse schedule with a bus not in the runcard raised an exception: {e}")
+
     def _compile_and_assert(
         self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize: bool = False
     ):
