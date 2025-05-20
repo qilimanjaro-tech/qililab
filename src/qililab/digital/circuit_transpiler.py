@@ -37,6 +37,15 @@ if TYPE_CHECKING:
 
 
 @dataclass
+class DigitalTranspilationOutput:
+    """Dataclass to store the output of digital transpilation."""
+
+    pulse_schedule: PulseSchedule
+    final_layout: list[int] | None
+    original_measurement_order: list[dict] | None
+
+
+@dataclass
 class DigitalTranspilationConfig:
     """Dataclass containing the digital transpilation configuration. Used in the :meth:`.CircuitTranspiler.transpile_circuit()` method"""
 
@@ -86,7 +95,7 @@ class CircuitTranspiler:
         self,
         circuit: Circuit,
         transpilation_config: DigitalTranspilationConfig | None = None,
-    ) -> tuple[PulseSchedule, list[int] | None]:
+    ) -> tuple[PulseSchedule, list[int] | None, list[dict] | None]:
         """Transpiles a list of ``qibo.models.Circuit`` objects into a list of pulse schedules.
 
         The process involves the following steps (by default only: **3.**, **4**., and **6.** run):
@@ -159,8 +168,8 @@ class CircuitTranspiler:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[PulseSchedule, list[int] | None]: Pulse schedule and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
-                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
+            tuple[PulseSchedule, list[int] | None, list[dict] | None]: Pulse schedule and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping), and the original measurement order.
         """
         # Default values:
         if transpilation_config is None:
@@ -168,10 +177,13 @@ class CircuitTranspiler:
 
         # Unpack dataclass attributes:
         routing, placer, router, routing_iterations, optimize = transpilation_config._attributes_ordered
+        original_measurement_order = None  # Initialize
 
         # Routing stage;
         if routing:
-            circuit_gates, nqubits, final_layout = self.route_circuit(circuit, placer, router, routing_iterations)
+            circuit_gates, nqubits, final_layout, original_measurement_order = self.route_circuit(
+                circuit, placer, router, routing_iterations
+            )
         else:
             circuit_gates, nqubits = circuit.queue, circuit.nqubits
             final_layout = None  # Random mapping
@@ -193,7 +205,7 @@ class CircuitTranspiler:
         # Pulse schedule stage:
         pulse_schedule = self.gates_to_pulses(circuit_gates)
 
-        return pulse_schedule, final_layout
+        return pulse_schedule, final_layout, original_measurement_order
 
     def route_circuit(
         self,
@@ -202,7 +214,7 @@ class CircuitTranspiler:
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         iterations: int = 10,
         coupling_map: tuple[int, int] | None = None,
-    ) -> tuple[list[gates.Gate], int, list[int]]:
+    ) -> tuple[list[gates.Gate], int, list[int], list[dict]]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         This process uses the provided ``placer``, ``router``, and ``routing_iterations`` parameters if they are passed; otherwise, default values are applied.
@@ -255,8 +267,8 @@ class CircuitTranspiler:
                 which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
 
         Returns:
-            tuple[list[Gate], int, list[int]]: List of gates of the routed circuit, number of qubits in it, and its corresponding final layout (Initial
-                Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...].
+            tuple[list[Gate], int, list[int], list[dict]]: List of gates of the routed circuit, number of qubits in it, its corresponding final layout (Initial
+                Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...], and the original measurement order.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -265,9 +277,9 @@ class CircuitTranspiler:
         topology = nx.Graph(coupling_map if coupling_map is not None else self.settings.topology)
         circuit_router = CircuitRouter(topology, placer, router)
 
-        circuit, final_layout = circuit_router.route(circuit, iterations)
+        circuit, final_layout, original_measurement_order = circuit_router.route(circuit, iterations)
 
-        return circuit.queue, circuit.nqubits, final_layout
+        return circuit.queue, circuit.nqubits, final_layout, original_measurement_order
 
     @staticmethod
     def optimize_gates(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:

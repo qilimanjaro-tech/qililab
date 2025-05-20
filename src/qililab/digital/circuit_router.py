@@ -72,7 +72,7 @@ class CircuitRouter:
         # 2) Routing stage, where the final_layout and swaps will be created.
         # 3) Layout stage, where the initial_layout will be created.
 
-    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, list[int]]:
+    def route(self, circuit: Circuit, iterations: int = 10) -> tuple[Circuit, list[int], list[dict]]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         Check public docstring in :meth:`.CircuitTranspiler.route_circuit()` for more information.
@@ -82,15 +82,17 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple [Circuit, list[int]: Routed circuit and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
-                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...].
+            tuple [Circuit, list[int], list[dict]]: Routed circuit, its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...], and the original measurement order.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
             ValueError: If the final layout is not valid, i.e. a qubit is mapped to more than one physical qubit.
         """
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
-        best_transp_circ, least_swaps, best_final_layout = self._iterate_routing(self.pipeline, circuit, iterations)
+        best_transp_circ, least_swaps, best_final_layout, original_measurement_order = self._iterate_routing(
+            self.pipeline, circuit, iterations
+        )
 
         if least_swaps is not None:
             logger.info(f"The best found routing, has {least_swaps} swaps.")
@@ -103,12 +105,12 @@ class CircuitRouter:
         else:
             logger.info("No routing was done. Most probably due to routing iterations being 0.")
 
-        return best_transp_circ, best_final_layout
+        return best_transp_circ, best_final_layout, original_measurement_order
 
     @staticmethod
     def _iterate_routing(
         routing_pipeline: Passes, circuit: Circuit, iterations: int = 10
-    ) -> tuple[Circuit, int | None, list[int]]:
+    ) -> tuple[Circuit, int | None, list[int], list[dict]]:
         """Iterates through the routing pipeline to retain the best stochastic result. Returns and/or logs the final qubit layout.
 
         Args:
@@ -117,11 +119,29 @@ class CircuitRouter:
             iterations (int, optional): Number of times to repeat the routing pipeline, to keep the best stochastic result. Defaults to 10.
 
         Returns:
-            tuple[Circuit, int | None, list[int]]: Best routed circuit, least number of swaps required, and the corresponding best final
-                layout of the original logical qubits in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...].
+            tuple[Circuit, int | None, list[int], list[dict]]: Best routed circuit, least number of swaps required, the corresponding best final
+                layout of the original logical qubits in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...], and the original measurement order.
         """
         # We repeat the routing pipeline a few times, to keep the best stochastic result:
         least_swaps: int | None = None
+        best_transpiled_circ = circuit  # Initialize with the original circuit
+        selected_final_layout: list[int] = list(range(circuit.nqubits))  # Initialize with a trivial layout
+        best_final_layout: dict[int, int] = {i: i for i in range(circuit.nqubits)}  # Initialize with a trivial layout
+
+        original_measurement_order: list = []
+        measurement_idx = 0
+        for gate_idx, gate in enumerate(circuit.queue):
+            if isinstance(gate, gates.M):
+                original_measurement_order.extend(
+                    {
+                        "original_qubit": qubit,
+                        "measurement_index": measurement_idx,
+                        "gate_index": gate_idx,
+                    }
+                    for qubit in gate.target_qubits
+                )
+                measurement_idx += 1
+
         for _ in range(iterations):
             # Call the routing pipeline on the circuit:
             transpiled_circ, final_layout = routing_pipeline(circuit)
@@ -144,9 +164,9 @@ class CircuitRouter:
             if n_swaps == 0:
                 break
 
-        best_final_layout = CircuitRouter._get_logical_qubit_of_each_wire(best_final_layout)
+        selected_final_layout = CircuitRouter._get_logical_qubit_of_each_wire(best_final_layout)
 
-        return best_transpiled_circ, least_swaps, best_final_layout
+        return best_transpiled_circ, least_swaps, selected_final_layout, original_measurement_order
 
     @staticmethod
     def _apply_initial_remap(transpiled_circ: Circuit) -> Circuit:
