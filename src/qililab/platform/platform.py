@@ -1566,10 +1566,10 @@ class Platform:
         for element in pulse_schedule.elements:
             bus = self.buses.get(alias=element.bus_alias)
             if bus is None:
-                # Skip elements for buses not defined in the runcard (and therefore not in self.buses)
-                # This can happen if a PulseSchedule is created manually with buses that don't exist in the platform
-                # or if a circuit is transpiled with a chip that has more qubits than the runcard
-                continue
+                # Raise error if bus in PulseSchedule is not found in the platform's runcard
+                raise ValueError(
+                    f"Bus with alias '{element.bus_alias}' in PulseSchedule not found in platform runcard."
+                )
             for instrument, channel in zip(bus.instruments, bus.channels):
                 if isinstance(instrument, QbloxModule):
                     module_and_sequencer_per_bus[element.bus_alias] = ModuleSequencer(

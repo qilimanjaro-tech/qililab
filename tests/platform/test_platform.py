@@ -27,6 +27,7 @@ from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
+from qililab.instruments.instrument import Instrument
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
@@ -543,82 +544,63 @@ class TestPlatform:
 
     def test_platform_initialization_respects_runcard_definitions(self):
         """Test that Platform initializes only with buses defined in the runcard."""
-        bus_A_dict = {"alias": "bus_A", "instruments": ["instrument1"], "channels": [0]} # Added dummy instrument and channel
+        # Define bus settings using instrument aliases
+        bus_A_dict = {"alias": "bus_A", "instruments": ["instrument1_alias"], "channels": [0]}
         # bus_B is intentionally omitted from the runcard definition
-        bus_C_dict = {"alias": "bus_C", "instruments": ["instrument2"], "channels": [1]} # Added dummy instrument and channel
+        bus_C_dict = {"alias": "bus_C", "instruments": ["instrument2_alias"], "channels": [1]}
 
-        # Define the runcard with specific buses.
+        # Define the runcard with specific buses and corresponding instruments.
+        # Added 'type' for robustness against Pydantic validation.
         runcard_settings = Runcard(
             name="test_runcard_bus_init",
             buses=[bus_A_dict, bus_C_dict],
-            instruments=[ # Added dummy instruments to satisfy Platform's _build method
-                {"name": "instrument1", "alias": "instrument1_alias", "category": "awg", "instrument_controller_name": "controller1", "address": "address1", "firmware": "0.1"},
-                {"name": "instrument2", "alias": "instrument2_alias", "category": "awg", "instrument_controller_name": "controller1", "address": "address2", "firmware": "0.1"}
+            instruments=[
+                {"name": "instrument1_raw_name", "alias": "instrument1_alias", "category": "awg", "instrument_controller_name": "controller1", "address": "address1", "firmware": "0.1", "type": "dummy_type"},
+                {"name": "instrument2_raw_name", "alias": "instrument2_alias", "category": "awg", "instrument_controller_name": "controller1", "address": "address2", "firmware": "0.1", "type": "dummy_type"}
             ],
-            instrument_controllers=[ # Added a dummy controller
-                {"name": "controller1", "alias": "controller1_alias", "connection": {"name": "tcp_ip", "address": "127.0.0.1"}, "modules": []}
+            instrument_controllers=[
+                {"name": "controller1", "alias": "controller1_alias", "type": "dummy_controller_type", "connection": {"name": "tcp_ip", "address": "127.0.0.1"}, "modules": []}
             ]
         )
 
-        # Mock methods that perform actual instrument loading/connection
+        # Mock methods that perform actual instrument loading/connection.
+        # We do not mock _build_buses, as its behavior (using the runcard's bus list) is part of what we're testing.
         with patch("qililab.platform.platform.Platform._load_instrument_controllers") as mock_load_controllers, \
-             patch("qililab.platform.platform.Platform._load_instruments") as mock_load_instruments, \
-             patch("qililab.platform.platform.Platform._build_buses") as mock_build_buses:
+             patch("qililab.platform.platform.Platform._load_instruments") as mock_load_instruments:
 
             # Simulate what _load_instrument_controllers would do
-            mock_controllers_instance = MagicMock(spec=InstrumentControllers)
+            mock_controllers_instance = create_autospec(InstrumentControllers, instance=True)
             mock_load_controllers.return_value = mock_controllers_instance
 
             # Simulate what _load_instruments would do
-            mock_instruments_instance = MagicMock(spec=Instruments)
-            # Add mocked instruments to the Instruments mock if _build_buses needs them
-            mock_instrument1 = MagicMock()
-            mock_instrument1.name = "instrument1"
-            mock_instrument2 = MagicMock()
-            mock_instrument2.name = "instrument2"
-            mock_instruments_instance.get_instrument.side_effect = lambda alias: {
-                "instrument1_alias": mock_instrument1, "instrument2_alias": mock_instrument2
-            }.get(alias)
+            # It should return an Instruments object whose get_instrument method is properly mocked.
+            mock_instrument1 = create_autospec(Instrument, instance=True)
+            mock_instrument1.alias = "instrument1_alias"
+            # If Bus constructor or other parts of Platform initialization access other attributes
+            # of the instrument (e.g., .name, .category, .id), they might need to be set here.
+            # For this test, alias should be sufficient for Bus to be created via _build_buses.
 
+            mock_instrument2 = create_autospec(Instrument, instance=True)
+            mock_instrument2.alias = "instrument2_alias"
 
+            mock_instruments_instance = create_autospec(Instruments, instance=True)
+
+            def side_effect_get_instrument(alias_requested):
+                if alias_requested == "instrument1_alias":
+                    return mock_instrument1
+                if alias_requested == "instrument2_alias":
+                    return mock_instrument2
+                # Raise an error for unexpected calls to make debugging easier if the test fails.
+                raise ValueError(f"Mock Instruments.get_instrument called with unexpected alias: {alias_requested}")
+
+            mock_instruments_instance.get_instrument.side_effect = side_effect_get_instrument
             mock_load_instruments.return_value = mock_instruments_instance
 
-            # Simulate what _build_buses would do - it populates self.buses
-            # We need to ensure the mock_build_buses correctly sets up `platform.buses`
-            # based on the runcard for the assertions to pass.
-            # The actual Platform._build_buses uses the runcard's bus definitions.
-            # For this test, we let the actual _build_buses run, as it's what we are testing,
-            # but we mock away the instrument parts it depends on.
-
-            # Let's refine the mocking for _build_buses.
-            # The goal is to test the bus loading logic within Platform.__init__ (which calls _build -> _build_buses)
-            # So, we should let the actual _build_buses run, but ensure its dependencies (instruments) are mocked.
-
-            # Re-patch _build_buses to call the original method but with mocked instrument interactions
-            # This is tricky. A simpler way is to check the state of platform.buses *after* Platform init.
-            # The mocks for _load_instruments and _load_instrument_controllers should be enough
-            # for Platform.__init__ to proceed and call the *real* _build_buses.
-
-            # The `_build_buses` method itself creates `Bus` objects.
-            # `Bus.__init__` takes `settings: dict` and `platform_instruments: Instruments`
-            # We need to ensure `platform_instruments.get_instrument(instrument_name)` works.
-
-            def mock_bus_constructor(settings, platform_instruments):
-                # Simplified Bus mock for this test
-                bus_mock = MagicMock(spec=Bus)
-                bus_mock.alias = settings["alias"]
-                # Add any other attributes accessed by Platform after bus creation if necessary
-                return bus_mock
-
-            # We will let the original _build_buses run, which will use the runcard.
-            # The key is that platform.instruments (set by _load_instruments) is properly mocked.
-            # And platform.instrument_controllers (set by _load_instrument_controllers) is also mocked.
-
+            # Initialize the Platform. This will call the real _build method,
+            # which in turn calls the real _build_buses using the mocked instruments and controllers.
             test_platform = Platform(runcard=runcard_settings)
 
-
         # Check the buses loaded into the platform
-        # The real Buses object is created by Platform._build_buses
         loaded_bus_aliases = {bus.alias for bus in test_platform.buses}
 
         assert "bus_A" in loaded_bus_aliases, "Bus 'bus_A' should be loaded from runcard"
@@ -626,11 +608,11 @@ class TestPlatform:
         assert "bus_B" not in loaded_bus_aliases, "Bus 'bus_B' should not be loaded as it's not in runcard"
         assert len(test_platform.buses) == 2, "Platform should only load the 2 buses defined in the runcard"
 
-        with pytest.raises(ValueError, match="Bus with alias bus_B not found."):
-            test_platform.buses.get(alias="bus_B")
-
+        # Verify that accessing buses works as expected
         assert test_platform.buses.get(alias="bus_A") is not None
         assert test_platform.buses.get(alias="bus_C") is not None
+        with pytest.raises(ValueError, match="Bus with alias bus_B not found."):
+            test_platform.buses.get(alias="bus_B")
 
 
 class TestMethods:
@@ -825,7 +807,7 @@ class TestMethods:
         )
 
         sequences_w_alias = None
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=re.escape(f"Bus with alias '{dummy_bus_alias}' in PulseSchedule not found in platform runcard.")):
             sequences_w_alias, _ = platform.compile(
                 program=pulse_schedule,
                 num_avg=1000,
