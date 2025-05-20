@@ -914,7 +914,7 @@ class TestMethods:
 
         assert "readout_q0_rf" in first_execution_results.results
         assert len(first_execution_results.results["readout_q0_rf"]) == 1
-        assert isinstance(first_execution_results.results["readout_q0_rf"][0], QuantumMachinesMeasurementResult())
+        assert isinstance(first_execution_results.results["readout_q0_rf"][0], QuantumMachinesMeasurementResult)
         np.testing.assert_array_equal(first_execution_results.results["readout_q0_rf"][0].I, np.array([1, 2, 3]))
         np.testing.assert_array_equal(first_execution_results.results["readout_q0_rf"][0].Q, np.array([4, 5, 6]))
 
