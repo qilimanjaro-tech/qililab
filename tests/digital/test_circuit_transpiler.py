@@ -801,13 +801,17 @@ class TestCircuitTranspiler:
         mock_circuit_to_route = Circuit(5)
         mock_circuit_to_route.add(X(0))
 
-        # mock_nx_Graph_class is a MagicMock due to @patch
-        # mock_CircuitRouter_class is a MagicMock due to @patch
+        # Configure the mock for the nx.Graph *instance*
+        # This mock instance will be returned when nx.Graph() is called within route_circuit.
+        # Using spec=nx.Graph ensures it passes isinstance(obj, nx.Graph) checks.
+        mock_graph_instance = MagicMock(spec=nx.Graph)
+        mock_nx_Graph_class.return_value = mock_graph_instance
 
         # Configure the mock for the CircuitRouter *instance* that will be created
         mock_router_instance = MagicMock()
         # Configure the mocked route method of the *instance* to return an empty tuple,
-        # which will cause the "not enough values to unpack" error as expected by the test.
+        # which will cause the "not enough values to unpack" error as expected by the test,
+        # if the call to route() is made.
         mock_router_instance.route.return_value = ()
         mock_CircuitRouter_class.return_value = mock_router_instance # When CircuitRouter() is called, it returns this instance
 
@@ -819,11 +823,9 @@ class TestCircuitTranspiler:
         # Assert that nx.Graph was called once by the SUT (inside route_circuit, when router is None)
         mock_nx_Graph_class.assert_called_once_with(transpiler.settings.topology)
 
-        # The graph object passed to CircuitRouter should be the return_value of the mocked nx.Graph() call
-        expected_graph_arg = mock_nx_Graph_class.return_value
-
         # Assert that CircuitRouter was instantiated once with the correct arguments.
-        mock_CircuitRouter_class.assert_called_once_with(graph=expected_graph_arg, placer=None, layout_placer=None)
+        # The graph object passed to CircuitRouter should be our spec'd mock_graph_instance.
+        mock_CircuitRouter_class.assert_called_once_with(graph=mock_graph_instance, placer=None, layout_placer=None)
 
         # Assert that the route method of the router instance was called
         mock_router_instance.route.assert_called_once_with(mock_circuit_to_route, routing_iterations)
