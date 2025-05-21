@@ -57,14 +57,19 @@ class StreamArray:
         db_manager: DatabaseManager,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
+        vna_result: bool = False,
     ):
-        self.results = np.zeros(shape=shape)
+        if vna_result:
+            self.results = np.zeros(shape=shape, dtype=np.complex128)
+        else:
+            self.results = np.zeros(shape=shape)
         self.loops = loops
         self.experiment_name = experiment_name
         self.db_manager = db_manager
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
+        self._vna_result = vna_result
 
     def __enter__(self):
         """The execution while the with StreamArray is created.
@@ -94,7 +99,10 @@ class StreamArray:
             else:
                 g.create_dataset(name=loop_name, data=array)
 
-        self._dataset = self._file.create_dataset("results", data=self.results)
+        if self._vna_result:
+            self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
+        else:
+            self._dataset = self._file.create_dataset("results", data=self.results)
 
         return self
 
