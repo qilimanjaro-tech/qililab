@@ -1,6 +1,6 @@
 import os
 import tempfile
-from unittest.mock import Mock, call, create_autospec
+from unittest.mock import Mock, call, create_autospec, patch
 
 import numpy as np
 import pytest
@@ -289,3 +289,41 @@ class TestExperimentExecutor:
         # Check if the correct file path is returned
         assert resuls_path.startswith(os.path.abspath(tempfile.gettempdir()))
         assert resuls_path.endswith(".h5")
+
+    @patch("qililab.qprogram.experiment_executor.get_db_manager")
+    def test_execute_database(self, mock_get_db_manager, platform, experiment):
+        """Test the execute with database as True."""
+
+        mock_db_manager = Mock()
+        mock_db_manager.current_sample = "test_sample"
+        mock_db_manager.current_cd = "test_cooldown"
+        mock_get_db_manager.return_value = mock_db_manager
+
+        executor = ExperimentExecutor(
+            platform=platform,
+            experiment=experiment,
+            live_plot=False,
+            slurm_execution=False,
+            database=True,
+        )
+        _ = executor.execute()
+
+        # Check if the correct file path is returned
+        assert executor.sample == "test_sample"
+        assert executor.cooldown == "test_cooldown"
+
+    def test_execute_database_raises_reference_error(self, platform, experiment):
+        """Test that execute() raises ReferenceError when get_db_manager() fails."""
+
+        executor = ExperimentExecutor(
+            platform=platform,
+            experiment=experiment,
+            live_plot=False,
+            slurm_execution=False,
+            database=True,
+        )
+
+        with pytest.raises(
+            ReferenceError, match="Missing initialization information at the desired database '.ini' path."
+        ):
+            executor.execute()

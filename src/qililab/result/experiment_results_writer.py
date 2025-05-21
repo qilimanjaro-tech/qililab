@@ -237,13 +237,13 @@ class ExperimentResultsWriter(ExperimentResults):
         self._create_resuts_access()
         if self._db_metadata:
             self.measurement = self._db_manager.add_measurement(
-                experiment_name=self._metadata["experiment_name"],
+                experiment_name=self._db_metadata["experiment_name"],
                 experiment_completed=False,
-                base_path=self._metadata["base_path"],
-                cooldown=self._metadata["cooldown"],
-                sample_name=self._metadata["sample_name"],
-                optional_identifier=self._metadata["optional_identifier"],
-                platform=self.platform.to_dict(),
+                base_path=self._db_metadata["base_path"],
+                cooldown=self._db_metadata["cooldown"],
+                sample_name=self._db_metadata["sample_name"],
+                optional_identifier=self._db_metadata["optional_identifier"],
+                platform=self.platform,
                 experiment=serialize(self.experiment),
                 qprogram=serialize(self._metadata["qprograms"]),
             )
@@ -252,7 +252,9 @@ class ExperimentResultsWriter(ExperimentResults):
         return self
 
     def __exit__(self, *args):
-        """_summary_"""
+        """Exit the context manager and close the HDF5 file and end experiment if there is a database."""
+        if self._file is not None:
+            self._file.close()
         if self._db_metadata:
             self.measurement = self.measurement.end_experiment(self._db_manager.Session)
 
