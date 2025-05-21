@@ -177,7 +177,8 @@ class CircuitTranspiler:
 
         # Unpack dataclass attributes:
         routing, placer, router, routing_iterations, optimize = transpilation_config._attributes_ordered
-        original_measurement_order = None  # Initialize
+        final_layout: list[int] | None
+        original_measurement_order: list[dict] | None  # Initialize
 
         # Routing stage;
         if routing:
@@ -186,7 +187,8 @@ class CircuitTranspiler:
             )
         else:
             circuit_gates, nqubits = circuit.queue, circuit.nqubits
-            final_layout = None  # Random mapping
+            final_layout = None  # No specific layout if not routing
+            original_measurement_order = None  # No measurement order if not routing
 
         # Optimze qibo gates, cancelling redundant gates:
         if optimize:
