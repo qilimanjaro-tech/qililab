@@ -32,7 +32,10 @@ from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.result import Acquisition, Acquisitions, QbloxResult, QProgramResults  # Added Acquisition, Acquisitions
+from qililab.result.acquisition import Acquisition
+from qililab.result.acquisitions import Acquisitions
+from qililab.result.qblox_results import QbloxResult
+from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
