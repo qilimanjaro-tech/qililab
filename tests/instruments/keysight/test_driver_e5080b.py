@@ -15,7 +15,7 @@ def _make_vnaks():
     driver = Driver_KeySight_E5080B(
         "Keysight_E5080B",
         address="TCPIP::192.168.0.10::INSTR",
-        pyvisa_sim_file="qililab.instruments.keysight:Keysight_E5080B.yaml"
+        pyvisa_sim_file="qililab.instruments.sims:Keysight_E5080B.yaml"
     )
     yield driver
     driver.close()

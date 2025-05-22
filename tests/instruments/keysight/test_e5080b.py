@@ -382,7 +382,7 @@ class TestE5080B:
         """Test the initial setup when sweep_type is not 'SEGM'."""
         e5080b.reset()
         e5080b.set_parameter(parameter=parameter, value=value)
-        e5080b.set_parameter(Parameter.SWEEP_TYPE, "cw")
+        e5080b.set_parameter(Parameter.SWEEP_TYPE, VNASweepTypes.CW)
         e5080b.device.reset_mock()
         e5080b.initial_setup()
         getattr(e5080b.device, method).assert_called_once_with(value)
