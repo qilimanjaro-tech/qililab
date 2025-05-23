@@ -100,16 +100,16 @@ class StreamArray:
 
         return self
 
-    def __setitem__(self, key: tuple, value: float | np.complexfloating):
+    def __setitem__(self, key: tuple, value: float | complex):
         """Sets and item by key and value in the dataset.
 
         Args:
             key (tuple): key for the item to save.
-            value (float | np.complexfloating): value to save.
+            value (float | complex): value to save.
         """
         # Create results dataset only once
         if self._first_value:
-            if isinstance(value, np.complexfloating):
+            if isinstance(value, complex):
                 self.results = np.zeros(shape=self.shape, dtype=np.complex128)
                 if self._file:
                     self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
@@ -257,15 +257,15 @@ class RawStreamArray:
         self._dataset = None
         self._first_value = True
 
-    def __setitem__(self, key: tuple, value: float | np.complexfloating):
+    def __setitem__(self, key: tuple, value: float | complex):
         """Sets and item by key and value in the dataset.
         Args:
             key (tuple): key for the item to save.
-            value (float | np.complexfloating): value to save.
+            value (float | complex): value to save.
         """
         # Create results dataset only once
         if self._first_value:
-            if isinstance(value, np.complexfloating):
+            if isinstance(value, complex):
                 self.results = np.zeros(shape=self.shape, dtype=np.complex128)
                 if self._file:
                     self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
