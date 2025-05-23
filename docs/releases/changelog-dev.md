@@ -20,7 +20,13 @@
 - Relocated save_results and load_results from data_management to result/result_management.py for structure consistency. The load_results functions has been slightly changed to take into account different structures of data.
 [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
 
+- Add base_path as an input for stream_array and an optional parameter for the experiment class, qililab cannot have the data path hardcoded.
+[#936](https://github.com/qilimanjaro-tech/qililab/pull/936)
+
 ### Breaking changes
+
+- Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
+[#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
 
 ### Deprecations / Removals
 
