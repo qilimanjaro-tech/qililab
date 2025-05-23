@@ -100,12 +100,12 @@ class StreamArray:
 
         return self
 
-    def __setitem__(self, key: tuple, value: float):
+    def __setitem__(self, key: tuple, value: float | np.complexfloating):
         """Sets and item by key and value in the dataset.
 
         Args:
             key (tuple): key for the item to save.
-            value (float): value to save.
+            value (float | np.complexfloating): value to save.
         """
         # Create results dataset only once
         if self._first_value:
@@ -261,7 +261,7 @@ class RawStreamArray:
         """Sets and item by key and value in the dataset.
         Args:
             key (tuple): key for the item to save.
-            value (float): value to save.
+            value (float | np.complexfloating): value to save.
         """
         # Create results dataset only once
         if self._first_value:
