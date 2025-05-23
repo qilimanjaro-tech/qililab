@@ -189,23 +189,23 @@ class TestRawStreamArray:
         assert (stream_results[0] == [1, 2]).all
 
     @patch("h5py.File", return_value=MockFile())
-    def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_array: RawStreamArray):
+    def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_results: RawStreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
-        stream_array[0, 0] = np.complex128(-2 + 1j)
+        stream_results[0, 0] = np.complex128(-2 + 1j)
 
         # test adding inside the context manager
-        with stream_array:
-            stream_array[0, 0] = np.complex128(1 + 1j)
-            stream_array[0, 1] = np.complex128(2 + 2j)
-            stream_array[1, 0] = np.complex128(3 + 3j)
-            stream_array[1, 1] = np.complex128(4 + 4j)
+        with stream_results:
+            stream_results[0, 0] = np.complex128(1 + 1j)
+            stream_results[0, 1] = np.complex128(2 + 2j)
+            stream_results[1, 0] = np.complex128(3 + 3j)
+            stream_results[1, 1] = np.complex128(4 + 4j)
 
-        assert (stream_array.results == [[1, 2], [3, 4]]).all
+        assert (stream_results.results == [[1, 2], [3, 4]]).all
 
-        assert len(stream_array) == 2
-        assert sum(1 for _ in iter(stream_array)) == 2
-        assert str(stream_array) == "[[1.+1.j 2.+2.j]\n [3.+3.j 4.+4.j]]"
+        assert len(stream_results) == 2
+        assert sum(1 for _ in iter(stream_results)) == 2
+        assert str(stream_results) == "[[1.+1.j 2.+2.j]\n [3.+3.j 4.+4.j]]"
 
-        assert [1.0 + 1.0j, 2.0 + 2.0j] in stream_array
-        assert (stream_array[0] == [1.0 + 1.0j, 2.0 + 2.0j]).all
+        assert [1.0 + 1.0j, 2.0 + 2.0j] in stream_results
+        assert (stream_results[0] == [1.0 + 1.0j, 2.0 + 2.0j]).all
