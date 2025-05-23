@@ -31,6 +31,7 @@ from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.result.database import get_db_manager
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -1375,6 +1376,42 @@ class TestMethods:
         with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
             platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
 
+    @patch("qililab.platform.platform.get_db_manager")
+    @patch("qililab.result.database._load_config")
+    def test_load_db_manager(self, mock_load_config, mock_get_db_manager, platform: Platform):
+        """Test load_db_manager createing a database from a given path"""
+        path = "~/database_test.ini"
+
+        mock_load_config.return_value = {
+            "host": "localhost",
+            "user": "user",
+            "passwd": "pass",
+            "port": "5432",
+            "database": "testdb",
+        }
+        mock_get_db_manager.return_value = get_db_manager(path)
+
+        _ = platform.load_db_manager(path)
+
+        mock_get_db_manager.assert_called_once_with(path)
+
+    @patch("qililab.platform.platform.get_db_manager")
+    @patch("qililab.result.database._load_config")
+    def test_load_db_manager_no_path(self, mock_load_config, mock_get_db_manager, platform: Platform):
+        """Test load_db_manager createing a database without a given path"""
+        mock_load_config.return_value = {
+            "host": "localhost",
+            "user": "user",
+            "passwd": "pass",
+            "port": "5432",
+            "database": "testdb",
+        }
+        mock_get_db_manager.return_value = get_db_manager()
+
+        _ = platform.load_db_manager()
+
+        mock_get_db_manager.assert_called_once_with()
+
     def test_db_real_time_saving(self, platform: Platform):
         """Test db_real_time_saving function to save database from platform"""
 
@@ -1403,6 +1440,23 @@ class TestMethods:
         assert db_real_time_saving.experiment_name == experiment_name
         assert db_real_time_saving.base_path == base_path
 
+    def test_db_real_time_saving_raises_error(self, platform: Platform):
+        """Test db_real_time_saving function raises an error when no database is created"""
+
+        shape = (2, 2)
+        loops = {"test_amp_loop": np.arange(0, 2)}
+        experiment_name = "test_db_real_time_saving"
+        optional_identifier = "optional_identifier"
+        base_path = "base_path"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        error_string = "Missing db_manager, try using platform.load_db_manager()."
+        with pytest.raises(ReferenceError, match=error_string):
+            platform.db_real_time_saving(shape, loops, experiment_name, base_path, qprogram, optional_identifier)
+
     @patch("h5py.File")
     def test_db_save_results(self, mock_h5file, platform: Platform):
         """Test db_save_results functionto save from database from Platform"""
@@ -1423,6 +1477,25 @@ class TestMethods:
         platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
 
         assert mock_h5file.called
+
+    @patch("h5py.File")
+    def test_db_save_results_raises_error(self, mock_h5file, platform: Platform):
+        """Test db_save_results function raises an error when no database is created"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 1)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path = "base_path"
+
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        error_string = "Missing db_manager, try using platform.load_db_manager()."
+        with pytest.raises(ReferenceError, match=error_string):
+            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
 
     @patch("h5py.File")
     def test_db_save_results_loop_dict(self, mock_h5file, platform: Platform):
