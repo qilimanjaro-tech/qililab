@@ -164,7 +164,7 @@ class TestRawStreamArray:
         assert stream_results.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
     @patch("h5py.File", return_value=MockFile())
-    def test_context_manager(self, mock_h5py: MockFile, stream_results: StreamArray):
+    def test_context_manager(self, mock_h5py: MockFile, stream_results: RawStreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
         stream_results[0, 0] = -2
@@ -189,7 +189,7 @@ class TestRawStreamArray:
         assert (stream_results[0] == [1, 2]).all
 
     @patch("h5py.File", return_value=MockFile())
-    def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_array: StreamArray):
+    def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_array: RawStreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
         stream_array[0, 0] = np.complex128(-2 + 1j)
