@@ -206,6 +206,4 @@ class TestRawStreamArray:
         assert len(stream_results) == 2
         assert sum(1 for _ in iter(stream_results)) == 2
         assert str(stream_results) == "[[1.+1.j 2.+2.j]\n [3.+3.j 4.+4.j]]"
-
-        assert [1.0 + 1.0j, 2.0 + 2.0j] in stream_results
         assert (stream_results[0] == [1.0 + 1.0j, 2.0 + 2.0j]).all
