@@ -78,12 +78,13 @@ def fixture_platform_with_orphan_digital_bus():
     but not in the main runcard.buses list.
     The input 'runcard' is a deepcopy from Galadriel.runcard.
     """
-    platform = build_platform(runcard=Galadriel.runcard)
+    # Start from base Galadriel runcard
+    runcard=Galadriel.runcard
 
     # Adding an orphan digital flux bus to the platform
     # Notice the need to be flux, since those are the ones that get always loaded when compiling.
     orphan_alias = "orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses"
-    platform.digital_compilation_settings.buses[orphan_alias] = {
+    runcard["digital"]["buses"][orphan_alias] = {
         "line": "flux",
         "qubits": [2],
         "delay": 0,
@@ -92,7 +93,7 @@ def fixture_platform_with_orphan_digital_bus():
 
     # Ensure the orphan_alias is NOT in the main runcard.buses list.
     # For Galadriel.runcard, a unique name like this won't exist in the main buses.
-    return platform
+    return build_platform(runcard)
 
 
 @pytest.fixture(name="qblox_results")
