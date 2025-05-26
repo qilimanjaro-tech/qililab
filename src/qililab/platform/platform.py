@@ -1608,10 +1608,8 @@ class Platform:
         if self.digital_compilation_settings is None:
             raise ValueError("Cannot compile Qibo Circuit or Pulse Schedule without gates settings.")
 
-        original_measurement_order: list[dict] | None = None  # ADDED initialization
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
-            # MODIFIED to unpack three values
             pulse_schedule, final_layout, original_measurement_order = transpiler.transpile_circuit(  # type: ignore
                 program, transpilation_config
             )
@@ -1619,7 +1617,7 @@ class Platform:
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
             final_layout = None
-            original_measurement_order = None  # ADDED for consistency
+            original_measurement_order = None
 
         else:
             raise ValueError(
