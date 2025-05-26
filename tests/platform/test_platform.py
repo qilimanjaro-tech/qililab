@@ -79,7 +79,7 @@ def fixture_platform_with_orphan_digital_bus():
     The input 'runcard' is a deepcopy from Galadriel.runcard.
     """
     # Start from base Galadriel runcard
-    runcard=Galadriel.runcard
+    runcard = copy.deepcopy(Galadriel.runcard)
 
     # Adding an orphan digital flux bus to the platform
     # Notice the need to be flux, since those are the ones that get always loaded when compiling.
