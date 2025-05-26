@@ -72,24 +72,26 @@ def fixture_runcard():
 
 
 @pytest.fixture(name="platform_with_orphan_digital_bus")
-def fixture_platform_with_orphan_digital_bus(runcard: Runcard):
+def fixture_platform_with_orphan_digital_bus():
     """
     Platform fixture where a bus alias is defined in runcard.digital.buses
     but not in the main runcard.buses list.
     The input 'runcard' is a deepcopy from Galadriel.runcard.
     """
-    # Galadriel.runcard has a "digital" section, and
-    # runcard.digital.buses is a dict due to DigitalCompilationSettings' default_factory.
-    orphan_alias = "orphan_digital_bus_that_does_not_exist_in_main_buses"
+    platform = build_platform(runcard=Galadriel.runcard)
 
-    if runcard.digital is None: # Should not happen with Galadriel but good for robustness
-        runcard.digital = DigitalCompilationSettings()
-
-    runcard.digital.buses[orphan_alias] = {} # Add the orphan bus to digital.buses
+    # Adding an orphan digital bus to the platform
+    orphan_alias = "orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses"
+    platform.digital_compilation_settings.buses[orphan_alias] = {
+        "line": "flux",
+        "qubits": [2],
+        "delay": 0,
+        "distortions": [],
+    }
 
     # Ensure the orphan_alias is NOT in the main runcard.buses list.
     # For Galadriel.runcard, a unique name like this won't exist in the main buses.
-    return Platform(runcard=runcard)
+    return platform
 
 
 @pytest.fixture(name="qblox_results")
@@ -724,8 +726,8 @@ class TestMethods:
         circuit.add(gates.M(0))
 
         # This is the expected error message format. Adjust if your PR has a different one.
-        # The alias used in the fixture is "orphan_digital_bus_that_does_not_exist_in_main_buses"
-        expected_error_message = "Bus with alias 'orphan_digital_bus_that_does_not_exist_in_main_buses' defined in Digital/Buses section of the Runcard, not found in main Buses section of the same Runcard."
+        # The alias used in the fixture is "orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses"
+        expected_error_message = "Bus with alias 'orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses' defined in Digital/Buses section of the Runcard, not found in main Buses section of the same Runcard."
 
         with pytest.raises(ValueError, match=re.escape(expected_error_message)):
             platform.compile(
