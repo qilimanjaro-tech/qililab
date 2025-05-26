@@ -84,7 +84,7 @@ class MockFile:
     def create_group(self, name: str):
         return MockGroup()
 
-    def create_dataset(self, _: str, data: np.ndarray, dtype=None):
+    def create_dataset(self, _: str, data: np.ndarray):
         """Creates a dataset"""
         return copy.deepcopy(data)
 
@@ -97,6 +97,8 @@ class TestStreamArray:
 
     def test_stream_array_instantiation(self, stream_array: StreamArray):
         """Tests the instantiation of a StreamArray object."""
+        assert stream_array.results.shape == (2, 2)
+        assert (stream_array.results == np.empty(shape=(2, 2))).all
         assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
     def test_stream_array_with_loop_dict(self, stream_array_dict_loops: StreamArray):
@@ -132,34 +134,14 @@ class TestStreamArray:
         assert [1, 2] in stream_array
         assert (stream_array[0] == [1, 2]).all
 
-    @patch("h5py.File", return_value=MockFile())
-    def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_array: StreamArray):
-        """Tests context manager real time saving."""
-        # test adding outside the context manager
-        stream_array[0, 0] = np.complex128(-2 + 1j)
-
-        # test adding inside the context manager
-        with stream_array:
-            stream_array[0, 0] = np.complex128(1 + 1j)
-            stream_array[0, 1] = np.complex128(2 + 2j)
-            stream_array[1, 0] = np.complex128(3 + 3j)
-            stream_array[1, 1] = np.complex128(4 + 4j)
-
-        assert (stream_array.results == [[1, 2], [3, 4]]).all
-
-        assert len(stream_array) == 2
-        assert sum(1 for _ in iter(stream_array)) == 2
-        assert str(stream_array) == "[[1.+1.j 2.+2.j]\n [3.+3.j 4.+4.j]]"
-
-        assert [1.0 + 1.0j, 2.0 + 2.0j] in stream_array
-        assert (stream_array[0] == [1.0 + 1.0j, 2.0 + 2.0j]).all
-
 
 class TestRawStreamArray:
     """Test `StreamArray` functionalities."""
 
     def test_stream_array_instantiation(self, stream_results: RawStreamArray):
         """Tests the instantiation of a StreamArray object."""
+        assert stream_results.results.shape == (2, 2)
+        assert (stream_results.results == np.empty(shape=(2, 2))).all
         assert stream_results.path == "test_stream_array.hdf5"
         assert stream_results.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
@@ -187,6 +169,7 @@ class TestRawStreamArray:
         assert sum(1 for _ in iter(stream_results)) == 2
         assert str(stream_results) == "[[1. 2.]\n [3. 4.]]"
         assert (stream_results[0] == [1, 2]).all
+<<<<<<< HEAD
 
     @patch("h5py.File", return_value=MockFile())
     def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_results: RawStreamArray):
@@ -207,3 +190,5 @@ class TestRawStreamArray:
         assert sum(1 for _ in iter(stream_results)) == 2
         assert str(stream_results) == "[[1.+1.j 2.+2.j]\n [3.+3.j 4.+4.j]]"
         assert (stream_results[0] == [1.0 + 1.0j, 2.0 + 2.0j]).all
+=======
+>>>>>>> parent of 57d94af1 (Implemented automatic method and tests)

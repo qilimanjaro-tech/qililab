@@ -57,16 +57,19 @@ class StreamArray:
         db_manager: DatabaseManager,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
+        vna_result: bool = False,
     ):
-        self.results: np.ndarray
-        self.shape = shape
+        if vna_result:
+            self.results = np.zeros(shape=shape, dtype=np.complex128)
+        else:
+            self.results = np.zeros(shape=shape)
         self.loops = loops
         self.experiment_name = experiment_name
         self.db_manager = db_manager
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
-        self._first_value = True
+        self._vna_result = vna_result
 
     def __enter__(self):
         """The execution while the with StreamArray is created.
@@ -96,7 +99,10 @@ class StreamArray:
             else:
                 g.create_dataset(name=loop_name, data=array)
 
-        self._first_value = True
+        if self._vna_result:
+            self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
+        else:
+            self._dataset = self._file.create_dataset("results", data=self.results)
 
         return self
 
@@ -107,6 +113,7 @@ class StreamArray:
             key (tuple): key for the item to save.
             value (float | complex): value to save.
         """
+<<<<<<< HEAD
         # Create results dataset only once
         if self._first_value:
             if isinstance(value, complex):
@@ -119,6 +126,8 @@ class StreamArray:
                     self._dataset = self._file.create_dataset("results", data=self.results)
             self._first_value = False
 
+=======
+>>>>>>> parent of 57d94af1 (Implemented automatic method and tests)
         if self._file is not None and self._dataset is not None:
             self._dataset[key] = value
         self.results[key] = value
@@ -167,7 +176,7 @@ class StreamArray:
         return item in self.results
 
 
-def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
+def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray], vna_result: bool = False):
     """Constructs a StreamArray instance.
 
     This methods serves as a constructor for user interface of the StreamArray class.
@@ -234,7 +243,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                 [0.75 0.  ]
                 [1.   0.  ]])
     """
-    return RawStreamArray(shape=shape, path=path, loops=loops)
+    return RawStreamArray(shape=shape, path=path, loops=loops, vna_result=vna_result)
 
 
 class RawStreamArray:
@@ -248,21 +257,28 @@ class RawStreamArray:
         loops (dict[str, np.ndarray]): dictionary with each loop name in the experiment as key and numpy array as values.
     """
 
-    def __init__(self, shape: tuple, path: str, loops: dict[str, np.ndarray]):
-        self.results: np.ndarray
-        self.shape = shape
+    def __init__(self, shape: tuple, path: str, loops: dict[str, np.ndarray], vna_result: bool = False):
+        if vna_result:
+            self.results = np.zeros(shape=shape, dtype=np.complex128)
+        else:
+            self.results = np.zeros(shape=shape)
         self.path = path
         self.loops = loops
         self._file: h5py.File | None = None
         self._dataset = None
-        self._first_value = True
+        self._vna_result = vna_result
 
+<<<<<<< HEAD
     def __setitem__(self, key: tuple, value: float | complex):
+=======
+    def __setitem__(self, key: tuple, value: float):
+>>>>>>> parent of 57d94af1 (Implemented automatic method and tests)
         """Sets and item by key and value in the dataset.
         Args:
             key (tuple): key for the item to save.
             value (float | complex): value to save.
         """
+<<<<<<< HEAD
         # Create results dataset only once
         if self._first_value:
             if isinstance(value, complex):
@@ -275,6 +291,8 @@ class RawStreamArray:
                     self._dataset = self._file.create_dataset("results", data=self.results)
             self._first_value = False
 
+=======
+>>>>>>> parent of 57d94af1 (Implemented automatic method and tests)
         if self._file is not None and self._dataset is not None:
             self._dataset[key] = value
         self.results[key] = value
@@ -285,8 +303,11 @@ class RawStreamArray:
         g = self._file.create_group(name="loops")
         for loop_name, array in self.loops.items():
             g.create_dataset(name=loop_name, data=array)
-
-        self._first_value = True
+        # Save results
+        if self._vna_result:
+            self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
+        else:
+            self._dataset = self._file.create_dataset("results", data=self.results)
 
         return self
 
