@@ -109,7 +109,7 @@ class StreamArray:
         """
         # Create results dataset only once
         if self._first_value:
-            if isinstance(value, np.complexfloating):
+            if isinstance(value[0], np.complexfloating):
                 self.results = np.zeros(shape=self.shape, dtype=np.complex128)
                 if self._file:
                     self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
@@ -265,7 +265,7 @@ class RawStreamArray:
         """
         # Create results dataset only once
         if self._first_value:
-            if isinstance(value, np.complexfloating):
+            if isinstance(value[0], np.complexfloating):
                 self.results = np.zeros(shape=self.shape, dtype=np.complex128)
                 if self._file:
                     self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
