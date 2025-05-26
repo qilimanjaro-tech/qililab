@@ -80,7 +80,8 @@ def fixture_platform_with_orphan_digital_bus():
     """
     platform = build_platform(runcard=Galadriel.runcard)
 
-    # Adding an orphan digital bus to the platform
+    # Adding an orphan digital flux bus to the platform
+    # Notice the need to be flux, since those are the ones that get always loaded when compiling.
     orphan_alias = "orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses"
     platform.digital_compilation_settings.buses[orphan_alias] = {
         "line": "flux",
