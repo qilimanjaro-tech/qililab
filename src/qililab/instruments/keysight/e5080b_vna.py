@@ -169,6 +169,15 @@ class E5080B(Instrument):
         return self.settings.sweep_mode
 
     @property
+    def sweep_time(self):
+        """Sets the time the analyzer takes to complete one sweep.
+
+        Returns:
+            float: settings.sweep_time.
+        """
+        return self.settings.sweep_time
+
+    @property
     def scattering_parameter(self) -> VNAScatteringParameters | None:
         """Set/get a measurement parameter for the specified measurement.
 
@@ -291,6 +300,12 @@ class E5080B(Instrument):
             self.settings.sweep_mode = VNASweepModes(value)
             if self.is_device_active() and self.sweep_mode is not None:
                 self.device.sweep_mode(self.sweep_mode.value)
+            return
+
+        if parameter == Parameter.SWEEP_TIME:
+            self.settings.sweep_time = float(value)
+            if self.is_device_active():
+                self.device.sweep_time(self.sweep_time)
             return
 
         if parameter == Parameter.SCATTERING_PARAMETER:
@@ -473,6 +488,8 @@ class E5080B(Instrument):
             self.device.scattering_parameter(self.scattering_parameter)
         if self.settings.format_border is not None:
             self.device.format_border(self.settings.format_border)
+        if self.settings.sweep_time is not None:
+            self.device.sweep_time(self.settings.sweep_time)
 
         if self.settings.sweep_type != VNASweepTypes.SEGM:
             if self.settings.frequency_start is not None:

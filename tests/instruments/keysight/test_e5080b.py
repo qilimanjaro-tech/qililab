@@ -126,6 +126,7 @@ class TestE5080B:
             (Parameter.AVERAGES_MODE, VNAAverageModes.POIN),
             (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
             (Parameter.RF_ON, False),
+            (Parameter.SWEEP_TIME, 4),
         ],
     )
     def test_set_parameter_method(
@@ -168,6 +169,8 @@ class TestE5080B:
             assert e5080b.settings.rf_on == value
         if parameter == Parameter.FORMAT_BORDER:
             assert e5080b.settings.format_border == value
+        if parameter == Parameter.SWEEP_TIME:
+            assert e5080b.settings.sweep_time == value
 
     def test__clear_averages(
             self,
@@ -378,6 +381,7 @@ class TestE5080B:
             (Parameter.FORMAT_BORDER, VNAFormatBorder.NORM, "format_border"),
             (Parameter.SOURCE_POWER, -10, "source_power"),
             (Parameter.RF_ON, True, "rf_on"),
+            (Parameter.SWEEP_TIME, 5, "sweep_time"),
         ],
     )
     def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):
@@ -414,6 +418,7 @@ class TestE5080B:
         device_mock.return_value.format_border = MagicMock()
         device_mock.return_value.source_power = MagicMock()
         device_mock.return_value.rf_on = MagicMock()
+        device_mock.return_value.sweep_time = MagicMock()
         controller_instance.connect()
         controller_instance.initial_setup()
 
