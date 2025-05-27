@@ -377,11 +377,11 @@ class E5080B(Instrument):
         if parameter == Parameter.SWEEP_MODE:
             self.settings.sweep_mode = self.device.sweep_mode.get().strip('"').strip()
             return cast("ParameterValue", self.settings.sweep_mode)
-        
+
         if parameter == Parameter.SWEEP_TIME:
             self.settings.sweep_time = self.device.sweep_time.get()
             return cast("ParameterValue", self.settings.sweep_time)
-        
+
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = self.device.scattering_parameter.get().strip('"').strip()
             return cast("ParameterValue", self.settings.scattering_parameter)
