@@ -65,6 +65,7 @@ class E5080B(Instrument):
         if_bandwidth: float | None = None
         sweep_type: VNASweepTypes | None = None
         sweep_mode: VNASweepModes | None = None
+        sweep_time: float | None = None
         averages_enabled: bool | None = None
         number_averages: int | None = None
         averages_mode: VNAAverageModes | None = None
@@ -283,19 +284,19 @@ class E5080B(Instrument):
         if parameter == Parameter.SWEEP_TYPE:
             self.settings.sweep_type = VNASweepTypes(value)
             if self.is_device_active():
-                self.device.sweep_type(self.sweep_type)
+                self.device.sweep_type(self.sweep_type.value)
             return
 
         if parameter == Parameter.SWEEP_MODE:
             self.settings.sweep_mode = VNASweepModes(value)
             if self.is_device_active():
-                self.device.sweep_mode(self.sweep_mode)
+                self.device.sweep_mode(self.sweep_mode.value)
             return
 
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = VNAScatteringParameters(value)
             if self.is_device_active():
-                self.device.scattering_parameter(self.scattering_parameter)
+                self.device.scattering_parameter(self.scattering_parameter.value)
             return
 
         if parameter == Parameter.AVERAGES_ENABLED:
@@ -313,7 +314,7 @@ class E5080B(Instrument):
         if parameter == Parameter.AVERAGES_MODE:
             self.settings.averages_mode = VNAAverageModes(value)
             if self.is_device_active():
-                self.device.averages_mode(self.averages_mode)
+                self.device.averages_mode(self.averages_mode.value)
             return
 
         if parameter == Parameter.RF_ON:
@@ -325,7 +326,7 @@ class E5080B(Instrument):
         if parameter == Parameter.FORMAT_BORDER:
             self.settings.format_border = VNAFormatBorder(value)
             if self.is_device_active():
-                self.device.format_border(self.format_border)
+                self.device.format_border(self.format_border.value)
             return
 
         raise ParameterNotFound(self, parameter)
@@ -376,7 +377,11 @@ class E5080B(Instrument):
         if parameter == Parameter.SWEEP_MODE:
             self.settings.sweep_mode = self.device.sweep_mode.get().strip('"').strip()
             return cast("ParameterValue", self.settings.sweep_mode)
-
+        
+        if parameter == Parameter.SWEEP_TIME:
+            self.settings.sweep_time = self.device.sweep_time.get()
+            return cast("ParameterValue", self.settings.sweep_time)
+        
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = self.device.scattering_parameter.get().strip('"').strip()
             return cast("ParameterValue", self.settings.scattering_parameter)
@@ -489,6 +494,26 @@ class E5080B(Instrument):
             self.device.source_power(self.settings.source_power)
         if self.settings.rf_on is not None:
             self.device.rf_on(self.settings.rf_on)
+
+    def update_settings(self):
+        """Queries the VNA for all parameters and stores the updated value in settings."""
+        self.settings.frequency_start = self.device.start_freq.get()
+        self.settings.frequency_stop = self.device.stop_freq.get()
+        self.settings.frequency_center = self.device.center_freq.get()
+        self.settings.frequency_span = self.device.span.get()
+        self.settings.cw_frequency = self.device.cw.get()
+        self.settings.number_points = self.device.points.get()
+        self.settings.source_power = self.device.source_power.get()
+        self.settings.if_bandwidth = self.device.if_bandwidth.get()
+        self.settings.sweep_type = self.device.sweep_type.get()
+        self.settings.sweep_mode = self.device.sweep_mode.get()
+        self.settings.sweep_time = self.device.sweep_time.get()
+        self.settings.averages_enabled = self.device.averages_enabled.get()
+        self.settings.number_averages = self.device.averages_count.get()
+        self.settings.scattering_parameter = self.device.scattering_parameter.get()
+        self.settings.format_border = self.device.format_border.get()
+        self.settings.rf_on = self.device.rf_on.get()
+        self.settings.operation_status = self.device.operation_status.get()
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""

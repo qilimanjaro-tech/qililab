@@ -217,6 +217,7 @@ class TestE5080B:
             (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
             (Parameter.RF_ON, False),
             (Parameter.OPERATION_STATUS, 0),
+            (Parameter.SWEEP_TIME, 50),
         ],
     )
     def test_get_parameter_method(
@@ -243,6 +244,7 @@ class TestE5080B:
         Parameter.FORMAT_BORDER:        "format_border",
         Parameter.RF_ON:                "rf_on",
         Parameter.OPERATION_STATUS:     "operation_status",
+        Parameter.SWEEP_TIME:           "sweep_time",
     }
         raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
         getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
@@ -477,3 +479,50 @@ def test_wait_for_averaging_raises_timeout(monkeypatch, e5080b):
         e5080b._wait_for_averaging(timeout=1.0)
 
     assert "Timeout of 1.0 seconds exceeded" in str(exc.value)
+
+def test_update_settings(e5080b: E5080B):
+    """Test that update_settings pulls values from device and sets settings correctly."""
+    # Map of attribute name on device → expected value to be returned
+    expected_device_values = {
+        "start_freq": 1e6,
+        "stop_freq": 2e6,
+        "center_freq": 1.5e6,
+        "span": 1e6,
+        "cw": 1.2e6,
+        "points": 201,
+        "source_power": -10.0,
+        "if_bandwidth": 5e3,
+        "sweep_type": VNASweepTypes.LIN,
+        "sweep_mode": VNASweepModes.CONT,
+        "sweep_time": 0.01,
+        "averages_enabled": True,
+        "averages_count": 8,
+        "scattering_parameter": VNAScatteringParameters.S21,
+        "format_border": VNAFormatBorder.NORM,
+        "rf_on": False,
+        "operation_status": 256,
+    }
+
+    # Set up the device.get() return values accordingly
+    for attr, val in expected_device_values.items():
+        getattr(e5080b.device, attr).get.return_value = val
+
+    # Act
+    e5080b.update_settings()
+
+    # Map device attribute name to settings attribute name (if different)
+    remap = {
+        "cw": "cw_frequency",
+        "points": "number_points",
+        "averages_count": "number_averages",
+        "start_freq": "frequency_start",
+        "stop_freq": "frequency_stop",
+        "center_freq": "frequency_center",
+        "span": "frequency_span"
+    }
+
+    # Assert each setting was updated
+    for attr, expected in expected_device_values.items():
+        settings_attr = remap.get(attr, attr)
+        actual = getattr(e5080b.settings, settings_attr)
+        assert actual == expected, f"Expected {settings_attr}={expected}, got {actual}"

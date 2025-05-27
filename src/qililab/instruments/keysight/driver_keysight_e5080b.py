@@ -151,6 +151,17 @@ class Driver_KeySight_E5080B(VisaInstrument):
         )
         """Parameter sweep_mode"""
 
+        # Sets the time the analyzer takes to complete one sweep.
+        self.sweep_time: Parameter = self.add_parameter(
+            "sweep_time",
+            label="Time",
+            unit="s",
+            get_parser=float,
+            get_cmd="SENS:SWE:TIME?",
+            set_cmd="SENS:SWE:TIME {}",
+        )
+        """Parameter sweep_time"""
+
         # Set/get a measurement parameter for the specified measurement.
         self.scattering_parameter: Parameter = self.add_parameter(
             "scattering_parameter",

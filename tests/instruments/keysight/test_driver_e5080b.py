@@ -127,3 +127,4 @@ def test_get_frequencies_calls_format_and_returns_array(vnaks, monkeypatch):
     # - output is a numpy array of the returned freqs
     assert isinstance(out, np.ndarray)
     assert np.allclose(out, freqs)
+    
