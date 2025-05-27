@@ -1470,54 +1470,56 @@ class Platform:
         if not isinstance(result, QbloxResult):
             raise NotImplementedError("Result ordering is only implemented for qblox results")
 
-        if original_measurement_order is not None and result.qblox_raw_results:
-            logger.info("Using provided original_measurement_order to order results.")
-            # Build a lookup for raw results: (physical_qubit, physical_measurement_index) -> raw_result_dict
-            raw_results_lookup = {(res["qubit"], res["measurement"]): res for res in result.qblox_raw_results}
+        # THIS WILL NEED A FEW IMPROVEMENTS:
+        #
+        # if original_measurement_order is not None and result.qblox_raw_results:
+        #     logger.info("Using provided original_measurement_order to order results.")
+        #     # Build a lookup for raw results: (physical_qubit, physical_measurement_index) -> raw_result_dict
+        #     raw_results_lookup = {(res["qubit"], res["measurement"]): res for res in result.qblox_raw_results}
 
-            ordered_raw_results = []
-            expected_num_measurements = len(original_measurement_order)
-            found_count = 0
+        #     ordered_raw_results = []
+        #     expected_num_measurements = len(original_measurement_order)
+        #     found_count = 0
 
-            for i, order_info in enumerate(original_measurement_order):
-                # Assuming order_info is a dict like {'physical_qubit': int, 'physical_measurement_index': int}
-                # These keys directly point to the physical acquisition data.
-                phys_q = order_info.get("physical_qubit")
-                phys_m_idx = order_info.get("physical_measurement_index")
+        #     for i, order_info in enumerate(original_measurement_order):
+        #         # Assuming order_info is a dict like {'physical_qubit': int, 'physical_measurement_index': int}
+        #         # These keys directly point to the physical acquisition data.
+        #         phys_q = order_info.get("physical_qubit")
+        #         phys_m_idx = order_info.get("physical_measurement_index")
 
-                if phys_q is None or phys_m_idx is None:
-                    logger.error(
-                        f"Invalid entry in original_measurement_order at index {i}: {order_info}. "
-                        "Required keys 'physical_qubit' and 'physical_measurement_index' not found or are None. Skipping."
-                    )
-                    # To maintain length, one might append a placeholder or error marker here if necessary.
-                    # For now, we log and continue, which might lead to a shorter list if entries are invalid.
-                    continue
+        #         if phys_q is None or phys_m_idx is None:
+        #             logger.error(
+        #                 f"Invalid entry in original_measurement_order at index {i}: {order_info}. "
+        #                 "Required keys 'physical_qubit' and 'physical_measurement_index' not found or are None. Skipping."
+        #             )
+        #             # To maintain length, one might append a placeholder or error marker here if necessary.
+        #             # For now, we log and continue, which might lead to a shorter list if entries are invalid.
+        #             continue
 
-                key_to_find = (phys_q, phys_m_idx)
-                if key_to_find in raw_results_lookup:
-                    ordered_raw_results.append(raw_results_lookup[key_to_find])
-                    found_count += 1
-                else:
-                    logger.warning(
-                        f"Measurement for physical_qubit {phys_q}, physical_measurement_index {phys_m_idx} "
-                        f"(from original_measurement_order index {i}, mapping to original logical qubit {order_info.get('original_logical_qubit', 'N/A')}) "
-                        "not found in qblox_raw_results. Result array may be incomplete or misordered."
-                    )
-                    # If a specific measurement is missing, it could indicate an issue upstream (e.g., transpiler or hardware).
-                    # Depending on strictness, one might add a placeholder.
+        #         key_to_find = (phys_q, phys_m_idx)
+        #         if key_to_find in raw_results_lookup:
+        #             ordered_raw_results.append(raw_results_lookup[key_to_find])
+        #             found_count += 1
+        #         else:
+        #             logger.warning(
+        #                 f"Measurement for physical_qubit {phys_q}, physical_measurement_index {phys_m_idx} "
+        #                 f"(from original_measurement_order index {i}, mapping to original logical qubit {order_info.get('original_logical_qubit', 'N/A')}) "
+        #                 "not found in qblox_raw_results. Result array may be incomplete or misordered."
+        #             )
+        #             # If a specific measurement is missing, it could indicate an issue upstream (e.g., transpiler or hardware).
+        #             # Depending on strictness, one might add a placeholder.
 
-            if found_count != expected_num_measurements:
-                logger.warning(
-                    f"Successfully ordered {found_count} measurements, but original_measurement_order specified {expected_num_measurements}. "
-                    "Some measurements may be missing from the final ordered list."
-                )
+        #     if found_count != expected_num_measurements:
+        #         logger.warning(
+        #             f"Successfully ordered {found_count} measurements, but original_measurement_order specified {expected_num_measurements}. "
+        #             "Some measurements may be missing from the final ordered list."
+        #         )
 
-            if (
-                expected_num_measurements > 0 or not result.qblox_raw_results
-            ):  # Apply if order was specified or if no raw results to begin with
-                result.qblox_raw_results = ordered_raw_results
-            return result
+        #     if (
+        #         expected_num_measurements > 0 or not result.qblox_raw_results
+        #     ):  # Apply if order was specified or if no raw results to begin with
+        #         result.qblox_raw_results = ordered_raw_results
+        #     return result
 
         # Fallback to existing logic if original_measurement_order is None or no raw results
         if not result.qblox_raw_results:  # No data to order
@@ -1547,7 +1549,7 @@ class Platform:
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             physical_qubit = qblox_result["qubit"]
-            # You need to check the transpiled circuit and undo the SWAPs to get the final measurement_layout[physical_qubit, measurement]
+            # TODO: You need to check the transpiled circuit and undo the SWAPs to get the final measurement_layout[physical_qubit, measurement]
             # (Notice the as a function of the measurment, since it can depend on a SWAP between two measurmenets...)
             original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
 
