@@ -1580,17 +1580,24 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True):
+    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True, get_q1asm: bool = True):
         """Draw the QProgram using QBlox Compiler
 
         Args:
             averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
                                         The default is False.
         """
-
+        #TODO: get q1asm as false by default
+        #TODO: fix the docstring
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
         sequencer = self.compile_qprogram(qprogram)
+
+        if get_q1asm is True:
+            for bus in sequencer.sequences:
+                print(bus)
+                print(sequencer.sequences[bus]._program)
+
         result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
 
         return result
