@@ -1622,7 +1622,7 @@ class Platform:
         loops: dict[str, np.ndarray],
         experiment_name: str,
         db_manager: DatabaseManager,
-        base_path: str,
+        base_path: str | None = None,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -1665,13 +1665,18 @@ class Platform:
             loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
             experiment_name (str): Name of the experiment.
             db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
-            base_path (str): base path for the results data folder structure.
+            base_path (str | None, optional): base path for the results data folder structure. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
             optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
 
         Returns:
             StreamArray: StreamArray class to process and save the data
         """
+        if base_path:
+            base_path = base_path
+        else:
+            base_path = self.experiment_results_base_path
+
         return StreamArray(
             shape=shape,
             loops=loops,
@@ -1689,7 +1694,7 @@ class Platform:
         results: np.ndarray,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
         db_manager: DatabaseManager,
-        base_path: str,
+        base_path: str | None = None,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -1726,10 +1731,15 @@ class Platform:
             results (np.ndarray): Experiment data.
             loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
             db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
-            base_path (str): base path for the results data folder structure.
+            base_path (str | None, optional): base path for the results data folder structure. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
             optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
         """
+        if base_path:
+            base_path = base_path
+        else:
+            base_path = self.experiment_results_base_path
+
         shape = results.shape
 
         if len(loops) != len(shape) - 1:
