@@ -292,14 +292,14 @@ class E5080B(Instrument):
 
         if parameter == Parameter.SWEEP_TYPE:
             self.settings.sweep_type = VNASweepTypes(value)
-            if self.is_device_active() and self.sweep_type is not None:
-                self.device.sweep_type(self.sweep_type.value)
+            if self.is_device_active():
+                self.device.sweep_type(self.sweep_type)
             return
 
         if parameter == Parameter.SWEEP_MODE:
             self.settings.sweep_mode = VNASweepModes(value)
-            if self.is_device_active() and self.sweep_mode is not None:
-                self.device.sweep_mode(self.sweep_mode.value)
+            if self.is_device_active():
+                self.device.sweep_mode(self.sweep_mode)
             return
 
         if parameter == Parameter.SWEEP_TIME:
@@ -310,8 +310,8 @@ class E5080B(Instrument):
 
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = VNAScatteringParameters(value)
-            if self.is_device_active() and self.scattering_parameter is not None:
-                self.device.scattering_parameter(self.scattering_parameter.value)
+            if self.is_device_active():
+                self.device.scattering_parameter(self.scattering_parameter)
             return
 
         if parameter == Parameter.AVERAGES_ENABLED:
@@ -328,8 +328,8 @@ class E5080B(Instrument):
 
         if parameter == Parameter.AVERAGES_MODE:
             self.settings.averages_mode = VNAAverageModes(value)
-            if self.is_device_active() and self.averages_mode is not None:
-                self.device.averages_mode(self.averages_mode.value)
+            if self.is_device_active():
+                self.device.averages_mode(self.averages_mode)
             return
 
         if parameter == Parameter.RF_ON:
@@ -340,8 +340,8 @@ class E5080B(Instrument):
 
         if parameter == Parameter.FORMAT_BORDER:
             self.settings.format_border = VNAFormatBorder(value)
-            if self.is_device_active() and self.format_border is not None:
-                self.device.format_border(self.format_border.value)
+            if self.is_device_active():
+                self.device.format_border(self.format_border)
             return
 
         raise ParameterNotFound(self, parameter)

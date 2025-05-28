@@ -103,7 +103,6 @@ class Driver_KeySight_E5080B(VisaInstrument):
             get_parser=int,
             set_cmd="SENS:SWE:POIN {}",
             unit="",
-            vals=Numbers(min_value=11, max_value=100003),
         )
         """Parameter points"""
 
