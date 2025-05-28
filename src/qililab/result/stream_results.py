@@ -101,7 +101,7 @@ class StreamArray:
         return self
 
     def __setitem__(
-        self, key: tuple, value: np.ndarray[Any, np.dtype[np.float64]] | np.ndarray[Any, np.dtype[np.complexfloating]]
+        self, key: tuple, value: np.ndarray[Any, np.dtype[np.floating]] | np.ndarray[Any, np.dtype[np.complexfloating]]
     ):
         """Sets and item by key and value in the dataset.
 
@@ -260,7 +260,7 @@ class RawStreamArray:
         self._first_value = True
 
     def __setitem__(
-        self, key: tuple, value: np.ndarray[Any, np.dtype[np.float64]] | np.ndarray[Any, np.dtype[np.complexfloating]]
+        self, key: tuple, value: np.ndarray[Any, np.dtype[np.floating]] | np.ndarray[Any, np.dtype[np.complexfloating]]
     ):
         """Sets and item by key and value in the dataset.
         Args:
