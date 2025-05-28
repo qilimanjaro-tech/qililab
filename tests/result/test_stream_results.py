@@ -22,7 +22,7 @@ def fixture_stream_array():
     Returns:
         stream_array: StreamArray
     """
-    shape = (2, 2)
+    shape = (2, 2, 1)
     loops = {"test_amp_loop": AMP_VALUES}
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
@@ -41,7 +41,7 @@ def fixture_stream_array_dict_loops():
     Returns:
         stream_array: StreamArray
     """
-    shape = (2, 2)
+    shape = (2, 2, 1)
     loops = {"test_amp_loop": {"bus": "readout", "units": "V", "parameter": Parameter.VOLTAGE, "array": AMP_VALUES}}
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
@@ -59,7 +59,7 @@ def fixture_stream_results():
     Returns:
         stream_results: RawStreamArray
     """
-    shape = (2, 2)
+    shape = (2, 2, 1)
     path = "test_stream_array.hdf5"
     loops = {"test_amp_loop": AMP_VALUES}
 
@@ -127,7 +127,7 @@ class TestStreamArray:
 
         assert len(stream_array) == 2
         assert sum(1 for _ in iter(stream_array)) == 2
-        assert str(stream_array) == "[[1. 2.]\n [3. 4.]]"
+        assert str(stream_array) == "[[[1.]\n  [2.]]\n\n [[3.]\n  [4.]]]"
 
         assert [1, 2] in stream_array
         assert (stream_array[0] == [1, 2]).all
@@ -149,7 +149,7 @@ class TestStreamArray:
 
         assert len(stream_array) == 2
         assert sum(1 for _ in iter(stream_array)) == 2
-        assert str(stream_array) == "[[1.+1.j 2.+2.j]\n [3.+3.j 4.+4.j]]"
+        assert str(stream_array) == "[[[1.+1.j]\n  [2.+2.j]]\n\n [[3.+3.j]\n  [4.+4.j]]]"
 
         assert [1.0 + 1.0j, 2.0 + 2.0j] in stream_array
         assert (stream_array[0] == [1.0 + 1.0j, 2.0 + 2.0j]).all
@@ -185,7 +185,7 @@ class TestRawStreamArray:
 
         assert len(stream_results) == 2
         assert sum(1 for _ in iter(stream_results)) == 2
-        assert str(stream_results) == "[[1. 2.]\n [3. 4.]]"
+        assert str(stream_results) == "[[[1.]\n  [2.]]\n\n [[3.]\n  [4.]]]"
         assert (stream_results[0] == [1, 2]).all
 
     @patch("h5py.File", return_value=MockFile())
@@ -205,5 +205,5 @@ class TestRawStreamArray:
 
         assert len(stream_results) == 2
         assert sum(1 for _ in iter(stream_results)) == 2
-        assert str(stream_results) == "[[1.+1.j 2.+2.j]\n [3.+3.j 4.+4.j]]"
+        assert str(stream_results) == "[[[1.+1.j]\n  [2.+2.j]]\n\n [[3.+3.j]\n  [4.+4.j]]]"
         assert (stream_results[0] == [1.0 + 1.0j, 2.0 + 2.0j]).all
