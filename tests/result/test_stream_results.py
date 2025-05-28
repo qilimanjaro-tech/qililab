@@ -114,14 +114,14 @@ class TestStreamArray:
     def test_context_manager(self, mock_h5py: MockFile, stream_array: StreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
-        stream_array[0, 0] = -2
+        stream_array[0, 0] = [-2]
 
         # test adding inside the context manager
         with stream_array:
-            stream_array[0, 0] = 1
-            stream_array[0, 1] = 2
-            stream_array[1, 0] = 3
-            stream_array[1, 1] = 4
+            stream_array[0, 0] = [1]
+            stream_array[0, 1] = [2]
+            stream_array[1, 0] = [3]
+            stream_array[1, 1] = [4]
 
         assert (stream_array.results == [[1, 2], [3, 4]]).all
 
@@ -136,7 +136,7 @@ class TestStreamArray:
     def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_array: StreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
-        stream_array[0, 0] = np.complex128(-2 + 1j)
+        stream_array[0, 0] = [np.complex128(-2 + 1j)]
 
         # test adding inside the context manager
         with stream_array:
@@ -167,16 +167,16 @@ class TestRawStreamArray:
     def test_context_manager(self, mock_h5py: MockFile, stream_results: RawStreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
-        stream_results[0, 0] = -2
+        stream_results[0, 0] = [-2]
 
         assert stream_results._dataset is None
 
         # test adding inside the context manager
         with stream_results:
-            stream_results[0, 0] = 1
-            stream_results[0, 1] = 2
-            stream_results[1, 0] = 3
-            stream_results[1, 1] = 4
+            stream_results[0, 0] = [1]
+            stream_results[0, 1] = [2]
+            stream_results[1, 0] = [3]
+            stream_results[1, 1] = [4]
 
         assert (stream_results.results == [[1, 2], [3, 4]]).all
         assert stream_results._dataset is not None
@@ -192,7 +192,7 @@ class TestRawStreamArray:
     def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_results: RawStreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
-        stream_results[0, 0] = np.complex128(-2 + 1j)
+        stream_results[0, 0] = [np.complex128(-2 + 1j)]
 
         # test adding inside the context manager
         with stream_results:
