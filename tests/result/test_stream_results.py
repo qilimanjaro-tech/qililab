@@ -140,10 +140,10 @@ class TestStreamArray:
 
         # test adding inside the context manager
         with stream_array:
-            stream_array[0, 0] = np.complex128(1 + 1j)
-            stream_array[0, 1] = np.complex128(2 + 2j)
-            stream_array[1, 0] = np.complex128(3 + 3j)
-            stream_array[1, 1] = np.complex128(4 + 4j)
+            stream_array[0, 0] = [np.complex128(1 + 1j)]
+            stream_array[0, 1] = [np.complex128(2 + 2j)]
+            stream_array[1, 0] = [np.complex128(3 + 3j)]
+            stream_array[1, 1] = [np.complex128(4 + 4j)]
 
         assert (stream_array.results == [[1, 2], [3, 4]]).all
 
@@ -196,10 +196,10 @@ class TestRawStreamArray:
 
         # test adding inside the context manager
         with stream_results:
-            stream_results[0, 0] = np.complex128(1 + 1j)
-            stream_results[0, 1] = np.complex128(2 + 2j)
-            stream_results[1, 0] = np.complex128(3 + 3j)
-            stream_results[1, 1] = np.complex128(4 + 4j)
+            stream_results[0, 0] = [np.complex128(1 + 1j)]
+            stream_results[0, 1] = [np.complex128(2 + 2j)]
+            stream_results[1, 0] = [np.complex128(3 + 3j)]
+            stream_results[1, 1] = [np.complex128(4 + 4j)]
 
         assert (stream_results.results == [[1, 2], [3, 4]]).all
 
