@@ -141,7 +141,6 @@ class Driver_KeySight_E5080B(VisaInstrument):
         """Parameter sweep_type"""
 
         # Sets the number of trigger signals the specified channel will ACCEPT. Default is CONT.
-        #  BUG: Setting the sweep mode as sing, sets it as gro in the actual device
         self.sweep_mode: Parameter = self.add_parameter(
             "sweep_mode",
             label="Type",
