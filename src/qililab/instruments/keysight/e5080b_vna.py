@@ -32,6 +32,7 @@ from qililab.typings.enums import (
     VNAScatteringParameters,
     VNASweepModes,
     VNASweepTypes,
+    VNATriggerSource,
 )
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 
@@ -74,6 +75,8 @@ class E5080B(Instrument):
         format_border: VNAFormatBorder | None = None
         rf_on: bool | None = None
         operation_status: int | None = None
+        trigger_source: VNATriggerSource | None = None
+        sweep_group_count: int | None = None
 
     settings: E5080BSettings
     device: KeysightE5080B
@@ -168,6 +171,25 @@ class E5080B(Instrument):
             Enum: settings.sweep_mode.
         """
         return self.settings.sweep_mode
+    
+    @property
+    def trigger_source(self) -> VNATriggerSource | None:
+        """Sets the source of the sweep trigger signal. Default is IMMediate.
+
+        Returns:
+            Enum: settings.trigger_source.
+        """
+        return self.settings.trigger_source
+    
+    @property
+    def sweep_group_count(self):
+        """Sets the trigger count (groups) for the specified channel. Set trigger mode to group after setting this count.
+            Default is 1. 1 is the same as SING trigger
+
+        Returns:
+            Enum: settings.sweep_group_count.
+        """
+        return self.settings.sweep_group_count
 
     @property
     def sweep_time(self):
@@ -312,6 +334,18 @@ class E5080B(Instrument):
                 self.device.sweep_mode(self.sweep_mode)
             return
 
+        if parameter == Parameter.TRIGGER_SOURCE:
+            self.settings.trigger_source = VNATriggerSource(value)
+            if self.is_device_active():
+                self.device.trigger_source(self.trigger_source)
+            return
+        
+        if parameter == Parameter.SWEEP_GROUP_COUNT:
+            self.settings.sweep_group_count = int(value)
+            if self.is_device_active():
+                self.device.sweep_group_count(self.sweep_group_count)
+            return
+
         if parameter == Parameter.SWEEP_TIME:
             self.settings.sweep_time = float(value)
             if self.is_device_active():
@@ -408,6 +442,14 @@ class E5080B(Instrument):
         if parameter == Parameter.SWEEP_MODE:
             self.settings.sweep_mode = self.device.sweep_mode.get().strip('"').strip()
             return cast("ParameterValue", self.settings.sweep_mode)
+
+        if parameter == Parameter.TRIGGER_SOURCE:
+            self.settings.trigger_source = self.device.trigger_source.get().strip('"').strip()
+            return cast("ParameterValue", self.settings.trigger_source)
+        
+        if parameter == Parameter.SWEEP_GROUP_COUNT:
+            self.settings.sweep_group_count = self.device.sweep_group_count.get()
+            return cast("ParameterValue", self.settings.sweep_group_count)
 
         if parameter == Parameter.SWEEP_TIME:
             self.settings.sweep_time = self.device.sweep_time.get()
@@ -512,6 +554,10 @@ class E5080B(Instrument):
             self.device.sweep_time(self.settings.sweep_time)
         if self.settings.sweep_time_auto is not None:
             self.device.sweep_time_auto(self.settings.sweep_time_auto)
+        if self.settings.sweep_group_count is not None:
+            self.device.sweep_group_count(self.settings.sweep_group_count)
+        if self.settings.trigger_source is not None:
+            self.device.trigger_source(self.settings.trigger_source)
 
         if self.settings.sweep_type != VNASweepTypes.SEGM:
             if self.settings.frequency_start is not None:
@@ -546,6 +592,8 @@ class E5080B(Instrument):
         self.settings.if_bandwidth = self.device.if_bandwidth.get()
         self.settings.sweep_type = self.device.sweep_type.get()
         self.settings.sweep_mode = self.device.sweep_mode.get()
+        self.settings.sweep_group_count = self.device.sweep_group_count()
+        self.settings.trigger_source = self.device.trigger_source.get()
         self.settings.sweep_time = self.device.sweep_time.get()
         self.settings.sweep_time_auto = self.device.sweep_time_auto.get()
         self.settings.averages_enabled = self.device.averages_enabled.get()

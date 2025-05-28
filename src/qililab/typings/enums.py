@@ -242,6 +242,18 @@ class VNASweepModes(str, Enum):
     SING = "SING"
     GRO = "GRO"
 
+class VNATriggerSource(str, Enum):
+    """Vector Network Analyzers Trigger Source
+    Args:
+        enum (str): Available types of trigger sources:
+        * external
+        * immediate
+        * manual
+    """
+
+    EXT = "EXT"
+    IMM = "IMM"
+    MAN = "MAN"
 
 class VNAAverageModes(str, Enum):
     """Vector Network Analyzers Average Modes
@@ -401,6 +413,8 @@ class Parameter(str, Enum):
     FLUX = "flux"
     FORMAT_BORDER = "format_border"
     OPERATION_STATUS = "operation_status"
+    TRIGGER_SOURCE = "trigger_source"
+    SWEEP_GROUP_COUNT = "sweep_group_count"
 
     @classmethod
     def to_yaml(cls, representer, node):
