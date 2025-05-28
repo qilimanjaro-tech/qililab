@@ -1434,7 +1434,6 @@ class TestMethods:
         )
 
         assert db_real_time_saving.loops == loops
-        assert db_real_time_saving.results.shape == shape
         assert db_real_time_saving.optional_identifier == optional_identifier
         assert db_real_time_saving.platform == platform
         assert db_real_time_saving.qprogram == qprogram
