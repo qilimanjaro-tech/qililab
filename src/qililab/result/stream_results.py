@@ -58,13 +58,15 @@ class StreamArray:
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
-        self.results = np.zeros(shape=shape)
+        self.results: np.ndarray
+        self.shape = shape
         self.loops = loops
         self.experiment_name = experiment_name
         self.db_manager = db_manager
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
+        self._first_value = True
 
     def __enter__(self):
         """The execution while the with StreamArray is created.
@@ -94,17 +96,31 @@ class StreamArray:
             else:
                 g.create_dataset(name=loop_name, data=array)
 
-        self._dataset = self._file.create_dataset("results", data=self.results)
+        self._first_value = True
 
         return self
 
-    def __setitem__(self, key: tuple, value: float):
+    def __setitem__(
+        self, key: tuple, value: np.ndarray[Any, np.dtype[np.floating]] | np.ndarray[Any, np.dtype[np.complexfloating]]
+    ):
         """Sets and item by key and value in the dataset.
 
         Args:
             key (tuple): key for the item to save.
-            value (float): value to save.
+            value (float | np.complexfloating): value to save.
         """
+        # Create results dataset only once
+        if self._first_value:
+            if isinstance(value[0], np.complexfloating):
+                self.results = np.zeros(shape=self.shape, dtype=np.complex128)
+                if self._file:
+                    self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
+            else:
+                self.results = np.zeros(shape=self.shape)
+                if self._file:
+                    self._dataset = self._file.create_dataset("results", data=self.results)
+            self._first_value = False
+
         if self._file is not None and self._dataset is not None:
             self._dataset[key] = value
         self.results[key] = value
@@ -235,18 +251,34 @@ class RawStreamArray:
     """
 
     def __init__(self, shape: tuple, path: str, loops: dict[str, np.ndarray]):
-        self.results = np.zeros(shape=shape)
+        self.results: np.ndarray
+        self.shape = shape
         self.path = path
         self.loops = loops
         self._file: h5py.File | None = None
         self._dataset = None
+        self._first_value = True
 
-    def __setitem__(self, key: tuple, value: float):
+    def __setitem__(
+        self, key: tuple, value: np.ndarray[Any, np.dtype[np.floating]] | np.ndarray[Any, np.dtype[np.complexfloating]]
+    ):
         """Sets and item by key and value in the dataset.
         Args:
             key (tuple): key for the item to save.
-            value (float): value to save.
+            value (float | np.complexfloating): value to save.
         """
+        # Create results dataset only once
+        if self._first_value:
+            if isinstance(value[0], np.complexfloating):
+                self.results = np.zeros(shape=self.shape, dtype=np.complex128)
+                if self._file:
+                    self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
+            else:
+                self.results = np.zeros(shape=self.shape)
+                if self._file:
+                    self._dataset = self._file.create_dataset("results", data=self.results)
+            self._first_value = False
+
         if self._file is not None and self._dataset is not None:
             self._dataset[key] = value
         self.results[key] = value
@@ -257,8 +289,8 @@ class RawStreamArray:
         g = self._file.create_group(name="loops")
         for loop_name, array in self.loops.items():
             g.create_dataset(name=loop_name, data=array)
-        # Save results
-        self._dataset = self._file.create_dataset("results", data=self.results)
+
+        self._first_value = True
 
         return self
 
