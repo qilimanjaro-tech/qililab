@@ -529,7 +529,7 @@ def test_update_settings(e5080b: E5080B):
         "rf_on": False,
         "operation_status": 256,
         "trigger_source": VNATriggerSource.EXT,
-        "sweep_group_count": 256,
+        "sweep_group_count": 300
     }
 
     # Set up the device.get() return values accordingly

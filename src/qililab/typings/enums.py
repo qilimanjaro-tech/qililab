@@ -242,6 +242,7 @@ class VNASweepModes(str, Enum):
     SING = "SING"
     GRO = "GRO"
 
+
 class VNATriggerSource(str, Enum):
     """Vector Network Analyzers Trigger Source
     Args:
@@ -254,6 +255,7 @@ class VNATriggerSource(str, Enum):
     EXT = "EXT"
     IMM = "IMM"
     MAN = "MAN"
+
 
 class VNAAverageModes(str, Enum):
     """Vector Network Analyzers Average Modes

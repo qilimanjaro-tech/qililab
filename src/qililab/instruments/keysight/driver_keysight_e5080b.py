@@ -141,7 +141,6 @@ class Driver_KeySight_E5080B(VisaInstrument):
         """Parameter sweep_type"""
 
         # Sets the number of trigger signals the specified channel will ACCEPT. Default is CONT.
-        #  BUG: Setting the sweep mode as sing, sets it as gro in the actual device
         self.sweep_mode: Parameter = self.add_parameter(
             "sweep_mode",
             label="Type",
@@ -150,6 +149,38 @@ class Driver_KeySight_E5080B(VisaInstrument):
             vals=Enum("HOLD", "CONT", "GRO", "SING"),
         )
         """Parameter sweep_mode"""
+
+        # Sets the trigger count (groups) for the specified channel. Set trigger mode to group after setting this count.
+        # Default is 1. 1 is the same as SING trigger
+        self.sweep_group_count: Parameter = self.add_parameter(
+            "sweep_group_count",
+            label="sweep_group_count",
+            get_cmd="SENS:SWE:GRO:COUN?",
+            set_cmd="SENS:SWE:GRO:COUN {}",
+            get_parser=int,
+            vals=Numbers(min_value=1, max_value=2e6),
+        )
+        """Parameter sweep_group_count"""
+
+        # Sets the source of the sweep trigger signal. Default is IMMediate.
+        self.trigger_source: Parameter = self.add_parameter(
+            "trigger_source",
+            label="Trigger Source",
+            get_cmd="TRIG:SOUR?",
+            set_cmd="TRIG:SOUR {}",
+            vals=Enum("EXT", "IMM", "MAN"),
+        )
+        """Trigger Source"""
+
+        # Specifies whether a trigger signal is sent to all channels or only the current channel. Default is ALL.
+        self.trigger_scope: Parameter = self.add_parameter(
+            "trigger_scope",
+            label="Trigger Scope",
+            get_cmd="TRIG:SCOP?",
+            set_cmd="TRIG:SCOP {}",
+            vals=Enum("ALL", "CURR", "ACT"),
+        )
+        """Trigger Scope"""
 
         # Sets the time the analyzer takes to complete one sweep.
         self.sweep_time: Parameter = self.add_parameter(

@@ -171,7 +171,7 @@ class E5080B(Instrument):
             Enum: settings.sweep_mode.
         """
         return self.settings.sweep_mode
-    
+
     @property
     def trigger_source(self) -> VNATriggerSource | None:
         """Sets the source of the sweep trigger signal. Default is IMMediate.
@@ -180,7 +180,7 @@ class E5080B(Instrument):
             Enum: settings.trigger_source.
         """
         return self.settings.trigger_source
-    
+
     @property
     def sweep_group_count(self):
         """Sets the trigger count (groups) for the specified channel. Set trigger mode to group after setting this count.
@@ -339,7 +339,7 @@ class E5080B(Instrument):
             if self.is_device_active():
                 self.device.trigger_source(self.trigger_source)
             return
-        
+
         if parameter == Parameter.SWEEP_GROUP_COUNT:
             self.settings.sweep_group_count = int(value)
             if self.is_device_active():
@@ -446,7 +446,7 @@ class E5080B(Instrument):
         if parameter == Parameter.TRIGGER_SOURCE:
             self.settings.trigger_source = self.device.trigger_source.get().strip('"').strip()
             return cast("ParameterValue", self.settings.trigger_source)
-        
+
         if parameter == Parameter.SWEEP_GROUP_COUNT:
             self.settings.sweep_group_count = self.device.sweep_group_count.get()
             return cast("ParameterValue", self.settings.sweep_group_count)
@@ -592,7 +592,7 @@ class E5080B(Instrument):
         self.settings.if_bandwidth = self.device.if_bandwidth.get()
         self.settings.sweep_type = self.device.sweep_type.get()
         self.settings.sweep_mode = self.device.sweep_mode.get()
-        self.settings.sweep_group_count = self.device.sweep_group_count()
+        self.settings.sweep_group_count = self.device.sweep_group_count.get()
         self.settings.trigger_source = self.device.trigger_source.get()
         self.settings.sweep_time = self.device.sweep_time.get()
         self.settings.sweep_time_auto = self.device.sweep_time_auto.get()
