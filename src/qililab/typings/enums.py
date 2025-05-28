@@ -393,6 +393,7 @@ class Parameter(str, Enum):
     AVERAGES_MODE = "averages_mode"
     SWEEP_MODE = "sweep_mode"
     SWEEP_TIME = "sweep_time"
+    SWEEP_TIME_AUTO = "sweep_time_auto"
     CLEAR_AVERAGES = "clear_averages"
     FORMAT_DATA = "format_data"
     SOURCE_POWER = "source_power"

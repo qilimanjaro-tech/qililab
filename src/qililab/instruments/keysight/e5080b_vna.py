@@ -66,6 +66,7 @@ class E5080B(Instrument):
         sweep_type: VNASweepTypes | None = None
         sweep_mode: VNASweepModes | None = None
         sweep_time: float | None = None
+        sweep_time_auto: bool | None = None
         averages_enabled: bool | None = None
         number_averages: int | None = None
         averages_mode: VNAAverageModes | None = None
@@ -176,6 +177,15 @@ class E5080B(Instrument):
             float: settings.sweep_time.
         """
         return self.settings.sweep_time
+
+    @property
+    def sweep_time_auto(self):
+        """Turns the automatic sweep time function ON or OFF.
+
+        Returns:
+            bool: settings.sweep_time:auto.
+        """
+        return self.settings.sweep_time_auto
 
     @property
     def scattering_parameter(self) -> VNAScatteringParameters | None:
@@ -308,6 +318,12 @@ class E5080B(Instrument):
                 self.device.sweep_time(self.sweep_time)
             return
 
+        if parameter == Parameter.SWEEP_TIME_AUTO:
+            self.settings.sweep_time_auto = bool(value)
+            if self.is_device_active():
+                self.device.sweep_time_auto(self.sweep_time_auto)
+            return
+
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = VNAScatteringParameters(value)
             if self.is_device_active():
@@ -396,6 +412,10 @@ class E5080B(Instrument):
         if parameter == Parameter.SWEEP_TIME:
             self.settings.sweep_time = self.device.sweep_time.get()
             return cast("ParameterValue", self.settings.sweep_time)
+        
+        if parameter == Parameter.SWEEP_TIME_AUTO:
+            self.settings.sweep_time_auto = self.device.sweep_time_auto.get()
+            return cast("ParameterValue", self.settings.sweep_time_auto)
 
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = self.device.scattering_parameter.get().strip('"').strip()
@@ -490,6 +510,8 @@ class E5080B(Instrument):
             self.device.format_border(self.settings.format_border)
         if self.settings.sweep_time is not None:
             self.device.sweep_time(self.settings.sweep_time)
+        if self.settings.sweep_time_auto is not None:
+            self.device.sweep_time_auto(self.settings.sweep_time_auto)
 
         if self.settings.sweep_type != VNASweepTypes.SEGM:
             if self.settings.frequency_start is not None:
@@ -525,6 +547,7 @@ class E5080B(Instrument):
         self.settings.sweep_type = self.device.sweep_type.get()
         self.settings.sweep_mode = self.device.sweep_mode.get()
         self.settings.sweep_time = self.device.sweep_time.get()
+        self.settings.sweep_time_auto = self.device.sweep_time_auto.get()
         self.settings.averages_enabled = self.device.averages_enabled.get()
         self.settings.number_averages = self.device.averages_count.get()
         self.settings.scattering_parameter = self.device.scattering_parameter.get()
