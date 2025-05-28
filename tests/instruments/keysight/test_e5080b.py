@@ -127,6 +127,7 @@ class TestE5080B:
             (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
             (Parameter.RF_ON, False),
             (Parameter.SWEEP_TIME, 4),
+            (Parameter.SWEEP_TIME_AUTO, False),
         ],
     )
     def test_set_parameter_method(
@@ -171,6 +172,8 @@ class TestE5080B:
             assert e5080b.settings.format_border == value
         if parameter == Parameter.SWEEP_TIME:
             assert e5080b.settings.sweep_time == value
+        if parameter == Parameter.SWEEP_TIME_AUTO:
+            assert e5080b.settings.sweep_time_auto == value
 
     def test__clear_averages(
             self,
@@ -221,6 +224,7 @@ class TestE5080B:
             (Parameter.RF_ON, False),
             (Parameter.OPERATION_STATUS, 0),
             (Parameter.SWEEP_TIME, 50),
+            (Parameter.SWEEP_TIME_AUTO, False),
         ],
     )
     def test_get_parameter_method(
@@ -248,6 +252,7 @@ class TestE5080B:
         Parameter.RF_ON:                "rf_on",
         Parameter.OPERATION_STATUS:     "operation_status",
         Parameter.SWEEP_TIME:           "sweep_time",
+        Parameter.SWEEP_TIME_AUTO:       "sweep_time_auto",
     }
         raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
         getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
@@ -382,6 +387,7 @@ class TestE5080B:
             (Parameter.SOURCE_POWER, -10, "source_power"),
             (Parameter.RF_ON, True, "rf_on"),
             (Parameter.SWEEP_TIME, 5, "sweep_time"),
+            (Parameter.SWEEP_TIME_AUTO, True, "sweep_time_auto"),
         ],
     )
     def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):
@@ -419,6 +425,7 @@ class TestE5080B:
         device_mock.return_value.source_power = MagicMock()
         device_mock.return_value.rf_on = MagicMock()
         device_mock.return_value.sweep_time = MagicMock()
+        device_mock.return_value.sweep_time_auto = MagicMock()
         controller_instance.connect()
         controller_instance.initial_setup()
 
@@ -500,6 +507,7 @@ def test_update_settings(e5080b: E5080B):
         "sweep_type": VNASweepTypes.LIN,
         "sweep_mode": VNASweepModes.CONT,
         "sweep_time": 0.01,
+        "sweep_time_auto": True,
         "averages_enabled": True,
         "averages_count": 8,
         "scattering_parameter": VNAScatteringParameters.S21,

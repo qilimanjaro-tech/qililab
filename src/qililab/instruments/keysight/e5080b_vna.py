@@ -412,7 +412,7 @@ class E5080B(Instrument):
         if parameter == Parameter.SWEEP_TIME:
             self.settings.sweep_time = self.device.sweep_time.get()
             return cast("ParameterValue", self.settings.sweep_time)
-        
+
         if parameter == Parameter.SWEEP_TIME_AUTO:
             self.settings.sweep_time_auto = self.device.sweep_time_auto.get()
             return cast("ParameterValue", self.settings.sweep_time_auto)
