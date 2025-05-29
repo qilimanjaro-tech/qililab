@@ -82,7 +82,7 @@ class E5080B(Instrument):
     device: KeysightE5080B
 
     @property
-    def start_freq(self):
+    def start_freq(self) -> float | None:
         """Sets the start frequency of the analyzer.
 
         Returns:
@@ -91,7 +91,7 @@ class E5080B(Instrument):
         return self.settings.frequency_start
 
     @property
-    def stop_freq(self):
+    def stop_freq(self) -> float | None:
         """Sets the stop frequency of the analyzer.
 
         Returns:
@@ -100,7 +100,7 @@ class E5080B(Instrument):
         return self.settings.frequency_stop
 
     @property
-    def center_freq(self):
+    def center_freq(self) -> float | None:
         """Sets the center frequency of the analyzer.
 
         Returns:
@@ -109,7 +109,7 @@ class E5080B(Instrument):
         return self.settings.frequency_center
 
     @property
-    def span(self):
+    def span(self) -> float | None:
         """Sets the frequency span of the analyzer.
 
         Returns:
@@ -118,7 +118,7 @@ class E5080B(Instrument):
         return self.settings.frequency_span
 
     @property
-    def cw(self):
+    def cw(self) -> float | None:
         """Sets the Continuous Wave (or Fixed) frequency. Must also send SENS:SWEEP:TYPE CW to put the analyzer into CW sweep mode.
 
         Returns:
@@ -127,7 +127,7 @@ class E5080B(Instrument):
         return self.settings.cw_frequency
 
     @property
-    def points(self):
+    def points(self) -> int | None:
         """Sets the number of data points for the measurement.
         REQ THE VNA TO BE RESETTED IF USING SET_PARAMETER IF VALUE IS CHANGED
 
@@ -137,7 +137,7 @@ class E5080B(Instrument):
         return self.settings.number_points
 
     @property
-    def source_power(self):
+    def source_power(self) -> float | None:
         """Sets the RF power output level.
 
         Returns:
@@ -146,7 +146,7 @@ class E5080B(Instrument):
         return self.settings.source_power
 
     @property
-    def if_bandwidth(self):
+    def if_bandwidth(self) -> float | None:
         """Sets the bandwidth of the digital IF filter to be used in the measurement.
 
         Returns:
@@ -182,7 +182,7 @@ class E5080B(Instrument):
         return self.settings.trigger_source
 
     @property
-    def sweep_group_count(self):
+    def sweep_group_count(self) -> int | None:
         """Sets the trigger count (groups) for the specified channel. Set trigger mode to group after setting this count.
             Default is 1. 1 is the same as SING trigger
 
@@ -192,7 +192,7 @@ class E5080B(Instrument):
         return self.settings.sweep_group_count
 
     @property
-    def sweep_time(self):
+    def sweep_time(self) -> float | None:
         """Sets the time the analyzer takes to complete one sweep.
 
         Returns:
@@ -201,7 +201,7 @@ class E5080B(Instrument):
         return self.settings.sweep_time
 
     @property
-    def sweep_time_auto(self):
+    def sweep_time_auto(self) -> bool | None:
         """Turns the automatic sweep time function ON or OFF.
 
         Returns:
@@ -219,7 +219,7 @@ class E5080B(Instrument):
         return self.settings.scattering_parameter
 
     @property
-    def averages_enabled(self):
+    def averages_enabled(self) -> bool | None:
         """Turns trace averaging ON or OFF.
 
         Returns:
@@ -228,7 +228,7 @@ class E5080B(Instrument):
         return self.settings.averages_enabled
 
     @property
-    def number_averages(self):
+    def number_averages(self) -> int | None:
         """Sets the number of measurements to combine for an average. Must also set SENS:AVER[:STATe] ON
 
         Returns:
@@ -246,7 +246,7 @@ class E5080B(Instrument):
         return self.settings.averages_mode
 
     @property
-    def rf_on(self):
+    def rf_on(self) -> bool | None:
         """Turns RF power from the source ON or OFF. Default is ON.
 
         Returns:
