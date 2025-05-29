@@ -80,7 +80,6 @@ class Driver_KeySight_E5080B(VisaInstrument):
             get_parser=float,
             set_cmd="SENS:FREQ:SPAN {}",
             unit="Hz",
-            vals=Numbers(min_value=min_freq, max_value=max_freq),
         )
         """Parameter span"""
 
@@ -103,7 +102,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
             get_parser=int,
             set_cmd="SENS:SWE:POIN {}",
             unit="",
-            vals=Numbers(min_value=11, max_value=100003),
+            vals=Numbers(min_value=1, max_value=100003),
         )
         """Parameter points"""
 
@@ -150,6 +149,28 @@ class Driver_KeySight_E5080B(VisaInstrument):
             vals=Enum("HOLD", "CONT", "GRO", "SING"),
         )
         """Parameter sweep_mode"""
+
+        # Sets the time the analyzer takes to complete one sweep.
+        self.sweep_time: Parameter = self.add_parameter(
+            "sweep_time",
+            label="sweep_time",
+            unit="s",
+            get_parser=float,
+            get_cmd="SENS:SWE:TIME?",
+            set_cmd="SENS:SWE:TIME {}",
+        )
+        """Parameter sweep_time"""
+
+        # Turns the automatic sweep time function ON or OFF.
+        self.sweep_time_auto: Parameter = self.add_parameter(
+            "sweep_time_auto",
+            label="sweep_time_auto",
+            get_parser=float,
+            get_cmd="SENS:SWE:TIME:AUTO?",
+            set_cmd="SENS:SWE:TIME:AUTO {}",
+            val_mapping=create_on_off_val_mapping(on_val=1, off_val=0),
+        )
+        """Parameter sweep_time_auto"""
 
         # Set/get a measurement parameter for the specified measurement.
         self.scattering_parameter: Parameter = self.add_parameter(
