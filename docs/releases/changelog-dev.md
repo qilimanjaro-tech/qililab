@@ -32,6 +32,7 @@
 - VNA Driver Keysight E5080B: Added triggerring related parameters. The parameters included are: sweep_group_count, trigger_source and trigger_scope. The first two have been included in the qcode type driver and the qililab wrapper; the second has been added to the qcodes type driver only to avoid cluttering the qililab code with parameters not required
 [#944](https://github.com/qilimanjaro-tech/qililab/pull/944)
 
+
 ### Breaking changes
 
 ### Deprecations / Removals
@@ -51,3 +52,4 @@
     - The user can now set through the platform the parameters of type Enums, the enums were not being capitalised. - The bounds in the frequency span of the qcodes type driver have been removed as they were wrong.
     - The bounds of the points in the qcodes type driver have been modified to range from 1 to 100003.
 [#943](https://github.com/qilimanjaro-tech/qililab/pull/943)
+
