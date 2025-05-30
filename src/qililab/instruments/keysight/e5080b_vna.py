@@ -604,18 +604,15 @@ class E5080B(Instrument):
             self.device.trigger_slope(self.settings.trigger_slope)
         if self.settings.trigger_type is not None:
             self.device.trigger_type(self.settings.trigger_type)
-
-        if self.settings.sweep_type != VNASweepTypes.SEGM:
-            if self.settings.frequency_start is not None:
-                self.device.start_freq(self.settings.frequency_start)
-            if self.settings.frequency_center is not None:
-                self.device.center_freq(self.settings.frequency_center)
-            if self.settings.frequency_stop is not None:
-                self.device.stop_freq(self.settings.frequency_stop)
-            if self.settings.frequency_span is not None:
-                self.device.span(self.settings.frequency_span)
-
-        if self.settings.sweep_type == VNASweepTypes.CW and self.settings.cw_frequency is not None:
+        if self.settings.frequency_start is not None:
+            self.device.start_freq(self.settings.frequency_start)
+        if self.settings.frequency_center is not None:
+            self.device.center_freq(self.settings.frequency_center)
+        if self.settings.frequency_stop is not None:
+            self.device.stop_freq(self.settings.frequency_stop)
+        if self.settings.frequency_span is not None:
+            self.device.span(self.settings.frequency_span)
+        if self.settings.cw_frequency is not None:
             self.device.cw(self.settings.cw_frequency)
         if self.settings.number_averages is not None:
             self.device.averages_count(self.settings.number_averages)
