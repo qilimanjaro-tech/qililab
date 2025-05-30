@@ -172,27 +172,6 @@ class Driver_KeySight_E5080B(VisaInstrument):
         )
         """Trigger Source"""
 
-        # Specifies whether a trigger signal is sent to all channels or only the current channel. Default is ALL.
-        self.trigger_scope: Parameter = self.add_parameter(
-            "trigger_scope",
-            label="Trigger Scope",
-            get_cmd="TRIG:SCOP?",
-            set_cmd="TRIG:SCOP {}",
-            vals=Enum("ALL", "CURR", "ACT"),
-        )
-        """Trigger Scope"""
-
-        #  TODO: not 100% sure it works on this VNA
-        # Specifies the polarity of the trigger IN signal to which the VNA will respond. Default is NEG.
-        self.polarity_trigger: Parameter = self.add_parameter(
-            "polarity_trigger",
-            label="Polarity Trigger",
-            get_cmd="TRIG:CHAN:AUX:INP:POL?",
-            set_cmd="TRIG:CHAN:AUX:INP:POL {}",
-            vals=Enum("POS", "NEG"),
-        )
-        """Polarity Trigger"""
-
         # Specifies the type of EXTERNAL trigger input detection used to listen for signals on the Meas Trig IN connectors. Default is LEV.
         self.trigger_type: Parameter = self.add_parameter(
             "trigger_type",
@@ -308,6 +287,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
 
         # Set the byte order used for GPIB data transfer.
         # Some computers read data from the analyzer in the reverse order. This command is only implemented if FORMAT:DATA is set to :REAL.
+        # Default is NORM
         self.format_border: Parameter = self.add_parameter(
             "format_border",
             label="Format Border",

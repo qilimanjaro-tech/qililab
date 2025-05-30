@@ -32,9 +32,9 @@ from qililab.typings.enums import (
     VNAScatteringParameters,
     VNASweepModes,
     VNASweepTypes,
+    VNATriggerSlope,
     VNATriggerSource,
     VNATriggerType,
-    VNATriggerSlope,
 )
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 
@@ -184,7 +184,7 @@ class E5080B(Instrument):
             Enum: settings.trigger_slope.
         """
         return self.settings.trigger_slope
-    
+
     @property
     def trigger_source(self) -> VNATriggerSource | None:
         """Sets the source of the sweep trigger signal. Default is IMMediate.
@@ -193,7 +193,7 @@ class E5080B(Instrument):
             Enum: settings.trigger_source.
         """
         return self.settings.trigger_source
-    
+
     @property
     def trigger_type(self) -> VNATriggerType | None:
         """Specifies the type of EXTERNAL trigger input detection used to listen for signals on the Meas Trig IN connectors. Default is LEV.
@@ -373,7 +373,7 @@ class E5080B(Instrument):
             if self.is_device_active():
                 self.device.trigger_type(self.trigger_type)
             return
-        
+
         if parameter == Parameter.SWEEP_GROUP_COUNT:
             self.settings.sweep_group_count = int(value)
             if self.is_device_active():
@@ -480,11 +480,11 @@ class E5080B(Instrument):
         if parameter == Parameter.TRIGGER_SLOPE:
             self.settings.trigger_slope = self.device.trigger_slope.get().strip('"').strip()
             return cast("ParameterValue", self.settings.trigger_slope)
-        
+
         if parameter == Parameter.TRIGGER_SOURCE:
             self.settings.trigger_source = self.device.trigger_source.get().strip('"').strip()
             return cast("ParameterValue", self.settings.trigger_source)
-        
+
         if parameter == Parameter.TRIGGER_TYPE:
             self.settings.trigger_type = self.device.trigger_type.get().strip('"').strip()
             return cast("ParameterValue", self.settings.trigger_type)
