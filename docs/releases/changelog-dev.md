@@ -21,13 +21,19 @@
 - Relocated save_results and load_results from data_management to result/result_management.py for structure consistency. The load_results functions has been slightly changed to take into account different structures of data.
 [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
 
-- In the VNA Driver for Keysight E5080B, an update_settings function has been implemented, it allows to efresh all settings inside qililab by querying the VNA.
+- In the VNA Driver for Keysight E5080B, an update_settings function has been implemented, it allows to refresh all settings inside qililab by querying the VNA.
 - The sweep time and sweep time auto parameters have been added in the qcodes like driver and also in the wrapper.
 - The sims file used to test the qcode like driver file has been moved to a similar location as qcodes (\qililab\src\qililab\instruments\sims).
 [#943](https://github.com/qilimanjaro-tech/qililab/pull/943)
 
 - Modified Streamarray to allow for np.complexfloat values following VNA results. This process has been automatized and requires no input from the user.
 [#941](https://github.com/qilimanjaro-tech/qililab/pull/941)
+
+- VNA Driver Keysight E5080B:
+  - Added triggerring related parameters. The parameters included are: sweep_group_count, trigger_source, trigger_type, trigger_slope, accept_before_armed. The first four have been included in the qcode type driver and the qililab wrapper; the last has only been added to the qcodes type driver to avoid cluttering the qililab code with parameters not required.
+  - The expected data type has been added to all set_parameters
+  - In the initial_setup, all parameters are now set, the conditionals have been removed. Now the VNA itself will show an error if two uncompatible parameters are being set.
+[#944](https://github.com/qilimanjaro-tech/qililab/pull/944)
 
 
 ### Breaking changes
