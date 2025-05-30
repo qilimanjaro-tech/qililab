@@ -196,6 +196,7 @@ class VNAScatteringParameters(str, Enum):
     S22 = "S22"
     S21 = "S21"
 
+
 class VNATriggerType(str, Enum):
     """Vector Network Analyzers Trigger Type
     Args:
@@ -207,6 +208,7 @@ class VNATriggerType(str, Enum):
     EDGE = "EDGE"
     LEV = "LEV"
 
+
 class VNATriggerSlope(str, Enum):
     """Vector Network Analyzers Trigger Slope
     Args:
@@ -217,6 +219,7 @@ class VNATriggerSlope(str, Enum):
 
     POS = "POS"
     NEG = "NEG"
+
 
 class VNAFormatBorder(str, Enum):
     """Vector Network Analyzers Format Border

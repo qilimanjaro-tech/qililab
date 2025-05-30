@@ -29,7 +29,10 @@
 - Modified Streamarray to allow for np.complexfloat values following VNA results. This process has been automatized and requires no input from the user.
 [#941](https://github.com/qilimanjaro-tech/qililab/pull/941)
 
-- VNA Driver Keysight E5080B: Added triggerring related parameters. The parameters included are: sweep_group_count, trigger_source and trigger_scope. The first two have been included in the qcode type driver and the qililab wrapper; the second has been added to the qcodes type driver only to avoid cluttering the qililab code with parameters not required
+- VNA Driver Keysight E5080B:
+  - Added triggerring related parameters. The parameters included are: sweep_group_count, trigger_source, trigger_type, trigger_slope, accept_before_armed. The first four have been included in the qcode type driver and the qililab wrapper; the last has only been added to the qcodes type driver to avoid cluttering the qililab code with parameters not required.
+  - The expected data type has been added to all set_parameters
+  - In the initial_setup, all parameters are now set, the conditionals have been removed. Now the VNA itself will show an error if two uncompatible parameters are being set.
 [#944](https://github.com/qilimanjaro-tech/qililab/pull/944)
 
 
