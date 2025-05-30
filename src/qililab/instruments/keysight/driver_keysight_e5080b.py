@@ -182,6 +182,47 @@ class Driver_KeySight_E5080B(VisaInstrument):
         )
         """Trigger Scope"""
 
+        #  TODO: not 100% sure it works on this VNA
+        # Specifies the polarity of the trigger IN signal to which the VNA will respond. Default is NEG.
+        self.polarity_trigger: Parameter = self.add_parameter(
+            "polarity_trigger",
+            label="Polarity Trigger",
+            get_cmd="TRIG:CHAN:AUX:INP:POL?",
+            set_cmd="TRIG:CHAN:AUX:INP:POL {}",
+            vals=Enum("POS", "NEG"),
+        )
+        """Polarity Trigger"""
+
+        # Specifies the type of EXTERNAL trigger input detection used to listen for signals on the Meas Trig IN connectors. Default is LEV.
+        self.trigger_type: Parameter = self.add_parameter(
+            "trigger_type",
+            label="Trigger Type",
+            get_cmd="TRIG:TYPE?",
+            set_cmd="TRIG:TYPE {}",
+            vals=Enum("EDGE", "LEV"),
+        )
+        """Trigger Type"""
+
+        # Specifies the polarity expected by the external trigger input circuitry. Also specify TRIG:TYPE (Level |Edge).
+        self.trigger_slope: Parameter = self.add_parameter(
+            "trigger_slope",
+            label="Trigger Slope",
+            get_cmd="TRIG:SLOP?",
+            set_cmd="TRIG:SLOP {}",
+            vals=Enum("POS", "NEG"),
+        )
+        """Trigger Slope"""
+
+        # Determines what happens to an EDGE trigger signal if it occurs before the VNA is ready to be triggered. (LEVEL trigger signals are always ignored.)
+        self.accept_trigger_before_armed: Parameter = self.add_parameter(
+            "accept_trigger_before_armed",
+            label="Accept Trigger Before Armed",
+            get_cmd="CONT:SIGN:TRIG:ATBA?",
+            set_cmd="CONT:SIGN:TRIG:ATBA {}",
+            val_mapping=create_on_off_val_mapping(on_val=1, off_val=0),
+        )
+        """Accept Trigger Before Armed"""
+
         # Sets the time the analyzer takes to complete one sweep.
         self.sweep_time: Parameter = self.add_parameter(
             "sweep_time",
