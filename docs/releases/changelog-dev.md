@@ -24,8 +24,14 @@
 - Add base_path as an input for stream_array and an optional parameter for the experiment class, qililab cannot have the data path hardcoded.
 [#936](https://github.com/qilimanjaro-tech/qililab/pull/936)
 
+- In the VNA Driver for Keysight E5080B, an update_settings function has been implemented, it allows to efresh all settings inside qililab by querying the VNA.
+- The sweep time and sweep time auto parameters have been added in the qcodes like driver and also in the wrapper.
+- The sims file used to test the qcode like driver file has been moved to a similar location as qcodes (\qililab\src\qililab\instruments\sims).
+[#943](https://github.com/qilimanjaro-tech/qililab/pull/943)
+
 - Modified Streamarray to allow for np.complexfloat values following VNA results. This process has been automatized and requires no input from the user.
 [#941](https://github.com/qilimanjaro-tech/qililab/pull/941)
+
 
 ### Breaking changes
 
@@ -44,3 +50,9 @@
 
 - Qblox Draw: Corrected bug with time window and nested loops- now after the code exits the recursive loop, the code checks the time window flag status and exits if needed.
 [#937](https://github.com/qilimanjaro-tech/qililab/pull/937)
+
+- VNA Driver Keysight E5080B:
+    - The user can now set through the platform the parameters of type Enums, the enums were not being capitalised. - The bounds in the frequency span of the qcodes type driver have been removed as they were wrong.
+    - The bounds of the points in the qcodes type driver have been modified to range from 1 to 100003.
+[#943](https://github.com/qilimanjaro-tech/qililab/pull/943)
+

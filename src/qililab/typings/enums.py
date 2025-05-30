@@ -205,8 +205,8 @@ class VNAFormatBorder(str, Enum):
         * SWAPped
     """
 
-    NORM = "norm"
-    SWAP = "swap"
+    NORM = "NORM"
+    SWAP = "SWAP"
 
 
 class VNASweepTypes(str, Enum):
@@ -220,11 +220,11 @@ class VNASweepTypes(str, Enum):
         * segm
     """
 
-    LIN = "lin"
-    LOG = "log"
-    POW = "pow"
-    CW = "cw"
-    SEGM = "segm"
+    LIN = "LIN"
+    LOG = "LOG"
+    POW = "POW"
+    CW = "CW"
+    SEGM = "SEGM"
 
 
 class VNASweepModes(str, Enum):
@@ -237,10 +237,10 @@ class VNASweepModes(str, Enum):
         * group
     """
 
-    HOLD = "hold"
-    CONT = "cont"
-    SING = "single"
-    GRO = "group"
+    HOLD = "HOLD"
+    CONT = "CONT"
+    SING = "SING"
+    GRO = "GRO"
 
 
 class VNAAverageModes(str, Enum):
@@ -251,8 +251,8 @@ class VNAAverageModes(str, Enum):
         * sweep
     """
 
-    POIN = "poin"
-    SWE = "swe"
+    POIN = "POIN"
+    SWE = "SWE"
 
 
 class InstrumentControllerName(str, Enum):
@@ -392,6 +392,8 @@ class Parameter(str, Enum):
     CW_FREQUENCY = "cw_frequency"
     AVERAGES_MODE = "averages_mode"
     SWEEP_MODE = "sweep_mode"
+    SWEEP_TIME = "sweep_time"
+    SWEEP_TIME_AUTO = "sweep_time_auto"
     CLEAR_AVERAGES = "clear_averages"
     FORMAT_DATA = "format_data"
     SOURCE_POWER = "source_power"

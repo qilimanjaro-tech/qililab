@@ -65,6 +65,8 @@ class E5080B(Instrument):
         if_bandwidth: float | None = None
         sweep_type: VNASweepTypes | None = None
         sweep_mode: VNASweepModes | None = None
+        sweep_time: float | None = None
+        sweep_time_auto: bool | None = None
         averages_enabled: bool | None = None
         number_averages: int | None = None
         averages_mode: VNAAverageModes | None = None
@@ -166,6 +168,24 @@ class E5080B(Instrument):
             Enum: settings.sweep_mode.
         """
         return self.settings.sweep_mode
+
+    @property
+    def sweep_time(self):
+        """Sets the time the analyzer takes to complete one sweep.
+
+        Returns:
+            float: settings.sweep_time.
+        """
+        return self.settings.sweep_time
+
+    @property
+    def sweep_time_auto(self):
+        """Turns the automatic sweep time function ON or OFF.
+
+        Returns:
+            bool: settings.sweep_time:auto.
+        """
+        return self.settings.sweep_time_auto
 
     @property
     def scattering_parameter(self) -> VNAScatteringParameters | None:
@@ -292,6 +312,18 @@ class E5080B(Instrument):
                 self.device.sweep_mode(self.sweep_mode)
             return
 
+        if parameter == Parameter.SWEEP_TIME:
+            self.settings.sweep_time = float(value)
+            if self.is_device_active():
+                self.device.sweep_time(self.sweep_time)
+            return
+
+        if parameter == Parameter.SWEEP_TIME_AUTO:
+            self.settings.sweep_time_auto = bool(value)
+            if self.is_device_active():
+                self.device.sweep_time_auto(self.sweep_time_auto)
+            return
+
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = VNAScatteringParameters(value)
             if self.is_device_active():
@@ -376,6 +408,14 @@ class E5080B(Instrument):
         if parameter == Parameter.SWEEP_MODE:
             self.settings.sweep_mode = self.device.sweep_mode.get().strip('"').strip()
             return cast("ParameterValue", self.settings.sweep_mode)
+
+        if parameter == Parameter.SWEEP_TIME:
+            self.settings.sweep_time = self.device.sweep_time.get()
+            return cast("ParameterValue", self.settings.sweep_time)
+
+        if parameter == Parameter.SWEEP_TIME_AUTO:
+            self.settings.sweep_time_auto = self.device.sweep_time_auto.get()
+            return cast("ParameterValue", self.settings.sweep_time_auto)
 
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = self.device.scattering_parameter.get().strip('"').strip()
@@ -468,6 +508,10 @@ class E5080B(Instrument):
             self.device.scattering_parameter(self.scattering_parameter)
         if self.settings.format_border is not None:
             self.device.format_border(self.settings.format_border)
+        if self.settings.sweep_time is not None:
+            self.device.sweep_time(self.settings.sweep_time)
+        if self.settings.sweep_time_auto is not None:
+            self.device.sweep_time_auto(self.settings.sweep_time_auto)
 
         if self.settings.sweep_type != VNASweepTypes.SEGM:
             if self.settings.frequency_start is not None:
@@ -489,6 +533,27 @@ class E5080B(Instrument):
             self.device.source_power(self.settings.source_power)
         if self.settings.rf_on is not None:
             self.device.rf_on(self.settings.rf_on)
+
+    def update_settings(self):
+        """Queries the VNA for all parameters and stores the updated value in settings."""
+        self.settings.frequency_start = self.device.start_freq.get()
+        self.settings.frequency_stop = self.device.stop_freq.get()
+        self.settings.frequency_center = self.device.center_freq.get()
+        self.settings.frequency_span = self.device.span.get()
+        self.settings.cw_frequency = self.device.cw.get()
+        self.settings.number_points = self.device.points.get()
+        self.settings.source_power = self.device.source_power.get()
+        self.settings.if_bandwidth = self.device.if_bandwidth.get()
+        self.settings.sweep_type = self.device.sweep_type.get()
+        self.settings.sweep_mode = self.device.sweep_mode.get()
+        self.settings.sweep_time = self.device.sweep_time.get()
+        self.settings.sweep_time_auto = self.device.sweep_time_auto.get()
+        self.settings.averages_enabled = self.device.averages_enabled.get()
+        self.settings.number_averages = self.device.averages_count.get()
+        self.settings.scattering_parameter = self.device.scattering_parameter.get()
+        self.settings.format_border = self.device.format_border.get()
+        self.settings.rf_on = self.device.rf_on.get()
+        self.settings.operation_status = self.device.operation_status.get()
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
