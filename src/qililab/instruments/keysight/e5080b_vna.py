@@ -279,7 +279,7 @@ class E5080B(Instrument):
     @property
     def format_border(self) -> VNAFormatBorder | None:
         """Set the byte order used for GPIB data transfer. Some computers read data from the analyzer in the reverse order.
-            This command is only implemented if FORMAT:DATA is set to :REAL.
+            This command is only implemented if FORMAT:DATA is set to :REAL. Default is NORM.
 
         Returns:
             Enum: settings.format_border.
