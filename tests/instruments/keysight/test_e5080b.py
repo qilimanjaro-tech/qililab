@@ -15,7 +15,7 @@ from qililab.instruments import ParameterNotFound
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.keysight import E5080BController
 from qililab.platform import Platform
-from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter, VNAAverageModes, VNAFormatBorder, VNAScatteringParameters, VNASweepModes, VNASweepTypes
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter, VNAAverageModes, VNAFormatBorder, VNAScatteringParameters, VNASweepModes, VNASweepTypes, VNATriggerSource, VNATriggerType, VNATriggerSlope
 
 from tests.data import SauronVNA
 from tests.test_utils import build_platform
@@ -128,6 +128,10 @@ class TestE5080B:
             (Parameter.RF_ON, False),
             (Parameter.SWEEP_TIME, 4),
             (Parameter.SWEEP_TIME_AUTO, False),
+            (Parameter.TRIGGER_SOURCE, VNATriggerSource.EXT),
+            (Parameter.SWEEP_GROUP_COUNT, 5),
+            (Parameter.TRIGGER_TYPE, VNATriggerType.LEV),
+            (Parameter.TRIGGER_SLOPE, VNATriggerSlope.POS),
         ],
     )
     def test_set_parameter_method(
@@ -174,6 +178,14 @@ class TestE5080B:
             assert e5080b.settings.sweep_time == value
         if parameter == Parameter.SWEEP_TIME_AUTO:
             assert e5080b.settings.sweep_time_auto == value
+        if parameter == Parameter.TRIGGER_SOURCE:
+            assert e5080b.settings.trigger_source == value
+        if parameter == Parameter.SWEEP_GROUP_COUNT:
+            assert e5080b.settings.sweep_group_count == value
+        if parameter == Parameter.TRIGGER_TYPE:
+            assert e5080b.settings.trigger_type == value
+        if parameter == Parameter.TRIGGER_SLOPE:
+            assert e5080b.settings.trigger_slope == value
 
     def test__clear_averages(
             self,
@@ -225,6 +237,10 @@ class TestE5080B:
             (Parameter.OPERATION_STATUS, 0),
             (Parameter.SWEEP_TIME, 50),
             (Parameter.SWEEP_TIME_AUTO, False),
+            (Parameter.TRIGGER_SOURCE, VNATriggerSource.IMM),
+            (Parameter.SWEEP_GROUP_COUNT, 150),
+            (Parameter.TRIGGER_TYPE, VNATriggerType.EDGE),
+            (Parameter.TRIGGER_SLOPE,VNATriggerSlope.POS),
         ],
     )
     def test_get_parameter_method(
@@ -253,6 +269,10 @@ class TestE5080B:
         Parameter.OPERATION_STATUS:     "operation_status",
         Parameter.SWEEP_TIME:           "sweep_time",
         Parameter.SWEEP_TIME_AUTO:       "sweep_time_auto",
+        Parameter.TRIGGER_SOURCE:        "trigger_source",
+        Parameter.SWEEP_GROUP_COUNT:     "sweep_group_count",
+        Parameter.TRIGGER_SLOPE:     "trigger_slope",
+        Parameter.TRIGGER_TYPE:     "trigger_type",
     }
         raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
         getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
@@ -388,6 +408,10 @@ class TestE5080B:
             (Parameter.RF_ON, True, "rf_on"),
             (Parameter.SWEEP_TIME, 5, "sweep_time"),
             (Parameter.SWEEP_TIME_AUTO, True, "sweep_time_auto"),
+            (Parameter.TRIGGER_SOURCE, VNATriggerSource.MAN, "trigger_source"),
+            (Parameter.SWEEP_GROUP_COUNT, 20000, "sweep_group_count"),
+            (Parameter.TRIGGER_SLOPE, VNATriggerSlope.POS, "trigger_slope"),
+            (Parameter.TRIGGER_TYPE, VNATriggerType.EDGE, "trigger_type"),
         ],
     )
     def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):
@@ -426,6 +450,10 @@ class TestE5080B:
         device_mock.return_value.rf_on = MagicMock()
         device_mock.return_value.sweep_time = MagicMock()
         device_mock.return_value.sweep_time_auto = MagicMock()
+        device_mock.return_value.trigger_source = MagicMock()
+        device_mock.return_value.sweep_group_count = MagicMock()
+        device_mock.return_value.trigger_slope = MagicMock()
+        device_mock.return_value.trigger_type = MagicMock()
         controller_instance.connect()
         controller_instance.initial_setup()
 
@@ -514,6 +542,10 @@ def test_update_settings(e5080b: E5080B):
         "format_border": VNAFormatBorder.NORM,
         "rf_on": False,
         "operation_status": 256,
+        "trigger_source": VNATriggerSource.EXT,
+        "sweep_group_count": 300,
+        "trigger_type": VNATriggerType.EDGE,
+        "trigger_slope": VNATriggerSource.EXT,
     }
 
     # Set up the device.get() return values accordingly
