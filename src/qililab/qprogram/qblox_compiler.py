@@ -552,7 +552,46 @@ class QbloxCompiler:
                 self._buses[bus].static_duration += duration_diff
 
     def __handle_dynamic_sync(self, buses: set[str]):
-        raise NotImplementedError("Dynamic syncing is not implemented yet.")
+        #  TODO: more than 2 buses, i guess you would want to compare each with the largest (but you cant know the largest in advance?)
+        # bus1, bus2 = self._buses[bus].static_duration for bus in buses
+        #  need smthg to track that a bus has dyanmic status (for now i am only thinkign abt teh case where one bus has a dynamic time)
+        print(buses)
+        self._buses = list(self._buses)
+        
+        for i,bus in buses:
+            bin_register = QPyProgram.Register() # time up to now
+            store_sum = QPyProgram.Register()
+            static_duration = self._buses[bus].static_duration
+            static_duration2 = self._buses[1].static_duration
+            print("bin_register",bin_register)
+            move = QPyInstructions.Move(static_duration, bin_register) # should be static + dynamic if there is one
+            nott = QPyInstructions.Not(bin_register,bin_register)
+            add = QPyInstructions.Add(bin_register,1,bin_register)
+            add2 = QPyInstructions.Add(bin_register,static_duration2,store_sum)
+            comparison = QPyInstructions.Jlt(store_sum, 2147483647, "dynamic_sync")
+
+
+
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=move
+        )
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=nott
+        )
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=add
+        )
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=add2
+        )
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=comparison
+        )
+            dynamic_block = QPyProgram.Block(name="dynamic_sync")
+            self.qpy_sequence._program.append_block(dynamic_block )
+
+
+            # QPyInstructions.(2147483647)
 
     def _handle_measure(self, element: Measure):
         """Wrapper for qblox play and acquire methods to be called in a single operation for consistency with QuantumMachines
