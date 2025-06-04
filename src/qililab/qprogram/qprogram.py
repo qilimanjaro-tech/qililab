@@ -718,7 +718,7 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-    def draw(self, time_window=None, averages_displayed=False, acquisition_showing=True):
+    def draw(self, time_window=None, averages_displayed=False, acquisition_showing=True, get_q1asm =True):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -732,6 +732,18 @@ class QProgram(StructuredProgram):
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(self)
+
+
+        if get_q1asm is True:
+            for bus in sequencer.sequences:
+                print(bus)
+                print(sequencer.sequences[bus]._program)
+
+        # result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
         result_draw = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
         logger.warning("The drawing feature is currently only supported for QBlox.")
         return result_draw
+    
+
+
+

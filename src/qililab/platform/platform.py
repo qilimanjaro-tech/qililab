@@ -1603,7 +1603,7 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True, get_q1asm: bool = True):
+    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True, get_q1asm: bool = True, bus_mapping: dict[str, str] | None = None):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -1614,7 +1614,7 @@ class Platform:
         #TODO: fix the docstring
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        sequencer = self.compile_qprogram(qprogram)
+        sequencer = self.compile_qprogram(qprogram, bus_mapping)
 
         if get_q1asm is True:
             for bus in sequencer.sequences:

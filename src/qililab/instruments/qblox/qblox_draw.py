@@ -34,25 +34,31 @@ class QbloxDraw:
         action_type = program_line[0]
         if action_type == "set_freq":
             param = self._handle_freq_phase_draw(program_line, param, register, "intermediate_frequency")
+
         elif action_type == "set_ph":
             param = self._handle_freq_phase_draw(program_line, param, register, "phase")
+
         elif action_type == "reset_ph":
             param = self._handle_reset_phase_draw(param)
+
         elif action_type == "set_awg_offs":
             param = self._handle_offset(program_line, param)
+
         elif action_type == "set_awg_gain":
             param = self._handle_gain_draw(program_line, param, register)
+
         elif action_type == "wait" or action_type == "upd_param":
             wait_duration = int(program_line[1])
             param["classical_time_counter"] += int(wait_duration)
             real_wait = wait_duration - param["real_time_counter"]
             if real_wait <= 0:
-                param["real_time_counter"] = param["real_time_counter"] + real_wait  # update the real time counter
+                param["real_time_counter"] = param["real_time_counter"] - real_wait  # update the real time counter
             else:
                 data_draw = self._handle_wait_draw(data_draw, param, real_wait)
+                param["real_time_counter"] =  max(0, param["real_time_counter"] - wait_duration)
+
         elif action_type == "play":
             param["play_idx"] += 1
-
             #  Essentially interrupting the previous play that is still running and extend the play status to the current play
             if len(data_draw[0]) != param["classical_time_counter"]:
                 for i in [0, 1]:
@@ -65,17 +71,19 @@ class QbloxDraw:
             param["classical_time_counter"] += int(classical_duration_play)
             if wf_length > classical_duration_play:
                 real_time_counter = wf_length - classical_duration_play
+                #  TODO: find a case where they can accumulate and resetting the counter without accounting for previous values would be wrong
                 param["real_time_counter"] = real_time_counter
             elif wf_length < classical_duration_play:
                 real_play_wait = classical_duration_play - wf_length
                 data_draw = self._handle_wait_draw(data_draw, param, real_play_wait)
+                # The counter is not being reset to 0 here because this allows overlaying a future acquire if needed
                 param["real_time_counter"] = param["real_time_counter"] - classical_duration_play
 
         elif action_type == "acquire_weighed":
             param["acquire_idx"] += 1
             classical_duration_acquire = self._get_value(program_line[1].split(',')[-1].strip(), register)
 
-            # If plotting from qp - assume that the integration_length is the classical duration of the Q1ASM command
+            # If plotting from qprogram - assume that the integration_length is the classical duration of the Q1ASM command
             integration_length = param.get("integration_length")
             if integration_length is None:
                 integration_length = classical_duration_acquire
@@ -101,14 +109,19 @@ class QbloxDraw:
 
         elif action_type == "add":
             self._handle_add_draw(register, program_line)
+
         elif action_type == "move":
             self._handle_move_draw(register, program_line)
-        elif action_type == "not":
-            self._handle_not(register, program_line)
+
+        # elif action_type == "not":
+        #     self._handle_not(register, program_line)
+
         elif action_type in ["loop", "nop"]:
             pass
+
         else:
-            raise NotImplementedError(f'The Q1ASM operation "{action_type}" is not implemented in the plotter yet. Please contact someone from QHC.')
+            # raise NotImplementedError(f'The Q1ASM operation "{action_type}" is not implemented in the plotter yet. Please contact someone from QHC.')
+            pass
         return param, register, data_draw
 
     def _calculate_scaling_and_offsets(self, param, i_or_q):
@@ -194,7 +207,7 @@ class QbloxDraw:
         data_draw[0] = np.append(data_draw[0], (y_wait))
         data_draw[1] = np.append(data_draw[1], (y_wait))
 
-        # extend the IF and phase by the length of the wf
+        # Extend the IF and phase by the length of the wf
         for key in ["intermediate_frequency", "phase", "q1asm_offset_i", "q1asm_offset_q"]:
             if param.get(f"{key}_new", False) is True:
                 param[key].extend([param[key][-1]] * (len(y_wait) - 1))
@@ -614,8 +627,6 @@ class QbloxDraw:
                         start = idx
                 elif value == idx_acquire and idx == len(nparray) - 1:
                     ranges.append([start, idx + 1])
-            print(ranges)
-
             return ranges
 
         def adjust_color_hex(color_hex, factor):
