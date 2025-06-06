@@ -535,7 +535,7 @@ class Platform:
                                         elif out == 1:
                                             dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
                                             dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
-                                
+
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
 
@@ -1603,24 +1603,21 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True, get_q1asm: bool = True, bus_mapping: dict[str, str] | None = None):
-        """Draw the QProgram using QBlox Compiler
+    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True, bus_mapping: dict[str, str] | None = None):
+        """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 
         Args:
-            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
-                                        The default is False.
+            time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the precise number of ns inputted.
+                                For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns.
+                                Defaults to None.
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations. Defaults to False.
+            acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
+            bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
+                It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
         """
-        #TODO: get q1asm as false by default
-        #TODO: fix the docstring
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
         sequencer = self.compile_qprogram(qprogram, bus_mapping)
-
-        if get_q1asm is True:
-            for bus in sequencer.sequences:
-                print(bus)
-                print(sequencer.sequences[bus]._program)
-
         result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
 
         return result

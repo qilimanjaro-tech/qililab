@@ -55,7 +55,7 @@ class QbloxDraw:
                 param["real_time_counter"] = param["real_time_counter"] - real_wait  # update the real time counter
             else:
                 data_draw = self._handle_wait_draw(data_draw, param, real_wait)
-                param["real_time_counter"] =  max(0, param["real_time_counter"] - wait_duration)
+                param["real_time_counter"] = max(0, param["real_time_counter"] - wait_duration)
 
         elif action_type == "play":
             param["play_idx"] += 1
@@ -113,26 +113,29 @@ class QbloxDraw:
         elif action_type == "move":
             self._handle_move_draw(register, program_line)
 
-        # elif action_type == "not":
-        #     self._handle_not(register, program_line)
+        elif action_type == "not":
+            self._handle_not(register, program_line)
+
+        elif action_type == "sub":
+            self._handle_sub_draw(register, program_line)
 
         elif action_type in ["loop", "nop"]:
             pass
 
         else:
-            # raise NotImplementedError(f'The Q1ASM operation "{action_type}" is not implemented in the plotter yet. Please contact someone from QHC.')
-            pass
+            raise NotImplementedError(f'The Q1ASM operation "{action_type}" is not implemented in the plotter yet. Please contact someone from QHC.')
+
         return param, register, data_draw
 
     def _calculate_scaling_and_offsets(self, param, i_or_q):
         if i_or_q == "I":
             scaling_factor, max_voltage = self._get_scaling_factors(
-                param, param.get("q1asm_offset_i", 0), param.get("ac_offset_i", 0)
+                param, param.get("q1asm_offset_i", 0), param.get("sequencer_runcard_offset_i", 0)
             )
             gain = param.get("gain_i", 1)
         elif i_or_q == "Q":
             scaling_factor, max_voltage = self._get_scaling_factors(
-                param, param.get("q1asm_offset_q", 0), param.get("ac_offset_q", 0)
+                param, param.get("q1asm_offset_q", 0), param.get("sequencer_runcard_offset_q", 0)
             )
             gain = param.get("gain_q", 1)
         return scaling_factor, max_voltage, gain
@@ -315,6 +318,20 @@ class QbloxDraw:
         register[destination] = self._get_value(a, register) + self._get_value(b, register)
         return register
 
+    def _handle_sub_draw(self, register, program_line):
+        """Updates the register dictionary when a line of the parsed program has a sub command.
+
+        Args:
+            register (dictionary): registers of the Q1ASM.
+            program_line (tuple): line of the Q1ASM program.
+
+        Returns:
+            Updated register.
+        """
+        a, b, destination = program_line[1].split(", ")
+        register[destination] = self._get_value(a, register) - self._get_value(b, register)
+        return register
+
     def _handle_move_draw(self, register, program_line):
         """Updates the register dictionary when a line of the parsed program has a move command.
 
@@ -353,10 +370,11 @@ class QbloxDraw:
             If the input is a number it returns a float; if the input is a key of the registery it returns the value as a float
         """
         if x is not None:
-            if x.isdigit():
+            try:
                 return float(x)
-            if x in register:
-                return float(register[x])
+            except ValueError:
+                if x in register:
+                    return float(register[x])
         return None
 
     def _parse_program(self, sequences):
@@ -371,6 +389,7 @@ class QbloxDraw:
                 ie: (avg_0, loop_0) meaning the current isntruction is part of 2 loops, avg_0 as top and loop_0 as nested.
 
         """
+
         seq_parsed_program = {}
         for bus in sequences:  # Iterate through the bus of the sequences
             sequence = sequences[bus].todict()
@@ -462,8 +481,8 @@ class QbloxDraw:
                 }  # retrieve runcard data if the qblox draw is called when a platform has been built
                 IF = parameters[bus]["intermediate_frequency"] * 4
                 parameters[bus]["intermediate_frequency"] = [IF]
-                parameters[bus]["ac_offset_i"] = parameters[bus]["offset_i"]
-                parameters[bus]["ac_offset_q"] = parameters[bus]["offset_q"]
+                parameters[bus]["sequencer_runcard_offset_i"] = parameters[bus]["offset_i"]
+                parameters[bus]["sequencer_runcard_offset_q"] = parameters[bus]["offset_q"]
                 if parameters[bus]["instrument_name"] in {"QCM", "QCM-RF"}:
                     parameters[bus]["max_voltage"] = 2.5
                 elif parameters[bus]["instrument_name"] in {"QRM", "QRM-RF"}:
@@ -471,8 +490,8 @@ class QbloxDraw:
             else:  # no runcard uploaded- running qp directly
                 parameters[bus] = {}
                 parameters[bus]["intermediate_frequency"] = [0]
-                parameters[bus]["ac_offset_i"] = [0]
-                parameters[bus]["ac_offset_q"] = [0]
+                parameters[bus]["sequencer_runcard_offset_i"] = [0]
+                parameters[bus]["sequencer_runcard_offset_q"] = [0]
                 parameters[bus]["dac_offset_i"] = [0]
                 parameters[bus]["dac_offset_q"] = [0]
                 parameters[bus]["hardware_modulation"] = True  # if plotting directly from qp, plot i and q
@@ -611,7 +630,6 @@ class QbloxDraw:
         Note:
             This function also **plots** the waveforms using the generated data.
         """
-        # not working - to be fixed
         def range_acquire(nparray):
             ranges = []
             start = None
@@ -645,29 +663,25 @@ class QbloxDraw:
             q1asm_offset_q = np.array(parameters[key]["q1asm_offset_q"])
             volt_bounds = parameters[key]["max_voltage"]
             dac_offset_i, dac_offset_q = parameters[key]["dac_offset_i"], parameters[key]["dac_offset_q"]
-            ac_offset_i, ac_offset_q = (
-                parameters[key]["ac_offset_i"] * volt_bounds / np.sqrt(2),
-                parameters[key]["ac_offset_q"] * volt_bounds / np.sqrt(2),
-            )
 
             base_color = palette[idx]
 
             if not parameters[key]["hardware_modulation"]:  # if hardware modulation is disabled, do not plot Q
-                ac_offset_i = ac_offset_i * volt_bounds
+                sequencer_runcard_offset_i = parameters[key]["sequencer_runcard_offset_i"] * volt_bounds
                 waveform_flux = np.clip(
-                    (np.array(data_draw[key][0]) + q1asm_offset_i + ac_offset_i + dac_offset_i),
+                    (np.array(data_draw[key][0]) + q1asm_offset_i + sequencer_runcard_offset_i + dac_offset_i),
                     -volt_bounds,
                     volt_bounds,
                 )
                 data_draw[key][0] = waveform_flux
                 data_draw[key][1] = None
-                fig.add_trace(go.Scatter(y=waveform_flux, mode="lines", name=f"{key} Flux", line=dict(color=base_color)))
+                fig.add_trace(go.Scatter(y=waveform_flux, mode="lines", name=f"{key} Flux", line={"color": base_color}))
 
             else:
-                ac_offset_i, ac_offset_q = (
-                    ac_offset_i * volt_bounds / np.sqrt(2),
-                    ac_offset_q * volt_bounds / np.sqrt(2),
-                )
+                sequencer_runcard_offset_i, sequencer_runcard_offset_q = (
+                parameters[key]["sequencer_runcard_offset_i"] * volt_bounds / np.sqrt(2),
+                parameters[key]["sequencer_runcard_offset_q"] * volt_bounds / np.sqrt(2),
+            )
                 wf1, wf2 = data_draw[key][0], data_draw[key][1]
                 fs = 1e9  # sampling frequency of the qblox
                 t = np.arange(0, len(wf1)) / fs
@@ -680,17 +694,16 @@ class QbloxDraw:
                 sin_term = np.sin(2 * np.pi * freq * t + phase)
 
                 # Add the offsets to the waveforms and ensure it is in the voltage range of the instrument
-                wf1_offsetted = np.clip((np.array(wf1) + q1asm_offset_i), -volt_bounds, volt_bounds)
-                wf2_offsetted = np.clip((np.array(wf2) + q1asm_offset_q), -volt_bounds, volt_bounds)
+                wf1_offsetted = np.clip((np.array(wf1) + q1asm_offset_i + sequencer_runcard_offset_i), -volt_bounds, volt_bounds)
+                wf2_offsetted = np.clip((np.array(wf2) + q1asm_offset_q + sequencer_runcard_offset_q), -volt_bounds, volt_bounds)
                 path0 = (
                     (cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted))
                     + dac_offset_i
-                    + ac_offset_i
+
                 )
                 path1 = (
                     (sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted))
                     + dac_offset_q
-                    + ac_offset_q
                 )
 
                 # clip the final signal
@@ -698,8 +711,8 @@ class QbloxDraw:
                 path1_clipped = np.clip(path1, -volt_bounds, volt_bounds)
 
                 data_draw[key][0], data_draw[key][1] = path0_clipped, path1_clipped
-                fig.add_trace(go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I", line=dict(color=base_color), zorder=1))
-                fig.add_trace(go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q", line=dict(color=adjust_color_hex(base_color, 1.5)), zorder=1))
+                fig.add_trace(go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I", line={"color": base_color}, zorder=1))
+                fig.add_trace(go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q", line={"color": adjust_color_hex(base_color, 1.5)}, zorder=1))
                 if self.acquisition_showing is True:
                     ranges = range_acquire(parameters[key]["acquiring_status"])
                     y_max = ((y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8))
@@ -712,7 +725,7 @@ class QbloxDraw:
                             fill="toself",
                             mode='none',
                             fillcolor=base_color,
-                            line=dict(width=0),
+                            line={"width": 0},
                             opacity=0.2,
                             line_width=0,
                             name=f"{key} Acquisition" if i == 0 else f"{key} Acquisition {i}",
