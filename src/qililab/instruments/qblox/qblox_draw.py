@@ -699,7 +699,6 @@ class QbloxDraw:
                 path0 = (
                     (cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted))
                     + dac_offset_i
-
                 )
                 path1 = (
                     (sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted))
