@@ -44,20 +44,6 @@ def fixture_qp_draw() -> QProgram:
     qp.set_frequency(bus="drive", frequency=frequency)
     return qp
 
-@pytest.fixture(name="qp_draw_with_acquire")
-def fixture_qp_draw_with_acquire() -> QProgram:
-    qp = QProgram()
-    square_wf = IQPair(
-        I=Square(amplitude=0.5, duration=5),
-        Q=Square(amplitude=0, duration=5),
-    )
-    weights_shape = Square(amplitude=1, duration=20)
-    bins = qp.variable(label="bins", domain=Domain.Scalar, type=int)
-    with qp.for_loop(variable=bins, start=1, stop=3):
-        qp.wait("readout_q13_bus",10)
-        qp.measure(bus="readout_q13_bus", waveform =square_wf, weights= IQPair(I=weights_shape, Q=weights_shape))
-    return qp
-
 
 @pytest.fixture(name="qp_draw_with_time_window")
 def fixture_qp_draw_with_time_window() -> QProgram:
@@ -163,6 +149,37 @@ def fixture_platform():
 def fixture_platform_quantum_machines():
     return build_platform(runcard=SauronQuantumMachines.runcard)
 
+@pytest.fixture(name="qp_play_interrupted_by_another_play")
+def fixture_play_interrupted_by_another_play():
+    qp = QProgram()
+    qp.qblox.play("drive",Square(1,10),7)
+    qp.qblox.play("drive",Square(-1,10),1)
+    qp.wait("drive", 5)
+    qp.wait("drive", 10)
+    return qp
+
+@pytest.fixture(name="qp_not_sub")
+def fixture_not_sub():
+    qp = QProgram()
+    frequency = qp.variable(label="drive", domain=Domain.Frequency)
+    FREQ_START = -100e6
+    FREQ_STOP = -200e6
+    FREQ_STEP = -50e6
+    with qp.for_loop(frequency, FREQ_START, FREQ_STOP, FREQ_STEP):
+        qp.set_frequency(bus="drive", frequency=frequency)
+        qp.play(bus="drive", waveform=Square(amplitude=1, duration=10))
+        qp.wait("drive", 10)
+    return qp
+
+@pytest.fixture(name="qp_real_time")
+def fixture_qp_real_time() -> QProgram:
+    qp = QProgram()
+    weights_shape = Square(amplitude=1, duration=20)
+    qp.qblox.play(bus="feedline_input_output_bus_1", waveform=Square(amplitude=1, duration=10),wait_time= 20)
+    qp.qblox.play(bus="feedline_input_output_bus_1", waveform=Square(amplitude=1, duration=60),wait_time = 20)
+    qp.qblox.acquire(bus="feedline_input_output_bus_1", weights= IQPair(I=weights_shape, Q=weights_shape))
+    qp.qblox.acquire(bus="feedline_input_output_bus_1", weights= IQPair(I=weights_shape, Q=weights_shape))
+    return qp
 
 class TestQBloxDraw:
     def test_parsing(self, parsing: QProgram):
@@ -244,19 +261,18 @@ class TestQBloxDraw:
     def test_qp_draw_with_timeout(self, qp_draw_with_time_window: QProgram):
         data_draw = qp_draw_with_time_window.draw(time_window=40)
         expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.35355339,
-       0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.        , 0.        , 0.        , 0.        , 0.35355339,
-       0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.        ,
-       0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.        , 0.        , 0.        ]
+         0.        , 0.        , 0.        , 0.        , 0.        ,
+         0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.35355339,
+         0.        , 0.        , 0.        , 0.        , 0.        ,
+         0.        , 0.        , 0.        , 0.        , 0.        ,
+         0.        , 0.        , 0.        , 0.        , 0.        ,
+         0.        , 0.        , 0.        , 0.        , 0.        ,
+         0.        , 0.        , 0.        , 0.        , 0.        ,
+         0.        , 0.        , 0.        , 0.        ]
 
         expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-       0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-       0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+         0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
 
         compiler = QbloxCompiler()
         qblox_draw = QbloxDraw()
@@ -298,35 +314,6 @@ class TestQBloxDraw:
         data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, time_window=10)
         np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
-
-
-    def test_qp_draw_with_acquire(self, qp_draw_with_acquire: QProgram):
-        data_draw = qp_draw_with_acquire.draw()
-        expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.35355339,
-       0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.        , 0.        , 0.        , 0.        , 0.35355339,
-       0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.        ,
-       0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.        , 0.        , 0.        , 0.        , 0.        ,
-       0.        , 0.        , 0.        , 0.35355339, 0.35355339,
-       0.35355339, 0.35355339, 0.35355339, 0.        , 0.        ,
-       0.        , 0.        ]
-        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-       0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-       0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-       0., 0., 0., 0., 0., 0.]
-        compiler = QbloxCompiler()
-        qblox_draw = QbloxDraw()
-        results = compiler.compile(qp_draw_with_acquire)
-        pio.renderers.default = "json"
-        data_draw = qblox_draw.draw(sequencer=results, runcard_data= None)
-
-        np.testing.assert_allclose(data_draw["readout_q13_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["readout_q13_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
-
 
     def test_platform_draw_qcmrf(self, qp_plat_draw_qcmrf: QProgram, platform: Platform):
         expected_data_draw_i = [0.20155136, 0.20075692, 0.19967336, 0.19871457, 0.19824677,
@@ -453,9 +440,128 @@ class TestQBloxDraw:
         )
         assert data_draw["feedline_input_output_bus"][1] is None
 
-    def platform_draw_quantum_machine_raises_error(
+    def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
         pio.renderers.default = "json"
-        with pytest.raises(NotImplementedError("The drawing feature is currently only supported for QBlox.")):
+
+        with pytest.raises(NotImplementedError) as exc_info:
             platform_quantum_machines.draw(qp_quantum_machine)
+    
+        # Optionally check the error message
+        assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
+
+    def test_play_interrupted_by_another_play(self, qp_play_interrupted_by_another_play: QProgram):
+        expected_data_draw_i = [ 0.70710678,  0.70710678,  0.70710678,  0.70710678,  0.70710678,
+          0.70710678,  0.70710678, -0.70710678, -0.70710678, -0.70710678,
+         -0.70710678, -0.70710678, -0.70710678, -0.70710678, -0.70710678,
+         -0.70710678, -0.70710678,  0.        ,  0.        ,  0.        ]
+        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+         0., 0., 0.]
+        compiler = QbloxCompiler()
+        qblox_draw = QbloxDraw()
+        results = compiler.compile(qp_play_interrupted_by_another_play)
+        pio.renderers.default = "json"
+        data_draw = qblox_draw.draw(sequencer=results, runcard_data= None)
+        np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+
+    def test_qp_not_sub(self, qp_not_sub: QProgram):
+        expected_data_draw_i = [ 7.07106781e-01,  5.72061403e-01,  2.18508014e-01, -2.18508009e-01,
+         -5.72061400e-01, -7.07106781e-01, -5.72061407e-01, -2.18508020e-01,
+          2.18508004e-01,  5.72061397e-01,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          7.07106781e-01,  4.15626957e-01, -2.18507989e-01, -6.72498504e-01,
+         -5.72061418e-01, -2.77680190e-08,  5.72061386e-01,  6.72498521e-01,
+          2.18508042e-01, -4.15626912e-01,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          7.07106781e-01,  2.18508056e-01, -5.72061375e-01, -5.72061431e-01,
+          2.18507966e-01,  7.07106781e-01,  2.18508061e-01, -5.72061372e-01,
+         -5.72061434e-01,  2.18507960e-01,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00]
+        expected_data_draw_q = [ 0.00000000e+00, -4.15626937e-01, -6.72498511e-01, -6.72498513e-01,
+         -4.15626941e-01, -5.55360364e-09,  4.15626932e-01,  6.72498510e-01,
+          6.72498515e-01,  4.15626946e-01,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          2.22144147e-08, -5.72061389e-01, -6.72498520e-01, -2.18508037e-01,
+          4.15626916e-01,  7.07106781e-01,  4.15626961e-01, -2.18507984e-01,
+         -6.72498502e-01, -5.72061422e-01,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          4.44288298e-08, -6.72498498e-01, -4.15626976e-01,  4.15626899e-01,
+          6.72498527e-01,  4.99824354e-08, -6.72498496e-01, -4.15626980e-01,
+          4.15626895e-01,  6.72498529e-01,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00]
+        compiler = QbloxCompiler()
+        qblox_draw = QbloxDraw()
+        results = compiler.compile(qp_not_sub)
+        pio.renderers.default = "json"
+        data_draw = qblox_draw.draw(sequencer=results, runcard_data= None)
+        np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+
+    def test_qp_real_time(self, qp_real_time: QProgram, platform: Platform):
+        expected_data_draw_i = [0.12335355, 0.12335077, 0.12334245, 0.12332873, 0.12330982,
+         0.12328603, 0.12325773, 0.12322536, 0.12318944, 0.12315054,
+         0.123     , 0.123     , 0.123     , 0.123     , 0.123     ,
+         0.123     , 0.123     , 0.123     , 0.123     , 0.123     ,
+         0.12271397, 0.12269018, 0.12267127, 0.12265755, 0.12264923,
+         0.12264645, 0.12264923, 0.12265755, 0.12267127, 0.12269018,
+         0.12271397, 0.12274227, 0.12277464, 0.12281056, 0.12284946,
+         0.12289075, 0.12293375, 0.1229778 , 0.1230222 , 0.12306625,
+         0.12310925, 0.12315054, 0.12318944, 0.12322536, 0.12325773,
+         0.12328603, 0.12330982, 0.12332873, 0.12334245, 0.12335077,
+         0.12335355, 0.12335077, 0.12334245, 0.12332873, 0.12330982,
+         0.12328603, 0.12325773, 0.12322536, 0.12318944, 0.12315054,
+         0.12310925, 0.12306625, 0.1230222 , 0.1229778 , 0.12293375,
+         0.12289075, 0.12284946, 0.12281056, 0.12277464, 0.12274227,
+         0.12271397, 0.12269018, 0.12267127, 0.12265755, 0.12264923,
+         0.12264645, 0.12264923, 0.12265755, 0.12267127, 0.12269018]
+        
+        expected_data_draw_q = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+         0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+         0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+         0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+         0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+         0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+         0.5, 0.5]
+        pio.renderers.default = "json"
+        data_draw = platform.draw(qp_real_time)
+        np.testing.assert_allclose(data_draw["feedline_input_output_bus_1"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(data_draw["feedline_input_output_bus_1"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+
+    def test_call_handlers_raises_on_unknown_instruction(self):
+        draw = QbloxDraw()
+        
+        # Simulate minimal valid input for internal method
+        program_line = ("badcmd", "")  # unknown Q1ASM instruction
+        param = {
+            "classical_time_counter": 0,
+            "real_time_counter": 0,
+            "intermediate_frequency": [0],
+            "phase": [0],
+            "q1asm_offset_i": [0],
+            "q1asm_offset_q": [0],
+            "intermediate_frequency_new": False,
+            "phase_new": False,
+            "q1asm_offset_i_new": False,
+            "q1asm_offset_q_new": False,
+            "acquiring_status": np.array([0]),
+            "acquire_idx": 0,
+            "play_idx": 0,
+            "max_voltage": 1,
+            "hardware_modulation": True,
+            "gain_i": 1,
+            "gain_q": 1
+        }
+        register = {}
+        data_draw = [[0.0], [0.0]]
+        waveform_seq = []
+
+        with pytest.raises(NotImplementedError, match=r'The Q1ASM operation "badcmd" is not implemented in the plotter yet. Please contact someone from QHC.'):
+            draw._call_handlers(program_line, param, register, data_draw, waveform_seq)
