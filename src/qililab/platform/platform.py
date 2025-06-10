@@ -490,7 +490,7 @@ class Platform:
         instruments = {
             instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
         }
-        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+        if instruments and all(isinstance(instrument, QbloxModule) for instrument in instruments):
             for bus in buses:
                 for instrument, _ in zip(bus.instruments, bus.channels):
                     if isinstance(instrument, QbloxModule):
@@ -535,8 +535,13 @@ class Platform:
                                         elif out == 1:
                                             dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
                                             dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
+
+                        if instrument.name == InstrumentName.QRMRF or instrument.name == InstrumentName.QBLOX_QRM:
+                            integration_length = bus.get_parameter(Parameter.INTEGRATION_LENGTH)
+                            data_oscilloscope[bus.alias]["integration_length"] = integration_length
         else:
             # TODO: the same information could be generated with a Quantum Machine runcard, even if the QBlox Compiler is used in the background.
             raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
@@ -1598,19 +1603,22 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False):
-        """Draw the QProgram using QBlox Compiler
+    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True, bus_mapping: dict[str, str] | None = None):
+        """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 
         Args:
-            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
-                                        The default is False.
+            time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the precise number of ns inputted.
+                                For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns.
+                                Defaults to None.
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations. Defaults to False.
+            acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
+            bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
+                It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
         """
-
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        compiler = QbloxCompiler()
-        sequencer = compiler.compile(qprogram)
-        result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed)
+        sequencer = self.compile_qprogram(qprogram, bus_mapping)
+        result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
 
         return result
 
