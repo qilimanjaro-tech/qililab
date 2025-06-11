@@ -33,6 +33,7 @@ from .set_parameter import SetParameter
 from .set_phase import SetPhase
 from .sync import Sync
 from .wait import Wait
+from .wait_trigger import WaitTrigger
 
 __all__ = [
     "Acquire",
@@ -56,4 +57,5 @@ __all__ = [
     "SetPhase",
     "Sync",
     "Wait",
+    "WaitTrigger",
 ]

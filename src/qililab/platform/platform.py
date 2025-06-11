@@ -37,7 +37,7 @@ from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
-from qililab.instrument_controllers import InstrumentController, InstrumentControllers
+from qililab.instrument_controllers import InstrumentController, InstrumentControllers, QbloxClusterController
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
@@ -996,6 +996,12 @@ class Platform:
         }
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             # Retrieve the time of flight parameter from settings
+            instrument_controllers = [
+                controller
+                for controller in self.instrument_controllers.elements
+                if isinstance(controller, QbloxClusterController)
+            ]
+            ext_trigger = any(controller.ext_trigger for controller in instrument_controllers)
             times_of_flight = {
                 bus.alias: int(bus.get_parameter(Parameter.TIME_OF_FLIGHT)) for bus in buses if bus.has_adc()
             }
@@ -1025,6 +1031,7 @@ class Platform:
                 times_of_flight=times_of_flight,
                 delays=delays,
                 markers=markers,
+                ext_trigger=ext_trigger,
             )
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
             if len(instruments) != 1:
