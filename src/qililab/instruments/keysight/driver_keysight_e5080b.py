@@ -150,6 +150,58 @@ class Driver_KeySight_E5080B(VisaInstrument):
         )
         """Parameter sweep_mode"""
 
+        # Sets the trigger count (groups) for the specified channel. Set trigger mode to group after setting this count.
+        # Default is 1. 1 is the same as SING trigger
+        self.sweep_group_count: Parameter = self.add_parameter(
+            "sweep_group_count",
+            label="sweep_group_count",
+            get_cmd="SENS:SWE:GRO:COUN?",
+            set_cmd="SENS:SWE:GRO:COUN {}",
+            get_parser=int,
+            vals=Numbers(min_value=1, max_value=2e6),
+        )
+        """Parameter sweep_group_count"""
+
+        # Sets the source of the sweep trigger signal. Default is IMMediate.
+        self.trigger_source: Parameter = self.add_parameter(
+            "trigger_source",
+            label="Trigger Source",
+            get_cmd="TRIG:SOUR?",
+            set_cmd="TRIG:SOUR {}",
+            vals=Enum("EXT", "IMM", "MAN"),
+        )
+        """Trigger Source"""
+
+        # Specifies the type of EXTERNAL trigger input detection used to listen for signals on the Meas Trig IN connectors. Default is LEV.
+        self.trigger_type: Parameter = self.add_parameter(
+            "trigger_type",
+            label="Trigger Type",
+            get_cmd="TRIG:TYPE?",
+            set_cmd="TRIG:TYPE {}",
+            vals=Enum("EDGE", "LEV"),
+        )
+        """Trigger Type"""
+
+        # Specifies the polarity expected by the external trigger input circuitry. Also specify TRIG:TYPE (Level |Edge).
+        self.trigger_slope: Parameter = self.add_parameter(
+            "trigger_slope",
+            label="Trigger Slope",
+            get_cmd="TRIG:SLOP?",
+            set_cmd="TRIG:SLOP {}",
+            vals=Enum("POS", "NEG"),
+        )
+        """Trigger Slope"""
+
+        # Determines what happens to an EDGE trigger signal if it occurs before the VNA is ready to be triggered. (LEVEL trigger signals are always ignored.)
+        self.accept_trigger_before_armed: Parameter = self.add_parameter(
+            "accept_trigger_before_armed",
+            label="Accept Trigger Before Armed",
+            get_cmd="CONT:SIGN:TRIG:ATBA?",
+            set_cmd="CONT:SIGN:TRIG:ATBA {}",
+            val_mapping=create_on_off_val_mapping(on_val=1, off_val=0),
+        )
+        """Accept Trigger Before Armed"""
+
         # Sets the time the analyzer takes to complete one sweep.
         self.sweep_time: Parameter = self.add_parameter(
             "sweep_time",
@@ -235,6 +287,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
 
         # Set the byte order used for GPIB data transfer.
         # Some computers read data from the analyzer in the reverse order. This command is only implemented if FORMAT:DATA is set to :REAL.
+        # Default is NORM
         self.format_border: Parameter = self.add_parameter(
             "format_border",
             label="Format Border",
