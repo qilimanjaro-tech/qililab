@@ -115,6 +115,7 @@ class BusCompilationInfo:
         self.static_duration = 0
         self.dynamic_durations: list[Variable] = []
         self.sync_durations: list[QPyProgram.Register] = []
+        self.duration_since_sync = 0
 
         # Syncing marker. If true, a real-time instruction has been added since the last sync or the beginning of the program.
         self.marked_for_sync = False
@@ -133,6 +134,8 @@ class BusCompilationInfo:
         # Registers values used for the hardware loop over time
         self.store_bus_difference: QPyProgram.Register = None
 
+        # # Track the number of hardware loop over time
+        # self.time_loop_counter: int = 0
 
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
@@ -164,6 +167,7 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
+        self._time_loop_counter: int = 0
 
     def compile(
         self,
@@ -247,6 +251,7 @@ class QbloxCompiler:
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
             self._buses[bus].static_duration += 4
 
+
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
 
@@ -258,18 +263,17 @@ class QbloxCompiler:
 
             # TODO: works but add a cleaner check
             # Check if variable waits are used
-            for x in self._qprogram.variables:
-                if x.domain.name == "Time":
-                    dynamic_sync_block = QPyProgram.Block(name="dynamic_sync")
-                    self._buses[bus].qpy_block_stack[0]._append_block(dynamic_sync_block)
+            if self._time_loop_counter > 0:
+                dynamic_sync_block = QPyProgram.Block(name="dynamic_sync")
+                self._buses[bus].qpy_block_stack[0]._append_block(dynamic_sync_block)
 
-                    #TODO: very wrong - should be a variable
-                    # TODO: Give an error if time variable created but no dynamic sync
-                    self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Wait(self._buses[bus].store_bus_difference))
-                    self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Jmp("@after_dynamic_sync"))
+                #TODO: very wrong - should be a variable
+                # TODO: Give an error if time variable created but no dynamic sync
+                self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Wait(self._buses[bus].store_bus_difference))
+                self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Jmp("@after_dynamic_sync"))
 
-                    #TODO: add the other cases. that are messed up because we cant have wait<
-                    
+                #TODO: add the other cases. that are messed up because we cant have wait<
+
             #TODO: what is the use of this variable below? i should probably update it
             self._buses[bus].static_duration += 4
             self._buses[bus].qpy_sequence._program.compile()
@@ -488,11 +492,14 @@ class QbloxCompiler:
                 component=QPyInstructions.Wait(wait_time=duration)
             )
             self._buses[element.bus].marked_for_dynamic_sync = True
+            # self._buses[element.bus].time_loop_counter += 1
+            self._time_loop_counter+= 1
         else:
             convert = QbloxCompiler._convert_value(element)
             duration = convert(element.duration)
             if not delay:
                 self._buses[element.bus].static_duration += duration
+                self._buses[element.bus].duration_since_sync += duration
             # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
             self._handle_add_waits(bus=element.bus, duration=duration)
 
@@ -558,8 +565,8 @@ class QbloxCompiler:
             self.__handle_dynamic_sync(buses=buses)
 
             # TODO: i added it here bc the dynamic accounts for the static - need to think abt this, and the order dynamic/static handlers
-            for bus in buses:
-                self._buses[bus].marked_for_sync = False
+            # for bus in buses:
+            #     self._buses[bus].marked_for_sync = False
         else:
             # If no, calculating the difference is trivial.
             self.__handle_static_sync(buses=buses, delay=delay)
@@ -568,21 +575,39 @@ class QbloxCompiler:
         for bus in buses:
             self._buses[bus].marked_for_sync = False
             self._buses[bus].marked_for_dynamic_sync = False
+            self._buses[bus].duration_since_sync = 0
 
     def __handle_static_sync(self, buses: set[str], delay: bool = False):
-        max_duration = max(self._buses[bus].static_duration for bus in buses)
-        if delay:
-            max_delay = max(self._buses[bus].delay for bus in buses)
-        for bus in buses:
+        if self._time_loop_counter == 0:
+            max_duration = max(self._buses[bus].static_duration for bus in buses)
             if delay:
-                delay_diff = max_delay - self._buses[bus].delay
-                duration_diff = max_duration - self._buses[bus].static_duration + delay_diff
-            else:
-                duration_diff = max_duration - self._buses[bus].static_duration
-            if duration_diff > 0:
-                # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
-                self._handle_add_waits(bus=bus, duration=duration_diff)
-                self._buses[bus].static_duration += duration_diff
+                max_delay = max(self._buses[bus].delay for bus in buses)
+            for bus in buses:
+                if delay:
+                    delay_diff = max_delay - self._buses[bus].delay
+                    duration_diff = max_duration - self._buses[bus].static_duration + delay_diff
+                else:
+                    duration_diff = max_duration - self._buses[bus].static_duration
+                if duration_diff > 0:
+                    # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
+                    self._handle_add_waits(bus=bus, duration=duration_diff)
+                    self._buses[bus].static_duration += duration_diff
+
+        #TODO: check if the delay could cause problem
+        else:
+            max_duration = max(self._buses[bus].duration_since_sync for bus in buses)
+            if delay:
+                max_delay = max(self._buses[bus].delay for bus in buses)
+            for bus in buses:
+                if delay:
+                    delay_diff = max_delay - self._buses[bus].delay
+                    duration_diff = max_duration - self._buses[bus].duration_since_sync + delay_diff
+                else:
+                    duration_diff = max_duration - self._buses[bus].duration_since_sync
+                if duration_diff > 0:
+                    # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
+                    self._handle_add_waits(bus=bus, duration=duration_diff)
+
 
     def __handle_dynamic_sync(self, buses: set[str]):
         #  TODO: more than 2 buses, i guess you would want to compare each with the largest (but you cant know the largest in advance?)
@@ -590,11 +615,9 @@ class QbloxCompiler:
 
         # bus1, bus2 = self._buses[bus].static_duration for bus in buses
         #  need smthg to track that a bus has dyanmic status (for now i am only thinkign abt teh case where one bus has a dynamic time)
-        # print(buses)
-        # self._buses = list(self._buses)
-        # buses = list(buses)
-        # for bus in buses:
-        # bus_names = list(self._buses.keys())
+        # will need to increment the name using the counter time_loop_counter
+
+        
 
         # Find the dynamic duration
         count_dynamic_bus = 0
@@ -751,6 +774,7 @@ class QbloxCompiler:
                 component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
             )
         self._buses[element.bus].static_duration += integration_length
+        self._buses[element.bus].duration_since_sync += integration_length
         self._buses[element.bus].next_bin_index = 0  # maybe this counter can be removed completely
         self._buses[element.bus].next_acquisition_index += 1
         self._buses[element.bus].marked_for_sync = True
@@ -813,6 +837,7 @@ class QbloxCompiler:
                 component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
             )
         self._buses[element.bus].static_duration += duration
+        self._buses[element.bus].duration_since_sync += duration
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
 
