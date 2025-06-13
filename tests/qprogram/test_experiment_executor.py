@@ -1,6 +1,6 @@
 import os
 import tempfile
-from unittest.mock import Mock, call, create_autospec
+from unittest.mock import Mock, call, create_autospec, patch
 
 import numpy as np
 import pytest
@@ -11,8 +11,8 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.experiment_executor import ExperimentExecutor
-from qililab.result.experiment_results import ExperimentResults
 from qililab.qprogram.qprogram import Domain, QProgram
+from qililab.result.experiment_results import ExperimentResults
 from qililab.result.qprogram import QProgramResults, QuantumMachinesMeasurementResult
 from qililab.typings.enums import Parameter
 from qililab.waveforms import IQPair, Square
@@ -145,7 +145,9 @@ class TestExperimentExecutor:
 
     def test_execute(self, platform, experiment, qprogram, crosstalk):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, live_plot=False, slurm_execution=False)
+        executor = ExperimentExecutor(
+            platform=platform, experiment=experiment, live_plot=False, slurm_execution=False, database=False
+        )
         resuls_path = executor.execute()
 
         # Check if the correct file path is returned
@@ -271,3 +273,57 @@ class TestExperimentExecutor:
             qprogram2_measurement1_data, _ = experiment_results.get(2, 1)
             assert qprogram2_measurement1_data.shape == (3, 11, 2)
             assert np.allclose(qprogram2_measurement1_data, measurement_data[None, :, :])
+
+    def test_execute_set_base_path(self, platform, experiment):
+        """Test the execute method to ensure the experiment is executed correctly and results are stored."""
+        executor = ExperimentExecutor(
+            platform=platform,
+            experiment=experiment,
+            base_path=tempfile.gettempdir(),
+            live_plot=False,
+            slurm_execution=False,
+            database=False,
+        )
+        resuls_path = executor.execute()
+
+        # Check if the correct file path is returned
+        assert resuls_path.startswith(os.path.abspath(tempfile.gettempdir()))
+        assert resuls_path.endswith(".h5")
+
+    @patch("qililab.qprogram.experiment_executor.get_db_manager")
+    def test_execute_database(self, mock_get_db_manager, platform, experiment):
+        """Test the execute with database as True."""
+
+        mock_db_manager = Mock()
+        mock_db_manager.current_sample = "test_sample"
+        mock_db_manager.current_cd = "test_cooldown"
+        mock_get_db_manager.return_value = mock_db_manager
+
+        executor = ExperimentExecutor(
+            platform=platform,
+            experiment=experiment,
+            live_plot=False,
+            slurm_execution=False,
+            database=True,
+        )
+        _ = executor.execute()
+
+        # Check if the correct file path is returned
+        assert executor.sample == "test_sample"
+        assert executor.cooldown == "test_cooldown"
+
+    def test_execute_database_raises_reference_error(self, platform, experiment):
+        """Test that execute() raises ReferenceError when get_db_manager() fails."""
+
+        executor = ExperimentExecutor(
+            platform=platform,
+            experiment=experiment,
+            live_plot=False,
+            slurm_execution=False,
+            database=True,
+        )
+
+        with pytest.raises(
+            ReferenceError, match="Missing initialization information at the desired database '.ini' path."
+        ):
+            executor.execute()
