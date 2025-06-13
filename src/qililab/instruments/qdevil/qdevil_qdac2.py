@@ -15,6 +15,7 @@
 """QDevil QDAC-II Instrument"""
 
 from dataclasses import dataclass
+from pickle import NONE
 
 import numpy as np
 from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import List_Context, QDac2Trigger_Context
@@ -180,13 +181,13 @@ class QDevilQDac2(VoltageSource):
     def upload_trigger_pulse(
         self,
         channel_id: ChannelID,
-        in_port: int,
-        out_port: int,
         ramp_up_us: int,
         ramp_down_us: int,
         dwell_us: int,
         pulse_duration_us: int,
         pulse_v: float,
+        in_port: int,
+        out_port: int | None = None,
         offset_v: float | None = None,
         delay_s: float = 0,
         trigger_width: float = 1e-6,
@@ -209,7 +210,7 @@ class QDevilQDac2(VoltageSource):
         """
         # Create the pulse sequence and upload as a dc list
         if not offset_v:
-            offset_v = float(self.device.dc_constant_V())
+            offset_v = float(self.device.channel(channel_id).dc_constant_V())
         offset_ramp_up = np.linspace(offset_v, pulse_v, int(ramp_up_us / dwell_us))
         offset_ramp_down = np.linspace(pulse_v, offset_v, int(ramp_down_us / dwell_us))
         offset_pulse = np.ones(int(pulse_duration_us / dwell_us)) * pulse_v
@@ -220,7 +221,8 @@ class QDevilQDac2(VoltageSource):
 
         # Set triggers received to start (in) and sent at the end (out)
         self.set_in_external_trigger(channel_id, in_port)
-        self.set_out_external_trigger(channel_id, out_port, f"ext_{out_port}_ch_{channel_id}", trigger_width)
+        if out_port:
+            self.set_out_external_trigger(channel_id, out_port, f"ext_{out_port}_ch_{channel_id}", trigger_width)
 
     def upload_voltage_list(self, waveform: Waveform, channel_id: ChannelID, dwell_us: int = 1, delay_s: float = 0):
 
