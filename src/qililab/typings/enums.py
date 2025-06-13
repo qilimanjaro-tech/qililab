@@ -197,6 +197,30 @@ class VNAScatteringParameters(str, Enum):
     S21 = "S21"
 
 
+class VNATriggerType(str, Enum):
+    """Vector Network Analyzers Trigger Type
+    Args:
+        enum (str): Available types of triggering types:
+        * EDGE
+        * LEV
+    """
+
+    EDGE = "EDGE"
+    LEV = "LEV"
+
+
+class VNATriggerSlope(str, Enum):
+    """Vector Network Analyzers Trigger Slope
+    Args:
+        enum (str): Available types of triggering slopes:
+        * POS
+        * NEG
+    """
+
+    POS = "POS"
+    NEG = "NEG"
+
+
 class VNAFormatBorder(str, Enum):
     """Vector Network Analyzers Format Border
     Args:
@@ -205,8 +229,8 @@ class VNAFormatBorder(str, Enum):
         * SWAPped
     """
 
-    NORM = "norm"
-    SWAP = "swap"
+    NORM = "NORM"
+    SWAP = "SWAP"
 
 
 class VNASweepTypes(str, Enum):
@@ -220,11 +244,11 @@ class VNASweepTypes(str, Enum):
         * segm
     """
 
-    LIN = "lin"
-    LOG = "log"
-    POW = "pow"
-    CW = "cw"
-    SEGM = "segm"
+    LIN = "LIN"
+    LOG = "LOG"
+    POW = "POW"
+    CW = "CW"
+    SEGM = "SEGM"
 
 
 class VNASweepModes(str, Enum):
@@ -237,10 +261,24 @@ class VNASweepModes(str, Enum):
         * group
     """
 
-    HOLD = "hold"
-    CONT = "cont"
-    SING = "single"
-    GRO = "group"
+    HOLD = "HOLD"
+    CONT = "CONT"
+    SING = "SING"
+    GRO = "GRO"
+
+
+class VNATriggerSource(str, Enum):
+    """Vector Network Analyzers Trigger Source
+    Args:
+        enum (str): Available types of trigger sources:
+        * external
+        * immediate
+        * manual
+    """
+
+    EXT = "EXT"
+    IMM = "IMM"
+    MAN = "MAN"
 
 
 class VNAAverageModes(str, Enum):
@@ -251,8 +289,8 @@ class VNAAverageModes(str, Enum):
         * sweep
     """
 
-    POIN = "poin"
-    SWE = "swe"
+    POIN = "POIN"
+    SWE = "SWE"
 
 
 class InstrumentControllerName(str, Enum):
@@ -392,6 +430,8 @@ class Parameter(str, Enum):
     CW_FREQUENCY = "cw_frequency"
     AVERAGES_MODE = "averages_mode"
     SWEEP_MODE = "sweep_mode"
+    SWEEP_TIME = "sweep_time"
+    SWEEP_TIME_AUTO = "sweep_time_auto"
     CLEAR_AVERAGES = "clear_averages"
     FORMAT_DATA = "format_data"
     SOURCE_POWER = "source_power"
@@ -399,6 +439,10 @@ class Parameter(str, Enum):
     FLUX = "flux"
     FORMAT_BORDER = "format_border"
     OPERATION_STATUS = "operation_status"
+    TRIGGER_SOURCE = "trigger_source"
+    TRIGGER_SLOPE = "trigger_slope"
+    TRIGGER_TYPE = "trigger_type"
+    SWEEP_GROUP_COUNT = "sweep_group_count"
 
     @classmethod
     def to_yaml(cls, representer, node):

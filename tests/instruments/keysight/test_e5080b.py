@@ -15,7 +15,7 @@ from qililab.instruments import ParameterNotFound
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.keysight import E5080BController
 from qililab.platform import Platform
-from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter, VNAAverageModes, VNAFormatBorder, VNAScatteringParameters, VNASweepModes, VNASweepTypes
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter, VNAAverageModes, VNAFormatBorder, VNAScatteringParameters, VNASweepModes, VNASweepTypes, VNATriggerSource, VNATriggerType, VNATriggerSlope
 
 from tests.data import SauronVNA
 from tests.test_utils import build_platform
@@ -126,6 +126,12 @@ class TestE5080B:
             (Parameter.AVERAGES_MODE, VNAAverageModes.POIN),
             (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
             (Parameter.RF_ON, False),
+            (Parameter.SWEEP_TIME, 4),
+            (Parameter.SWEEP_TIME_AUTO, False),
+            (Parameter.TRIGGER_SOURCE, VNATriggerSource.EXT),
+            (Parameter.SWEEP_GROUP_COUNT, 5),
+            (Parameter.TRIGGER_TYPE, VNATriggerType.LEV),
+            (Parameter.TRIGGER_SLOPE, VNATriggerSlope.POS),
         ],
     )
     def test_set_parameter_method(
@@ -168,6 +174,18 @@ class TestE5080B:
             assert e5080b.settings.rf_on == value
         if parameter == Parameter.FORMAT_BORDER:
             assert e5080b.settings.format_border == value
+        if parameter == Parameter.SWEEP_TIME:
+            assert e5080b.settings.sweep_time == value
+        if parameter == Parameter.SWEEP_TIME_AUTO:
+            assert e5080b.settings.sweep_time_auto == value
+        if parameter == Parameter.TRIGGER_SOURCE:
+            assert e5080b.settings.trigger_source == value
+        if parameter == Parameter.SWEEP_GROUP_COUNT:
+            assert e5080b.settings.sweep_group_count == value
+        if parameter == Parameter.TRIGGER_TYPE:
+            assert e5080b.settings.trigger_type == value
+        if parameter == Parameter.TRIGGER_SLOPE:
+            assert e5080b.settings.trigger_slope == value
 
     def test__clear_averages(
             self,
@@ -217,6 +235,12 @@ class TestE5080B:
             (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
             (Parameter.RF_ON, False),
             (Parameter.OPERATION_STATUS, 0),
+            (Parameter.SWEEP_TIME, 50),
+            (Parameter.SWEEP_TIME_AUTO, False),
+            (Parameter.TRIGGER_SOURCE, VNATriggerSource.IMM),
+            (Parameter.SWEEP_GROUP_COUNT, 150),
+            (Parameter.TRIGGER_TYPE, VNATriggerType.EDGE),
+            (Parameter.TRIGGER_SLOPE,VNATriggerSlope.POS),
         ],
     )
     def test_get_parameter_method(
@@ -243,6 +267,12 @@ class TestE5080B:
         Parameter.FORMAT_BORDER:        "format_border",
         Parameter.RF_ON:                "rf_on",
         Parameter.OPERATION_STATUS:     "operation_status",
+        Parameter.SWEEP_TIME:           "sweep_time",
+        Parameter.SWEEP_TIME_AUTO:       "sweep_time_auto",
+        Parameter.TRIGGER_SOURCE:        "trigger_source",
+        Parameter.SWEEP_GROUP_COUNT:     "sweep_group_count",
+        Parameter.TRIGGER_SLOPE:     "trigger_slope",
+        Parameter.TRIGGER_TYPE:     "trigger_type",
     }
         raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
         getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
@@ -376,13 +406,19 @@ class TestE5080B:
             (Parameter.FORMAT_BORDER, VNAFormatBorder.NORM, "format_border"),
             (Parameter.SOURCE_POWER, -10, "source_power"),
             (Parameter.RF_ON, True, "rf_on"),
+            (Parameter.SWEEP_TIME, 5, "sweep_time"),
+            (Parameter.SWEEP_TIME_AUTO, True, "sweep_time_auto"),
+            (Parameter.TRIGGER_SOURCE, VNATriggerSource.MAN, "trigger_source"),
+            (Parameter.SWEEP_GROUP_COUNT, 20000, "sweep_group_count"),
+            (Parameter.TRIGGER_SLOPE, VNATriggerSlope.POS, "trigger_slope"),
+            (Parameter.TRIGGER_TYPE, VNATriggerType.EDGE, "trigger_type"),
         ],
     )
     def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):
         """Test the initial setup when sweep_type is not 'SEGM'."""
         e5080b.reset()
         e5080b.set_parameter(parameter=parameter, value=value)
-        e5080b.set_parameter(Parameter.SWEEP_TYPE, "cw")
+        e5080b.set_parameter(Parameter.SWEEP_TYPE, VNASweepTypes.CW)
         e5080b.device.reset_mock()
         e5080b.initial_setup()
         getattr(e5080b.device, method).assert_called_once_with(value)
@@ -412,6 +448,12 @@ class TestE5080B:
         device_mock.return_value.format_border = MagicMock()
         device_mock.return_value.source_power = MagicMock()
         device_mock.return_value.rf_on = MagicMock()
+        device_mock.return_value.sweep_time = MagicMock()
+        device_mock.return_value.sweep_time_auto = MagicMock()
+        device_mock.return_value.trigger_source = MagicMock()
+        device_mock.return_value.sweep_group_count = MagicMock()
+        device_mock.return_value.trigger_slope = MagicMock()
+        device_mock.return_value.trigger_type = MagicMock()
         controller_instance.connect()
         controller_instance.initial_setup()
 
@@ -477,3 +519,55 @@ def test_wait_for_averaging_raises_timeout(monkeypatch, e5080b):
         e5080b._wait_for_averaging(timeout=1.0)
 
     assert "Timeout of 1.0 seconds exceeded" in str(exc.value)
+
+def test_update_settings(e5080b: E5080B):
+    """Test that update_settings pulls values from device and sets settings correctly."""
+    # Map of attribute name on device → expected value to be returned
+    expected_device_values = {
+        "start_freq": 1e6,
+        "stop_freq": 2e6,
+        "center_freq": 1.5e6,
+        "span": 1e6,
+        "cw": 1.2e6,
+        "points": 201,
+        "source_power": -10.0,
+        "if_bandwidth": 5e3,
+        "sweep_type": VNASweepTypes.LIN,
+        "sweep_mode": VNASweepModes.CONT,
+        "sweep_time": 0.01,
+        "sweep_time_auto": True,
+        "averages_enabled": True,
+        "averages_count": 8,
+        "scattering_parameter": VNAScatteringParameters.S21,
+        "format_border": VNAFormatBorder.NORM,
+        "rf_on": False,
+        "operation_status": 256,
+        "trigger_source": VNATriggerSource.EXT,
+        "sweep_group_count": 300,
+        "trigger_type": VNATriggerType.EDGE,
+        "trigger_slope": VNATriggerSource.EXT,
+    }
+
+    # Set up the device.get() return values accordingly
+    for attr, val in expected_device_values.items():
+        getattr(e5080b.device, attr).get.return_value = val
+
+    # Act
+    e5080b.update_settings()
+
+    # Map device attribute name to settings attribute name (if different)
+    remap = {
+        "cw": "cw_frequency",
+        "points": "number_points",
+        "averages_count": "number_averages",
+        "start_freq": "frequency_start",
+        "stop_freq": "frequency_stop",
+        "center_freq": "frequency_center",
+        "span": "frequency_span"
+    }
+
+    # Assert each setting was updated
+    for attr, expected in expected_device_values.items():
+        settings_attr = remap.get(attr, attr)
+        actual = getattr(e5080b.settings, settings_attr)
+        assert actual == expected, f"Expected {settings_attr}={expected}, got {actual}"
