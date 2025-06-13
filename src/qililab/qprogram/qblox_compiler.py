@@ -156,6 +156,7 @@ class QbloxCompiler:
             SetOffset: self._handle_set_offset,
             SetMarkers: self._handle_set_markers,
             Wait: self._handle_wait,
+            WaitTrigger: self._handle_wait_trigger,
             Sync: self._handle_sync,
             Measure: self._handle_measure,
             Acquire: self._handle_acquire,
@@ -494,7 +495,9 @@ class QbloxCompiler:
         """
 
         if self._buses[bus].upd_param_instruction_pending:
-            if 4 < duration < 8:  # you cannot play an update param and then a wait bc both have a minimum of 4
+            if (
+                4 <= duration and duration <= 8
+            ):  # you cannot play an update param and then a wait bc both have a minimum of 4
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
             else:
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
@@ -543,7 +546,9 @@ class QbloxCompiler:
         """
 
         if self._buses[bus].upd_param_instruction_pending:
-            if 4 < duration < 8:  # you cannot play an update param and then a wait bc both have a minimum of 4
+            if (
+                4 <= duration and duration <= 8
+            ):  # you cannot play an update param and then a wait bc both have a minimum of 4
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
                 self._buses[bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.WaitTrigger(address=ext_trigger_address(), wait_time=4)
@@ -583,11 +588,11 @@ class QbloxCompiler:
 
         # Sync all other buses with WaitSync
         for sync_bus in self._buses:
-            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.WaitSync(wait_time=4))
+            self._buses[sync_bus].qpy_block_stack[-1].append_component(component=QPyInstructions.WaitSync(wait_time=4))
 
             # After wait sync reset static duration
             self._buses[sync_bus].marked_for_sync = False
-            self._buses[bus].static_duration = 0
+            self._buses[sync_bus].static_duration = 0
 
     def _handle_sync(self, element: Sync, delay: bool = False):
         # Get the buses involved in the sync operation.
