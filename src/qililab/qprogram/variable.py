@@ -19,7 +19,7 @@ from uuid import UUID, uuid4
 
 from qililab.yaml import yaml
 
-
+#TODO: Allow flattening of the cst otherwise it wont work
 @yaml.register_class
 class Domain(Enum):
     """Domain class."""
@@ -61,6 +61,30 @@ class Variable:
 
     def __eq__(self, other):
         return other is not None and isinstance(other, Variable) and self._uuid == other._uuid
+    
+    def __add__(self, other):
+        return VariableExpression(self, '+', other)
+
+    def __radd__(self, other):
+        return VariableExpression(other, '+', self)
+
+    def __sub__(self, other):
+        return VariableExpression(self, '-', other)
+
+    def __rsub__(self, other):
+        return VariableExpression(other, '-', self)
+
+    def __mul__(self, other):
+        return VariableExpression(self, '*', other)
+
+    def __rmul__(self, other):
+        return VariableExpression(other, '*', self)
+
+    def __truediv__(self, other):
+        return VariableExpression(self, '/', other)
+
+    def __rtruediv__(self, other):
+        return VariableExpression(other, '/', self)
 
     @property
     def uuid(self):
@@ -116,3 +140,83 @@ class FloatVariable(Variable, float):  # type: ignore
 
     def __init__(self, label: str = "", domain: Domain = Domain.Scalar):
         Variable.__init__(self, label, domain)
+
+@yaml.register_class
+class VariableExpression(Variable):
+    """An expression combining Variables and/or constants."""
+
+    def __init__(self, left, operator: str, right):
+        self.left = left
+        self.operator = operator
+        self.right = right
+        super().__init__(label="", domain=self._infer_domain(left, right))
+
+    def _infer_domain(self, left, right):
+        # Prefer left's domain; fallback to right if needed
+        if isinstance(left, Variable):
+            return left.domain
+        elif isinstance(right, Variable):
+            return right.domain
+        raise ValueError("Cannot infer domain from constants.")
+
+    def __repr__(self):
+        return f"({self.left} {self.operator} {self.right})"
+
+    def __add__(self, other):
+        return VariableExpression(self, '+', other)
+
+    def __radd__(self, other):
+        return VariableExpression(other, '+', self)
+
+    def __sub__(self, other):
+        return VariableExpression(self, '-', other)
+
+    def __rsub__(self, other):
+        return VariableExpression(other, '-', self)
+
+    def __mul__(self, other):
+        return VariableExpression(self, '*', other)
+
+    def __rmul__(self, other):
+        return VariableExpression(other, '*', self)
+
+    def __truediv__(self, other):
+        return VariableExpression(self, '/', other)
+
+    def __rtruediv__(self, other):
+        return VariableExpression(other, '/', self)
+        
+    def extract_variables(self):
+        """Recursively extract all Variable instances used in this expression."""
+
+        def _collect(expr):
+            if isinstance(expr, VariableExpression):
+                result = _collect(expr.left)
+                if result is not None:
+                    return result
+                return _collect(expr.right)
+            elif isinstance(expr, Variable):
+                return expr
+            # ignore constants like int, float, etc.
+            else:
+                pass
+        return _collect(self)
+
+    
+    def extract_constants(self):
+        """Recursively extract all Variable instances used in this expression."""
+
+        def _collect(expr):
+            if isinstance(expr, VariableExpression):
+            # if isinstance(expr, IntVariable) or isinstance(expr, FloatVariable):
+                result = _collect(expr.left)
+                if result is not None:
+                    return result
+                return _collect(expr.right)
+            elif isinstance(expr, int) or isinstance(expr, float):
+                return expr
+            else:
+                pass
+
+        return _collect(self)
+
