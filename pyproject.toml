@@ -30,6 +30,8 @@ dependencies = [
     "pandas==1.5.3",
     "papermill>=2.6.0",
     "psycopg2-binary>=2.9.10",
+    "pydantic>=2.11.5",
+    "pydantic-yaml>=1.6.0a1",
     "pyvisa-py>=0.7.2",
     "qblox-instruments==0.14.2",
     "qcodes>=0.51.0",
