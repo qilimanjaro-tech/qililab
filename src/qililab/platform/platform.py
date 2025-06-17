@@ -1407,7 +1407,9 @@ class Platform:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
         """
         # Compile pulse schedule
-        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpilation_config)
+        programs, final_layout, needed_measurement_reorder = self.compile(  # type: ignore
+            program, num_avg, repetition_duration, num_bins, transpilation_config
+        )
 
         # Upload pulse schedule
         for bus_alias in programs:
@@ -1445,12 +1447,14 @@ class Platform:
             result = results[0]
 
         if isinstance(program, Circuit):
-            result = self._order_result(result, program, final_layout)
+            result = self._order_result(result, program, final_layout, needed_measurement_reorder)
 
         return result
 
     @staticmethod
-    def _order_result(result: Result, circuit: Circuit, final_layout: list[int] | None) -> Result:
+    def _order_result(
+        result: Result, circuit: Circuit, final_layout: list[int] | None, needed_measurement_reorder: list[dict] | None
+    ) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
         Finds the absolute order of each measurement for each qubit and its corresponding key in the
@@ -1463,6 +1467,7 @@ class Platform:
             circuit (Circuit): Qibo circuit being executed
             final_layouts (list[int], optional): Final layout of the original logical qubits in the physical circuit:
                 [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
+            needed_measurement_reorder (list[dict] | None): Needed re-order of measurements for the results.
 
         Returns:
             Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue.
@@ -1474,8 +1479,6 @@ class Platform:
         qubits_m = {}
         order = {}
         # iterate over qubits measured in same order as they appear in the circuit
-        # TODO: You need to check where each measurement is, since SWAPs can be after a measurement...
-        # FIXME: In the meanwhile do it asuming the Measurement is the last gate for each qubit
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
@@ -1496,13 +1499,22 @@ class Platform:
         for qblox_result in result.qblox_raw_results:
             measurement = qblox_result["measurement"]
             physical_qubit = qblox_result["qubit"]
-            # You need to check the transpiled circuit and undo the SWAPs to get the final measurement_layout[physical_qubit, measurement]
+            # TODO: You need to check the transpiled circuit and undo the SWAPs to get the final measurement_layout[physical_qubit, measurement]
             # (Notice the as a function of the measurment, since it can depend on a SWAP between two measurmenets...)
             original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
 
             # TODO:Check this is correct, or how it works with multiple measurements per qubit:
-            original_measure_num = order[original_logical_qubit, measurement]
-            results[original_measure_num] = qblox_result
+            # Fallback to existing logic if needed_measurement_reorder is None or no raw results
+            if not needed_measurement_reorder:  # No data to order
+                original_measure_num = order[original_logical_qubit, measurement]
+                results[original_measure_num] = qblox_result
+            else:
+                # If needed_measurement_reorder is provided, use it to find the original measurement number
+                for reorder_info in needed_measurement_reorder:
+                    if reorder_info["physical_qubit"] == physical_qubit and reorder_info["measurement"] == measurement:
+                        original_measure_num = order[original_logical_qubit, reorder_info["logical_measurement"]]
+                        results[original_measure_num] = qblox_result
+                        break
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
@@ -1513,7 +1525,7 @@ class Platform:
         repetition_duration: int,
         num_bins: int,
         transpilation_config: DigitalTranspilationConfig | None = None,
-    ) -> tuple[dict[str, list[QpySequence]], list[int] | None]:
+    ) -> tuple[dict[str, list[QpySequence]], list[int] | None, list[dict] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
@@ -1545,9 +1557,10 @@ class Platform:
                 Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
-            tuple[dict, list[int] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
-                and the value is the assembly compilation (``list``)), and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
-                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
+            tuple[dict, list[int] | None, list[dict] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
+                and the value is the assembly compilation (``list``)), its corresponding final layout (Initial Re-mapping + SWAPs routing) of
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping),
+                and the needed measurement re-order information (list of dicts, or None).
 
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
@@ -1558,11 +1571,14 @@ class Platform:
 
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
-            pulse_schedule, final_layout = transpiler.transpile_circuit(program, transpilation_config)
+            pulse_schedule, final_layout, needed_measurement_reorder = transpiler.transpile_circuit(  # type: ignore
+                program, transpilation_config
+            )
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
             final_layout = None
+            needed_measurement_reorder = None
 
         else:
             raise ValueError(
@@ -1591,7 +1607,7 @@ class Platform:
             pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
         )
 
-        return compiled_programs, final_layout
+        return compiled_programs, final_layout, needed_measurement_reorder
 
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
         bus = self.get_element(alias=alias)
@@ -1605,7 +1621,14 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True, bus_mapping: dict[str, str] | None = None):
+    def draw(
+        self,
+        qprogram: QProgram,
+        time_window: int | None = None,
+        averages_displayed: bool = False,
+        acquisition_showing: bool = True,
+        bus_mapping: dict[str, str] | None = None,
+    ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 
         Args:
