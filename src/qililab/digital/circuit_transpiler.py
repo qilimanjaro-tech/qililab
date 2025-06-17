@@ -169,7 +169,7 @@ class CircuitTranspiler:
 
         Returns:
             tuple[PulseSchedule, list[int] | None, list[dict] | None]: Pulse schedule and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
-                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping), and the original measurement order.
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping), and the needed measurement re-order.
         """
         # Default values:
         if transpilation_config is None:
@@ -178,17 +178,17 @@ class CircuitTranspiler:
         # Unpack dataclass attributes:
         routing, placer, router, routing_iterations, optimize = transpilation_config._attributes_ordered
         final_layout: list[int] | None
-        original_measurement_order: list[dict] | None  # Initialize
+        nedeed_measurement_reorder: list[dict] | None  # Initialize
 
         # Routing stage;
         if routing:
-            circuit_gates, nqubits, final_layout, original_measurement_order = self.route_circuit(
+            circuit_gates, nqubits, final_layout, nedeed_measurement_reorder = self.route_circuit(
                 circuit, placer, router, routing_iterations
             )
         else:
             circuit_gates, nqubits = circuit.queue, circuit.nqubits
             final_layout = None  # No specific layout if not routing
-            original_measurement_order = None  # No measurement order if not routing
+            nedeed_measurement_reorder = None  # No measurement order if not routing
 
         # Optimze qibo gates, cancelling redundant gates:
         if optimize:
@@ -207,7 +207,7 @@ class CircuitTranspiler:
         # Pulse schedule stage:
         pulse_schedule = self.gates_to_pulses(circuit_gates)
 
-        return pulse_schedule, final_layout, original_measurement_order
+        return pulse_schedule, final_layout, nedeed_measurement_reorder
 
     def route_circuit(
         self,
@@ -270,7 +270,7 @@ class CircuitTranspiler:
 
         Returns:
             tuple[list[Gate], int, list[int], list[dict]]: List of gates of the routed circuit, number of qubits in it, its corresponding final layout (Initial
-                Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...], and the original measurement order.
+                Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...], and the needed measurement re-order.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -279,9 +279,9 @@ class CircuitTranspiler:
         topology = nx.Graph(coupling_map if coupling_map is not None else self.settings.topology)
         circuit_router = CircuitRouter(topology, placer, router)
 
-        circuit, final_layout, original_measurement_order = circuit_router.route(circuit, iterations)
+        circuit, final_layout, needed_measurement_reorder = circuit_router.route(circuit, iterations)
 
-        return circuit.queue, circuit.nqubits, final_layout, original_measurement_order
+        return circuit.queue, circuit.nqubits, final_layout, needed_measurement_reorder
 
     @staticmethod
     def optimize_gates(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:

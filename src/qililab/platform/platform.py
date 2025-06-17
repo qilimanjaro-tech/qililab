@@ -1407,7 +1407,7 @@ class Platform:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
         """
         # Compile pulse schedule
-        programs, final_layout, original_measurement_order = self.compile(  # type: ignore
+        programs, final_layout, needed_measurement_reorder = self.compile(  # type: ignore
             program, num_avg, repetition_duration, num_bins, transpilation_config
         )
 
@@ -1447,13 +1447,13 @@ class Platform:
             result = results[0]
 
         if isinstance(program, Circuit):
-            result = self._order_result(result, program, final_layout, original_measurement_order)
+            result = self._order_result(result, program, final_layout, needed_measurement_reorder)
 
         return result
 
     @staticmethod
     def _order_result(
-        result: Result, circuit: Circuit, final_layout: list[int] | None, original_measurement_order: list[dict] | None
+        result: Result, circuit: Circuit, final_layout: list[int] | None, needed_measurement_reorder: list[dict] | None
     ) -> Result:
         """Order the results of the execution as they are ordered in the input circuit.
 
@@ -1467,68 +1467,13 @@ class Platform:
             circuit (Circuit): Qibo circuit being executed
             final_layouts (list[int], optional): Final layout of the original logical qubits in the physical circuit:
                 [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
-            original_measurement_order (list[dict] | None): Original order of measurements in the circuit.
+            needed_measurement_reorder (list[dict] | None): Needed re-order of measurements for the results.
 
         Returns:
             Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue.
         """
         if not isinstance(result, QbloxResult):
             raise NotImplementedError("Result ordering is only implemented for qblox results")
-
-        # THIS WILL NEED A FEW IMPROVEMENTS:
-        #
-        # if original_measurement_order is not None and result.qblox_raw_results:
-        #     logger.info("Using provided original_measurement_order to order results.")
-        #     # Build a lookup for raw results: (physical_qubit, physical_measurement_index) -> raw_result_dict
-        #     raw_results_lookup = {(res["qubit"], res["measurement"]): res for res in result.qblox_raw_results}
-
-        #     ordered_raw_results = []
-        #     expected_num_measurements = len(original_measurement_order)
-        #     found_count = 0
-
-        #     for i, order_info in enumerate(original_measurement_order):
-        #         # Assuming order_info is a dict like {'physical_qubit': int, 'physical_measurement_index': int}
-        #         # These keys directly point to the physical acquisition data.
-        #         phys_q = order_info.get("physical_qubit")
-        #         phys_m_idx = order_info.get("physical_measurement_index")
-
-        #         if phys_q is None or phys_m_idx is None:
-        #             logger.error(
-        #                 f"Invalid entry in original_measurement_order at index {i}: {order_info}. "
-        #                 "Required keys 'physical_qubit' and 'physical_measurement_index' not found or are None. Skipping."
-        #             )
-        #             # To maintain length, one might append a placeholder or error marker here if necessary.
-        #             # For now, we log and continue, which might lead to a shorter list if entries are invalid.
-        #             continue
-
-        #         key_to_find = (phys_q, phys_m_idx)
-        #         if key_to_find in raw_results_lookup:
-        #             ordered_raw_results.append(raw_results_lookup[key_to_find])
-        #             found_count += 1
-        #         else:
-        #             logger.warning(
-        #                 f"Measurement for physical_qubit {phys_q}, physical_measurement_index {phys_m_idx} "
-        #                 f"(from original_measurement_order index {i}, mapping to original logical qubit {order_info.get('original_logical_qubit', 'N/A')}) "
-        #                 "not found in qblox_raw_results. Result array may be incomplete or misordered."
-        #             )
-        #             # If a specific measurement is missing, it could indicate an issue upstream (e.g., transpiler or hardware).
-        #             # Depending on strictness, one might add a placeholder.
-
-        #     if found_count != expected_num_measurements:
-        #         logger.warning(
-        #             f"Successfully ordered {found_count} measurements, but original_measurement_order specified {expected_num_measurements}. "
-        #             "Some measurements may be missing from the final ordered list."
-        #         )
-
-        #     if (
-        #         expected_num_measurements > 0 or not result.qblox_raw_results
-        #     ):  # Apply if order was specified or if no raw results to begin with
-        #         result.qblox_raw_results = ordered_raw_results
-        #     return result
-
-        # Fallback to existing logic if original_measurement_order is None or no raw results
-        if not result.qblox_raw_results:  # No data to order
-            return result
 
         # register the overall order of all qubit measurements.
         qubits_m = {}
@@ -1559,8 +1504,17 @@ class Platform:
             original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
 
             # TODO:Check this is correct, or how it works with multiple measurements per qubit:
-            original_measure_num = order[original_logical_qubit, measurement]
-            results[original_measure_num] = qblox_result
+            # Fallback to existing logic if needed_measurement_reorder is None or no raw results
+            if not needed_measurement_reorder:  # No data to order
+                original_measure_num = order[original_logical_qubit, measurement]
+                results[original_measure_num] = qblox_result
+            else:
+                # If needed_measurement_reorder is provided, use it to find the original measurement number
+                for reorder_info in needed_measurement_reorder:
+                    if reorder_info["physical_qubit"] == physical_qubit and reorder_info["measurement"] == measurement:
+                        original_measure_num = order[original_logical_qubit, reorder_info["logical_measurement"]]
+                        results[original_measure_num] = qblox_result
+                        break
 
         return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
@@ -1606,7 +1560,7 @@ class Platform:
             tuple[dict, list[int] | None, list[dict] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
                 and the value is the assembly compilation (``list``)), its corresponding final layout (Initial Re-mapping + SWAPs routing) of
                 the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping),
-                and the original measurement order information (list of dicts, or None).
+                and the needed measurement re-order information (list of dicts, or None).
 
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
@@ -1617,14 +1571,14 @@ class Platform:
 
         if isinstance(program, Circuit):
             transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
-            pulse_schedule, final_layout, original_measurement_order = transpiler.transpile_circuit(  # type: ignore
+            pulse_schedule, final_layout, needed_measurement_reorder = transpiler.transpile_circuit(  # type: ignore
                 program, transpilation_config
             )
 
         elif isinstance(program, PulseSchedule):
             pulse_schedule = program
             final_layout = None
-            original_measurement_order = None
+            needed_measurement_reorder = None
 
         else:
             raise ValueError(
@@ -1653,7 +1607,7 @@ class Platform:
             pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
         )
 
-        return compiled_programs, final_layout, original_measurement_order
+        return compiled_programs, final_layout, needed_measurement_reorder
 
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
         bus = self.get_element(alias=alias)
@@ -1667,7 +1621,14 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True, bus_mapping: dict[str, str] | None = None):
+    def draw(
+        self,
+        qprogram: QProgram,
+        time_window: int | None = None,
+        averages_displayed: bool = False,
+        acquisition_showing: bool = True,
+        bus_mapping: dict[str, str] | None = None,
+    ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 
         Args:

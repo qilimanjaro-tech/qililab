@@ -83,14 +83,14 @@ class CircuitRouter:
 
         Returns:
             tuple [Circuit, list[int], list[dict]]: Routed circuit, its corresponding final layout (Initial Re-mapping + SWAPs routing) of
-                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...], and the original measurement order.
+                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...], and the needed measurement reorder.
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
             ValueError: If the final layout is not valid, i.e. a qubit is mapped to more than one physical qubit.
         """
         # Call the routing pipeline on the circuit, multiple times, and keep the best stochastic result:
-        best_transp_circ, least_swaps, best_final_layout, original_measurement_order = self._iterate_routing(
+        best_transp_circ, least_swaps, best_final_layout, needed_measurement_reorder = self._iterate_routing(
             self.pipeline, circuit, iterations
         )
 
@@ -105,7 +105,7 @@ class CircuitRouter:
         else:
             logger.info("No routing was done. Most probably due to routing iterations being 0.")
 
-        return best_transp_circ, best_final_layout, original_measurement_order
+        return best_transp_circ, best_final_layout, needed_measurement_reorder
 
     @staticmethod
     def _iterate_routing(
@@ -120,7 +120,7 @@ class CircuitRouter:
 
         Returns:
             tuple[Circuit, int | None, list[int], list[dict]]: Best routed circuit, least number of swaps required, the corresponding best final
-                layout of the original logical qubits in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...], and the original measurement order.
+                layout of the original logical qubits in the physical circuit: [Logical qubit in wire 1, Logical qubit in wire 2, ...], and the needed measurement re-order.
         """
         # We repeat the routing pipeline a few times, to keep the best stochastic result:
         least_swaps: int | None = None
@@ -166,7 +166,11 @@ class CircuitRouter:
 
         selected_final_layout = CircuitRouter._get_logical_qubit_of_each_wire(best_final_layout)
 
-        return best_transpiled_circ, least_swaps, selected_final_layout, original_measurement_order
+        needed_reorder_measurements = CircuitRouter._get_needed_reorder_measurements(
+            original_measurement_order, selected_final_layout, best_transpiled_circ, circuit
+        )
+
+        return best_transpiled_circ, least_swaps, selected_final_layout, needed_reorder_measurements
 
     @staticmethod
     def _apply_initial_remap(transpiled_circ: Circuit) -> Circuit:
@@ -212,6 +216,68 @@ class CircuitRouter:
                 f"The final layout: {final_layout} is not valid. i.e. a logical qubit is mapped to more than one physical qubit, or a key/value isn't a number. Try again, if the problem persists, try another placer/routing algorithm."
             )
         return [logical_q for logical_q, _ in sorted(final_layout.items(), key=lambda q_wire_in_1: q_wire_in_1[1])]
+
+    @staticmethod
+    def _get_needed_reorder_measurements(
+        original_measurement_order: list[dict], final_layout: list[int], final_circuit: Circuit, og_circuit: Circuit
+    ) -> list[dict]:
+        """Reorders the measurements in the circuit, according to the final layout and all SWAPs after the measurement.
+
+        Args:
+            original_measurement_order (list[dict]): Original measurement order of the circuit.
+            final_layout (list[int]): Final layout of the logical qubits in the physical circuit.
+            final_circuit (Circuit): Final circuit after routing.
+            og_circuit (Circuit): Original circuit before routing.
+
+        Returns:
+            list[dict]: List of dictionaries with the needed re-order measurements, in the format:
+                [{"original_qubit": original_qubit, "measurement_index": measurement_index, "gate_index": gate_index, "final_wire": final_wire}, ...]
+        """
+        # Map: logical qubit -> initial wire after routing
+        logical_to_wire = {lq: wire for wire, lq in enumerate(final_layout)}
+
+        needed_reorder = []
+        for meas in original_measurement_order:
+            logical_qubit = meas["original_qubit"]
+            gate_index = meas["gate_index"]
+            measurement_index = meas["measurement_index"]
+
+            # Start from the wire where this logical qubit is mapped after routing
+            wire = logical_to_wire[logical_qubit]
+
+            # Trace through SWAPs that occur after the measurement in the original circuit
+            for gate in og_circuit.queue[gate_index + 1 :]:
+                if isinstance(gate, gates.SWAP):
+                    q0, q1 = gate.target_qubits
+                    if wire == q0:
+                        wire = q1
+                    elif wire == q1:
+                        wire = q0
+
+            # Trace through SWAPs that occur after the measurement in the final circuit
+            # (Assume measurement order is preserved; otherwise, this can be refined)
+            for gate in final_circuit.queue:
+                # If the gate is a SWAP and occurs after the measurement (by index in original circuit)
+                if isinstance(gate, gates.SWAP):
+                    # If the gate has an 'original_gate_index' attribute, use it to check order
+                    if hasattr(gate, "original_gate_index") and gate.original_gate_index <= gate_index:
+                        continue
+                    q0, q1 = gate.target_qubits
+                    if wire == q0:
+                        wire = q1
+                    elif wire == q1:
+                        wire = q0
+
+            needed_reorder.append(
+                {
+                    "original_qubit": logical_qubit,
+                    "measurement_index": measurement_index,
+                    "gate_index": gate_index,
+                    "final_wire": wire,
+                }
+            )
+
+        return needed_reorder
 
     @staticmethod
     def _if_star_algorithms_for_nonstar_connectivity(connectivity: nx.Graph, placer: Placer, router: Router) -> bool:
