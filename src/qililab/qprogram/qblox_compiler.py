@@ -140,6 +140,7 @@ class BusCompilationInfo:
         self.add_dynamic_static_register: QPyProgram.Register = None
         # # Track the number of hardware loop over time
         # self.time_loop_counter: int = 0
+        self.variable_expression: bool = False
 
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
@@ -172,6 +173,7 @@ class QbloxCompiler:
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
         self._time_loop_counter: int = 0
+        # self._variable_expression: bool = False
 
     def compile(
         self,
@@ -502,7 +504,7 @@ class QbloxCompiler:
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Wait(wait_time=duration)
                 )
-                self._buses[element.bus].dynamic_durations.append(element.duration)
+                # self._buses[element.bus].dynamic_durations.append(element.duration)
             else:
                 #TODO: now this only supports CST + VARIABLE OR CST - VARIABLE
                 #TODO: what happens if called more than once in such a way !!!!!!!!!!! NEEDED FOR CRYOSCOPE
@@ -521,16 +523,29 @@ class QbloxCompiler:
                     self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Move(constant_duration, constant_duration_register))
                     self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
                     self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Sub(constant_duration_register, variable_duration, wait_register))
-                
-                self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-                self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_register))
-                
-                #TODO: not sure of that one
-                self._buses[element.bus].dynamic_durations.append(wait_register)
+                    self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                    self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_register))
 
+                    buses = set(self._buses)
+
+                    for bus in buses:
+                        if bus != element.bus:
+                            dynamic_duration_register = self._buses[bus].variable_to_register[self._buses[element.bus].dynamic_durations[0]]
+                            constant_duration_register = QPyProgram.Register()
+                            # variable_duration = self._buses[element.bus].variable_to_register[element.duration.extract_variables()] #TODO: NOT 100% sure of that
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Move(constant_duration, constant_duration_register))
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Sub(constant_duration_register, dynamic_duration_register, self._buses[bus].add_dynamic_static_register))
+                        self._buses[bus].variable_expression = True
+                        
+
+                #TODO: not sure of that one
+                # self._buses[element.bus].dynamic_durations.append(wait_register)
+                # self._buses[element.bus].duration_since_sync += constant_duration
 
             self._buses[element.bus].marked_for_dynamic_sync = True
             self._time_loop_counter+= 1
+
         else:
             convert = QbloxCompiler._convert_value(element)
             duration = convert(element.duration)
@@ -654,9 +669,7 @@ class QbloxCompiler:
         #  need smthg to track that a bus has dyanmic status (for now i am only thinkign abt teh case where one bus has a dynamic time)
         # will need to increment the name using the counter time_loop_counter
 
-        # Find the dynamic duration
-        
-
+        # Find the dynamic bus
         count_dynamic_bus = 0
         for bus in buses:
             if self._buses[bus].dynamic_durations:
@@ -667,35 +680,34 @@ class QbloxCompiler:
 
 
         for bus in buses:
+            dynamic_duration_register = self._buses[bus].variable_to_register[self._buses[dynamic_bus].dynamic_durations[0]] # retrieves the register of the time variable
             if self._buses[bus].dynamic_sync_counter == 0:
                 self._buses[bus].max_other_static_register = QPyProgram.Register()
                 self._buses[bus].add_dynamic_static_register = QPyProgram.Register()
                 self._buses[bus].bus_difference_register = QPyProgram.Register()
                 if not self._buses[bus].dynamic_durations:
                     self._buses[bus].max_other_register = QPyProgram.Register()
-                
-            
 
             #  Get the max static duration of the other buses
             max_bus = max(
                         (bus_other for bus_other in buses if bus_other != bus),
-                        key=lambda bus_other: self._buses[bus_other].static_duration
+                        key=lambda bus_other: self._buses[bus_other].duration_since_sync
                         )
-            max_static = self._buses[max_bus].static_duration
+            max_static = self._buses[max_bus].duration_since_sync
             self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Move(max_static, self._buses[bus].max_other_static_register))
 
             # Compute the duration of the dynamic bus
-            dynamic_duration_register = self._buses[bus].variable_to_register[self._buses[dynamic_bus].dynamic_durations[0]] # retrieves the register of the time variable
-            static_duration_dynamic_bus = self._buses[dynamic_bus].static_duration
-            self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Add(dynamic_duration_register, static_duration_dynamic_bus, self._buses[bus].add_dynamic_static_register))
-            self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
-
+            
+            static_duration_dynamic_bus = self._buses[dynamic_bus].duration_since_sync
 
 
             if self._buses[bus].dynamic_durations:
 
                 #TODO if the dynamic bus has the longest static duration, Q1ASM can be further simplified, no need for any comparison
                 #TODO consider the case where there is no static duration in this bus
+
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Add(dynamic_duration_register, static_duration_dynamic_bus, self._buses[bus].add_dynamic_static_register))
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
 
                 # Maximum duration of the other buses - Duration of this bus
                 self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Sub(self._buses[bus].max_other_static_register, self._buses[bus].add_dynamic_static_register,self._buses[bus].bus_difference_register))
@@ -704,14 +716,18 @@ class QbloxCompiler:
                 # Check the sign of the bus difference
                 self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Jlt(self._buses[bus].bus_difference_register, 2147483648, f"@dynamic_sync_{self._buses[bus].dynamic_sync_counter}"))
 
-                #Add the block to label to continue after the comparison
-                self._buses[bus].qpy_block_stack[-1]._append_block(QPyProgram.Block(name=f"after_dynamic_sync_{self._buses[bus].dynamic_sync_counter}"))
-
-                
-
             else:
-                
                 current_bus_duration_register = QPyProgram.Register()
+
+                if self._buses[bus].variable_expression is True:
+                    self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Add(self._buses[bus].add_dynamic_static_register, static_duration_dynamic_bus, self._buses[bus].add_dynamic_static_register))
+                    self._buses[bus].variable_expression = False
+                    
+
+                else:
+                    self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Add(dynamic_duration_register, static_duration_dynamic_bus, self._buses[bus].add_dynamic_static_register))
+                
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
 
                 # Check which of the other buses has the longest duration (this check is needed in the Q1ASM as at least one bus will have dynamic duration)
                 self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Sub(self._buses[bus].max_other_static_register, self._buses[bus].add_dynamic_static_register, self._buses[bus].max_other_register))
@@ -725,7 +741,7 @@ class QbloxCompiler:
                 self._buses[bus].qpy_block_stack[-1]._append_block(QPyProgram.Block(name=f"after_other_max_duration_{self._buses[bus].dynamic_sync_counter}"))
 
                 #  Move the static duration of the current bus to a register
-                static_duration_current_bus = self._buses[bus].static_duration
+                static_duration_current_bus = self._buses[bus].duration_since_sync
                 self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Move(static_duration_current_bus, current_bus_duration_register))
 
                 # This part is the same for the dynamic bus
@@ -736,8 +752,12 @@ class QbloxCompiler:
                 # Check the sign of the bus difference
                 self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Jlt(self._buses[bus].bus_difference_register, 2147483648, f"@dynamic_sync_{self._buses[bus].dynamic_sync_counter}"))
 
-                # Add the block to label to continue after the comparison
-                self._buses[bus].qpy_block_stack[-1]._append_block(QPyProgram.Block(name=f"after_dynamic_sync_{self._buses[bus].dynamic_sync_counter}"))
+
+            #Check if the wait is greater than -3
+            # self._buses[bus].qpy_block_stack[-1]._append_block(QPyInstructions.Jge(self._buses[bus].bus_difference_register, 2147483648, f"@negative_one_two_three_{self._buses[bus].dynamic_sync_counter}"))
+
+            # Add the block to label to continue after the comparison
+            self._buses[bus].qpy_block_stack[-1]._append_block(QPyProgram.Block(name=f"after_dynamic_sync_{self._buses[bus].dynamic_sync_counter}"))
 
 
                 # self._buses[bus].max_other_register = max_other_register
@@ -747,236 +767,6 @@ class QbloxCompiler:
 
             self._buses[bus].dynamic_sync_counter += 1
             # self._buses[bus].bus_difference_register = bus_difference_register
-
-
-
-            
-            
-            
-            
-            # add_dynamic_static = QPyInstructions.Add(dynamic_duration_register, static_duration_dynamic_bus, add_dynamic_static_register)
-            # self._buses[bus].qpy_block_stack[-1].append_component(component=add_dynamic_static)
-            # store_bus_difference = QPyProgram.Register()
-        
-            # if self._buses[bus].dynamic_durations:
-            #     to_substract = add_dynamic_static_register
-            #     # static_dur_non_dynamic_bus = self._buses[static_bus].static_duration
-            #     # to_add = static_dur_non_dynamic_bus
-
-            # else:
-            #     to_substract = self._buses[bus].static_duration
-            #     # to_add = add_dynamic_static_register
-
-            # # to_add_register = QPyProgram.Register()
-
-            # #TODO: this move isnt always useful - it shouldnt move a register - but if removed then the register operations following need to be modified
-
-            # #TODO: What happens if this max bus is also the dynamic one?
-            # # Retrieve the greatest static duration of the other buses
-            # # max_static = max(self._buses[bus_other].static_duration for bus_other in buses if bus != bus)
-            # max_bus = max(
-            #     (bus_other for bus_other in buses if bus_other != bus),
-            #     key=lambda bus_other: self._buses[bus_other].static_duration
-            # )
-            # max_static = self._buses[max_bus].static_duration
-
-            # max_other_bus_register = QPyProgram.Register() 
-            # if max_bus != dynamic_bus: #  if it is the same bus, the element for comparison is already added by the add_dynamic_static component
-
-            #     max_static_register = QPyProgram.Register()
-            #     max_static_component = QPyInstructions.Move(max_static, max_static_register)
-            #     self._buses[bus].qpy_block_stack[-1].append_component(component=max_static_component)
-
-                
-            #     max_other_bus_comparison_component = QPyInstructions.Sub(add_dynamic_static_register, max_static_register, max_other_bus_register)
-            #     self._buses[bus].qpy_block_stack[-1].append_component(component=max_other_bus_comparison_component)
-
-            #     if bus is not dynamic_bus:
-            #         self._buses[bus].max_other_bus_register = max_other_bus_register
-            #         self._buses[bus].add_dynamic_static_register = add_dynamic_static_register
-            #         comparison = QPyInstructions.Jlt(max_other_bus_register, 2147483648, "@max_other_bus")
-            #         self._buses[bus].qpy_block_stack[-1].append_component(component=comparison)
-
-            #         max_other_bus = QPyInstructions.Move(max_static_register, max_other_bus_register) # if the jlt is not met, the static is the biggest one
-            #         self._buses[bus].qpy_block_stack[-1].append_component(component=max_other_bus)
-
-            #         after_max_other_bus_block = QPyProgram.Block(name="after_max_other_bus")
-            #         self._buses[bus].qpy_block_stack[-1]._append_block(after_max_other_bus_block)
-
-                
-            # elif max_bus == dynamic_bus and bus ==dynamic_bus:
-            #     max_other_bus = QPyInstructions.Move(max_static, max_other_bus_register) # if the jlt is not met, the static is the biggest one
-            #     self._buses[bus].qpy_block_stack[-1].append_component(component=max_other_bus)
-            
-            # else:
-            #     max_other_bus_register = add_dynamic_static_register
-
-            #             #TODO: below block to be replaced with a sub i think - to test in hw
-            # nop = QPyInstructions.Nop()
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-            # # not_operation = QPyInstructions.Not(to_substract, store_bus_difference)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=not_operation)
-
-            # # add1 = QPyInstructions.Add(store_bus_difference, 1, store_bus_difference)
-
-            # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-            # # nop = QPyInstructions.Nop()
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-            # # not_operation = QPyInstructions.Not(to_substract, store_bus_difference)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=not_operation)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-            # # add1 = QPyInstructions.Add(store_bus_difference, 1, store_bus_difference)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=add1)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-
-            # bus_difference = QPyInstructions.Sub(max_other_bus_register, to_substract, store_bus_difference)
-            # self._buses[bus].qpy_block_stack[-1].append_component(component=bus_difference)
-            # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-
-            # # bus_difference = QPyInstructions.Add(store_bus_difference, max_other_bus_register, store_bus_difference)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=bus_difference)
-
-            # comparison = QPyInstructions.Jlt(store_bus_difference, 2147483648, "@dynamic_sync")
-            # self._buses[bus].qpy_block_stack[-1].append_component(component=comparison)
-
-            # dynamic_block = QPyProgram.Block(name="after_dynamic_sync")
-            # self._buses[bus].qpy_block_stack[-1]._append_block(dynamic_block)
-
-
-            # self._buses[bus].store_bus_difference = store_bus_difference
-
-
-            
-
-
-
-
-            # dynamic_duration_register = self._buses[bus].variable_to_register[self._buses[dynamic_bus].dynamic_durations[0]]
-            # static_duration_dynamic_bus = self._buses[dynamic_bus].static_duration
-            # add_dynamic_static_register = QPyProgram.Register()
-            # add_dynamic_static = QPyInstructions.Add(dynamic_duration_register, static_duration_dynamic_bus, add_dynamic_static_register)
-            # self._buses[bus].qpy_block_stack[-1].append_component(component=add_dynamic_static)
-            # store_bus_difference = QPyProgram.Register()
-        
-            # if self._buses[bus].dynamic_durations:
-            #     to_substract = add_dynamic_static_register
-            #     # static_dur_non_dynamic_bus = self._buses[static_bus].static_duration
-            #     # to_add = static_dur_non_dynamic_bus
-
-            # else:
-            #     to_substract = self._buses[bus].static_duration
-            #     # to_add = add_dynamic_static_register
-
-            # # to_add_register = QPyProgram.Register()
-
-            # #TODO: this move isnt always useful - it shouldnt move a register - but if removed then the register operations following need to be modified
-
-            # #TODO: What happens if this max bus is also the dynamic one?
-            # # Retrieve the greatest static duration of the other buses
-            # # max_static = max(self._buses[bus_other].static_duration for bus_other in buses if bus != bus)
-            # max_bus = max(
-            #     (bus_other for bus_other in buses if bus_other != bus),
-            #     key=lambda bus_other: self._buses[bus_other].static_duration
-            # )
-            # max_static = self._buses[max_bus].static_duration
-
-            # max_other_bus_register = QPyProgram.Register() 
-            # if max_bus != dynamic_bus: #  if it is the same bus, the element for comparison is already added by the add_dynamic_static component
-
-            #     max_static_register = QPyProgram.Register()
-            #     max_static_component = QPyInstructions.Move(max_static, max_static_register)
-            #     self._buses[bus].qpy_block_stack[-1].append_component(component=max_static_component)
-
-                
-            #     max_other_bus_comparison_component = QPyInstructions.Sub(add_dynamic_static_register, max_static_register, max_other_bus_register)
-            #     self._buses[bus].qpy_block_stack[-1].append_component(component=max_other_bus_comparison_component)
-
-            #     if bus is not dynamic_bus:
-            #         self._buses[bus].max_other_bus_register = max_other_bus_register
-            #         self._buses[bus].add_dynamic_static_register = add_dynamic_static_register
-            #         comparison = QPyInstructions.Jlt(max_other_bus_register, 2147483648, "@max_other_bus")
-            #         self._buses[bus].qpy_block_stack[-1].append_component(component=comparison)
-
-            #         max_other_bus = QPyInstructions.Move(max_static_register, max_other_bus_register) # if the jlt is not met, the static is the biggest one
-            #         self._buses[bus].qpy_block_stack[-1].append_component(component=max_other_bus)
-
-            #         after_max_other_bus_block = QPyProgram.Block(name="after_max_other_bus")
-            #         self._buses[bus].qpy_block_stack[-1]._append_block(after_max_other_bus_block)
-
-                
-            # elif max_bus == dynamic_bus and bus ==dynamic_bus:
-            #     max_other_bus = QPyInstructions.Move(max_static, max_other_bus_register) # if the jlt is not met, the static is the biggest one
-            #     self._buses[bus].qpy_block_stack[-1].append_component(component=max_other_bus)
-            
-            # else:
-            #     max_other_bus_register = add_dynamic_static_register
-
-            #     # is bus != dynamic_bus:
-            #     #     max_dynamic_register = QPyProgram.Register()
-            #     #     max_static_component = QPyInstructions.Move(max_static, max_static_register)
-            #     #     self._buses[bus].qpy_block_stack[-1].append_component(component=max_static_component)
-
-
-
-            # # move_to_add = QPyInstructions.Move(to_add, to_add_register)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=move_to_add)
-            
-
-
-
-            # #TODO: below block to be replaced with a sub i think - to test in hw
-            # nop = QPyInstructions.Nop()
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-            # # not_operation = QPyInstructions.Not(to_substract, store_bus_difference)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=not_operation)
-
-            # # add1 = QPyInstructions.Add(store_bus_difference, 1, store_bus_difference)
-
-            # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-            # # nop = QPyInstructions.Nop()
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-            # # not_operation = QPyInstructions.Not(to_substract, store_bus_difference)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=not_operation)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-            # # add1 = QPyInstructions.Add(store_bus_difference, 1, store_bus_difference)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=add1)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-
-            # bus_difference = QPyInstructions.Sub(max_other_bus_register, to_substract, store_bus_difference)
-            # self._buses[bus].qpy_block_stack[-1].append_component(component=bus_difference)
-            # self._buses[bus].qpy_block_stack[-1].append_component(component=nop)
-
-            # # bus_difference = QPyInstructions.Add(store_bus_difference, max_other_bus_register, store_bus_difference)
-            # # self._buses[bus].qpy_block_stack[-1].append_component(component=bus_difference)
-
-            # comparison = QPyInstructions.Jlt(store_bus_difference, 2147483648, "@dynamic_sync")
-            # self._buses[bus].qpy_block_stack[-1].append_component(component=comparison)
-
-            # dynamic_block = QPyProgram.Block(name="after_dynamic_sync")
-            # self._buses[bus].qpy_block_stack[-1]._append_block(dynamic_block)
-
-
-            # self._buses[bus].store_bus_difference = store_bus_difference
-
-
-            # # static_duration = self._buses[bus].static_duration
-            # # static_duration__max_other_bus = max(
-            # #                                     self._buses[other_bus].static_duration
-            # #                                     for other_bus in buses
-            # #                                     if other_bus != bus
-            #                                 )
-
-            # if self._buses[bus].dynamic_durations:
-            # #TODO: this should be much cleaner self._buses['drive'].variable_to_register[self._buses['drive'].dynamic_durations[0]] and do i always retrieve the first element?
-            #     # dynamic_duration_reg = dynamic_duration_register
-            #     # add_dynamic_static = QPyInstructions.Add(dynamic_duration_reg, static_duration, bin_register)
-            #     pass
-                
-            # else: # the bus only has a static component
-            #     move = QPyInstructions.Move(static_duration, bin_register) # should be static + dynamic if there is one
-            #     self._buses[bus].qpy_block_stack[-1].append_component(component=move)
-           
-
 
 
     def _handle_measure(self, element: Measure):
