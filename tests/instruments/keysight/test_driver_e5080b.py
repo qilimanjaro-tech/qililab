@@ -15,7 +15,7 @@ def _make_vnaks():
     driver = Driver_KeySight_E5080B(
         "Keysight_E5080B",
         address="TCPIP::192.168.0.10::INSTR",
-        pyvisa_sim_file="qililab.instruments.keysight:Keysight_E5080B.yaml"
+        pyvisa_sim_file="qililab.instruments.sims:Keysight_E5080B.yaml"
     )
     yield driver
     driver.close()
@@ -127,3 +127,4 @@ def test_get_frequencies_calls_format_and_returns_array(vnaks, monkeypatch):
     # - output is a numpy array of the returned freqs
     assert isinstance(out, np.ndarray)
     assert np.allclose(out, freqs)
+    
