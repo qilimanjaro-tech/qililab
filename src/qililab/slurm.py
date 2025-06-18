@@ -20,7 +20,7 @@ from IPython.core.magic import needs_local_scope, register_cell_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from submitit import AutoExecutor
 
-from qililab.config import logger
+from qililab.logging import logger
 
 num_files_to_keep = 500  # needs to be a multiple of 4 and 5
 

@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Settings class."""
+from .controller_settings import ConnectionSettings, ConnectionType, ControllerSettings
+from .qdevil_qdac2_controller_settings import QDevilQDAC2ControllerSettings
 
-from pydantic import BaseModel, ConfigDict
-
-
-# Base settings model
-class Settings(BaseModel):
-    """Base settings model for instruments."""
-
-    model_config = ConfigDict(validate_assignment=True, validate_default=True)
+__all__ = [
+    "ConnectionSettings",
+    "ConnectionType",
+    "ControllerSettings",
+    "QDevilQDAC2ControllerSettings",
+]

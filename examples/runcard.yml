@@ -1,0 +1,9 @@
+name: my_lab
+controllers:
+- type: qdac2_controller
+  settings:
+    alias: qdac2
+    connection:
+      type: tcp_ip
+      address: 168.0.0.1
+    reset: true

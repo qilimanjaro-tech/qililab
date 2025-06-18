@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Settings class."""
-
-from pydantic import BaseModel, ConfigDict
+from enum import Enum
 
 
-# Base settings model
-class Settings(BaseModel):
-    """Base settings model for instruments."""
-
-    model_config = ConfigDict(validate_assignment=True, validate_default=True)
+class ControllerType(str, Enum):
+    QBLOX_CLUSTER_CONTROLLER = "qblox_cluster_controller"
+    QBLOX_SPI_RACK_CONTROLLER = "qblox_spi_rack_controller"
+    QDEVIL_QDAC2_CONTROLLER = "qdac2_controller"
+    QUANTUM_MACHINES_CLUSTER_CONTROLLER = "quantum_machines_cluster_controller"
+    ROHDE_SCHWARZ_SG100_CONTROLLER = "sg100_controller"

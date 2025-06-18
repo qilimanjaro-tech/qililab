@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Settings class."""
+"""Driver for QDevil QDAC-II"""
 
-from pydantic import BaseModel, ConfigDict
+from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import QDac2
+
+from .device import Device
 
 
-# Base settings model
-class Settings(BaseModel):
-    """Base settings model for instruments."""
-
-    model_config = ConfigDict(validate_assignment=True, validate_default=True)
+class QDevilQDAC2Device(QDac2, Device):
+    """Typing class of the QDevil QDAC-II."""

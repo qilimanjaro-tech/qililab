@@ -12,13 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Settings class."""
 
-from pydantic import BaseModel, ConfigDict
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, Field
+
+from qililab.controllers.controller_type import ControllerType
+from qililab.settings.controllers import (
+    QDevilQDAC2ControllerSettings,
+)
 
 
-# Base settings model
-class Settings(BaseModel):
-    """Base settings model for instruments."""
+class QDevilQDAC2RuncardInstrumentController(BaseModel):
+    type: Literal[ControllerType.QDEVIL_QDAC2_CONTROLLER] = ControllerType.QDEVIL_QDAC2_CONTROLLER
+    settings: QDevilQDAC2ControllerSettings
 
-    model_config = ConfigDict(validate_assignment=True, validate_default=True)
+
+# Discriminated Union for instruments
+RuncardController = Annotated[
+    QDevilQDAC2RuncardInstrumentController,
+    Field(discriminator="type"),
+]

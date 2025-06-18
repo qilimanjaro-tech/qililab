@@ -12,13 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Settings class."""
+"""Instruments module"""
 
-from pydantic import BaseModel, ConfigDict
+from .device import Device
+from .qdevil_qdac2_device import QDevilQDAC2Device
 
-
-# Base settings model
-class Settings(BaseModel):
-    """Base settings model for instruments."""
-
-    model_config = ConfigDict(validate_assignment=True, validate_default=True)
+__all__ = ["Device", "QDevilQDAC2Device"]

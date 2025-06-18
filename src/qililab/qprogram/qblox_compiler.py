@@ -24,7 +24,7 @@ import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
 from qpysequence.constants import INST_MAX_WAIT
 
-from qililab.config import logger
+from qililab.logging import logger
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
