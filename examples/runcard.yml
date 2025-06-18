@@ -7,3 +7,13 @@ controllers:
       type: tcp_ip
       address: 168.0.0.1
     reset: true
+- type: qblox_cluster_controller
+  settings:
+    alias: cluster
+    connection:
+      type: tcp_ip
+      address: 168.0.0.1
+    reset: true
+    modules:
+      '0': QCM
+      '1': QRM

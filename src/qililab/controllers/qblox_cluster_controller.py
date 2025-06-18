@@ -16,30 +16,27 @@ from __future__ import annotations
 from qililab.controllers.controller import Controller
 from qililab.controllers.controller_factory import ControllerFactory
 from qililab.controllers.controller_type import ControllerType
-from qililab.controllers.devices import QDevilQDAC2Device
+from qililab.controllers.devices import QbloxClusterDevice
 from qililab.runcard.runcard_controllers import (
-    QDevilQDAC2RuncardController,
+    QbloxClusterRuncardController,
     RuncardController,
 )
-from qililab.settings.controllers import ConnectionType, QDevilQDAC2ControllerSettings
+from qililab.settings.controllers import QbloxClusterControllerSettings
 
 
-@ControllerFactory.register(ControllerType.QDEVIL_QDAC2_CONTROLLER)
-class QDevilQDAC2Controller(Controller[QDevilQDAC2Device, QDevilQDAC2ControllerSettings]):
+@ControllerFactory.register(ControllerType.QBLOX_CLUSTER_CONTROLLER)
+class QbloxClusterController(Controller[QbloxClusterDevice, QbloxClusterControllerSettings]):
     MAX_RAMPING_RATE: float = 2e7
 
     @classmethod
-    def get_default_settings(cls) -> QDevilQDAC2ControllerSettings:
-        return QDevilQDAC2ControllerSettings(alias="qdac2_controller")
+    def get_default_settings(cls) -> QbloxClusterControllerSettings:
+        return QbloxClusterControllerSettings(alias="qblox_cluster", modules={})
 
     def _initialize_device(self):
-        if self.settings.connection.type == ConnectionType.TCP_IP:
-            self.device = QDevilQDAC2Device(f"{self.name.value}", f"TCPIP::{self.address}::5025::SOCKET")
-        else:
-            self.device = QDevilQDAC2Device(f"{self.name.value}", f"ASRL/dev/{self.address}::INSTR")
+        self.device = QbloxClusterDevice(name=f"{self.settings.alias}", identifier=self.settings.connection.address)
 
     def to_runcard(self) -> RuncardController:
-        return QDevilQDAC2RuncardController(settings=self.settings)
+        return QbloxClusterRuncardController(settings=self.settings)
 
     def _get_voltage(self, channel: int):
         return self.device.channel(channel).dc_constant_V()

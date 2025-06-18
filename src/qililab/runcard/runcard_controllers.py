@@ -18,18 +18,21 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 from qililab.controllers.controller_type import ControllerType
-from qililab.settings.controllers import (
-    QDevilQDAC2ControllerSettings,
-)
+from qililab.settings.controllers import QbloxClusterControllerSettings, QDevilQDAC2ControllerSettings
 
 
-class QDevilQDAC2RuncardInstrumentController(BaseModel):
+class QDevilQDAC2RuncardController(BaseModel):
     type: Literal[ControllerType.QDEVIL_QDAC2_CONTROLLER] = ControllerType.QDEVIL_QDAC2_CONTROLLER
     settings: QDevilQDAC2ControllerSettings
 
 
+class QbloxClusterRuncardController(BaseModel):
+    type: Literal[ControllerType.QBLOX_CLUSTER_CONTROLLER] = ControllerType.QBLOX_CLUSTER_CONTROLLER
+    settings: QbloxClusterControllerSettings
+
+
 # Discriminated Union for instruments
 RuncardController = Annotated[
-    QDevilQDAC2RuncardInstrumentController,
+    QDevilQDAC2RuncardController | QbloxClusterRuncardController,
     Field(discriminator="type"),
 ]

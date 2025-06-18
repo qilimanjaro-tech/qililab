@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Instruments module"""
+"""Class Cluster"""
+
+from qblox_instruments.qcodes_drivers.cluster import Cluster
 
 from .device import Device
-from .qblox_cluster_device import QbloxClusterDevice
-from .qdevil_qdac2_device import QDevilQDAC2Device
 
-__all__ = ["Device", "QDevilQDAC2Device", "QbloxClusterDevice"]
+
+class QbloxClusterDevice(Cluster, Device):
+    """Typing class of the Qblox Cluster."""

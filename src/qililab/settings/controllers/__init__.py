@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from .controller_settings import ConnectionSettings, ConnectionType, ControllerSettings
+from .qblox_cluster_controller_settings import QbloxClusterControllerSettings
 from .qdevil_qdac2_controller_settings import QDevilQDAC2ControllerSettings
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "ConnectionType",
     "ControllerSettings",
     "QDevilQDAC2ControllerSettings",
+    "QbloxClusterControllerSettings",
 ]

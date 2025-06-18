@@ -12,10 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Instruments module"""
 
-from .device import Device
-from .qblox_cluster_device import QbloxClusterDevice
-from .qdevil_qdac2_device import QDevilQDAC2Device
+from typing import Annotated, Literal, Union
 
-__all__ = ["Device", "QDevilQDAC2Device", "QbloxClusterDevice"]
+from pydantic import BaseModel, Field
+
+
+class NoPort(BaseModel):
+    kind: Literal["none"] = "none"  # “single” instrument → no port data
+
+
+class IntPort(BaseModel):
+    kind: Literal["int"] = "int"
+    id: int  # e.g. “port 3” on a back-plane
+
+
+class ModulePort(BaseModel):
+    kind: Literal["module"] = "module"
+    module: int
+    port: int  # e.g. “slot 2, channel 5”
+
+
+# A self-describing union that Pydantic can validate/serialise
+Port = Annotated[Union[NoPort, IntPort, ModulePort], Field(discriminator="kind")]
