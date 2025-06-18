@@ -188,7 +188,8 @@ class QDevilQDac2(VoltageSource):
         in_port: int,
         out_port: int | None = None,
         offset_v: float | None = None,
-        delay_s: float = 0,
+        delay_us: float = 0,
+        sync_delay_s: float = 0,
         trigger_width: float = 1e-6,
     ):
         """Create a triggered pulse that sends another trigger at the end of the pulse.
@@ -204,7 +205,7 @@ class QDevilQDac2(VoltageSource):
             pulse_duration_us (int): _description_
             pulse_v (float): _description_
             offset_v (float | None, optional): _description_. Defaults to None.
-            delay_s (float, optional): _description_. Defaults to 0.
+            sync_delay_s (float, optional): _description_. Defaults to 0.
             trigger_width (float, optional): _description_. Defaults to 1e-6.
         """
         # Create the pulse sequence and upload as a dc list
@@ -213,17 +214,20 @@ class QDevilQDac2(VoltageSource):
         offset_ramp_up = np.linspace(offset_v, pulse_v, int(ramp_up_us / dwell_us))
         offset_ramp_down = np.linspace(pulse_v, offset_v, int(ramp_down_us / dwell_us))
         offset_pulse = np.ones(int(pulse_duration_us / dwell_us)) * pulse_v
-        volt_pulse = np.concatenate([offset_ramp_up, offset_pulse, offset_ramp_down])
+        pulse_delay = np.ones(int(delay_us / dwell_us)) * offset_v
+        volt_pulse = np.concatenate([offset_ramp_up, offset_pulse, offset_ramp_down, pulse_delay])
         volt_waveform = Arbitrary(samples=volt_pulse)
 
-        self.upload_voltage_list(volt_waveform, channel_id, dwell_us, delay_s)
+        self.upload_voltage_list(volt_waveform, channel_id, dwell_us, sync_delay_s)
 
         # Set triggers received to start (in) and sent at the end (out)
         self.set_in_external_trigger(channel_id, in_port)
         if out_port:
             self.set_out_external_trigger(channel_id, out_port, f"ext_{out_port}_ch_{channel_id}", trigger_width)
 
-    def upload_voltage_list(self, waveform: Waveform, channel_id: ChannelID, dwell_us: int = 1, delay_s: float = 0):
+    def upload_voltage_list(
+        self, waveform: Waveform, channel_id: ChannelID, dwell_us: int = 1, sync_delay_s: float = 0
+    ):
 
         if channel_id in self._cache_dc:
             raise ValueError(
@@ -233,7 +237,7 @@ class QDevilQDac2(VoltageSource):
         envelope = waveform.envelope()
         channel = self.device.channel(channel_id)
 
-        dc_list = channel.dc_list(voltages=list(envelope), dwell_s=dwell_us * 10e-6, delay_s=delay_s)
+        dc_list = channel.dc_list(voltages=list(envelope), dwell_s=dwell_us * 1e-6, delay_s=sync_delay_s)
         self._cache_dc[channel_id] = dc_list
 
     def set_in_external_trigger(self, channel_id: ChannelID, in_port: int):
@@ -318,13 +322,18 @@ class QDevilQDac2(VoltageSource):
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(0.0)
         if self._triggers:
-            self._triggers.close()
+            for trigger_name in self._triggers.keys():
+                self._triggers[trigger_name].close()
+        self.device.remove_traces()
+        self._cache_awg = {}
+        self._cache_dc = {}
 
     @check_device_initialized
     def reset(self):
         """Reset instrument. This will affect all channels."""
         if self._triggers:
-            self._triggers.close()
+            for trigger_name in self._triggers.keys():
+                self._triggers[trigger_name].close()
         self.device.reset()
 
     def _validate_channel(self, channel_id: ChannelID | None):
