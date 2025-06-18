@@ -15,7 +15,6 @@
 """QDevil QDAC-II Instrument"""
 
 from dataclasses import dataclass
-from pickle import NONE
 
 import numpy as np
 from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import List_Context, QDac2Trigger_Context
@@ -51,7 +50,7 @@ class QDevilQDac2(VoltageSource):
 
     settings: QDevilQDac2Settings
     device: QDevilQDac2Driver
-    _cache_aws: dict[int | str, bool] = {}  # noqa: RUF012
+    _cache_awg: dict[int | str, bool] = {}  # noqa: RUF012
     _cache_dc: dict[int | str, List_Context] = {}  # noqa: RUF012
     _triggers: dict[str, QDac2Trigger_Context] = {}  # noqa: RUF012
 
@@ -146,7 +145,7 @@ class QDevilQDac2(VoltageSource):
         """
         envelope = waveform.envelope()
         values = list(envelope)  # TODO: does np array work?
-        if channel_id in self._cache_aws:
+        if channel_id in self._cache_awg:
             raise ValueError(
                 f"Device {self.name} already has a waveform allocated to channel {channel_id}. Clear the cache before allocating a new waveform"
             )
@@ -157,7 +156,7 @@ class QDevilQDac2(VoltageSource):
             raise ValueError("Waveform amplitudes must be within [-1,1] range.")
         trace = self.device.allocate_trace(channel_id, len(values))
         trace.waveform(values)
-        self._cache_aws[channel_id] = True
+        self._cache_awg[channel_id] = True
 
     def play_awg(self, channel_id: ChannelID | None = None, clear_after: bool = True):
         """Plays a waveform for a given channel id. If no channel id is given, plays all waveforms stored in the cache.
@@ -238,25 +237,25 @@ class QDevilQDac2(VoltageSource):
         self._cache_dc[channel_id] = dc_list
 
     def set_in_external_trigger(self, channel_id: ChannelID, in_port: int):
-        if not channel_id in self._cache_dc.keys():
+        if channel_id not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
             )
         self._cache_dc[channel_id].start_on_external(in_port)
 
     def set_out_external_trigger(self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6):
-        if not channel_id in self._cache_dc.keys():
+        if channel_id not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
             )
-        if not str(trigger) in self._triggers.keys():
+        if str(trigger) not in self._triggers.keys():
             self._triggers[str(trigger)] = self._cache_dc[channel_id].end_marker()
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
     def clear_cache(self):
         """Clears the cache of the instrument"""
         self.device.remove_traces()  # TODO: this method should be run at initial setup if instrument is in awg mode
-        self._cache_aws = {}
+        self._cache_awg = {}
         self._cache_dc = {}
 
     def clear_trigger(self, trigger: str | None = None):
@@ -318,14 +317,14 @@ class QDevilQDac2(VoltageSource):
         for channel_id in self.dacs:
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(0.0)
-        if self._trigger:
-            self._trigger.close()
+        if self._triggers:
+            self._triggers.close()
 
     @check_device_initialized
     def reset(self):
         """Reset instrument. This will affect all channels."""
-        if self._trigger:
-            self._trigger.close()
+        if self._triggers:
+            self._triggers.close()
         self.device.reset()
 
     def _validate_channel(self, channel_id: ChannelID | None):
