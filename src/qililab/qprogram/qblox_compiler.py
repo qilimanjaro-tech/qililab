@@ -30,9 +30,11 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    LatchReset,
     Operation,
     Play,
     ResetPhase,
+    SetConditional,
     SetFrequency,
     SetGain,
     SetMarkers,
@@ -141,6 +143,7 @@ class QbloxCompiler:
             Parallel: self._handle_parallel,
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
+            LatchReset: self._handle_latch_rst,
             Loop: self._handle_loop,
             SetFrequency: self._handle_set_frequency,
             SetPhase: self._handle_set_phase,
@@ -154,6 +157,7 @@ class QbloxCompiler:
             Acquire: self._handle_acquire,
             Play: self._handle_play,
             Block: self._handle_block,
+            SetConditional: self._handle_conditional,
         }
 
         self._qprogram: QProgram
@@ -238,6 +242,10 @@ class QbloxCompiler:
         # Pre-processing: Set markers ON/OFF
         for bus in self._buses:
             mask = markers[bus] if markers is not None and bus in markers else "0000"
+            #TODO: very dirty code, 1 is the address, and replace the conditional statement
+            if bus.startswith("drive_q17"):
+                self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1,4),1)
+
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
             self._buses[bus].static_duration += 4
@@ -411,6 +419,13 @@ class QbloxCompiler:
     def _handle_reset_phase(self, element: ResetPhase):
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
+
+    def _handle_latch_rst(self, element: LatchReset):
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.LatchRst(wait_time=element.duration)
+        )
+        self._buses[element.bus].marked_for_sync = True
+        self._buses[element.bus].static_duration += element.duration
 
     def _handle_set_gain(self, element: SetGain):
         convert = QbloxCompiler._convert_value(element)
@@ -632,6 +647,22 @@ class QbloxCompiler:
         self._buses[element.bus].next_acquisition_index += 1
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
+
+    def _handle_conditional(self, element: SetConditional):
+        #TODO: add docstring
+        #TODO: mask should be assigned by the software
+        #TODO: this method shouldnt be accessed by the user, they should just do qp.measure and have the conditional called there
+        enable = element.enable
+        mask = element.mask
+        operator = element.operator
+        else_duration= element.else_duration
+        # mask = 2**(12-1) #get it from the runcard? - will need to be
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.SetCond(enable,mask,operator,else_duration)
+                )
+
+        # self._buses[element.bus].static_duration += duration
+        self._buses[element.bus].marked_for_sync = True
 
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()

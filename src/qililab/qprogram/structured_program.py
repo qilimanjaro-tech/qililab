@@ -46,6 +46,7 @@ class StructuredProgram:
         self._block_stack: deque[Block] = deque([self._body])
         self._variables: dict[Variable, VariableInfo] = {}
         self._buses: set[str] = set()
+        self._active_reset: list[tuple[str, str]] = []
 
     def _append_to_block_stack(self, block: Block):
         """Appends a block to the internal block stack.
@@ -89,6 +90,15 @@ class StructuredProgram:
             set[str]: A set of the names of the buses
         """
         return self._buses
+
+    @property
+    def active_reset(self) -> list[tuple[str, str]]:
+        #TODO: CHNAGE THE DOCSTRING, and wont always be a 1:1 or maybe yes but will need to be converted as such
+        """Get the buses.
+        Returns:
+            set[str]: A set of the names of the buses
+        """
+        return self._active_reset
 
     @property
     def variables(self) -> list[Variable]:
