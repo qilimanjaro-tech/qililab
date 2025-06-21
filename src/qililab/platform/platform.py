@@ -1077,7 +1077,7 @@ class Platform:
     def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
         sequences, acquisitions = output.sequences, output.acquisitions
         buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
-        involved_qubits = set()
+        qubit_indices = set()
         operation_point_on = os.environ.get("OPERATION_POINT_ON", "false").lower() in ("1", "true", "yes")
 
         for bus_alias, bus in buses.items():
@@ -1085,7 +1085,7 @@ class Platform:
                 match = re.search(r"_q(\d+)_", bus)
                 if match:
                     qubit_idx = int(match.group(1))
-                    involved_qubits.add(qubit_idx)
+                    qubit_indices.add(qubit_idx)
 
             if bus.distortions:
                 for distortion in bus.distortions:
@@ -1100,7 +1100,7 @@ class Platform:
 
         # placing qubits in operation point if operation point mode is on
         if operation_point_on:
-            for qubit_idx in involved_qubits:
+            for qubit_idx in qubit_indices:
                 flux_bus_alias = f"flux_q{qubit_idx}_bus"
                 flux_bus = self.get_element(alias=flux_bus_alias)
                 for idx, instrument in enumerate(flux_bus.instruments):
@@ -1152,7 +1152,7 @@ class Platform:
                     instrument.desync_sequencer(sequencer_id=int(channel))
                     # placing qubits out of operation point if operation point mode is on
                     if operation_point_on:
-                        for qubit_idx in involved_qubits:
+                        for qubit_idx in qubit_indices:
                             flux_bus_alias = f"flux_q{qubit_idx}_bus"
                             flux_bus = self.get_element(alias=flux_bus_alias)
                             for idx, instrument in enumerate(flux_bus.instruments):
@@ -1324,6 +1324,35 @@ class Platform:
             {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
             for sequences in sequences_per_qprogram
         ]
+        qubit_indices = {
+                int(match.group(1))
+                for bus_dict in buses_per_qprogram
+                for alias in bus_dict.keys()
+                if (match := re.search(r"_q(\d+)_", alias))
+            }
+
+        # setting qubits to operation point if this setting is on
+        operation_point_on = os.environ.get("OPERATION_POINT_ON", "false").lower() in ("1", "true", "yes")
+        if operation_point_on:
+            for qubit_idx in qubit_indices:
+                flux_bus_alias = f"flux_q{qubit_idx}_bus"
+                flux_bus = self.get_element(alias=flux_bus_alias)
+                for idx, instrument in enumerate(flux_bus.instruments):
+                    if isinstance(instrument, QbloxQCM):
+                        offset_channel = flux_bus.channels[idx]
+                        if offset_channel == 0:
+                            parameter = Parameter.OFFSET_OUT0
+                        if offset_channel == 1:
+                            parameter = Parameter.OFFSET_OUT1
+                        if offset_channel == 2:
+                            parameter = Parameter.OFFSET_OUT2
+                        if offset_channel == 3:
+                            parameter = Parameter.OFFSET_OUT3
+                        else:
+                            raise ValueError("Offset index out of bounds.")
+                        instrument.set_parameter(parameter=parameter,
+                                                 value=instrument.out_offsets[offset_channel])
+
         for qprogram_idx, buses in enumerate(buses_per_qprogram):
             for bus_alias, bus in buses.items():
                 if bus.distortions:
@@ -1384,6 +1413,26 @@ class Platform:
                 ):
                     if isinstance(instrument, QbloxModule):
                         instrument.desync_sequencer(sequencer_id=int(channel))
+        
+            if operation_point_on:
+                for qubit_idx in qubit_indices:
+                    flux_bus_alias = f"flux_q{qubit_idx}_bus"
+                    flux_bus = self.get_element(alias=flux_bus_alias)
+                    for idx, instrument in enumerate(flux_bus.instruments):
+                        if isinstance(instrument, QbloxQCM):
+                            offset_channel = flux_bus.channels[idx]
+                            if offset_channel == 0:
+                                parameter = Parameter.OFFSET_OUT0
+                            if offset_channel == 1:
+                                parameter = Parameter.OFFSET_OUT1
+                            if offset_channel == 2:
+                                parameter = Parameter.OFFSET_OUT2
+                            if offset_channel == 3:
+                                parameter = Parameter.OFFSET_OUT3
+                            else:
+                                raise ValueError("Offset index out of bounds.")
+                            instrument.set_parameter(parameter=parameter,
+                                                    value=0)
 
         return results
 
