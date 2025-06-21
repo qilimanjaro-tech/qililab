@@ -18,6 +18,7 @@ from ruamel.yaml import YAML
 
 from .platform import Platform
 from .settings import Runcard
+import os
 
 
 def save_platform(path: str, platform: Platform) -> str:
@@ -106,6 +107,9 @@ def build_platform(runcard: str | dict, new_drivers: bool = False) -> Platform:
         >>> platform.name
         galadriel
     """
+    if (environ_runcard := os.environ.get("ENVIRONMENT_RUNCARD")):
+        runcard = environ_runcard
+
     if not isinstance(runcard, (str, dict)):
         raise ValueError(
             f"Incorrect type for `runcard` argument in `build_platform()`. Expected (str | dict), got: {type(runcard)}"
