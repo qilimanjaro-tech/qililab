@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from pathlib import Path
 
 from ruamel.yaml import YAML
 
 from .platform import Platform
 from .settings import Runcard
-import os
 
 
 def save_platform(path: str, platform: Platform) -> str:
