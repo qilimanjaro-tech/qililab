@@ -24,11 +24,13 @@ import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
+import os
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
+from qililab.instruments.qblox.qblox_qcm import QbloxQCM
 from qm import generate_qua_script
 from ruamel.yaml import YAML
 
@@ -1075,7 +1077,16 @@ class Platform:
     def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
         sequences, acquisitions = output.sequences, output.acquisitions
         buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
+        involved_qubits = set()
+        operation_point_on = os.environ.get("OPERATION_POINT_ON", "false").lower() in ("1", "true", "yes")
+
         for bus_alias, bus in buses.items():
+            if operation_point_on:
+                match = re.search(r"_q(\d+)_", bus)
+                if match:
+                    qubit_idx = int(match.group(1))
+                    involved_qubits.add(qubit_idx)
+
             if bus.distortions:
                 for distortion in bus.distortions:
                     for waveform in sequences[bus_alias]._waveforms._waveforms:
@@ -1087,6 +1098,26 @@ class Platform:
                     print(str(sequence._program), file=sourceFile)
                     print(file=sourceFile)
 
+        # placing qubits in operation point if operation point mode is on
+        if operation_point_on:
+            for qubit_idx in involved_qubits:
+                flux_bus_alias = f"flux_q{qubit_idx}_bus"
+                flux_bus = self.get_element(alias=flux_bus_alias)
+                for idx, instrument in enumerate(flux_bus.instruments):
+                    if isinstance(instrument, QbloxQCM):
+                        offset_channel = flux_bus.channels[idx]
+                        if offset_channel == 0:
+                            parameter = Parameter.OFFSET_OUT0
+                        if offset_channel == 1:
+                            parameter = Parameter.OFFSET_OUT1
+                        if offset_channel == 2:
+                            parameter = Parameter.OFFSET_OUT2
+                        if offset_channel == 3:
+                            parameter = Parameter.OFFSET_OUT3
+                        else:
+                            raise ValueError("Offset index out of bounds.")
+                        instrument.set_parameter(parameter=parameter,
+                                                 value=instrument.out_offsets[offset_channel])
         # Upload sequences
         for bus_alias in sequences:
             sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
@@ -1119,6 +1150,25 @@ class Platform:
             for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                 if isinstance(instrument, QbloxModule):
                     instrument.desync_sequencer(sequencer_id=int(channel))
+                    # placing qubits out of operation point if operation point mode is on
+                    if operation_point_on:
+                        for qubit_idx in involved_qubits:
+                            flux_bus_alias = f"flux_q{qubit_idx}_bus"
+                            flux_bus = self.get_element(alias=flux_bus_alias)
+                            for idx, instrument in enumerate(flux_bus.instruments):
+                                if isinstance(instrument, QbloxQCM):
+                                    offset_channel = flux_bus.channels[idx]
+                                    if offset_channel == 0:
+                                        parameter = Parameter.OFFSET_OUT0
+                                    if offset_channel == 1:
+                                        parameter = Parameter.OFFSET_OUT1
+                                    if offset_channel == 2:
+                                        parameter = Parameter.OFFSET_OUT2
+                                    if offset_channel == 3:
+                                        parameter = Parameter.OFFSET_OUT3
+                                    else:
+                                        raise ValueError("Offset index out of bounds.")
+                                    instrument.set_parameter(parameter=parameter, value=0)
 
         return results
 

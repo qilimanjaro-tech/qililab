@@ -15,6 +15,7 @@
 """Qblox module class"""
 
 from dataclasses import dataclass
+import os
 from typing import ClassVar, Sequence
 
 from qpysequence import Sequence as QpySequence
@@ -124,8 +125,14 @@ class QbloxModule(Instrument):
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
-        for idx, offset in enumerate(self.out_offsets):
-            self._set_out_offset(output=idx, value=offset)
+        operation_point_on = os.environ.get("OPERATION_POINT_ON", "false").lower() in ("1", "true", "yes")
+
+        if operation_point_on:
+            for idx, _ in enumerate(self.out_offsets):
+                self._set_out_offset(output=idx, value=0)
+        else:
+            for idx, offset in enumerate(self.out_offsets):
+                self._set_out_offset(output=idx, value=offset)
 
     def sync_sequencer(self, sequencer_id: int) -> None:
         """Syncs all sequencers."""
