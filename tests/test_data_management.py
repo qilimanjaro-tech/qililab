@@ -60,6 +60,14 @@ class TestPlatformData:
         assert path == "test/test.yml"
         mock_load.assert_not_called()
 
+    def test_save_platform_fails_if_environment_runcard_set(self, mock_open: MagicMock, mock_load: MagicMock):
+        """Test that `save_platform` raises ValueError when ENVIRONMENT_RUNCARD is set."""
+        platform = ql.build_platform(runcard="some-path.yml")
+
+        with patch.dict(os.environ, {"ENVIRONMENT_RUNCARD": "fake/path/to/env_runcard.yml"}):
+            with pytest.raises(ValueError, match="No permissions to save the runcard to disk."):
+                ql.save_platform(path="test/", platform=platform)
+
 
 class TestBuildPlatformCornerCases:
     """Unit tests for the corner cases of the `build_platform` function.."""
