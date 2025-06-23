@@ -274,9 +274,22 @@ class QbloxCompiler:
                 for idx in range(self._buses[bus].dynamic_sync_counter):
                 # Block to add the wait if needed following the Jlt instruction
                     self._buses[bus].qpy_block_stack[0]._append_block(QPyProgram.Block(name=f"dynamic_sync_{idx}"))
+                    self._buses[bus].qpy_block_stack[0].append_component(QPyInstructions.Jlt(self._buses[bus].bus_difference_register, 1, f"@after_dynamic_sync_{idx}")) # if the register difference is 0
+                    self._buses[bus].qpy_block_stack[0].append_component(QPyInstructions.Jlt(self._buses[bus].bus_difference_register, 4, f"@one_two_three_{idx}")) # if the register difference is 1, 2 or 3 
                     self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Wait(self._buses[bus].bus_difference_register))
                     self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Jmp(f"@after_dynamic_sync_{idx}"))
 
+                    #  Block to handle the case where the bus difference is 1, 2 or 3 - need to add the difference + 4 ns (the other buses will also add 4 ns)
+                    self._buses[bus].qpy_block_stack[0]._append_block(QPyProgram.Block(name=f"one_two_three_{idx}"))
+                    self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Add(self._buses[bus].bus_difference_register, 4, self._buses[bus].bus_difference_register))
+                    self._buses[bus].qpy_block_stack[0].append_component(QPyInstructions.Nop())
+                    self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Wait(self._buses[bus].bus_difference_register))
+                    self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Jmp(f"@after_dynamic_sync_{idx}"))
+                    
+                    #  Block to handle the case where the bus difference is -1, -2 or -3 - need to add + 4 ns (the other buses will add 4 ns and the integer)
+                    self._buses[bus].qpy_block_stack[0]._append_block(QPyProgram.Block(name=f"negative_one_two_three_{idx}"))
+                    self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Wait(4))
+                    self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Jmp(f"@after_dynamic_sync_{idx}"))
 
                     if self._buses[bus].max_other_register is not None: # the bus is static, hence  an extra check needs to be added
                         self._buses[bus].qpy_block_stack[0]._append_block(QPyProgram.Block(name=f"other_max_duration_{idx}"))
@@ -537,11 +550,6 @@ class QbloxCompiler:
                             self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
                             self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Sub(constant_duration_register, dynamic_duration_register, self._buses[bus].add_dynamic_static_register))
                         self._buses[bus].variable_expression = True
-                        
-
-                #TODO: not sure of that one
-                # self._buses[element.bus].dynamic_durations.append(wait_register)
-                # self._buses[element.bus].duration_since_sync += constant_duration
 
             self._buses[element.bus].marked_for_dynamic_sync = True
             self._time_loop_counter+= 1
@@ -715,6 +723,7 @@ class QbloxCompiler:
 
                 # Check the sign of the bus difference
                 self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Jlt(self._buses[bus].bus_difference_register, 2147483648, f"@dynamic_sync_{self._buses[bus].dynamic_sync_counter}"))
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Jge(self._buses[bus].bus_difference_register, 4294967293, f"@negative_one_two_three_{self._buses[bus].dynamic_sync_counter}")) # Check if the difference is -1, -2 or -3
 
             else:
                 current_bus_duration_register = QPyProgram.Register()
@@ -751,6 +760,7 @@ class QbloxCompiler:
 
                 # Check the sign of the bus difference
                 self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Jlt(self._buses[bus].bus_difference_register, 2147483648, f"@dynamic_sync_{self._buses[bus].dynamic_sync_counter}"))
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Jge(self._buses[bus].bus_difference_register, 4294967293, f"@negative_one_two_three_{self._buses[bus].dynamic_sync_counter}")) # Check if the difference is -1, -2 or -3
 
 
             #Check if the wait is greater than -3
