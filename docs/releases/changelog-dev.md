@@ -58,9 +58,21 @@ Code example:
 
 ```
 ...
-platform.load_db_manager(db_ini_path = "path", optional_identifier = "string")  # To load the database manager. All parameters are optional.
-platform.execute_experiment(...)  # The typical experiment execution.
+platform.load_db_manager(db_ini_path = "path")  # To load the database manager. All parameters are optional.
+platform.execute_experiment(..., optional_identifier = "string")  # The typical experiment execution.
 ...
+```
+
+By deafault the results and metadata will be saved in database format, so unless specified the user can also use this:
+
+```
+platform.execute_experiment(..., optional_identifier = "string")
+```
+
+To NOT use the database saving format it just requires to set the variable database as False:
+
+```
+platform.execute_experiment(..., database = False)
 ```
 
 [#945](https://github.com/qilimanjaro-tech/qililab/pull/945)
