@@ -468,7 +468,6 @@ class DatabaseManager:
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
-        result_path = f"{dir_path}/{experiment_name}.h5"
         dir_path = (
             f"{base_path}{self.current_sample}/{self.current_cd}/{formatted_time}"
             if base_path[-1] == "/"
