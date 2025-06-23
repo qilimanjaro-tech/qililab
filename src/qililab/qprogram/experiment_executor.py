@@ -109,7 +109,6 @@ class ExperimentExecutor:
         - Ensure that the platform and experiment are properly configured before execution.
         - The results will be saved in a timestamped directory within the `base_data_path`.
     """
-
     def __init__(
         self,
         platform: "Platform",

@@ -1470,7 +1470,7 @@ class TestMethods:
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
         db_real_time_saving = platform.db_real_time_saving(
-            shape, loops, experiment_name, base_path, qprogram, optional_identifier
+            shape, loops, experiment_name, db_manager, base_path, qprogram, optional_identifier
         )
 
         assert db_real_time_saving.loops == loops
@@ -1481,14 +1481,16 @@ class TestMethods:
         assert db_real_time_saving.experiment_name == experiment_name
         assert db_real_time_saving.base_path == base_path
 
-    def test_db_real_time_saving_raises_error(self, platform: Platform):
-        """Test db_real_time_saving function raises an error when no database is created"""
+    def test_db_real_time_saving_no_base_path(self, platform: Platform):
+        """Test db_real_time_saving function to save database from platform"""
 
         shape = (2, 2)
         loops = {"test_amp_loop": np.arange(0, 2)}
         experiment_name = "test_db_real_time_saving"
-        optional_identifier = "optional_identifier"
         base_path = "base_path"
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
@@ -1497,6 +1499,17 @@ class TestMethods:
         error_string = "Missing db_manager, try using platform.load_db_manager()."
         with pytest.raises(ReferenceError, match=error_string):
             platform.db_real_time_saving(shape, loops, experiment_name, base_path, qprogram, optional_identifier)
+
+        db_real_time_saving = platform.db_real_time_saving(
+            shape=shape,
+            loops=loops,
+            experiment_name=experiment_name,
+            db_manager=db_manager,
+            qprogram=qprogram,
+            optional_identifier=optional_identifier,
+        )
+
+        assert db_real_time_saving.base_path == platform.experiment_results_base_path
 
     @patch("h5py.File")
     def test_db_save_results(self, mock_h5file, platform: Platform):
@@ -1515,7 +1528,7 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier)
 
         assert mock_h5file.called
 
@@ -1557,7 +1570,34 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier)
+
+        assert mock_h5file.called
+
+    @patch("h5py.File")
+    def test_db_save_results_no_base_path(self, mock_h5file, platform: Platform):
+        """Test db_save_results functionto save from database from Platform"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 1)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        mock_database = MagicMock()
+        db_manager = mock_database
+        optional_identifier = "optional_identifier"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        platform.db_save_results(
+            experiment_name=experiment_name,
+            results=results,
+            loops=loops,
+            db_manager=db_manager,
+            qprogram=qprogram,
+            optional_identifier=optional_identifier,
+        )
 
         assert mock_h5file.called
 
@@ -1580,7 +1620,9 @@ class TestMethods:
 
         error_string = "Number of loops must be the same as the number of dimensions of the results except for IQ"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
+            platform.db_save_results(
+                experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier
+            )
 
     @patch("h5py.File")
     def test_db_save_results_raise_error_incorrect_loops_size(self, mock_h5file, platform: Platform):
@@ -1601,4 +1643,6 @@ class TestMethods:
 
         error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
+            platform.db_save_results(
+                experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier
+            )

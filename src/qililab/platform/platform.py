@@ -1675,7 +1675,7 @@ class Platform:
         shape: tuple,
         loops: dict[str, np.ndarray],
         experiment_name: str,
-        base_path: str,
+        base_path: str | None = None,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -1717,7 +1717,7 @@ class Platform:
             loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
             experiment_name (str): Name of the experiment.
             db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
-            base_path (str): base path for the results data folder structure.
+            base_path (str | None, optional): base path for the results data folder structure. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
             optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
 
@@ -1727,6 +1727,10 @@ class Platform:
 
         if not self.db_manager:
             raise ReferenceError("Missing db_manager, try using platform.load_db_manager().")
+        if base_path:
+            base_path = base_path
+        else:
+            base_path = self.experiment_results_base_path
 
         return StreamArray(
             shape=shape,
@@ -1744,7 +1748,7 @@ class Platform:
         experiment_name: str,
         results: np.ndarray,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
-        base_path: str,
+        base_path: str | None = None,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -1780,13 +1784,17 @@ class Platform:
             results (np.ndarray): Experiment data.
             loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
             db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
-            base_path (str): base path for the results data folder structure.
+            base_path (str | None, optional): base path for the results data folder structure. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
             optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
         """
 
         if not self.db_manager:
             raise ReferenceError("Missing db_manager, try using platform.load_db_manager().")
+        if base_path:
+            base_path = base_path
+        else:
+            base_path = self.experiment_results_base_path
 
         shape = results.shape
 
