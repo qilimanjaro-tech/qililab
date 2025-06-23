@@ -32,7 +32,6 @@ def save_platform(path: str, platform: Platform) -> str:
     existing folder. The platform will then be saved inside the folder specified by `path` in a file called
     `platform_name.yml`, where `platform_name` corresponds to the `name` attribute of the given `Platform`.
 
-
     Args:
         path (str): Path to the folder/file where the YAML file will be saved.
         platform (Platform): Platform class to serialize and save to a YAML file.
@@ -48,8 +47,6 @@ def save_platform(path: str, platform: Platform) -> str:
         Qililab will use the name of the platform to create the YAML file. If ``platform.name == "galadriel"``, a file
         will be created in ``examples/runcards/galadriel.yml``.
     """
-    if os.environ.get("ENVIRONMENT_RUNCARD"):
-        raise ValueError("No permissions to save the runcard to disk.")
 
     if not (path.endswith((".yml", ".yaml"))):
         new_path = Path(path) / f"{platform.name}.yml"
