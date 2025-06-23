@@ -24,7 +24,7 @@
 - Add base_path as an input for stream_array and an optional parameter for the experiment class, qililab cannot have the data path hardcoded.
 [#936](https://github.com/qilimanjaro-tech/qililab/pull/936)
 
-- In the VNA Driver for Keysight E5080B, an update_settings function has been implemented, it allows to refresh all settings inside qililab by querying the VNA.
+- In the VNA Driver for Keysight E5080B, an update_settings function has been implemented, it allows to efresh all settings inside qililab by querying the VNA.
 - The sweep time and sweep time auto parameters have been added in the qcodes like driver and also in the wrapper.
 - The sims file used to test the qcode like driver file has been moved to a similar location as qcodes (\qililab\src\qililab\instruments\sims).
 [#943](https://github.com/qilimanjaro-tech/qililab/pull/943)
