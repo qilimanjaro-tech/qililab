@@ -243,7 +243,7 @@ class QbloxCompiler:
         for bus in self._buses:
             mask = markers[bus] if markers is not None and bus in markers else "0000"
             #TODO: very dirty code, 1 is the address, and replace the conditional statement
-            if bus.startswith("drive_q17"):
+            if bus.startswith("drive"):
                 self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1,4),1)
 
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
