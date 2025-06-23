@@ -473,7 +473,6 @@ class DatabaseManager:
             else f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         )
         relative_path = f"{self.current_sample}/{self.current_cd}/{formatted_time}/{experiment_name}.h5"
-        result_path = f"{dir_path}/{experiment_name}.h5"
 
         folder = dir_path
         if not os.path.isdir(folder):
