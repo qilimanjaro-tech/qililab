@@ -38,7 +38,8 @@ def fixture_measurement():
     return Measurement(
         experiment_name="test_experiment",
         sample_name="sampleA",
-        result_path="/test/result.h5",
+        base_path="/test/",
+        relative_path="result.h5",
         experiment_completed=False,
         start_time=datetime.datetime(2023, 1, 1, 12, 0, 0),
         cooldown="CDX",
