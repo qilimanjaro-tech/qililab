@@ -490,7 +490,7 @@ class Platform:
         instruments = {
             instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
         }
-        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+        if instruments and all(isinstance(instrument, QbloxModule) for instrument in instruments):
             for bus in buses:
                 for instrument, _ in zip(bus.instruments, bus.channels):
                     if isinstance(instrument, QbloxModule):
@@ -535,8 +535,13 @@ class Platform:
                                         elif out == 1:
                                             dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
                                             dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
+
+                        if instrument.name == InstrumentName.QRMRF or instrument.name == InstrumentName.QBLOX_QRM:
+                            integration_length = bus.get_parameter(Parameter.INTEGRATION_LENGTH)
+                            data_oscilloscope[bus.alias]["integration_length"] = integration_length
         else:
             # TODO: the same information could be generated with a Quantum Machine runcard, even if the QBlox Compiler is used in the background.
             raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
@@ -933,6 +938,7 @@ class Platform:
     def execute_experiment(
         self,
         experiment: Experiment,
+        base_path: str | None = None,
         live_plot: bool = True,
         slurm_execution: bool = True,
         port_number: int | None = None,
@@ -977,6 +983,7 @@ class Platform:
         executor = ExperimentExecutor(
             platform=self,
             experiment=experiment,
+            base_path=base_path,
             live_plot=live_plot,
             slurm_execution=slurm_execution,
             port_number=port_number,
@@ -1598,19 +1605,22 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False):
-        """Draw the QProgram using QBlox Compiler
+    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True, bus_mapping: dict[str, str] | None = None):
+        """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 
         Args:
-            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations.
-                                        The default is False.
+            time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the precise number of ns inputted.
+                                For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns.
+                                Defaults to None.
+            averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations. Defaults to False.
+            acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
+            bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
+                It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
         """
-
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        compiler = QbloxCompiler()
-        sequencer = compiler.compile(qprogram)
-        result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed)
+        sequencer = self.compile_qprogram(qprogram, bus_mapping)
+        result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
 
         return result
 
@@ -1619,7 +1629,8 @@ class Platform:
         shape: tuple,
         loops: dict[str, np.ndarray],
         experiment_name: str,
-        db_manager: DatabaseManager,  # get rid
+        db_manager: DatabaseManager,
+        base_path: str | None = None,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -1662,13 +1673,18 @@ class Platform:
             loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
             experiment_name (str): Name of the experiment.
             db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
-            base_path (str): base path for the results data folder structure.
+            base_path (str | None, optional): base path for the results data folder structure. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
             optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
 
         Returns:
             StreamArray: StreamArray class to process and save the data
         """
+        if base_path:
+            base_path = base_path
+        else:
+            base_path = self.experiment_results_base_path
+
         return StreamArray(
             shape=shape,
             loops=loops,
@@ -1677,6 +1693,7 @@ class Platform:
             experiment_name=experiment_name,
             db_manager=db_manager,
             optional_identifier=optional_identifier,
+            base_path=base_path,
         )
 
     def db_save_results(
@@ -1685,6 +1702,7 @@ class Platform:
         results: np.ndarray,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
         db_manager: DatabaseManager,
+        base_path: str | None = None,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -1721,10 +1739,15 @@ class Platform:
             results (np.ndarray): Experiment data.
             loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
             db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
-            base_path (str): base path for the results data folder structure.
+            base_path (str | None, optional): base path for the results data folder structure. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
             optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
         """
+        if base_path:
+            base_path = base_path
+        else:
+            base_path = self.experiment_results_base_path
+
         shape = results.shape
 
         if len(loops) != len(shape) - 1:
@@ -1748,6 +1771,7 @@ class Platform:
             experiment_name=experiment_name,
             db_manager=db_manager,
             optional_identifier=optional_identifier,
+            base_path=base_path,
         )
 
         with stream_array:
