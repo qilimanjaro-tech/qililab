@@ -332,7 +332,6 @@ class TestPlatform:
             with pytest.raises(ValueError, match=error_string):
                 platform.set_parameter(alias=alias, parameter=Parameter.FLUX, value=0.14, channel_id=0)
 
-
     @patch("qililab.typings.Parameter")
     def test_set_flux_parameter_qblox_channel0(self, mock_parameter, platform: Platform):
         """Test platform raises and error if no instrument connection."""
