@@ -955,10 +955,13 @@ class Platform:
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
+            base_path (str | None, optional): Base path of the saved data. If no string given it defaults to platform.experiment_results_base_path.
+            database (bool, optional): Trigger to define if the experiment metadata will be saved in a database or not. Defaults to True.
+            optional_identifier (str | None, optional): Database optional text. Defaults to None.
             live_plot (bool): Flag that abilitates live plotting. Defaults to True.
             slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell.
                                     Defaults to True.
-            port_number (int|None): Optional parameter for when slurm_execution is True.
+            port_number (int | None): Optional parameter for when slurm_execution is True.
                                     It defines the port number of the Dash server. Defaults to None.
 
         Returns:
@@ -1635,7 +1638,14 @@ class Platform:
             else:
                 raise AttributeError("Mixers calibration not implemented for this instrument.")
 
-    def draw(self, qprogram: QProgram, time_window: int | None = None, averages_displayed: bool = False, acquisition_showing: bool = True, bus_mapping: dict[str, str] | None = None):
+    def draw(
+        self,
+        qprogram: QProgram,
+        time_window: int | None = None,
+        averages_displayed: bool = False,
+        acquisition_showing: bool = True,
+        bus_mapping: dict[str, str] | None = None,
+    ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 
         Args:
