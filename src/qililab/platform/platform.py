@@ -1610,6 +1610,9 @@ class Platform:
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(qprogram)
+        for variable in sequencer.qprogram._variables:
+            if variable.domain == Domain.Time:
+                raise NotImplementedError("QbloxDraw does not support hardware time-domain loops at the moment.")
         result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed)
 
         return result

@@ -732,6 +732,9 @@ class QProgram(StructuredProgram):
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(self)
+        for variable in sequencer.qprogram._variables:
+            if variable.domain == Domain.Time:
+                raise NotImplementedError("QbloxDraw does not support hardware time-domain loops at the moment.")
         result_draw = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed)
         logger.warning("The drawing feature is currently only supported for QBlox.")
         return result_draw
