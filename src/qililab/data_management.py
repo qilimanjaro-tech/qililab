@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -31,7 +32,6 @@ def save_platform(path: str, platform: Platform) -> str:
     existing folder. The platform will then be saved inside the folder specified by `path` in a file called
     `platform_name.yml`, where `platform_name` corresponds to the `name` attribute of the given `Platform`.
 
-
     Args:
         path (str): Path to the folder/file where the YAML file will be saved.
         platform (Platform): Platform class to serialize and save to a YAML file.
@@ -47,6 +47,7 @@ def save_platform(path: str, platform: Platform) -> str:
         Qililab will use the name of the platform to create the YAML file. If ``platform.name == "galadriel"``, a file
         will be created in ``examples/runcards/galadriel.yml``.
     """
+
     if not (path.endswith((".yml", ".yaml"))):
         new_path = Path(path) / f"{platform.name}.yml"
     else:
@@ -82,6 +83,9 @@ def build_platform(runcard: str | dict, new_drivers: bool = False) -> Platform:
 
     which contains the information the :class:`.Platform` class uses to connect, setup and control the actual chip, buses and instruments of the laboratory.
 
+    If the environment variable `ENVIRONMENT_RUNCARD` has been set, this method will ignore the runcard passed as parameter
+    and use instead the one specified in the environment variable.
+
     .. note::
 
         You can find more information about the complete structure of such dictionary, in the :ref:`Runcards <runcards>` section of the documentation.
@@ -106,6 +110,9 @@ def build_platform(runcard: str | dict, new_drivers: bool = False) -> Platform:
         >>> platform.name
         galadriel
     """
+    if (environ_runcard := os.environ.get("ENVIRONMENT_RUNCARD")):
+        runcard = environ_runcard
+
     if not isinstance(runcard, (str, dict)):
         raise ValueError(
             f"Incorrect type for `runcard` argument in `build_platform()`. Expected (str | dict), got: {type(runcard)}"

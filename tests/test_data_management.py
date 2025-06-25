@@ -33,6 +33,15 @@ class TestPlatformData:
         mock_load.assert_not_called()
         mock_open.assert_not_called()
 
+    def test_build_platform_having_an_environment_runcard(self, mock_open: MagicMock, mock_load: MagicMock):
+        """Test build method for environment runcard."""
+        with patch.dict(os.environ, {"ENVIRONMENT_RUNCARD": "fake/path/to/env_runcard.yml"}):
+            platform = ql.build_platform(runcard="this-will-be-overwritten")
+
+        assert isinstance(platform, Platform)
+        mock_load.assert_called_once()
+        mock_open.assert_called_once_with(file="fake/path/to/env_runcard.yml", mode="r", encoding="utf8")
+
     def test_save_platform_with_non_yml_path(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test the `save_platform` function with a path that doesn't end in .yml."""
         path = save_platform(path="test/", platform=build_platform(Galadriel.runcard))
