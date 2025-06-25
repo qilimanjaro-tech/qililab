@@ -223,10 +223,15 @@ class QDevilQDac2(VoltageSource):
         # Set triggers received to start (in) and sent at the end (out)
         self.set_in_external_trigger(channel_id, in_port)
         if out_port:
-            self.set_out_external_trigger(channel_id, out_port, f"ext_{out_port}_ch_{channel_id}", trigger_width)
+            self.set_end_marker_external_trigger(channel_id, out_port, f"ext_{out_port}_ch_{channel_id}", trigger_width)
 
     def upload_voltage_list(
-        self, waveform: Waveform, channel_id: ChannelID, dwell_us: int = 1, sync_delay_s: float = 0
+        self,
+        waveform: Waveform,
+        channel_id: ChannelID,
+        dwell_us: int = 1,
+        sync_delay_s: float = 0,
+        repetitions: int = 1,
     ):
 
         if channel_id in self._cache_dc:
@@ -237,7 +242,9 @@ class QDevilQDac2(VoltageSource):
         envelope = waveform.envelope()
         channel = self.device.channel(channel_id)
 
-        dc_list = channel.dc_list(voltages=list(envelope), dwell_s=dwell_us * 1e-6, delay_s=sync_delay_s)
+        dc_list = channel.dc_list(
+            voltages=list(envelope), dwell_s=dwell_us * 1e-6, delay_s=sync_delay_s, repetitions=repetitions
+        )
         self._cache_dc[channel_id] = dc_list
 
     def set_in_external_trigger(self, channel_id: ChannelID, in_port: int):
@@ -247,7 +254,14 @@ class QDevilQDac2(VoltageSource):
             )
         self._cache_dc[channel_id].start_on_external(in_port)
 
-    def set_out_external_trigger(self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6):
+    def set_in_internal_trigger(self, channel_id: ChannelID, trigger: str):
+        if str(trigger) not in self._triggers.keys():
+            raise ValueError(f"Trigger with name {trigger} not created.")
+        self._cache_dc[channel_id].start_on(self._triggers[str(trigger)])
+
+    def set_end_marker_external_trigger(
+        self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6
+    ):
         if channel_id not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
@@ -255,6 +269,37 @@ class QDevilQDac2(VoltageSource):
         if str(trigger) not in self._triggers.keys():
             self._triggers[str(trigger)] = self._cache_dc[channel_id].end_marker()
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
+
+    def set_start_marker_external_trigger(
+        self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6
+    ):
+        if channel_id not in self._cache_dc.keys():
+            raise ValueError(
+                f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
+            )
+        if str(trigger) not in self._triggers.keys():
+            self._triggers[str(trigger)] = self._cache_dc[channel_id].start_marker()
+        self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
+
+    def set_start_marker_internal_trigger(self, channel_id: ChannelID, trigger: str):
+        if channel_id not in self._cache_dc.keys():
+            raise ValueError(
+                f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
+            )
+        if str(trigger) not in self._triggers.keys():
+            self._triggers[str(trigger)] = self._cache_dc[channel_id].start_marker()
+
+    def set_end_marker_internal_trigger(self, channel_id: ChannelID, trigger: str):
+        if channel_id not in self._cache_dc.keys():
+            raise ValueError(
+                f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
+            )
+        if str(trigger) not in self._triggers.keys():
+            self._triggers[str(trigger)] = self._cache_dc[channel_id].end_marker()
+
+    def start(self):
+        """All generators, that have not been explicitly set to trigger on an internal or external trigger, will be started."""
+        self.device.start_all()
 
     def clear_cache(self):
         """Clears the cache of the instrument"""
