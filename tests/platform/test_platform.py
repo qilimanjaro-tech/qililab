@@ -1470,7 +1470,7 @@ class TestMethods:
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
         db_real_time_saving = platform.db_real_time_saving(
-            shape, loops, experiment_name, db_manager, base_path, qprogram, optional_identifier
+            shape, loops, experiment_name, base_path, qprogram, optional_identifier
         )
 
         assert db_real_time_saving.loops == loops
@@ -1528,7 +1528,7 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
 
         assert mock_h5file.called
 
@@ -1570,7 +1570,7 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
 
         assert mock_h5file.called
 
@@ -1621,7 +1621,7 @@ class TestMethods:
         error_string = "Number of loops must be the same as the number of dimensions of the results except for IQ"
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(
-                experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier
+                experiment_name, results, loops, base_path, qprogram, optional_identifier
             )
 
     @patch("h5py.File")
@@ -1644,5 +1644,5 @@ class TestMethods:
         error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(
-                experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier
+                experiment_name, results, loops, base_path, qprogram, optional_identifier
             )
