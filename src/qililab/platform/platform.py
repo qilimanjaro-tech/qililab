@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import ast
 import io
+import os
 import re
 import tempfile
 from contextlib import contextmanager
@@ -564,12 +565,20 @@ class Platform:
         If you use ``set_parameter`` + ``ql.save_platform()``, the saved runcard will include the new "set" value, even without
         an instrument connection, as the cache values of the :class:`.Platform` object are modified.
 
+        If the environment variable `ENVIRONMENT_RUNCARD` has been set, the user won't be able to set any parameter inç
+        the platform and the method will raise an error.
+
         Args:
             parameter (Parameter): Name of the parameter to change.
             value (float | str | bool): New value to set in the parameter.
             alias (str): Alias of the bus where the parameter is set.
             channel_id (int, optional): ID of the channel you want to use to set the parameter. Defaults to None.
         """
+        if os.environ.get("ENVIRONMENT_RUNCARD"):
+            raise ValueError(
+                "You do not have permissions to set parameters in the Platform. Please contact your system admin for further details."
+            )
+
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
             if self.digital_compilation_settings is None:

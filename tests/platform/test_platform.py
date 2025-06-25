@@ -2,6 +2,7 @@
 
 import copy
 import io
+import os
 import re
 import warnings
 from pathlib import Path
@@ -319,6 +320,18 @@ class TestPlatform:
             AttributeError, match="Can not do initial_setup without being connected to the instruments."
         ):
             platform.initial_setup()
+
+    def test_set_parameter_having_an_environment_runcard(self, platform: Platform):
+        """Test that set_parameter raises an error if ENVIRONMENT_RUNCARD is set."""
+        alias = "q0"
+        error_string = (
+            "You do not have permissions to set parameters in the Platform. "
+            "Please contact your system admin for further details."
+        )
+        with patch.dict(os.environ, {"ENVIRONMENT_RUNCARD": "fake/path/to/env_runcard.yml"}):
+            with pytest.raises(ValueError, match=error_string):
+                platform.set_parameter(alias=alias, parameter=Parameter.FLUX, value=0.14, channel_id=0)
+
 
     @patch("qililab.typings.Parameter")
     def test_set_flux_parameter_qblox_channel0(self, mock_parameter, platform: Platform):

@@ -83,6 +83,9 @@ def build_platform(runcard: str | dict, new_drivers: bool = False) -> Platform:
 
     which contains the information the :class:`.Platform` class uses to connect, setup and control the actual chip, buses and instruments of the laboratory.
 
+    If the environment variable `ENVIRONMENT_RUNCARD` has been set, this method will ignore the runcard passed as parameter
+    and use instead the one specified in the environment variable.
+
     .. note::
 
         You can find more information about the complete structure of such dictionary, in the :ref:`Runcards <runcards>` section of the documentation.
