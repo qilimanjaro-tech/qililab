@@ -1488,8 +1488,6 @@ class TestMethods:
         loops = {"test_amp_loop": np.arange(0, 2)}
         experiment_name = "test_db_real_time_saving"
         base_path = "base_path"
-        mock_database = MagicMock()
-        db_manager = mock_database
         optional_identifier = "optional_identifier"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1504,7 +1502,6 @@ class TestMethods:
             shape=shape,
             loops=loops,
             experiment_name=experiment_name,
-            db_manager=db_manager,
             qprogram=qprogram,
             optional_identifier=optional_identifier,
         )
@@ -1582,8 +1579,6 @@ class TestMethods:
         loops = {"test_amp_loop": np.arange(0, 1)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
-        mock_database = MagicMock()
-        db_manager = mock_database
         optional_identifier = "optional_identifier"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1594,7 +1589,6 @@ class TestMethods:
             experiment_name=experiment_name,
             results=results,
             loops=loops,
-            db_manager=db_manager,
             qprogram=qprogram,
             optional_identifier=optional_identifier,
         )
@@ -1620,9 +1614,7 @@ class TestMethods:
 
         error_string = "Number of loops must be the same as the number of dimensions of the results except for IQ"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(
-                experiment_name, results, loops, base_path, qprogram, optional_identifier
-            )
+            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
 
     @patch("h5py.File")
     def test_db_save_results_raise_error_incorrect_loops_size(self, mock_h5file, platform: Platform):
@@ -1643,6 +1635,4 @@ class TestMethods:
 
         error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(
-                experiment_name, results, loops, base_path, qprogram, optional_identifier
-            )
+            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, optional_identifier)
