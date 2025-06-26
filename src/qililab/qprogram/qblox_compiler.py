@@ -38,6 +38,7 @@ from qililab.qprogram.operations import (
     SetMarkers,
     SetOffset,
     SetPhase,
+    SetTrigger,
     Sync,
     Wait,
     WaitTrigger,
@@ -155,6 +156,7 @@ class QbloxCompiler:
             SetGain: self._handle_set_gain,
             SetOffset: self._handle_set_offset,
             SetMarkers: self._handle_set_markers,
+            SetTrigger: self._handle_set_trigger,
             Wait: self._handle_wait,
             WaitTrigger: self._handle_wait_trigger,
             Sync: self._handle_sync,
@@ -167,6 +169,7 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
+        self._markers: dict[str, str]
 
     def compile(
         self,
@@ -246,8 +249,9 @@ class QbloxCompiler:
                 self._buses[bus].delay = delays[bus]
 
         # Pre-processing: Set markers ON/OFF
+        self._markers = markers
         for bus in self._buses:
-            mask = markers[bus] if markers is not None and bus in markers else "0000"
+            mask = self._markers[bus] if self._markers is not None and bus in self._markers else "0000"
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
             self._buses[bus].static_duration += 4
@@ -468,6 +472,33 @@ class QbloxCompiler:
         )
         self._buses[element.bus].upd_param_instruction_pending = True
 
+    def _handle_set_trigger(self, element: SetTrigger):
+        for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
+            if int(self._markers[element.bus], 2) > 0:
+                output_map = {1: 1, 2: 0}
+                if output not in output_map:
+                    raise ValueError("RF modules only have 2 trigger outputs, either 1 or 2")
+            else:
+                output_map = {1: 3, 2: 2, 3: 1, 4: 0}
+                if output not in output_map:
+                    raise ValueError("RF modules only have 4 trigger outputs, out of range")
+
+            markers = list(self._markers[element.bus])
+            markers[output_map[output]] = "1"
+
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetMrk(marker_outputs=int("".join(markers), 2))
+        )
+        self._buses[element.bus].upd_param_instruction_pending = True
+
+        for bus in self._buses:
+            self._handle_wait(element=Wait(bus=bus, duration=self._buses[bus].delay), delay=True)
+
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetMrk(marker_outputs=int(self._markers[element.bus], 2))
+        )
+        self._buses[element.bus].upd_param_instruction_pending = True
+
     def _handle_wait(self, element: Wait, delay: bool = False):
         duration: QPyProgram.Register | int
         if isinstance(element.duration, Variable):
@@ -496,7 +527,7 @@ class QbloxCompiler:
 
         if self._buses[bus].upd_param_instruction_pending:
             if (
-                4 <= duration and duration <= 8
+                4 < duration and duration < 8
             ):  # you cannot play an update param and then a wait bc both have a minimum of 4
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
             else:
