@@ -535,7 +535,8 @@ class QbloxCompiler:
             raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
         # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
-        self._handle_add_trigger_waits(bus=element.bus, duration=duration)
+        for trigger_bus in self._buses:
+            self._handle_add_trigger_waits(bus=trigger_bus, duration=duration)
 
     def _handle_add_trigger_waits(self, bus: str, duration: int):
         """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
@@ -585,14 +586,6 @@ class QbloxCompiler:
                     self._buses[bus].qpy_block_stack[-1].append_component(
                         component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
                     )
-
-        # Sync all other buses with WaitSync
-        for sync_bus in self._buses:
-            self._buses[sync_bus].qpy_block_stack[-1].append_component(component=QPyInstructions.WaitSync(wait_time=4))
-
-            # After wait sync reset static duration
-            self._buses[sync_bus].marked_for_sync = False
-            self._buses[sync_bus].static_duration = 0
 
     def _handle_sync(self, element: Sync, delay: bool = False):
         # Get the buses involved in the sync operation.
