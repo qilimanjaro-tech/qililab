@@ -21,7 +21,10 @@
 - Relocated save_results and load_results from data_management to result/result_management.py for structure consistency. The load_results functions has been slightly changed to take into account different structures of data.
 [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
 
-- In the VNA Driver for Keysight E5080B, an update_settings function has been implemented, it allows to refresh all settings inside qililab by querying the VNA.
+- Add base_path as an input for stream_array and an optional parameter for the experiment class, qililab cannot have the data path hardcoded.
+[#936](https://github.com/qilimanjaro-tech/qililab/pull/936)
+
+- In the VNA Driver for Keysight E5080B, an update_settings function has been implemented, it allows to efresh all settings inside qililab by querying the VNA.
 - The sweep time and sweep time auto parameters have been added in the qcodes like driver and also in the wrapper.
 - The sims file used to test the qcode like driver file has been moved to a similar location as qcodes (\qililab\src\qililab\instruments\sims).
 [#943](https://github.com/qilimanjaro-tech/qililab/pull/943)
@@ -35,8 +38,24 @@
   - In the initial_setup, all parameters are now set, the conditionals have been removed. Now the VNA itself will show an error if two uncompatible parameters are being set.
 [#944](https://github.com/qilimanjaro-tech/qililab/pull/944)
 
+- QbloxDraw:
+    - The code is now tracking real time/classical time. The implications are the following:
+      - A play can interrupt a preceeding play - this replicates the hardware behaviour.
+      - Acquisitions are now plotted, when hovering the mouse on the plot, the user can see the index of the acquisition (they are plotted by default but this can be set to False if desired with the argument 'acquisition_showing').
+      - Acquire and Play can overlap each other as they are real time commands - this replicates the hardware behaviour.
+        The integration length of the acquire is retrieved from the platform if given. If plotting directly from qprogram, the integration length is set as the duration of the acquire.
+    - The sub and not commands have been implemented.
+    - If QbloxDraw is given a Q1ASM command it is not programmed for, it will raise a NotImplementedError.
+    - The _handle_play() used to loop through all the waveform indices, now it exits in the loop as soon as I and Q have been found, this is more efficient.
+    - When running the code from the platform, the bus_mapping can be provided.
+    - The overall plotting design has been improved. A plotly colour plaette is used. The I and Q are the same color but in a different shade.
+
+[#945](https://github.com/qilimanjaro-tech/qililab/pull/945)
 
 ### Breaking changes
+
+- Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
+[#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
 
 ### Deprecations / Removals
 
@@ -56,3 +75,7 @@
     - The bounds of the points in the qcodes type driver have been modified to range from 1 to 100003.
 [#943](https://github.com/qilimanjaro-tech/qililab/pull/943)
 
+- QbloxDraw:
+    - The sequencer offsets given from the runcard (offset_i and offset_q in the runcard) were being applied similarly to the DAC offsets, when they should have been treated like the Q1ASM offsets - this has been fixed and those sequencer offsets havee been renamed sequencer_runcard_offset_i and  sequencer_runcard_offset_q instead of ac_offsets_i and ac_offsets_q for improved clarity.
+    - get_value() in the QbloxDraw class now checks that the given string is a float, it used to check x.isdigit() which didn't work for negative values.
+[#945](https://github.com/qilimanjaro-tech/qililab/pull/945)
