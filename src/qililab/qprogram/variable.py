@@ -19,7 +19,6 @@ from uuid import UUID, uuid4
 
 from qililab.yaml import yaml
 
-#TODO: Allow flattening of the cst otherwise it wont work
 @yaml.register_class
 class Domain(Enum):
     """Domain class."""
@@ -144,6 +143,7 @@ class FloatVariable(Variable, float):  # type: ignore
 @yaml.register_class
 class VariableExpression(Variable):
     """An expression combining Variables and/or constants."""
+    #TODO: The possible operations are very limited, they could be expanded with * or / if needed; and it could allow for parenthesis in the expression
 
     def __init__(self, left, operator: str, right):
         self.left = left
@@ -152,7 +152,6 @@ class VariableExpression(Variable):
         super().__init__(label="", domain=self._infer_domain(left, right))
 
     def _infer_domain(self, left, right):
-        # Prefer left's domain; fallback to right if needed
         if isinstance(left, Variable):
             return left.domain
         elif isinstance(right, Variable):
@@ -173,18 +172,6 @@ class VariableExpression(Variable):
 
     def __rsub__(self, other):
         return VariableExpression(other, '-', self)
-
-    def __mul__(self, other):
-        return VariableExpression(self, '*', other)
-
-    def __rmul__(self, other):
-        return VariableExpression(other, '*', self)
-
-    def __truediv__(self, other):
-        return VariableExpression(self, '/', other)
-
-    def __rtruediv__(self, other):
-        return VariableExpression(other, '/', self)
         
     def extract_variables(self):
         """Recursively extract all Variable instances used in this expression."""
@@ -197,26 +184,22 @@ class VariableExpression(Variable):
                 return _collect(expr.right)
             elif isinstance(expr, Variable):
                 return expr
-            # ignore constants like int, float, etc.
             else:
                 pass
         return _collect(self)
 
     
     def extract_constants(self):
-        """Recursively extract all Variable instances used in this expression."""
+        """Recursively extract all constants used in this expression."""
 
         def _collect(expr):
             if isinstance(expr, VariableExpression):
-            # if isinstance(expr, IntVariable) or isinstance(expr, FloatVariable):
                 result = _collect(expr.left)
                 if result is not None:
                     return result
                 return _collect(expr.right)
-            elif isinstance(expr, int) or isinstance(expr, float):
+            elif isinstance(expr, int) and not isinstance(expr, IntVariable):
                 return expr
             else:
                 pass
-
         return _collect(self)
-
