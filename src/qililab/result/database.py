@@ -204,8 +204,7 @@ class Measurement(base):  # type: ignore
         self,
         experiment_name,
         sample_name,
-        base_path,
-        relative_path,
+        result_path,
         experiment_completed,
         start_time,
         cooldown=None,
@@ -223,9 +222,7 @@ class Measurement(base):  # type: ignore
         # Required fields
         self.experiment_name = experiment_name
         self.sample_name = sample_name
-        self.base_path = base_path
-        self.relative_path = relative_path
-        self.result_path = f"{base_path}{relative_path}" if base_path[-1] == "/" else f"{base_path}/{relative_path}"
+        self.result_path = result_path
         self.experiment_completed = experiment_completed
         self.start_time = start_time
 
@@ -427,7 +424,6 @@ class DatabaseManager:
         self,
         experiment_name: str,
         experiment_completed: bool,
-        base_path: str,
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
@@ -467,12 +463,9 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
-        dir_path = (
-            f"{base_path}{self.current_sample}/{self.current_cd}/{formatted_time}"
-            if base_path[-1] == "/"
-            else f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
-        )
-        relative_path = f"{self.current_sample}/{self.current_cd}/{formatted_time}/{experiment_name}.h5"
+        base_path = "/mnt/home.local/jupytershared/data"
+        dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
+        result_path = f"{dir_path}/{experiment_name}.h5"
 
         folder = dir_path
         if not os.path.isdir(folder):
@@ -482,8 +475,7 @@ class DatabaseManager:
         measurement = Measurement(
             experiment_name=experiment_name,
             sample_name=sample_name,
-            base_path=base_path,
-            relative_path=relative_path,
+            result_path=result_path,
             experiment_completed=experiment_completed,
             start_time=start_time,
             cooldown=cooldown,
@@ -511,7 +503,6 @@ class DatabaseManager:
         experiment_name: str,
         results: np.ndarray,
         loops: dict[str, np.ndarray],
-        base_path: str,
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
@@ -546,13 +537,9 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
-        dir_path = (
-            f"{base_path}{self.current_sample}/{self.current_cd}/{formatted_time}"
-            if base_path[-1] == "/"
-            else f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
-        )
+        base_path = "/mnt/home.local/jupytershared/data"
+        dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         result_path = f"{dir_path}/{experiment_name}.h5"
-        relative_path = f"{self.current_sample}/{self.current_cd}/{formatted_time}/{experiment_name}.h5"
 
         folder = dir_path
         if not os.path.isdir(folder):
@@ -571,8 +558,7 @@ class DatabaseManager:
         measurement = Measurement(
             experiment_name=experiment_name,
             sample_name=sample_name,
-            base_path=base_path,
-            relative_path=relative_path,
+            result_path=result_path,
             experiment_completed=True,
             start_time=start_time,
             cooldown=cooldown,
