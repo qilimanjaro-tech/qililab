@@ -33,7 +33,6 @@ from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.variable import Variable
-from qililab.result.database import DatabaseManager, get_db_manager
 from qililab.result.experiment_results_writer import (
     ExperimentDataBaseMetadata,
     ExperimentMetadata,
