@@ -348,6 +348,12 @@ class Platform:
         self.db_manager: DatabaseManager | None = None
         """Database manager for experiment class and db stream array"""
 
+        self.save_experiment_results_in_database: bool = True
+        """Database trigger to define if the experiment metadata will be saved in a database or not"""
+
+        self.db_optional_identifier: str | None = None
+        """Database optional text."""
+
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
 
@@ -943,8 +949,6 @@ class Platform:
         self,
         experiment: Experiment,
         base_path: str | None = None,
-        database: bool = True,
-        optional_identifier: str | None = None,
         live_plot: bool = True,
         slurm_execution: bool = True,
         port_number: int | None = None,
@@ -956,8 +960,6 @@ class Platform:
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
             base_path (str | None, optional): Base path of the saved data. If no string given it defaults to platform.experiment_results_base_path.
-            database (bool, optional): Trigger to define if the experiment metadata will be saved in a database or not. Defaults to True.
-            optional_identifier (str | None, optional): Database optional text. Defaults to None.
             live_plot (bool): Flag that abilitates live plotting. Defaults to True.
             slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell.
                                     Defaults to True.
@@ -1013,10 +1015,7 @@ class Platform:
         executor = ExperimentExecutor(
             platform=self,
             experiment=experiment,
-            database=database,
-            db_manager=self.db_manager,
             base_path=base_path,
-            optional_identifier=optional_identifier,
             live_plot=live_plot,
             slurm_execution=slurm_execution,
             port_number=port_number,
