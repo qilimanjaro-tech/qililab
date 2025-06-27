@@ -165,17 +165,10 @@ class ExperimentExecutor:
         # Base path string for the place where to save the experiment folder structure. Default None (temporal path).
         self.base_path: str | None = base_path
 
-    def _create_database(
-        self,
-    ):
-        if not self.platform.db_manager:
-            try:
-                self.platform.db_manager = get_db_manager()
-            except ReferenceError:
-                raise ReferenceError("Missing initialization information at the desired database '.ini' path.")
-
-        self.sample = self.platform.db_manager.current_sample
-        self.cooldown = self.platform.db_manager.current_cd
+        # In case the results are saved in a database, load the correct sample and cooldown.
+        if platform.save_experiment_results_in_database:
+            self.sample = self.platform.db_manager.current_sample
+            self.cooldown = self.platform.db_manager.current_cd
 
     def _prepare_metadata(self, executed_at: datetime):
         """Prepares the loop values and result shape before execution."""
@@ -606,10 +599,6 @@ class ExperimentExecutor:
 
         # Create file path to store results
         results_path = self._create_results_path(executed_at=executed_at)
-
-        # Load / Create database manager, cooldown and sample names
-        if self.platform.save_experiment_results_in_database:
-            self._create_database()
 
         # Prepare the results metadata
         self._prepare_metadata(executed_at=executed_at)
