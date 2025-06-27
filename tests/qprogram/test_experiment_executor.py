@@ -1,3 +1,4 @@
+import datetime
 import os
 import tempfile
 from unittest.mock import Mock, call, create_autospec, patch
@@ -290,9 +291,11 @@ class TestExperimentExecutor:
         assert resuls_path.startswith(os.path.abspath(tempfile.gettempdir()))
         assert resuls_path.endswith(".h5")
 
-    @patch("qililab.qprogram.platform.get_db_manager")
+    @patch("qililab.result.database.get_db_manager")
     def test_execute_database(self, mock_get_db_manager, platform, experiment):
         """Test the execute with database as True."""
+        platform.save_experiment_results_in_database = True
+        platform.db_optional_identifier = "test"
 
         mock_db_manager = Mock()
         mock_db_manager.current_sample = "test_sample"
@@ -305,8 +308,10 @@ class TestExperimentExecutor:
             live_plot=False,
             slurm_execution=False,
         )
-        _ = executor.execute()
+        results_path = executor.execute()
+
+        date = datetime.datetime.now().strftime("%Y%m%d")
+        timestamp = datetime.datetime.now().strftime("%H%M%S")
 
         # Check if the correct file path is returned
-        assert executor.sample == "test_sample"
-        assert executor.cooldown == "test_cooldown"
+        assert results_path == f"/tmp/{date}/{timestamp}/experiment.h5"
