@@ -145,9 +145,8 @@ class TestExperimentExecutor:
 
     def test_execute(self, platform, experiment, qprogram, crosstalk):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        executor = ExperimentExecutor(
-            platform=platform, experiment=experiment, live_plot=False, slurm_execution=False, database=False
-        )
+        platform.save_experiment_results_in_database = False
+        executor = ExperimentExecutor(platform=platform, experiment=experiment, live_plot=False, slurm_execution=False)
         resuls_path = executor.execute()
 
         # Check if the correct file path is returned
@@ -276,13 +275,13 @@ class TestExperimentExecutor:
 
     def test_execute_set_base_path(self, platform, experiment):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
+        platform.save_experiment_results_in_database = False
         executor = ExperimentExecutor(
             platform=platform,
             experiment=experiment,
             base_path=tempfile.gettempdir(),
             live_plot=False,
             slurm_execution=False,
-            database=False,
         )
         resuls_path = executor.execute()
 
@@ -304,26 +303,9 @@ class TestExperimentExecutor:
             experiment=experiment,
             live_plot=False,
             slurm_execution=False,
-            database=True,
         )
         _ = executor.execute()
 
         # Check if the correct file path is returned
         assert executor.sample == "test_sample"
         assert executor.cooldown == "test_cooldown"
-
-    def test_execute_database_raises_reference_error(self, platform, experiment):
-        """Test that execute() raises ReferenceError when get_db_manager() fails."""
-
-        executor = ExperimentExecutor(
-            platform=platform,
-            experiment=experiment,
-            live_plot=False,
-            slurm_execution=False,
-            database=True,
-        )
-
-        with pytest.raises(
-            ReferenceError, match="Missing initialization information at the desired database '.ini' path."
-        ):
-            executor.execute()

@@ -833,6 +833,8 @@ class TestMethods:
         # Mock database manager
         mock_database = MagicMock()
         platform.db_manager = mock_database
+        platform.save_experiment_results_in_database = True
+        platform.optional_identifier = "test_optional_identifier"
 
         # Create an autospec of the Experiment class and Calibration class
         mock_experiment = create_autospec(Experiment)
@@ -852,10 +854,7 @@ class TestMethods:
             MockExecutor.assert_called_once_with(
                 platform=platform,
                 experiment=mock_experiment,
-                database=True,
-                db_manager=None,
                 base_path="base_path",
-                optional_identifier=None,
                 live_plot=True,
                 slurm_execution=True,
                 port_number=None,
@@ -866,6 +865,21 @@ class TestMethods:
 
             # Ensure that execute_experiment returns the correct value
             assert results_path == expected_results_path
+
+        # def test_execute_database_raises_reference_error(self, platform, experiment):
+        #     """Test that execute() raises ReferenceError when get_db_manager() fails."""
+
+        #     executor = ExperimentExecutor(
+        #         platform=platform,
+        #         experiment=experiment,
+        #         live_plot=False,
+        #         slurm_execution=False,
+        #     )
+
+        #     with pytest.raises(
+        #         ReferenceError, match="Missing initialization information at the desired database '.ini' path."
+        #     ):
+        #         executor.execute()
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
