@@ -37,6 +37,7 @@ def mock_platform():
     platform.experiment_results_base_path = tempfile.gettempdir()
     platform.experiment_results_path_format = "{date}/{time}/{label}.h5"
     platform.set_crosstalk = Mock()
+    platform.db_manager = Mock()
 
     return platform
 
@@ -289,7 +290,7 @@ class TestExperimentExecutor:
         assert resuls_path.startswith(os.path.abspath(tempfile.gettempdir()))
         assert resuls_path.endswith(".h5")
 
-    @patch("qililab.qprogram.experiment_executor.get_db_manager")
+    @patch("qililab.qprogram.platform.get_db_manager")
     def test_execute_database(self, mock_get_db_manager, platform, experiment):
         """Test the execute with database as True."""
 
