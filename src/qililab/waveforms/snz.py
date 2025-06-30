@@ -15,7 +15,6 @@
 """Square waveform."""
 
 import numpy as np
-from scipy.special import erf
 
 from qililab.config import logger
 from qililab.qprogram.decorators import requires_domain

@@ -45,4 +45,4 @@ from .snz import SNZ
 from .square import Square
 from .waveform import Waveform
 
-__all__ = ["Arbitrary", "Chained", "DragCorrection", "FlatTop", "Gaussian", "IQPair", "Ramp", "SNZ", "Square", "Waveform"]
+__all__ = ["SNZ", "Arbitrary", "Chained", "DragCorrection", "FlatTop", "Gaussian", "IQPair", "Ramp", "Square", "Waveform"]
