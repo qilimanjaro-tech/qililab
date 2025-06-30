@@ -32,7 +32,7 @@ from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProg
 from .result import ExperimentResults, stream_results
 from .typings import Parameter
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
-from .waveforms import IQPair, Square, Gaussian, FlatTop, Arbitrary, DragCorrection, Waveform, Ramp, Chained
+from .waveforms import IQPair, Snz, Square, Gaussian, FlatTop, Arbitrary, DragCorrection, Waveform, Ramp, Chained
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
 from .digital import Drag, Wait
@@ -62,6 +62,7 @@ __all__ = [
     "QuantumMachinesCompiler",
     "Ramp",
     "Sample",
+    "Snz",
     "Square",
     "Wait",
     "Waveform",
