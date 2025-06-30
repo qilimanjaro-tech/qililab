@@ -540,7 +540,6 @@ class DatabaseManager:
         experiment_name: str,
         results: np.ndarray,
         loops: dict[str, np.ndarray],
-        base_path: str,
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
@@ -574,6 +573,13 @@ class DatabaseManager:
             cooldown = self.current_cd
 
         start_time = datetime.datetime.now()
+
+        base_path = f"{self.base_path_local}{self.folder_path}"
+        if not os.path.isdir(base_path):
+            base_path = f"{self.base_path_share}{self.folder_path}"
+            warnings.warn(
+                f"Local base path ({self.base_path_local}) did not exist, using shared base path: {self.base_path_share}"
+            )
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         result_path = f"{dir_path}/{experiment_name}.h5"

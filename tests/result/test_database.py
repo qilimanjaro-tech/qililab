@@ -362,25 +362,21 @@ class Testdatabase:
         mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
 
         # Act
-        measurement = db_manager.add_measurement(
-            "exp1", experiment_completed=True, base_path="/mnt/home.local/jupytershared/data"
-        )
+        measurement = db_manager.add_measurement("exp1", experiment_completed=True)
 
         # Assert
-        expected_path = "/mnt/home.local/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+        expected_path = "/shared_test/mesaurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
         assert measurement.result_path == expected_path
         assert db_manager._mock_session.add.called_once
         assert db_manager._mock_session.commit.called_once
-        assert mock_makedirs.called_once_with(
-            "/mnt/home.local/jupytershared/data/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
-        )
+        assert mock_makedirs.called_once_with("/shared_test/mesaurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5")
 
     def test_add_measurement_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set
         db_manager.current_sample = None
 
         with pytest.raises(Exception, match="Please set at least a sample using set_sample_and_cooldown(...)"):
-            db_manager.add_measurement(experiment_name="exp1", experiment_completed=True, base_path="/base_path")
+            db_manager.add_measurement(experiment_name="exp1", experiment_completed=True)
 
     @patch("qililab.result.database.os.makedirs")
     @patch("qililab.result.database.datetime")
@@ -399,7 +395,7 @@ class Testdatabase:
         db_manager.Session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
-            _ = db_manager.add_measurement("exp1", experiment_completed=True, base_path="/base_path")
+            _ = db_manager.add_measurement("exp1", experiment_completed=True)
 
         assert mock_session.rollback.called_once
 
@@ -428,10 +424,9 @@ class Testdatabase:
         # Simulated data
         results = np.array([[1, 2], [3, 4]])
         loops = {"x": np.array([0, 1])}
-        base_path = "/mnt/home.local/jupytershared/data"
 
         # Run the method
-        db_manager.add_results("exp1", results, loops, base_path)
+        db_manager.add_results("exp1", results, loops)
 
         # Assertions
         group_mock.create_dataset.called_once_with(name="x", data=loops["x"])
@@ -446,10 +441,9 @@ class Testdatabase:
 
         results = np.array([[1, 2], [3, 4]])
         loops = {"x": np.array([0, 1])}
-        base_path = "/mnt/home.local/jupytershared/data"
 
         with pytest.raises(Exception, match="Please set at least a sample using set_sample_and_cooldown(...)"):
-            db_manager.add_results(experiment_name="exp1", results=results, loops=loops, base_path=base_path)
+            db_manager.add_results(experiment_name="exp1", results=results, loops=loops)
 
     @patch("qililab.result.database.h5py.File")
     @patch("qililab.result.database.os.makedirs")
@@ -478,7 +472,6 @@ class Testdatabase:
         # Simulated data
         results = np.array([[1, 2], [3, 4]])
         loops = {"x": np.array([0, 1])}
-        base_path = "/mnt/home.local/jupytershared/data"
 
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
@@ -487,7 +480,7 @@ class Testdatabase:
         db_manager.Session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
-            db_manager.add_results("exp1", results, loops, base_path)
+            db_manager.add_results("exp1", results, loops)
 
         assert mock_session.rollback.called_once
 
