@@ -7,7 +7,7 @@ from qililab.waveforms import Snz
 
 @pytest.fixture(name="snz")
 def fixture_snz():
-    return SNZ(amplitude=1, duration=10, b=0.1, t_phi=2)
+    return Snz(amplitude=1, duration=10, b=0.1, t_phi=2)
 
 
 class TestSnz:
