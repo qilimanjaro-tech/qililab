@@ -31,6 +31,7 @@ Waveforms
     ~Chained
     ~IQPair
     ~FlatTop
+    ~SNZ
 """
 
 from .arbitrary import Arbitrary
@@ -40,7 +41,8 @@ from .flat_top import FlatTop
 from .gaussian import Gaussian
 from .iq_pair import IQPair
 from .ramp import Ramp
+from .snz import SNZ
 from .square import Square
 from .waveform import Waveform
 
-__all__ = ["Arbitrary", "Chained", "DragCorrection", "FlatTop", "Gaussian", "IQPair", "Ramp", "Square", "Waveform"]
+__all__ = ["Arbitrary", "Chained", "DragCorrection", "FlatTop", "Gaussian", "IQPair", "Ramp", "SNZ", "Square", "Waveform"]
