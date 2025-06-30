@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from scipy.special import erf
 
-from qililab.waveforms import SNZ
+from qililab.waveforms import Snz
 
 
 @pytest.fixture(name="snz")
@@ -11,7 +11,7 @@ def fixture_snz():
 
 
 class TestSnz:
-    """Unit tests checking the SNZ waveform attributes and methods."""
+    """Unit tests checking the Snz waveform attributes and methods."""
     def test_init(self, snz):
         """Test __init__ method"""
         assert snz.amplitude == 1
