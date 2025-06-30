@@ -2,15 +2,15 @@ import numpy as np
 import pytest
 from scipy.special import erf
 
-from qililab.waveforms import Snz
+from qililab.waveforms import SuddenNetZero
 
 
 @pytest.fixture(name="snz")
 def fixture_snz():
-    return Snz(amplitude=1, duration=10, b=0.1, t_phi=2)
+    return SuddenNetZero(amplitude=1, duration=10, b=0.1, t_phi=2)
 
 
-class TestSnz:
+class TestSuddenNetZero:
     """Unit tests checking the Snz waveform attributes and methods."""
     def test_init(self, snz):
         """Test __init__ method"""

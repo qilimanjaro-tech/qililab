@@ -25,13 +25,13 @@ from .waveform import Waveform
 
 
 @yaml.register_class
-class Snz(Waveform):
-    """Sudden Net Zero waveform.
+class SuddenNetZero(Waveform):
+    """Sudden Net Zero waveform. https://arxiv.org/pdf/2008.07411
 
     Args:
         duration (int): Duration of the pulse (ns).
         amplitude (float): Maximum amplitude of the pulse.
-        b (float): Instant stops height when going from the rectangular half-duration to `height = 0`.
+        b (float): Instant stops height when going from the rectangular half-duration to `height = 0`. Coefficient applied to the amplitude.
         t_phi (int): Time at `height = 0`, in the middle of the positive and negative rectangular pulses.
     """
 
@@ -45,7 +45,7 @@ class Snz(Waveform):
         self.t_phi = t_phi
 
     def envelope(self, resolution: float = 1.0) -> np.ndarray:
-        """SNZ envelope.
+        """SuddenNetZero envelope.
 
         Args:
             resolution (float, optional): Resolution of the pulse. Defaults to 1.
@@ -67,7 +67,6 @@ class Snz(Waveform):
 
         envelope[:half_pulse_t] = self.amplitude * np.ones(half_pulse_t)  # positive square halfpulse
         envelope[half_pulse_t] = self.b * self.amplitude  # impulse b
-        envelope[half_pulse_t + 2 + self.t_phi:] = 0  # t_phi
         envelope[half_pulse_t + 1 + self.t_phi] = -self.b * self.amplitude  # impulse -b
         envelope[half_pulse_t + 2 + self.t_phi:] = -self.amplitude * np.ones(half_pulse_t)  # negative square halfpulse
 
