@@ -28,7 +28,9 @@ def fixture_db_manager():
             mock_context_manager.__enter__.return_value = mock_session
             mock_sessionmaker.return_value = lambda: mock_context_manager
 
-            dbm = DatabaseManager("user", "pass", "host", "5432", "db")
+            dbm = DatabaseManager(
+                "user", "pass", "host", "5432", "db", "/local_test/", "/shared_test/", "mesaurement_folder"
+            )
             dbm._mock_session = mock_session  # Add reference for testing
             return dbm
 
