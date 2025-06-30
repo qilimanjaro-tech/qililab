@@ -866,20 +866,34 @@ class TestMethods:
             # Ensure that execute_experiment returns the correct value
             assert results_path == expected_results_path
 
-        # def test_execute_database_raises_reference_error(self, platform, experiment):
-        #     """Test that execute() raises ReferenceError when get_db_manager() fails."""
+    def test_execute_experiment_raises_reference_error(self):
+        """Test that execute() raises ReferenceError when get_db_manager() fails."""
 
-        #     executor = ExperimentExecutor(
-        #         platform=platform,
-        #         experiment=experiment,
-        #         live_plot=False,
-        #         slurm_execution=False,
-        #     )
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
 
-        #     with pytest.raises(
-        #         ReferenceError, match="Missing initialization information at the desired database '.ini' path."
-        #     ):
-        #         executor.execute()
+        # Manually set the execute_experiment method to the real one
+        platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
+
+        platform.db_manager = None
+        platform.save_experiment_results_in_database = True
+        platform.optional_identifier = "test_optional_identifier"
+
+        # Create an autospec of the Experiment class and Calibration class
+        mock_experiment = create_autospec(Experiment)
+
+        expected_results_path = "mock/results/path/data.h5"
+
+        with patch.object(platform, "load_db_manager", side_effect=ReferenceError):
+            with pytest.raises(
+                ReferenceError, match="Missing initialization information at the desired database '.ini' path."
+            ):
+                # Mock the ExperimentExecutor to ensure it's used correctly
+                with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
+                    mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+                    mock_executor_instance.execute.return_value = expected_results_path
+
+                    platform.execute_experiment(experiment=mock_experiment)
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
