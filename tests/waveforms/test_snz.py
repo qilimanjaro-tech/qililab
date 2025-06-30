@@ -10,7 +10,7 @@ def fixture_snz():
     return SNZ(amplitude=1, duration=10, b=0.1, t_phi=2)
 
 
-class TestSNZ:
+class TestSnz:
     """Unit tests checking the SNZ waveform attributes and methods."""
     def test_init(self, snz):
         """Test __init__ method"""

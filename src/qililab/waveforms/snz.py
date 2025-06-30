@@ -25,7 +25,7 @@ from .waveform import Waveform
 
 
 @yaml.register_class
-class SNZ(Waveform):
+class Snz(Waveform):
     """Sudden Net Zero waveform.
 
     Args:
