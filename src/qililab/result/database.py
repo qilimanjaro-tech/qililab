@@ -373,7 +373,7 @@ class DatabaseManager:
         measurement_by_id = self.Session().query(Measurement).where(Measurement.measurement_id == id).one_or_none()
 
         path = measurement_by_id.result_path
-        if not os.path.isdir(path):
+        if not os.path.isfile(path):
 
             new_path = path.replace(self.base_path_local, self.base_path_share)
             measurement_by_id.result_path = new_path
@@ -505,7 +505,7 @@ class DatabaseManager:
         result_path = f"{dir_path}/{experiment_name}.h5"
 
         folder = dir_path
-        if not os.path.isdir(folder):
+        if not os.path.isfile(folder):
             os.makedirs(folder)
             warnings.warn(f"Data folder did not exist. Created one at {folder}")
 
@@ -585,7 +585,7 @@ class DatabaseManager:
         result_path = f"{dir_path}/{experiment_name}.h5"
 
         folder = dir_path
-        if not os.path.isdir(folder):
+        if not os.path.isfile(folder):
             os.makedirs(folder)
             warnings.warn(f"Data folder did not exist. Created one at {folder}")
 
