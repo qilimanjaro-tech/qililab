@@ -55,6 +55,21 @@
 
 [#945](https://github.com/qilimanjaro-tech/qililab/pull/945)
 
+- Added the database implementation inside `Experiment`. `load_db_manager` function added to platform to add the db_manager. For `Experiment` class, added an input variable (`platform.save_experiment_results_in_database`) to define if working with databases or not (default set as True), if True, the database is automatically generated using the `Experiment` variables as information.
+
+Code example:
+
+```
+...
+platform.load_db_manager(db_ini_path = "path")  # To load the database manager. Optional path.
+platform.save_experiment_results_in_database = True  # Default is True.
+experiment = Experiment(label="Experiment_name", description = "optional description")
+platform.execute_experiment(experiment)
+...
+```
+
+[#938](https://github.com/qilimanjaro-tech/qililab/pull/938)
+
 - Minor modification at database `DatabaseManager`, as it now requires the for the config file to contain a `base_path_local`, `base_path_local` and `data_write_folder`. following the structure:
 
 ```

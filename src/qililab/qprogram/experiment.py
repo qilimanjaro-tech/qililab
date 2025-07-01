@@ -60,10 +60,11 @@ class Experiment(StructuredProgram):
         {Parameter.DRAG_COEFFICIENT: float, Parameter.THRESHOLD: float, Parameter.THRESHOLD_ROTATION: float}
     )
 
-    def __init__(self, label: str) -> None:
+    def __init__(self, label: str, description: str | None = None) -> None:
         super().__init__()
 
         self.label: str = label
+        self.description: str | None = description
 
     def get_parameter(self, alias: str, parameter: Parameter, channel_id: int | None = None):
         """Set a platform parameter.
