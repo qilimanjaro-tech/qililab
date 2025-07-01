@@ -271,7 +271,7 @@ class ExperimentExecutor:
                 base_path=self.base_path,  # type: ignore
                 cooldown=self.cooldown,
                 sample_name=self.sample,
-                optional_identifier=self.platform.db_optional_identifier,
+                optional_identifier=self.experiment.description,
             )
         traverse_experiment(self.experiment.body)
         self._all_variables = dict(self._all_variables)

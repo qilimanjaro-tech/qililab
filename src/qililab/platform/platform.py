@@ -351,9 +351,6 @@ class Platform:
         self.save_experiment_results_in_database: bool = True
         """Database trigger to define if the experiment metadata will be saved in a database or not"""
 
-        self.db_optional_identifier: str | None = None
-        """Database optional text."""
-
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
 
@@ -1693,7 +1690,7 @@ class Platform:
         experiment_name: str,
         base_path: str | None = None,
         qprogram: QProgram | None = None,
-        optional_identifier: str | None = None,
+        description: str | None = None,
     ):
         """Allows for real time saving of results from an experiment.
 
@@ -1720,7 +1717,7 @@ class Platform:
                     experiment_name="resonator_spectroscopy",
                     base_path="/base_path",
                     qprogram=qprogram,
-                    optional_identifier="optional text"
+                    description="optional text"
                 )
 
                 with stream_array:
@@ -1734,7 +1731,7 @@ class Platform:
             experiment_name (str): Name of the experiment.
             base_path (str | None, optional): base path for the results data folder structure. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
-            optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
+            description (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
 
         Returns:
             StreamArray: StreamArray class to process and save the data
@@ -1754,7 +1751,7 @@ class Platform:
             qprogram=qprogram,
             experiment_name=experiment_name,
             db_manager=self.db_manager,
-            optional_identifier=optional_identifier,
+            optional_identifier=description,
             base_path=base_path,
         )
 
@@ -1765,7 +1762,7 @@ class Platform:
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
         base_path: str | None = None,
         qprogram: QProgram | None = None,
-        optional_identifier: str | None = None,
+        description: str | None = None,
     ):
         """Uses the same StreamArray class as for live saving but it saves full chunks of data in the same format as platform.stream_array.
 
@@ -1791,7 +1788,7 @@ class Platform:
                     loops={"frequency": if_sweep},
                     base_path="/base_path",
                     qprogram=qprogram,
-                    optional_identifier="optional text"
+                    description="optional text"
                 )
 
         Args:
@@ -1800,7 +1797,7 @@ class Platform:
             loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
             base_path (str | None, optional): base path for the results data folder structure. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
-            optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
+            description (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
         """
 
         if not self.db_manager:
@@ -1832,7 +1829,7 @@ class Platform:
             qprogram=qprogram,
             experiment_name=experiment_name,
             db_manager=self.db_manager,
-            optional_identifier=optional_identifier,
+            optional_identifier=description,
             base_path=base_path,
         )
 
