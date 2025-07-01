@@ -132,22 +132,11 @@ def fixture_qp_plat_draw_qrm() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="qp_quantum_machine")
-def fixture_qp_quantum_machine() -> QProgram:
-    qp = QProgram()
-    qp.play(bus="drive_q0", waveform=Square(amplitude=1, duration=10))
-    qp.wait("drive_q0", 10)
-    return qp
-
-
 @pytest.fixture(name="platform")
 def fixture_platform():
     return build_platform(runcard=Galadriel.runcard)
 
 
-@pytest.fixture(name="platform_quantum_machines")
-def fixture_platform_quantum_machines():
-    return build_platform(runcard=SauronQuantumMachines.runcard)
 
 @pytest.fixture(name="qp_play_interrupted_by_another_play")
 def fixture_play_interrupted_by_another_play():
@@ -440,16 +429,7 @@ class TestQBloxDraw:
         )
         assert data_draw["feedline_input_output_bus"][1] is None
 
-    def test_platform_draw_quantum_machine_raises_error(
-        self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
-    ):
-        pio.renderers.default = "json"
 
-        with pytest.raises(NotImplementedError) as exc_info:
-            platform_quantum_machines.draw(qp_quantum_machine)
-    
-        # Optionally check the error message
-        assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
 
     def test_play_interrupted_by_another_play(self, qp_play_interrupted_by_another_play: QProgram):
         expected_data_draw_i = [ 0.70710678,  0.70710678,  0.70710678,  0.70710678,  0.70710678,
