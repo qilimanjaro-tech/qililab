@@ -70,7 +70,12 @@ def sample_metadata():
 def mock_experiment_results(metadata):
     """Create a mock HDF5 file structure for testing"""
     with ExperimentResultsWriter(
-        path=EXPERIMENT_RESULTS_PATH, metadata=metadata, live_plot=False, slurm_execution=False
+        path=EXPERIMENT_RESULTS_PATH,
+        metadata=metadata,
+        live_plot=False,
+        slurm_execution=False,
+        db_metadata=None,
+        db_manager=None,
     ):
         ...
     yield EXPERIMENT_RESULTS_PATH
@@ -505,7 +510,14 @@ class TestExperimentResultsWriter:
     def test_create_results_file(self, mock_h5file, metadata):
         """Test file creation"""
         # Test that the results file is created with the correct structure
-        with ExperimentResultsWriter(path="mock_path", metadata=metadata, live_plot=False, slurm_execution=False):
+        with ExperimentResultsWriter(
+            path="mock_path",
+            metadata=metadata,
+            live_plot=False,
+            slurm_execution=False,
+            db_metadata=None,
+            db_manager=None,
+        ):
             pass  # Just initializing should create the file structure
 
         assert mock_h5file.called
@@ -514,7 +526,12 @@ class TestExperimentResultsWriter:
     def test_setters(self, experiment_results):
         """Test setters"""
         with ExperimentResultsWriter(
-            path=experiment_results, metadata={}, live_plot=False, slurm_execution=False
+            path=experiment_results,
+            metadata={},
+            live_plot=False,
+            slurm_execution=False,
+            db_metadata=None,
+            db_manager=None,
         ) as exp_writer:
             # test experiment property
             exp_writer.experiment = "new_experiment"
@@ -563,7 +580,7 @@ class TestExperimentResultsWriter:
         path = "test_live_plot_writer.h5"  # ✅ temp path
 
         with ExperimentResultsWriter(
-            path=str(path), metadata=metadata, live_plot=True, slurm_execution=False
+            path=str(path), metadata=metadata, live_plot=True, slurm_execution=False, db_metadata=None, db_manager=None
         ) as writer:
             writer["QProgram_0", "Measurement_0", 0, 0, 0] = 1.0
 
