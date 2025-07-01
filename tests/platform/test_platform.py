@@ -288,6 +288,13 @@ def get_anneal_qprogram_with_preparation(runcard, flux_to_bus_topology):
     return qp_anneal
 
 
+@pytest.fixture(name="qp_quantum_machine")
+def fixture_qp_quantum_machine() -> QProgram:
+    qp = QProgram()
+    qp.play(bus="drive_q0", waveform=Square(amplitude=1, duration=10))
+    qp.wait("drive_q0", 10)
+    return qp
+
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
 
@@ -1577,3 +1584,32 @@ class TestMethods:
             platform.db_save_results(
                 experiment_name, results, loops, db_manager, base_path, qprogram, optional_identifier
             )
+
+    def test_platform_draw_quantum_machine_raises_error(
+        self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
+    ):
+
+        with pytest.raises(NotImplementedError) as exc_info:
+            platform_quantum_machines.draw(qp_quantum_machine)
+    
+        assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
+
+
+    def test_drawer_hardware_loop_time_raises_error(
+        self, platform: Platform
+    ):
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        
+        time=qprogram.variable(label="time",domain=Domain.Time)
+        with qprogram.for_loop(variable=time, start=10, stop=500, step=10):
+            qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+            qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
+            qprogram.wait(bus="drive_line_q1_bus", duration=time)
+            qprogram.sync()
+
+        with pytest.raises(NotImplementedError) as exc_info:
+            platform.draw(qprogram)
+    
+        assert str(exc_info.value) == "QbloxDraw does not support hardware time-domain loops at the moment."

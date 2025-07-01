@@ -19,6 +19,7 @@ from uuid import UUID, uuid4
 
 from qililab.yaml import yaml
 
+
 @yaml.register_class
 class Domain(Enum):
     """Domain class."""
@@ -60,30 +61,18 @@ class Variable:
 
     def __eq__(self, other):
         return other is not None and isinstance(other, Variable) and self._uuid == other._uuid
-    
+
     def __add__(self, other):
-        return VariableExpression(self, '+', other)
+        return VariableExpression(self, "+", other)
 
     def __radd__(self, other):
-        return VariableExpression(other, '+', self)
+        return VariableExpression(other, "+", self)
 
     def __sub__(self, other):
-        return VariableExpression(self, '-', other)
+        return VariableExpression(self, "-", other)
 
     def __rsub__(self, other):
-        return VariableExpression(other, '-', self)
-
-    def __mul__(self, other):
-        return VariableExpression(self, '*', other)
-
-    def __rmul__(self, other):
-        return VariableExpression(other, '*', self)
-
-    def __truediv__(self, other):
-        return VariableExpression(self, '/', other)
-
-    def __rtruediv__(self, other):
-        return VariableExpression(other, '/', self)
+        return VariableExpression(other, "-", self)
 
     @property
     def uuid(self):
@@ -140,21 +129,27 @@ class FloatVariable(Variable, float):  # type: ignore
     def __init__(self, label: str = "", domain: Domain = Domain.Scalar):
         Variable.__init__(self, label, domain)
 
+
 @yaml.register_class
 class VariableExpression(Variable):
     """An expression combining Variables and/or constants."""
-    #TODO: The possible operations are very limited, they could be expanded with * or / if needed; and it could allow for parenthesis in the expression
+
+    # TODO: The possible operations are very limited, they could be expanded with * or / if needed; and it could allow for parenthesis in the expression
 
     def __init__(self, left, operator: str, right):
         self.left = left
         self.operator = operator
         self.right = right
-        super().__init__(label="", domain=self._infer_domain(left, right))
+        domain = self._infer_domain(left, right)
+        if domain != Domain.Time:
+            raise NotImplementedError("Variable Expressions are only supported for Domain.Time.")
+        self._domain = domain
+        super().__init__(label="", domain=self._domain)
 
     def _infer_domain(self, left, right):
         if isinstance(left, Variable):
             return left.domain
-        elif isinstance(right, Variable):
+        if isinstance(right, Variable):
             return right.domain
         raise ValueError("Cannot infer domain from constants.")
 
@@ -162,17 +157,17 @@ class VariableExpression(Variable):
         return f"({self.left} {self.operator} {self.right})"
 
     def __add__(self, other):
-        return VariableExpression(self, '+', other)
+        return VariableExpression(self, "+", other)
 
     def __radd__(self, other):
-        return VariableExpression(other, '+', self)
+        return VariableExpression(other, "+", self)
 
     def __sub__(self, other):
-        return VariableExpression(self, '-', other)
+        return VariableExpression(self, "-", other)
 
     def __rsub__(self, other):
-        return VariableExpression(other, '-', self)
-        
+        return VariableExpression(other, "-", self)
+
     def extract_variables(self):
         """Recursively extract all Variable instances used in this expression."""
 
@@ -182,13 +177,15 @@ class VariableExpression(Variable):
                 if result is not None:
                     return result
                 return _collect(expr.right)
-            elif isinstance(expr, Variable):
+            if isinstance(expr, Variable):
                 return expr
-            else:
-                pass
-        return _collect(self)
+            return None
 
-    
+        result = _collect(self)
+        if result is None:
+            raise ValueError(f"No Variable instance found in expression: {self}")
+        return result
+
     def extract_constants(self):
         """Recursively extract all constants used in this expression."""
 
@@ -198,8 +195,11 @@ class VariableExpression(Variable):
                 if result is not None:
                     return result
                 return _collect(expr.right)
-            elif isinstance(expr, int) and not isinstance(expr, IntVariable):
+            if isinstance(expr, int) and not isinstance(expr, IntVariable):
                 return expr
-            else:
-                pass
-        return _collect(self)
+            return None
+
+        result = _collect(self)
+        if result is None:
+            raise ValueError(f"No Variable instance found in expression: {self}")
+        return result

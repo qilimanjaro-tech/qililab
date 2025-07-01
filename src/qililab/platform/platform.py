@@ -1619,7 +1619,6 @@ class Platform:
         """
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        compiler = QbloxCompiler()
         sequencer = self.compile_qprogram(qprogram, bus_mapping)
         for variable in sequencer.qprogram._variables:
             if variable.domain == Domain.Time:
