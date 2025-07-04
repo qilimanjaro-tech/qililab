@@ -31,8 +31,10 @@ from .set_markers import SetMarkers
 from .set_offset import SetOffset
 from .set_parameter import SetParameter
 from .set_phase import SetPhase
+from .set_trigger import SetTrigger
 from .sync import Sync
 from .wait import Wait
+from .wait_trigger import WaitTrigger
 
 __all__ = [
     "Acquire",
@@ -54,6 +56,8 @@ __all__ = [
     "SetOffset",
     "SetParameter",
     "SetPhase",
+    "SetTrigger",
     "Sync",
     "Wait",
+    "WaitTrigger",
 ]
