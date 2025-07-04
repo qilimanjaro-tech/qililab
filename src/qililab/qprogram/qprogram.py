@@ -504,7 +504,7 @@ class QProgram(StructuredProgram):
                 bus (str): Unique identifier of the bus.
                 duration (int): Duration of the delay after the trigger is recieved. Minimum of 4 ns.
             """
-            operation = WaitTrigger(bus=bus, duration=duration)
+            operation = WaitTrigger(duration=duration)
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
@@ -748,6 +748,11 @@ class QProgram(StructuredProgram):
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(self)
-        result_draw = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
+        result_draw = qblox_draw.draw(
+            sequencer=sequencer,
+            time_window=time_window,
+            averages_displayed=averages_displayed,
+            acquisition_showing=acquisition_showing,
+        )
         logger.warning("The drawing feature is currently only supported for QBlox.")
         return result_draw
