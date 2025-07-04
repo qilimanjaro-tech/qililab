@@ -128,9 +128,9 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
             if isinstance(data, dict):
                 loops[name] = {
                     "array": data[:],
-                    "units": data.attrs.get("units", ""),
-                    "bus": data.attrs.get("bus", ""),
-                    "parameter": data.attrs.get("parameter", ""),
+                    "units": data.attrs.get("units", ""),  # type: ignore
+                    "bus": data.attrs.get("bus", ""),  # type: ignore
+                    "parameter": data.attrs.get("parameter", ""),  # type: ignore
                 }
             else:
                 loops[name] = data[:] if isinstance(data, (list, np.ndarray)) else np.array(data)  # type: ignore
