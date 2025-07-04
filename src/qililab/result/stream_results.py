@@ -34,7 +34,7 @@ class StreamArray:
 
     Args:
         shape (list | tuple): Shape of the results array.
-        loops (dict[str, np.ndarray]): dictionary of loops with the name of the loop and the array.
+        loops (dict[str, np.ndarray] | dict[str, dict[str, Any]]): dictionary of loops with the name of the loop and the array.
         platform (Platform): platform where the experiment was executed
         experiment_name (str): Name of the experiment.
         db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
@@ -92,10 +92,10 @@ class StreamArray:
         g = self._file.create_group(name="loops")
         for loop_name, array in self.loops.items():
             if isinstance(array, dict):
-                g_dataset = g.create_dataset(name=loop_name, data=array["array"])
-                g_dataset["bus"] = array["bus"]
-                g_dataset["parameter"] = array["parameter"]
-                g_dataset["units"] = array["units"]
+                g.create_dataset(name=loop_name, data=array["array"])
+                g["bus"] = array["bus"]
+                g["parameter"] = array["parameter"]
+                g["units"] = array["units"]
             else:
                 g.create_dataset(name=loop_name, data=array)
 
