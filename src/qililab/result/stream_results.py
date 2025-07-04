@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 import h5py
 import numpy as np
 
-from qililab.qprogram import QProgram
+from qililab.qprogram.qprogram import QProgram
 from qililab.result.database import DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
 
@@ -92,10 +92,10 @@ class StreamArray:
         g = self._file.create_group(name="loops")
         for loop_name, array in self.loops.items():
             if isinstance(array, dict):
-                g.create_dataset(name=loop_name, data=array["array"])
-                g["bus"] = array["bus"]
-                g["parameter"] = array["parameter"]
-                g["units"] = array["units"]
+                g_dataset = g.create_dataset(name=loop_name, data=array["array"])
+                g_dataset.attrs["bus"] = array["bus"]
+                g_dataset.attrs["parameter"] = array["parameter"]
+                g_dataset.attrs["units"] = array["units"]
             else:
                 g.create_dataset(name=loop_name, data=array)
 
