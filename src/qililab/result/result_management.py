@@ -132,7 +132,7 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
                     "bus": data.attrs.get("bus", ""),  # type: ignore
                     "parameter": data.attrs.get("parameter", ""),  # type: ignore
                 }
-            except:  # type: ignore
+            except:  # noqa: E722
                 loops[name] = data[:] if isinstance(data, (list, np.ndarray)) else np.array(data)  # type: ignore
         results = hf["results"][:]  # type: ignore
 
