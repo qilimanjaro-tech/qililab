@@ -89,7 +89,7 @@ class StreamArray:
         # Save loops
         self._file = h5py.File(name=self.path, mode="w")
 
-        g = self._file.create_group(name="loops")
+        g = self._file.create_group(name="loops", track_order=True)
         for loop_name, array in self.loops.items():
             if isinstance(array, dict):
                 g_dataset = g.create_dataset(name=loop_name, data=array["array"])
