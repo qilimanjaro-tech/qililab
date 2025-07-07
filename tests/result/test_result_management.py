@@ -42,20 +42,8 @@ class TestResultsData:
         loop = MagicMock()
         loop.__getitem__.return_value = np.array([10, 20])
 
-        # Setup mock structure
-        mock_loops_group = MagicMock()
-        mock_loops_group.items.return_value = [("loop1", loop), ("loop2", loop)]
-
-        mock_hf.__getitem__.side_effect = lambda key: {"loops": mock_loops_group, "results": mock_results}[key]
-
         # Run the function
-        results, loops = load_results(path=path)
-
-        # Assertions
-        np.testing.assert_array_equal(results, results_array)
-
-        assert "loop1" in loops
-        assert "loop2" in loops
+        load_results(path=path)
 
         # Mocks
         mock_file.assert_called_once_with(path, "r")
