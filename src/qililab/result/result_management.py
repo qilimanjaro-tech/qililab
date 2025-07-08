@@ -125,15 +125,12 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     with h5py.File(path, "r") as hf:
         loops = {}
         for name, data in hf["loops"].items():
-            try:
-                loops[name] = {
-                    "array": data[:],
-                    "units": data.attrs.get("units", ""),  # type: ignore
-                    "bus": data.attrs.get("bus", ""),  # type: ignore
-                    "parameter": data.attrs.get("parameter", ""),  # type: ignore
-                }
-            except:  # noqa: E722
-                loops[name] = data[:] if isinstance(data, (list, np.ndarray)) else np.array(data)  # type: ignore
+            loops[name] = {
+                "array": data[:],
+                "units": data.attrs.get("units", ""),  # type: ignore
+                "bus": data.attrs.get("bus", ""),  # type: ignore
+                "parameter": data.attrs.get("parameter", ""),  # type: ignore
+            }
         results = hf["results"][:]  # type: ignore
 
     return results, loops  # type: ignore

@@ -24,27 +24,28 @@ class TestResultsData:
         assert path.endswith("_test")
 
     def test_load_results(self, mock_file: MagicMock, mock_makedirs: MagicMock):
-        """Test that load_results handles datasets without expected attributes (triggers except block)."""
+        """Test that the path created to save the results is correct."""
 
-        path = "some/path/results.h5"
+        path = "this_is_a_test/results.h5"
 
-        # Create mock file
+        # Create mock for the file context
         mock_hf = MagicMock()
+        mock_file.return_value.__enter__.return_value = mock_hf
 
-        # Mock 'results' dataset
-        mock_hf.__getitem__.side_effect = lambda key: {
-            "results": np.array([[1, 2], [3, 4]]),
-            "loops": {"loop_1": MagicMock()},
-        }[key]
+        # Mock results
+        results_array = np.array([1, 2, 3])
+        mock_results = MagicMock()
+        mock_results.__getitem__.return_value = results_array
+        mock_results.__array__ = lambda self: results_array
 
-        # Make "loop_1" raise on accessing .attrs.get
-        broken_dataset = MagicMock()
-        broken_dataset.__getitem__.side_effect = lambda _: (_ for _ in ()).throw(Exception("Nope"))
-        broken_dataset.attrs.get.side_effect = Exception("Attribute error")
+        # First loop: behaves like a dict (with attributes)
+        loop = MagicMock()
+        loop.__getitem__.return_value = np.array([10, 20])
 
-        load_results(path)
+        # Run the function
+        load_results(path=path)
 
-        # Assertions
+        # Mocks
         mock_file.assert_called_once_with(path, "r")
         mock_makedirs.assert_not_called()
 
