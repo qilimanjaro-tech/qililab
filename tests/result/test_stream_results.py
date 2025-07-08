@@ -93,7 +93,7 @@ class MockFile:
         """Initialize a mock file."""
         self.dataset = None
 
-    def create_group(self, name: str):
+    def create_group(self, name: str, track_order: bool = False):
         return MockGroup()
 
     def create_dataset(self, _: str, data: np.ndarray, dtype=None):
@@ -122,7 +122,7 @@ class TestStreamArray:
             }
         }
 
-    @patch("h5py.File", return_value=MockFile())
+    @patch("h5py.File", return_value=MockFile(), autospec=False)
     def test_context_manager(self, mock_h5py: MockFile, stream_array: StreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
@@ -144,7 +144,7 @@ class TestStreamArray:
         assert [1, 2] in stream_array
         assert (stream_array[0] == [1, 2]).all
 
-    @patch("h5py.File", return_value=MockFile())
+    @patch("h5py.File", return_value=MockFile(), autospec=False)
     def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_array: StreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
@@ -175,7 +175,7 @@ class TestRawStreamArray:
         assert stream_results.path == "test_stream_array.hdf5"
         assert stream_results.loops == {"test_amp_loop": np.arange(0, 1, 2)}
 
-    @patch("h5py.File", return_value=MockFile())
+    @patch("h5py.File", return_value=MockFile(), autospec=False)
     def test_context_manager(self, mock_h5py: MockFile, stream_results: RawStreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
@@ -200,7 +200,7 @@ class TestRawStreamArray:
         assert str(stream_results) == "[[[1.]\n  [2.]]\n\n [[3.]\n  [4.]]]"
         assert (stream_results[0] == [1, 2]).all
 
-    @patch("h5py.File", return_value=MockFile())
+    @patch("h5py.File", return_value=MockFile(), autospec=False)
     def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_results: RawStreamArray):
         """Tests context manager real time saving."""
         # test adding outside the context manager
