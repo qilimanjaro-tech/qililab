@@ -1739,10 +1739,6 @@ class Platform:
 
         if not self.db_manager:
             raise ReferenceError("Missing db_manager, try using platform.load_db_manager().")
-        if base_path:
-            base_path = base_path
-        else:
-            base_path = self.experiment_results_base_path
 
         return StreamArray(
             shape=shape,
@@ -1752,7 +1748,6 @@ class Platform:
             experiment_name=experiment_name,
             db_manager=self.db_manager,
             optional_identifier=description,
-            base_path=base_path,
         )
 
     def db_save_results(
@@ -1760,7 +1755,6 @@ class Platform:
         experiment_name: str,
         results: np.ndarray,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
-        base_path: str | None = None,
         qprogram: QProgram | None = None,
         description: str | None = None,
     ):
@@ -1802,10 +1796,6 @@ class Platform:
 
         if not self.db_manager:
             raise ReferenceError("Missing db_manager, try using platform.load_db_manager().")
-        if base_path:
-            base_path = base_path
-        else:
-            base_path = self.experiment_results_base_path
 
         shape = results.shape
 
@@ -1830,7 +1820,6 @@ class Platform:
             experiment_name=experiment_name,
             db_manager=self.db_manager,
             optional_identifier=description,
-            base_path=base_path,
         )
 
         with stream_array:
