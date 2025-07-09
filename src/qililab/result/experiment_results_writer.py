@@ -96,7 +96,6 @@ class ExperimentDataBaseMetadata(TypedDict, total=False):
     """
 
     experiment_name: str
-    base_path: str
     cooldown: str | None
     sample_name: str | None
     optional_identifier: str | None
@@ -232,14 +231,10 @@ class ExperimentResultsWriter(ExperimentResults):
         Returns:
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
-        self._file = h5py.File(self.path, mode="w", libver="latest")
-        self._create_results_file()
-        self._create_resuts_access()
         if self._db_metadata:
             self.measurement = self._db_manager.add_measurement(
                 experiment_name=self._db_metadata["experiment_name"],
                 experiment_completed=False,
-                base_path=self._db_metadata["base_path"],
                 cooldown=self._db_metadata["cooldown"],
                 sample_name=self._db_metadata["sample_name"],
                 optional_identifier=self._db_metadata["optional_identifier"],
@@ -247,6 +242,12 @@ class ExperimentResultsWriter(ExperimentResults):
                 experiment=serialize(self.experiment),
                 qprogram=serialize(self._metadata["qprograms"]),
             )
+            self.path = self.measurement.result_path
+
+        self._file = h5py.File(self.path, mode="w", libver="latest")
+        self._create_results_file()
+        self._create_resuts_access()
+
         self._append_mode = True
 
         return self
