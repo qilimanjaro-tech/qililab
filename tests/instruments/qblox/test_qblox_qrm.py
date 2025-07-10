@@ -415,3 +415,16 @@ class TestQbloxQRM:
         qrm.device.reset.assert_called_once()
         assert qrm.cache == {}
         assert qrm.sequences == {}
+
+    def test_setup_trigger_network(self, qrm: QbloxQRM):
+        """Test the setup of the trigger network."""
+        sequencer_id = 0
+        trigger_address = 3
+
+        sequencer = qrm.device.sequencers[sequencer_id]
+
+        sequencer = qrm.get_sequencer(0)
+        qrm._setup_trigger_network(trigger_address=trigger_address, sequencer_id=sequencer_id)
+
+        sequencer.thresholded_acq_trigger_address.assert_called_with(trigger_address)
+        sequencer.thresholded_acq_trigger_en.assert_called_with(True)

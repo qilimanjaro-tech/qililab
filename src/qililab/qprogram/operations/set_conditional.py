@@ -26,4 +26,3 @@ class SetConditional(Operation):
         self.mask: int = mask
         self.operator: int = operator
         self.else_duration: int = else_duration
-        

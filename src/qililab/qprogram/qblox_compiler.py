@@ -29,9 +29,9 @@ from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop,
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
+    LatchReset,
     Measure,
     MeasureReset,
-    LatchReset,
     Operation,
     Play,
     ResetPhase,
@@ -246,7 +246,7 @@ class QbloxCompiler:
             mask = markers[bus] if markers is not None and bus in markers else "0000"
             # if qprogram.measure_reset is used the bus using the conditional enables latching at the very top of the q1asm
             if bus in self._qprogram.qblox.latch_enabled:
-                self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1,4),1)
+                self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1, 4), 1)
 
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
@@ -655,25 +655,23 @@ class QbloxCompiler:
         enable = element.enable
         mask = element.mask
         operator = element.operator
-        else_duration= element.else_duration
-        
+        else_duration = element.else_duration
+
         self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.SetCond(enable,mask,operator,else_duration)
-                )
+            component=QPyInstructions.SetCond(enable, mask, operator, else_duration)
+        )
 
         self._buses[element.bus].marked_for_sync = True
 
     def _handle_measure_reset(self, element: MeasureReset):
-        
-        """Wrapper for qblox play and acquire methods to be called in a single operation for consistency with QuantumMachines
-        measure operation
+        """Executes a measurement followed by active reset in a single operation
 
         Args:
-            element (Measure): measure operation
+            element (MeasureReset): measure operation and perform active reset
         """
-        wait_trigger_network = 400 # this corresponds to the time it takes for the qblox trigger network to send a trigger;
+        wait_trigger_network = 400  # this corresponds to the time it takes for the qblox trigger network to send a trigger;
         # 400ns is conservative - the official guideline is 388ns between 2 modules
-        
+
         time_of_flight = self._buses[element.measure_bus].time_of_flight
         latch_rst = LatchReset(bus=element.control_bus, duration=4)
         play = Play(bus=element.measure_bus, waveform=element.waveform, wait_time=time_of_flight)
@@ -681,9 +679,17 @@ class QbloxCompiler:
         sync = Sync()
         wait = Wait(bus=element.control_bus, duration=wait_trigger_network)
         play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
-        mask = 2**(element.trigger_address-1)
-        conditional_activated = SetConditional(bus=element.control_bus,enable=1,mask=mask,operator=0,else_duration=play_reset_pulse.waveform.get_duration())
-        conditional_desactivated = SetConditional(bus=element.control_bus,enable=0,mask=0,operator=0,else_duration=4)
+        mask = 2 ** (element.trigger_address - 1)
+        conditional_activated = SetConditional(
+            bus=element.control_bus,
+            enable=1,
+            mask=mask,
+            operator=0,
+            else_duration=play_reset_pulse.waveform.get_duration(),
+        )
+        conditional_desactivated = SetConditional(
+            bus=element.control_bus, enable=0, mask=0, operator=0, else_duration=4
+        )
 
         self._handle_latch_rst(latch_rst)
         self._handle_play(play)

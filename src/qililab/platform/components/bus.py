@@ -260,7 +260,7 @@ class Bus:
             )
 
         return total_results[0]
-    
+
     def _setup_trigger_network(self, trigger_address):
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, (QbloxQRM)):

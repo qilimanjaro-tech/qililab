@@ -408,7 +408,6 @@ class QProgram(StructuredProgram):
         self._active_block.append(operation)
         self._buses.add(bus)
 
-
     def sync(self, buses: list[str] | None = None):
         """Synchronize operations between buses, so the operations following will start at the same time.
 
@@ -503,14 +502,14 @@ class QProgram(StructuredProgram):
 
         @requires_domain("duration", Domain.Time)
         def latch_rst(self, bus: str, duration: int):
-            #TODO: add docstring
+            # TODO: add docstring
             operation = LatchReset(bus=bus, duration=duration)
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
         @requires_domain("duration", Domain.Time)
         def set_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
-            #TODO: add docstring
+            # TODO: add docstring
             operation = SetConditional(bus=bus, enable=enable, mask=mask, operator=operator, else_duration=else_duration)
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
@@ -585,9 +584,11 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-
         def measure_reset(self, measure_bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False):
-            """Play a measurement and reset pulse, and acquire results.
+            """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
+
+            If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
+            If the result is 0, the control_bus waits instead.
 
             Args:
                 measure_bus (str): Identifier of the measurement bus.
