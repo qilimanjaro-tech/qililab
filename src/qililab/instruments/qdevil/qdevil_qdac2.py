@@ -390,6 +390,12 @@ class QDevilQDac2(VoltageSource):
         self._cache_awg = {}
         self._cache_dc = {}
 
+    def stop(self):
+        """Stop pulse execution"""
+        for channel_id in self._cache_dc.keys():
+            channel = self.device.channel(channel_id)
+            channel.dc_abort()
+
     @check_device_initialized
     def reset(self):
         """Reset instrument. This will affect all channels."""
