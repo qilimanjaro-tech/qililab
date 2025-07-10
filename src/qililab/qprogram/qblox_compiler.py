@@ -651,8 +651,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_conditional(self, element: SetConditional):
-        #TODO: add docstring
-        #TODO: this takes the mask so not 1,2,3,4 etc ..
+        # The conditional does not add any static duration as it is assumed that the operations contained within are the same as the else_duration of the conditional
         enable = element.enable
         mask = element.mask
         operator = element.operator
@@ -662,25 +661,26 @@ class QbloxCompiler:
                 component=QPyInstructions.SetCond(enable,mask,operator,else_duration)
                 )
 
-        # self._buses[element.bus].static_duration += duration
         self._buses[element.bus].marked_for_sync = True
 
     def _handle_measure_reset(self, element: MeasureReset):
-        #TODO: UPDATE THE DOCSTRING
-        #TODO: 400 should be in an enums file or smthg and should tyr if lowering it works
+        
         """Wrapper for qblox play and acquire methods to be called in a single operation for consistency with QuantumMachines
         measure operation
 
         Args:
             element (Measure): measure operation
         """
+        wait_trigger_network = 400 # this corresponds to the time it takes for the qblox trigger network to send a trigger;
+        # 400ns is conservative - the official guideline is 388ns between 2 modules
+        
         time_of_flight = self._buses[element.measure_bus].time_of_flight
         latch_rst = LatchReset(bus=element.control_bus, duration=4)
         play = Play(bus=element.measure_bus, waveform=element.waveform, wait_time=time_of_flight)
         acquire = Acquire(bus=element.measure_bus, weights=element.weights, save_adc=element.save_adc)
         sync = Sync()
-        wait = Wait(bus=element.control_bus, duration=400)
-        play_reset_pulse = Play(bus=element.control_bus, waveform=element.waveform, wait_time=time_of_flight)
+        wait = Wait(bus=element.control_bus, duration=wait_trigger_network)
+        play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
         mask = 2**(element.trigger_address-1)
         conditional_activated = SetConditional(bus=element.control_bus,enable=1,mask=mask,operator=0,else_duration=play_reset_pulse.waveform.get_duration())
         conditional_desactivated = SetConditional(bus=element.control_bus,enable=0,mask=0,operator=0,else_duration=4)

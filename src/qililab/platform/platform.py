@@ -1023,8 +1023,6 @@ class Platform:
                         else:
                             markers[bus.alias] = "0000"
             qblox_compiler = QbloxCompiler()
-            if bus in qprogram.qblox.trigger_network_required:
-                return
             return qblox_compiler.compile(
                 qprogram=qprogram,
                 bus_mapping=bus_mapping,
