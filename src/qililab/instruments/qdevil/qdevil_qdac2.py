@@ -235,10 +235,9 @@ class QDevilQDac2(VoltageSource):
     ):
         envelope = waveform.envelope()
         channel = self.device.channel(channel_id)
-        # if channel_id in self._cache_dc:
-        # raise ValueError(
-        #     f"Device {self.name} already has a waveform allocated to channel {channel_id}. Clear the cache before allocating a new waveform"
-        # )
+        if channel_id in self._cache_dc:
+            channel.dc_abort()
+            self.device.remove_traces()
 
         dc_list = channel.dc_list(
             voltages=list(envelope), dwell_s=dwell_us * 1e-6, delay_s=sync_delay_s, repetitions=repetitions
