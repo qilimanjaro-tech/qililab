@@ -38,7 +38,6 @@ class StreamArray:
         platform (Platform): platform where the experiment was executed
         experiment_name (str): Name of the experiment.
         db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
-        base_path (str): base path for the results data folder structure.
         qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
         optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
     """
@@ -55,7 +54,6 @@ class StreamArray:
         platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
-        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -67,7 +65,6 @@ class StreamArray:
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
-        self.base_path = base_path
         self._first_value = True
 
     def __enter__(self):
@@ -79,7 +76,6 @@ class StreamArray:
         self.measurement = self.db_manager.add_measurement(
             experiment_name=self.experiment_name,
             experiment_completed=False,
-            base_path=self.base_path,
             optional_identifier=self.optional_identifier,
             platform=self.platform.to_dict(),
             qprogram=serialize(self.qprogram),
