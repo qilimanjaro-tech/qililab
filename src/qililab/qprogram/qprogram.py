@@ -23,6 +23,7 @@ from qililab.qprogram.operations import (
     AcquireWithCalibratedWeights,
     LatchReset,
     Measure,
+    MeasureReset,
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
@@ -336,7 +337,7 @@ class QProgram(StructuredProgram):
         self._buses.add(bus)
 
     @overload
-    def measure(self, bus: str, waveform: IQPair, weights: IQPair, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None, pi_pulse: IQPair = None):
+    def measure(self, bus: str, waveform: IQPair, weights: IQPair, save_adc: bool = False):
         """Play a pulse and acquire results.
 
         Args:
@@ -347,7 +348,7 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def measure(self, bus: str, waveform: str, weights: IQPair, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None, pi_pulse: str = None):
+    def measure(self, bus: str, waveform: str, weights: IQPair, save_adc: bool = False):
         """Play a named pulse and acquire results.
 
         Args:
@@ -358,7 +359,7 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def measure(self, bus: str, waveform: IQPair, weights: str, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None, pi_pulse: IQPair = None):
+    def measure(self, bus: str, waveform: IQPair, weights: str, save_adc: bool = False):
         """Play a named pulse and acquire results.
 
         Args:
@@ -369,7 +370,7 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def measure(self, bus: str, waveform: str, weights: str, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None, pi_pulse: str = None):
+    def measure(self, bus: str, waveform: str, weights: str, save_adc: bool = False):
         """Play a named pulse and acquire results.
 
         Args:
@@ -379,7 +380,7 @@ class QProgram(StructuredProgram):
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
 
-    def measure(self, bus: str, waveform: IQPair | str, weights: IQPair | str, save_adc: bool = False, active_reset: bool = False, control_bus_reset: str = None, pi_pulse: IQPair | str = None):
+    def measure(self, bus: str, waveform: IQPair | str, weights: IQPair | str, save_adc: bool = False):
         """Play a pulse and acquire results.
 
         Args:
@@ -394,22 +395,19 @@ class QProgram(StructuredProgram):
             | MeasureWithCalibratedWeights
             | MeasureWithCalibratedWaveformWeights
         )
-
-
-        #TODO: might need to do that for the calibrated wf, weights and waveformweight. Should give out an error if active reset is true and control bus not provided, and say only qblox no qm
         if isinstance(waveform, IQPair) and isinstance(weights, IQPair):
-            operation = Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=active_reset, control_bus_reset=control_bus_reset, pi_pulse=pi_pulse)
+            operation = Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
         elif isinstance(waveform, str) and isinstance(weights, IQPair):
-            operation = MeasureWithCalibratedWaveform(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=True, control_bus_reset=control_bus_reset, pi_pulse=pi_pulse)
+            operation = MeasureWithCalibratedWaveform(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
         elif isinstance(waveform, IQPair) and isinstance(weights, str):
-            operation = MeasureWithCalibratedWeights(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=True, control_bus_reset=control_bus_reset, pi_pulse=pi_pulse)
+            operation = MeasureWithCalibratedWeights(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
         elif isinstance(waveform, str) and isinstance(weights, str):
             operation = MeasureWithCalibratedWaveformWeights(
-                bus=bus, waveform=waveform, weights=weights, save_adc=save_adc, active_reset=True, control_bus_reset=control_bus_reset, pi_pulse=pi_pulse
+                bus=bus, waveform=waveform, weights=weights, save_adc=save_adc
             )
         self._active_block.append(operation)
         self._buses.add(bus)
-        self._active_reset.append((bus,control_bus_reset))
+
 
     def sync(self, buses: list[str] | None = None):
         """Synchronize operations between buses, so the operations following will start at the same time.
@@ -431,22 +429,6 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
         """
         operation = ResetPhase(bus=bus)
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("duration", Domain.Time)
-    def latch_rst(self, bus: str, duration: int):
-        #TODO: add docstring
-        #TODO: move to the qblox interface
-        operation = LatchReset(bus=bus, duration=duration)
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("duration", Domain.Time)
-    def set_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
-        #TODO: add docstring
-        #TODO: move to the qblox interface
-        operation = SetConditional(bus=bus, enable=enable, mask=mask, operator=operator, else_duration=else_duration)
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -505,6 +487,8 @@ class QProgram(StructuredProgram):
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
             self.disable_autosync: bool = False
+            self.latch_enabled: list[str] = []
+            self.trigger_network_required: dict[str, int] = {}
 
         def set_markers(self, bus: str, mask: str):
             """Set the markers based on a 4-bit binary mask.
@@ -514,6 +498,20 @@ class QProgram(StructuredProgram):
                 mask (str): A 4-bit mask, where 0 means that the associated marker is open (no signal), and 1 means that the marker is closed (signal).
             """
             operation = SetMarkers(bus=bus, mask=mask)
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
+
+        @requires_domain("duration", Domain.Time)
+        def latch_rst(self, bus: str, duration: int):
+            #TODO: add docstring
+            operation = LatchReset(bus=bus, duration=duration)
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
+
+        @requires_domain("duration", Domain.Time)
+        def set_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
+            #TODO: add docstring
+            operation = SetConditional(bus=bus, enable=enable, mask=mask, operator=operator, else_duration=else_duration)
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
@@ -586,6 +584,30 @@ class QProgram(StructuredProgram):
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
+
+
+        def measure_reset(self, measure_bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False):
+            """Play a measurement and reset pulse, and acquire results.
+
+            Args:
+                measure_bus (str): Identifier of the measurement bus.
+                waveform (IQPair): Waveform played during measurement.
+                weights (IQPair): Weights used for demodulation/integration.
+                control_bus (str): Identifier of the control/reset bus.
+                reset_pulse (IQPair): Pulse used for active reset.
+                trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
+                save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+            """
+            operation: (
+                MeasureReset
+            )
+
+            operation = MeasureReset(measure_bus=measure_bus, waveform=waveform, weights=weights, control_bus=control_bus, reset_pulse=reset_pulse, trigger_address=trigger_address, save_adc=save_adc)
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(measure_bus)
+            self.qprogram._buses.add(control_bus)
+            self.latch_enabled.append(control_bus)
+            self.trigger_network_required[measure_bus] = trigger_address
 
     @yaml.register_class
     class _QuantumMachinesInterface:

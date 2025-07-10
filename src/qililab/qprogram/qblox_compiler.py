@@ -30,6 +30,7 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureReset,
     LatchReset,
     Operation,
     Play,
@@ -154,6 +155,7 @@ class QbloxCompiler:
             Wait: self._handle_wait,
             Sync: self._handle_sync,
             Measure: self._handle_measure,
+            MeasureReset: self._handle_measure_reset,
             Acquire: self._handle_acquire,
             Play: self._handle_play,
             Block: self._handle_block,
@@ -242,8 +244,8 @@ class QbloxCompiler:
         # Pre-processing: Set markers ON/OFF
         for bus in self._buses:
             mask = markers[bus] if markers is not None and bus in markers else "0000"
-            #TODO: very dirty code, 1 is the address, and replace the conditional statement
-            if bus.startswith("drive"):
+            # if qprogram.measure_reset is used the bus using the conditional enables latching at the very top of the q1asm
+            if bus in self._qprogram.qblox.latch_enabled:
                 self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1,4),1)
 
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
@@ -650,19 +652,47 @@ class QbloxCompiler:
 
     def _handle_conditional(self, element: SetConditional):
         #TODO: add docstring
-        #TODO: mask should be assigned by the software
-        #TODO: this method shouldnt be accessed by the user, they should just do qp.measure and have the conditional called there
+        #TODO: this takes the mask so not 1,2,3,4 etc ..
         enable = element.enable
         mask = element.mask
         operator = element.operator
         else_duration= element.else_duration
-        # mask = 2**(12-1) #get it from the runcard? - will need to be
+        
         self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.SetCond(enable,mask,operator,else_duration)
                 )
 
         # self._buses[element.bus].static_duration += duration
         self._buses[element.bus].marked_for_sync = True
+
+    def _handle_measure_reset(self, element: MeasureReset):
+        #TODO: UPDATE THE DOCSTRING
+        #TODO: 400 should be in an enums file or smthg and should tyr if lowering it works
+        """Wrapper for qblox play and acquire methods to be called in a single operation for consistency with QuantumMachines
+        measure operation
+
+        Args:
+            element (Measure): measure operation
+        """
+        time_of_flight = self._buses[element.measure_bus].time_of_flight
+        latch_rst = LatchReset(bus=element.control_bus, duration=4)
+        play = Play(bus=element.measure_bus, waveform=element.waveform, wait_time=time_of_flight)
+        acquire = Acquire(bus=element.measure_bus, weights=element.weights, save_adc=element.save_adc)
+        sync = Sync()
+        wait = Wait(bus=element.control_bus, duration=400)
+        play_reset_pulse = Play(bus=element.control_bus, waveform=element.waveform, wait_time=time_of_flight)
+        mask = 2**(element.trigger_address-1)
+        conditional_activated = SetConditional(bus=element.control_bus,enable=1,mask=mask,operator=0,else_duration=play_reset_pulse.waveform.get_duration())
+        conditional_desactivated = SetConditional(bus=element.control_bus,enable=0,mask=0,operator=0,else_duration=4)
+
+        self._handle_latch_rst(latch_rst)
+        self._handle_play(play)
+        self._handle_acquire(acquire)
+        self._handle_sync(sync)
+        self._handle_wait(wait)
+        self._handle_conditional(conditional_activated)
+        self._handle_play(play_reset_pulse)
+        self._handle_conditional(conditional_desactivated)
 
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()

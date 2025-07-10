@@ -27,9 +27,6 @@ class Measure(Operation):
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
-        active_reset: bool = False,
-        control_bus_reset: str = None,
-        pi_pulse: IQPair = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -38,9 +35,6 @@ class Measure(Operation):
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
-        self.active_reset: bool = active_reset
-        self.control_bus_reset: str = control_bus_reset
-        self.pi_pulse: IQPair = pi_pulse
 
     def get_waveforms(self) -> tuple[Waveform, Waveform]:
         """Get the waveforms.
@@ -63,9 +57,6 @@ class MeasureWithCalibratedWaveform(Operation):
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
-        active_reset: bool = False,
-        control_bus_reset: str = None,
-        pi_pulse: IQPair = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -74,9 +65,7 @@ class MeasureWithCalibratedWaveform(Operation):
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
-        self.active_reset: bool = active_reset
-        self.control_bus_reset: str = control_bus_reset
-        self.pi_pulse: IQPair = pi_pulse
+
 
 @yaml.register_class
 class MeasureWithCalibratedWeights(Operation):
@@ -88,9 +77,6 @@ class MeasureWithCalibratedWeights(Operation):
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
-        active_reset: bool = False,
-        control_bus_reset: str = None,
-        pi_pulse: IQPair = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -99,10 +85,8 @@ class MeasureWithCalibratedWeights(Operation):
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
-        self.active_reset: bool = active_reset
-        self.control_bus_reset: str = control_bus_reset
-        self.pi_pulse: IQPair = pi_pulse
-    
+
+
 @yaml.register_class
 class MeasureWithCalibratedWaveformWeights(Operation):
     def __init__(
@@ -113,9 +97,6 @@ class MeasureWithCalibratedWaveformWeights(Operation):
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
-        active_reset: bool = False,
-        control_bus_reset: str = None,
-        pi_pulse: IQPair = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -124,6 +105,3 @@ class MeasureWithCalibratedWaveformWeights(Operation):
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
-        self.active_reset: bool = active_reset
-        self.control_bus_reset: str = control_bus_reset
-        self.pi_pulse: IQPair = pi_pulse

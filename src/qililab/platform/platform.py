@@ -1023,6 +1023,8 @@ class Platform:
                         else:
                             markers[bus.alias] = "0000"
             qblox_compiler = QbloxCompiler()
+            if bus in qprogram.qblox.trigger_network_required:
+                return
             return qblox_compiler.compile(
                 qprogram=qprogram,
                 bus_mapping=bus_mapping,
@@ -1075,7 +1077,11 @@ class Platform:
     def _execute_qblox_compilation_output(self, output: QbloxCompilationOutput, debug: bool = False):
         sequences, acquisitions = output.sequences, output.acquisitions
         buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
+
         for bus_alias, bus in buses.items():
+            # set up the trigger network if required
+            if bus_alias in output.qprogram.qblox.trigger_network_required:
+                buses[bus_alias]._setup_trigger_network(trigger_address=output.qprogram.qblox.trigger_network_required[bus_alias])
             if bus.distortions:
                 for distortion in bus.distortions:
                     for waveform in sequences[bus_alias]._waveforms._waveforms:

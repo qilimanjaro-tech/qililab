@@ -477,3 +477,13 @@ class QbloxQRM(QbloxModule):
             ValueError: when value type is not bool
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).time_of_flight = int(value)
+
+    def _setup_trigger_network(self, trigger_address: int, sequencer_id: int):
+        """Sets the trigger network, currently used if measure_reset is used in qprogram.
+
+        Args:
+            value (float): threshold rotation value in degrees (0.0 to 360.0).
+            sequencer_id (int): sequencer to update the value
+        """
+        self.device.sequencers[sequencer_id].thresholded_acq_trigger_address(trigger_address)
+        self.device.sequencers[sequencer_id].thresholded_acq_trigger_en(True)
