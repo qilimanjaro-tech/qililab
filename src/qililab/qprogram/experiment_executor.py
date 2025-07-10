@@ -34,6 +34,7 @@ from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, 
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
+    ExperimentDataBaseMetadata,
     ExperimentMetadata,
     ExperimentResultsWriter,
     MeasurementMetadata,
@@ -112,6 +113,7 @@ class ExperimentExecutor:
         self,
         platform: "Platform",
         experiment: Experiment,
+        base_path: str | None = None,
         live_plot: bool = True,
         slurm_execution: bool = True,
         port_number: int | None = None,
@@ -153,8 +155,19 @@ class ExperimentExecutor:
         # Metadata dictionary containing information about the experiment structure and variables.
         self._metadata: ExperimentMetadata
 
+        # DatabaseMetadata dictionary containing information about the experiment structure and variables.
+        self._db_metadata: ExperimentDataBaseMetadata | None = None
+
         # ExperimentResultsWriter object responsible for saving experiment results to file in real-time.
         self._results_writer: ExperimentResultsWriter
+
+        # Base path string for the place where to save the experiment folder structure. Default None (temporal path).
+        self.base_path: str | None = base_path
+
+        # In case the results are saved in a database, load the correct sample and cooldown.
+        if platform.save_experiment_results_in_database:
+            self.sample = self.platform.db_manager.current_sample
+            self.cooldown = self.platform.db_manager.current_cd
 
     def _prepare_metadata(self, executed_at: datetime):
         """Prepares the loop values and result shape before execution."""
@@ -252,6 +265,14 @@ class ExperimentExecutor:
             execution_time=0.0,
             qprograms={},
         )
+        if self.platform.save_experiment_results_in_database:
+            self._db_metadata = ExperimentDataBaseMetadata(
+                experiment_name=self.experiment.label,
+                base_path=self.base_path,  # type: ignore
+                cooldown=self.cooldown,
+                sample_name=self.sample,
+                optional_identifier=self.experiment.description,
+            )
         traverse_experiment(self.experiment.body)
         self._all_variables = dict(self._all_variables)
 
@@ -522,7 +543,11 @@ class ExperimentExecutor:
 
     def _create_results_path(self, executed_at: datetime):
         # Get base path and path format from platform
-        base_path = self.platform.experiment_results_base_path
+
+        if self.base_path:
+            base_path = self.base_path
+        else:
+            base_path = self.platform.experiment_results_base_path
         path_format = self.platform.experiment_results_path_format
 
         # Format date and time for directory names
@@ -581,6 +606,8 @@ class ExperimentExecutor:
         self._results_writer = ExperimentResultsWriter(
             path=results_path,
             metadata=self._metadata,
+            db_metadata=self._db_metadata,
+            db_manager=self.platform.db_manager,
             live_plot=self._live_plot,
             slurm_execution=self._slurm_execution,
             port_number=self._port_number,

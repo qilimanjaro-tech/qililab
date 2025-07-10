@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 import h5py
 import numpy as np
 
-from qililab.qprogram import QProgram
+from qililab.qprogram.qprogram import QProgram
 from qililab.result.database import DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
 
@@ -34,7 +34,7 @@ class StreamArray:
 
     Args:
         shape (list | tuple): Shape of the results array.
-        loops (dict[str, np.ndarray]): dictionary of loops with the name of the loop and the array.
+        loops (dict[str, np.ndarray] | dict[str, dict[str, Any]]): dictionary of loops with the name of the loop and the array.
         platform (Platform): platform where the experiment was executed
         experiment_name (str): Name of the experiment.
         db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
@@ -55,6 +55,7 @@ class StreamArray:
         platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
+        base_path: str,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -66,6 +67,7 @@ class StreamArray:
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
+        self.base_path = base_path
         self._first_value = True
 
     def __enter__(self):
@@ -77,6 +79,7 @@ class StreamArray:
         self.measurement = self.db_manager.add_measurement(
             experiment_name=self.experiment_name,
             experiment_completed=False,
+            base_path=self.base_path,
             optional_identifier=self.optional_identifier,
             platform=self.platform.to_dict(),
             qprogram=serialize(self.qprogram),
@@ -86,13 +89,13 @@ class StreamArray:
         # Save loops
         self._file = h5py.File(name=self.path, mode="w")
 
-        g = self._file.create_group(name="loops")
+        g = self._file.create_group(name="loops", track_order=True)
         for loop_name, array in self.loops.items():
             if isinstance(array, dict):
                 g_dataset = g.create_dataset(name=loop_name, data=array["array"])
-                g_dataset["bus"] = array["bus"]
-                g_dataset["parameter"] = array["parameter"]
-                g_dataset["units"] = array["units"]
+                g_dataset.attrs["bus"] = array["bus"]
+                g_dataset.attrs["parameter"] = array["parameter"]
+                g_dataset.attrs["units"] = array["units"]
             else:
                 g.create_dataset(name=loop_name, data=array)
 
@@ -234,7 +237,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                 [0.25 0.  ]
                 [0.5  0.  ]
                 [0.75 0.  ]
-                [1.   0.  ]])
+                [1.   0.  ]]))
     """
     return RawStreamArray(shape=shape, path=path, loops=loops)
 
