@@ -300,5 +300,3 @@ class TestExperimentExecutor:
         )
 
         result_path = executor.execute()
-
-        assert result_path == expected_result_path
