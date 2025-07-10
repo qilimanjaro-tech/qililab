@@ -633,4 +633,4 @@ class ExperimentExecutor:
 
         del self.loop_indices
 
-        return self._results_writer.path
+        return self._results_writer.results_path
