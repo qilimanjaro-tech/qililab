@@ -35,5 +35,5 @@ class MeasureReset(Operation):
         self.weights: IQPair = weights
         self.control_bus: str = control_bus
         self.reset_pulse: IQPair = reset_pulse
-        self.trigger_address: bool = trigger_address
+        self.trigger_address: int = trigger_address
         self.save_adc: bool = save_adc
