@@ -15,15 +15,18 @@
 from .acquire import Acquire, AcquireWithCalibratedWeights
 from .execute_qprogram import ExecuteQProgram
 from .get_parameter import GetParameter
+from .latch_rst import LatchReset
 from .measure import (
     Measure,
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
 )
+from .measure_reset import MeasureReset
 from .operation import Operation
 from .play import Play, PlayWithCalibratedWaveform
 from .reset_phase import ResetPhase
+from .set_conditional import SetConditional
 from .set_crosstalk import SetCrosstalk
 from .set_frequency import SetFrequency
 from .set_gain import SetGain
@@ -39,7 +42,9 @@ __all__ = [
     "AcquireWithCalibratedWeights",
     "ExecuteQProgram",
     "GetParameter",
+    "LatchReset",
     "Measure",
+    "MeasureReset",
     "MeasureWithCalibratedWaveform",
     "MeasureWithCalibratedWaveformWeights",
     "MeasureWithCalibratedWeights",
@@ -47,6 +52,7 @@ __all__ = [
     "Play",
     "PlayWithCalibratedWaveform",
     "ResetPhase",
+    "SetConditional",
     "SetCrosstalk",
     "SetFrequency",
     "SetGain",

@@ -10,13 +10,16 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
+    LatchReset,
     Measure,
+    MeasureReset,
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
     Play,
     PlayWithCalibratedWaveform,
     ResetPhase,
+    SetConditional,
     SetFrequency,
     SetGain,
     SetMarkers,
@@ -431,3 +434,78 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(deserialized_qprogram, QProgram)
 
         os.remove(file)
+
+    def test_measure_reset_method(self):
+        """Test measure_reset method"""
+        one_wf = Square(amplitude=1.0, duration=40)
+        zero_wf = Square(amplitude=0.0, duration=40)
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            measure_bus="readout",
+            waveform=IQPair(one_wf, zero_wf),
+            weights=IQPair(one_wf, zero_wf),
+            control_bus="control",
+            reset_pulse=IQPair(one_wf, zero_wf)
+        )
+
+        # Should append a single MeasureReset operation
+        assert len(qp._active_block.elements) == 1
+        assert len(qp._body.elements) == 1
+
+        op = qp._body.elements[0]
+        assert isinstance(op, MeasureReset)
+        # Check measurement settings
+        assert op.measure_bus == "readout"
+        assert np.equal(op.waveform.I, one_wf)
+        assert np.equal(op.waveform.Q, zero_wf)
+        assert np.equal(op.weights.I, one_wf)
+        assert np.equal(op.weights.Q, zero_wf)
+        # Check reset settings
+        assert op.control_bus == "control"
+        assert np.equal(op.reset_pulse.I, one_wf)
+        assert np.equal(op.reset_pulse.Q, zero_wf)
+        # Defaults for trigger and ADC saving
+        assert op.trigger_address == 1
+        assert not op.save_adc
+
+        # Interface flags updated
+        assert "control" in qp.qblox.latch_enabled
+        assert qp.qblox.trigger_network_required["readout"] == 1
+
+
+    def test_latch_rst_method(self):
+        """Test that qblox.latch_rst appends a LatchReset op and updates interfaces."""
+        qp = QProgram()
+        qp.qblox.latch_rst(bus="drive", duration=75)
+
+        # exactly one op in the program
+        assert len(qp._body.elements) == 1
+
+        op = qp._body.elements[0]
+        assert isinstance(op, LatchReset)
+        assert op.bus == "drive"
+        assert op.duration == 75
+        assert "drive" in qp.buses
+
+    def test_set_conditional_method(self):
+        """Test that qblox.set_conditional appends a SetConditional op and disables autosync."""
+        qp = QProgram()
+        qp.qblox.set_conditional(
+            bus="ctrl",
+            enable=1,
+            mask=2,
+            operator=0,
+            else_duration=100,
+        )
+
+        # exactly one op in the program
+        assert len(qp._body.elements) == 1
+
+        op = qp._body.elements[0]
+        assert isinstance(op, SetConditional)
+        assert op.bus == "ctrl"
+        assert op.enable == 1
+        assert op.mask == 2
+        assert op.operator == 0
+        assert op.else_duration == 100
+        assert "ctrl" in qp.buses
