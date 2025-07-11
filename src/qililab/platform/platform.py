@@ -31,7 +31,7 @@ from qibo.gates import M
 from qibo.models import Circuit
 from qm import generate_qua_script
 from ruamel.yaml import YAML
-
+from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
@@ -1117,7 +1117,11 @@ class Platform:
         for bus_alias, bus in buses.items():
             # set up the trigger network if required
             if bus_alias in output.qprogram.qblox.trigger_network_required:
-                buses[bus_alias]._setup_trigger_network(trigger_address=output.qprogram.qblox.trigger_network_required[bus_alias])
+                trigger_address = output.qprogram.qblox.trigger_network_required[bus_alias]
+                buses[bus_alias]._setup_trigger_network(trigger_address=trigger_address)
+                for controller in self.instrument_controllers.elements:
+                    if isinstance(controller, QbloxClusterController):
+                        controller.device.reset_trigger_monitor_count(address=trigger_address)
             if bus.distortions:
                 for distortion in bus.distortions:
                     for waveform in sequences[bus_alias]._waveforms._waveforms:
