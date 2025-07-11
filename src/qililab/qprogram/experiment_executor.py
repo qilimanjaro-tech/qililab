@@ -113,7 +113,6 @@ class ExperimentExecutor:
         self,
         platform: "Platform",
         experiment: Experiment,
-        base_path: str | None = None,
         live_plot: bool = True,
         slurm_execution: bool = True,
         port_number: int | None = None,
@@ -160,9 +159,6 @@ class ExperimentExecutor:
 
         # ExperimentResultsWriter object responsible for saving experiment results to file in real-time.
         self._results_writer: ExperimentResultsWriter
-
-        # Base path string for the place where to save the experiment folder structure. Default None (temporal path).
-        self.base_path: str | None = base_path
 
         # In case the results are saved in a database, load the correct sample and cooldown.
         if platform.save_experiment_results_in_database:
@@ -268,7 +264,6 @@ class ExperimentExecutor:
         if self.platform.save_experiment_results_in_database:
             self._db_metadata = ExperimentDataBaseMetadata(
                 experiment_name=self.experiment.label,
-                base_path=self.base_path,  # type: ignore
                 cooldown=self.cooldown,
                 sample_name=self.sample,
                 optional_identifier=self.experiment.description,
@@ -544,10 +539,7 @@ class ExperimentExecutor:
     def _create_results_path(self, executed_at: datetime):
         # Get base path and path format from platform
 
-        if self.base_path:
-            base_path = self.base_path
-        else:
-            base_path = self.platform.experiment_results_base_path
+        base_path = self.platform.experiment_results_base_path
         path_format = self.platform.experiment_results_path_format
 
         # Format date and time for directory names
@@ -641,4 +633,4 @@ class ExperimentExecutor:
 
         del self.loop_indices
 
-        return results_path
+        return self._results_writer.results_path

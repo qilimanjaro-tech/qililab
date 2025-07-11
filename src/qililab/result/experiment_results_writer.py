@@ -96,7 +96,6 @@ class ExperimentDataBaseMetadata(TypedDict, total=False):
     """
 
     experiment_name: str
-    base_path: str
     cooldown: str | None
     sample_name: str | None
     optional_identifier: str | None
@@ -129,6 +128,7 @@ class ExperimentResultsWriter(ExperimentResults):
             port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
         """
         super().__init__(path)
+        self.results_path = path
         self._metadata = metadata
         self._db_metadata = db_metadata
         self._db_manager = db_manager
@@ -232,21 +232,25 @@ class ExperimentResultsWriter(ExperimentResults):
         Returns:
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
-        self._file = h5py.File(self.path, mode="w", libver="latest")
-        self._create_results_file()
-        self._create_resuts_access()
         if self._db_metadata:
             self.measurement = self._db_manager.add_measurement(
                 experiment_name=self._db_metadata["experiment_name"],
                 experiment_completed=False,
-                base_path=self._db_metadata["base_path"],
                 cooldown=self._db_metadata["cooldown"],
                 sample_name=self._db_metadata["sample_name"],
                 optional_identifier=self._db_metadata["optional_identifier"],
-                platform=self.platform,
-                experiment=serialize(self.experiment),
+                platform=self._metadata["platform"],
+                experiment=self._metadata["experiment"],
                 qprogram=serialize(self._metadata["qprograms"]),
             )
+            self.results_path = self.measurement.result_path
+            self._file = h5py.File(str(self.results_path), mode="w", libver="latest")
+
+        else:
+            self._file = h5py.File(self.path, mode="w", libver="latest")
+        self._create_results_file()
+        self._create_resuts_access()
+
         self._append_mode = True
 
         return self
