@@ -50,7 +50,9 @@ def fixture_qrm(platform: Platform) -> QbloxQRM:
         "connect_acq_I",
         "connect_acq_Q",
         "thresholded_acq_threshold",
-        "thresholded_acq_rotation"
+        "thresholded_acq_rotation",
+        "thresholded_acq_trigger_address",
+        "thresholded_acq_trigger_en"
     ]
 
     module_mock_spec = [
