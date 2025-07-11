@@ -502,15 +502,31 @@ class QProgram(StructuredProgram):
 
         @requires_domain("duration", Domain.Time)
         def latch_rst(self, bus: str, duration: int):
-            # TODO: add docstring
+            """Reset all trigger network address counters back to 0.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                duration (int) duration of the command in ns:
+            """
             operation = LatchReset(bus=bus, duration=duration)
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-        @requires_domain("duration", Domain.Time)
+        @requires_domain("else_duration", Domain.Time)
         def set_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
-            # TODO: add docstring
-            operation = SetConditional(bus=bus, enable=enable, mask=mask, operator=operator, else_duration=else_duration)
+            """Enable/disable conditionality on all following real-time instructions based on enable.
+            The condition is based on the trigger network address counters.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                enable (int): 1 to enable the conditional check, 0 to disable.
+                mask (int): bits 0-14, where the bit index plus one corresponds to the trigger address.
+                operator (int): Logical operators are OR, NOR, AND, NAND, XOR, XNOR, where a value for operator of 0 is OR and 5 is XNOR respectively.
+                else_duration (int): duration in ns taken by each real time command if the condition is not met.
+            """
+            operation = SetConditional(
+                bus=bus, enable=enable, mask=mask, operator=operator, else_duration=else_duration
+            )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
@@ -584,7 +600,16 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-        def measure_reset(self, measure_bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False):
+        def measure_reset(
+            self,
+            measure_bus: str,
+            waveform: IQPair,
+            weights: IQPair,
+            control_bus: str,
+            reset_pulse: IQPair,
+            trigger_address: int = 1,
+            save_adc: bool = False,
+        ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
@@ -599,11 +624,17 @@ class QProgram(StructuredProgram):
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
             """
-            operation: (
-                MeasureReset
-            )
+            operation: MeasureReset
 
-            operation = MeasureReset(measure_bus=measure_bus, waveform=waveform, weights=weights, control_bus=control_bus, reset_pulse=reset_pulse, trigger_address=trigger_address, save_adc=save_adc)
+            operation = MeasureReset(
+                measure_bus=measure_bus,
+                waveform=waveform,
+                weights=weights,
+                control_bus=control_bus,
+                reset_pulse=reset_pulse,
+                trigger_address=trigger_address,
+                save_adc=save_adc,
+            )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(measure_bus)
             self.qprogram._buses.add(control_bus)
@@ -780,6 +811,11 @@ class QProgram(StructuredProgram):
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(self)
-        result_draw = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
+        result_draw = qblox_draw.draw(
+            sequencer=sequencer,
+            time_window=time_window,
+            averages_displayed=averages_displayed,
+            acquisition_showing=acquisition_showing,
+        )
         logger.warning("The drawing feature is currently only supported for QBlox.")
         return result_draw
