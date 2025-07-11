@@ -2,9 +2,9 @@
 
 ### New features since last release
 
-- **Active reset for transmon qubits**
+- **Active reset for transmon qubits in QBlox**
 
-  Implemented a feedback-based reset: measure the qubit, and if it is in the \|1⟩ state apply a corrective DRAG pulse; if it is already in \|0⟩ (ground state), do nothing. This replaces the commonly used passive 200 000 ns wait at the end of each experiment with a much faster, conditional reset, also improving state-preparation fidelity.
+  Implemented a feedback-based reset for QBlox: measure the qubit, and if it is in the \|1⟩ state apply a corrective DRAG pulse; if it is already in \|0⟩ (ground state), do nothing. This replaces the commonly used passive 200 000 ns wait at the end of each experiment with a much faster, conditional reset, also improving state-preparation fidelity.
   This has been implemented as **`qprogram.qblox.measure_reset(measure_bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False)`** 
 
   It is compiled by the QBlox compiler as:
