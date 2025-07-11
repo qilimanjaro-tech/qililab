@@ -31,13 +31,14 @@ from qibo.gates import M
 from qibo.models import Circuit
 from qm import generate_qua_script
 from ruamel.yaml import YAML
-from qililab.instrument_controllers.qblox import QbloxClusterController
+
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
+from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
