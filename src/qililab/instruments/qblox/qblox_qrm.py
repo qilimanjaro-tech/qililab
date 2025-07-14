@@ -118,8 +118,12 @@ class QbloxQRM(QbloxModule):
             if sequencer.scope_store_enabled:
                 if self._scoping_sequencer is None:
                     self._scoping_sequencer = sequencer.identifier
-                else:
-                    raise ValueError("The scope can only be stored in one sequencer at a time.")
+                    return
+                if self._scoping_sequencer == sequencer.identifier:
+                    return
+                raise ValueError("The scope can only be stored in one sequencer at a time.")
+            if self._scoping_sequencer == sequencer.identifier:
+                self._scoping_sequencer = None
 
     @check_device_initialized
     def acquire_result(self) -> QbloxResult:
@@ -464,6 +468,14 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not bool
         """
+        self._obtain_scope_sequencer()
+        sequencer = self.get_sequencer(sequencer_id)
+        self._set_acquisition_mode(
+            value=cast("QbloxADCSequencer", sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
+        )
+        self._set_scope_hardware_averaging(
+            value=cast("QbloxADCSequencer", sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
+        )
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
 
     def _set_time_of_flight(self, value: int | float | str | bool, sequencer_id: int):
