@@ -276,14 +276,13 @@ class QbloxCompiler:
 
             if self._long_wait_dynamic:
             # TODO: this part of the q1asm can be simplified; using by creating a jump table using offset to only have one type of block per program
-                self._buses[bus].long_wait_register = QPyProgram.Register()
+                
                 if self._buses[bus].dynamic_durations:
-    
                     for idx in range(self._long_wait_dynamic_idx):
                         self._buses[bus].qpy_block_stack[0]._append_block(QPyProgram.Block(name=f"long_wait_{idx}"))
                         self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Wait(65532))
                         self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Add(self._buses[bus].long_wait_register_total, 65532, self._buses[bus].long_wait_register_total))
-                        self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Sub(self._buses[bus].dynamic_duration_register, 65532, self._buses[bus].long_wait_register))
+                        self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Sub(self._buses[bus].long_wait_register, 65532, self._buses[bus].long_wait_register))
                         self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Nop())
                         self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Jge(self._buses[bus].long_wait_register, 65532,f"@long_wait_{idx}"))
                         self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Add( self._buses[bus].long_wait_register_total, self._buses[bus].long_wait_register, self._buses[bus].long_wait_register_total))
@@ -294,7 +293,7 @@ class QbloxCompiler:
                     for idx in range(self._long_wait_dynamic_idx):
                         self._buses[bus].qpy_block_stack[0]._append_block(QPyProgram.Block(name=f"long_wait_{idx}"))
                         self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Add(self._buses[bus].long_wait_register_total, 65532, self._buses[bus].long_wait_register_total))
-                        self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Sub(self._buses[bus].dynamic_duration_register, 65532, self._buses[bus].long_wait_register))
+                        self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Sub(self._buses[bus].long_wait_register, 65532, self._buses[bus].long_wait_register))
                         self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Nop())
                         self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Jge(self._buses[bus].long_wait_register, 65532,f"@long_wait_{idx}"))
                         self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Add( self._buses[bus].long_wait_register_total, self._buses[bus].long_wait_register, self._buses[bus].long_wait_register_total))
@@ -587,7 +586,9 @@ class QbloxCompiler:
                     for bus in buses:
                         if self._long_wait_dynamic_idx == 0:
                             self._buses[bus].long_wait_register_total = QPyProgram.Register()
+                            self._buses[bus].long_wait_register = QPyProgram.Register()
                         self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Move(0, self._buses[bus].long_wait_register_total))
+                        self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Move(self._buses[bus].dynamic_duration_register, self._buses[bus].long_wait_register))
                         self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
                         self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Jge(self._buses[bus].dynamic_duration_register, 65533, f"@long_wait_{self._long_wait_dynamic_idx}"))
                         self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Move(self._buses[bus].dynamic_duration_register, self._buses[bus].long_wait_register_total))
