@@ -153,8 +153,6 @@ class TestQbloxQRM:
             (Parameter.ACQUISITION_TIMEOUT, 2),
             (Parameter.TIME_OF_FLIGHT, 80),
             (Parameter.SCOPE_STORE_ENABLED, True),
-            (Parameter.SCOPE_STORE_ENABLED, True),
-            (Parameter.SCOPE_STORE_ENABLED, False),
             (Parameter.THRESHOLD, 0.5),
             (Parameter.THRESHOLD_ROTATION, 0.5),
         ],
@@ -201,6 +199,17 @@ class TestQbloxQRM:
         elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
             assert qrm.out_offsets[output] == value
+
+    def test_set_parameter_scope_store_enabled(self, qrm: QbloxQRM):
+        """Test setting parameters for SCOPE_STORE_ENABLED that require the same instance of QRM."""
+        sequencer = qrm.get_sequencer(0)
+
+        qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, True, channel_id=0)
+        assert sequencer.scope_store_enabled == bool(True)
+        qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, True, channel_id=0)
+        assert sequencer.scope_store_enabled == bool(True)
+        qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, False, channel_id=0)
+        assert sequencer.scope_store_enabled == bool(False)
 
     def test_set_parameter_raises_error(self, qrm: QbloxQRM):
         """Test setting parameters for QCM sequencers using parameterized values."""
