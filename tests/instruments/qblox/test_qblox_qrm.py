@@ -204,6 +204,8 @@ class TestQbloxQRM:
         """Test setting parameters for SCOPE_STORE_ENABLED that require the same instance of QRM."""
         sequencer = qrm.get_sequencer(0)
 
+        qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, True, channel_id=0)
+        assert sequencer.scope_store_enabled == bool(True)
         qrm._scoping_sequencer = 0
         qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, True, channel_id=0)
         assert sequencer.scope_store_enabled == bool(True)
