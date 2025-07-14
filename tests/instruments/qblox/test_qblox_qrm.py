@@ -209,6 +209,8 @@ class TestQbloxQRM:
         qrm._scoping_sequencer = 0
         qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, True, channel_id=0)
         assert sequencer.scope_store_enabled == bool(True)
+        qrm.awg_sequencers[0].scope_store_enabled = False
+        qrm._scoping_sequencer = 0
         qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, False, channel_id=0)
         assert sequencer.scope_store_enabled == bool(False)
 
