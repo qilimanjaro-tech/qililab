@@ -2,6 +2,7 @@
 
 # pylint: disable=protected-access
 import datetime
+import warnings
 from unittest.mock import MagicMock, patch
 
 import matplotlib as mpl
@@ -275,6 +276,23 @@ class Testdatabase:
     def test_load_by_id(self, db_manager: DatabaseManager):
         db_manager.load_by_id(123)
         assert db_manager.Session().query.called
+
+    def test_load_by_id_path_not_found(self, db_manager: DatabaseManager):
+        # Setup a mock measurement
+        mock_measurement = MagicMock(spec=Measurement)
+        mock_measurement.result_path = "/local_test/results/file.h5"
+        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+
+        # Patch os.path.isfile to return False to simulate missing file
+        with patch("os.path.isfile", return_value=False), warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")  # Ensure all warnings are caught
+
+            db_manager.load_by_id(123)
+
+            # Check that a warning was issued
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
+            assert "Replaced local path" in str(w[0].message)
 
     @patch("qililab.result.database.read_sql")
     def test_tail(self, mock_read_sql, db_manager: DatabaseManager):
