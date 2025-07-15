@@ -591,6 +591,7 @@ class QbloxCompiler:
                         self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Move(self._buses[bus].dynamic_duration_register, self._buses[bus].long_wait_register))
                         self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
                         self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Jge(self._buses[bus].dynamic_duration_register, 65533, f"@long_wait_{self._long_wait_dynamic_idx}"))
+                        self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(self._buses[bus].dynamic_duration_register))
                         self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Move(self._buses[bus].dynamic_duration_register, self._buses[bus].long_wait_register_total))
                         self._buses[bus].qpy_block_stack[-1]._append_block(QPyProgram.Block(f"continue_after_long_wait_{self._long_wait_dynamic_idx}"))
                     self._long_wait_dynamic_idx += 1
