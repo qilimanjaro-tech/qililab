@@ -504,7 +504,7 @@ class QProgram(StructuredProgram):
                 bus (str): Unique identifier of the bus.
                 duration (int): Duration of the delay after the trigger is recieved. Minimum of 4 ns.
             """
-            operation = WaitTrigger(duration=duration)
+            operation = WaitTrigger(bus=bus, duration=duration)
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
