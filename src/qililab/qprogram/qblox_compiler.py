@@ -634,6 +634,7 @@ class QbloxCompiler:
                     self._buses[element.bus].dynamic_durations.append(variable_duration)
 
                 if element.duration.operator == "+":
+                    self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
                     self._buses[element.bus].qpy_block_stack[-1].append_component(
                         component=QPyInstructions.Add(
                             variable_duration_register,
@@ -685,6 +686,7 @@ class QbloxCompiler:
                         variable_duration_register = self._buses[bus].variable_to_register[variable_duration]
 
                         if element.duration.operator == "+":
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
                             self._buses[bus].qpy_block_stack[-1].append_component(
                                 component=QPyInstructions.Add(
                                     variable_duration_register,
@@ -709,6 +711,7 @@ class QbloxCompiler:
                                 )
 
                             else:  # Time - CST
+                                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
                                 self._buses[bus].qpy_block_stack[-1].append_component(
                                     component=QPyInstructions.Sub(
                                         variable_duration_register,
@@ -866,6 +869,7 @@ class QbloxCompiler:
                 # TODO if the dynamic bus has the longest static duration, Q1ASM can be further simplified, no need for any comparison
                 # TODO the Q1ASM can be simplified by checking if the static duration is 0 before using it
                 if self._buses[bus].dynamic_expression:
+                    self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
                     self._buses[bus].qpy_block_stack[-1].append_component(
                         QPyInstructions.Add(
                             self._buses[bus].dynamic_expression_register,
