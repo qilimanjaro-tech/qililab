@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 import h5py
 import numpy as np
 
-from qililab.qprogram import QProgram
+from qililab.qprogram.qprogram import QProgram
 from qililab.result.database import DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
 
@@ -34,7 +34,7 @@ class StreamArray:
 
     Args:
         shape (list | tuple): Shape of the results array.
-        loops (dict[str, np.ndarray]): dictionary of loops with the name of the loop and the array.
+        loops (dict[str, np.ndarray] | dict[str, dict[str, Any]]): dictionary of loops with the name of the loop and the array.
         platform (Platform): platform where the experiment was executed
         experiment_name (str): Name of the experiment.
         db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
@@ -89,13 +89,13 @@ class StreamArray:
         # Save loops
         self._file = h5py.File(name=self.path, mode="w")
 
-        g = self._file.create_group(name="loops")
+        g = self._file.create_group(name="loops", track_order=True)
         for loop_name, array in self.loops.items():
             if isinstance(array, dict):
                 g_dataset = g.create_dataset(name=loop_name, data=array["array"])
-                g_dataset["bus"] = array["bus"]
-                g_dataset["parameter"] = array["parameter"]
-                g_dataset["units"] = array["units"]
+                g_dataset.attrs["bus"] = array["bus"]
+                g_dataset.attrs["parameter"] = array["parameter"]
+                g_dataset.attrs["units"] = array["units"]
             else:
                 g.create_dataset(name=loop_name, data=array)
 
