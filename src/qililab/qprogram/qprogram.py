@@ -35,6 +35,7 @@ from qililab.qprogram.operations import (
     SetPhase,
     Sync,
     Wait,
+    WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import Domain
@@ -495,6 +496,18 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
+        @requires_domain("duration", Domain.Time)
+        def wait_trigger(self, bus: str, duration: int):
+            """Adds a delay on the bus and wait for an trigger signal to arrive.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                duration (int): Duration of the delay after the trigger is recieved. Minimum of 4 ns.
+            """
+            operation = WaitTrigger(bus=bus, duration=duration)
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
+
         @overload
         def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):
             """Acquire results based on the given weights.
@@ -735,6 +748,11 @@ class QProgram(StructuredProgram):
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(self)
-        result_draw = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
+        result_draw = qblox_draw.draw(
+            sequencer=sequencer,
+            time_window=time_window,
+            averages_displayed=averages_displayed,
+            acquisition_showing=acquisition_showing,
+        )
         logger.warning("The drawing feature is currently only supported for QBlox.")
         return result_draw

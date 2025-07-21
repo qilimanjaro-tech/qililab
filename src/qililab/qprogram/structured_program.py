@@ -17,6 +17,7 @@ import numpy as np
 
 from qililab.exceptions.variable_allocated import VariableAllocated
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.blocks.linspace_loop import LinspaceLoop
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
 from qililab.yaml import yaml
 
@@ -139,6 +140,31 @@ class StructuredProgram:
         """
 
         return StructuredProgram._ForLoopContext(program=self, variable=variable, start=start, stop=stop, step=step)
+
+    def linspace_loop(self, variable: Variable, start: int | float, stop: int | float, iterations: int = 1):
+        """Define a for_loop block to iterate values over a variable.
+
+        Blocks need to open a scope.
+
+        Args:
+            variable (Variable): The variable to be affected from the loop.
+            start (int | float): The start value.
+            stop (int | float): The stop value.
+            step (int | float, optional): The step value. Defaults to 1.
+
+        Returns:
+            Loop: The loop block.
+
+        Examples:
+
+            >>> variable = qp.variable(int)
+            >>> with qp.for_loop(variable=variable, start=0, stop=100, step=5)):
+            >>> # operations that shall be executed in the for_loop block
+        """
+
+        return StructuredProgram._LinspaceLoopContext(
+            program=self, variable=variable, start=start, stop=stop, iterations=iterations
+        )
 
     def loop(self, variable: Variable, values: np.ndarray):
         """Define a loop block to iterate values over a variable.
@@ -280,6 +306,28 @@ class StructuredProgram:
             self.block: ForLoop = ForLoop(variable=variable, start=start, stop=stop, step=step)
 
         def __enter__(self) -> ForLoop:
+            if self.program._variables[self.block.variable].is_allocated:
+                raise VariableAllocated(self.block.variable)
+            self.program._variables[self.block.variable].allocate(self.block)
+            return super().__enter__()
+
+        def __exit__(self, exc_type, exc_value, exc_tb):
+            self.program._variables[self.block.variable].free()
+            super().__exit__(exc_type, exc_value, exc_tb)
+
+    class _LinspaceLoopContext(_BlockContext):
+        def __init__(
+            self,
+            program: "StructuredProgram",
+            variable: Variable,
+            start: int | float,
+            stop: int | float,
+            iterations: int,
+        ):
+            self.program = program
+            self.block: LinspaceLoop = LinspaceLoop(variable=variable, start=start, stop=stop, iterations=iterations)
+
+        def __enter__(self) -> LinspaceLoop:
             if self.program._variables[self.block.variable].is_allocated:
                 raise VariableAllocated(self.block.variable)
             self.program._variables[self.block.variable].allocate(self.block)
