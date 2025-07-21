@@ -116,10 +116,8 @@ class QbloxQRM(QbloxModule):
         """
         for sequencer in self.awg_sequencers:
             if sequencer.scope_store_enabled:
-                if self._scoping_sequencer is None:
+                if self._scoping_sequencer in (None, sequencer.identifier):
                     self._scoping_sequencer = sequencer.identifier
-                    return
-                if self._scoping_sequencer == sequencer.identifier:
                     return
                 raise ValueError("The scope can only be stored in one sequencer at a time.")
             if self._scoping_sequencer == sequencer.identifier:
