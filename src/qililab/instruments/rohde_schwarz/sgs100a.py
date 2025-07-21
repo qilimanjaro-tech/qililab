@@ -52,6 +52,7 @@ class SGS100A(Instrument):
         alc: bool = True
         iq_modulation: bool = False
         iq_wideband: bool = True
+        operation_mode: str = "normal"
 
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
@@ -119,6 +120,14 @@ class SGS100A(Instrument):
         """
         return self.settings.iq_wideband
 
+    @property
+    def operation_mode(self):
+        """SignalGenerator "Operation Mode" property.
+        Returns:
+            str: settings.operation_mode.
+        """
+        return self.settings.operation_mode
+
     def to_dict(self):
         """Return a dict representation of the SignalGenerator class."""
         return dict(super().to_dict().items())
@@ -168,6 +177,15 @@ class SGS100A(Instrument):
             if self.is_device_active():
                 self.device.IQ_state(self.iq_modulation)
             return
+        if parameter == Parameter.OPERATION_MODE:
+            value = str(value).lower()
+            if value not in ("normal", "bypass"):
+                raise ParameterNotFound(self, parameter)
+            self.settings.operation_mode = value
+            if self.is_device_active():
+                operation_mode = "NORMal" if value == "normal" else "BBBYpass"
+                self.device.write(f":SOUR:OPMode {operation_mode}")
+            return
         raise ParameterNotFound(self, parameter)
 
     def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
@@ -183,6 +201,8 @@ class SGS100A(Instrument):
             return self.settings.iq_wideband
         if parameter == Parameter.IQ_MODULATION:
             return self.settings.iq_modulation
+        if parameter == Parameter.OPERATION_MODE:
+            return self.settings.operation_mode
         raise ParameterNotFound(self, parameter)
 
     @check_device_initialized
@@ -237,6 +257,16 @@ class SGS100A(Instrument):
             self.device.on()
         else:
             self.device.off()
+        if self.operation_mode in ("normal", "bypass"):
+            operation_mode = "NORMal" if self.operation_mode == "normal" else "BBBYpass"
+            self.device.write(f":SOUR:OPMode {operation_mode}")
+        else:
+            warnings.warn(
+                f"Operation mode '{self.operation_mode}' not allowed, defaulting to normal operation mode",
+                ResourceWarning
+            )
+            self.settings.operation_mode = "normal"
+            self.device.write(":SOUR:OPMode NORMal")
 
     @check_device_initialized
     def turn_on(self):
