@@ -197,7 +197,7 @@ def fixture_sdg100a_wrong_op_mode() -> SGS100A:
         {
             "alias": "qdac",
             "power": 10,
-            "frequency": 13e9,
+            "frequency": 8e9,
             "rf_on": True,
             "iq_modulation": True,
             "iq_wideband": True,
@@ -326,12 +326,12 @@ class TestSGS100A:
 
     @patch("qililab.instruments.rohde_schwarz.sgs100a.warnings.warn")
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
-    def test_initial_setup_method_wideband_off(self, mock_get_rs_options, mock_warn, sdg100a_wrong_op_mode: SGS100A):
+    def test_initial_setup_method_wrong_bypass(self, mock_get_rs_options, mock_warn, sdg100a_wrong_op_mode: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
         mock_get_rs_options.return_value = "Some,other,SGS-B112V"
         sdg100a_wrong_op_mode.initial_setup()
         assert sdg100a_wrong_op_mode.settings.operation_mode=="normal"
-        sdg100a_wrong_op_mode.write.assert_any_call(":SOUR:OPMode NORMal")
+        sdg100a_wrong_op_mode.device.write.assert_any_call(":SOUR:OPMode NORMal")
 
         mock_warn.assert_any_call(
             "Operation mode 'wrong_operation_mode' not allowed, defaulting to normal operation mode", ResourceWarning
