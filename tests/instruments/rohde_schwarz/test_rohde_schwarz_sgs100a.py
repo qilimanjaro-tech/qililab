@@ -324,7 +324,7 @@ class TestSGS100A:
         sdg100a_bypass_mode.initial_setup()
         assert sdg100a_bypass_mode.settings.operation_mode == "bypass"
 
-    @patch("warnings.warn")
+    @patch("qililab.instruments.rohde_schwarz.sgs100a.warnings.warn")
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
     def test_initial_setup_method_wideband_off(self, mock_get_rs_options, mock_warn, sdg100a_wrong_op_mode: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
