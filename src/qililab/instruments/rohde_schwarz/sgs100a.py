@@ -181,7 +181,7 @@ class SGS100A(Instrument):
             value = str(value).lower()
             if value not in ("normal", "bypass"):
                 raise ParameterNotFound(self, parameter)
-            self.settings.operation_mode = str(value)
+            self.settings.operation_mode = value
             if self.is_device_active():
                 operation_mode = "NORMal" if value == "normal" else "BBBYpass"
                 self.device.write(f":SOUR:OPMode {operation_mode}")
