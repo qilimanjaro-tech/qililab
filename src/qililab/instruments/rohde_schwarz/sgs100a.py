@@ -185,7 +185,7 @@ class SGS100A(Instrument):
             if self.is_device_active():
                 operation_mode = "NORMal" if value == "normal" else "BBBYpass"
                 self.device.write(f":SOUR:OPMode {operation_mode}")
-
+            return
         raise ParameterNotFound(self, parameter)
 
     def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
