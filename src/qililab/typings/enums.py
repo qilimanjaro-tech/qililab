@@ -322,7 +322,7 @@ class InstrumentControllerName(str, Enum):
 @yaml.register_class
 class Parameter(str, Enum):
     """Parameter names."""
-
+    OPERATION_MODE = "operation_mode"
     ALC = "alc"
     IQ_WIDEBAND = "iq_wideband"
     IQ_MODULATION = "iq_modulation"
