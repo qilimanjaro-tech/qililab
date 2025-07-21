@@ -12,10 +12,10 @@ from qililab.typings.enums import Parameter
 
 @pytest.fixture(name="sdg100a")
 def fixture_sdg100a() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
+    """Fixture that returns an instance of a dummy SGS100a."""
     sdg100a = SGS100A(
         {
-            "alias": "qdac",
+            "alias": "sgs100a",
             "power": 10,
             "frequency": 80e6,
             "rf_on": True,
@@ -179,7 +179,7 @@ def fixture_sdg100a_bypass_mode() -> SGS100A:
         {
             "alias": "qdac",
             "power": 10,
-            "frequency": 13e9,
+            "frequency": 8e9,
             "rf_on": True,
             "iq_modulation": True,
             "iq_wideband": True,
