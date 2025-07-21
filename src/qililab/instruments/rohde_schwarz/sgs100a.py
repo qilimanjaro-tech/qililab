@@ -119,7 +119,7 @@ class SGS100A(Instrument):
             bool: settings.iq_wideband.
         """
         return self.settings.iq_wideband
-    
+
     @property
     def operation_mode(self):
         """SignalGenerator "Operation Mode" property.
@@ -265,7 +265,6 @@ class SGS100A(Instrument):
                 ResourceWarning
             )
             self.device.write(":SOUR:OPMode NORMal")
-
 
     @check_device_initialized
     def turn_on(self):
