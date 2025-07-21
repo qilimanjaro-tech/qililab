@@ -8,10 +8,6 @@
 in the settings are `normal` and `bypass`. If the instrument is reset the native instrument configuration defaults to normal.
 [#957](https://github.com/qilimanjaro-tech/qililab/pull/957)
 
-- For the plots outputted by Qblox Draw, the name legend will now be a concatenation of the bus name and "Flux", similar to I and Q when hardware modulation is enabled.
-- An additional argument has been added, to Qblox Draw, time_window. It allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the exact number of ns inputted. For example, if the time_window is 100 ns but there is a play operation of 150 ns, the plots will display the data until 150 ns.
-[#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
-
 - Implementation of the Sudden Net Zero (SNZ) waveform to be able to realise better fidelity two qubit gates.
 [#952](https://github.com/qilimanjaro-tech/qililab/pull/952)
 
