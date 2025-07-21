@@ -52,7 +52,7 @@ class SGS100A(Instrument):
         alc: bool = True
         iq_modulation: bool = False
         iq_wideband: bool = True
-        operation_mode: str = "normal"
+        operation_mode: str = str("normal")
 
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
@@ -178,6 +178,7 @@ class SGS100A(Instrument):
                 self.device.IQ_state(self.iq_modulation)
             return
         if parameter == Parameter.OPERATION_MODE:
+            value = str(value).lower()
             if value not in ("normal", "bypass"):
                 raise ParameterNotFound(self, parameter)
             self.settings.operation_mode = value
