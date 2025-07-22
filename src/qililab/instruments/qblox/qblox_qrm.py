@@ -466,6 +466,8 @@ class QbloxQRM(QbloxModule):
         Raises:
             ValueError: when value type is not bool
         """
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
+
         self._obtain_scope_sequencer()
         sequencer = self.get_sequencer(sequencer_id)
         self._set_acquisition_mode(
@@ -474,7 +476,6 @@ class QbloxQRM(QbloxModule):
         self._set_scope_hardware_averaging(
             value=cast("QbloxADCSequencer", sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
         )
-        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
 
     def _set_time_of_flight(self, value: int | float | str | bool, sequencer_id: int):
         """set time_of_flight
