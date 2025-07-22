@@ -12,10 +12,10 @@ from qililab.typings.enums import Parameter
 
 @pytest.fixture(name="sdg100a")
 def fixture_sdg100a() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
+    """Fixture that returns an instance of a dummy SGS100a."""
     sdg100a = SGS100A(
         {
-            "alias": "qdac",
+            "alias": "sgs100a",
             "power": 10,
             "frequency": 80e6,
             "rf_on": True,
@@ -30,7 +30,7 @@ def fixture_sdg100a() -> SGS100A:
 
 @pytest.fixture(name="sdg100a_iq")
 def fixture_sdg100a_iq() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
+    """Fixture that returns an instance of a dummy SGS100a."""
     sdg100a_iq = SGS100A(
         {
             "alias": "qdac",
@@ -40,6 +40,7 @@ def fixture_sdg100a_iq() -> SGS100A:
             "iq_modulation": True,
             "iq_wideband": True,
             "alc": True,
+            "operation_mode": "normal"
         }
     )
     sdg100a_iq.device = MagicMock()
@@ -48,7 +49,7 @@ def fixture_sdg100a_iq() -> SGS100A:
 
 @pytest.fixture(name="sdg100a_rf_off")
 def fixture_sdg100a_rf_off() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
+    """Fixture that returns an instance of a dummy SGS100a."""
     sdg100a_rf_off = SGS100A(
         {
             "alias": "qdac",
@@ -66,7 +67,7 @@ def fixture_sdg100a_rf_off() -> SGS100A:
 
 @pytest.fixture(name="sdg100a_alc_off")
 def fixture_sdg100a_alc_off() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
+    """Fixture that returns an instance of a dummy SGS100a."""
     sdg100a_alc_off = SGS100A(
         {
             "alias": "qdac",
@@ -84,7 +85,7 @@ def fixture_sdg100a_alc_off() -> SGS100A:
 
 @pytest.fixture(name="sdg100a_iq_mod_off")
 def fixture_sdg100a_iq_mod_off() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
+    """Fixture that returns an instance of a dummy SGS100a."""
     sdg100a_iq_mod_off = SGS100A(
         {
             "alias": "qdac",
@@ -102,7 +103,7 @@ def fixture_sdg100a_iq_mod_off() -> SGS100A:
 
 @pytest.fixture(name="sdg100a_wideband_off")
 def fixture_sdg100a_wideband_off() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
+    """Fixture that returns an instance of a dummy SGS100a."""
     sdg100a_wideband_off = SGS100A(
         {
             "alias": "qdac",
@@ -120,7 +121,7 @@ def fixture_sdg100a_wideband_off() -> SGS100A:
 
 @pytest.fixture(name="sdg100a_wideband_off_large_freq")
 def fixture_sdg100a_wideband_off_large_freq() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
+    """Fixture that returns an instance of a dummy SGS100a."""
     sdg100a_wideband_off_large_freq = SGS100A(
         {
             "alias": "qdac",
@@ -138,7 +139,7 @@ def fixture_sdg100a_wideband_off_large_freq() -> SGS100A:
 
 @pytest.fixture(name="sdg100a_wrong_power")
 def fixture_sdg100a_wrong_power() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
+    """Fixture that returns an instance of a dummy SGS100a."""
     sdg100a_wrong_power = SGS100A(
         {
             "alias": "qdac",
@@ -156,8 +157,8 @@ def fixture_sdg100a_wrong_power() -> SGS100A:
 
 @pytest.fixture(name="sdg100a_wrong_freq")
 def fixture_sdg100a_wrong_freq() -> SGS100A:
-    """Fixture that returns an instance of a dummy QDAC-II."""
-    sdg100a_wrong_freq= SGS100A(
+    """Fixture that returns an instance of a dummy SGS100a."""
+    sdg100a_wrong_freq = SGS100A(
         {
             "alias": "qdac",
             "power": 10,
@@ -170,6 +171,42 @@ def fixture_sdg100a_wrong_freq() -> SGS100A:
     )
     sdg100a_wrong_freq.device = MagicMock()
     return sdg100a_wrong_freq
+
+@pytest.fixture(name="sdg100a_bypass_mode")
+def fixture_sdg100a_bypass_mode() -> SGS100A:
+    """Fixture that returns an instance of a dummy SGS100a."""
+    sdg100a_wrong_op_mode = SGS100A(
+        {
+            "alias": "qdac",
+            "power": 10,
+            "frequency": 8e9,
+            "rf_on": True,
+            "iq_modulation": True,
+            "iq_wideband": True,
+            "alc": True,
+            "operation_mode": "bypass"
+        }
+    )
+    sdg100a_wrong_op_mode.device = MagicMock()
+    return sdg100a_wrong_op_mode
+
+@pytest.fixture(name="sdg100a_wrong_op_mode")
+def fixture_sdg100a_wrong_op_mode() -> SGS100A:
+    """Fixture that returns an instance of a dummy SGS100a."""
+    sdg100a_wrong_op_mode = SGS100A(
+        {
+            "alias": "qdac",
+            "power": 10,
+            "frequency": 8e9,
+            "rf_on": True,
+            "iq_modulation": True,
+            "iq_wideband": True,
+            "alc": True,
+            "operation_mode": "wrong_operation_mode"
+        }
+    )
+    sdg100a_wrong_op_mode.device = MagicMock()
+    return sdg100a_wrong_op_mode
 
 
 class TestSGS100A:
@@ -188,6 +225,7 @@ class TestSGS100A:
             (Parameter.ALC, False),
             (Parameter.IQ_WIDEBAND, True),
             (Parameter.IQ_WIDEBAND, False),
+            (Parameter.OPERATION_MODE, "normal")
         ],
     )
     def test_set_parameter_method(
@@ -206,11 +244,15 @@ class TestSGS100A:
             assert sdg100a.settings.rf_on == value
         if parameter == Parameter.IQ_MODULATION:
             assert sdg100a.settings.iq_modulation == value
+        if parameter == Parameter.OPERATION_MODE:
+            assert sdg100a.settings.operation_mode == value
 
     def test_set_parameter_method_raises_error(self, sdg100a: SGS100A):
         """Test setup method"""
         with pytest.raises(ParameterNotFound):
             sdg100a.set_parameter(parameter=Parameter.BUS_FREQUENCY, value=123)
+        with pytest.raises(ParameterNotFound):
+            sdg100a.set_parameter(parameter=Parameter.OPERATION_MODE, value="wrong_operation_mode")
 
     @pytest.mark.parametrize(
         "parameter, expected_value",
@@ -221,6 +263,7 @@ class TestSGS100A:
             (Parameter.IQ_MODULATION, True),
             (Parameter.ALC, True),
             (Parameter.IQ_WIDEBAND, True),
+            (Parameter.OPERATION_MODE, "normal")
         ],
     )
     def test_get_parameter_method(
@@ -273,6 +316,26 @@ class TestSGS100A:
         sdg100a_alc_off.initial_setup()
         assert sdg100a_alc_off.settings.alc is False
         assert sdg100a_alc_off.alc is False
+        
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method_bypass_operation_mode(self, mock_get_rs_options, sdg100a_bypass_mode: SGS100A):
+        """Test initial method when the runcard sets rf_on as False"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
+        sdg100a_bypass_mode.initial_setup()
+        assert sdg100a_bypass_mode.settings.operation_mode == "bypass"
+
+    @patch("qililab.instruments.rohde_schwarz.sgs100a.warnings.warn")
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method_wrong_bypass(self, mock_get_rs_options, mock_warn, sdg100a_wrong_op_mode: SGS100A):
+        """Test initial method when the runcard sets rf_on as False"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B112V"
+        sdg100a_wrong_op_mode.initial_setup()
+        assert sdg100a_wrong_op_mode.settings.operation_mode=="normal"
+        sdg100a_wrong_op_mode.device.write.assert_any_call(":SOUR:OPMode NORMal")
+
+        mock_warn.assert_any_call(
+            "Operation mode 'wrong_operation_mode' not allowed, defaulting to normal operation mode", ResourceWarning
+        )
 
     @patch("warnings.warn")
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")

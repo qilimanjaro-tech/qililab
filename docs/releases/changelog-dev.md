@@ -4,6 +4,10 @@
 
 ### Improvements
 
+- The R&S SGS100a driver has now the capability to change the operation mode between normal mode and bypass mode. The default mode is the normal mode. The allowed strings for each mode
+in the settings are `normal` and `bypass`. If the instrument is reset the native instrument configuration defaults to normal.
+[#957](https://github.com/qilimanjaro-tech/qililab/pull/957)
+
 - Implementation of the Sudden Net Zero (SNZ) waveform to be able to realise better fidelity two qubit gates.
   [#952](https://github.com/qilimanjaro-tech/qililab/pull/952)
 
@@ -130,3 +134,4 @@ The data automatically selects between the local or shared domains depending on 
 
 - Quick fix for set_parameter of scope_store_enabled. Now it executes the correct Qblox functions to record the scope.
   [#956](https://github.com/qilimanjaro-tech/qililab/pull/956)
+  [#959](https://github.com/qilimanjaro-tech/qililab/pull/959)
