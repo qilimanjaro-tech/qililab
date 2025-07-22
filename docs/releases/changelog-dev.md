@@ -116,3 +116,4 @@ platform.execute_experiment(experiment)
 
 - Quick fix for set_parameter of scope_store_enabled. Now it executes the correct Qblox functions to record the scope.
   [#956](https://github.com/qilimanjaro-tech/qililab/pull/956)
+  [#959](https://github.com/qilimanjaro-tech/qililab/pull/959)
