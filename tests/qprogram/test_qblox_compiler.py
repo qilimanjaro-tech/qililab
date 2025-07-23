@@ -393,10 +393,10 @@ def fixture_dynamic_sync() -> QProgram:
 def fixture_dynamic_sync_long_wait() -> QProgram:
     drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
-    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
     duration = qp.variable(label="time", domain=Domain.Time)
-    with qp.for_loop(variable=duration, start=200_000, stop=200, step=10):
+    with qp.for_loop(variable=duration, start=0, stop=200_000, step=10):
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
@@ -1793,41 +1793,57 @@ set_freq         R5
                             upd_param        4              
 
             main:
-                            move             -19979, R0     
-                            move             200000, R1     
+                            move             20001, R0      
+                            move             4, R1          
             loop_0:
                             play             0, 1, 40       
+                            nop                             
+                            move             R1, R2         
+                            nop                             
+                            jge              R1, 65533, @long_wait_0
                             wait             R1             
-                            move             0, R2          
-                            add              R1, 40, R3     
+            continue_after_long_wait_0:
+
+
+                            move             0, R3          
+                            add              R1, 40, R4     
                             nop                             
-                            sub              R2, R3, R4     
+                            sub              R3, R4, R5     
                             nop                             
-                            jlt              R4, 2147483648, @dynamic_sync_0
-                            jge              R4, 4294967293, @negative_one_two_three_0
+                            jlt              R5, 2147483648, @dynamic_sync_0
+                            jge              R5, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
 
 
-                            wait             2004           
-                            add              R1, 10, R1     
+                            wait             1004           
+                            add              R1, 9, R1      
                             loop             R0, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                            
+            long_wait_0:
+
+
+                            wait             65532          
+                            sub              R2, 65532, R2  
+                            nop                             
+                            jge              R2, 65532, @long_wait_0
+                            wait             R2             
+                            jmp              @continue_after_long_wait_0
             dynamic_sync_0:
 
 
-                            jlt              R4, 1, @after_dynamic_sync_0
-                            jlt              R4, 4, @one_two_three_0
-                            jge              R4, 65533, @long_wait_sync_0
-                            wait             R4             
+                            jlt              R5, 1, @after_dynamic_sync_0
+                            jlt              R5, 4, @one_two_three_0
+                            jge              R5, 65533, @long_wait_sync_0
+                            wait             R5             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
 
 
-                            add              R4, 4, R4      
+                            add              R5, 4, R5      
                             nop                             
-                            wait             R4             
+                            wait             R5             
                             jmp              @after_dynamic_sync_0
             negative_one_two_three_0:
 
@@ -1838,9 +1854,9 @@ set_freq         R5
 
 
                             wait             65532          
-                            sub              R4, 65532, R4  
+                            sub              R5, 65532, R5  
                             nop                             
-                            jge              R4, 65532, @long_wait_sync_0
+                            jge              R5, 65532, @long_wait_sync_0
                             jmp              @dynamic_sync_0
                 """
         
@@ -1854,8 +1870,8 @@ set_freq         R5
                             move             1, R0          
                             move             0, R1          
                             move             0, R2          
-                            move             -19979, R3     
-                            move             200000, R4     
+                            move             20001, R3      
+                            move             4, R4          
             loop_0:
                             move             40, R5         
                             add              R4, 40, R6     
@@ -1877,9 +1893,9 @@ set_freq         R5
 
 
                             play             0, 1, 4        
-                            acquire_weighed  0, R2, R1, R0, 2000
+                            acquire_weighed  0, R2, R1, R0, 1000
                             add              R2, 1, R2      
-                            add              R4, 10, R4     
+                            add              R4, 9, R4      
                             loop             R3, @loop_0    
                             set_mrk          0              
                             upd_param        4              
