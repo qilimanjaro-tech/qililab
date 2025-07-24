@@ -226,7 +226,9 @@ class TestQbloxQRM:
             qrm.set_parameter(Parameter.PHASE_IMBALANCE, value=0.5, channel_id=None)
 
         with pytest.raises(ValueError):
-            qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, value=True, channel_id=0)
+            qrm.awg_sequencers[0].scope_store_enabled = True
+            qrm.awg_sequencers[0].identifier = 0
+            qrm._scoping_sequencer = 1
             qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, value=True, channel_id=1)
 
     @pytest.mark.parametrize(
