@@ -1650,7 +1650,6 @@ class Platform:
         bus_mapping: dict[str, str] | None = None,
     ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
-
         Args:
             time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the precise number of ns inputted.
                                 For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns.
