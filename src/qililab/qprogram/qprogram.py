@@ -727,11 +727,11 @@ class QProgram(StructuredProgram):
             averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations. Defaults to False.
             acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
 
+
         Returns:
             data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for the I and Q components. This includes all data points used
                 for plotting the waveforms. This function modifies this dictionary, it adds the offsets, the phase and the frequency to the waveforms.
             fig (plotly object)
-
 
         """
 
