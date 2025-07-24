@@ -733,6 +733,7 @@ class QProgram(StructuredProgram):
                 the I and Q components. This includes all data points used for plotting the waveforms. This function modifies this dictionary,
                 it adds the offsets, the phase and the frequency to the waveforms.
             fig (plotly object)
+
         """
 
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
