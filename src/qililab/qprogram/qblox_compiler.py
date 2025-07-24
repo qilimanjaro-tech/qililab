@@ -476,7 +476,7 @@ class QbloxCompiler:
         start, step, iterations = QbloxCompiler._convert_for_loop_values(element, operation)
         if element.variable.domain == Domain.Time and element.stop > INST_MAX_WAIT:
             self._long_wait_dynamic = True
-        self._max_wait_dynamic = element.stop
+        self._max_wait_dynamic = int(element.stop)
 
         for bus in self._buses:
             qpy_loop = QPyProgram.IterativeLoop(
@@ -724,22 +724,6 @@ class QbloxCompiler:
 
                         self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
                     self._buses[bus].dynamic_expression = True
-
-            # if self._long_wait_dynamic:
-            #     for bus in buses:
-            #         if self._long_wait_dynamic_idx == 0:
-            #             self._buses[bus].long_wait_register_total = QPyProgram.Register()
-            #             self._buses[bus].long_wait_register = QPyProgram.Register()
-
-            #         if self._buses[bus].dynamic_durations:
-            #             self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-            #             self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Move(self._buses[bus].dynamic_expression_register, self._buses[bus].long_wait_register))
-            #             self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-            #             self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Jge(self._buses[bus].dynamic_expression_register, 65533, f"@long_wait_{self._long_wait_dynamic_idx}"))
-            #             self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(self._buses[bus].dynamic_expression_register))
-            #             self._buses[bus].qpy_block_stack[-1]._append_block(QPyProgram.Block(f"continue_after_long_wait_{self._long_wait_dynamic_idx}"))
-
-            #     self._long_wait_dynamic_idx += 1
 
             self._buses[element.bus].marked_for_dynamic_sync = True
             self._time_loop_counter += 1

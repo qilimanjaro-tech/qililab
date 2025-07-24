@@ -249,3 +249,41 @@ class TestStructuredProgram:
         for var in [freq_var, phase_var, voltage_var, flux_var]:
             with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
                 _ = var + 5
+
+    def test_variable_expression_infer_domain_error(self):
+        # Pure-constant expression should fail to infer a domain
+        with pytest.raises(ValueError, match="Cannot infer domain from constants."):
+            VariableExpression(5, "+", 3)
+
+    def test_variable_expression_nested_operations(self, instance):
+        # Test __add__, __radd__, __sub__ and __rsub__ on an existing VariableExpression
+        time_var = instance.variable(label="time", domain=Domain.Time)
+        base_expr = time_var + 5
+
+        # nested add
+        nested_add = base_expr + 10
+        assert isinstance(nested_add, VariableExpression)
+        assert repr(nested_add) == f"({base_expr} + 10)"
+
+        # reversed add
+        nested_radd = 20 + base_expr
+        assert isinstance(nested_radd, VariableExpression)
+        assert repr(nested_radd) == f"(20 + {base_expr})"
+
+        # nested sub
+        nested_sub = base_expr - 2
+        assert isinstance(nested_sub, VariableExpression)
+        assert repr(nested_sub) == f"({base_expr} - 2)"
+
+        # reversed sub
+        nested_rsub = 30 - base_expr
+        assert isinstance(nested_rsub, VariableExpression)
+        assert repr(nested_rsub) == f"(30 - {base_expr})"
+
+    def test_extract_constants_raises_error_when_no_constants(self, instance):
+        # An expression made of two Variables should have no constants to extract
+        t1 = instance.variable(label="t1", domain=Domain.Time)
+        t2 = instance.variable(label="t2", domain=Domain.Time)
+        expr = t1 + t2
+        with pytest.raises(ValueError, match="No Variable instance found in expression"):
+            expr.extract_constants()
