@@ -625,6 +625,7 @@ class QbloxCompiler:
                     self._max_wait_dynamic = self._max_wait_dynamic + constant_duration
 
                     if self._max_wait_dynamic > INST_MAX_WAIT:
+                        # TODO: this can lead to redundancies, for example if you wait a long wait and then a short wait; the second is also treated as a long wait
                         self._long_wait_dynamic = True
                     else:
                         self._buses[element.bus].qpy_block_stack[-1].append_component(
