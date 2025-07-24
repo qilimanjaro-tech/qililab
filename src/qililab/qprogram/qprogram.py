@@ -727,6 +727,12 @@ class QProgram(StructuredProgram):
                                 Defaults to None.
             averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations. Defaults to False.
             acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
+
+        Returns:
+            data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for
+                the I and Q components. This includes all data points used for plotting the waveforms. This function modifies this dictionary,
+                it adds the offsets, the phase and the frequency to the waveforms.
+            fig (plotly object)
         """
 
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
@@ -735,6 +741,6 @@ class QProgram(StructuredProgram):
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(self)
-        result_draw = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
+        plotly_figure, data_draw = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
         logger.warning("The drawing feature is currently only supported for QBlox.")
-        return result_draw
+        return plotly_figure, data_draw

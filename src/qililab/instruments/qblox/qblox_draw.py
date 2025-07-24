@@ -626,6 +626,7 @@ class QbloxDraw:
             data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for
                 the I and Q components. This includes all data points used for plotting the waveforms. This function modifies this dictionary,
                 it adds the offsets, the phase and the frequency to the waveforms.
+            fig (plotly object)
 
         Note:
             This function also **plots** the waveforms using the generated data.
@@ -747,4 +748,4 @@ class QbloxDraw:
         )
         fig.show()
 
-        return data_draw
+        return fig, data_draw

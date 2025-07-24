@@ -1659,13 +1659,19 @@ class Platform:
             acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
             bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
                 It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
+
+        Returns:
+            data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for
+                the I and Q components. This includes all data points used for plotting the waveforms. This function modifies this dictionary,
+                it adds the offsets, the phase and the frequency to the waveforms.
+            fig (plotly object)
         """
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
         sequencer = self.compile_qprogram(qprogram, bus_mapping)
-        result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
+        plotly_figure, data_draw = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
 
-        return result
+        return plotly_figure, data_draw
 
     def load_db_manager(self, db_ini_path: str | None = None):
         """Load Database Manager from an .ini path containing user DB user information or if no path is given
