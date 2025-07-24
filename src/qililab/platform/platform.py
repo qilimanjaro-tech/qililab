@@ -1650,7 +1650,6 @@ class Platform:
         bus_mapping: dict[str, str] | None = None,
     ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
-
         Args:
             time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the precise number of ns inputted.
                 For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns. Defaults to None.
@@ -1659,12 +1658,10 @@ class Platform:
             bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
                 It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
 
-
         Returns:
             data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for the I and Q components. This includes all data points used
                 for plotting the waveforms. This function modifies this dictionary, it adds the offsets, the phase and the frequency to the waveforms.
             fig (plotly object): the plotly figure of the data_draw dictionary
-
         """
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
