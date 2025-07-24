@@ -723,16 +723,15 @@ class QProgram(StructuredProgram):
 
         Args:
             time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the precise number of ns inputted.
-                                For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns.
-                                Defaults to None.
+                For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns. Defaults to None.
             averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations. Defaults to False.
             acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
 
         Returns:
-            data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for
-                the I and Q components. This includes all data points used for plotting the waveforms. This function modifies this dictionary,
-                it adds the offsets, the phase and the frequency to the waveforms.
+            data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for the I and Q components. This includes all data points used
+                for plotting the waveforms. This function modifies this dictionary, it adds the offsets, the phase and the frequency to the waveforms.
             fig (plotly object)
+
 
         """
 

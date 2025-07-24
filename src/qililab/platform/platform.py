@@ -1661,7 +1661,7 @@ class Platform:
 
         Returns:
             data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for the I and Q components. This includes all data points used
-            for plotting the waveforms. This function modifies this dictionary, it adds the offsets, the phase and the frequency to the waveforms.
+                for plotting the waveforms. This function modifies this dictionary, it adds the offsets, the phase and the frequency to the waveforms.
             fig (plotly object)
 
         """
