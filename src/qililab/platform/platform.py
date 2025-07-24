@@ -1659,7 +1659,7 @@ class Platform:
             bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
                 It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
 
-                
+
         Returns:
             data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for the I and Q components. This includes all data points used
                 for plotting the waveforms. This function modifies this dictionary, it adds the offsets, the phase and the frequency to the waveforms.
