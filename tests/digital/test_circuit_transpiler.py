@@ -849,8 +849,7 @@ class TestCircuitTranspiler:
         mock_graph.return_value = graph_mocking
 
         # Execute the function
-        with pytest.raises(ValueError, match=re.escape("not enough values to unpack (expected 2, got 0)")):
-            transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
 
         # Asserts:
         mock_router.assert_called_once_with(graph_mocking, None, None)
