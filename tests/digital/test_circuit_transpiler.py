@@ -870,6 +870,12 @@ class TestCircuitTranspiler:
         # No gate after measurement for either qubit
         transpiler._check_that_no_gate_is_after_measurement(circuit)  # Should not raise
 
+        circuit = Circuit(2)
+        circuit.add(gates.X(0))
+        circuit.add(gates.M(0,1)) # Same for both measures defined together
+        # No gate after measurement for either qubit
+        transpiler._check_that_no_gate_is_after_measurement(circuit)  # Should not raise
+
 
     def test__check_that_no_gate_is_after_measurement_violation_single_qubit(self):
         """Test _check_that_no_gate_is_after_measurement raises when a gate is after measurement on one qubit."""
