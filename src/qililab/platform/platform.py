@@ -949,7 +949,6 @@ class Platform:
     def execute_experiment(
         self,
         experiment: Experiment,
-        base_path: str | None = None,
         live_plot: bool = True,
         slurm_execution: bool = True,
         port_number: int | None = None,
@@ -960,7 +959,6 @@ class Platform:
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
-            base_path (str | None, optional): Base path of the saved data. If no string given it defaults to platform.experiment_results_base_path.
             live_plot (bool): Flag that abilitates live plotting. Defaults to True.
             slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell.
                                     Defaults to True.
@@ -980,9 +978,6 @@ class Platform:
                 # Add variables, loops, and operations to the experiment
                 # ...
 
-                # Define the base path for storing experiment results
-                platform.experiment_results_base_path = "/data/experiments"
-
                 # Execute the experiment on the platform
                 results_path = platform.execute_experiment(experiment=experiment, database=False)
                 print(f"Results saved to {results_path}")
@@ -997,9 +992,6 @@ class Platform:
                 # Add variables, loops, and operations to the experiment
                 # ...
 
-                # Define the base path for storing experiment results
-                platform.experiment_results_base_path = "/data/experiments"
-
                 # Define the database manager. Optional, as this can be done inside execute_experiment
                 db_manager = platform.load_db_manager(db_manager_ini_path)
                 db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
@@ -1010,7 +1002,7 @@ class Platform:
 
         Note:
             - Ensure that the experiment is properly configured before execution.
-            - The results will be saved in a directory within the `experiment_results_base_path` according to the `platform.experiment_results_path_format`. The default format is `{date}/{time}/{label}.h5`.
+            - The results will be saved in a directory within the load_db_manager config file. The default format is `{date}/{time}/{label}.h5`.
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
 
@@ -1023,7 +1015,6 @@ class Platform:
         executor = ExperimentExecutor(
             platform=self,
             experiment=experiment,
-            base_path=base_path,
             live_plot=live_plot,
             slurm_execution=slurm_execution,
             port_number=port_number,
@@ -1664,19 +1655,25 @@ class Platform:
 
         Args:
             time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the precise number of ns inputted.
-                                For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns.
-                                Defaults to None.
+                For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns. Defaults to None.
             averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations. Defaults to False.
             acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
             bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
                 It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
+
+        Returns:
+            tuple[plotly object, dictionary]: Tuple containing the dictionary where keys are bus aliases and values are lists containing numpy arrays for
+                the I and Q components. And the plotly object plotting the data from the dictionary.
+
+        Note:
+            This function also **plots** the waveforms using the generated data.
         """
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
         sequencer = self.compile_qprogram(qprogram, bus_mapping)
-        result = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
+        plotly_figure, data_draw = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
 
-        return result
+        return plotly_figure, data_draw
 
     def load_db_manager(self, db_ini_path: str | None = None):
         """Load Database Manager from an .ini path containing user DB user information or if no path is given
@@ -1699,7 +1696,6 @@ class Platform:
         shape: tuple,
         loops: dict[str, np.ndarray],
         experiment_name: str,
-        base_path: str | None = None,
         qprogram: QProgram | None = None,
         description: str | None = None,
     ):
@@ -1726,7 +1722,6 @@ class Platform:
                     shape=(len(if_sweep), 2),
                     loops={"frequency": if_sweep},
                     experiment_name="resonator_spectroscopy",
-                    base_path="/base_path",
                     qprogram=qprogram,
                     description="optional text"
                 )
@@ -1740,7 +1735,6 @@ class Platform:
             shape (tuple): results array shape.
             loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
             experiment_name (str): Name of the experiment.
-            base_path (str | None, optional): base path for the results data folder structure. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
             description (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
 
@@ -1750,10 +1744,6 @@ class Platform:
 
         if not self.db_manager:
             raise ReferenceError("Missing db_manager, try using platform.load_db_manager().")
-        if base_path:
-            base_path = base_path
-        else:
-            base_path = self.experiment_results_base_path
 
         return StreamArray(
             shape=shape,
@@ -1770,7 +1760,6 @@ class Platform:
         experiment_name: str,
         results: np.ndarray,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
-        base_path: str | None = None,
         qprogram: QProgram | None = None,
         description: str | None = None,
     ):
@@ -1796,7 +1785,6 @@ class Platform:
                     experiment_name="resonator_spectroscopy",
                     results = results
                     loops={"frequency": if_sweep},
-                    base_path="/base_path",
                     qprogram=qprogram,
                     description="optional text"
                 )
@@ -1805,17 +1793,12 @@ class Platform:
             experiment_name (str): Name of the experiment.
             results (np.ndarray): Experiment data.
             loops (dict[str, np.ndarray]): Dictionary of loops with the name of the loop and the array.
-            base_path (str | None, optional): base path for the results data folder structure. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
             description (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
         """
 
         if not self.db_manager:
             raise ReferenceError("Missing db_manager, try using platform.load_db_manager().")
-        if base_path:
-            base_path = base_path
-        else:
-            base_path = self.experiment_results_base_path
 
         shape = results.shape
 
