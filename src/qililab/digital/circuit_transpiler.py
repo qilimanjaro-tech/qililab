@@ -381,7 +381,8 @@ class CircuitTranspiler:
 
         return circuit_to_pulses.run(circuit_gates)
 
-    def _check_that_no_gate_is_after_measurement(self, circuit: Circuit) -> None:
+    @staticmethod
+    def _check_that_no_gate_is_after_measurement(circuit: Circuit) -> None:
         """Checks that no gate is after a measurement gate in each qubit of the circuit.
 
         Args:
