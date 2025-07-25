@@ -1512,8 +1512,7 @@ class Platform:
         qubits_m = {}
         order = {}
         # iterate over qubits measured in same order as they appear in the circuit
-        # TODO: You need to check where each measurement is, since SWAPs can be after a measurement...
-        # FIXME: In the meanwhile do it asuming the Measurement is the last gate for each qubit
+        # TODO: Expand the automatic routing, to allow SWAPs and therefore 2q gates, after the Measurements.
         for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
             if qubit not in qubits_m:
                 qubits_m[qubit] = 0
