@@ -28,8 +28,9 @@ Transpilation
 
 """
 
+from .circuit_router import CircuitRouter
 from .circuit_transpiler import CircuitTranspiler, DigitalTranspilationConfig
 from .gate_decompositions import GateDecompositions
 from .native_gates import Drag, Wait
 
-__all__ = ["CircuitTranspiler", "DigitalTranspilationConfig", "Drag", "GateDecompositions", "Wait"]
+__all__ = ["CircuitRouter", "CircuitTranspiler", "DigitalTranspilationConfig", "Drag", "GateDecompositions", "Wait"]

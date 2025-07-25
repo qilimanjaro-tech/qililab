@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import networkx as nx
+from qibo.gates import M
 
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.circuit_router import CircuitRouter
@@ -171,6 +172,7 @@ class CircuitTranspiler:
 
         # Routing stage;
         if routing:
+            self._check_that_no_gate_is_after_measurement(circuit)
             circuit_gates, nqubits, final_layout = self.route_circuit(circuit, placer, router, routing_iterations)
         else:
             circuit_gates, nqubits = circuit.queue, circuit.nqubits
@@ -378,3 +380,30 @@ class CircuitTranspiler:
         circuit_to_pulses = CircuitToPulses(self.settings)
 
         return circuit_to_pulses.run(circuit_gates)
+
+    def _check_that_no_gate_is_after_measurement(self, circuit: Circuit) -> None:
+        """Checks that no gate is after a measurement gate in each qubit of the circuit.
+
+        Args:
+            circuit (Circuit): Qibo circuit.
+
+        Raises:
+            ValueError: If there is a gate after a measurement gate.
+        """
+        for qubit in range(circuit.nqubits):
+            first_measurement = None
+            last_non_measurement = None
+            for i, gate in enumerate(circuit.queue):
+                if qubit in gate.qubits:
+                    if isinstance(gate, M):
+                        first_measurement = i if first_measurement is None else first_measurement
+                    else:
+                        last_non_measurement = i
+            if (
+                first_measurement is not None
+                and last_non_measurement is not None
+                and first_measurement < last_non_measurement
+            ):
+                raise ValueError(
+                    f"For the automatic routing to work in an `execute`, no gate can be after a measurement gate in each qubit. Check the gates at qubit: {qubit}."
+                )

@@ -859,3 +859,54 @@ class TestCircuitTranspiler:
         """
         tc = DigitalTranspilationConfig()
         assert tc._attributes_ordered == (False, None, None, 10, False)
+
+    def test__check_that_no_gate_is_after_measurement_no_violation(self):
+        """Test _check_that_no_gate_is_after_measurement passes when no gate is after measurement."""
+        transpiler = CircuitTranspiler(settings=MagicMock())
+        circuit = Circuit(2)
+        circuit.add(gates.X(0))
+        circuit.add(gates.M(0))
+        circuit.add(gates.M(1))
+        # No gate after measurement for either qubit
+        transpiler._check_that_no_gate_is_after_measurement(circuit)  # Should not raise
+
+    def test__check_that_no_gate_is_after_measurement_violation_single_qubit(self):
+        """Test _check_that_no_gate_is_after_measurement raises when a gate is after measurement on one qubit."""
+        transpiler = CircuitTranspiler(settings=MagicMock())
+        circuit = Circuit(2)
+        circuit.add(gates.X(0))
+        circuit.add(gates.M(0))
+        circuit.add(gates.X(0))  # Gate after measurement on qubit 0
+        with pytest.raises(ValueError, match="no gate can be after a measurement gate in each qubit. Check the gates at qubit: 0"):
+            transpiler._check_that_no_gate_is_after_measurement(circuit)
+
+    def test__check_that_no_gate_is_after_measurement_violation_multiple_qubits(self):
+        """Test _check_that_no_gate_is_after_measurement raises when a gate is after measurement on multiple qubits."""
+        transpiler = CircuitTranspiler(settings=MagicMock())
+        circuit = Circuit(3)
+        circuit.add(gates.X(0))
+        circuit.add(gates.M(0))
+        circuit.add(gates.X(0))  # Violation on qubit 0
+        circuit.add(gates.M(1))
+        circuit.add(gates.X(1))  # Violation on qubit 1
+        with pytest.raises(ValueError) as excinfo:
+            transpiler._check_that_no_gate_is_after_measurement(circuit)
+        assert "no gate can be after a measurement gate in each qubit" in str(excinfo.value)
+
+    def test__check_that_no_gate_is_after_measurement_measurement_last(self):
+        """Test _check_that_no_gate_is_after_measurement passes when measurement is last gate for all qubits."""
+        transpiler = CircuitTranspiler(settings=MagicMock())
+        circuit = Circuit(2)
+        circuit.add(gates.X(0))
+        circuit.add(gates.X(1))
+        circuit.add(gates.M(0))
+        circuit.add(gates.M(1))
+        transpiler._check_that_no_gate_is_after_measurement(circuit)  # Should not raise
+
+    def test__check_that_no_gate_is_after_measurement_no_measurement(self):
+        """Test _check_that_no_gate_is_after_measurement passes when there are no measurement gates."""
+        transpiler = CircuitTranspiler(settings=MagicMock())
+        circuit = Circuit(2)
+        circuit.add(gates.X(0))
+        circuit.add(gates.X(1))
+        transpiler._check_that_no_gate_is_after_measurement(circuit)  # Should not raise
