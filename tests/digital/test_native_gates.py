@@ -48,8 +48,12 @@ def test_native_gates_raw():
     drag_gate = Drag(0, 0, 0)
     assert drag_gate.raw == {
         "_class": "Drag",
-        "init_args": [0, 0, 0],
-        "init_kwargs": {},
+        "init_args": [0],
+        "init_kwargs": {
+            'phase': 0,
+            'theta': 0,
+            'trainable': True
+        },
         "name": "drag",
         "qubits": [0],
     }
@@ -57,8 +61,8 @@ def test_native_gates_raw():
     wait_gate = Wait(0, 100)
     assert wait_gate.raw == {
         "_class": "Wait",
-        "init_args": [0, 100],
-        "init_kwargs": {},
+        "init_args": [0],
+        "init_kwargs": {"t": 100},
         "name": "wait",
         "qubits": [0],
     }

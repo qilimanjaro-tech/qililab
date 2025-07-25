@@ -948,4 +948,4 @@ class TestCircuitTranspiler:
         circuit.add(gates.SWAP(0, 1))
 
         with pytest.raises(ValueError, match="The routing algorithm has added a SWAP gate after a Measurement on qubit: 0, which isn't allowed in the automatic routing. Change routing algorithm, or route it manually with `CircuitRouter` before executing the circuit."):
-            transpiler._check_that_no_SWAP_gate_is_after_measurement((circuit.queue, circuit.nqubits), "after")
+            transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "after")
