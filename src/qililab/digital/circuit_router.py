@@ -34,6 +34,8 @@ class CircuitRouter:
 
     - ``route(circuit: Circuit) -> tuple[Circuit, dict]``: Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
 
+    (This class is used by :meth:`.CircuitTranspiler.transpile_circuit()`, which uses it in its routing stage.)
+
     Args:
         connectivity (nx.graph): Chip connectivity.
         placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to

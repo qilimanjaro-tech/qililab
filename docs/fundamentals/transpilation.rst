@@ -29,6 +29,10 @@ The process involves the following steps (by default only: **3.**, **4**., and *
 
     To do Steps **2.** and **5.** set ``optimize=True`` in ``transpilation_config`` (default behavior skips it).
 
+.. note::
+
+    If the circuit has SWAP gates after a Measurement gate, the automatic routing will not work, better to use the :meth:`.CircuitRouter.route()` method manually, and track the mapping of measurement results before execution.
+
 **Examples:**
 
 For example, the most basic use, would be to automatically transpile during an execute, like:

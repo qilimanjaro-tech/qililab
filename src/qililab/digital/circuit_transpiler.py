@@ -65,11 +65,9 @@ class DigitalTranspilationConfig:
 
 
 class CircuitTranspiler:
-    """Handles circuit transpilation. It has 3 accessible methods:
+    """Handles circuit transpilation (routing, optimization, native gate translation, and pulse scheduling).
 
-    - ``circuit_to_native``: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
-    - ``circuit_to_pulses``: transpiles a native gate circuit to a ``PulseSchedule``
-    - ``transpile_circuit``: runs both of the methods above sequentially
+    Its main method, which sequentially calls the rest, is: :meth:`.transpile_circuit()`.
 
     Args:
         settings (DigitalCompilationSettings): Object containing the Digital Compilations Settings and the info on chip's physical qubits.
@@ -112,6 +110,10 @@ class CircuitTranspiler:
             To do Step **1.** set ``routing=True`` (default behavior skips it).
 
             To do Steps **2.** and **5.** set ``optimize=True`` (default behavior skips it).
+
+        .. note::
+
+            If the circuit has SWAP gates after a Measurement gate, the automatic routing will not work, better to use the :meth:`.CircuitRouter.route()` method manually, and track the mapping of measurement results before execution.
 
         **Examples:**
 
