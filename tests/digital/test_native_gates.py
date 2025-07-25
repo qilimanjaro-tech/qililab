@@ -55,7 +55,8 @@ def test_native_gates_raw():
             'trainable': True
         },
         "name": "drag",
-        "qubits": [0],
+        "_control_qubits": (),
+        "_target_qubits": (0,)
     }
 
     wait_gate = Wait(0, 100)
@@ -64,7 +65,8 @@ def test_native_gates_raw():
         "init_args": [0],
         "init_kwargs": {"t": 100},
         "name": "wait",
-        "qubits": [0],
+        "_control_qubits": (),
+        "_target_qubits": (0,)
     }
 
 def test_create_gate():
