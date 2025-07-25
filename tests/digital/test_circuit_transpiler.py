@@ -911,9 +911,8 @@ class TestCircuitTranspiler:
         circuit.add(gates.SWAP(0, 1))  # Violation on qubit 0
         circuit.add(gates.M(1))
         circuit.add(gates.X(1))
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match=re.escape("For automatic routing to work, no SWAP gate can be after a Measurement gate on each qubit. This validation is performed during the transpilation of an `execute`. Check the gates at qubit: 0.")):
             transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")
-        assert re.escape("For automatic routing to work, no SWAP gate can be after a Measurement gate on each qubit. This validation is performed during the transpilation of an `execute`. Check the gates at qubit: 0.") in str(excinfo.value)
 
     def test__check_that_no_SWAP_gate_is_after_measurement_measurement_last(self):
         """Test _check_that_no_SWAP_gate_is_after_measurement passes when measurement is last gate for all qubits."""
