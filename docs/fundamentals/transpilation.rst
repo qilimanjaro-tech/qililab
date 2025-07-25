@@ -99,27 +99,27 @@ And now, transpile manually, like in the following examples:
 .. code-block:: python
 
     # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
-    transpiled_circuit, final_layouts = transpiler.transpile_circuit(c)
+    transpiled_pulses, final_layouts = transpiler.transpile_circuit(c)
 
     # Or another case, not doing optimization for some reason, and with Non-Default placer:
     transpilation_settings = DigitalTranspilationConfig(placer=Random, optimize=False)
-    transpiled_circuit, final_layout = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
+    transpiled_pulses, final_layout = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
     # Or also specifying the `router` with kwargs:
     transpilation_settings = DigitalTranspilationConfig(router=(Sabre, {"lookahead": 2}))
-    transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
+    transpiled_pulses, final_layouts = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
 And even we could only do a single step of the transpilation manually, like in the following, where we will only route:
 
 .. code-block:: python
 
     # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
-    transpiled_circuit, qubits, final_layouts = transpiler.route_circuit(c)
+    routed_circuit, final_layouts = transpiler.route_circuit(c)
 
     # Or another case with Non-Default placer:
-    transpiled_circuit, qubits, final_layout = transpiler.route_circuit(c, placer=Random)
+    routed_circuit, final_layout = transpiler.route_circuit(c, placer=Random)
 
-And finally, if you want to Route a Circuit, but not instantiate any Platform, a CircuitRouter can be used directly, like:
+And finally, if you want to route a ``Circuit``, but not instantiate any ``Platform``, a ``CircuitRouter`` can be used directly, like:
 
 .. code-block:: python
 
@@ -131,4 +131,4 @@ And finally, if you want to Route a Circuit, but not instantiate any Platform, a
 
     # Create a hardcoded Router with a connectivity graph:
     router = CircuitRouter(connectivity=nx.Graph([(0,1), (0,4), (1,2), (2,4),(2,3)]))
-    transpiled_circuit, final_layout = router.route(c)
+    routed_circuit, final_layout = router.route(c)
