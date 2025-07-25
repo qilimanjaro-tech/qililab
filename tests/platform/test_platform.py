@@ -31,6 +31,7 @@ from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.result.database import get_db_manager
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
@@ -732,12 +733,7 @@ class TestMethods:
         expected_error_message = "Bus with alias 'orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses' defined in Digital/Buses section of the Runcard, not found in main Buses section of the same Runcard."
 
         with pytest.raises(ValueError, match=re.escape(expected_error_message)):
-            platform.compile(
-                program=circuit,
-                num_avg=1000,
-                repetition_duration=200_000,
-                num_bins=1
-            )
+            platform.compile(program=circuit, num_avg=1000, repetition_duration=200_000, num_bins=1)
 
     def test_compile_pulse_schedule(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
@@ -834,6 +830,11 @@ class TestMethods:
         # Manually set the execute_experiment method to the real one
         platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
 
+        # Mock database manager
+        mock_database = MagicMock()
+        platform.db_manager = mock_database
+        platform.save_experiment_results_in_database = True
+
         # Create an autospec of the Experiment class and Calibration class
         mock_experiment = create_autospec(Experiment)
 
@@ -845,11 +846,17 @@ class TestMethods:
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
-            results_path = platform.execute_experiment(experiment=mock_experiment)
+            platform.db_manager = None
+            results_path = platform.execute_experiment(experiment=mock_experiment, base_path="base_path")
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
             MockExecutor.assert_called_once_with(
-                platform=platform, experiment=mock_experiment, live_plot=True, slurm_execution=True, port_number=None
+                platform=platform,
+                experiment=mock_experiment,
+                base_path="base_path",
+                live_plot=True,
+                slurm_execution=True,
+                port_number=None,
             )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
@@ -857,6 +864,34 @@ class TestMethods:
 
             # Ensure that execute_experiment returns the correct value
             assert results_path == expected_results_path
+
+    def test_execute_experiment_raises_reference_error(self):
+        """Test that execute() raises ReferenceError when get_db_manager() fails."""
+
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the execute_experiment method to the real one
+        platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
+
+        platform.db_manager = None
+        platform.save_experiment_results_in_database = True
+
+        # Create an autospec of the Experiment class and Calibration class
+        mock_experiment = create_autospec(Experiment)
+
+        expected_results_path = "mock/results/path/data.h5"
+
+        with patch.object(platform, "load_db_manager", side_effect=ReferenceError):
+            with pytest.raises(
+                ReferenceError, match="Missing initialization information at the desired database '.ini' path."
+            ):
+                # Mock the ExperimentExecutor to ensure it's used correctly
+                with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
+                    mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+                    mock_executor_instance.execute.return_value = expected_results_path
+
+                    platform.execute_experiment(experiment=mock_experiment)
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -1409,6 +1444,42 @@ class TestMethods:
         with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
             platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
 
+    @patch("qililab.platform.platform.get_db_manager")
+    @patch("qililab.result.database._load_config")
+    def test_load_db_manager(self, mock_load_config, mock_get_db_manager, platform: Platform):
+        """Test load_db_manager createing a database from a given path"""
+        path = "~/database_test.ini"
+
+        mock_load_config.return_value = {
+            "host": "localhost",
+            "user": "user",
+            "passwd": "pass",
+            "port": "5432",
+            "database": "testdb",
+        }
+        mock_get_db_manager.return_value = get_db_manager(path)
+
+        _ = platform.load_db_manager(path)
+
+        mock_get_db_manager.assert_called_once_with(path)
+
+    @patch("qililab.platform.platform.get_db_manager")
+    @patch("qililab.result.database._load_config")
+    def test_load_db_manager_no_path(self, mock_load_config, mock_get_db_manager, platform: Platform):
+        """Test load_db_manager createing a database without a given path"""
+        mock_load_config.return_value = {
+            "host": "localhost",
+            "user": "user",
+            "passwd": "pass",
+            "port": "5432",
+            "database": "testdb",
+        }
+        mock_get_db_manager.return_value = get_db_manager()
+
+        _ = platform.load_db_manager()
+
+        mock_get_db_manager.assert_called_once_with()
+
     def test_db_real_time_saving(self, platform: Platform):
         """Test db_real_time_saving function to save database from platform"""
 
@@ -1416,23 +1487,55 @@ class TestMethods:
         loops = {"test_amp_loop": np.arange(0, 2)}
         experiment_name = "test_db_real_time_saving"
         mock_database = MagicMock()
-        db_manager = mock_database
-        optional_identifier = "optional_identifier"
+        platform.db_manager = mock_database
+        description = "description"
+        base_path = "base_path"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
         db_real_time_saving = platform.db_real_time_saving(
-            shape, loops, experiment_name, db_manager, qprogram, optional_identifier
+            shape, loops, experiment_name, base_path, qprogram, description
         )
 
         assert db_real_time_saving.loops == loops
-        assert db_real_time_saving.optional_identifier == optional_identifier
+        assert db_real_time_saving.optional_identifier == description
         assert db_real_time_saving.platform == platform
         assert db_real_time_saving.qprogram == qprogram
         assert db_real_time_saving.db_manager == mock_database
         assert db_real_time_saving.experiment_name == experiment_name
+        assert db_real_time_saving.base_path == base_path
+
+    def test_db_real_time_saving_no_base_path(self, platform: Platform):
+        """Test db_real_time_saving function to save database from platform"""
+
+        shape = (2, 2)
+        loops = {"test_amp_loop": np.arange(0, 2)}
+        experiment_name = "test_db_real_time_saving"
+        base_path = "base_path"
+        description = "description"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        error_string = "Missing db_manager, try using platform.load_db_manager()."
+        with pytest.raises(ReferenceError, match=error_string):
+            platform.db_real_time_saving(shape, loops, experiment_name, base_path, qprogram, description)
+
+        mock_database = MagicMock()
+        platform.db_manager = mock_database
+
+        db_real_time_saving = platform.db_real_time_saving(
+            shape=shape,
+            loops=loops,
+            experiment_name=experiment_name,
+            qprogram=qprogram,
+            description=description,
+        )
+
+        assert db_real_time_saving.base_path == platform.experiment_results_base_path
 
     @patch("h5py.File")
     def test_db_save_results(self, mock_h5file, platform: Platform):
@@ -1441,18 +1544,38 @@ class TestMethods:
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 1)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path = "base_path"
 
         mock_database = MagicMock()
-        db_manager = mock_database
-        optional_identifier = "optional_identifier"
+        platform.db_manager = mock_database
+        description = "description"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, base_path, qprogram, description)
 
         assert mock_h5file.called
+
+    @patch("h5py.File")
+    def test_db_save_results_raises_error(self, mock_h5file, platform: Platform):
+        """Test db_save_results function raises an error when no database is created"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 1)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path = "base_path"
+
+        description = "description"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        error_string = "Missing db_manager, try using platform.load_db_manager()."
+        with pytest.raises(ReferenceError, match=error_string):
+            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, description)
 
     @patch("h5py.File")
     def test_db_save_results_loop_dict(self, mock_h5file, platform: Platform):
@@ -1463,16 +1586,43 @@ class TestMethods:
             "test_amp_loop": {"bus": "readout", "units": "V", "parameter": Parameter.VOLTAGE, "array": np.arange(0, 1)}
         }
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path = "base_path"
 
         mock_database = MagicMock()
-        db_manager = mock_database
-        optional_identifier = "optional_identifier"
+        platform.db_manager = mock_database
+        description = "description"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, base_path, qprogram, description)
+
+        assert mock_h5file.called
+
+    @patch("h5py.File")
+    def test_db_save_results_no_base_path(self, mock_h5file, platform: Platform):
+        """Test db_save_results functionto save from database from Platform"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 1)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        mock_database = MagicMock()
+        platform.db_manager = mock_database
+        description = "description"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        platform.db_save_results(
+            experiment_name=experiment_name,
+            results=results,
+            loops=loops,
+            qprogram=qprogram,
+            description=description,
+        )
 
         assert mock_h5file.called
 
@@ -1483,10 +1633,11 @@ class TestMethods:
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 1), "test_freq_loop": np.arange(0, 1e6, 1e6)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path = "base_path"
 
         mock_database = MagicMock()
-        db_manager = mock_database
-        optional_identifier = "optional_identifier"
+        platform.db_manager = mock_database
+        description = "description"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
@@ -1494,7 +1645,7 @@ class TestMethods:
 
         error_string = "Number of loops must be the same as the number of dimensions of the results except for IQ"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, description)
 
     @patch("h5py.File")
     def test_db_save_results_raise_error_incorrect_loops_size(self, mock_h5file, platform: Platform):
@@ -1503,10 +1654,11 @@ class TestMethods:
         experiment_name = "experiment_name"
         loops = {"test_amp_loop": np.arange(0, 4)}
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
+        base_path = "base_path"
 
         mock_database = MagicMock()
-        db_manager = mock_database
-        optional_identifier = "optional_identifier"
+        platform.db_manager = mock_database
+        description = "description"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
@@ -1514,4 +1666,4 @@ class TestMethods:
 
         error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, description)

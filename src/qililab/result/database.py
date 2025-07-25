@@ -424,6 +424,7 @@ class DatabaseManager:
         self,
         experiment_name: str,
         experiment_completed: bool,
+        base_path: str,
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
@@ -441,6 +442,7 @@ class DatabaseManager:
         Args:
             experiment_name (str): Experiment name.
             experiment_completed (bool): Status of the experiment.
+            base_path (str): Base path for data location.
             cooldown (str | None, optional): Cooldown id. Defaults to None.
             sample_name (str | None, optional): Sample id. Defaults to None.
             optional_identifier (str | None, optional): Optional additional information. Defaults to None.
@@ -463,8 +465,11 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
-        base_path = "/mnt/home.local/jupytershared/data"
-        dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
+        dir_path = (
+            f"{base_path}{self.current_sample}/{self.current_cd}/{formatted_time}"
+            if base_path[-1] == "/"
+            else f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
+        )
         result_path = f"{dir_path}/{experiment_name}.h5"
 
         folder = dir_path
@@ -503,6 +508,7 @@ class DatabaseManager:
         experiment_name: str,
         results: np.ndarray,
         loops: dict[str, np.ndarray],
+        base_path: str,
         cooldown: str | None = None,
         sample_name: str | None = None,
         optional_identifier: str | None = None,
@@ -537,7 +543,6 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
-        base_path = "/mnt/home.local/jupytershared/data"
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         result_path = f"{dir_path}/{experiment_name}.h5"
 
@@ -581,7 +586,7 @@ class DatabaseManager:
                 raise e
 
 
-def _load_config(filename=os.path.expanduser("~/database.ini"), section="postgresql"):
+def _load_config(filename, section="postgresql"):
     """Load database configuration based on postrgreSQL"""
     parser = ConfigParser()
     parser.read(filename)
@@ -593,12 +598,13 @@ def _load_config(filename=os.path.expanduser("~/database.ini"), section="postgre
         for param in params:
             config[param[0]] = param[1]
         return config
-    raise Exception("Section {0} not found in the {1} file".format(section, filename))
+    raise ReferenceError("Section {0} not found in the {1} file".format(section, filename))
 
 
-def get_db_manager():
+def get_db_manager(path: str = "~/database.ini"):
     """Automatic DatabaseManager generator based on default load_config"""
-    return DatabaseManager(**_load_config())
+    filename = os.path.expanduser(path)
+    return DatabaseManager(**_load_config(filename))
 
 
 def get_engine(user: str, passwd: str, host: str, port: str, database: str):

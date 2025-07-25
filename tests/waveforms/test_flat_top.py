@@ -10,7 +10,8 @@ def fixture_flat_top():
     return FlatTop(amplitude=1, duration=10, gaussian=0.2, buffer=1)
 
 
-class TestGaussian:
+class TestFlatTop:
+    """Unit tests checking the FlatTop waveform attributes and methods."""
     def test_init(self, flat_top):
         """Test __init__ method"""
         assert flat_top.amplitude == 1
