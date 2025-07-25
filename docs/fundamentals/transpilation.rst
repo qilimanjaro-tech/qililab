@@ -98,10 +98,12 @@ And now, transpile manually, like in the following examples:
     transpiled_circuit, final_layouts = transpiler.transpile_circuit(c)
 
     # Or another case, not doing optimization for some reason, and with Non-Default placer:
-    transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Random, optimize=False)
+    transpilation_settings = DigitalTranspilationConfig(placer=Random, optimize=False)
+    transpiled_circuit, final_layout = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
     # Or also specifying the `router` with kwargs:
-    transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
+    transpilation_settings = DigitalTranspilationConfig(router=(Sabre, {"lookahead": 2}))
+    transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
 And even we could only do a single step of the transpilation manually, like in the following, where we will only route:
 
@@ -112,3 +114,17 @@ And even we could only do a single step of the transpilation manually, like in t
 
     # Or another case with Non-Default placer:
     transpiled_circuit, qubits, final_layout = transpiler.route_circuit(c, placer=Random)
+
+And finally, if you want to Route a Circuit, but not instantiate any Platform, a CircuitRouter can be used directly, like:
+
+.. code-block:: python
+
+    from qililab.digital import CircuitRouter
+
+    # Create circuit:
+    c = Circuit(5)
+    c.add(gates.CNOT(1, 0))
+
+    # Create a hardcoded Router with a connectivity graph:
+    router = CircuitRouter(connectivity=nx.Graph([(0,1), (0,4), (1,2), (2,4),(2,3)]))
+    transpiled_circuit, final_layout = router.route(c)

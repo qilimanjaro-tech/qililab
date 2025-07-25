@@ -23,6 +23,7 @@ Transpilation
 .. autosummary::
     :toctree: api
 
+    ~CircuitRouter
     ~CircuitTranspiler
     ~DigitalTranspilationConfig
 
