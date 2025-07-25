@@ -870,6 +870,7 @@ class TestCircuitTranspiler:
         # No gate after measurement for either qubit
         transpiler._check_that_no_gate_is_after_measurement(circuit)  # Should not raise
 
+
     def test__check_that_no_gate_is_after_measurement_violation_single_qubit(self):
         """Test _check_that_no_gate_is_after_measurement raises when a gate is after measurement on one qubit."""
         transpiler = CircuitTranspiler(settings=MagicMock())
@@ -877,7 +878,15 @@ class TestCircuitTranspiler:
         circuit.add(gates.X(0))
         circuit.add(gates.M(0))
         circuit.add(gates.X(0))  # Gate after measurement on qubit 0
-        with pytest.raises(ValueError, match="no gate can be after a measurement gate in each qubit. Check the gates at qubit: 0"):
+        with pytest.raises(ValueError, match="For automatic routing to work, no gate can be after a Measurement gate on each qubit. This validation is performed during the transpilation of an `execute`. Check the gates at qubit: 0."):
+            transpiler._check_that_no_gate_is_after_measurement(circuit)
+
+        circuit = Circuit(2)
+        circuit.add(gates.CNOT(0,1))
+        circuit.add(gates.M(0))
+        circuit.add(gates.CNOT(0,1))  # Gate after measurement on qubit 0
+        circuit.add(gates.M(1))
+        with pytest.raises(ValueError, match="For automatic routing to work, no gate can be after a Measurement gate on each qubit. This validation is performed during the transpilation of an `execute`. Check the gates at qubit: 0."):
             transpiler._check_that_no_gate_is_after_measurement(circuit)
 
     def test__check_that_no_gate_is_after_measurement_violation_multiple_qubits(self):
@@ -898,8 +907,8 @@ class TestCircuitTranspiler:
         transpiler = CircuitTranspiler(settings=MagicMock())
         circuit = Circuit(2)
         circuit.add(gates.X(0))
-        circuit.add(gates.X(1))
         circuit.add(gates.M(0))
+        circuit.add(gates.X(1))
         circuit.add(gates.M(1))
         transpiler._check_that_no_gate_is_after_measurement(circuit)  # Should not raise
 
