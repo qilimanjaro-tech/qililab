@@ -913,7 +913,7 @@ class TestCircuitTranspiler:
         circuit.add(gates.X(1))
         with pytest.raises(ValueError) as excinfo:
             transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")
-        assert "no gate can be after a Measurement gate on each qubit" in str(excinfo.value)
+        assert re.escape("no gate can be after a Measurement gate on each qubit") in str(excinfo.value)
 
     def test__check_that_no_SWAP_gate_is_after_measurement_measurement_last(self):
         """Test _check_that_no_SWAP_gate_is_after_measurement passes when measurement is last gate for all qubits."""
