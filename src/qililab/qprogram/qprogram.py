@@ -720,7 +720,6 @@ class QProgram(StructuredProgram):
 
     def draw(self, time_window=None, averages_displayed=False, acquisition_showing=True):
         """Draw the QProgram using QBlox Compiler
-
         Args:
             time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the precise number of ns inputted.
                 For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns. Defaults to None.
@@ -728,10 +727,9 @@ class QProgram(StructuredProgram):
             acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
 
         Returns:
-            data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for
-                the I and Q components. This includes all data points used for plotting the waveforms. This function modifies this dictionary,
-                it adds the offsets, the phase and the frequency to the waveforms.
-            fig (plotly object): the plotly figure of the data_draw dictionary
+            fig (plotly object): the plotly figure of the data_draw dictionary.
+            data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for the I and Q components. This includes all data points used for plotting the waveforms.
+                This function modifies this dictionary, it adds the offsets, the phase and the frequency to the waveforms.
 
         Note:
             This function also **plots** the waveforms using the generated data.
