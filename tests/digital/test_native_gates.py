@@ -41,17 +41,17 @@ def test_get_circuit_gates_info():
 
     circuit_gates_info = _GateHandler.get_circuit_gates_info(circuit.queue)
 
-    assert circuit_gates_info == [("X", [0], {}), ("H", [1], {})]
+    assert circuit_gates_info == [gates.X(0).raw, gates.H(1).raw]
 
 def test_create_gate():
     """Test create gate."""
-    gate = _GateHandler.create_gate("X", [0], {})
+    gate = _GateHandler.create_gate(gates.X(0).raw)
     assert isinstance(gate, gates.X)
     assert gate.init_args == [0]
 
 def test_create_circuit():
     """Test create circuit."""
-    circuit_gates = [("X", [0], {}), ("H", [1], {})]
+    circuit_gates = [gates.X(0).raw, gates.H(1).raw]
     circuit_gates = _GateHandler.create_qibo_gates_from_gates_info(circuit_gates)
 
     assert len(circuit_gates) == 2
@@ -69,11 +69,3 @@ def test_create_circuit_from_gates():
     assert len(circuit.queue) == 2
     assert [gate.name for gate in circuit.queue] == ["x", "h"]
     assert circuit.wire_names == [0, 1]
-
-def test_extract_qubits():
-    """Test extract qubits."""
-    qubits = _GateHandler.extract_qubits_from_gate_args([0, 1])
-    assert qubits == [0, 1]
-
-    qubits = _GateHandler.extract_qubits_from_gate_args(0)
-    assert qubits == [0]
