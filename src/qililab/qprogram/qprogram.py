@@ -728,10 +728,11 @@ class QProgram(StructuredProgram):
             acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
 
         Returns:
-            fig (plotly object): the plotly figure of the data_draw dictionary.
-            data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for the I and Q components. This includes all data points used for plotting the waveforms.
-                This function modifies this dictionary, it adds the offsets, the phase and the frequency to the waveforms.
+            tuple[plotly object, dictionary]: Tuple containing the dictionary where keys are bus aliases and values are lists containing numpy arrays for
+                the I and Q components. And the plotly object plotting the data from the dictionary.
 
+        Note:
+            This function also **plots** the waveforms using the generated data.
         """
 
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
