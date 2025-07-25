@@ -408,5 +408,5 @@ class CircuitTranspiler:
                 and first_measurement < last_non_measurement
             ):
                 raise ValueError(
-                    f"For the automatic routing to work in an `execute`, no gate can be after a measurement gate in each qubit. Check the gates at qubit: {qubit}."
+                    f"For automatic routing to work, no gate can be after a Measurement gate on each qubit. This validation is performed during the transpilation of an `execute`. Check the gates at qubit: {qubit}."
                 )
