@@ -1,3 +1,4 @@
+from calendar import c
 import re
 from dataclasses import asdict
 from unittest.mock import MagicMock, patch
@@ -729,11 +730,11 @@ class TestCircuitTranspiler:
         mock_route.return_value = (mock_circuit, mock_layout)
 
         # Execute the function
-        circuit_gates, nqubits, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        circuit, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
 
         # Asserts:
         mock_route.assert_called_once_with(mock_circuit, routing_iterations)
-        assert (circuit_gates, nqubits, layout) == (mock_circuit.queue, mock_circuit.nqubits, mock_layout)
+        assert (circuit, layout) == (mock_circuit, mock_layout)
 
     def test_route_circuit_only_needs_remapping_integration(self, digital_settings):
         """Test route_circuit method"""
@@ -748,14 +749,14 @@ class TestCircuitTranspiler:
 
 
         # Execute the function
-        circuit_gates, nqubits, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
-        output_gates = [(gate.name, gate.qubits) for gate in circuit_gates]
+        circuit, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        output_gates = [(gate.name, gate.qubits) for gate in circuit.queue]
 
         # Asserts:
         expected_layout = [2, 1, 0, 3, 4]
         expected_gates = [('cx', (1, 2)), ('cx', (2, 1)), ('cx', (3, 2))]
 
-        assert (output_gates, nqubits, final_layout) == (expected_gates, mock_circuit.nqubits, expected_layout)
+        assert (output_gates, circuit.nqubits, final_layout) == (expected_gates, mock_circuit.nqubits, expected_layout)
 
     def test_route_circuit_swap_needed_integration(self, digital_settings):
         """Test route_circuit method"""
@@ -769,8 +770,8 @@ class TestCircuitTranspiler:
 
 
         # Execute the function
-        circuit_gates, nqubits, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
-        output_gates = [(gate.name, gate.qubits) for gate in circuit_gates]
+        circuit, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        output_gates = [(gate.name, gate.qubits) for gate in circuit.queue]
 
         # Asserts:
         expected_gates_and_layout = [
@@ -789,7 +790,7 @@ class TestCircuitTranspiler:
 
         ]
 
-        assert nqubits == 5 # The routing changes the size to fit that of the topology
+        assert circuit.nqubits == 5 # The routing changes the size to fit that of the topology
         # Test one of the possible routing has been achieved:
         assert (output_gates, final_layout) in expected_gates_and_layout
 
@@ -809,8 +810,8 @@ class TestCircuitTranspiler:
 
 
         # Execute the function
-        circuit_gates, _, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
-        output_gates = [[gate.name, gate.qubits] for gate in circuit_gates]
+        circuit, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        output_gates = [[gate.name, gate.qubits] for gate in circuit.queue]
 
         # Undo routing with SWAPS
         for idx, gate in enumerate(output_gates):
