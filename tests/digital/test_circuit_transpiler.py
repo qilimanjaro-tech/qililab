@@ -906,7 +906,7 @@ class TestCircuitTranspiler:
         circuit.add(gates.X(1))  # Violation on qubit 1
         with pytest.raises(ValueError) as excinfo:
             transpiler._check_that_no_gate_is_after_measurement(circuit)
-        assert "no gate can be after a measurement gate in each qubit" in str(excinfo.value)
+        assert "no gate can be after a Measurement gate on each qubit" in str(excinfo.value)
 
     def test__check_that_no_gate_is_after_measurement_measurement_last(self):
         """Test _check_that_no_gate_is_after_measurement passes when measurement is last gate for all qubits."""
