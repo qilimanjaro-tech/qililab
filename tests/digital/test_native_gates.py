@@ -42,6 +42,14 @@ def test_get_circuit_gates_info():
     circuit_gates_info = _GateHandler.get_circuit_gates_info(circuit.queue)
 
     assert circuit_gates_info == [gates.X(0).raw, gates.H(1).raw]
+    assert gates.X(0).raw == {
+        "_class": "X",
+        "init_args": [0],
+        "init_kwargs": {},
+        "name": "x",
+        "_control_qubits": (),
+        "_target_qubits": (0,)
+    }
 
 def test_native_gates_raw():
     """Test native gates raw."""
