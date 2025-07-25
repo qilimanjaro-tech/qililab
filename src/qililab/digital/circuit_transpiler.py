@@ -144,10 +144,12 @@ class CircuitTranspiler:
             transpiled_circuit, final_layouts = transpiler.transpile_circuit(c)
 
             # Or another case, not doing optimization for some reason, and with Non-Default placer:
-            transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Random, optimize=False)
+            transpilation_settings = DigitalTranspilationConfig(placer=Random, optimize=False)
+            transpiled_circuit, final_layout = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
             # Or also specifying the `router` with kwargs:
-            transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
+            transpilation_settings = DigitalTranspilationConfig(router=(Sabre, {"lookahead": 2}))
+            transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
         .. note::
 
@@ -172,7 +174,11 @@ class CircuitTranspiler:
 
         # Routing stage;
         if routing:
+            # Check that no gate is after a M gate in each qubit of the circuit, else automatic un-reordering will not work.
+            CircuitTranspiler._check_that_no_SWAP_gate_is_after_measurement(circuit, before_or_after="before")
             circuit_gates, nqubits, final_layout = self.route_circuit(circuit, placer, router, routing_iterations)
+            CircuitTranspiler._check_that_no_SWAP_gate_is_after_measurement(circuit, before_or_after="after")
+            # Check again, after routing, so no SWAP gate has appeared behind a measurement gate.
         else:
             circuit_gates, nqubits = circuit.queue, circuit.nqubits
             final_layout = None  # Random mapping
@@ -262,17 +268,11 @@ class CircuitTranspiler:
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
-        # Check that no gate is after a M gate in each qubit of the circuit, else automatic un-reordering will not work.
-        CircuitTranspiler._check_that_no_SWAP_gate_is_after_measurement(circuit, before_or_after="before")
-
         # Get the chip's connectivity
         topology = nx.Graph(coupling_map if coupling_map is not None else self.settings.topology)
         circuit_router = CircuitRouter(topology, placer, router)
 
         circuit, final_layout = circuit_router.route(circuit, iterations)
-
-        # Check again, after routing, so no SWAP gate has appeared behind a measurement gate.
-        CircuitTranspiler._check_that_no_SWAP_gate_is_after_measurement(circuit, before_or_after="after")
 
         return circuit.queue, circuit.nqubits, final_layout
 
