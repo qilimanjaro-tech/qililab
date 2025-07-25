@@ -677,7 +677,7 @@ class TestCircuitTranspiler:
         mock_schedule = PulseSchedule()
 
         # Mock the return values
-        mock_route.return_value = mock_circuit.queue, mock_circuit.nqubits, mock_layout
+        mock_route.return_value = mock_circuit, mock_layout
         mock_opt_circuit.return_value = mock_circuit_gates
         mock_to_native.return_value = mock_circuit_gates
         mock_add_phases.return_value = mock_circuit_gates
@@ -727,7 +727,7 @@ class TestCircuitTranspiler:
         mock_circuit = Circuit(5)
         mock_circuit.add(X(0))
         mock_layout = [0, 1, 2, 3, 4]
-        mock_route.return_value = (mock_circuit, mock_layout)
+        mock_route.return_value = mock_circuit, mock_layout
 
         # Execute the function
         circuit, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)

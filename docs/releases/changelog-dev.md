@@ -5,8 +5,8 @@
 ### Improvements
 
 - The R&S SGS100a driver has now the capability to change the operation mode between normal mode and bypass mode. The default mode is the normal mode. The allowed strings for each mode
-in the settings are `normal` and `bypass`. If the instrument is reset the native instrument configuration defaults to normal.
-[#957](https://github.com/qilimanjaro-tech/qililab/pull/957)
+  in the settings are `normal` and `bypass`. If the instrument is reset the native instrument configuration defaults to normal.
+  [#957](https://github.com/qilimanjaro-tech/qililab/pull/957)
 
 - Implementation of the Sudden Net Zero (SNZ) waveform to be able to realise better fidelity two qubit gates.
   [#952](https://github.com/qilimanjaro-tech/qililab/pull/952)
@@ -80,6 +80,9 @@ platform.execute_experiment(experiment)
 
 [#938](https://github.com/qilimanjaro-tech/qililab/pull/938)
 
+- Make CircuitRouter directly importable from `qililab.digital` and improve documentation on it
+  [%961](qililab.digital)
+
 ### Breaking changes
 
 - Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
@@ -117,3 +120,6 @@ platform.execute_experiment(experiment)
 - Quick fix for set_parameter of scope_store_enabled. Now it executes the correct Qblox functions to record the scope.
   [#956](https://github.com/qilimanjaro-tech/qililab/pull/956)
   [#959](https://github.com/qilimanjaro-tech/qililab/pull/959)
+
+- Raise an Error, for a concrete case, that might have given wrong results previously with the routing=True (If the user passed SWAP gates, or if during routing SWAPs appeared, after the Measurements)
+  [#961](https://github.com/qilimanjaro-tech/qililab/pull/961)
