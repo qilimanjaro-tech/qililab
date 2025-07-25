@@ -1,4 +1,3 @@
-import queue
 import re
 from dataclasses import asdict
 from unittest.mock import MagicMock, patch
@@ -947,5 +946,5 @@ class TestCircuitTranspiler:
         circuit.add(M(0,1,2,3,4))
         circuit.add(gates.SWAP(0, 1))
 
-        with pytest.raises(ValueError, match=re.escape("The routing algorithm has added a SWAP gate after a Measurement on qubit: 0, which isn't allowed in the automatic routing. Change routing algorithm, or route it manually with `CircuitRouter` before executing the circuit.")):
+        with pytest.raises(ValueError, match=re.escape("The routing algorithm has added a SWAP gate after a Measurement on qubit: 0, which isn't allowed in the automatic routing. This has happened, most likely, because you were using 2qubit gates after a Measurement. For routing such circuit route it manually with `CircuitRouter` before executing it.")):
             transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "after")

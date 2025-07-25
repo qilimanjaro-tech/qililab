@@ -415,5 +415,5 @@ class CircuitTranspiler:
                 # Error if SWAP gate has been added after Measurement in routing
                 if before_or_after == "after":
                     raise ValueError(
-                        f"The routing algorithm has added a SWAP gate after a Measurement on qubit: {qubit}, which isn't allowed in the automatic routing. Change routing algorithm, or route it manually with `CircuitRouter` before executing the circuit."
+                        f"The routing algorithm has added a SWAP gate after a Measurement on qubit: {qubit}, which isn't allowed in the automatic routing. This has happened, most likely, because you were using 2qubit gates after a Measurement. For routing such circuit route it manually with `CircuitRouter` before executing it."
                     )

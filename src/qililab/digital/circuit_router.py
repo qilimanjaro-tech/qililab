@@ -15,7 +15,6 @@
 """CircuitRouter class"""
 
 import contextlib
-from copy import deepcopy
 
 import networkx as nx
 import numpy as np
@@ -161,7 +160,7 @@ class CircuitRouter:
         new_queue = []
         wire_names = transpiled_circ.wire_names
         for gate in transpiled_circ.queue:
-            gate_info = deepcopy(gate.raw)
+            gate_info = gate.raw.copy()
             gate_info["_control_qubits"] = tuple(wire_names.index(qubit) for qubit in gate_info["_control_qubits"])
             gate_info["_target_qubits"] = tuple(wire_names.index(qubit) for qubit in gate_info["_target_qubits"])
             qubits = list(gate_info["_control_qubits"] + gate_info["_target_qubits"])
