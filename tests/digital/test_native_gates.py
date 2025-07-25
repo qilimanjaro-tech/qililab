@@ -1,6 +1,6 @@
 import numpy as np
 
-from qililab.digital.native_gates import Drag, _GateHandler
+from qililab.digital.native_gates import Drag, _GateHandler, Wait
 from qibo import Circuit, gates
 
 
@@ -42,6 +42,26 @@ def test_get_circuit_gates_info():
     circuit_gates_info = _GateHandler.get_circuit_gates_info(circuit.queue)
 
     assert circuit_gates_info == [gates.X(0).raw, gates.H(1).raw]
+
+def test_native_gates_raw():
+    """Test native gates raw."""
+    drag_gate = Drag(0, 0, 0)
+    assert drag_gate.raw == {
+        "_class": "Drag",
+        "init_args": [0, 0, 0],
+        "init_kwargs": {},
+        "name": "drag",
+        "qubits": [0],
+    }
+
+    wait_gate = Wait(0, 100)
+    assert wait_gate.raw == {
+        "_class": "Wait",
+        "init_args": [0, 100],
+        "init_kwargs": {},
+        "name": "wait",
+        "qubits": [0],
+    }
 
 def test_create_gate():
     """Test create gate."""

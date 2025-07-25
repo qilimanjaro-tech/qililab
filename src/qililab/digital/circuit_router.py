@@ -165,10 +165,7 @@ class CircuitRouter:
             gate_info["_control_qubits"] = tuple(wire_names.index(qubit) for qubit in gate_info["_control_qubits"])
             gate_info["_target_qubits"] = tuple(wire_names.index(qubit) for qubit in gate_info["_target_qubits"])
             qubits = list(gate_info["_control_qubits"] + gate_info["_target_qubits"])
-            if len(qubits) != len(gate_info["init_args"]):
-                raise TypeError(
-                    f"Gate {gate_info['_class']} has a different number of qubits (`_control_qubits` + `_target_qubits`) than the number of `init_args`, which shouldn't happen with qibo gates. If you are using a personalized gate, check that all arguments which are not qubits are being passed to `init_kwargs` instead."
-                )
+            # Qibo gates only have qubits as init_args, the rest need to be init_kwargs, therefore:
             gate_info["init_args"] = qubits
 
             new_queue.append(_GateHandler.create_gate(gate_info))
