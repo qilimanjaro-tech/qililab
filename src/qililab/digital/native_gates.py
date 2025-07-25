@@ -153,7 +153,7 @@ class _GateHandler:
         """Converts a list of gate info (name, qubits) into a list of Qibo gates.
 
         Args:
-            circuit_gates (list[tuple]): List of information of each gate in the circuit, after cancelling adjacent gates. Where each element is the qibo raw info of the gate.
+            circuit_gates (list[dict]): List of information of each gate in the circuit, after cancelling adjacent gates. Where each element is the qibo raw info of the gate.
             nqubits (int): Number of qubits in the circuit.
 
         Returns:

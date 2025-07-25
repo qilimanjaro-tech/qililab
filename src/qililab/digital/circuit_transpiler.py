@@ -42,7 +42,7 @@ class DigitalTranspilationConfig:
     """Dataclass containing the digital transpilation configuration. Used in the :meth:`.CircuitTranspiler.transpile_circuit()` method"""
 
     routing: bool = False  # TODO: Change to True, when user confirms it works well.
-    """(bool, optional): Whether to route the circuit. Currently this only works if no SWAP gate is after a Measurement gate on any qubit. Defaults to False."""
+    """(bool, optional): Whether to route the circuit. Currently this only works if no SWAP gate is after a Measurement for each qubit. Defaults to False."""
 
     placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None
     """(Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
