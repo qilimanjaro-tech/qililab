@@ -172,7 +172,6 @@ class CircuitTranspiler:
 
         # Routing stage;
         if routing:
-            self._check_that_no_gate_is_after_measurement(circuit)
             circuit_gates, nqubits, final_layout = self.route_circuit(circuit, placer, router, routing_iterations)
         else:
             circuit_gates, nqubits = circuit.queue, circuit.nqubits
@@ -263,6 +262,9 @@ class CircuitTranspiler:
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
+        # Check that no gate is after a M gate in each qubit of the circuit, else automatic un-reordering will not work.
+        CircuitTranspiler._check_that_no_gate_is_after_measurement(circuit)
+
         # Get the chip's connectivity
         topology = nx.Graph(coupling_map if coupling_map is not None else self.settings.topology)
         circuit_router = CircuitRouter(topology, placer, router)
