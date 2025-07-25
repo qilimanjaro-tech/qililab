@@ -87,6 +87,24 @@ platform.execute_experiment(experiment)
 
 [#938](https://github.com/qilimanjaro-tech/qililab/pull/938)
 
+- Minor modification at database `DatabaseManager`, as it now requires the config file to contain a `base_path_local`, `base_path_shared` and `data_write_folder`. following the structure:
+
+```
+[postgresql]
+user = 
+passwd = 
+host = haldir.localdomain
+port = 9999
+database = postgres
+base_path_local = "/mnt/home.local/"
+base_path_shared = "/home/"
+data_write_folder = "shared_measurement_haldir"
+```
+
+The data automatically selects between the local or shared domains depending on availability, always prioritizing local domains but if not available choosing the shared domain.
+
+[#951](https://github.com/qilimanjaro-tech/qililab/pull/951)
+
 ### Breaking changes
 
 - Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
