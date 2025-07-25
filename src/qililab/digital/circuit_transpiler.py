@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import networkx as nx
-from qibo.gates import M
+from qibo.gates import SWAP, M
 
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.circuit_router import CircuitRouter
@@ -263,13 +263,16 @@ class CircuitTranspiler:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
         """
         # Check that no gate is after a M gate in each qubit of the circuit, else automatic un-reordering will not work.
-        CircuitTranspiler._check_that_no_gate_is_after_measurement(circuit)
+        CircuitTranspiler._check_that_no_SWAP_gate_is_after_measurement(circuit, before_or_after="before")
 
         # Get the chip's connectivity
         topology = nx.Graph(coupling_map if coupling_map is not None else self.settings.topology)
         circuit_router = CircuitRouter(topology, placer, router)
 
         circuit, final_layout = circuit_router.route(circuit, iterations)
+
+        # Check again, after routing, so no SWAP gate has appeared behind a measurement gate.
+        CircuitTranspiler._check_that_no_SWAP_gate_is_after_measurement(circuit, before_or_after="after")
 
         return circuit.queue, circuit.nqubits, final_layout
 
@@ -384,29 +387,33 @@ class CircuitTranspiler:
         return circuit_to_pulses.run(circuit_gates)
 
     @staticmethod
-    def _check_that_no_gate_is_after_measurement(circuit: Circuit) -> None:
-        """Checks that no gate is after a measurement gate in each qubit of the circuit.
+    def _check_that_no_SWAP_gate_is_after_measurement(circuit: Circuit, before_or_after: str) -> None:
+        """Checks that no SWAP gate is after a measurement gate in each qubit of the circuit.
 
         Args:
-            circuit (Circuit): Qibo circuit.
+            circuit (Circuit): Qibo circuit to check.
+            before_or_after (str): Whether to check before or after the measurement gate. Should be "before" or "after".
 
         Raises:
             ValueError: If there is a gate after a measurement gate.
         """
         for qubit in range(circuit.nqubits):
             first_measurement = None
-            last_non_measurement = None
+            last_SWAP = None
             for i, gate in enumerate(circuit.queue):
                 if qubit in gate.qubits:
                     if isinstance(gate, M):
                         first_measurement = i if first_measurement is None else first_measurement
-                    else:
-                        last_non_measurement = i
-            if (
-                first_measurement is not None
-                and last_non_measurement is not None
-                and first_measurement < last_non_measurement
-            ):
-                raise ValueError(
-                    f"For automatic routing to work, no gate can be after a Measurement gate on each qubit. This validation is performed during the transpilation of an `execute`. Check the gates at qubit: {qubit}."
-                )
+                    elif isinstance(gate, SWAP):
+                        last_SWAP = i
+            if first_measurement is not None and last_SWAP is not None and first_measurement < last_SWAP:
+                # Error if SWAP is after Measurement in original circuit
+                if before_or_after == "before":
+                    raise ValueError(
+                        f"For automatic routing to work, no SWAP gate can be after a Measurement gate on each qubit. This validation is performed during the transpilation of an `execute`. Check the gates at qubit: {qubit}."
+                    )
+                # Error if SWAP gate has been added after Measurement in routing
+                if before_or_after == "after":
+                    raise ValueError(
+                        f"The routing algorithm has added a SWAP gate after a Measurement on qubit: {qubit}, which isn't allowed in the automatic routing. Change routing algorithm, or route it manually with `CircuitRouter` before executing the circuit."
+                    )
