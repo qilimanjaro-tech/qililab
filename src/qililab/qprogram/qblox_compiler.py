@@ -44,7 +44,8 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain, Variable, VariableExpression
 from qililab.waveforms import IQPair, Square, Waveform
-
+SIGN_BIT = 2**31                 # 2147483648 -> values >= this are "negative" in 2's complement (MSB = 1)
+NEG_ONE_TO_THREE = (2**32) - 3   # 4294967293 == -3 in 2's complement
 
 @dataclass
 class AcquisitionData:
@@ -134,17 +135,26 @@ class BusCompilationInfo:
         self.upd_param_instruction_pending: bool = False
 
         # Registers values used for the hardware loop over time
-        self.bus_difference_register: QPyProgram.Register = None
-        self.max_other_register: QPyProgram.Register = None
-        self.max_other_static_register: QPyProgram.Register = None
-        self.add_dynamic_static_register: QPyProgram.Register = None
-        self.long_wait_register: QPyProgram.Register = None
-        self.long_wait_register_total: QPyProgram.Register = None
+        # (Target duration - this bus duration); negative/positive sign decides branching.
+        self.delta_to_target_duration_register: QPyProgram.Register | None = None
+        # Longest total (static + dynamic) duration among the other buses.
+        self.max_other_total_duration_register: QPyProgram.Register | None = None
+        # Longest static duration among the other buses.
+        self.max_other_static_duration_register: QPyProgram.Register | None = None
+        # (This bus's dynamic portion) + (dynamic bus's static duration).
+        self.dynamic_plus_static_duration_register: QPyProgram.Register | None = None
+        # Single wait chunk (to respect hardware limit on wait size).
+        self.wait_chunk_duration_register: QPyProgram.Register | None = None
+        # Accumulated total of all wait chunks inserted.
+        self.total_wait_duration_register: QPyProgram.Register | None = None
 
         # Variable Expression
+        # Holds evaluated dynamic expression until consumed.
         self.dynamic_expression_register: QPyProgram.Register = None
-        self.dynamic_expression: bool = False
-        self.dynamic_duration_register: QPyProgram.Register = None
+        # True if the above value still needs to be applied to duration registers.
+        self.has_pending_dynamic_expression: bool = False
+        # Dynamic duration register for this bus.
+        self.dynamic_duration_register: QPyProgram.Register | None = None
 
 
 class QbloxCompiler:
@@ -788,7 +798,7 @@ class QbloxCompiler:
             return
 
         # Is there any bus that has dynamic durations?
-        if any(bus for bus in buses if self._buses[bus].marked_for_dynamic_sync):
+        if any(self._buses[bus].marked_for_dynamic_sync for bus in buses):
             self.__handle_dynamic_sync(buses=buses)
         else:
             # If no, calculating the difference is trivial.
