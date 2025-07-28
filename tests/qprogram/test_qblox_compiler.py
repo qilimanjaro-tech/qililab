@@ -1666,7 +1666,7 @@ set_freq         R5
 
                             jlt              R4, 1, @after_dynamic_sync_0
                             jlt              R4, 4, @one_two_three_0
-                            jge              R4, 65533, @long_wait_sync_0
+                            jge              R4, 65532, @long_wait_sync_0
                             wait             R4             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -1736,7 +1736,7 @@ set_freq         R5
 
                             jlt              R9, 1, @after_dynamic_sync_0
                             jlt              R9, 4, @one_two_three_0
-                            jge              R9, 65533, @long_wait_sync_0
+                            jge              R9, 65532, @long_wait_sync_0
                             wait             R9             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -1804,7 +1804,7 @@ set_freq         R5
                             nop                             
                             move             R1, R2         
                             nop                             
-                            jge              R1, 65533, @long_wait_0
+                            jge              R1, 65532, @long_wait_0
                             wait             R1             
             continue_after_long_wait_0:
 
@@ -1839,7 +1839,7 @@ set_freq         R5
 
                             jlt              R5, 1, @after_dynamic_sync_0
                             jlt              R5, 4, @one_two_three_0
-                            jge              R5, 65533, @long_wait_sync_0
+                            jge              R5, 65532, @long_wait_sync_0
                             wait             R5             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -1909,7 +1909,7 @@ set_freq         R5
 
                             jlt              R9, 1, @after_dynamic_sync_0
                             jlt              R9, 4, @one_two_three_0
-                            jge              R9, 65533, @long_wait_sync_0
+                            jge              R9, 65532, @long_wait_sync_0
                             wait             R9             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -2016,7 +2016,7 @@ set_freq         R5
 
                             jlt              R5, 1, @after_dynamic_sync_0
                             jlt              R5, 4, @one_two_three_0
-                            jge              R5, 65533, @long_wait_sync_0
+                            jge              R5, 65532, @long_wait_sync_0
                             wait             R5             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -2044,7 +2044,7 @@ set_freq         R5
 
                             jlt              R5, 1, @after_dynamic_sync_1
                             jlt              R5, 4, @one_two_three_1
-                            jge              R5, 65533, @long_wait_sync_1
+                            jge              R5, 65532, @long_wait_sync_1
                             wait             R5             
                             jmp              @after_dynamic_sync_1
             one_two_three_1:
@@ -2140,7 +2140,7 @@ set_freq         R5
 
                             jlt              R10, 1, @after_dynamic_sync_0
                             jlt              R10, 4, @one_two_three_0
-                            jge              R10, 65533, @long_wait_sync_0
+                            jge              R10, 65532, @long_wait_sync_0
                             wait             R10            
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -2173,7 +2173,7 @@ set_freq         R5
 
                             jlt              R10, 1, @after_dynamic_sync_1
                             jlt              R10, 4, @one_two_three_1
-                            jge              R10, 65533, @long_wait_sync_1
+                            jge              R10, 65532, @long_wait_sync_1
                             wait             R10            
                             jmp              @after_dynamic_sync_1
             one_two_three_1:
@@ -2259,7 +2259,7 @@ set_freq         R5
                             nop                             
                             move             R6, R7         
                             nop                             
-                            jge              R6, 65533, @long_wait_0
+                            jge              R6, 65532, @long_wait_0
                             wait             R6             
             continue_after_long_wait_0:
 
@@ -2295,7 +2295,7 @@ set_freq         R5
 
                             jlt              R5, 1, @after_dynamic_sync_0
                             jlt              R5, 4, @one_two_three_0
-                            jge              R5, 65533, @long_wait_sync_0
+                            jge              R5, 65532, @long_wait_sync_0
                             wait             R5             
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -2323,7 +2323,7 @@ set_freq         R5
 
                             jlt              R5, 1, @after_dynamic_sync_1
                             jlt              R5, 4, @one_two_three_1
-                            jge              R5, 65533, @long_wait_sync_1
+                            jge              R5, 65532, @long_wait_sync_1
                             wait             R5             
                             jmp              @after_dynamic_sync_1
             one_two_three_1:
@@ -2418,7 +2418,7 @@ set_freq         R5
 
                             jlt              R10, 1, @after_dynamic_sync_0
                             jlt              R10, 4, @one_two_three_0
-                            jge              R10, 65533, @long_wait_sync_0
+                            jge              R10, 65532, @long_wait_sync_0
                             wait             R10            
                             jmp              @after_dynamic_sync_0
             one_two_three_0:
@@ -2451,7 +2451,7 @@ set_freq         R5
 
                             jlt              R10, 1, @after_dynamic_sync_1
                             jlt              R10, 4, @one_two_three_1
-                            jge              R10, 65533, @long_wait_sync_1
+                            jge              R10, 65532, @long_wait_sync_1
                             wait             R10            
                             jmp              @after_dynamic_sync_1
             one_two_three_1:
