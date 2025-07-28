@@ -4,6 +4,13 @@
 
 ### Improvements
 
+- Previously, QbloxDraw returned only the raw data being plotted. Now, the class returns both the Plotly Figure object and the raw data. This has been extended to qprogram and platform:
+```
+plotly_figure, data_draw = qprogram.draw()
+plotly_figure, data_draw = platform.draw(qprogram)
+```
+  [#960](https://github.com/qilimanjaro-tech/qililab/pull/952)
+
 - The R&S SGS100a driver has now the capability to change the operation mode between normal mode and bypass mode. The default mode is the normal mode. The allowed strings for each mode
 in the settings are `normal` and `bypass`. If the instrument is reset the native instrument configuration defaults to normal.
 [#957](https://github.com/qilimanjaro-tech/qililab/pull/957)
@@ -79,6 +86,24 @@ platform.execute_experiment(experiment)
 ```
 
 [#938](https://github.com/qilimanjaro-tech/qililab/pull/938)
+
+- Minor modification at database `DatabaseManager`, as it now requires the config file to contain a `base_path_local`, `base_path_shared` and `data_write_folder`. following the structure:
+
+```
+[postgresql]
+user = 
+passwd = 
+host = haldir.localdomain
+port = 9999
+database = postgres
+base_path_local = "/mnt/home.local/"
+base_path_shared = "/home/"
+data_write_folder = "shared_measurement_haldir"
+```
+
+The data automatically selects between the local or shared domains depending on availability, always prioritizing local domains but if not available choosing the shared domain.
+
+[#951](https://github.com/qilimanjaro-tech/qililab/pull/951)
 
 ### Breaking changes
 
