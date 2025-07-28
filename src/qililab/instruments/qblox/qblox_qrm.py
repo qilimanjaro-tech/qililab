@@ -110,6 +110,7 @@ class QbloxQRM(QbloxModule):
 
     def _obtain_scope_sequencer(self):
         """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
+
         Raises:
             ValueError: The scope can only be stores in one sequencer at a time.
         """
