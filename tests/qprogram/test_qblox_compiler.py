@@ -2518,7 +2518,7 @@ set_freq         R5
                             wait             20             
                             play             0, 1, 40       
                             wait             R1             
-                            move             20, R2         
+                            move             0, R2          
                             add              R1, 40, R3     
                             nop                             
                             sub              R2, R3, R4     
@@ -2528,7 +2528,6 @@ set_freq         R5
             after_dynamic_sync_0:
 
 
-                            wait             2004           
                             add              R1, 10, R1     
                             loop             R0, @loop_0    
                             set_mrk          0              
@@ -2562,6 +2561,7 @@ set_freq         R5
                             nop                             
                             jge              R4, 65532, @long_wait_sync_0
                             jmp              @dynamic_sync_0
+
         """
         
         readout_str = """
@@ -2577,7 +2577,6 @@ set_freq         R5
                             move             11, R3         
                             move             100, R4        
             loop_0:
-                            wait             20
                             move             40, R5         
                             add              R4, 40, R6     
                             nop                             
@@ -2588,7 +2587,7 @@ set_freq         R5
             after_other_max_duration_0:
 
 
-                            move             20, R8          
+                            move             0, R8          
                             nop                             
                             sub              R7, R8, R9     
                             nop                             
@@ -2599,8 +2598,7 @@ set_freq         R5
 
                             play             0, 1, 4        
                             acquire_weighed  0, R2, R1, R0, 2000
-                            add              R2, 1, R2
-                            wait             20      
+                            add              R2, 1, R2      
                             add              R4, 10, R4     
                             loop             R3, @loop_0    
                             set_mrk          0              
@@ -2639,6 +2637,7 @@ set_freq         R5
 
                             move             R5, R7         
                             jmp              @after_other_max_duration_0
+
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
