@@ -2528,6 +2528,7 @@ set_freq         R5
             after_dynamic_sync_0:
 
 
+                            wait             2004           
                             add              R1, 10, R1     
                             loop             R0, @loop_0    
                             set_mrk          0              
@@ -2637,7 +2638,6 @@ set_freq         R5
 
                             move             R5, R7         
                             jmp              @after_other_max_duration_0
-
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)

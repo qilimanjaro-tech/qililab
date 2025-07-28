@@ -878,11 +878,11 @@ class QbloxCompiler:
         If include_delay is True, we also align each bus's delay so the  total (duration + delay) is matched.
         """
         duration_attr = "static_duration" if self._time_loop_counter == 0 else "duration_since_sync"
-        max_duration = max(getattr(self._buses[bus], duration_attr) for bus in buses) if include_delay else 0
+        max_duration = max(getattr(self._buses[bus], duration_attr) for bus in buses)
         max_delay = max(self._buses[bus].delay for bus in buses) if include_delay else 0
         for bus in buses:
             current_duration = getattr(self._buses[bus], duration_attr)
-            delay_diff = (max_delay - self._buses[bus].delay)
+            delay_diff = (max_delay - self._buses[bus].delay) if include_delay else 0
             duration_diff = (max_duration - current_duration) + delay_diff
             if duration_diff > 0:
                 self._handle_add_waits(bus=bus, duration=duration_diff)
