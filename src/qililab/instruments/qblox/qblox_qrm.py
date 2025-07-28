@@ -110,7 +110,6 @@ class QbloxQRM(QbloxModule):
 
     def _obtain_scope_sequencer(self):
         """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
-
         Raises:
             ValueError: The scope can only be stores in one sequencer at a time.
         """
@@ -118,8 +117,14 @@ class QbloxQRM(QbloxModule):
             if sequencer.scope_store_enabled:
                 if self._scoping_sequencer is None:
                     self._scoping_sequencer = sequencer.identifier
+                    return
+                elif self._scoping_sequencer == sequencer.identifier:
+                    return
                 else:
                     raise ValueError("The scope can only be stored in one sequencer at a time.")
+            if self._scoping_sequencer == sequencer.identifier:
+                self._scoping_sequencer = None
+
 
     @check_device_initialized
     def acquire_result(self) -> QbloxResult:
@@ -185,6 +190,13 @@ class QbloxQRM(QbloxModule):
                     timeout=cast("QbloxADCSequencer", sequencer).acquisition_timeout,
                 )
                 if acquisition_data.save_adc:
+                    # sequencer_id = sequencer.identifier
+                    # self._set_acquisition_mode(
+                    # value=cast("QbloxADCSequencer", sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
+                    # )
+                    # self._set_scope_hardware_averaging(
+                    #     value=cast("QbloxADCSequencer", sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
+                    # )
                     self.device.store_scope_acquisition(sequencer=sequencer.identifier, name=acquisition)
                 raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
                     "acquisition"
@@ -312,6 +324,15 @@ class QbloxQRM(QbloxModule):
             return
         if parameter == Parameter.SCOPE_STORE_ENABLED:
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
+            self._obtain_scope_sequencer()
+            self._set_acquisition_mode(
+                value=cast("QbloxADCSequencer", self.get_sequencer(channel_id)).scope_acquire_trigger_mode,
+                sequencer_id=channel_id,
+            )
+            self._set_scope_hardware_averaging(
+                value=cast("QbloxADCSequencer", self.get_sequencer(channel_id)).scope_hardware_averaging,
+                sequencer_id=channel_id,
+            )
             return
         if parameter == Parameter.THRESHOLD:
             self._set_threshold(value=float(value), sequencer_id=channel_id)
