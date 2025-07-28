@@ -44,8 +44,10 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain, Variable, VariableExpression
 from qililab.waveforms import IQPair, Square, Waveform
+
 SIGN_BIT = 2**31                 # 2147483648 -> values >= this are "negative" in 2's complement (MSB = 1)
 NEG_ONE_TO_THREE = (2**32) - 3   # 4294967293 == -3 in 2's complement
+
 
 @dataclass
 class AcquisitionData:
@@ -795,10 +797,10 @@ class QbloxCompiler:
 
         # Is there any bus that has dynamic durations?
         if any(self._buses[bus].marked_for_dynamic_sync for bus in buses):
-            self.__handle_dynamic_sync(buses=buses)
+            self._handle_dynamic_sync(buses=buses, include_delay=delay)
         else:
             # If no, calculating the difference is trivial.
-            self.__handle_static_sync(buses=buses, delay=delay)
+            self._handle_static_sync(buses=buses, include_delay=delay)
 
         # In any case, mark all buses as synced.
         for bus in buses:
@@ -806,14 +808,12 @@ class QbloxCompiler:
             self._buses[bus].marked_for_dynamic_sync = False
             self._buses[bus].duration_since_sync = 0
 
-    def __handle_static_sync(self, buses: set[str], include_delay: bool = False):
+    def _handle_static_sync(self, buses: set[str], include_delay: bool = False):
         """  
-        Equalize durations across buses when there are no dynamic waits pending.  
-        If self._time_loop_counter == 0, we equalize on `static_duration`.  
-        Otherwise, we equalize on `duration_since_sync`.  
-        If include_delay is True, we also align each bus's delay so the  
-        total (duration + delay) is matched.  
-        """ 
+        Equalize durations across buses when there are no dynamic waits pending. If self._time_loop_counter == 0, we equalize on `static_duration`.
+        Otherwise, we equalize on `duration_since_sync`.
+        If include_delay is True, we also align each bus's delay so the  total (duration + delay) is matched.
+        """
         if not buses:
             return
         duration_attr = "static_duration" if self._time_loop_counter == 0 else "duration_since_sync"
@@ -832,10 +832,17 @@ class QbloxCompiler:
                 else:
                     self._buses[bus].duration_since_sync += duration_diff
 
-    def __handle_dynamic_sync(self, buses: set[str]):
+    def _handle_dynamic_sync(self, buses: set[str], include_delay: bool = False):
         #  TODO: Implement the case where two buses use the time variable - this will require an additional check similar to the one currently done between the maximum time of the other buses (now we ocmpare the max static and the dynamic,
         #  but when two buses will be dynamic we need to find the max dynamic before the max static/dynamic)
         #  TODO using two times a variable wait is ok but a sync between them is required for now
+        # Add delay if needed
+        for bus in buses:
+            max_delay = max(self._buses[bus].delay for bus in buses) if include_delay else 0
+            delay_diff = (max_delay - self._buses[bus].delay) if include_delay else 0
+            if delay_diff > 0:
+                self._handle_add_waits(bus=bus, duration=delay_diff)
+                self._buses[bus].duration_since_sync += delay_diff
 
         # Find the dynamic bus
         count_dynamic_bus = 0

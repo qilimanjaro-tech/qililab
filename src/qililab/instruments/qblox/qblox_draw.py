@@ -20,6 +20,7 @@ import plotly.graph_objects as go
 
 from qililab.qprogram.variable import Domain
 
+
 class QbloxDraw:
     def _call_handlers(self, program_line, param, register, data_draw, waveform_seq):
         """Calls the handlers.
@@ -472,7 +473,7 @@ class QbloxDraw:
             raise NotImplementedError(
                 "QbloxDraw does not support hardware time-domain loops at the moment."
             )
-    
+
         self.acquisition_showing = acquisition_showing
         Q1ASM_ordered = self._parse_program(
             sequencer.sequences.copy()

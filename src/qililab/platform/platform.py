@@ -1664,7 +1664,6 @@ class Platform:
 
         return plotly_figure, data_draw
 
-
     def load_db_manager(self, db_ini_path: str | None = None):
         """Load Database Manager from an .ini path containing user DB user information or if no path is given
         it uses '~/database.ini'.
