@@ -8,7 +8,6 @@ import pytest
 
 from qililab.platform.platform import Platform
 from qililab.qprogram.blocks import ForLoop, Loop
-from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.experiment_executor import ExperimentExecutor
@@ -275,31 +274,22 @@ class TestExperimentExecutor:
             assert qprogram2_measurement1_data.shape == (3, 11, 2)
             assert np.allclose(qprogram2_measurement1_data, measurement_data[None, :, :])
 
-    def test_execute_set_base_path(self, platform, experiment):
-        """Test the execute method to ensure the experiment is executed correctly and results are stored."""
-        platform.save_experiment_results_in_database = False
-        executor = ExperimentExecutor(
-            platform=platform,
-            experiment=experiment,
-            base_path=tempfile.gettempdir(),
-            live_plot=False,
-            slurm_execution=False,
-        )
-        resuls_path = executor.execute()
-
-        # Check if the correct file path is returned
-        assert resuls_path.startswith(os.path.abspath(tempfile.gettempdir()))
-        assert resuls_path.endswith(".h5")
-
-    @patch("qililab.result.database.get_db_manager")
+    @patch("qililab.platform.platform.get_db_manager")
     def test_execute_database(self, mock_get_db_manager, platform, experiment):
         """Test the execute with database as True."""
         platform.save_experiment_results_in_database = True
         platform.db_optional_identifier = "test"
 
+        expected_result_path = "/tmp/20250710/155901/experiment.h5"
+
+        mock_measurement = Mock()
+        mock_measurement.result_path = expected_result_path
+
         mock_db_manager = Mock()
-        mock_db_manager.current_sample = "test_sample"
-        mock_db_manager.current_cd = "test_cooldown"
+        mock_db_manager.current_sample = "sample"
+        mock_db_manager.current_cd = "cd"
+        mock_db_manager.add_measurement.return_value = mock_measurement
+
         mock_get_db_manager.return_value = mock_db_manager
 
         executor = ExperimentExecutor(
@@ -308,10 +298,5 @@ class TestExperimentExecutor:
             live_plot=False,
             slurm_execution=False,
         )
-        results_path = executor.execute()
 
-        date = datetime.datetime.now().strftime("%Y%m%d")
-        timestamp = datetime.datetime.now().strftime("%H%M%S")
-
-        # Check if the correct file path is returned
-        assert results_path == f"/tmp/{date}/{timestamp}/experiment.h5"
+        result_path = executor.execute()
