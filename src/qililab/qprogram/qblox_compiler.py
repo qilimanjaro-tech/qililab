@@ -237,7 +237,7 @@ class QbloxCompiler:
                     if not self._qprogram.qblox.disable_autosync and isinstance(
                         element, (ForLoop, Parallel, Loop, Average)
                     ):
-                        self._handle_sync(element=Sync(buses=None), delay=True)
+                        self._handle_sync(element=Sync(buses=None))
                     if appended:
                         for bus in self._buses:
                             self._buses[bus].qpy_block_stack.pop()
@@ -846,7 +846,7 @@ class QbloxCompiler:
                 component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
             )
 
-    def _handle_sync(self, element: Sync, delay: bool = False):
+    def _handle_sync(self, element: Sync):
         # Get the buses involved in the sync operation.
         buses = set(element.buses or self._buses)
 
@@ -860,10 +860,10 @@ class QbloxCompiler:
 
         # Is there any bus that has dynamic durations?
         if any(self._buses[bus].marked_for_dynamic_sync for bus in buses):
-            self._handle_dynamic_sync(buses=buses, include_delay=delay)
+            self._handle_dynamic_sync(buses=buses)
         else:
             # If no, calculating the difference is trivial.
-            self._handle_static_sync(buses=buses, include_delay=delay)
+            self._handle_static_sync(buses=buses)
 
         # In any case, mark all buses as synced.
         for bus in buses:
@@ -871,20 +871,18 @@ class QbloxCompiler:
             self._buses[bus].marked_for_dynamic_sync = False
             self._buses[bus].duration_since_sync = 0
 
-    def _handle_static_sync(self, buses: set[str], include_delay: bool = False):
+    def _handle_static_sync(self, buses: set[str]):
         """
         Equalize durations across buses when there are no dynamic waits pending. If self._time_loop_counter == 0, we equalize on `static_duration`.
         Otherwise, we equalize on `duration_since_sync`.
         If include_delay is True, we also align each bus's delay so the  total (duration + delay) is matched.
         """
-        if not buses:
-            return
         duration_attr = "static_duration" if self._time_loop_counter == 0 else "duration_since_sync"
         max_duration = max(getattr(self._buses[bus], duration_attr) for bus in buses)
-        max_delay = max(self._buses[bus].delay for bus in buses) if include_delay else 0
+        max_delay = max(self._buses[bus].delay for bus in buses)
         for bus in buses:
             current_duration = getattr(self._buses[bus], duration_attr)
-            delay_diff = (max_delay - self._buses[bus].delay) if include_delay else 0
+            delay_diff = (max_delay - self._buses[bus].delay)
             duration_diff = (max_duration - current_duration) + delay_diff
             if duration_diff > 0:
                 self._handle_add_waits(bus=bus, duration=duration_diff)
@@ -895,14 +893,14 @@ class QbloxCompiler:
                 else:
                     self._buses[bus].duration_since_sync += duration_diff
 
-    def _handle_dynamic_sync(self, buses: set[str], include_delay: bool = False):
+    def _handle_dynamic_sync(self, buses: set[str]):
         #  TODO: Implement the case where two buses use the time variable - this will require an additional check similar to the one currently done between the maximum time of the other buses (now we ocmpare the max static and the dynamic,
         #  but when two buses will be dynamic we need to find the max dynamic before the max static/dynamic)
         #  TODO using two times a variable wait is ok but a sync between them is required for now
         # Add delay if needed
         for bus in buses:
-            max_delay = max(self._buses[bus].delay for bus in buses) if include_delay else 0
-            delay_diff = (max_delay - self._buses[bus].delay) if include_delay else 0
+            max_delay = max(self._buses[bus].delay for bus in buses)
+            delay_diff = (max_delay - self._buses[bus].delay)
             if delay_diff > 0:
                 self._handle_add_waits(bus=bus, duration=delay_diff)
                 self._buses[bus].duration_since_sync += delay_diff

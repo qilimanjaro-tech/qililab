@@ -438,6 +438,19 @@ def fixture_dynamic_sync_variable_expression_sum() -> QProgram:
         qp.sync()
     return qp
 
+@pytest.fixture(name="dynamic_sync_delay")
+def fixture_dynamic_sync_delay() -> QProgram:
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    duration = qp.variable(label="time", domain=Domain.Time)
+    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.wait(bus="drive", duration=duration)
+        qp.sync()
+        qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+    return qp
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
@@ -1612,9 +1625,9 @@ set_freq         R5
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
 
-    def test_dynamic_sync(self, dynamic_sync: QProgram):
+    def test_dynamic_sync(self, dynamic_sync_delay: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=dynamic_sync)
+        sequences, _ = compiler.compile(qprogram=dynamic_sync_delay)
 
         assert len(sequences) == 2
         assert "drive" in sequences
@@ -2481,5 +2494,151 @@ set_freq         R5
                             jmp              @after_other_max_duration_1
                 """
         
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_delay_with_dynamic_time(self, dynamic_sync: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=dynamic_sync, delays={"drive": 20})
+
+        assert len(sequences) == 2
+        assert "drive" in sequences
+        assert "readout" in sequences
+
+        drive_str = """
+            setup:
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            move             11, R0         
+                            move             100, R1        
+            loop_0:
+                            wait             20             
+                            play             0, 1, 40       
+                            wait             R1             
+                            move             20, R2         
+                            add              R1, 40, R3     
+                            nop                             
+                            sub              R2, R3, R4     
+                            nop                             
+                            jlt              R4, 2147483648, @dynamic_sync_0
+                            jge              R4, 4294967293, @negative_one_two_three_0
+            after_dynamic_sync_0:
+
+
+                            wait             2004           
+                            add              R1, 10, R1     
+                            loop             R0, @loop_0    
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                            
+            dynamic_sync_0:
+
+
+                            jlt              R4, 1, @after_dynamic_sync_0
+                            jlt              R4, 4, @one_two_three_0
+                            jge              R4, 65532, @long_wait_sync_0
+                            wait             R4             
+                            jmp              @after_dynamic_sync_0
+            one_two_three_0:
+
+
+                            add              R4, 4, R4      
+                            nop                             
+                            wait             R4             
+                            jmp              @after_dynamic_sync_0
+            negative_one_two_three_0:
+
+
+                            wait             4              
+                            jmp              @after_dynamic_sync_0
+            long_wait_sync_0:
+
+
+                            wait             65532          
+                            sub              R4, 65532, R4  
+                            nop                             
+                            jge              R4, 65532, @long_wait_sync_0
+                            jmp              @dynamic_sync_0
+        """
+        
+        readout_str = """
+            setup:
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            move             1, R0          
+                            move             0, R1          
+                            move             0, R2          
+                            move             11, R3         
+                            move             100, R4        
+            loop_0:
+                            wait             20
+                            move             40, R5         
+                            add              R4, 40, R6     
+                            nop                             
+                            sub              R5, R6, R7     
+                            nop                             
+                            jlt              R7, 2147483648, @other_max_duration_0
+                            move             R6, R7         
+            after_other_max_duration_0:
+
+
+                            move             20, R8          
+                            nop                             
+                            sub              R7, R8, R9     
+                            nop                             
+                            jlt              R9, 2147483648, @dynamic_sync_0
+                            jge              R9, 4294967293, @negative_one_two_three_0
+            after_dynamic_sync_0:
+
+
+                            play             0, 1, 4        
+                            acquire_weighed  0, R2, R1, R0, 2000
+                            add              R2, 1, R2
+                            wait             20      
+                            add              R4, 10, R4     
+                            loop             R3, @loop_0    
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                            
+            dynamic_sync_0:
+
+
+                            jlt              R9, 1, @after_dynamic_sync_0
+                            jlt              R9, 4, @one_two_three_0
+                            jge              R9, 65532, @long_wait_sync_0
+                            wait             R9             
+                            jmp              @after_dynamic_sync_0
+            one_two_three_0:
+
+
+                            add              R9, 4, R9      
+                            nop                             
+                            wait             R9             
+                            jmp              @after_dynamic_sync_0
+            negative_one_two_three_0:
+
+
+                            wait             4              
+                            jmp              @after_dynamic_sync_0
+            long_wait_sync_0:
+
+
+                            wait             65532          
+                            sub              R9, 65532, R9  
+                            nop                             
+                            jge              R9, 65532, @long_wait_sync_0
+                            jmp              @dynamic_sync_0
+            other_max_duration_0:
+
+
+                            move             R5, R7         
+                            jmp              @after_other_max_duration_0
+        """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
