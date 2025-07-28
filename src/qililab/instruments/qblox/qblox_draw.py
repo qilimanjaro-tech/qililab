@@ -18,6 +18,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
+from qililab.qprogram.variable import Domain
 
 class QbloxDraw:
     def _call_handlers(self, program_line, param, register, data_draw, waveform_seq):
@@ -467,6 +468,11 @@ class QbloxDraw:
 
         """
 
+        if any(variable.domain == Domain.Time for variable in sequencer.qprogram._variables):
+            raise NotImplementedError(
+                "QbloxDraw does not support hardware time-domain loops at the moment."
+            )
+    
         self.acquisition_showing = acquisition_showing
         Q1ASM_ordered = self._parse_program(
             sequencer.sequences.copy()
@@ -626,6 +632,7 @@ class QbloxDraw:
             data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for
                 the I and Q components. This includes all data points used for plotting the waveforms. This function modifies this dictionary,
                 it adds the offsets, the phase and the frequency to the waveforms.
+            fig (plotly object): the plotly figure of the data_draw dictionary
 
         Note:
             This function also **plots** the waveforms using the generated data.
@@ -747,4 +754,4 @@ class QbloxDraw:
         )
         fig.show()
 
-        return data_draw
+        return fig, data_draw

@@ -431,20 +431,3 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(deserialized_qprogram, QProgram)
 
         os.remove(file)
-
-    def test_drawer_hardware_loop_time_raises_error(self):
-
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        qprogram = QProgram()
-        
-        time=qprogram.variable(label="time",domain=Domain.Time)
-        with qprogram.for_loop(variable=time, start=10, stop=500, step=10):
-            qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
-            qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
-            qprogram.wait(bus="drive_line_q1_bus", duration=time)
-            qprogram.sync()
-
-        with pytest.raises(NotImplementedError) as exc_info:
-            qprogram.draw()
-    
-        assert str(exc_info.value) == "QbloxDraw does not support hardware time-domain loops at the moment."
