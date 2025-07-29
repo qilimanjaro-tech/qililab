@@ -287,3 +287,16 @@ class TestStructuredProgram:
         expr = t1 + t2
         with pytest.raises(ValueError, match="No Variable instance found in expression"):
             expr.extract_constants()
+
+    def test_extract_variables_raises_error_when_no_variables(self, instance):
+        # Create a valid VariableExpression with a Time variable
+        time_var = instance.variable(label="time", domain=Domain.Time)
+        expr = time_var + 5
+
+        # Overwrite operands to simulate pure constants (bypass domain inference)
+        expr.left = 5
+        expr.right = 3
+
+        # Now extract_variables should fail because no Variable remains
+        with pytest.raises(ValueError, match="No Variable instance found in expression"):
+            expr.extract_variables()

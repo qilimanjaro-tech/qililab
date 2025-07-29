@@ -386,7 +386,6 @@ def fixture_dynamic_sync() -> QProgram:
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
-        qp.sync()
     return qp
 
 @pytest.fixture(name="dynamic_sync_long_wait")
@@ -2600,6 +2599,7 @@ set_freq         R5
                             play             0, 1, 4        
                             acquire_weighed  0, R2, R1, R0, 2000
                             add              R2, 1, R2      
+                            wait             20             
                             add              R4, 10, R4     
                             loop             R3, @loop_0    
                             set_mrk          0              
