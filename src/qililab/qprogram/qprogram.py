@@ -728,7 +728,7 @@ class QProgram(StructuredProgram):
             acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
 
         Returns:
-            plotly object
+            plotly object: plotly.graph_objs._figure.Figure
         """
 
         from qililab.instruments.qblox.qblox_draw import QbloxDraw

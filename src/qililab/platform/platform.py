@@ -1430,7 +1430,9 @@ class Platform:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
+            transp_config = DigitalTranspilationConfig(
+                routing=True, optimize=False, router=Sabre, placer=ReverseTraversal
+            )
 
             # Execute with automatic transpilation:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
@@ -1651,12 +1653,14 @@ class Platform:
                 It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
 
         Returns:
-            plotly object
+            plotly object: plotly.graph_objs._figure.Figure
         """
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
         sequencer = self.compile_qprogram(qprogram, bus_mapping)
-        plotly_figure, _= qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
+        plotly_figure, _ = qblox_draw.draw(
+            sequencer, runcard_data, time_window, averages_displayed, acquisition_showing
+        )
 
         return plotly_figure
 

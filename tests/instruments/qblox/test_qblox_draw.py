@@ -248,14 +248,11 @@ class TestQBloxDraw:
           0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
           0.00000000e+00, -1.80171382e-14,  6.72498512e-01,  4.15626938e-01,
          -4.15626938e-01, -6.72498512e-01]
-
-        compiler = QbloxCompiler()
-        qblox_draw = QbloxDraw()
-        results = compiler.compile(qp_draw)
+        
         pio.renderers.default = "json"
-        _, data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, averages_displayed = True)
-        np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+        figure = qp_draw.draw(averages_displayed=True)
+        np.testing.assert_allclose(figure.data[0].y, expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[1].y, expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout(self, qp_draw_with_time_window: QProgram):
         expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
@@ -272,13 +269,10 @@ class TestQBloxDraw:
          0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
          0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
 
-        compiler = QbloxCompiler()
-        qblox_draw = QbloxDraw()
-        results = compiler.compile(qp_draw_with_time_window)
         pio.renderers.default = "json"
-        _, data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, averages_displayed = True, time_window=40)
-        np.testing.assert_allclose(data_draw["readout_q13_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["readout_q13_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+        figure = qp_draw_with_time_window.draw(averages_displayed = True, time_window=40)
+        np.testing.assert_allclose(figure.data[0].y, expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[1].y, expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout_nested_loop(self, qp_draw_with_time_window_nested_loop: QProgram):
         expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
@@ -289,27 +283,20 @@ class TestQBloxDraw:
 
         expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
          0., 0., 0., 0., 0., 0., 0., 0.]
-
-        compiler = QbloxCompiler()
-        qblox_draw = QbloxDraw()
-        results = compiler.compile(qp_draw_with_time_window_nested_loop)
         pio.renderers.default = "json"
-        _, data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, time_window=20)
-        np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+        figure = qp_draw_with_time_window_nested_loop.draw(time_window=20)
+        np.testing.assert_allclose(figure.data[0].y, expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[1].y, expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout_no_loop(self, qp_draw_with_timeout_no_loop: QProgram):
         expected_data_draw_i = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
 
         expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
 
-        compiler = QbloxCompiler()
-        qblox_draw = QbloxDraw()
-        results = compiler.compile(qp_draw_with_timeout_no_loop)
         pio.renderers.default = "json"
-        _, data_draw = qblox_draw.draw(sequencer=results, runcard_data= None, time_window=10)
-        np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+        figure = qp_draw_with_timeout_no_loop.draw(time_window=10)
+        np.testing.assert_allclose(figure.data[0].y, expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[1].y, expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_platform_draw_qcmrf(self, qp_plat_draw_qcmrf: QProgram, platform: Platform):
         expected_data_draw_i = [0.20155136, 0.20075692, 0.19967336, 0.19871457, 0.19824677,
