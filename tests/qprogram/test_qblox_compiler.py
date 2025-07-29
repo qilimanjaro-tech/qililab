@@ -385,6 +385,7 @@ def fixture_dynamic_sync() -> QProgram:
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
+        qp.wait(bus="drive", duration=duration-30)
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
 
@@ -2527,7 +2528,21 @@ set_freq         R5
             after_dynamic_sync_0:
 
 
-                            wait             2004           
+                            nop                             
+                            sub              R1, 30, R5     
+                            nop                             
+                            wait             R5             
+                            move             2024, R2       
+                            nop                             
+                            add              R5, 0, R3      
+                            nop                             
+                            sub              R2, R3, R4     
+                            nop                             
+                            jlt              R4, 2147483648, @dynamic_sync_1
+                            jge              R4, 4294967293, @negative_one_two_three_1
+            after_dynamic_sync_1:
+
+
                             add              R1, 10, R1     
                             loop             R0, @loop_0    
                             set_mrk          0              
@@ -2561,10 +2576,39 @@ set_freq         R5
                             nop                             
                             jge              R4, 65532, @long_wait_sync_0
                             jmp              @dynamic_sync_0
+            dynamic_sync_1:
+
+
+                            jlt              R4, 1, @after_dynamic_sync_1
+                            jlt              R4, 4, @one_two_three_1
+                            jge              R4, 65532, @long_wait_sync_1
+                            wait             R4             
+                            jmp              @after_dynamic_sync_1
+            one_two_three_1:
+
+
+                            add              R4, 4, R4      
+                            nop                             
+                            wait             R4             
+                            jmp              @after_dynamic_sync_1
+            negative_one_two_three_1:
+
+
+                            wait             4              
+                            jmp              @after_dynamic_sync_1
+            long_wait_sync_1:
+
+
+                            wait             65532          
+                            sub              R4, 65532, R4  
+                            nop                             
+                            jge              R4, 65532, @long_wait_sync_1
+                            jmp              @dynamic_sync_1
 
         """
         
         readout_str = """
+
             setup:
                             wait_sync        4              
                             set_mrk          0              
@@ -2596,10 +2640,32 @@ set_freq         R5
             after_dynamic_sync_0:
 
 
+                            nop                             
+                            sub              R4, 30, R10    
+                            nop                             
                             play             0, 1, 4        
                             acquire_weighed  0, R2, R1, R0, 2000
                             add              R2, 1, R2      
                             wait             20             
+                            move             0, R5          
+                            add              R10, 0, R6     
+                            nop                             
+                            sub              R5, R6, R7     
+                            nop                             
+                            jlt              R7, 2147483648, @other_max_duration_1
+                            move             R6, R7         
+            after_other_max_duration_1:
+
+
+                            move             2024, R11      
+                            nop                             
+                            sub              R7, R11, R9    
+                            nop                             
+                            jlt              R9, 2147483648, @dynamic_sync_1
+                            jge              R9, 4294967293, @negative_one_two_three_1
+            after_dynamic_sync_1:
+
+
                             add              R4, 10, R4     
                             loop             R3, @loop_0    
                             set_mrk          0              
@@ -2638,6 +2704,39 @@ set_freq         R5
 
                             move             R5, R7         
                             jmp              @after_other_max_duration_0
+            dynamic_sync_1:
+
+
+                            jlt              R9, 1, @after_dynamic_sync_1
+                            jlt              R9, 4, @one_two_three_1
+                            jge              R9, 65532, @long_wait_sync_1
+                            wait             R9             
+                            jmp              @after_dynamic_sync_1
+            one_two_three_1:
+
+
+                            add              R9, 4, R9      
+                            nop                             
+                            wait             R9             
+                            jmp              @after_dynamic_sync_1
+            negative_one_two_three_1:
+
+
+                            wait             4              
+                            jmp              @after_dynamic_sync_1
+            long_wait_sync_1:
+
+
+                            wait             65532          
+                            sub              R9, 65532, R9  
+                            nop                             
+                            jge              R9, 65532, @long_wait_sync_1
+                            jmp              @dynamic_sync_1
+            other_max_duration_1:
+
+
+                            move             R5, R7         
+                            jmp              @after_other_max_duration_1
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
