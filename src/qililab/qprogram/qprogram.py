@@ -728,11 +728,7 @@ class QProgram(StructuredProgram):
             acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
 
         Returns:
-            tuple[plotly object, dictionary]: Tuple containing the dictionary where keys are bus aliases and values are lists containing numpy arrays for
-                the I and Q components. And the plotly object plotting the data from the dictionary.
-
-        Note:
-            This function also **plots** the waveforms using the generated data.
+            plotly object: plotly.graph_objs._figure.Figure
         """
 
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
@@ -741,6 +737,6 @@ class QProgram(StructuredProgram):
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(self)
-        plotly_figure, data_draw = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
+        plotly_figure, _ = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
         logger.warning("The drawing feature is currently only supported for QBlox.")
-        return plotly_figure, data_draw
+        return plotly_figure
