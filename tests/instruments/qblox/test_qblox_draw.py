@@ -202,7 +202,6 @@ class TestQBloxDraw:
         assert parsing["drive"]["program"]["main"] == expected_parsing
 
     def test_qp_draw(self, qp_draw: QProgram):
-        _, data_draw = qp_draw.draw()
         expected_data_draw_i = [ 7.07106781e-01,  5.72061403e-01,  2.18508012e-01, -2.18508012e-01,
          -5.72061403e-01,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
           0.00000000e+00,  0.00000000e+00,  7.07106781e-01,  5.72061403e-01,
@@ -259,7 +258,6 @@ class TestQBloxDraw:
         np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout(self, qp_draw_with_time_window: QProgram):
-        _, data_draw = qp_draw_with_time_window.draw(time_window=40)
         expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
          0.        , 0.        , 0.        , 0.        , 0.        ,
          0.35355339, 0.35355339, 0.35355339, 0.35355339, 0.35355339,
@@ -283,7 +281,6 @@ class TestQBloxDraw:
         np.testing.assert_allclose(data_draw["readout_q13_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout_nested_loop(self, qp_draw_with_time_window_nested_loop: QProgram):
-        _, data_draw = qp_draw_with_time_window_nested_loop.draw(time_window=20)
         expected_data_draw_i = [0.        , 0.        , 0.        , 0.        , 0.        ,
          0.        , 0.        , 0.        , 0.        , 0.        ,
          0.        , 0.        , 0.        , 0.        , 0.        ,
@@ -302,7 +299,6 @@ class TestQBloxDraw:
         np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_draw_with_timeout_no_loop(self, qp_draw_with_timeout_no_loop: QProgram):
-        _, data_draw = qp_draw_with_timeout_no_loop.draw()
         expected_data_draw_i = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
 
         expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
@@ -325,9 +321,9 @@ class TestQBloxDraw:
        0.07      , 0.07      , 0.07      , 0.07      , 0.07      ,
        0.07      , 0.07      , 0.07      , 0.07      , 0.07      ]
         pio.renderers.default = "json"
-        _, data_draw = platform.draw(qp_plat_draw_qcmrf)
-        np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+        figure = platform.draw(qp_plat_draw_qcmrf)
+        np.testing.assert_allclose(figure.data[0].y, expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[1].y, expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_platform_draw_qcmrf_offset(self, qp_plat_draw_qcmrf_offset: QProgram, platform: Platform):
         expected_data_draw_i_q1 = [ 1.08562427,  0.39696727, -0.36692454, -0.91427044, -1.0360029 ,
@@ -341,11 +337,11 @@ class TestQBloxDraw:
         expected_data_draw_i_q2 = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
         expected_data_draw_q_q2 = [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6]
         pio.renderers.default = "json"
-        _, data_draw = platform.draw(qp_plat_draw_qcmrf_offset)
-        np.testing.assert_allclose(data_draw["drive_line_q1_bus"][0], expected_data_draw_i_q1, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["drive_line_q1_bus"][1], expected_data_draw_q_q1, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["drive_line_q2_bus"][0], expected_data_draw_i_q2, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["drive_line_q2_bus"][1], expected_data_draw_q_q2, rtol=1e-2, atol=1e-12)
+        figure = platform.draw(qp_plat_draw_qcmrf_offset)
+        np.testing.assert_allclose(figure.data[0].y, expected_data_draw_i_q1, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[1].y, expected_data_draw_q_q1, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[2].y, expected_data_draw_i_q2, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[3].y, expected_data_draw_q_q2, rtol=1e-2, atol=1e-12)
 
     def test_platform_draw_qcm(self, qp_plat_draw_qcm_flux: QProgram, platform: Platform):
         expected_data_draw_i = [
@@ -371,9 +367,9 @@ class TestQBloxDraw:
             0.0,
         ]
         pio.renderers.default = "json"
-        _, data_draw = platform.draw(qp_plat_draw_qcm_flux)
-        np.testing.assert_allclose(data_draw["flux_line_q0_bus"][0], expected_data_draw_i, rtol=1e-9, atol=1e-12)
-        assert data_draw["flux_line_q0_bus"][1] is None
+        figure = platform.draw(qp_plat_draw_qcm_flux)
+        np.testing.assert_allclose(figure.data[0].y, expected_data_draw_i, rtol=1e-9, atol=1e-12)
+        assert len(figure.data) == 1
 
     def test_platform_draw_qcm_offset(self, qp_plat_draw_qcm_flux_offset: QProgram, platform: Platform):
         expected_data_draw_i = [
@@ -399,9 +395,9 @@ class TestQBloxDraw:
             1.24996185,
         ]
         pio.renderers.default = "json"
-        _, data_draw = platform.draw(qp_plat_draw_qcm_flux_offset)
-        np.testing.assert_allclose(data_draw["flux_line_q0_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
-        assert data_draw["flux_line_q0_bus"][1] is None
+        figure = platform.draw(qp_plat_draw_qcm_flux_offset)
+        np.testing.assert_allclose(figure.data[0].y, expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        assert len(figure.data) == 1
 
     def test_get_value(self):
         draw = QbloxDraw()
@@ -434,11 +430,11 @@ class TestQBloxDraw:
             0.123,
         ]
         pio.renderers.default = "json"
-        _, data_draw = platform.draw(qp_plat_draw_qrm)
+        figure = platform.draw(qp_plat_draw_qrm)
         np.testing.assert_allclose(
-            data_draw["feedline_input_output_bus"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12
+            figure.data[0].y, expected_data_draw_i, rtol=1e-2, atol=1e-12
         )
-        assert data_draw["feedline_input_output_bus"][1] is None
+        assert len(figure.data) == 1
 
     def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
@@ -531,9 +527,10 @@ class TestQBloxDraw:
          0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
          0.5, 0.5]
         pio.renderers.default = "json"
-        _, data_draw = platform.draw(qp_real_time)
-        np.testing.assert_allclose(data_draw["feedline_input_output_bus_1"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["feedline_input_output_bus_1"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
+        figure = platform.draw(qp_real_time)
+
+        np.testing.assert_allclose(figure.data[0].y, expected_data_draw_i, rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[1].y, expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_call_handlers_raises_on_unknown_instruction(self):
         draw = QbloxDraw()

@@ -1651,18 +1651,14 @@ class Platform:
                 It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
 
         Returns:
-            tuple[plotly object, dictionary]: Tuple containing the dictionary where keys are bus aliases and values are lists containing numpy arrays for
-                the I and Q components. And the plotly object plotting the data from the dictionary.
-
-        Note:
-            This function also **plots** the waveforms using the generated data.
+            plotly object
         """
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
         sequencer = self.compile_qprogram(qprogram, bus_mapping)
-        plotly_figure, data_draw = qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
+        plotly_figure, _= qblox_draw.draw(sequencer, runcard_data, time_window, averages_displayed, acquisition_showing)
 
-        return plotly_figure, data_draw
+        return plotly_figure
 
     def load_db_manager(self, db_ini_path: str | None = None):
         """Load Database Manager from an .ini path containing user DB user information or if no path is given
