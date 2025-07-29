@@ -628,8 +628,6 @@ class QbloxDraw:
                 it adds the offsets, the phase and the frequency to the waveforms.
             fig (plotly object): the plotly figure of the data_draw dictionary
 
-        Note:
-            This function also **plots** the waveforms using the generated data.
         """
         def range_acquire(nparray):
             ranges = []
@@ -746,6 +744,5 @@ class QbloxDraw:
             title_text="QBlox Oscillator simulation",
             showlegend=True,
         )
-        fig.show()
 
         return fig, data_draw
