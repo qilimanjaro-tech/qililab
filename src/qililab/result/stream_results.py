@@ -83,7 +83,9 @@ class StreamArray:
         self.path = self.measurement.result_path
 
         # Save loops
-        self._file = h5py.File(name=self.path, mode="w")
+        self._file = h5py.File(name=self.path, mode="w", libver="latest")
+        self._file.swmr_mode = True #NOTE changed here
+
 
         g = self._file.create_group(name="loops", track_order=True)
         for loop_name, array in self.loops.items():
@@ -95,8 +97,21 @@ class StreamArray:
             else:
                 g.create_dataset(name=loop_name, data=array)
 
-        self._first_value = True
+        
+        
 
+        
+        
+        if len(self.shape) == len(self.loops.keys()):
+            self.results = np.zeros(shape=self.shape, dtype=np.complex128)
+            if self._file:
+                self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
+        else:
+            self.results = np.zeros(shape=self.shape)
+            if self._file:
+                self._dataset = self._file.create_dataset("results", data=self.results)
+        
+        self._file.flush()
         return self
 
     def __setitem__(
@@ -109,19 +124,20 @@ class StreamArray:
             value (float | np.complexfloating): value to save.
         """
         # Create results dataset only once
-        if self._first_value:
-            if isinstance(value[0], np.complexfloating):
-                self.results = np.zeros(shape=self.shape, dtype=np.complex128)
-                if self._file:
-                    self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
-            else:
-                self.results = np.zeros(shape=self.shape)
-                if self._file:
-                    self._dataset = self._file.create_dataset("results", data=self.results)
-            self._first_value = False
+        # if self._first_value:
+        #     if isinstance(value[0], np.complexfloating):
+        #         self.results = np.zeros(shape=self.shape, dtype=np.complex128)
+        #         if self._file:
+        #             self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
+        #     else:
+        #         self.results = np.zeros(shape=self.shape)
+        #         if self._file:
+        #             self._dataset = self._file.create_dataset("results", data=self.results)
+        #     self._first_value = False
 
         if self._file is not None and self._dataset is not None:
             self._dataset[key] = value
+            self._file.flush()
         self.results[key] = value
 
     def __exit__(self, *args):
