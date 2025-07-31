@@ -1,6 +1,6 @@
 import numpy as np
 
-from qililab.digital.native_gates import Drag, _GateHandler
+from qililab.digital.native_gates import Drag, _GateHandler, Wait
 from qibo import Circuit, gates
 
 
@@ -41,17 +41,51 @@ def test_get_circuit_gates_info():
 
     circuit_gates_info = _GateHandler.get_circuit_gates_info(circuit.queue)
 
-    assert circuit_gates_info == [("X", [0], {}), ("H", [1], {})]
+    assert circuit_gates_info == [gates.X(0).raw, gates.H(1).raw]
+    assert gates.X(0).raw == {
+        "_class": "X",
+        "init_args": [0],
+        "init_kwargs": {},
+        "name": "x",
+        "_control_qubits": (),
+        "_target_qubits": (0,)
+    }
+
+def test_native_gates_raw():
+    """Test native gates raw."""
+    drag_gate = Drag(0, 0, 0)
+    assert drag_gate.raw == {
+        "_class": "Drag",
+        "init_args": [0],
+        "init_kwargs": {
+            'phase': 0,
+            'theta': 0,
+            'trainable': True
+        },
+        "name": "drag",
+        "_control_qubits": (),
+        "_target_qubits": (0,)
+    }
+
+    wait_gate = Wait(0, 100)
+    assert wait_gate.raw == {
+        "_class": "Wait",
+        "init_args": [0],
+        "init_kwargs": {"t": 100},
+        "name": "wait",
+        "_control_qubits": (),
+        "_target_qubits": (0,)
+    }
 
 def test_create_gate():
     """Test create gate."""
-    gate = _GateHandler.create_gate("X", [0], {})
+    gate = _GateHandler.create_gate(gates.X(0).raw)
     assert isinstance(gate, gates.X)
     assert gate.init_args == [0]
 
 def test_create_circuit():
     """Test create circuit."""
-    circuit_gates = [("X", [0], {}), ("H", [1], {})]
+    circuit_gates = [gates.X(0).raw, gates.H(1).raw]
     circuit_gates = _GateHandler.create_qibo_gates_from_gates_info(circuit_gates)
 
     assert len(circuit_gates) == 2
@@ -69,11 +103,3 @@ def test_create_circuit_from_gates():
     assert len(circuit.queue) == 2
     assert [gate.name for gate in circuit.queue] == ["x", "h"]
     assert circuit.wire_names == [0, 1]
-
-def test_extract_qubits():
-    """Test extract qubits."""
-    qubits = _GateHandler.extract_qubits_from_gate_args([0, 1])
-    assert qubits == [0, 1]
-
-    qubits = _GateHandler.extract_qubits_from_gate_args(0)
-    assert qubits == [0]
