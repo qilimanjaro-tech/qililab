@@ -26,17 +26,11 @@ def fixture_stream_array():
     loops = {"test_amp_loop": AMP_VALUES}
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
-    base_path = "base_path"
     mock_database = MagicMock()
     db_manager = mock_database
 
     return StreamArray(
-        shape=shape,
-        loops=loops,
-        platform=platform,
-        experiment_name=experiment_name,
-        db_manager=db_manager,
-        base_path=base_path,
+        shape=shape, loops=loops, platform=platform, experiment_name=experiment_name, db_manager=db_manager
     )
 
 
@@ -51,7 +45,6 @@ def fixture_stream_array_dict_loops():
     loops = {"test_amp_loop": {"bus": "readout", "units": "V", "parameter": Parameter.VOLTAGE, "array": AMP_VALUES}}
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
-    base_path = "base_path"
     mock_database = MagicMock()
     db_manager = mock_database
 
@@ -61,7 +54,6 @@ def fixture_stream_array_dict_loops():
         platform=platform,
         experiment_name=experiment_name,
         db_manager=db_manager,
-        base_path=base_path,
     )
 
 
