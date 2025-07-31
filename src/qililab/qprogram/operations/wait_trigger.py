@@ -19,7 +19,8 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class WaitTrigger(Operation):
-    def __init__(self, bus: str, duration: int) -> None:
+    def __init__(self, bus: str, duration: int, port: int | None = None) -> None:
         super().__init__()
         self.bus: str = bus
         self.duration: int = duration
+        self.port: int | None = port

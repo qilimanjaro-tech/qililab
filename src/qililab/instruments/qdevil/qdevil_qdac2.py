@@ -24,7 +24,6 @@ from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
 from qililab.waveforms import Waveform
-from qililab.waveforms.arbitrary import Arbitrary
 
 
 @InstrumentFactory.register
@@ -158,73 +157,6 @@ class QDevilQDac2(VoltageSource):
         trace.waveform(values)
         self._cache_awg[channel_id] = True
 
-    def play_awg(self, channel_id: ChannelID | None = None, clear_after: bool = True):
-        """Plays a waveform for a given channel id. If no channel id is given, plays all waveforms stored in the cache.
-
-        Args:
-            channel_id (ChannelID, optional): Channel id to play a waveform through. Defaults to None.
-            clear_after (bool): If True, clears cache. Defaults to True.
-        """
-        if channel_id is None:
-            for dac in self.dacs:
-                awg_context = self.get_dac(dac).arbitrary_wave(dac)
-            self.device.start_all()
-        else:
-            awg_context = self.get_dac(channel_id).arbitrary_wave(channel_id)
-            awg_context.start()
-        if clear_after:
-            self.clear_cache()
-
-        # TODO: catch errors raised at self.device.errors()
-
-    def upload_trigger_pulse(
-        self,
-        channel_id: ChannelID,
-        ramp_up_us: int,
-        ramp_down_us: int,
-        dwell_us: int,
-        pulse_duration_us: int,
-        pulse_v: float,
-        in_port: int,
-        out_port: int | None = None,
-        offset_v: float | None = None,
-        delay_us: float = 0,
-        sync_delay_s: float = 0,
-        trigger_width: float = 1e-6,
-    ):
-        """Create a triggered pulse that sends another trigger at the end of the pulse.
-        For communication with another machine
-
-        Args:
-            channel_id (ChannelID): Channel identifier.
-            in_port (int): input trigger port.
-            out_port (int): output trigger port
-            ramp_up_us (int): _description_
-            ramp_down_us (int): _description_
-            dwell_us (int): _description_
-            pulse_duration_us (int): _description_
-            pulse_v (float): _description_
-            offset_v (float | None, optional): _description_. Defaults to None.
-            sync_delay_s (float, optional): _description_. Defaults to 0.
-            trigger_width (float, optional): _description_. Defaults to 1e-6.
-        """
-        # Create the pulse sequence and upload as a dc list
-        if not offset_v:
-            offset_v = float(self.device.channel(channel_id).dc_constant_V())
-        offset_ramp_up = np.linspace(offset_v, pulse_v, int(ramp_up_us / dwell_us))
-        offset_ramp_down = np.linspace(pulse_v, offset_v, int(ramp_down_us / dwell_us))
-        offset_pulse = np.ones(int(pulse_duration_us / dwell_us)) * pulse_v
-        pulse_delay = np.ones(int(delay_us / dwell_us)) * offset_v
-        volt_pulse = np.concatenate([offset_ramp_up, offset_pulse, offset_ramp_down, pulse_delay])
-        volt_waveform = Arbitrary(samples=volt_pulse)
-
-        self.upload_voltage_list(volt_waveform, channel_id, dwell_us, sync_delay_s)
-
-        # Set triggers received to start (in) and sent at the end (out)
-        self.set_in_external_trigger(channel_id, in_port)
-        if out_port:
-            self.set_end_marker_external_trigger(channel_id, out_port, f"ext_{out_port}_ch_{channel_id}", trigger_width)
-
     def upload_voltage_list(
         self,
         waveform: Waveform,
@@ -254,6 +186,10 @@ class QDevilQDac2(VoltageSource):
     def set_in_internal_trigger(self, channel_id: ChannelID, trigger: str):
         if str(trigger) not in self._triggers.keys():
             raise ValueError(f"Trigger with name {trigger} not created.")
+        if channel_id not in self._cache_dc.keys():
+            raise ValueError(
+                f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
+            )
         self._cache_dc[channel_id].start_on(self._triggers[str(trigger)])
 
     def set_end_marker_external_trigger(
@@ -315,6 +251,23 @@ class QDevilQDac2(VoltageSource):
 
         channel = self.device.channel(channel_id)
         channel.write_channel(f'sour{"{0}"}:dc:mark:pend {self._triggers[str(trigger)].value}')
+
+    def play_awg(self, channel_id: ChannelID | None = None, clear_after: bool = True):
+        """Plays a waveform for a given channel id. If no channel id is given, plays all waveforms stored in the cache.
+
+        Args:
+            channel_id (ChannelID, optional): Channel id to play a waveform through. Defaults to None.
+            clear_after (bool): If True, clears cache. Defaults to True.
+        """
+        if channel_id is None:
+            for dac in self.dacs:
+                awg_context = self.get_dac(dac).arbitrary_wave(dac)
+            self.device.start_all()
+        else:
+            awg_context = self.get_dac(channel_id).arbitrary_wave(channel_id)
+            awg_context.start()
+        if clear_after:
+            self.clear_cache()
 
     def start(self):
         """All generators, that have not been explicitly set to trigger on an internal or external trigger, will be started."""

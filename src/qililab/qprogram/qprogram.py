@@ -33,6 +33,7 @@ from qililab.qprogram.operations import (
     SetMarkers,
     SetOffset,
     SetPhase,
+    SetTrigger,
     Sync,
     Wait,
     WaitTrigger,
@@ -117,7 +118,7 @@ class QProgram(StructuredProgram):
                     for string_element in traverse(element):
                         string_elements.append(f"\t{string_element}")
 
-                # if not a block, it is asusmed that element is type Operation
+                # if not a block, it is assumed that element is type Operation
                 if hasattr(element, "waveform"):
                     waveform_string = (
                         [f"\tWaveform {type(element.waveform).__name__}:\n"]
@@ -287,7 +288,14 @@ class QProgram(StructuredProgram):
         return copied_qprogram
 
     @overload
-    def play(self, bus: str, waveform: Waveform | IQPair) -> None:
+    def play(
+        self,
+        bus: str,
+        waveform: Waveform | IQPair,
+        dwell: int | None = None,
+        delay: int | None = None,
+        repetitions: int | None = None,
+    ) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
@@ -296,7 +304,14 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def play(self, bus: str, waveform: str) -> None:
+    def play(
+        self,
+        bus: str,
+        waveform: str,
+        dwell: int | None = None,
+        delay: int | None = None,
+        repetitions: int | None = None,
+    ) -> None:
         """Play a named waveform on the bus.
 
         Args:
@@ -304,7 +319,14 @@ class QProgram(StructuredProgram):
             waveform (str): An identifier of a named waveform.
         """
 
-    def play(self, bus: str, waveform: Waveform | IQPair | str) -> None:
+    def play(
+        self,
+        bus: str,
+        waveform: Waveform | IQPair | str,
+        dwell: int | None = None,
+        delay: int | None = None,
+        repetitions: int | None = None,
+    ) -> None:
         """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
         This method handles both playing a waveform or IQPair, and playing a
@@ -315,9 +337,9 @@ class QProgram(StructuredProgram):
             waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
         """
         operation = (
-            PlayWithCalibratedWaveform(bus=bus, waveform=waveform)
+            PlayWithCalibratedWaveform(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions)
             if isinstance(waveform, str)
-            else Play(bus=bus, waveform=waveform)
+            else Play(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions)
         )
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -331,6 +353,18 @@ class QProgram(StructuredProgram):
             time (int): Duration of the delay.
         """
         operation = Wait(bus=bus, duration=duration)
+        self._active_block.append(operation)
+        self._buses.add(bus)
+
+    @requires_domain("duration", Domain.Time)
+    def wait_trigger(self, bus: str, duration: int, port: int | None = None):
+        """Adds a delay on the bus and wait for an trigger signal to arrive.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
+        """
+        operation = WaitTrigger(bus=bus, duration=duration, port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -479,34 +513,33 @@ class QProgram(StructuredProgram):
         self._active_block.append(operation)
         self._buses.add(bus)
 
+    @requires_domain("duration", Domain.Time)
+    def set_trigger(self, bus: str, duration: int, outputs: list[int] | int | None = None, marker: str = "start"):
+        """Adds a delay on the bus and wait for an trigger signal to arrive.
+        Args:
+            bus (str): Unique identifier of the bus.
+            duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
+        """
+        operation = SetTrigger(bus=bus, outputs=outputs, duration=duration, marker=marker)
+        self._active_block.append(operation)
+        self._buses.add(bus)
+
+    def set_markers(self, bus: str, mask: str):
+        """Set the markers based on a 4-bit binary mask.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            mask (str): A 4-bit mask, where 0 means that the associated marker is open (no signal), and 1 means that the marker is closed (signal).
+        """
+        operation = SetMarkers(bus=bus, mask=mask)
+        self._active_block.append(operation)
+        self._buses.add(bus)
+
     @yaml.register_class
     class _QbloxInterface:
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
             self.disable_autosync: bool = False
-
-        def set_markers(self, bus: str, mask: str):
-            """Set the markers based on a 4-bit binary mask.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                mask (str): A 4-bit mask, where 0 means that the associated marker is open (no signal), and 1 means that the marker is closed (signal).
-            """
-            operation = SetMarkers(bus=bus, mask=mask)
-            self.qprogram._active_block.append(operation)
-            self.qprogram._buses.add(bus)
-
-        @requires_domain("duration", Domain.Time)
-        def wait_trigger(self, bus: str, duration: int):
-            """Adds a delay on the bus and wait for an trigger signal to arrive.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                duration (int): Duration of the delay after the trigger is recieved. Minimum of 4 ns.
-            """
-            operation = WaitTrigger(bus=bus, duration=duration)
-            self.qprogram._active_block.append(operation)
-            self.qprogram._buses.add(bus)
 
         @overload
         def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):
@@ -731,6 +764,71 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
+    @yaml.register_class
+    class _QdacInterface:
+        def __init__(self, qprogram: "QProgram"):
+            self.qprogram = qprogram
+
+        @overload
+        def play(
+            self,
+            bus: str,
+            waveform: Waveform | IQPair,
+            dwell: int | None = None,
+            delay: int | None = None,
+            repetitions: int | None = None,
+        ) -> None:
+            """Play a single waveform or an I/Q pair of waveforms on the bus.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
+            """
+
+        @overload
+        def play(
+            self,
+            bus: str,
+            waveform: str,
+            dwell: int | None = None,
+            delay: int | None = None,
+            repetitions: int | None = None,
+        ) -> None:
+            """Play a named waveform on the bus.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (str): An identifier of a named waveform.
+            """
+
+        def play(
+            self,
+            bus: str,
+            waveform: Waveform | IQPair | str,
+            dwell: int | None = None,
+            delay: int | None = None,
+            repetitions: int | None = None,
+        ) -> None:
+            """Play a waveform, IQPair, or calibrated operation on the specified bus.
+
+            This method handles both playing a waveform or IQPair, and playing a
+            calibrated operation based on the type of the argument provided.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
+                wait_time (int): Overwrite the value of Q1ASM play instruction's wait_time parameter.
+            """
+            operation = (
+                PlayWithCalibratedWaveform(
+                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions
+                )
+                if isinstance(waveform, str)
+                else Play(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions)
+            )
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
+
     def draw(self, time_window=None, averages_displayed=False, acquisition_showing=True):
         """Draw the QProgram using QBlox Compiler
 
@@ -739,7 +837,7 @@ class QProgram(StructuredProgram):
                                 For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns.
                                 Defaults to None.
             averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations. Defaults to False.
-            acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
+            acquisition_showing (bool): Allows visualizing the acquisition period on the plot. Defaults to True.
         """
 
         from qililab.instruments.qblox.qblox_draw import QbloxDraw

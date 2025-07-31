@@ -47,11 +47,7 @@ from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
 from qililab.waveforms import IQPair, Square, Waveform
 
-
-def ext_trigger_address():
-    from qililab.instrument_controllers.qblox.qblox_cluster_controller import EXT_TRIGGER_ADDRESS
-
-    return EXT_TRIGGER_ADDRESS
+EXT_TRIGGER_ADDRESS: int = 15
 
 
 @dataclass
@@ -171,6 +167,7 @@ class QbloxCompiler:
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
         self._markers: dict[str, str]
+        self._qdac_buses: list[str]
 
     def compile(
         self,
@@ -181,6 +178,7 @@ class QbloxCompiler:
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
         ext_trigger: bool = False,
+        qdac_buses: list[str] = [],
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -234,6 +232,7 @@ class QbloxCompiler:
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
+        self._qdac_buses = qdac_buses
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
@@ -280,7 +279,7 @@ class QbloxCompiler:
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
 
-        return {bus: BusCompilationInfo() for bus in self._qprogram.buses}
+        return {bus: BusCompilationInfo() for bus in self._qprogram.buses if bus not in self._qdac_buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         """Append waveforms to Sequence's Waveforms of the given bus.
@@ -409,6 +408,9 @@ class QbloxCompiler:
         raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
 
     def _handle_set_frequency(self, element: SetFrequency):
+        if element.bus in self._qdac_buses:
+            pass
+
         convert = QbloxCompiler._convert_value(element)
         frequency = (
             self._buses[element.bus].variable_to_register[element.frequency]
@@ -426,6 +428,9 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_phase(self, element: SetPhase):
+        if element.bus in self._qdac_buses:
+            pass
+
         convert = QbloxCompiler._convert_value(element)
         phase = (
             self._buses[element.bus].variable_to_register[element.phase]
@@ -436,10 +441,16 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_reset_phase(self, element: ResetPhase):
+        if element.bus in self._qdac_buses:
+            pass
+
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_gain(self, element: SetGain):
+        if element.bus in self._qdac_buses:
+            pass
+
         convert = QbloxCompiler._convert_value(element)
         gain = (
             self._buses[element.bus].variable_to_register[element.gain]
@@ -456,6 +467,9 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset):
+        if element.bus in self._qdac_buses:
+            pass
+
         convert = QbloxCompiler._convert_value(element)
         offset_0 = (
             self._buses[element.bus].variable_to_register[element.offset_path0]
@@ -479,6 +493,9 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_markers(self, element: SetMarkers):
+        if element.bus in self._qdac_buses:
+            pass
+
         marker_outputs = int(element.mask, 2)
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetMrk(marker_outputs=marker_outputs)
@@ -486,6 +503,9 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_trigger(self, element: SetTrigger):
+        if element.bus in self._qdac_buses:
+            pass
+
         for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
             if int(self._markers[element.bus], 2) > 0:
                 output_map = {1: 1, 2: 0}
@@ -513,6 +533,9 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_wait(self, element: Wait, delay: bool = False):
+        if element.bus in self._qdac_buses:
+            pass
+
         duration: QPyProgram.Register | int
         if isinstance(element.duration, Variable):
             duration = self._buses[element.bus].variable_to_register[element.duration]
@@ -568,6 +591,9 @@ class QbloxCompiler:
             )
 
     def _handle_wait_trigger(self, element: WaitTrigger):
+        if element.bus in self._qdac_buses:
+            pass
+
         duration: QPyProgram.Register | int
         convert = QbloxCompiler._convert_value(element)
         duration = convert(element.duration)
@@ -579,34 +605,35 @@ class QbloxCompiler:
             raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
         # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
-        self._handle_add_trigger_waits(bus=element.bus, duration=duration)
+        self._handle_add_trigger_waits(bus=element.bus, duration=duration, port=element.port)
 
-    def _handle_add_trigger_waits(self, bus: str, duration: int):
+    def _handle_add_trigger_waits(self, bus: str, duration: int, port: int):
         """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
 
         Args:
             bus (str): wait element
             duration (int): duration to wait in ns
         """
-
+        if not port:
+            port = EXT_TRIGGER_ADDRESS
         if self._buses[bus].upd_param_instruction_pending:
             if (
                 4 <= duration and duration <= 8
             ):  # you cannot play an update param and then a wait bc both have a minimum of 4
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
                 self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.WaitTrigger(address=ext_trigger_address(), wait_time=4)
+                    component=QPyInstructions.WaitTrigger(address=port, wait_time=4)
                 )
             else:
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
                 duration -= 4
                 if duration <= INST_MAX_WAIT:
                     self._buses[bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.WaitTrigger(address=ext_trigger_address(), wait_time=duration)
+                        component=QPyInstructions.WaitTrigger(address=port, wait_time=duration)
                     )
                 else:
                     self._buses[bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.WaitTrigger(address=ext_trigger_address(), wait_time=4)
+                        component=QPyInstructions.WaitTrigger(address=port, wait_time=4)
                     )
                     duration -= 4
                     for _ in range((duration // INST_MAX_WAIT) + 1):
@@ -618,11 +645,11 @@ class QbloxCompiler:
         else:  # no instructions pending
             if duration <= INST_MAX_WAIT:
                 self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.WaitTrigger(address=ext_trigger_address(), wait_time=duration)
+                    component=QPyInstructions.WaitTrigger(address=port, wait_time=duration)
                 )
             else:
                 self._buses[bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.WaitTrigger(address=ext_trigger_address(), wait_time=4)
+                    component=QPyInstructions.WaitTrigger(address=port, wait_time=4)
                 )
                 duration -= 4
                 for _ in range((duration // INST_MAX_WAIT) + 1):
@@ -642,6 +669,9 @@ class QbloxCompiler:
             self._buses[sync_bus].static_duration = 0
 
     def _handle_sync(self, element: Sync, delay: bool = False):
+        if any(element.buses) in self._qdac_buses:
+            raise ValueError("QDACII buses not allowed inside sync function")
+
         # Get the buses involved in the sync operation.
         buses = set(element.buses or self._buses)
 
@@ -691,6 +721,9 @@ class QbloxCompiler:
         Args:
             element (Measure): measure operation
         """
+        if element.bus in self._qdac_buses:
+            pass
+
         time_of_flight = self._buses[element.bus].time_of_flight
         play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
@@ -698,6 +731,9 @@ class QbloxCompiler:
         self._handle_acquire(acquire)
 
     def _handle_acquire(self, element: Acquire):
+        if element.bus in self._qdac_buses:
+            pass
+
         # TODO: unify with measure when time of flight is implemented
         loops = [
             (i, loop)
@@ -764,6 +800,9 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_play(self, element: Play):
+        if element.bus in self._qdac_buses:
+            pass
+
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
         if waveform_variables:
