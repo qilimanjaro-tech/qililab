@@ -514,13 +514,13 @@ class QProgram(StructuredProgram):
         self._buses.add(bus)
 
     @requires_domain("duration", Domain.Time)
-    def set_trigger(self, bus: str, duration: int, outputs: list[int] | int | None = None, marker: str = "start"):
+    def set_trigger(self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start"):
         """Adds a delay on the bus and wait for an trigger signal to arrive.
         Args:
             bus (str): Unique identifier of the bus.
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
         """
-        operation = SetTrigger(bus=bus, outputs=outputs, duration=duration, marker=marker)
+        operation = SetTrigger(bus=bus, outputs=outputs, duration=duration, position=position)
         self._active_block.append(operation)
         self._buses.add(bus)
 

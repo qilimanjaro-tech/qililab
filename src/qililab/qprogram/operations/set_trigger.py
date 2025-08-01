@@ -19,9 +19,11 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class SetTrigger(Operation):
-    def __init__(self, bus: str, duration: int, outputs: list[int] | int | None = None, marker: str = "start") -> None:
+    def __init__(
+        self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start"
+    ) -> None:
         super().__init__()
         self.bus: str = bus
         self.duration: int = duration
         self.outputs: list[int] | int | None = outputs
-        self.marker: str = marker
+        self.position: str = position

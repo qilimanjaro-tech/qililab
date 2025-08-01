@@ -142,6 +142,8 @@ class QDevilQDac2(VoltageSource):
         Raises:
             ValueError: if a waveform is already allocated
         """
+        self._validate_channel(channel_id=channel_id)
+
         envelope = waveform.envelope()
         values = list(envelope)  # TODO: does np array work?
         if channel_id in self._cache_awg:
@@ -165,6 +167,8 @@ class QDevilQDac2(VoltageSource):
         sync_delay_s: float = 0,
         repetitions: int = 1,
     ):
+        self._validate_channel(channel_id=channel_id)
+
         envelope = waveform.envelope()
         channel = self.device.channel(channel_id)
         if channel_id in self._cache_dc:
@@ -177,6 +181,9 @@ class QDevilQDac2(VoltageSource):
         self._cache_dc[channel_id] = dc_list
 
     def set_in_external_trigger(self, channel_id: ChannelID, in_port: int):
+
+        self._validate_channel(channel_id=channel_id)
+
         if channel_id not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
@@ -184,6 +191,9 @@ class QDevilQDac2(VoltageSource):
         self._cache_dc[channel_id].start_on_external(in_port)
 
     def set_in_internal_trigger(self, channel_id: ChannelID, trigger: str):
+
+        self._validate_channel(channel_id=channel_id)
+
         if str(trigger) not in self._triggers.keys():
             raise ValueError(f"Trigger with name {trigger} not created.")
         if channel_id not in self._cache_dc.keys():
@@ -195,6 +205,7 @@ class QDevilQDac2(VoltageSource):
     def set_end_marker_external_trigger(
         self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6
     ):
+        self._validate_channel(channel_id=channel_id)
         if channel_id not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
@@ -212,6 +223,8 @@ class QDevilQDac2(VoltageSource):
     def set_start_marker_external_trigger(
         self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6
     ):
+        self._validate_channel(channel_id=channel_id)
+
         if channel_id not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
@@ -227,6 +240,8 @@ class QDevilQDac2(VoltageSource):
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
     def set_start_marker_internal_trigger(self, channel_id: ChannelID, trigger: str):
+        self._validate_channel(channel_id=channel_id)
+
         if channel_id not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
@@ -240,6 +255,8 @@ class QDevilQDac2(VoltageSource):
         channel.write_channel(f'sour{"{0}"}:dc:mark:pstart {self._triggers[str(trigger)].value}')
 
     def set_end_marker_internal_trigger(self, channel_id: ChannelID, trigger: str):
+        self._validate_channel(channel_id=channel_id)
+
         if channel_id not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
@@ -259,6 +276,8 @@ class QDevilQDac2(VoltageSource):
             channel_id (ChannelID, optional): Channel id to play a waveform through. Defaults to None.
             clear_after (bool): If True, clears cache. Defaults to True.
         """
+        self._validate_channel(channel_id=channel_id)
+
         if channel_id is None:
             for dac in self.dacs:
                 awg_context = self.get_dac(dac).arbitrary_wave(dac)
@@ -370,3 +389,8 @@ class QDevilQDac2(VoltageSource):
         channel_id = int(channel_id)
         if channel_id < 1 or channel_id > 24:
             raise ValueError(f"The specified `channel_id`: {channel_id} is out of range. Allowed range is [1, 24].")
+
+        if channel_id not in self.dacs:
+            raise ValueError(
+                f"The specified `channel_id`: {channel_id} is not added to the QDAC-II instrument controller dac list."
+            )

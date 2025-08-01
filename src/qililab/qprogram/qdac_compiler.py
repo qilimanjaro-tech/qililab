@@ -18,6 +18,7 @@ from typing import Any, Callable
 
 from qililab.config import logger
 from qililab.instruments.qdevil import QDevilQDac2
+from qililab.platform.components.bus import Bus
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, LinspaceLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -90,11 +91,14 @@ class QdacCompiler:
 
         self._qprogram: QProgram
         self._buses: dict[str, QdacBusCompilationInfo]
+        self._qdac_buses: list[Bus]
+        self._qdac_buses_alias: list[str]
+        self._channels: dict[str, int]
         self._qdac: QDevilQDac2
 
         self._dc_dwell: int = 2
         self._dc_delay: int = 0
-        self._loop_repetitions: int = 1
+        self._loop_repetitions: dict[str, int] = {}
         self._infinite_loop: bool = False
 
         self._trigger_hashes: dict[str, str] = {}
@@ -104,7 +108,7 @@ class QdacCompiler:
         self,
         qprogram: QProgram,
         qdac: QDevilQDac2,
-        qdac_buses: list[str],
+        qdac_buses: list[Bus],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
     ) -> QdacCompilationOutput:
@@ -116,7 +120,7 @@ class QdacCompiler:
         """
 
         def traverse(block: Block):
-            for bus in self._buses and self._qdac_buses:
+            for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.append(block)
             for element in block.elements:
                 handler = self._handlers.get(type(element))
@@ -126,7 +130,7 @@ class QdacCompiler:
                     handler(element)
                 if isinstance(element, Block):
                     traverse(element)
-            for bus in self._buses and self._qdac_buses:
+            for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.pop()
 
         self._qprogram = qprogram
@@ -141,7 +145,7 @@ class QdacCompiler:
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
 
-        self._buses = self._populate_qdac_buses()
+        self._populate_qdac_buses()
 
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
@@ -153,7 +157,12 @@ class QdacCompiler:
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
 
-        return {bus: QdacBusCompilationInfo() for bus in self._qprogram.buses if bus in self._qdac_buses}
+        self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
+        self._buses = {bus: QdacBusCompilationInfo() for bus in self._qprogram.buses if bus in self._qdac_buses_alias}
+        self._loop_repetitions.update({alias: 1 for alias in self._qdac_buses_alias})
+
+        self._channels = {bus.alias: bus.channels[0] for bus in self._qdac_buses if bus.alias in self._qdac_buses_alias}
+        return
 
     def _handle_parallel(self, element: Parallel):
         if not element.loops:
@@ -166,14 +175,16 @@ class QdacCompiler:
             elif isinstance(loop, Loop):
                 iters = int(loop.values.shape[0])
             iterations.append(iters)
-        self._loop_repetitions *= min(iterations)
+        for qdac_bus_alias in self._qdac_buses_alias:
+            self._loop_repetitions[qdac_bus_alias] *= min(iterations) + 1
 
         for bus in self._buses:
             self._buses[bus].loop_counter += 1
         return True
 
     def _handle_average(self, element: Average):
-        self._loop_repetitions *= element.shots
+        for qdac_bus_alias in self._qdac_buses_alias:
+            self._loop_repetitions[qdac_bus_alias] *= element.shots + 1
         for bus in self._buses:
             self._buses[bus].loop_counter += 1
         return True
@@ -186,74 +197,84 @@ class QdacCompiler:
 
     def _handle_for_loop(self, element: ForLoop):
         iterations = QdacCompiler._convert_for_loop_values(element)
-        self._loop_repetitions *= iterations
+        for qdac_bus_alias in self._qdac_buses_alias:
+            self._loop_repetitions[qdac_bus_alias] *= iterations + 1
         for bus in self._buses:
             self._buses[bus].loop_counter += 1
         return True
 
     def _handle_linspace_loop(self, element: LinspaceLoop):
-        self._loop_repetitions *= element.iterations
+        for qdac_bus_alias in self._qdac_buses_alias:
+            self._loop_repetitions[qdac_bus_alias] *= element.iterations + 1
         for bus in self._buses:
             self._buses[bus].loop_counter += 1
         return True
 
     def _handle_loop(self, element: Loop):
-        self._loop_repetitions *= int(element.values.shape[0])
+        for qdac_bus_alias in self._qdac_buses_alias:
+            self._loop_repetitions[qdac_bus_alias] *= int(element.values.shape[0]) + 1
         for bus in self._buses:
             self._buses[bus].loop_counter += 1
         return True
 
     def _handle_set_offset(self, element: SetOffset):
-        if element.bus in self._qdac_buses:
-            self._qdac.set_parameter(parameter=Parameter.VOLTAGE, value=element.offset_path0, channel_id=element.bus)
+        if element.bus in self._qdac_buses_alias:
+            self._qdac.set_parameter(
+                parameter=Parameter.VOLTAGE, value=element.offset_path0, channel_id=self._channels[element.bus]
+            )
             self._buses[element.bus].dc_set = True
 
     def _handle_set_trigger(self, element: SetTrigger):
-        if element.bus in self._qdac_buses:
-            # Condition to check if markers are properly set.
-            if element.marker not in {"end", "start"}:
-                raise NotImplementedError(f"marker must be set as 'end' or 'start', {element.marker} is not recognized")
-
-            self._qdac._validate_channel(channel_id=element.bus)
-            channel = self._qdac.device.channel(element.bus)
+        if element.bus in self._qdac_buses_alias:
+            # Condition to check if positions are properly set.
+            if element.position not in {"end", "start"}:
+                raise NotImplementedError(
+                    f"position must be set as 'end' or 'start', {element.position} is not recognized"
+                )
 
             if element.outputs:
                 for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
                     trigger = self._hash_trigger(element, output)
 
-                    if element.marker == "end":
+                    if element.position == "end":
                         self._qdac.set_end_marker_external_trigger(
-                            channel_id=channel, out_port=output, trigger=trigger, width_s=element.duration
+                            channel_id=self._channels[element.bus],
+                            out_port=output,
+                            trigger=trigger,
+                            width_s=element.duration,
                         )
                     else:
                         self._qdac.set_start_marker_external_trigger(
-                            channel_id=channel, out_port=output, trigger=trigger, width_s=element.duration
+                            channel_id=self._channels[element.bus],
+                            out_port=output,
+                            trigger=trigger,
+                            width_s=element.duration,
                         )
                 if not self._trigger_position:
                     self._trigger_position = "front"
             else:
                 trigger = self._hash_trigger(element, None)
-                if element.marker == "end":
-                    self._qdac.set_end_marker_internal_trigger(channel_id=channel, trigger=trigger)
+                if element.position == "end":
+                    self._qdac.set_end_marker_internal_trigger(channel_id=self._channels[element.bus], trigger=trigger)
                 else:
-                    self._qdac.set_start_marker_internal_trigger(channel_id=channel, trigger=trigger)
+                    self._qdac.set_start_marker_internal_trigger(
+                        channel_id=self._channels[element.bus], trigger=trigger
+                    )
 
     def _handle_wait_trigger(self, element: WaitTrigger):
-        if element.bus in self._qdac_buses:
-            self._qdac._validate_channel(channel_id=element.bus)
-            channel = self._qdac.device.channel(element.bus)
+        if element.bus in self._qdac_buses_alias:
 
             if element.port:
-                self._qdac.set_in_external_trigger(channel_id=channel, in_port=element.port)
+                self._qdac.set_in_external_trigger(channel_id=self._channels[element.bus], in_port=element.port)
                 if not self._trigger_position:
                     self._trigger_position = "back"
             else:
-                self._qdac.set_in_internal_trigger(channel_id=channel, trigger=self._trigger_hashes[element.bus])
+                self._qdac.set_in_internal_trigger(
+                    channel_id=self._channels[element.bus], trigger=self._trigger_hashes[element.bus]
+                )
 
     def _handle_play(self, element: Play):
-        if element.bus in self._qdac_buses:
-            self._qdac._validate_channel(channel_id=element.bus)
-            channel = self._qdac.device.channel(element.bus)
+        if element.bus in self._qdac_buses_alias:
 
             convert = QdacCompiler._convert_value(element)
             waveform, _ = element.get_waveforms()
@@ -266,34 +287,34 @@ class QdacCompiler:
             if not element.delay:
                 element.delay = self._dc_delay
             if not element.repetitions:
-                element.repetitions = self._loop_repetitions
+                element.repetitions = self._loop_repetitions[element.bus]
             if self._infinite_loop:
                 element.repetitions = -1
 
             self._qdac.upload_voltage_list(
                 waveform=waveform,
-                channel_id=channel,
+                channel_id=self._channels[element.bus],
                 dwell_us=convert(element.dwell),
                 sync_delay_s=element.delay,
                 repetitions=element.repetitions,
             )
 
-            self._loop_repetitions = 1
+            self._loop_repetitions[element.bus] = 1
 
     def _handle_block(self, element: Block):
         pass
 
     def _handle_unknown(self, element: Any):
         if type(element) in [SetFrequency, SetPhase, ResetPhase, SetGain, SetMarkers, Wait, Measure, Acquire]:
-            if element.bus in self._qdac_buses:
+            if element.bus in self._qdac_buses_alias:
                 raise NotImplementedError(f"{element.__class__} is not supported in QDACII.")
 
         if type(element) is Sync:
-            if element.buses and any(bus in self._qdac_buses for bus in element.buses):
+            if element.buses and any(bus in self._qdac_buses_alias for bus in element.buses):
                 raise NotImplementedError(f"{element.__class__} is not supported in QDACII.")
 
     def _hash_trigger(self, element: SetTrigger, output: int | None):
-        hash = f"trigger_{element.bus}_{output}_{element.marker}"
+        hash = f"trigger_{element.bus}_{output}_{element.position}"
         self._trigger_hashes[element.bus] = hash
         return hash
 

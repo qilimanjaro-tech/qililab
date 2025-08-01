@@ -178,7 +178,7 @@ class QbloxCompiler:
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
         ext_trigger: bool = False,
-        qdac_buses: list[str] = [],
+        qdac_buses: list = [],
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -232,7 +232,7 @@ class QbloxCompiler:
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
-        self._qdac_buses = qdac_buses
+        self._qdac_buses = [bus.alias for bus in qdac_buses]
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
@@ -409,7 +409,7 @@ class QbloxCompiler:
 
     def _handle_set_frequency(self, element: SetFrequency):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         convert = QbloxCompiler._convert_value(element)
         frequency = (
@@ -429,7 +429,7 @@ class QbloxCompiler:
 
     def _handle_set_phase(self, element: SetPhase):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         convert = QbloxCompiler._convert_value(element)
         phase = (
@@ -442,14 +442,14 @@ class QbloxCompiler:
 
     def _handle_reset_phase(self, element: ResetPhase):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_gain(self, element: SetGain):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         convert = QbloxCompiler._convert_value(element)
         gain = (
@@ -468,7 +468,7 @@ class QbloxCompiler:
 
     def _handle_set_offset(self, element: SetOffset):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         convert = QbloxCompiler._convert_value(element)
         offset_0 = (
@@ -494,7 +494,7 @@ class QbloxCompiler:
 
     def _handle_set_markers(self, element: SetMarkers):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         marker_outputs = int(element.mask, 2)
         self._buses[element.bus].qpy_block_stack[-1].append_component(
@@ -504,8 +504,10 @@ class QbloxCompiler:
 
     def _handle_set_trigger(self, element: SetTrigger):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
+        if not element.outputs:
+            raise ValueError("Missing qblox trigger outputs at qp.set_trigger.")
         for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
             if int(self._markers[element.bus], 2) > 0:
                 output_map = {1: 1, 2: 0}
@@ -534,7 +536,7 @@ class QbloxCompiler:
 
     def _handle_wait(self, element: Wait, delay: bool = False):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         duration: QPyProgram.Register | int
         if isinstance(element.duration, Variable):
@@ -592,7 +594,7 @@ class QbloxCompiler:
 
     def _handle_wait_trigger(self, element: WaitTrigger):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         duration: QPyProgram.Register | int
         convert = QbloxCompiler._convert_value(element)
@@ -604,10 +606,13 @@ class QbloxCompiler:
         if not self._ext_trigger:
             raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
+        if not self._ext_trigger:
+            raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
+
         # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
         self._handle_add_trigger_waits(bus=element.bus, duration=duration, port=element.port)
 
-    def _handle_add_trigger_waits(self, bus: str, duration: int, port: int):
+    def _handle_add_trigger_waits(self, bus: str, duration: int, port: int | None):
         """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
 
         Args:
@@ -657,9 +662,6 @@ class QbloxCompiler:
                         component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
                     )
 
-        # Reset trigger counter
-        self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.LatchRst(wait_time=4))
-
         # Sync all other buses with WaitSync
         for sync_bus in self._buses:
             self._buses[sync_bus].qpy_block_stack[-1].append_component(component=QPyInstructions.WaitSync(wait_time=4))
@@ -669,7 +671,7 @@ class QbloxCompiler:
             self._buses[sync_bus].static_duration = 0
 
     def _handle_sync(self, element: Sync, delay: bool = False):
-        if any(element.buses) in self._qdac_buses:
+        if element.buses and any(element.buses) in self._qdac_buses:
             raise ValueError("QDACII buses not allowed inside sync function")
 
         # Get the buses involved in the sync operation.
@@ -722,7 +724,7 @@ class QbloxCompiler:
             element (Measure): measure operation
         """
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         time_of_flight = self._buses[element.bus].time_of_flight
         play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
@@ -732,7 +734,7 @@ class QbloxCompiler:
 
     def _handle_acquire(self, element: Acquire):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         # TODO: unify with measure when time of flight is implemented
         loops = [
@@ -801,7 +803,7 @@ class QbloxCompiler:
 
     def _handle_play(self, element: Play):
         if element.bus in self._qdac_buses:
-            pass
+            return
 
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
