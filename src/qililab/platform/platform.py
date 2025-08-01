@@ -1152,6 +1152,7 @@ class Platform:
         debug: bool = False,
     ):
         if isinstance(output, QbloxCompilationOutput):
+            self.trigger_runs = 0
             return self._execute_qblox_compilation_output(output=output, qdac_output=qdac_output, debug=debug)
 
         buses = [self.buses.get(alias=bus_alias) for bus_alias in output.qprogram.buses]
@@ -1166,63 +1167,79 @@ class Platform:
     def _execute_qblox_compilation_output(
         self, output: QbloxCompilationOutput, qdac_output: QdacCompilationOutput | None, debug: bool = False
     ):
-        sequences, acquisitions = output.sequences, output.acquisitions
-        buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
-        for bus_alias, bus in buses.items():
-            if bus.distortions:
-                for distortion in bus.distortions:
-                    for waveform in sequences[bus_alias]._waveforms._waveforms:
-                        sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
-        if debug:
-            with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
-                for bus_alias, sequence in sequences.items():
-                    print(f"Bus {bus_alias}:", file=sourceFile)
-                    print(str(sequence._program), file=sourceFile)
-                    print(file=sourceFile)
+        try:
+            sequences, acquisitions = output.sequences, output.acquisitions
+            buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
+            for bus_alias, bus in buses.items():
+                if bus.distortions:
+                    for distortion in bus.distortions:
+                        for waveform in sequences[bus_alias]._waveforms._waveforms:
+                            sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
+            if debug:
+                with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
+                    for bus_alias, sequence in sequences.items():
+                        print(f"Bus {bus_alias}:", file=sourceFile)
+                        print(str(sequence._program), file=sourceFile)
+                        print(file=sourceFile)
 
-        # Upload sequences
-        for bus_alias in sequences:
-            sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
-            if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
-                buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
-                self._qpy_sequence_cache[bus_alias] = sequence_hash
-            # sync all relevant sequences
-            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
-                if isinstance(instrument, QbloxModule):
-                    instrument.sync_sequencer(sequencer_id=int(channel))
-
-        # Execute sequences
-        if qdac_output:
-            if qdac_output.trigger_position == "front":
-                qdac_output.qdac.start()
+            # Upload sequences
             for bus_alias in sequences:
-                buses[bus_alias].run()
-
-            if qdac_output.trigger_position == "back":
-                qdac_output.qdac.start()
-        else:
-            for bus_alias in sequences:
-                buses[bus_alias].run()
-
-        # Acquire results
-        results = QProgramResults()
-        for bus_alias, bus in buses.items():
-            if bus.has_adc():
+                sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
+                if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
+                    buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+                    self._qpy_sequence_cache[bus_alias] = sequence_hash
+                # sync all relevant sequences
                 for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                     if isinstance(instrument, QbloxModule):
-                        bus_results = bus.acquire_qprogram_results(
-                            acquisitions=acquisitions[bus_alias], channel_id=int(channel)
-                        )
-                        for bus_result in bus_results:
-                            results.append_result(bus=bus_alias, result=bus_result)
+                        instrument.sync_sequencer(sequencer_id=int(channel))
 
-        # Reset instrument settings
-        for bus_alias in sequences:
-            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
-                if isinstance(instrument, QbloxModule):
-                    instrument.desync_sequencer(sequencer_id=int(channel))
+            # Execute sequences
+            if qdac_output:
+                if qdac_output.trigger_position == "front":
+                    qdac_output.qdac.start()
+                for bus_alias in sequences:
+                    buses[bus_alias].run()
 
-        return results
+                if qdac_output.trigger_position == "back":
+                    qdac_output.qdac.start()
+            else:
+                for bus_alias in sequences:
+                    buses[bus_alias].run()
+
+            # Acquire results
+            results = QProgramResults()
+            for bus_alias, bus in buses.items():
+                if bus.has_adc():
+                    for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
+                        if isinstance(instrument, QbloxModule):
+                            bus_results = bus.acquire_qprogram_results(
+                                acquisitions=acquisitions[bus_alias], channel_id=int(channel)
+                            )
+                            for bus_result in bus_results:
+                                results.append_result(bus=bus_alias, result=bus_result)
+
+            # Reset instrument settings
+            for bus_alias in sequences:
+                for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
+                    if isinstance(instrument, QbloxModule):
+                        instrument.desync_sequencer(sequencer_id=int(channel))
+
+            return results
+        except TimeoutError as timeout:
+            if qdac_output:
+                warnings.warn(f"Timeout reached for triggered measurement, trying again.")
+
+                # Reset instrument settings
+                for bus_alias in sequences:
+                    for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
+                        if isinstance(instrument, QbloxModule):
+                            instrument.desync_sequencer(sequencer_id=int(channel))
+                self.trigger_runs += 1
+
+                if self.trigger_runs <= 3:
+                    return self._execute_qblox_compilation_output(output, qdac_output, debug)
+
+            raise timeout
 
     def _execute_quantum_machines_compilation_output(
         self,
@@ -1898,87 +1915,3 @@ class Platform:
             for index in range(shape[0]):
                 stream_array[index,] = results[index, ...]  # type: ignore
         return stream_array.path
-
-    def execute_qblox_qdac_triggers(self, qdac, qprogram, bus_mapping=None):
-        """This is a temporal function"""
-
-        try:
-            cluster = [
-                controller
-                for controller in self.instrument_controllers.elements
-                if isinstance(controller, QbloxClusterController)
-            ]
-            cluster[0].device.reset_trigger_monitor_count(address=15)
-
-            debug = True
-
-            output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping)
-            sequences, acquisitions = output.sequences, output.acquisitions
-            buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
-            for bus_alias, bus in buses.items():
-                if bus.distortions:
-                    for distortion in bus.distortions:
-                        for waveform in sequences[bus_alias]._waveforms._waveforms:
-                            sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
-            if debug:
-                with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
-                    for bus_alias, sequence in sequences.items():
-                        print(f"Bus {bus_alias}:", file=sourceFile)
-                        print(str(sequence._program), file=sourceFile)
-                        print(file=sourceFile)
-
-            # Upload sequences
-            for bus_alias in sequences:
-                sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
-                if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
-                    buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
-                    self._qpy_sequence_cache[bus_alias] = sequence_hash
-                # sync all relevant sequences
-                for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
-                    if isinstance(instrument, QbloxModule):
-                        instrument.sync_sequencer(sequencer_id=int(channel))
-
-            # Execute sequences
-            for bus_alias in sequences:
-                buses[bus_alias].run()
-
-            qdac.start()
-
-            # Acquire results
-            results = QProgramResults()
-            for bus_alias, bus in buses.items():
-                if bus.has_adc():
-                    for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
-                        if isinstance(instrument, QbloxModule):
-                            bus_results = bus.acquire_qprogram_results(
-                                acquisitions=acquisitions[bus_alias], channel_id=int(channel)
-                            )
-                            for bus_result in bus_results:
-                                results.append_result(bus=bus_alias, result=bus_result)
-
-            # Reset instrument settings
-            for bus_alias in sequences:
-                for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
-                    if isinstance(instrument, QbloxModule):
-                        instrument.desync_sequencer(sequencer_id=int(channel))
-
-            self.trigger_runs = 0
-
-            return results
-
-        except TimeoutError:
-            warnings.warn(f"Error reached with trigger count {cluster[0].device.trigger15_monitor_count()}")
-            # print(error)  # warnings.warn(error.strerror)
-
-            # Reset instrument settings
-            for bus_alias in sequences:
-                for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
-                    if isinstance(instrument, QbloxModule):
-                        instrument.desync_sequencer(sequencer_id=int(channel))
-
-            self.trigger_runs += 1
-
-            if self.trigger_runs <= 3:
-                self.execute_qblox_qdac_triggers(qdac, qprogram, bus_mapping)
-
-            return QProgramResults()
