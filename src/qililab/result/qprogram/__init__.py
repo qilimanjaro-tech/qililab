@@ -17,4 +17,35 @@ from .qblox_measurement_result import QbloxMeasurementResult
 from .qprogram_results import QProgramResults
 from .quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 
+"""This module contains the QProgram result class and all the needed information to get the results information.
+
+.. currentmodule:: qililab
+
+QProgram Results
+~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~MeasurementResults
+    ~QProgramResults
+
+Qblox Measurements Results
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~QbloxCompiler
+
+QuantumMachines Measurements Results
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~QuantumMachinesMeasurementResult
+
+"""
+
 __all__ = ["MeasurementResult", "QProgramResults", "QbloxMeasurementResult", "QuantumMachinesMeasurementResult"]
