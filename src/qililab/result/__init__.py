@@ -21,7 +21,7 @@ Classes
 
 .. autosummary::
     :toctree: api
-    :no_index:
+    :no-index:
 
     ExperimentResults
     Result
