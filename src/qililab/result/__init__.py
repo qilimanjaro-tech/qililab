@@ -61,14 +61,14 @@ __all__ = [
     "ExperimentLivePlot",
     "ExperimentResults",
     "Measurement",
+    "MeasurementResult",
+    "QbloxMeasurementResult",
+    "QuantumMachinesMeasurementResult",
     "Result",
     "Sample",
     "StreamArray",
     "get_db_manager",
     "load_results",
     "save_results",
-    "stream_results",
-    "MeasurementResult",
-    "QbloxMeasurementResult",
-    "QuantumMachinesMeasurementResult"
+    "stream_results"
 ]
