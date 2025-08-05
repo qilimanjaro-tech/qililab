@@ -21,10 +21,13 @@ Classes
 
 .. autosummary::
     :toctree: api
-    :no-index:
 
     ExperimentResults
     Result
+    MeasurementResult
+    QbloxMeasurementResult
+    QuantumMachinesMeasurementResult
+
 
 Functions
 ~~~~~~~~~~
@@ -35,13 +38,6 @@ Functions
     load_results
     save_results
 
-Submodules
-~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    qprogram
 """
 
 
