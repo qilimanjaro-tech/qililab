@@ -14,26 +14,35 @@
 
 """This module contains the classes used to return the results of the execution of a program.
 
-.. currentmodule:: qililab
+.. currentmodule:: qililab.result
 
 Classes
-~~~~~~~~~~~~~~~~
+~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    ~ExperimentResults
-    ~result.Result
+    ExperimentResults
+    Result
 
 Functions
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    ~load_results
-    ~save_results
+    load_results
+    save_results
+
+Submodules
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    qprogram
 """
+
 
 # isort: skip_file
 from .experiment_live_plot import ExperimentLivePlot
@@ -44,6 +53,7 @@ from .result_management import load_results, save_results
 # Moving database here to avoid circular imports
 from .database import Cooldown, DatabaseManager, Sample, get_db_manager, Measurement
 from .stream_results import StreamArray, stream_results
+from .qprogram import MeasurementResult, QbloxMeasurementResult, QuantumMachinesMeasurementResult
 
 __all__ = [
     "Cooldown",
@@ -58,4 +68,7 @@ __all__ = [
     "load_results",
     "save_results",
     "stream_results",
+    "MeasurementResult",
+    "QbloxMeasurementResult",
+    "QuantumMachinesMeasurementResult"
 ]
