@@ -22,7 +22,7 @@ Classes
 .. autosummary::
     :toctree: api
 
-    ExperimentResults
+    qililab.result.experiment_results.ExperimentResults
     Result
     MeasurementResult
     QbloxMeasurementResult
