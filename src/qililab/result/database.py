@@ -369,17 +369,17 @@ class DatabaseManager:
 
     def load_by_id(self, id):
         """Load measurement by its measurement_id."""
+        with self.Session() as session:
+            measurement_by_id = session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
 
-        measurement_by_id = self.Session().query(Measurement).where(Measurement.measurement_id == id).one_or_none()
+            path = measurement_by_id.result_path
+            if not os.path.isfile(path):
 
-        path = measurement_by_id.result_path
-        if not os.path.isfile(path):
+                new_path = path.replace(self.base_path_local, self.base_path_share)
+                measurement_by_id.result_path = new_path
+                warnings.warn(f"Replaced local path {path} by {new_path} as it was not found.")
 
-            new_path = path.replace(self.base_path_local, self.base_path_share)
-            measurement_by_id.result_path = new_path
-            warnings.warn(f"Replaced local path {path} by {new_path} as it was not found.")
-
-        return measurement_by_id
+            return measurement_by_id
 
     def tail(
         self,
