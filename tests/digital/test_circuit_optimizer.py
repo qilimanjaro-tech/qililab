@@ -104,7 +104,7 @@ class TestCircuitOptimizerUnit:
 
     def test_sweep_circuit_cancelling_pairs_of_hermitian_gates(self):
         """Test sweep circuit cancelling pairs of hermitian gates."""
-        circuit_gates = [("X", [0], {}), ("X", [0], {}), ("H", [1], {}), ("H", [1], {})]
+        circuit_gates = [gates.X(0).raw, gates.X(0).raw, gates.H(1).raw, gates.H(1).raw]
         output_circuit_gates = CircuitOptimizer._sweep_circuit_cancelling_pairs_of_hermitian_gates(circuit_gates)
 
         assert output_circuit_gates == []

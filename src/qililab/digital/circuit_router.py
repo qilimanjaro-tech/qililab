@@ -34,6 +34,8 @@ class CircuitRouter:
 
     - ``route(circuit: Circuit) -> tuple[Circuit, dict]``: Routes the virtual/logical qubits of a circuit, to the chip's physical qubits.
 
+    (This class is used by :meth:`.CircuitTranspiler.transpile_circuit()`, which uses it in its routing stage.)
+
     Args:
         connectivity (nx.graph): Chip connectivity.
         placer (Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
@@ -158,10 +160,16 @@ class CircuitRouter:
             Circuit: Circuit with the initial remapping applied to the gate qubits.
         """
         new_queue = []
+        wire_names = transpiled_circ.wire_names
         for gate in transpiled_circ.queue:
-            qubits = [transpiled_circ.wire_names.index(qubit) for qubit in gate.qubits]
-            gate = _GateHandler.create_gate(type(gate).__name__, qubits, gate.init_kwargs)
-            new_queue.append(gate)
+            gate_info = gate.raw.copy()
+            gate_info["_control_qubits"] = tuple(wire_names.index(qubit) for qubit in gate_info["_control_qubits"])
+            gate_info["_target_qubits"] = tuple(wire_names.index(qubit) for qubit in gate_info["_target_qubits"])
+            qubits = list(gate_info["_control_qubits"] + gate_info["_target_qubits"])
+            # Qibo gates only have qubits as init_args, the rest need to be init_kwargs, therefore:
+            gate_info["init_args"] = qubits
+
+            new_queue.append(_GateHandler.create_gate(gate_info))
 
         return _GateHandler.create_circuit_from_gates(new_queue, transpiled_circ.nqubits, transpiled_circ.wire_names)
 
