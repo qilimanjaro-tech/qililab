@@ -4,6 +4,26 @@
 
 ### Improvements
 
+- Previously, `platform.draw(qprogram)` and `qprogram.draw()` returned the plotly object and the raw data being plotted. Now they return only the plotly object. This change ensures: 
+  - When calling `qprogram.draw()` or  `platform.draw(qprogram)` directly, the figure is displayed.
+  - When assigning it to a variable (e.g., `plotly_figure = qprogram.draw()` or  `plotly_figure = platform.draw(qprogram)`), the figure is stored but not automatically shown (since `figure.show()` has been removed from QbloxDraw).
+
+  If the user needs access to the underlying data, it can be retrieved as follows:
+    ```
+    plotly_figure = qprogram.draw()
+    plotly_figure.data
+    ```
+
+Note: QbloxDraw class continues to return both, the plotly object and the dictionary of raw data. 
+  [#963](https://github.com/qilimanjaro-tech/qililab/pull/963)
+
+- Previously, QbloxDraw returned only the raw data being plotted. Now, the class returns both the Plotly Figure object and the raw data. This has been extended to qprogram and platform:
+```
+plotly_figure, data_draw = qprogram.draw()
+plotly_figure, data_draw = platform.draw(qprogram)
+```
+  [#960](https://github.com/qilimanjaro-tech/qililab/pull/960)
+
 - The R&S SGS100a driver has now the capability to change the operation mode between normal mode and bypass mode. The default mode is the normal mode. The allowed strings for each mode
 in the settings are `normal` and `bypass`. If the instrument is reset the native instrument configuration defaults to normal.
 [#957](https://github.com/qilimanjaro-tech/qililab/pull/957)
@@ -80,6 +100,24 @@ platform.execute_experiment(experiment)
 
 [#938](https://github.com/qilimanjaro-tech/qililab/pull/938)
 
+- Minor modification at database `DatabaseManager`, as it now requires the config file to contain a `base_path_local`, `base_path_shared` and `data_write_folder`. following the structure:
+
+```
+[postgresql]
+user = 
+passwd = 
+host = haldir.localdomain
+port = 9999
+database = postgres
+base_path_local = "/mnt/home.local/"
+base_path_shared = "/home/"
+data_write_folder = "shared_measurement_haldir"
+```
+
+The data automatically selects between the local or shared domains depending on availability, always prioritizing local domains but if not available choosing the shared domain.
+
+[#951](https://github.com/qilimanjaro-tech/qililab/pull/951)
+
 ### Breaking changes
 
 - Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
@@ -90,6 +128,9 @@ platform.execute_experiment(experiment)
 ### Documentation
 
 ### Bug fixes
+
+- A bug on the tests of Qblox Draw has been fixed. Previously, the test compared `figure.data` using the position of items in the list. Since the order of items can change, this caused inconsistent results. The test now compares the data based on the bus name.
+  [#965](https://github.com/qilimanjaro-tech/qililab/pull/965)
 
 - For Qblox Draw, the move commands  of the Q1ASM were being read correctly once but were not being updated after - this caused problem with loops.
 

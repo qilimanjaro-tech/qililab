@@ -834,10 +834,12 @@ class QProgram(StructuredProgram):
 
         Args:
             time_window (int): Allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the precise number of ns inputted.
-                                For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns.
-                                Defaults to None.
+                For example, if the timeout is 100 ns but there is a play operation of 150 ns, the plot will display the data until 150 ns. Defaults to None.
             averages_displayed (bool): False means that all loops on the sequencer starting with avg will only loop once, and True shows all iterations. Defaults to False.
-            acquisition_showing (bool): Allows visualizing the acquisition period on the plot. Defaults to True.
+            acquisition_showing (bool): Allows visualing the acquisition period on the plot. Defaults to True.
+
+        Returns:
+            plotly object: plotly.graph_objs._figure.Figure
         """
 
         from qililab.instruments.qblox.qblox_draw import QbloxDraw
@@ -846,11 +848,6 @@ class QProgram(StructuredProgram):
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(self)
-        result_draw = qblox_draw.draw(
-            sequencer=sequencer,
-            time_window=time_window,
-            averages_displayed=averages_displayed,
-            acquisition_showing=acquisition_showing,
-        )
+        plotly_figure, _ = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
         logger.warning("The drawing feature is currently only supported for QBlox.")
-        return result_draw
+        return plotly_figure
