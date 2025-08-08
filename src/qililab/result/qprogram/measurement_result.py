@@ -22,7 +22,22 @@ from qililab.typings.enums import ResultName
 
 
 class MeasurementResult(ABC):
-    """Result of a single measurement of QProgram."""
+    """Abstract base class for storing and accessing QProgram measurement
+    results.
+
+    This class defines the interface for a measurement result from the
+    execution of a QProgram. It provides methods to access both the raw
+    measured data and the thresholded (classified) version of that data.
+
+    Subclasses must implement the `array` and `threshold` properties to define
+    how raw and thresholded data are accessed or computed.
+
+    Attributes:
+        name (ResultName): Enum identifier for the result type.
+        bus (str): Name of the readout bus associated with the result.
+        shape (tuple | None): Optional shape of the result data. Used for
+                              reshaping or validation.
+    """
 
     name: ResultName
 
