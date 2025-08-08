@@ -46,6 +46,7 @@ class InstrumentControllerSettings(Settings):
     alias: str
     connection: Connection
     modules: list[InstrumentReference]
+    ext_trigger: bool = False
     reset: bool = True
 
     def __post_init__(self):
@@ -228,6 +229,15 @@ class InstrumentController(BusElement, ABC):
             str: settings.alias.
         """
         return self.settings.alias
+
+    @property
+    def ext_trigger(self):
+        """Instrument Controller 'ext_trigger' property.
+
+        Returns:
+            str: settings.ext_trigger.
+        """
+        return self.settings.ext_trigger
 
     @property
     def connection(self):

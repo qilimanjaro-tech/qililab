@@ -12,12 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .average import Average
-from .block import Block
-from .for_loop import ForLoop
-from .infinite_loop import InfiniteLoop
-from .linspace_loop import LinspaceLoop
-from .loop import Loop
-from .parallel import Parallel
 
-__all__ = ["Average", "Block", "ForLoop", "InfiniteLoop", "LinspaceLoop", "Loop", "Parallel"]
+from qililab.qprogram.operations.operation import Operation
+from qililab.yaml import yaml
+
+
+@yaml.register_class
+class SetTrigger(Operation):
+    def __init__(
+        self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start"
+    ) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.duration: int = duration
+        self.outputs: list[int] | int | None = outputs
+        self.position: str = position
