@@ -1430,9 +1430,7 @@ class Platform:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(
-                routing=True, optimize=False, router=Sabre, placer=ReverseTraversal
-            )
+            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
             # Execute with automatic transpilation:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
@@ -1460,9 +1458,10 @@ class Platform:
             if not np.all(np.isnan(result.array)):
                 results.append(result)
 
-        for instrument in self.instruments.elements:
-            if isinstance(instrument, QbloxModule):
-                instrument.desync_sequencers()
+        for instrument_controller in self.instrument_controllers.elements:
+            for instrument in instrument_controller.modules:
+                if isinstance(instrument, QbloxModule):
+                    instrument.desync_sequencers()
 
         # Flatten results if more than one readout bus was used for a qblox module
         if len(results) > 1:
