@@ -1337,7 +1337,7 @@ class Platform:
         unique_buses = len(set.union(*buses_per_qprogram))
         if total_buses != unique_buses:
             raise ValueError("QPrograms cannot be executed in parallel.")
-        outputs = [
+        outputs, _ = [
             self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
             for qprogram in qprograms
         ]
@@ -1737,7 +1737,7 @@ class Platform:
         """
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        sequencer = self.compile_qprogram(qprogram, bus_mapping)
+        sequencer, _ = self.compile_qprogram(qprogram, bus_mapping)
         plotly_figure, _ = qblox_draw.draw(
             sequencer, runcard_data, time_window, averages_displayed, acquisition_showing
         )

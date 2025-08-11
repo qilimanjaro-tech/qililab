@@ -1604,6 +1604,6 @@ class TestMethods:
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
+        error_string = "Loops dimensions must be the same than the array introduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
