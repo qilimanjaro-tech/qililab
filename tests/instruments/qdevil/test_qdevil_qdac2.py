@@ -15,12 +15,12 @@ def fixture_qdac() -> QDevilQDac2:
     qdac = QDevilQDac2(
         {
             "alias": "qdac",
-            "voltage": [0.5, 0.5],
-            "span": ["low", "low"],
-            "ramping_enabled": [True, False],
-            "ramp_rate": [0.01, 0.01],
+            "voltage": [0.5, 0.5, 0.5, 0.5],
+            "span": ["low", "low", "low", "low"],
+            "ramping_enabled": [True, True, True, False],
+            "ramp_rate": [0.01, 0.01, 0.01, 0.01],
             "dacs": [2, 4, 10, 11],
-            "low_pass_filter": ["dc", "dc"],
+            "low_pass_filter": ["dc", "dc", "dc", "dc"],
         }
     )
     qdac.device = MagicMock()
@@ -147,12 +147,12 @@ class TestQDevilQDac2:
         with pytest.raises(ValueError, match=error_string):
             qdac.upload_awg_waveform(waveform, channel_id)
 
-    def test_play(self, qdac: QDevilQDac2):
+    def test_play_awg(self, qdac: QDevilQDac2):
         """Test play method"""
         channel_id = 4
-        channel_calls = [call(10), call(11), call(4), call().start]
+        channel_calls = [call(4), call().start(), call(4), call().start()]
         qdac._cache_awg = {channel_id: True}
-        qdac.play_awg(clear_after=False)
+        qdac.play_awg(channel_id, clear_after=False)
         # cache not erased if default clear_after
         assert qdac._cache_awg == {channel_id: True}
         qdac.play_awg(channel_id)

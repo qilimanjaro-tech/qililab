@@ -276,13 +276,13 @@ class QDevilQDac2(VoltageSource):
             channel_id (ChannelID, optional): Channel id to play a waveform through. Defaults to None.
             clear_after (bool): If True, clears cache. Defaults to True.
         """
-        self._validate_channel(channel_id=channel_id)
 
         if channel_id is None:
             for dac in self.dacs:
                 awg_context = self.get_dac(dac).arbitrary_wave(dac)
             self.device.start_all()
         else:
+            self._validate_channel(channel_id=channel_id)
             awg_context = self.get_dac(channel_id).arbitrary_wave(channel_id)
             awg_context.start()
         if clear_after:
