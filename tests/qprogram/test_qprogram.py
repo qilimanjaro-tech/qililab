@@ -340,7 +340,7 @@ class TestQProgram(TestStructuredProgram):
 
     def test_set_markers(self):
         qp = QProgram()
-        qp.qblox.set_markers(bus="drive", mask="0111")
+        qp.set_markers(bus="drive", mask="0111")
 
         assert len(qp._active_block.elements) == 1
         assert len(qp._body.elements) == 1

@@ -39,6 +39,7 @@ def fixture_play_named_operation() -> QProgram:
 
     return qp
 
+
 @pytest.fixture(name="measurement_blocked_operation")
 def fixture_measurement_blocked_operation() -> QProgram:
     drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
@@ -67,7 +68,7 @@ def fixture_no_loops_all_operations() -> QProgram:
     qp.sync()
     qp.wait(bus="readout", duration=100)
     qp.play(bus="readout", waveform=readout_pair)
-    qp.qblox.set_markers(bus="readout", mask="0111")
+    qp.set_markers(bus="readout", mask="0111")
     qp.qblox.play(bus="readout", waveform=readout_pair, wait_time=4)
     qp.qblox.acquire(bus="readout", weights=weights_pair)
     return qp
@@ -357,6 +358,7 @@ def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
     qp.play(bus="drive", waveform=Gaussian(amplitude=1.0, duration=40, num_sigmas=4))
     return qp
 
+
 @pytest.fixture(name="play_square_waveforms_with_optimization")
 def fixture_lay_square_waveforms_with_optimization() -> QProgram:
     qp = QProgram()
@@ -370,6 +372,7 @@ def fixture_lay_square_waveforms_with_optimization() -> QProgram:
     qp.play(bus="drive", waveform=Square(0.5, duration=1234567))
     return qp
 
+
 @pytest.fixture(name="play_operation_with_variable_in_waveform")
 def fixture_play_operation_with_variable_in_waveform() -> QProgram:
     qp = QProgram()
@@ -377,27 +380,29 @@ def fixture_play_operation_with_variable_in_waveform() -> QProgram:
     qp.play(bus="drive", waveform=Square(amplitude=amplitude, duration=100))
     return qp
 
+
 @pytest.fixture(name="update_latched_param")
 def update_latched_param() -> QProgram:
     qp = QProgram()
-    qp.set_offset("drive",1,0)
+    qp.set_offset("drive", 1, 0)
     qp.wait(bus="drive", duration=0)
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=100))
-    qp.set_phase("drive",1)
+    qp.set_phase("drive", 1)
     qp.wait(bus="drive", duration=4)
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=100))
-    qp.set_gain("drive",1)
+    qp.set_gain("drive", 1)
     qp.wait(bus="drive", duration=100)
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=5))
-    qp.set_frequency("drive",1e6)
+    qp.set_frequency("drive", 1e6)
     qp.wait(bus="drive", duration=100000)
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=5))
-    qp.set_gain("drive",1)
+    qp.set_gain("drive", 1)
     qp.wait(bus="drive", duration=4)
     qp.play(bus="drive", waveform=Square(amplitude=1, duration=5))
-    qp.set_offset("drive",1,0)
+    qp.set_offset("drive", 1, 0)
     qp.wait(bus="drive", duration=6)
     return qp
+
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -419,13 +424,9 @@ class TestQBloxCompiler:
         qp_no_block.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
 
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(
-            qprogram=measurement_blocked_operation
-        )
+        sequences, _ = compiler.compile(qprogram=measurement_blocked_operation)
 
-        sequences_no_block, _ = compiler.compile(
-            qprogram=qp_no_block
-        )
+        sequences_no_block, _ = compiler.compile(qprogram=qp_no_block)
         assert len(sequences) == 2
         assert "drive" in sequences
         assert "readout" in sequences
@@ -520,7 +521,10 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         with caplog.at_level(logging.WARNING):
             _ = compiler.compile(qprogram=offset_no_path1)
-        assert "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path." in caplog.text
+        assert (
+            "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
+            in caplog.text
+        )
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
         compiler = QbloxCompiler()
@@ -1388,7 +1392,6 @@ set_freq         R5
 
         assert "Variables in waveforms are not supported in Qblox." in caplog.text
 
-
     def test_delay(self, average_with_for_loop_nshots: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=average_with_for_loop_nshots, delays={"drive": 20})
@@ -1579,5 +1582,5 @@ set_freq         R5
                             upd_param        4              
                             stop                            
         """
-        
+
         assert is_q1asm_equal(sequences["drive"], drive_str)

@@ -19,7 +19,7 @@ def fixture_qdac() -> QDevilQDac2:
             "span": ["low", "low"],
             "ramping_enabled": [True, False],
             "ramp_rate": [0.01, 0.01],
-            "dacs": [10, 11],
+            "dacs": [2, 4, 10, 11],
             "low_pass_filter": ["dc", "dc"],
         }
     )

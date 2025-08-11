@@ -1337,8 +1337,8 @@ class Platform:
         unique_buses = len(set.union(*buses_per_qprogram))
         if total_buses != unique_buses:
             raise ValueError("QPrograms cannot be executed in parallel.")
-        outputs, _ = [
-            self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+        outputs = [
+            self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)[0]
             for qprogram in qprograms
         ]
         if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
