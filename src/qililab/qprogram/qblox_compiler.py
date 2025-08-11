@@ -166,7 +166,7 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
-        self._markers: dict[str, str]
+        self._markers: dict[str, str] | None
         self._qdac_buses: list[str]
 
     def compile(
@@ -506,10 +506,11 @@ class QbloxCompiler:
         if element.bus in self._qdac_buses:
             return
 
+        mask = self._markers[element.bus] if self._markers is not None and element.bus in self._markers else "0000"
         if not element.outputs:
             raise ValueError("Missing qblox trigger outputs at qp.set_trigger.")
         for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
-            if int(self._markers[element.bus], 2) > 0:
+            if int(mask, 2) > 0:
                 output_map = {1: 1, 2: 0}
                 if output not in output_map:
                     raise ValueError("RF modules only have 2 trigger outputs, either 1 or 2")
@@ -518,7 +519,7 @@ class QbloxCompiler:
                 if output not in output_map:
                     raise ValueError("RF modules only have 4 trigger outputs, out of range")
 
-            markers = list(self._markers[element.bus])
+            markers = list(mask)
             markers[output_map[output]] = "1"
 
         self._buses[element.bus].qpy_block_stack[-1].append_component(
@@ -530,7 +531,7 @@ class QbloxCompiler:
             self._handle_wait(element=Wait(bus=bus, duration=self._buses[bus].delay), delay=True)
 
         self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetMrk(marker_outputs=int(self._markers[element.bus], 2))
+            component=QPyInstructions.SetMrk(marker_outputs=int(mask, 2))
         )
         self._buses[element.bus].upd_param_instruction_pending = True
 
