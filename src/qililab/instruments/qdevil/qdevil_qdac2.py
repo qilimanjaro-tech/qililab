@@ -206,6 +206,7 @@ class QDevilQDac2(VoltageSource):
         self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6
     ):
         self._validate_channel(channel_id=channel_id)
+
         if channel_id not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
