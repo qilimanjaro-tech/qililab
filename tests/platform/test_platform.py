@@ -7,7 +7,7 @@ import warnings
 from pathlib import Path
 from queue import Queue
 from types import MethodType
-from unittest.mock import MagicMock, create_autospec, patch
+from unittest.mock import MagicMock, PropertyMock, create_autospec, patch
 
 import numpy as np
 import pytest
@@ -15,7 +15,7 @@ from qibo import gates
 from qibo.models import Circuit
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
-from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
+from tests.data import Galadriel, QbloxQDacII, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
 from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
@@ -26,6 +26,7 @@ from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.qdevil import QDevilQDac2
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
@@ -38,6 +39,7 @@ from qililab.result.qprogram.quantum_machines_measurement_result import QuantumM
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
+from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
 
@@ -45,6 +47,11 @@ from qililab.waveforms import Chained, IQPair, Ramp, Square
 @pytest.fixture(name="platform")
 def fixture_platform():
     return build_platform(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="platform_qblox_qdac")
+def fixture_platform_qblox_qdac():
+    return build_platform(runcard=QbloxQDacII.runcard)
 
 
 @pytest.fixture(name="platform_quantum_machines")
@@ -934,6 +941,56 @@ class TestMethods:
         assert first_execution_results.results["feedline_input_output_bus_1"] == [123]
         assert second_execution_results.results["feedline_input_output_bus"] == [456]
         assert second_execution_results.results["feedline_input_output_bus_1"] == [456]
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_and_qdac(self, platform_qblox_qdac: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+            # Mock Qdac functions without connecting
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+            patch.object(QDevilQDac2, "start") as start,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
+
+            acquire_qprogram_results.return_value = [456]
+            second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
+
+            _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed only once (2 because there are 2 buses)
+        assert upload.call_count == 2
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert sync_sequencer.call_count == 6  # called as many times as run
+        assert desync_sequencer.call_count == 6
+        assert first_execution_results.results["resonator"] == [123]
+        assert second_execution_results.results["resonator"] == [456]
+        assert upload_voltage_list.call_count == 3  # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
+        assert start.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1

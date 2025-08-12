@@ -649,6 +649,580 @@ class Galadriel:
     }
 
 
+class QbloxQDacII:
+    """Test data of the Qblox + QDacII platform."""
+
+    name = "qbloxqdac"
+
+    qblox_qcm: dict[str, Any] = {
+        "name": InstrumentName.QBLOX_QCM.value,
+        "alias": InstrumentName.QBLOX_QCM.value,
+        AWGTypes.OUT_OFFSETS: [0, 0, 0.7, 0.8],
+        AWGTypes.AWG_SEQUENCERS: [
+            {
+                "identifier": 0,
+                "outputs": [0, 1],
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: True,
+            }
+        ],
+    }
+
+    qblox_qrm: dict[str, Any] = {
+        "name": InstrumentName.QBLOX_QRM.value,
+        "alias": InstrumentName.QBLOX_QRM.value,
+        AWGTypes.OUT_OFFSETS: [0.123, 1.23],
+        AWGTypes.AWG_SEQUENCERS: [
+            {
+                "identifier": 0,
+                "outputs": [0, 1],
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+                Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
+                Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
+                Parameter.SAMPLING_RATE.value: 1.0e09,
+                Parameter.INTEGRATION_LENGTH.value: 2_123,
+                Parameter.INTEGRATION_MODE.value: IntegrationMode.SSB.value,
+                Parameter.SEQUENCE_TIMEOUT.value: 1,
+                Parameter.ACQUISITION_TIMEOUT.value: 1,
+                Parameter.HARDWARE_DEMODULATION.value: True,
+                Parameter.SCOPE_STORE_ENABLED.value: True,
+                Parameter.TIME_OF_FLIGHT.value: 40,
+                Parameter.THRESHOLD.value: 0.5,
+                Parameter.THRESHOLD_ROTATION.value: 45.0,
+            }
+        ],
+    }
+
+    qdevil_qdac2 = {
+        RUNCARD.NAME: InstrumentName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac",
+        Parameter.VOLTAGE.value: [0.0, 0.0],
+        Parameter.SPAN.value: ["low", "low"],
+        Parameter.RAMPING_ENABLED.value: [True, True],
+        Parameter.RAMPING_RATE.value: [0.01, 0.01],
+        Parameter.LOW_PASS_FILTER.value: ["dc", "dc"],
+        "dacs": [1, 2],
+    }
+
+    qdevil_qdac2_controller = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_ip",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qdac",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    instruments: list[dict] = [qblox_qcm, qblox_qrm, qdevil_qdac2]
+
+    instrument_controllers: list[dict] = [qdevil_qdac2_controller]
+
+    buses: list[dict[str, Any]] = [
+        {RUNCARD.ALIAS: "drive", RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value], RUNCARD.CHANNELS: [0]},
+        {RUNCARD.ALIAS: "resonator", RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value], RUNCARD.CHANNELS: [0]},
+        {RUNCARD.ALIAS: "qdac_bus_1", RUNCARD.INSTRUMENTS: ["qdac"], RUNCARD.CHANNELS: [1]},
+        {RUNCARD.ALIAS: "qdac_bus_2", RUNCARD.INSTRUMENTS: ["qdac"], RUNCARD.CHANNELS: [2]},
+    ]
+
+    runcard: dict[str, Any] = {
+        RUNCARD.NAME: name,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+        RUNCARD.BUSES: buses,
+    }
+
+
+class QMQDacII:
+    """Test data of the QM + QDacII platform."""
+
+    name = "qmqdac"
+
+    qmm = {
+        "name": InstrumentName.QUANTUM_MACHINES_CLUSTER.value,
+        "alias": "qmm",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}, "shareable": True},
+                    {"port": 2},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [],
+        "elements": [
+            {
+                "identifier": "drive_q0",
+                "mix_inputs": {
+                    "I": {"controller": "con1", "port": 1},
+                    "Q": {"controller": "con1", "port": 2},
+                    "lo_frequency": 6e9,
+                    "mixer_correction": [1.0, 0.0, 0.0, 1.0],
+                },
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "identifier": "readout_q0",
+                "mix_inputs": {
+                    "I": {"controller": "con1", "port": 3},
+                    "Q": {"controller": "con1", "port": 4},
+                    "lo_frequency": 6e9,
+                    "mixer_correction": [1.0, 0.0, 0.0, 1.0],
+                },
+                "outputs": {"out1": {"controller": "con1", "port": 1}, "out2": {"controller": "con1", "port": 2}},
+                "time_of_flight": 40,
+                "smearing": 10,
+                "threshold_rotation": 0.5,
+                "threshold": 0.09,
+                "intermediate_frequency": 6e9,
+            },
+            {"identifier": "flux_q0", "single_input": {"controller": "con1", "port": 5}},
+        ],
+        "run_octave_calibration": False,
+    }
+
+    qmm_with_octave = {
+        "name": InstrumentName.QUANTUM_MACHINES_CLUSTER.value,
+        "alias": "qmm_with_octave",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                    {"port": 2},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [
+            {
+                "name": "octave1",
+                "port": 11555,
+                "connectivity": {"controller": "con1"},
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
+                "rf_outputs": [
+                    {"port": 1, "lo_frequency": 6e9},
+                    {"port": 2, "lo_frequency": 6e9},
+                    {"port": 3, "lo_frequency": 6e9},
+                    {"port": 4, "lo_frequency": 6e9},
+                    {"port": 5, "lo_frequency": 6e9},
+                ],
+                "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
+            }
+        ],
+        "elements": [
+            {
+                "identifier": "drive_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 1},
+                "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
+                "digital_outputs": {"controller": "con1", "port": 1},
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "identifier": "readout_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 2},
+                "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
+                "rf_outputs": {"octave": "octave1", "port": 1},
+                "intermediate_frequency": 6e9,
+                "time_of_flight": 40,
+                "smearing": 10,
+            },
+        ],
+        "run_octave_calibration": True,
+    }
+
+    qmm_with_octave_custom_connectivity = {
+        "name": InstrumentName.QUANTUM_MACHINES_CLUSTER.value,
+        "alias": "qmm_with_octave_custom_connectivity",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "analog_outputs": [
+                    {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                    {"port": 2},
+                    {"port": 3},
+                    {"port": 4},
+                    {"port": 5},
+                    {"port": 6},
+                    {"port": 7},
+                    {"port": 8},
+                    {"port": 9},
+                    {"port": 10},
+                ],
+                "analog_inputs": [{"port": 1}, {"port": 2}],
+                "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+            }
+        ],
+        "octaves": [
+            {
+                "name": "octave1",
+                "port": 11555,
+                "rf_outputs": [
+                    {
+                        "port": 1,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 1},
+                        "q_connection": {"controller": "con1", "port": 2},
+                    },
+                    {
+                        "port": 2,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 3},
+                        "q_connection": {"controller": "con1", "port": 4},
+                    },
+                    {
+                        "port": 3,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 5},
+                        "q_connection": {"controller": "con1", "port": 6},
+                    },
+                    {
+                        "port": 4,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 7},
+                        "q_connection": {"controller": "con1", "port": 8},
+                    },
+                    {
+                        "port": 5,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "port": 9},
+                        "q_connection": {"controller": "con1", "port": 10},
+                    },
+                ],
+                "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
+                "if_outputs": [{"controller": "con1", "port": 1}, {"controller": "con1", "port": 2}],
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
+            }
+        ],
+        "elements": [
+            {
+                "identifier": "drive_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 1},
+                "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
+                "digital_outputs": {"controller": "con1", "port": 1},
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "identifier": "readout_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 2},
+                "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
+                "rf_outputs": {"octave": "octave1", "port": 1},
+                "intermediate_frequency": 6e9,
+                "time_of_flight": 40,
+                "smearing": 10,
+            },
+        ],
+        "run_octave_calibration": True,
+    }
+
+    qmm_with_opx1000 = {
+        "name": InstrumentName.QUANTUM_MACHINES_CLUSTER.value,
+        "alias": "qmm_with_opx1000",
+        "address": "192.168.0.1",
+        "cluster": "cluster_0",
+        "controllers": [
+            {
+                "name": "con1",
+                "type": "opx1000",
+                "fems": [
+                    {
+                        "fem": 1,
+                        "shareable": True,
+                        "analog_outputs": [
+                            {"port": 1, "filter": {"feedforward": [0, 0, 0], "feedback": [0, 0, 0]}},
+                            {"port": 2},
+                            {"port": 3},
+                            {"port": 4},
+                            {"port": 5},
+                            {"port": 6},
+                            {"port": 7},
+                            {"port": 8},
+                        ],
+                        "analog_inputs": [{"port": 1}, {"port": 2}],
+                        "digital_outputs": [{"port": 1}, {"port": 2}, {"port": 3}, {"port": 4}, {"port": 5}],
+                    }
+                ],
+            }
+        ],
+        "octaves": [
+            {
+                "name": "octave1",
+                "port": 11555,
+                "connectivity": {"controller": "con1", "fem": 1},
+                "loopbacks": {"Synth": "Synth2", "Dmd": "Dmd2LO"},
+                "rf_outputs": [
+                    {
+                        "port": 1,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 1},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 2},
+                    },
+                    {
+                        "port": 2,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 3},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 4},
+                    },
+                    {
+                        "port": 3,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 5},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 6},
+                    },
+                    {
+                        "port": 4,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 7},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 8},
+                    },
+                    {
+                        "port": 5,
+                        "lo_frequency": 6e9,
+                        "i_connection": {"controller": "con1", "fem": 1, "port": 9},
+                        "q_connection": {"controller": "con1", "fem": 1, "port": 10},
+                    },
+                ],
+                "rf_inputs": [{"port": 1, "lo_frequency": 6e9}, {"port": 2, "lo_frequency": 6e9}],
+            }
+        ],
+        "elements": [
+            {
+                "identifier": "drive_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 1},
+                "digital_inputs": {"controller": "con1", "port": 1, "delay": 87, "buffer": 15},
+                "digital_outputs": {"controller": "con1", "fem": 1, "port": 1},
+                "intermediate_frequency": 6e9,
+            },
+            {
+                "identifier": "readout_q0_rf",
+                "rf_inputs": {"octave": "octave1", "port": 2},
+                "digital_inputs": {"controller": "con1", "port": 2, "delay": 87, "buffer": 15},
+                "rf_outputs": {"octave": "octave1", "port": 1},
+                "intermediate_frequency": 6e9,
+                "time_of_flight": 40,
+                "smearing": 10,
+            },
+            {"identifier": "flux_q0", "single_input": {"controller": "con1", "fem": 1, "port": 5}},
+        ],
+        "run_octave_calibration": True,
+    }
+
+    qmm_controller = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER.value,
+        "alias": "qmm_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qmm",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qmm_with_octave_controller = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER.value,
+        "alias": "qmm_with_octave_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qmm_with_octave",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qmm_with_octave_custom_connectivity_controller = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER.value,
+        "alias": "qmm_with_octave_custom_connectivity_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qmm_with_octave_custom_connectivity",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    qmm_with_opx1000_controller = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER.value,
+        "alias": "qmm_with_opx1000_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qmm_with_opx1000",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    rohde_schwarz: dict[str, Any] = {
+        "name": InstrumentName.ROHDE_SCHWARZ.value,
+        "alias": "rohde_schwarz",
+        Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 7.24730e09,
+        Parameter.RF_ON.value: True,
+    }
+
+    qmm_controller_wrong_module = {
+        "name": InstrumentControllerName.QUANTUM_MACHINES_CLUSTER.value,
+        "alias": "qmm_controller_wrong_module",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.111",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "rohde_schwarz",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    instruments = [qmm, qmm_with_octave, qmm_with_octave_custom_connectivity, qmm_with_opx1000, rohde_schwarz]
+    instrument_controllers = [
+        qmm_controller,
+        qmm_with_octave_controller,
+        qmm_with_octave_custom_connectivity_controller,
+        qmm_with_opx1000_controller,
+        qmm_controller_wrong_module,
+    ]
+
+    buses: list[dict[str, Any]] = [
+        {RUNCARD.ALIAS: "drive_q0", RUNCARD.INSTRUMENTS: ["qmm"], RUNCARD.CHANNELS: ["drive_q0"]},
+        {RUNCARD.ALIAS: "readout_q0", RUNCARD.INSTRUMENTS: ["qmm"], RUNCARD.CHANNELS: ["readout_q0"]},
+        {RUNCARD.ALIAS: "flux_q0", RUNCARD.INSTRUMENTS: ["qmm"], RUNCARD.CHANNELS: ["flux_q0"]},
+        {RUNCARD.ALIAS: "drive_q0_rf", RUNCARD.INSTRUMENTS: ["qmm_with_octave"], RUNCARD.CHANNELS: ["drive_q0_rf"]},
+        {RUNCARD.ALIAS: "readout_q0_rf", RUNCARD.INSTRUMENTS: ["qmm_with_octave"], RUNCARD.CHANNELS: ["readout_q0_rf"]},
+        {
+            RUNCARD.ALIAS: "drive_q0_rf_custom",
+            RUNCARD.INSTRUMENTS: ["qmm_with_octave_custom_connectivity"],
+            RUNCARD.CHANNELS: ["drive_q0_rf"],
+        },
+        {
+            RUNCARD.ALIAS: "readout_q0_rf_custom",
+            RUNCARD.INSTRUMENTS: ["qmm_with_octave_custom_connectivity"],
+            RUNCARD.CHANNELS: ["readout_q0_rf"],
+        },
+        {
+            RUNCARD.ALIAS: "drive_q0_opx1000",
+            RUNCARD.INSTRUMENTS: ["qmm_with_opx1000"],
+            RUNCARD.CHANNELS: ["drive_q0_rf"],
+        },
+        {
+            RUNCARD.ALIAS: "readout_q0_opx1000",
+            RUNCARD.INSTRUMENTS: ["qmm_with_opx1000"],
+            RUNCARD.CHANNELS: ["readout_q0_rf"],
+        },
+    ]
+
+    runcard = {
+        RUNCARD.NAME: name,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+    }
+
+    qdevil_qdac2 = {
+        RUNCARD.NAME: InstrumentName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac",
+        Parameter.VOLTAGE.value: [0.0, 0.0],
+        Parameter.SPAN.value: ["low", "low"],
+        Parameter.RAMPING_ENABLED.value: [True, True],
+        Parameter.RAMPING_RATE.value: [0.01, 0.01],
+        Parameter.LOW_PASS_FILTER.value: ["dc", "dc"],
+        "dacs": [1, 2],
+    }
+
+    qdevil_qdac2_controller = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_ip",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qdac",
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    instruments: list[dict] = [qblox_qcm, qblox_qrm, qdevil_qdac2]
+
+    instrument_controllers: list[dict] = [qdevil_qdac2_controller]
+
+    buses: list[dict[str, Any]] = [
+        {RUNCARD.ALIAS: "drive", RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value], RUNCARD.CHANNELS: [0]},
+        {RUNCARD.ALIAS: "resonator", RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value], RUNCARD.CHANNELS: [0]},
+        {RUNCARD.ALIAS: "qdac_bus_1", RUNCARD.INSTRUMENTS: ["qdac"], RUNCARD.CHANNELS: [1]},
+        {RUNCARD.ALIAS: "qdac_bus_2", RUNCARD.INSTRUMENTS: ["qdac"], RUNCARD.CHANNELS: [2]},
+    ]
+
+    runcard: dict[str, Any] = {
+        RUNCARD.NAME: name,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+        RUNCARD.BUSES: buses,
+    }
+
+
 class SauronYokogawa:
     """Test data of the sauron with yokogawa platform."""
 
@@ -937,7 +1511,11 @@ class SauronVNA:
     ]
 
     buses: list[dict[str, Any]] = [
-        {RUNCARD.ALIAS: "keysight_e5080b_bus", RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value], RUNCARD.CHANNELS: [0]},
+        {
+            RUNCARD.ALIAS: "keysight_e5080b_bus",
+            RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
+            RUNCARD.CHANNELS: [0],
+        },
     ]
 
     runcard = {
