@@ -143,10 +143,10 @@ class Measurement(base):  # type: ignore
             # Merge the detached instance into the current session
             persistent_instance = session.merge(self)
             persistent_instance.end_time = datetime.datetime.now()
-            persistent_instance.experiment_completed = True
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
                 session.commit()
+                persistent_instance.experiment_completed = True
                 return persistent_instance
             except Exception as e:
                 session.rollback()
