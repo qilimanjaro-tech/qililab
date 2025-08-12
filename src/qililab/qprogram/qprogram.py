@@ -95,6 +95,7 @@ class QProgram(StructuredProgram):
         super().__init__()
         self.qblox = self._QbloxInterface(self)
         self.quantum_machines = self._QuantumMachinesInterface(self)
+        self.qdac = self._QdacInterface(self)
 
     def __str__(self) -> str:
         def traverse(block: Block):
@@ -848,6 +849,11 @@ class QProgram(StructuredProgram):
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(self)
-        plotly_figure, _ = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
+        plotly_figure, _ = qblox_draw.draw(
+            sequencer=sequencer,
+            time_window=time_window,
+            averages_displayed=averages_displayed,
+            acquisition_showing=acquisition_showing,
+        )
         logger.warning("The drawing feature is currently only supported for QBlox.")
         return plotly_figure

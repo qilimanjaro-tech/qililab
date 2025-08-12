@@ -51,7 +51,7 @@ def get_sample_qprogram_string():
     with qp.average(100):
         with qp.for_loop(variable=amp, start=0.2, stop=1, step=0.1):
             qp.set_gain(bus="dummy_bus_0", gain=amp)
-            with qp.for_loop(variable=freq, start=0, stop=20, step=5):
+            with qp.linspace_loop(variable=freq, start=0, stop=20, iterations=5):
                 qp.set_frequency(bus="dummy_bus_1", frequency=freq)
                 # DRAG PULSE
                 qp.play(bus="dummy_bus_0", waveform=d_wf)
@@ -272,6 +272,18 @@ class TestQProgram(TestStructuredProgram):
         assert qp._body.elements[0].bus == "readout"
         assert np.equal(qp._body.elements[0].weights.I, one_wf)
         assert np.equal(qp._body.elements[0].weights.Q, zero_wf)
+
+    def test_qdac_methods(self):
+        """Test acquire method"""
+        one_wf = Square(amplitude=1.0, duration=40)
+        qp = QProgram()
+        qp.qdac.play(bus="flux", waveform=one_wf, dwell=2, delay=0, repetitions=100)
+
+        assert len(qp._active_block.elements) == 1
+        assert len(qp._body.elements) == 1
+        assert isinstance(qp._body.elements[0], Play)
+        assert qp._body.elements[0].bus == "flux"
+        assert np.equal(qp._body.elements[0].waveform, one_wf)
 
     def test_sync_method(self):
         """Test sync method"""

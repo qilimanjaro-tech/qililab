@@ -38,7 +38,6 @@ from qililab.qprogram.operations import (
     SetTrigger,
     Sync,
     Wait,
-    WaitTrigger,
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
