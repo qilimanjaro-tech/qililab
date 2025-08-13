@@ -573,6 +573,9 @@ class QuantumMachinesCompiler:
         )
 
     def _handle_sync(self, element: Sync):
+        if element.buses and any(bus in self._qdac_buses for bus in element.buses):
+            raise ValueError("QDACII buses not allowed inside sync function")
+
         if element.buses:
             qua.align(*element.buses)
         else:
@@ -706,5 +709,5 @@ class QuantumMachinesCompiler:
     def _convert_linspace_loop_values(linspace_loop: LinspaceLoop):
         qblox_start = linspace_loop.start
         qblox_stop = linspace_loop.stop
-        qblox_step = (qblox_stop - qblox_start) // (linspace_loop.iterations - 1)
+        qblox_step = (qblox_stop - qblox_start) / linspace_loop.iterations
         return (qblox_start, qblox_stop, qblox_step)

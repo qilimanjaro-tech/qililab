@@ -672,7 +672,7 @@ class QbloxCompiler:
             self._buses[sync_bus].static_duration = 0
 
     def _handle_sync(self, element: Sync, delay: bool = False):
-        if element.buses and any(element.buses) in self._qdac_buses:
+        if element.buses and any(bus in self._qdac_buses for bus in element.buses):
             raise ValueError("QDACII buses not allowed inside sync function")
 
         # Get the buses involved in the sync operation.
