@@ -5,7 +5,7 @@ import pytest
 
 from qililab import Domain
 from qililab.exceptions import VariableAllocated
-from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, LinspaceLoop, Loop, Parallel
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import FloatVariable, IntVariable
 
@@ -98,7 +98,7 @@ class TestStructuredProgram:
         start, stop, iterations = 0, 100, 20
         with instance.linspace_loop(variable=variable, start=start, stop=stop, iterations=iterations) as loop:
             # __enter__
-            assert isinstance(loop, ForLoop)
+            assert isinstance(loop, LinspaceLoop)
             assert loop.variable == variable
             assert loop.start == start
             assert loop.stop == stop
