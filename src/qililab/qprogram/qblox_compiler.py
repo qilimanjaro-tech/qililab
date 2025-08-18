@@ -685,14 +685,14 @@ class QbloxCompiler:
         elif (
             isinstance(waveform_I, SquareSmooth)
             and (waveform_Q is None or isinstance(waveform_Q, SquareSmooth))
-            and ((waveform_I.duration - (waveform_I.smooth_duration + waveform_I.buffer) * 2) >= 100)
+            and ((waveform_I.duration - (waveform_I.sigma + waveform_I.buffer) * 2) >= 100)
         ):
             smooth_waveform_I: SquareSmooth = deepcopy(waveform_I)
             smooth_waveform_Q: SquareSmooth | None = deepcopy(waveform_Q)
             duration = smooth_waveform_I.duration
             smooth_duration_I = (
-                smooth_waveform_I.smooth_duration + smooth_waveform_I.buffer
-                if smooth_waveform_I.smooth_duration + smooth_waveform_I.buffer > 4
+                smooth_waveform_I.sigma + smooth_waveform_I.buffer
+                if smooth_waveform_I.sigma + smooth_waveform_I.buffer > 4
                 else 4
             )
             square_duration = duration - smooth_duration_I * 2
@@ -703,7 +703,7 @@ class QbloxCompiler:
             end_envelope_Q = None
 
             if isinstance(smooth_waveform_Q, SquareSmooth):
-                if smooth_waveform_Q.smooth_duration + smooth_waveform_Q.buffer != smooth_duration_I:
+                if smooth_waveform_Q.sigma + smooth_waveform_Q.buffer != smooth_duration_I and smooth_duration_I != 4:
                     raise ValueError("smooth_duration + buffer of both I and Q must be the same.")
                 inital_envelope_Q = Arbitrary(samples=smooth_waveform_Q.envelope()[:smooth_duration_I])
                 end_envelope_Q = Arbitrary(samples=smooth_waveform_Q.envelope()[-smooth_duration_I:])

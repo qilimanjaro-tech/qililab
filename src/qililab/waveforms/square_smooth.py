@@ -37,11 +37,11 @@ class SquareSmooth(Waveform):
 
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)
-    def __init__(self, amplitude: float, duration: int, smooth_duration: int, buffer: int = 0):
+    def __init__(self, amplitude: float, duration: int, sigma: int, buffer: int = 0):
         super().__init__()
         self.amplitude = amplitude
         self.duration = duration
-        self.smooth_duration = smooth_duration
+        self.sigma = sigma
         self.buffer = buffer
 
     def envelope(self, resolution: int = 1) -> np.ndarray:
@@ -53,12 +53,14 @@ class SquareSmooth(Waveform):
         Returns:
             np.ndarray: Height of the envelope for each time step.
         """
-        x = np.arange(0, self.duration, resolution)
+        x = np.arange(-self.duration / 2, self.duration / 2 + 1, resolution)
         A = self.amplitude
-        err = self.smooth_duration / 2
+        sigma = self.sigma
         buf = self.buffer
-        dur = self.duration - 1
-        return 0.5 * A * np.real((erf((x - buf) / err) - erf((x - dur + buf) / err)))
+        dur = self.duration
+        return (
+            0.5 * A * np.real((erf(4 * (x + (dur / 2 - buf)) / sigma - 2) - erf(4 * (x - (dur / 2 - buf)) / sigma + 2)))
+        )
 
     def get_duration(self) -> int:
         """Get the duration of the waveform.
