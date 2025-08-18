@@ -25,7 +25,8 @@ from qm.program import Program
 from qm.qua import _dsl as qua_dsl
 from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
-from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, LinspaceLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, LinspaceLoop, Loop, Parallel
+from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Measure,
