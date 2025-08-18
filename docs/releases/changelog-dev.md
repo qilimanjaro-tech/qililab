@@ -4,24 +4,27 @@
 
 ### Improvements
 
-- Previously, `platform.draw(qprogram)` and `qprogram.draw()` returned the plotly object and the raw data being plotted. Now they return only the plotly object. This change ensures: 
+- Previously, `platform.draw(qprogram)` and `qprogram.draw()` returned the plotly object and the raw data being plotted. Now they return only the plotly object. This change ensures:
   - When calling `qprogram.draw()` or  `platform.draw(qprogram)` directly, the figure is displayed.
   - When assigning it to a variable (e.g., `plotly_figure = qprogram.draw()` or  `plotly_figure = platform.draw(qprogram)`), the figure is stored but not automatically shown (since `figure.show()` has been removed from QbloxDraw).
 
   If the user needs access to the underlying data, it can be retrieved as follows:
+
     ```
     plotly_figure = qprogram.draw()
     plotly_figure.data
     ```
 
-Note: QbloxDraw class continues to return both, the plotly object and the dictionary of raw data. 
+Note: QbloxDraw class continues to return both, the plotly object and the dictionary of raw data.
   [#963](https://github.com/qilimanjaro-tech/qililab/pull/963)
 
 - Previously, QbloxDraw returned only the raw data being plotted. Now, the class returns both the Plotly Figure object and the raw data. This has been extended to qprogram and platform:
+
 ```
 plotly_figure, data_draw = qprogram.draw()
 plotly_figure, data_draw = platform.draw(qprogram)
 ```
+
   [#960](https://github.com/qilimanjaro-tech/qililab/pull/960)
 
 - The R&S SGS100a driver has now the capability to change the operation mode between normal mode and bypass mode. The default mode is the normal mode. The allowed strings for each mode
@@ -118,10 +121,13 @@ The data automatically selects between the local or shared domains depending on 
 
 [#951](https://github.com/qilimanjaro-tech/qililab/pull/951)
 
+- Added smoothed square waveform class `SquareSmooth(amplitude, duration, smooth_duration, buffer = 0)` which works similar to the `Square` waveform with an additional smoothing on the edges. The only additional parameters are the smoothing duration and the buffer time. In `QbloxCompiler` if the duration exceeds a threshold of 100 ns the pulses are divide into twor arbitrary pulses at the beggining and the end for the smooth parts and a loop of square pulses in the middle, with the exact same behaviour as `Square` pulses.
+[#951](https://github.com/qilimanjaro-tech/qililab/pull/951)
+
 ### Breaking changes
 
 - Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
-  [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
+  [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
 
 ### Deprecations / Removals
 

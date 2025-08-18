@@ -55,9 +55,9 @@ class SquareSmooth(Waveform):
         """
         x = np.arange(0, self.duration, resolution)
         A = self.amplitude
-        err = self.smooth_duration
+        err = self.smooth_duration / 2
         buf = self.buffer
-        dur = self.duration
+        dur = self.duration - 1
         return 0.5 * A * np.real((erf((x - buf) / err) - erf((x - dur + buf) / err)))
 
     def get_duration(self) -> int:
