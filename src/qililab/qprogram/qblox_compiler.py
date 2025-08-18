@@ -511,13 +511,13 @@ class QbloxCompiler:
             raise ValueError("Missing qblox trigger outputs at qp.set_trigger.")
         for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
             if int(mask, 2) > 0:
-                output_map = {1: 1, 2: 0}
+                output_map = {1: 3, 2: 2}
                 if output not in output_map:
                     raise ValueError("RF modules only have 2 trigger outputs, either 1 or 2")
             else:
                 output_map = {1: 3, 2: 2, 3: 1, 4: 0}
                 if output not in output_map:
-                    raise ValueError("RF modules only have 4 trigger outputs, out of range")
+                    raise ValueError("Low frequency modules only have 4 trigger outputs, out of range")
 
             markers = list(mask)
             markers[output_map[output]] = "1"
@@ -528,7 +528,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
         for bus in self._buses:
-            self._handle_wait(element=Wait(bus=bus, duration=self._buses[bus].delay), delay=True)
+            self._handle_wait(element=Wait(bus=bus, duration=element.duration), delay=True)
 
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetMrk(marker_outputs=int(mask, 2))
@@ -603,9 +603,6 @@ class QbloxCompiler:
 
         if isinstance(element.duration, Variable):
             raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
-
-        if not self._ext_trigger:
-            raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
         if not self._ext_trigger:
             raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")

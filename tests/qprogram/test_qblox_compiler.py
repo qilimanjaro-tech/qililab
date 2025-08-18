@@ -397,6 +397,31 @@ def fixture_multiple_play_operations_with_same_waveform() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="set_trigger")
+def fixture_set_trigger() -> QProgram:
+    qp = QProgram()
+    qp.set_trigger(bus="drive", duration=100, outputs=1)
+    qp.wait(bus="drive", duration=100)
+    return qp
+
+
+@pytest.fixture(name="wait_trigger")
+def fixture_wait_trigger() -> QProgram:
+    qp = QProgram()
+    # With update parameter pending
+    qp.set_frequency(bus="readout", frequency=1e6)
+    qp.wait_trigger(bus="drive", duration=4, port=1)
+    qp.set_frequency(bus="readout", frequency=1e6)
+    qp.wait_trigger(bus="drive", duration=1000, port=1)
+    qp.set_frequency(bus="readout", frequency=1e6)
+    qp.wait_trigger(bus="drive", duration=70000, port=1)
+
+    # No instructions pending
+    qp.wait_trigger(bus="drive", duration=1000, port=1)
+    qp.wait_trigger(bus="drive", duration=70000, port=1)
+    return qp
+
+
 @pytest.fixture(name="multiple_play_operations_with_no_Q_waveform")
 def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
     qp = QProgram()
@@ -486,6 +511,84 @@ class TestQBloxCompiler:
 
         with pytest.raises(ValueError, match="QDACII buses not allowed inside sync function"):
             compiler.compile(qprogram=run_qdac_sync, bus_mapping={"drive": "drive_q0"}, qdac_buses=[mock_qdac_bus])
+
+    def test_set_trigger(self, set_trigger: QProgram):
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=set_trigger)
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+                setup:
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+
+                main:
+                                set_mrk          1
+                                upd_param        4
+                                wait             96
+                                set_mrk          0
+                                upd_param        4
+                                wait             96
+                                set_mrk          0
+                                upd_param        4
+                                stop
+            """
+        assert is_q1asm_equal(sequences["drive"]._program, drive_str)
+
+        # RF example with the right markers
+        sequences, _ = compiler.compile(qprogram=set_trigger, markers={"drive": "1100"})
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+                setup:
+                                wait_sync        4
+                                set_mrk          12
+                                upd_param        4
+
+                main:
+                                set_mrk          13
+                                upd_param        4
+                                wait             96
+                                set_mrk          12
+                                upd_param        4
+                                wait             96
+                                set_mrk          0
+                                upd_param        4
+                                stop
+            """
+        assert is_q1asm_equal(sequences["drive"]._program, drive_str)
+
+    def test_set_trigger_raises_no_output_error(self):
+        qp = QProgram()
+        qp.set_trigger(bus="drive", duration=10)
+
+        compiler = QbloxCompiler()
+
+        with pytest.raises(ValueError, match="Missing qblox trigger outputs at qp.set_trigger."):
+            compiler.compile(qprogram=qp)
+
+    def test_set_trigger_raises_output_out_of_range_error(self):
+        qp = QProgram()
+        qp.set_trigger(bus="drive", duration=10, outputs=5)
+
+        compiler = QbloxCompiler()
+
+        with pytest.raises(ValueError, match="Low frequency modules only have 4 trigger outputs, out of range"):
+            compiler.compile(qprogram=qp)
+            pass
+
+        compiler._markers = {"drive": "1100"}
+        with pytest.raises(ValueError, match="RF modules only have 2 trigger outputs, either 1 or 2"):
+            compiler.compile(qprogram=qp, markers={"drive": "1100"})
+            pass
+
+    def test_wait_trigger(self, wait_trigger: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=wait_trigger)
 
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
         drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)

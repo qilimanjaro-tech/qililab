@@ -137,6 +137,23 @@ class TestStructuredProgram:
                 with instance.for_loop(variable=variable, start=100, stop=110, step=1):
                     pass
             with pytest.raises(VariableAllocated):
+                with instance.linspace_loop(variable=variable, start=0, stop=10, itarations=11):
+                    pass
+            with pytest.raises(VariableAllocated):
+                with instance.loop(variable=variable, values=np.arange(10)):
+                    pass
+            with pytest.raises(VariableAllocated):
+                with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
+                    pass
+        # test when LinspaceLoop allocates variable
+        with instance.linspace_loop(variable=variable, start=0, stop=10, itarations=11):
+            with pytest.raises(VariableAllocated):
+                with instance.for_loop(variable=variable, start=100, stop=110, step=1):
+                    pass
+            with pytest.raises(VariableAllocated):
+                with instance.linspace_loop(variable=variable, start=0, stop=10, itarations=11):
+                    pass
+            with pytest.raises(VariableAllocated):
                 with instance.loop(variable=variable, values=np.arange(10)):
                     pass
             with pytest.raises(VariableAllocated):
@@ -148,6 +165,9 @@ class TestStructuredProgram:
                 with instance.for_loop(variable=variable, start=100, stop=110, step=1):
                     pass
             with pytest.raises(VariableAllocated):
+                with instance.linspace_loop(variable=variable, start=0, stop=10, itarations=11):
+                    pass
+            with pytest.raises(VariableAllocated):
                 with instance.loop(variable=variable, values=np.arange(10)):
                     pass
             with pytest.raises(VariableAllocated):
@@ -157,6 +177,9 @@ class TestStructuredProgram:
         with instance.parallel(loops=[Loop(variable=variable, values=np.arange(10))]):
             with pytest.raises(VariableAllocated):
                 with instance.for_loop(variable=variable, start=100, stop=110, step=1):
+                    pass
+            with pytest.raises(VariableAllocated):
+                with instance.linspace_loop(variable=variable, start=0, stop=10, itarations=11):
                     pass
             with pytest.raises(VariableAllocated):
                 with instance.loop(variable=variable, values=np.arange(10)):

@@ -275,6 +275,33 @@ def fixture_for_loop() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="for_loop_with_negative_step")
+def fixture_for_loop_with_negative_step() -> QProgram:
+    qp = QProgram()
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    phase = qp.variable(label="phase", domain=Domain.Phase)
+    time = qp.variable(label="time", domain=Domain.Time)
+    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
+
+    with qp.for_loop(variable=gain, start=1.0, stop=0.0, step=-0.1):
+        qp.set_gain(bus="drive", gain=gain)
+
+    with qp.for_loop(variable=frequency, start=200, stop=100, step=-10):
+        qp.set_frequency(bus="drive", frequency=frequency)
+
+    with qp.for_loop(variable=phase, start=np.pi / 2, stop=0, step=-np.pi / 18):
+        qp.set_phase(bus="drive", phase=phase)
+
+    with qp.for_loop(variable=time, start=200, stop=100, step=-10):
+        qp.wait(bus="drive", duration=time)
+
+    with qp.for_loop(variable=scalar, start=10, stop=0, step=-1):
+        qp.wait(bus="drive", duration=100)
+
+    return qp
+
+
 @pytest.fixture(name="linspace_loop")
 def fixture_linspace_loop() -> QProgram:
     qp = QProgram()
@@ -302,8 +329,8 @@ def fixture_linspace_loop() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="for_loop_with_negative_step")
-def fixture_for_loop_with_negative_step() -> QProgram:
+@pytest.fixture(name="linspace_loop_with_negative_step")
+def fixture_linspace_loop_with_negative_step() -> QProgram:
     qp = QProgram()
     gain = qp.variable(label="gain", domain=Domain.Voltage)
     frequency = qp.variable(label="frequency", domain=Domain.Frequency)
@@ -311,19 +338,19 @@ def fixture_for_loop_with_negative_step() -> QProgram:
     time = qp.variable(label="time", domain=Domain.Time)
     scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
 
-    with qp.for_loop(variable=gain, start=1.0, stop=0.0, step=-0.1):
+    with qp.linspace_loop(variable=gain, start=1.0, stop=0.0, iterations=10):
         qp.set_gain(bus="drive", gain=gain)
 
-    with qp.for_loop(variable=frequency, start=200, stop=100, step=-10):
+    with qp.linspace_loop(variable=frequency, start=200, stop=100, iterations=10):
         qp.set_frequency(bus="drive", frequency=frequency)
 
-    with qp.for_loop(variable=phase, start=np.pi / 2, stop=0, step=-np.pi / 18):
+    with qp.linspace_loop(variable=phase, start=np.pi / 2, stop=0, iterations=10):
         qp.set_phase(bus="drive", phase=phase)
 
-    with qp.for_loop(variable=time, start=200, stop=100, step=-10):
+    with qp.linspace_loop(variable=time, start=200, stop=100, iterations=10):
         qp.wait(bus="drive", duration=time)
 
-    with qp.for_loop(variable=scalar, start=10, stop=0, step=-1):
+    with qp.linspace_loop(variable=scalar, start=10, stop=0, iterations=10):
         qp.wait(bus="drive", duration=100)
 
     return qp
@@ -901,6 +928,43 @@ class TestQuantumMachinesCompiler:
             float(statements[3].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 10
         )
 
+    def test_for_loop_with_negative_step(self, for_loop_with_negative_step: QProgram):
+        compiler = QuantumMachinesCompiler()
+        qua_program, _, _ = compiler.compile(for_loop_with_negative_step)
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 5
+
+        # Voltage
+        assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 1.0
+        assert float(statements[0].for_.condition.binary_operation.right.literal.value) == -0.05
+        assert (
+            float(statements[0].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
+            == -0.1
+        )
+
+        # Frequency
+        assert float(statements[1].for_.init.statements[0].assign.expression.literal.value) == 200
+        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == 95
+        assert (
+            float(statements[1].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == -10
+        )
+
+        # Phase
+        assert float(statements[2].for_.init.statements[0].assign.expression.literal.value) == 90 / 360.0
+        assert float(statements[2].for_.condition.binary_operation.right.literal.value) == -5 / 360.0
+        assert (
+            float(statements[2].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
+            == -10 / 360.0
+        )
+
+        # Time
+        assert float(statements[3].for_.init.statements[0].assign.expression.literal.value) == 200
+        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 100
+        assert (
+            float(statements[3].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == -10
+        )
+
     def test_linspace_loop(self, linspace_loop: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(linspace_loop)
@@ -937,9 +1001,9 @@ class TestQuantumMachinesCompiler:
             float(statements[3].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 10
         )
 
-    def test_for_loop_with_negative_step(self, for_loop_with_negative_step: QProgram):
+    def test_linspace_loop_with_negative_step(self, linspace_loop_with_negative_step: QProgram):
         compiler = QuantumMachinesCompiler()
-        qua_program, _, _ = compiler.compile(for_loop_with_negative_step)
+        qua_program, _, _ = compiler.compile(linspace_loop_with_negative_step)
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 5
@@ -961,10 +1025,10 @@ class TestQuantumMachinesCompiler:
 
         # Phase
         assert float(statements[2].for_.init.statements[0].assign.expression.literal.value) == 90 / 360.0
-        assert float(statements[2].for_.condition.binary_operation.right.literal.value) == -5 / 360.0
+        assert float(statements[2].for_.condition.binary_operation.right.literal.value) == -4.5 / 360.0
         assert (
             float(statements[2].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
-            == -10 / 360.0
+            == -9 / 360.0
         )
 
         # Time
