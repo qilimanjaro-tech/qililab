@@ -690,3 +690,4 @@ def _compress_integration_weights(integration_weights, N=100):
             integration_weights.T[1].astype(int).tolist(),
         )
     )
+    return integration_weights
