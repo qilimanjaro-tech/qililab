@@ -25,12 +25,25 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
   [#950](https://github.com/qilimanjaro-tech/qililab/pull/950)
 ### Improvements
 
+- Previously, `platform.draw(qprogram)` and `qprogram.draw()` returned the plotly object and the raw data being plotted. Now they return only the plotly object. This change ensures: 
+  - When calling `qprogram.draw()` or  `platform.draw(qprogram)` directly, the figure is displayed.
+  - When assigning it to a variable (e.g., `plotly_figure = qprogram.draw()` or  `plotly_figure = platform.draw(qprogram)`), the figure is stored but not automatically shown (since `figure.show()` has been removed from QbloxDraw).
+
+  If the user needs access to the underlying data, it can be retrieved as follows:
+    ```
+    plotly_figure = qprogram.draw()
+    plotly_figure.data
+    ```
+
+Note: QbloxDraw class continues to return both, the plotly object and the dictionary of raw data. 
+  [#963](https://github.com/qilimanjaro-tech/qililab/pull/963)
+
 - Previously, QbloxDraw returned only the raw data being plotted. Now, the class returns both the Plotly Figure object and the raw data. This has been extended to qprogram and platform:
 ```
 plotly_figure, data_draw = qprogram.draw()
 plotly_figure, data_draw = platform.draw(qprogram)
 ```
-  [#960](https://github.com/qilimanjaro-tech/qililab/pull/952)
+  [#960](https://github.com/qilimanjaro-tech/qililab/pull/960)
 
 - The R&S SGS100a driver has now the capability to change the operation mode between normal mode and bypass mode. The default mode is the normal mode. The allowed strings for each mode
 in the settings are `normal` and `bypass`. If the instrument is reset the native instrument configuration defaults to normal.
@@ -136,6 +149,9 @@ The data automatically selects between the local or shared domains depending on 
 ### Documentation
 
 ### Bug fixes
+
+- A bug on the tests of Qblox Draw has been fixed. Previously, the test compared `figure.data` using the position of items in the list. Since the order of items can change, this caused inconsistent results. The test now compares the data based on the bus name.
+  [#965](https://github.com/qilimanjaro-tech/qililab/pull/965)
 
 - For Qblox Draw, the move commands  of the Q1ASM were being read correctly once but were not being updated after - this caused problem with loops.
 
