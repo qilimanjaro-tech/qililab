@@ -673,17 +673,6 @@ def _convert_integration_weights(integration_weights, N=100, accuracy=2**-15):
 
 def _compress_integration_weights(integration_weights, N=100):
     integration_weights = np.array(integration_weights)
-    while len(integration_weights) > N:
-        diffs = np.abs(np.diff(integration_weights, axis=0)[:, 0])
-        min_diff = np.min(diffs)
-        min_diff_indices = np.where(diffs == min_diff)[0][0]
-        times1 = integration_weights[min_diff_indices, 1]
-        times2 = integration_weights[min_diff_indices + 1, 1]
-        weights1 = integration_weights[min_diff_indices, 0]
-        weights2 = integration_weights[min_diff_indices + 1, 0]
-        integration_weights[min_diff_indices, 0] = (weights1 * times1 + weights2 * times2) / (times1 + times2)
-        integration_weights[min_diff_indices, 1] = times1 + times2
-        integration_weights = np.delete(integration_weights, min_diff_indices + 1, 0)
     integration_weights = list(
         zip(
             integration_weights.T[0].tolist(),
