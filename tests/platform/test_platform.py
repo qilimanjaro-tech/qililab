@@ -170,7 +170,46 @@ def fixture_qblox_results_scope():
             },
             "qubit": 0,
             "measurement": 0,
-        }
+        },
+        {
+            "scope": {
+                "path0": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
+            },
+            "bins": {
+                "integration": {"path0": [1], "path1": [1]},
+                "threshold": [1],
+                "avg_cnt": [1],
+            },
+            "qubit": 0,
+            "measurement": 1,
+        },
+        {
+            "scope": {
+                "path0": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
+            },
+            "bins": {
+                "integration": {"path0": [1], "path1": [1]},
+                "threshold": [2],
+                "avg_cnt": [1],
+            },
+            "qubit": 1,
+            "measurement": 0,
+        },
+        {
+            "scope": {
+                "path0": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
+            },
+            "bins": {
+                "integration": {"path0": [1], "path1": [1]},
+                "threshold": [3],
+                "avg_cnt": [1],
+            },
+            "qubit": 1,
+            "measurement": 1,
+        },
     ]
 
 
