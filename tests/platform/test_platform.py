@@ -160,8 +160,8 @@ def fixture_qblox_results_scope():
     return [
         {
             "scope": {
-                "path0": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
-                "path1": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
+                "path0": {"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
             },
             "bins": {
                 "integration": {"path0": [1], "path1": [1]},
@@ -173,8 +173,8 @@ def fixture_qblox_results_scope():
         },
         {
             "scope": {
-                "path0": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
-                "path1": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
+                "path0": {"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
             },
             "bins": {
                 "integration": {"path0": [1], "path1": [1]},
@@ -186,8 +186,8 @@ def fixture_qblox_results_scope():
         },
         {
             "scope": {
-                "path0": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
-                "path1": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
+                "path0": {"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
             },
             "bins": {
                 "integration": {"path0": [1], "path1": [1]},
@@ -199,8 +199,8 @@ def fixture_qblox_results_scope():
         },
         {
             "scope": {
-                "path0": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
-                "path1": {"data": [1, 2, 3, 4], "out-of-range": False, "avg_cnt": 0},
+                "path0": {"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
             },
             "bins": {
                 "integration": {"path0": [1], "path1": [1]},
