@@ -34,10 +34,9 @@ dependencies = [
     "qblox-instruments==0.14.2",
     "qcodes>=0.51.0",
     "qcodes-contrib-drivers>=0.23.0",
-    "qibo==0.2.15",
+    "qibo==0.2.20",
     "qm-qua==1.2.1",
     "qpysequence>=0.10.7",
-    "qualang-tools>=0.19.3",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
     "sqlalchemy>=2.0.40",
@@ -74,6 +73,7 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 prerelease = "allow"
+override-dependencies=["numpy==2.2.6"]
 
 [tool.ruff]
 line-length = 120
