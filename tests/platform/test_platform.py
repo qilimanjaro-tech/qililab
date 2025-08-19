@@ -1606,7 +1606,7 @@ class TestMethods:
 
         error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(experiment_name, results, loops, base_path, qprogram, description)
+            platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
     def test_trigger_network_setup_and_reset(self, platform):
         # Build a fake compilation output with one bus “b” → trigger 5
