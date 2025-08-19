@@ -1077,7 +1077,11 @@ class TestMethods:
         )
         qblox_result = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
         qblox_result.qblox_scope_acquisitions = QbloxScopeAcquisitions(
-            pulse_length=3, scope=ScopeData(path0=[1, 2, 3], path1=[1, 2, 3])
+            pulse_length=3,
+            scope=ScopeData(
+                path0={"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
+                path1={"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
+            ),
         )
         assert qblox_result.acquisitions_scope(integrate=True) == 1
 
