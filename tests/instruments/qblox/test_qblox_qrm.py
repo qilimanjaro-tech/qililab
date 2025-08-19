@@ -1,4 +1,5 @@
 """Tests for the Qblox Module class."""
+
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -75,7 +76,7 @@ def fixture_qrm(platform: Platform) -> QbloxQRM:
         "disconnect_inputs",
         "arm_sequencer",
         "start_sequencer",
-        "reset"
+        "reset",
     ]
 
     # Create a mock device using create_autospec to follow the interface of the expected device
@@ -122,33 +123,25 @@ class TestQbloxQRM:
             # Test GAIN setting
             (Parameter.GAIN, 2.0),
             (Parameter.GAIN, 3.5),
-
             # Test GAIN_I and GAIN_Q settings
             (Parameter.GAIN_I, 1.5),
             (Parameter.GAIN_Q, 1.5),
-
             # Test OFFSET_I and OFFSET_Q settings
             (Parameter.OFFSET_I, 0.1),
             (Parameter.OFFSET_Q, 0.2),
-
             # Test IF setting (intermediate frequency)
             (Parameter.IF, 100e6),
-
             # Test HARDWARE_MODULATION setting
             (Parameter.HARDWARE_MODULATION, True),
-
             # Test GAIN_IMBALANCE setting
             (Parameter.GAIN_IMBALANCE, 0.05),
-
             # Test PHASE_IMBALANCE setting
             (Parameter.PHASE_IMBALANCE, 0.02),
-
             # Test OFFSET_OUT settings
             (Parameter.OFFSET_OUT0, 0.1),
             (Parameter.OFFSET_OUT1, 0.15),
             (Parameter.OFFSET_OUT2, 0.2),
             (Parameter.OFFSET_OUT3, 0.25),
-
             (Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, "sequencer"),
             (Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, "level"),
             (Parameter.SCOPE_HARDWARE_AVERAGING, True),
@@ -163,8 +156,8 @@ class TestQbloxQRM:
             (Parameter.TIME_OF_FLIGHT, 80),
             (Parameter.SCOPE_STORE_ENABLED, True),
             (Parameter.THRESHOLD, 0.5),
-            (Parameter.THRESHOLD_ROTATION, 0.5)
-        ]
+            (Parameter.THRESHOLD_ROTATION, 0.5),
+        ],
     )
     def test_set_parameter(self, qrm: QbloxQRM, parameter, value):
         """Test setting parameters for QCM sequencers using parameterized values."""
@@ -209,6 +202,20 @@ class TestQbloxQRM:
             output = int(parameter.value[-1])
             assert qrm.out_offsets[output] == value
 
+    def test_set_parameter_scope_store_enabled(self, qrm: QbloxQRM):
+        """Test setting parameters for SCOPE_STORE_ENABLED that require the same instance of QRM."""
+        sequencer = qrm.get_sequencer(0)
+
+        qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, True, channel_id=0)
+        assert sequencer.scope_store_enabled == bool(True)
+        qrm._scoping_sequencer = 0
+        qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, True, channel_id=0)
+        assert sequencer.scope_store_enabled == bool(True)
+        qrm.awg_sequencers[0].scope_store_enabled = False
+        qrm._scoping_sequencer = 0
+        qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, False, channel_id=0)
+        assert sequencer.scope_store_enabled == bool(False)
+
     def test_set_parameter_raises_error(self, qrm: QbloxQRM):
         """Test setting parameters for QCM sequencers using parameterized values."""
         with pytest.raises(ParameterNotFound):
@@ -220,38 +227,37 @@ class TestQbloxQRM:
         with pytest.raises(Exception):
             qrm.set_parameter(Parameter.PHASE_IMBALANCE, value=0.5, channel_id=None)
 
+        with pytest.raises(ValueError):
+            qrm.awg_sequencers[0].scope_store_enabled = True
+            qrm.awg_sequencers[0].identifier = 0
+            qrm._scoping_sequencer = 1
+            qrm.set_parameter(Parameter.SCOPE_STORE_ENABLED, value=True, channel_id=1)
+
     @pytest.mark.parametrize(
         "parameter, expected_value",
         [
             # Test GAIN_I and GAIN_Q settings
             (Parameter.GAIN_I, 1.0),
             (Parameter.GAIN_Q, 1.0),
-
             # Test OFFSET_I and OFFSET_Q settings
             (Parameter.OFFSET_I, 0.0),
             (Parameter.OFFSET_Q, 0.0),
-
             # Test IF setting (intermediate frequency)
             (Parameter.IF, 100e6),
-
             # Test HARDWARE_MODULATION setting
             (Parameter.HARDWARE_MODULATION, True),
-
             # Test GAIN_IMBALANCE setting
             (Parameter.GAIN_IMBALANCE, 0.05),
-
             # Test PHASE_IMBALANCE setting
             (Parameter.PHASE_IMBALANCE, 0.02),
-
             # Test OFFSET_OUT settings
             (Parameter.OFFSET_OUT0, 0.0),
             (Parameter.OFFSET_OUT1, 0.1),
             (Parameter.OFFSET_OUT2, 0.2),
             (Parameter.OFFSET_OUT3, 0.3),
-
             (Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, "sequencer"),
             (Parameter.SCOPE_HARDWARE_AVERAGING, True),
-            (Parameter.SAMPLING_RATE, 1.e9),
+            (Parameter.SAMPLING_RATE, 1.0e9),
             (Parameter.HARDWARE_DEMODULATION, True),
             (Parameter.INTEGRATION_LENGTH, 1000),
             (Parameter.INTEGRATION_MODE, "ssb"),
@@ -260,8 +266,8 @@ class TestQbloxQRM:
             (Parameter.TIME_OF_FLIGHT, 120),
             (Parameter.SCOPE_STORE_ENABLED, False),
             (Parameter.THRESHOLD, 1.0),
-            (Parameter.THRESHOLD_ROTATION, 0.0)
-        ]
+            (Parameter.THRESHOLD_ROTATION, 0.0),
+        ],
     )
     def test_get_parameter(self, qrm: QbloxQRM, parameter, expected_value):
         """Test setting parameters for QCM sequencers using parameterized values."""
@@ -284,7 +290,7 @@ class TestQbloxQRM:
         [
             (0, None),  # Valid channel ID
             (5, Exception),  # Invalid channel ID
-        ]
+        ],
     )
     def test_invalid_channel(self, qrm: QbloxQRM, channel_id, expected_error):
         """Test handling invalid channel IDs when setting parameters."""
@@ -308,7 +314,9 @@ class TestQbloxQRM:
 
     def test_run(self, qrm: QbloxQRM):
         """Test running the QCM module."""
-        qrm.sequences[0] = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qrm.sequences[0] = Sequence(
+            program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights()
+        )
         qrm.run(channel_id=0)
 
         sequencer = qrm.get_sequencer(0)
@@ -332,8 +340,12 @@ class TestQbloxQRM:
         acquisitions_q1.add(name="acquisition_q1_0")
         acquisitions_q1.add(name="acquisition_q1_1")
 
-        sequence_q0 = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=acquisitions_q0, weights=Weights())
-        sequence_q1 = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=acquisitions_q1, weights=Weights())
+        sequence_q0 = Sequence(
+            program=Program(), waveforms=Waveforms(), acquisitions=acquisitions_q0, weights=Weights()
+        )
+        sequence_q1 = Sequence(
+            program=Program(), waveforms=Waveforms(), acquisitions=acquisitions_q1, weights=Weights()
+        )
 
         qrm.upload_qpysequence(qpysequence=sequence_q0, channel_id=0)
         qrm.upload_qpysequence(qpysequence=sequence_q1, channel_id=1)
@@ -392,7 +404,7 @@ class TestQbloxQRM:
 
         qp_acqusitions = {
             "acquisition_0": AcquisitionData(bus="readout_q0", save_adc=False, shape=(-1,)),
-            "acquisition_1": AcquisitionData(bus="readout_q0", save_adc=True, shape=(-1,))
+            "acquisition_1": AcquisitionData(bus="readout_q0", save_adc=True, shape=(-1,)),
         }
 
         qrm.acquire_qprogram_results(acquisitions=qp_acqusitions, channel_id=0)
