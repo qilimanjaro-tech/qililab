@@ -658,7 +658,7 @@ def _convert_integration_weights(integration_weights, N=100, accuracy=2**-15):
     changes_indices = np.where(np.abs(np.diff(integration_weights)) > 0)[0].tolist()
     prev_index = -1
     new_integration_weights = []
-    for curr_index in changes_indices + [len(integration_weights) - 1]:
+    for curr_index in [*changes_indices, len(integration_weights) - 1]:
         constant_part = (
             integration_weights[curr_index].tolist(),
             round(4 * (curr_index - prev_index)),
