@@ -11,7 +11,6 @@ from qililab.analog import Qubit2LevelTranspiler
 @pytest.fixture(name="dummy_transpiler")
 def dummy_transpiler():
     """Transpiler dummy fixture"""
-    with patch.object(ql.analog.fluqe_parameter.FluqeParameter, "foo"):
         mock_delta = MagicMock(return_value=2)
         mock_delta.name = "mock_delta"
         mock_epsilon = MagicMock(return_value=3)
