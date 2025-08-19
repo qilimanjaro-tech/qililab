@@ -1061,6 +1061,9 @@ class TestMethods:
         assert result == qblox_result
         desync.assert_called()
 
+        # Test integrated aqcuisition scope
+        assert qblox_result.acquisitions_scope(integrate=True) == 1
+
     def test_execute_with_queue(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method adds the obtained results to the given queue."""
         queue: Queue = Queue()
