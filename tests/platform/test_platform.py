@@ -1063,28 +1063,6 @@ class TestMethods:
         assert result == qblox_result
         desync.assert_called()
 
-    def test_execute_scope(self, platform: Platform, qblox_results: list[dict]):
-        """Test that the execute method calls the buses to run and return the results."""
-        # Define pulse schedule
-        pulse_schedule = PulseSchedule()
-        drag_pulse = Pulse(
-            amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
-        )
-        readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
-        pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
-        )
-        qblox_result = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
-        qblox_result.qblox_scope_acquisitions = QbloxScopeAcquisitions(
-            pulse_length=3,
-            scope=ScopeData(
-                path0={"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
-                path1={"data": [1, 2, 3], "out-of-range": False, "avg_cnt": 0},
-            ),
-        )
-        assert qblox_result.acquisitions_scope(integrate=True) == 1
-
     def test_execute_with_queue(self, platform: Platform, qblox_results: list[dict]):
         """Test that the execute method adds the obtained results to the given queue."""
         queue: Queue = Queue()
@@ -1246,6 +1224,9 @@ class TestMethods:
         assert len(result.qblox_raw_results) == 2  # type: ignore[attr-defined]
         assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[0]  # type: ignore[attr-defined]
         assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[1]  # type: ignore[attr-defined]
+
+        # test integration
+        assert qblox_raw_results.acquisitions_scope(integrate=True) == 1
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
