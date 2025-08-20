@@ -1226,7 +1226,7 @@ class TestMethods:
         assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[1]  # type: ignore[attr-defined]
 
         # test integration
-        assert qblox_raw_results.acquisitions_scope(integrate=True) == 1
+        assert qblox_raw_results.acquisitions_scope(integrate=True, integration_range=(0, 8)) == 1
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
