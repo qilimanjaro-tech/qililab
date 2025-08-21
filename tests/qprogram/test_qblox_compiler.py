@@ -405,6 +405,12 @@ def fixture_play_square_smooth_waveforms_with_optimization() -> QProgram:
         ),
     )
     qp.play(bus="drive", waveform=SquareSmooth(0.5, duration=1234567, sigma=10))
+    qp.play(
+        bus="drive",
+        waveform=IQPair(
+            I=SquareSmooth(1.0, duration=1234567, sigma=10), Q=SquareSmooth(1.0, duration=1234567, sigma=10)
+        ),
+    )
     return qp
 
 
@@ -1426,7 +1432,7 @@ set_freq         R5
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=play_square_smooth_waveforms_with_optimization)
 
-        assert len(sequences["drive"]._waveforms._waveforms) == 30
+        assert len(sequences["drive"]._waveforms._waveforms) == 32
         assert sequences["drive"]._program._compiled
 
         drive_str = """
@@ -1489,12 +1495,18 @@ set_freq         R5
                             loop             R7, @square_7
                             play             28, 29, 47
                             play             21, 5, 10
+                            play             4, 4, 10
+                            move             12345, R8
+            square_8:
+                            play             30, 30, 100
+                            loop             R8, @square_8
+                            play             31, 31, 47
+                            play             8, 8, 10
                             set_mrk          0
                             upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
-        # assert sequences["drive"]._program == drive_str
 
     def test_play_square_smooth_raise_error_async_iq(self):
         qp = QProgram()
