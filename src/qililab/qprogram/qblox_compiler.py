@@ -733,7 +733,7 @@ class QbloxCompiler:
             if remainder != 0:
                 square_waveform_I.duration = remainder
                 if isinstance(smooth_waveform_Q, SquareSmooth):
-                    square_waveform_Q.duration = remainder
+                    square_waveform_Q.duration = remainder  # type:ignore [union-attr]
                 index_I, index_Q, _ = self._append_to_waveforms_of_bus(
                     bus=element.bus, waveform_I=square_waveform_I, waveform_Q=square_waveform_Q
                 )
