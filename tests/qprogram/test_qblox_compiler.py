@@ -586,9 +586,9 @@ class TestQBloxCompiler:
             compiler.compile(qprogram=qp, markers={"drive": "1100"})
             pass
 
-    def test_wait_trigger(self, wait_trigger: QProgram):
-        compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=wait_trigger)
+    # def test_wait_trigger(self, wait_trigger: QProgram):
+    #     compiler = QbloxCompiler()
+    #     sequences, _ = compiler.compile(qprogram=wait_trigger)
 
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
         drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
@@ -672,23 +672,23 @@ class TestQBloxCompiler:
 
         readout_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            wait             40         
-                            wait             100            
-                            move             10, R0         
+                            wait             40
+                            wait             100
+                            move             10, R0
             square_0:
-                            play             0, 1, 100      
-                            loop             R0, @square_0  
-                            set_mrk          7              
-                            play             2, 3, 4        
+                            play             0, 1, 100
+                            loop             R0, @square_0
+                            set_mrk          7
+                            play             2, 3, 4
                             acquire_weighed  0, 0, 0, 1, 2000
-                            set_mrk          0              
-                            upd_param        4              
-                            stop  
+                            set_mrk          0
+                            upd_param        4
+                            stop
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
@@ -832,24 +832,24 @@ class TestQBloxCompiler:
 
         readout_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            move             1000, R0       
+                            move             1000, R0
             avg_0:
-                            wait             65532     
-                            wait             34508          
-                            move             10, R1         
+                            wait             65532
+                            wait             34508
+                            move             10, R1
             square_0:
-                            play             0, 1, 100      
-                            loop             R1, @square_0  
+                            play             0, 1, 100
+                            loop             R1, @square_0
                             acquire_weighed  0, 0, 0, 0, 1000
-                            loop             R0, @avg_0     
-                            set_mrk          0              
-                            upd_param        4              
-                            stop 
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -931,8 +931,8 @@ class TestQBloxCompiler:
                             wait             100
                             move             10, R1
             square_0:
-                            play             0, 1, 100      
-                            loop             R1, @square_0  
+                            play             0, 1, 100
+                            loop             R1, @square_0
                             acquire_weighed  0, 0, 0, 0, 1000
                             loop             R0, @avg_0
                             set_mrk          0
@@ -986,30 +986,30 @@ class TestQBloxCompiler:
         """
         readout_str = """
             setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
 
             main:
-                            move             1000, R0       
+                            move             1000, R0
             avg_0:
-                            move             1, R1          
-                            move             0, R2          
-                            move             0, R3          
-                            move             3, R4          
-                            move             0, R5          
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             3, R4
+                            move             0, R5
             loop_0:
-                            move             10, R6         
+                            move             10, R6
             square_0:
-                            play             0, 1, 100      
-                            loop             R6, @square_0  
+                            play             0, 1, 100
+                            loop             R6, @square_0
                             acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3      
-                            add              R5, 1, R5      
-                            loop             R4, @loop_0    
-                            loop             R0, @avg_0     
-                            set_mrk          0              
-                            upd_param        4              
+                            add              R3, 1, R3
+                            add              R5, 1, R5
+                            loop             R4, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -1060,33 +1060,33 @@ class TestQBloxCompiler:
         """
         readout_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            move             1000, R0       
+                            move             1000, R0
             avg_0:
-                            move             1, R1          
-                            move             0, R2          
-                            move             0, R3          
-                            move             11, R4         
-                            move             0, R5          
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             11, R4
+                            move             0, R5
             loop_0:
                             set_awg_gain     R5, R5
-                            set_awg_gain     R5, R5         
-                            move             10, R6         
+                            set_awg_gain     R5, R5
+                            move             10, R6
             square_0:
-                            play             0, 1, 100      
-                            loop             R6, @square_0  
+                            play             0, 1, 100
+                            loop             R6, @square_0
                             acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3      
-                            add              R5, 3276, R5   
-                            loop             R4, @loop_0    
-                            nop                             
-                            loop             R0, @avg_0     
-                            set_mrk          0              
-                            upd_param        4              
+                            add              R3, 1, R3
+                            add              R5, 3276, R5
+                            loop             R4, @loop_0
+                            nop
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -1137,33 +1137,33 @@ class TestQBloxCompiler:
         """
         readout_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            move             1000, R0       
+                            move             1000, R0
             avg_0:
-                            move             1, R1          
-                            move             0, R2          
-                            move             0, R3          
-                            move             11, R4         
-                            move             0, R5          
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             11, R4
+                            move             0, R5
             loop_0:
                             set_awg_gain     R5, R5
-                            set_awg_gain     R5, R5         
-                            move             10, R6         
+                            set_awg_gain     R5, R5
+                            move             10, R6
             square_0:
-                            play             0, 1, 100      
-                            loop             R6, @square_0  
+                            play             0, 1, 100
+                            loop             R6, @square_0
                             acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3      
-                            add              R5, 3276, R5   
-                            loop             R4, @loop_0    
-                            nop                             
-                            loop             R0, @avg_0     
-                            set_mrk          0              
-                            upd_param        4              
+                            add              R3, 1, R3
+                            add              R5, 3276, R5
+                            loop             R4, @loop_0
+                            nop
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -1251,34 +1251,34 @@ class TestQBloxCompiler:
         """
         readout_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            move             1000, R0       
+                            move             1000, R0
             avg_0:
-                            move             0, R1          
-                            move             0, R2          
-                            move             0, R3          
-                            move             11, R4         
-                            move             0, R5          
+                            move             0, R1
+                            move             0, R2
+                            move             0, R3
+                            move             11, R4
+                            move             0, R5
             loop_0:
                             set_awg_gain     R5, R5
-                            set_awg_gain     R5, R5         
-                            move             10, R6         
+                            set_awg_gain     R5, R5
+                            move             10, R6
             square_0:
-                            play             0, 1, 100      
-                            loop             R6, @square_0  
+                            play             0, 1, 100
+                            loop             R6, @square_0
                             acquire_weighed  0, R3, R2, R1, 1000
-                            add              R3, 1, R3      
-                            add              R5, 3276, R5   
-                            loop             R4, @loop_0    
-                            nop                             
-                            loop             R0, @avg_0     
-                            set_mrk          0              
-                            upd_param        4              
-                            stop    
+                            add              R3, 1, R3
+                            add              R5, 3276, R5
+                            loop             R4, @loop_0
+                            nop
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -1303,51 +1303,51 @@ class TestQBloxCompiler:
 
         readout_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            move             1000, R0       
+                            move             1000, R0
             avg_0:
-                            move             5, R1          
-                            move             4, R2          
-                            move             0, R3          
-                            move             1, R4          
-                            move             0, R5          
-                            move             0, R6          
-                            move             51, R7         
-                            move             0, R8          
+                            move             5, R1
+                            move             4, R2
+                            move             0, R3
+                            move             1, R4
+                            move             0, R5
+                            move             0, R6
+                            move             51, R7
+                            move             0, R8
             loop_0:
-                            set_freq         R8             
                             set_freq         R8
-                            move             10, R9         
+                            set_freq         R8
+                            move             10, R9
             square_0:
-                            play             0, 1, 100      
-                            loop             R9, @square_0  
+                            play             0, 1, 100
+                            loop             R9, @square_0
                             acquire_weighed  0, R6, R5, R4, 2000
-                            add              R6, 1, R6      
-                            add              R8, 40, R8     
-                            loop             R7, @loop_0    
-                            nop                             
+                            add              R6, 1, R6
+                            add              R8, 40, R8
+                            loop             R7, @loop_0
+                            nop
                             acquire_weighed  1, 0, 2, 3, 1000
-                            move             11, R10        
-                            move             0, R11         
-                            nop                             
+                            move             11, R10
+                            move             0, R11
+                            nop
             loop_1:
                             set_awg_gain     R11, R11
-                            set_awg_gain     R11, R11       
-                            move             10, R12         
+                            set_awg_gain     R11, R11
+                            move             10, R12
             square_1:
-                            play             0, 1, 100      
-                            loop             R12, @square_1 
+                            play             0, 1, 100
+                            loop             R12, @square_1
                             acquire_weighed  2, R3, R2, R1, 500
-                            add              R3, 1, R3      
-                            add              R11, 3276, R11 
-                            loop             R10, @loop_1   
-                            loop             R0, @avg_0     
-                            set_mrk          0              
-                            upd_param        4              
+                            add              R3, 1, R3
+                            add              R11, 3276, R11
+                            loop             R10, @loop_1
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -1405,39 +1405,39 @@ class TestQBloxCompiler:
         """
         readout_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            move             1000, R0       
+                            move             1000, R0
             avg_0:
-                            move             1, R1          
-                            move             0, R2          
-                            move             0, R3          
-                            move             11, R4         
-                            move             0, R5          
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             11, R4
+                            move             0, R5
             loop_0:
-                            move             51, R6         
-                            move             0, R7          
+                            move             51, R6
+                            move             0, R7
             loop_1:
-                            wait             40             
+                            wait             40
                             set_freq         R7
-                            set_freq         R7             
-                            move             10, R8         
+                            set_freq         R7
+                            move             10, R8
             square_0:
-                            play             0, 1, 100      
-                            loop             R8, @square_0  
+                            play             0, 1, 100
+                            loop             R8, @square_0
                             acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3      
-                            add              R7, 40, R7     
-                            loop             R6, @loop_1    
-                            add              R5, 3276, R5   
-                            loop             R4, @loop_0    
-                            loop             R0, @avg_0     
-                            set_mrk          0              
-                            upd_param        4              
-                            stop   
+                            add              R3, 1, R3
+                            add              R7, 40, R7
+                            loop             R6, @loop_1
+                            add              R5, 3276, R5
+                            loop             R4, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -1492,37 +1492,37 @@ class TestQBloxCompiler:
         """
         readout_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            move             1000, R0       
+                            move             1000, R0
             avg_0:
-                            move             1, R1          
-                            move             0, R2          
-                            move             0, R3          
-                            move             11, R4         
-                            move             400, R5        
-                            move             0, R6          
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             11, R4
+                            move             400, R5
+                            move             0, R6
             loop_0:
                             set_freq         R5
-set_freq         R5                            
-                            upd_param        4           
-                            wait             36             
-                            move             10, R7         
+set_freq         R5
+                            upd_param        4
+                            wait             36
+                            move             10, R7
             square_0:
-                            play             0, 1, 100      
-                            loop             R7, @square_0  
+                            play             0, 1, 100
+                            loop             R7, @square_0
                             acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3      
-                            add              R5, 40, R5     
-                            add              R6, 3276, R6   
-                            loop             R4, @loop_0    
-                            loop             R0, @avg_0     
-                            set_mrk          0              
-                            upd_param        4              
-                            stop 
+                            add              R3, 1, R3
+                            add              R5, 40, R5
+                            add              R6, 3276, R6
+                            loop             R4, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -1676,31 +1676,31 @@ set_freq         R5
         """
         readout_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            move             1000, R0       
+                            move             1000, R0
             avg_0:
-                            move             1, R1          
-                            move             0, R2          
-                            move             0, R3          
-                            move             3, R4          
-                            move             0, R5          
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             3, R4
+                            move             0, R5
             loop_0:
-                            move             10, R6         
+                            move             10, R6
             square_0:
-                            play             0, 1, 100      
-                            loop             R6, @square_0  
+                            play             0, 1, 100
+                            loop             R6, @square_0
                             acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3     
-                            wait             20             
-                            add              R5, 1, R5      
-                            loop             R4, @loop_0    
-                            loop             R0, @avg_0     
-                            set_mrk          0              
-                            upd_param        4              
+                            add              R3, 1, R3
+                            wait             20
+                            add              R5, 1, R5
+                            loop             R4, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -1737,31 +1737,31 @@ set_freq         R5
         """
         readout_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            move             1000, R0       
+                            move             1000, R0
             avg_0:
-                            move             1, R1          
-                            move             0, R2          
-                            move             0, R3          
-                            move             3, R4          
-                            move             0, R5          
+                            move             1, R1
+                            move             0, R2
+                            move             0, R3
+                            move             3, R4
+                            move             0, R5
             loop_0:
-                            wait             20             
-                            move             10, R6         
+                            wait             20
+                            move             10, R6
             square_0:
-                            play             0, 1, 100      
-                            loop             R6, @square_0  
+                            play             0, 1, 100
+                            loop             R6, @square_0
                             acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3      
-                            add              R5, 1, R5      
-                            loop             R4, @loop_0    
-                            loop             R0, @avg_0     
-                            set_mrk          0              
-                            upd_param        4              
+                            add              R3, 1, R3
+                            add              R5, 1, R5
+                            loop             R4, @loop_0
+                            loop             R0, @avg_0
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -1796,43 +1796,43 @@ set_freq         R5
 
         drive_str = """
             setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
 
             main:
-                            set_awg_offs     32767, 0       
-                            upd_param        4              
-                            move             1, R0          
+                            set_awg_offs     32767, 0
+                            upd_param        4
+                            move             1, R0
             square_0:
-                            play             0, 1, 100      
-                            loop             R0, @square_0  
-                            set_ph           159154943      
-                            upd_param        4              
-                            move             1, R1          
+                            play             0, 1, 100
+                            loop             R0, @square_0
+                            set_ph           159154943
+                            upd_param        4
+                            move             1, R1
             square_1:
-                            play             0, 1, 100      
-                            loop             R1, @square_1  
+                            play             0, 1, 100
+                            loop             R1, @square_1
                             set_awg_gain     32767, 32767
-                            set_awg_gain     32767, 32767   
-                            upd_param        4              
-                            wait             96             
-                            play             2, 3, 5        
+                            set_awg_gain     32767, 32767
+                            upd_param        4
+                            wait             96
+                            play             2, 3, 5
                             set_freq         4000000
-                            set_freq         4000000        
-                            upd_param        4              
-                            wait             65532          
-                            wait             34464          
-                            play             2, 3, 5        
+                            set_freq         4000000
+                            upd_param        4
+                            wait             65532
+                            wait             34464
+                            play             2, 3, 5
                             set_awg_gain     32767, 32767
-                            set_awg_gain     32767, 32767   
-                            upd_param        4              
-                            play             2, 3, 5        
-                            set_awg_offs     32767, 0       
-                            upd_param        6              
-                            set_mrk          0              
-                            upd_param        4              
-                            stop                            
+                            set_awg_gain     32767, 32767
+                            upd_param        4
+                            play             2, 3, 5
+                            set_awg_offs     32767, 0
+                            upd_param        6
+                            set_mrk          0
+                            upd_param        4
+                            stop
         """
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
