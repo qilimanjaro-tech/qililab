@@ -563,7 +563,7 @@ class QbloxCompiler:
         """
         time_of_flight = self._buses[element.bus].time_of_flight
         play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
-        acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
+        acquire = Acquire(bus=element.bus, weights=element.weights, acquisition_index=element.acquisition_index, bin_index=element.bin_index, save_adc=element.save_adc)
         self._handle_play(play)
         self._handle_acquire(acquire)
 

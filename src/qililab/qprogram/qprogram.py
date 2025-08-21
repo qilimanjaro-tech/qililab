@@ -239,7 +239,7 @@ class QProgram(StructuredProgram):
                     bus=element.bus, name=element.weights
                 ):
                     weights = calibration.get_weights(bus=element.bus, name=element.weights)
-                    acquire_operation = Acquire(bus=element.bus, weights=weights, save_adc=element.save_adc)
+                    acquire_operation = Acquire(bus=element.bus, weights=weights, acquisition_index=element.acquisition_index, bin_index=element.bin_index, save_adc=element.save_adc)
                     block.elements[index] = acquire_operation
                 elif isinstance(element, MeasureWithCalibratedWaveform) and calibration.has_waveform(
                     bus=element.bus, name=element.waveform
@@ -496,7 +496,7 @@ class QProgram(StructuredProgram):
             self.qprogram._buses.add(bus)
 
         @overload
-        def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):
+        def acquire(self, bus: str, weights: IQPair, acquisition_index: int, bin_index: int, save_adc: bool = False):
             """Acquire results based on the given weights.
 
             Args:
@@ -505,7 +505,7 @@ class QProgram(StructuredProgram):
             """
 
         @overload
-        def acquire(self, bus: str, weights: str, save_adc: bool = False):
+        def acquire(self, bus: str, weights: str, acquisition_index: int, bin_index: int, save_adc: bool = False):
             """Acquire results based on the given weights.
 
             Args:
@@ -513,15 +513,17 @@ class QProgram(StructuredProgram):
                 weights (str): Weights used during acquisition.
             """
 
-        def acquire(self, bus: str, weights: IQPair | str, save_adc: bool = False):
+        def acquire(self, bus: str, weights: IQPair | str, acquisition_index: int, bin_index: int, save_adc: bool = False):
             """Acquire results based on the given weights.
 
             Args:
                 bus (str): Unique identifier of the bus.
                 weights (IQPair | str): Weights used during acquisition.
+                acquisition_index (int): index of the acquisition.
+                bin_index (int): index of the bin.
             """
             operation = (
-                Acquire(bus=bus, weights=weights, save_adc=save_adc)
+                Acquire(bus=bus, weights=weights, acquisition_index=acquisition_index, bin_index=bin_index, save_adc=save_adc)
                 if isinstance(weights, IQPair)
                 else AcquireWithCalibratedWeights(bus=bus, weights=weights, save_adc=save_adc)
             )
