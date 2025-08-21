@@ -719,6 +719,7 @@ class QbloxCompiler:
                 square_duration
             )
             square_waveform_I = Square(amplitude=smooth_waveform_I.amplitude, duration=chunk_duration)
+            square_waveform_Q = None
             if isinstance(smooth_waveform_Q, SquareSmooth):
                 square_waveform_Q = Square(amplitude=smooth_waveform_Q.amplitude, duration=chunk_duration)
             index_I, index_Q, _ = self._append_to_waveforms_of_bus(
@@ -825,7 +826,7 @@ class QbloxCompiler:
         return f"{waveform.__class__.__name__} {hashes}"
 
     @staticmethod
-    def calculate_square_waveform_optimization_values(duration):
+    def calculate_square_waveform_optimization_values(duration: int):
         def remainder_conditions(chunk_duration):
             remainder = duration % chunk_duration
             return remainder, (chunk_duration >= 4 and (remainder == 0 or remainder >= 4))
@@ -837,6 +838,9 @@ class QbloxCompiler:
                     if valid and condition_func(remainder):
                         return chunk_duration
             return None
+
+        # Make sure that duration ia an integer
+        duration = int(duration)
 
         # First try for remainder == 0
         final_chunk_duration = find_chunk_duration(lambda rem: rem == 0)

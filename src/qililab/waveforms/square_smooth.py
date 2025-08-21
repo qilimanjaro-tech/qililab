@@ -31,8 +31,8 @@ class SquareSmooth(Waveform):
     Args:
         duration (int): Duration of the pulse (ns).
         amplitude (float): Maximum amplitude of the pulse.
-        smooth_duration (float, optional): duration of the smoothing component. Defaults to 0.5.
-        buffer (float, optional): Buffer of the waveform. Defaults to 3.0.
+        sigma (float, optional): duration of the smoothing component in ns.
+        buffer (float, optional): Buffer of the waveform. Defaults to 0.
     """
 
     @requires_domain("amplitude", Domain.Voltage)
