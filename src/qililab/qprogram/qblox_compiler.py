@@ -783,4 +783,4 @@ class QbloxCompiler:
             return final_chunk_duration, duration // final_chunk_duration, duration % final_chunk_duration
 
         # If no suitable piece_duration found, fallback to entire duration
-        return int(duration), 1, 0
+        return duration, 1, 0
