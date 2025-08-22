@@ -17,7 +17,7 @@ class TestResultsData:
 
         path = save_results(results=np.array([]), loops={"one_loop": np.arange(0, 100, 0.1)}, data_path="", name="test")
 
-        mock_file.assert_called_once_with(f"{path}/results.h5", "w")
+        mock_file.assert_called_once_with(f"{path}/results.h5", "w", libver="latest", swmr=True)
         assert mock_makedirs.call_count == 2
         mock_makedirs.assert_called_with(path)
 
