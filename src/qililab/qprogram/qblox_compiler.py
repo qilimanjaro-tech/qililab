@@ -43,7 +43,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
-from qililab.waveforms import Arbitrary, IQPair, Square, SquareSmooth, Waveform
+from qililab.waveforms import Arbitrary, FlatTop, IQPair, Square, Waveform
 
 
 @dataclass
@@ -683,12 +683,12 @@ class QbloxCompiler:
                 )
             self._buses[element.bus].square_optimization_counter += 1
         elif (
-            isinstance(waveform_I, SquareSmooth)
-            and (waveform_Q is None or isinstance(waveform_Q, SquareSmooth))
+            isinstance(waveform_I, FlatTop)
+            and (waveform_Q is None or isinstance(waveform_Q, FlatTop))
             and ((waveform_I.duration - (waveform_I.sigma + waveform_I.buffer) * 2) >= 100)
         ):
-            smooth_waveform_I: SquareSmooth = deepcopy(waveform_I)
-            smooth_waveform_Q: SquareSmooth | None = deepcopy(waveform_Q)
+            smooth_waveform_I: FlatTop = deepcopy(waveform_I)
+            smooth_waveform_Q: FlatTop | None = deepcopy(waveform_Q)
             duration = smooth_waveform_I.duration
             smooth_duration_I = (
                 smooth_waveform_I.sigma + smooth_waveform_I.buffer
@@ -702,7 +702,7 @@ class QbloxCompiler:
             inital_envelope_Q = None
             end_envelope_Q = None
 
-            if isinstance(smooth_waveform_Q, SquareSmooth):
+            if isinstance(smooth_waveform_Q, FlatTop):
                 if smooth_waveform_Q.sigma + smooth_waveform_Q.buffer != smooth_duration_I and smooth_duration_I != 4:
                     raise ValueError("smooth_duration + buffer of both I and Q must be the same.")
                 inital_envelope_Q = Arbitrary(samples=smooth_waveform_Q.envelope()[:smooth_duration_I])
@@ -720,7 +720,7 @@ class QbloxCompiler:
             )
             square_waveform_I = Square(amplitude=smooth_waveform_I.amplitude, duration=chunk_duration)
             square_waveform_Q = None
-            if isinstance(smooth_waveform_Q, SquareSmooth):
+            if isinstance(smooth_waveform_Q, FlatTop):
                 square_waveform_Q = Square(amplitude=smooth_waveform_Q.amplitude, duration=chunk_duration)
             index_I, index_Q, _ = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=square_waveform_I, waveform_Q=square_waveform_Q
@@ -732,7 +732,7 @@ class QbloxCompiler:
             self._buses[element.bus].qpy_block_stack[-1].append_component(component=loop)
             if remainder != 0:
                 square_waveform_I.duration = remainder
-                if isinstance(smooth_waveform_Q, SquareSmooth):
+                if isinstance(smooth_waveform_Q, FlatTop):
                     square_waveform_Q.duration = remainder  # type: ignore [union-attr]
                 index_I, index_Q, _ = self._append_to_waveforms_of_bus(
                     bus=element.bus, waveform_I=square_waveform_I, waveform_Q=square_waveform_Q

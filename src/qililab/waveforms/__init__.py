@@ -43,7 +43,6 @@ from .iq_pair import IQPair
 from .ramp import Ramp
 from .snz import SuddenNetZero
 from .square import Square
-from .square_smooth import SquareSmooth
 from .waveform import Waveform
 
 __all__ = [
@@ -55,7 +54,6 @@ __all__ = [
     "IQPair",
     "Ramp",
     "Square",
-    "SquareSmooth",
     "SuddenNetZero",
     "Waveform",
 ]
