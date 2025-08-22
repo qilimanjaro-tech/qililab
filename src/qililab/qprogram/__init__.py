@@ -48,6 +48,7 @@ from .calibration import Calibration
 from .crosstalk_matrix import CrosstalkMatrix, FluxVector
 from .experiment import Experiment
 from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
+from .qdac_compiler import QdacCompilationOutput, QdacCompiler
 from .qprogram import QProgram
 from .quantum_machines_compiler import QuantumMachinesCompilationOutput, QuantumMachinesCompiler
 from .variable import Domain
@@ -61,6 +62,8 @@ __all__ = [
     "QProgram",
     "QbloxCompilationOutput",
     "QbloxCompiler",
+    "QdacCompilationOutput",
+    "QdacCompiler",
     "QuantumMachinesCompilationOutput",
     "QuantumMachinesCompiler",
 ]

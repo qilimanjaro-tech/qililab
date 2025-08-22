@@ -171,10 +171,14 @@ class TestQDevilQDac2:
         qdac.play_awg(channel_id, clear_after=False)
         # cache not erased if default clear_after
         assert qdac._cache_awg == {channel_id: True}
+
         qdac.play_awg(channel_id)
         qdac.get_dac(4).arbitrary_wave.assert_has_calls(channel_calls)
         # check that cache is erased
         assert qdac._cache_awg == {}
+
+        qdac.play_awg()
+        qdac.device.start_all.assert_called_once()
 
     def test_upload_voltage_list(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
