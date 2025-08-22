@@ -134,6 +134,7 @@ class Measurement(base):  # type: ignore
     data_shape: Column = Column("data_shape", ARRAY(Integer))
     debug_file = Column("debug_file", Text)
     created_by = Column("created_by", String, server_default=text("current_user"))
+    error_report = Column("error_report", String)
 
     def end_experiment(self, Session):
         """Function to end measurement of the experiment. The function sets inside the database information
@@ -143,13 +144,14 @@ class Measurement(base):  # type: ignore
             # Merge the detached instance into the current session
             persistent_instance = session.merge(self)
             persistent_instance.end_time = datetime.datetime.now()
-            persistent_instance.experiment_completed = True
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
+                persistent_instance.experiment_completed = True
                 session.commit()
                 return persistent_instance
             except Exception as e:
                 session.rollback()
+                persistent_instance.error_report = e.__str__()
                 raise e
 
     def read_experiment(self):
