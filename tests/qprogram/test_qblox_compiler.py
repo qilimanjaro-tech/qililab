@@ -411,7 +411,7 @@ def fixture_wait_trigger() -> QProgram:
     # With update parameter pending
     qp.set_frequency(bus="drive", frequency=1e6)
     qp.set_frequency(bus="readout", frequency=1e6)
-    qp.wait_trigger(bus="drive", duration=4, port=1)
+    qp.wait_trigger(bus="drive", duration=4)
     qp.set_frequency(bus="drive", frequency=1e6)
     qp.wait_trigger(bus="drive", duration=1000, port=1)
     qp.set_frequency(bus="drive", frequency=1e6)
@@ -603,7 +603,7 @@ class TestQBloxCompiler:
                             set_freq         4000000
                             set_freq         4000000
                             upd_param        4
-                            wait_trigger     1, 4
+                            wait_trigger     15, 4
                             wait_sync        4
                             set_freq         4000000
                             set_freq         4000000

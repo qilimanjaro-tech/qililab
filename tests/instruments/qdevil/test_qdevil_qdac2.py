@@ -84,8 +84,16 @@ class TestQDevilQDac2:
 
         qdac.device.channel.assert_has_calls(channel_calls)
 
-    def test_turn_off(self, qdac: QDevilQDac2):
+    def test_turn_off(self, qdac: QDevilQDac2, waveform: Square):
         """Test turn_off method"""
+        # Create test trigger dictionary
+        channel_id = 4
+        out_port = 1
+        trigger = "trigger_test"
+        qdac._triggers = {}
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_start_marker_external_trigger(channel_id, out_port, trigger)
+
         qdac.turn_off()
 
         channel_calls = []
