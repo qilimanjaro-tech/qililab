@@ -409,11 +409,12 @@ def fixture_set_trigger() -> QProgram:
 def fixture_wait_trigger() -> QProgram:
     qp = QProgram()
     # With update parameter pending
+    qp.set_frequency(bus="drive", frequency=1e6)
     qp.set_frequency(bus="readout", frequency=1e6)
     qp.wait_trigger(bus="drive", duration=4, port=1)
-    qp.set_frequency(bus="readout", frequency=1e6)
+    qp.set_frequency(bus="drive", frequency=1e6)
     qp.wait_trigger(bus="drive", duration=1000, port=1)
-    qp.set_frequency(bus="readout", frequency=1e6)
+    qp.set_frequency(bus="drive", frequency=1e6)
     qp.wait_trigger(bus="drive", duration=70000, port=1)
 
     # No instructions pending
@@ -586,9 +587,86 @@ class TestQBloxCompiler:
             compiler.compile(qprogram=qp, markers={"drive": "1100"})
             pass
 
-    # def test_wait_trigger(self, wait_trigger: QProgram):
-    #     compiler = QbloxCompiler()
-    #     sequences, _ = compiler.compile(qprogram=wait_trigger)
+    def test_wait_trigger(self, wait_trigger: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=wait_trigger, ext_trigger=True)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            set_freq         4000000
+                            set_freq         4000000
+                            upd_param        4
+                            wait_trigger     1, 4
+                            wait_sync        4
+                            set_freq         4000000
+                            set_freq         4000000
+                            upd_param        4
+                            wait_trigger     1, 996
+                            wait_sync        4
+                            set_freq         4000000
+                            set_freq         4000000
+                            upd_param        4
+                            wait_trigger     1, 4
+                            wait             65532
+                            wait             65532
+                            wait_sync        4
+                            wait_trigger     1, 1000
+                            wait_sync        4
+                            wait_trigger     1, 4
+                            wait             65532
+                            wait             65532
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            set_freq         4000000
+                            set_freq         4000000
+                            wait_sync        4
+                            wait_sync        4
+                            wait_sync        4
+                            wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_wait_trigger_no_ext_trigger_raises_error(self, wait_trigger: QProgram):
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            AttributeError, match="External trigger has not been set as True inside runcard's instrument controllers."
+        ):
+            compiler.compile(qprogram=wait_trigger, ext_trigger=False)
+
+    def test_wait_trigger_var_durationraises_error(self):
+
+        qp = QProgram()
+        duration = qp.variable(label="duration", domain=Domain.Time)
+        with qp.for_loop(variable=duration, start=4, stop=100, step=4):
+            qp.wait_trigger(bus="drive", duration=duration, port=1)
+
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match="Wait trigger duration cannot be a Variable, it must be an int."):
+            compiler.compile(qprogram=qp, ext_trigger=True)
 
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
         drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
