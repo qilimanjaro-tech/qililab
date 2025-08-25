@@ -123,15 +123,15 @@ The data automatically selects between the local or shared domains depending on 
 [#951](https://github.com/qilimanjaro-tech/qililab/pull/951)
 
 - Modified smoothed square waveform class `FlatTop(amplitude, duration, smooth_duration, buffer = 0)` which works similar to the `Square` waveform with an additional smoothing on the edges. The only additional parameters are the smoothing duration and the buffer time. In `QbloxCompiler` if the duration exceeds a threshold of 100 ns the pulses are divide into two arbitrary pulses at the beginning and the end for the smooth parts and a loop of square pulses in the middle, with the exact same behavior as `Square` pulses.
-  [#951](https://github.com/qilimanjaro-tech/qililab/pull/951)
+  [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
 
 - Modified `StreamArray` to work with live plot. Now the H5 file has the `swmr_mode` set as true allowing for live reading and `StreamArray`'s `__enter__` and `__setitem__` have `file.flush()` to update the H5 live. Moved `create_dataset` to `__enter__` instead of `__setitem__` to allow for live plot while acounting for VNA results with different data structure.
-[#966](https://github.com/qilimanjaro-tech/qililab/pull/966)
+  [#966](https://github.com/qilimanjaro-tech/qililab/pull/966)
 
 ### Breaking changes
 
 - Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
-  [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
+  [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
 
 ### Deprecations / Removals
 
@@ -168,3 +168,6 @@ The data automatically selects between the local or shared domains depending on 
 - Quick fix for set_parameter of scope_store_enabled. Now it executes the correct Qblox functions to record the scope.
   [#956](https://github.com/qilimanjaro-tech/qililab/pull/956)
   [#959](https://github.com/qilimanjaro-tech/qililab/pull/959)
+
+- Added an integer transformation for the play pulse duration at the `QbloxCompiler` `compile`. Before this fix, if a user introduced a pulse duration as a float and greater than 100 ns in `qp.play`, the program would crash with a weir and difficul to trace error report. Now this is fixed.
+  [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
