@@ -134,6 +134,7 @@ class Measurement(base):  # type: ignore
     data_shape: Column = Column("data_shape", ARRAY(Integer))
     debug_file = Column("debug_file", Text)
     created_by = Column("created_by", String, server_default=text("current_user"))
+    # TODO: add error_report = Column("error_report", String, nullable=True)
 
     def end_experiment(self, Session):
         """Function to end measurement of the experiment. The function sets inside the database information
@@ -150,6 +151,7 @@ class Measurement(base):  # type: ignore
                 return persistent_instance
             except Exception as e:
                 session.rollback()
+                # TODO: add persistent_instance.error_report = e.__str__()
                 raise e
 
     def read_experiment(self):
