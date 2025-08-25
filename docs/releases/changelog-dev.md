@@ -122,8 +122,11 @@ The data automatically selects between the local or shared domains depending on 
 
 [#951](https://github.com/qilimanjaro-tech/qililab/pull/951)
 
-- Modified `StreamArray` to work with live plot. Now the H5 file has the `swmr_mode` set as true allowing for live reading and `StreamArray`'s `__enter__` and `__setitem__` have `file.flush()` to update the H5 live. Moved `create_dataset` to `__enter__` instead of `__setitem__` to allow for live plot while acounting for VNA results with different data structure.
+- Modified `StreamArray` to work with live plot. Now the H5 file has the `swmr_mode` set as true allowing for live reading and `StreamArray`'s `__enter__` and `__setitem__` have `file.flush()` to update the H5 live. Moved `create_dataset` to `__enter__` instead of `__setitem__` to allow for live plot while acounting for VNA results with different data structure. Modified the `experiment_completed` to set as `True` after the execution, now in case of a crash the experiment will not be set as Completed.
   [#966](https://github.com/qilimanjaro-tech/qililab/pull/966)
+
+- Modified the `experiment_completed` to set as `True` after the execution, now in case of a crash the experiment will not be set as Completed.
+  [#972](https://github.com/qilimanjaro-tech/qililab/pull/972)
 
 ### Breaking changes
 
