@@ -139,6 +139,9 @@ The data automatically selects between the local or shared domains depending on 
 
 ### Bug fixes
 
+- Removed the unsupported zorder kwarg from QbloxDraw plotting to prevent Plotly errors across environments.
+  [#974](https://github.com/qilimanjaro-tech/qililab/pull/974)
+
 - A bug on the tests of Qblox Draw has been fixed. Previously, the test compared `figure.data` using the position of items in the list. Since the order of items can change, this caused inconsistent results. The test now compares the data based on the bus name.
   [#965](https://github.com/qilimanjaro-tech/qililab/pull/965)
 
@@ -168,3 +171,6 @@ The data automatically selects between the local or shared domains depending on 
 - Quick fix for set_parameter of scope_store_enabled. Now it executes the correct Qblox functions to record the scope.
   [#956](https://github.com/qilimanjaro-tech/qililab/pull/956)
   [#959](https://github.com/qilimanjaro-tech/qililab/pull/959)
+
+- Fixed an error inside set_parameter for OUT0_ATT and OUT1_ATT for the QRM-RF and QCM-RF. When the device was disconnected qililab tried to get the non existent device. not it executes as expected.
+  [#973](https://github.com/qilimanjaro-tech/qililab/pull/973)

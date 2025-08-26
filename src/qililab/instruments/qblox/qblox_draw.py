@@ -709,8 +709,8 @@ class QbloxDraw:
                 path1_clipped = np.clip(path1, -volt_bounds, volt_bounds)
 
                 data_draw[key][0], data_draw[key][1] = path0_clipped, path1_clipped
-                fig.add_trace(go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I", line={"color": base_color}, zorder=1))
-                fig.add_trace(go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q", line={"color": adjust_color_hex(base_color, 1.5)}, zorder=1))
+                fig.add_trace(go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I", line={"color": base_color}))
+                fig.add_trace(go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q", line={"color": adjust_color_hex(base_color, 1.5)}))
                 if self.acquisition_showing is True:
                     ranges = range_acquire(parameters[key]["acquiring_status"])
                     y_max = ((y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8))
