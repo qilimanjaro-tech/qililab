@@ -3,78 +3,81 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-# from qililab.platform import Bus
+from qililab.platform import Bus
 from qililab.waveforms import Square
 from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
-from qililab.qprogram import QdacCompiler, QProgram, Calibration
+from qililab.qprogram import QProgram, Calibration, QdacCompiler
 
 
-# @pytest.fixture(name="qdac_instrument")
-# def mock_instrument() -> list[Instrument]:
-#     instrument1 = MagicMock(spec=QDevilQDac2)
-#     type(instrument1).alias = property(lambda self: "qdac")
-#     return [instrument1]
+@pytest.fixture(name="qdac_instrument")
+def mock_instrument() -> list[Instrument]:
+    instrument1 = MagicMock(spec=QDevilQDac2)
+    type(instrument1).alias = property(lambda self: "qdac")
+    return [instrument1]
 
 
-# @pytest.fixture(name="flux1")
-# def fixture_bus(qdac_instrument) -> Bus:
-#     settings = {"alias": "flux1", "instruments": ["qdac"], "channels": [1]}
-#     return Bus(settings=settings, platform_instruments=Instruments(elements=qdac_instrument))
+@pytest.fixture(name="flux1")
+def fixture_bus_flux1(qdac_instrument) -> Bus:
+    settings = {"alias": "flux1", "instruments": ["qdac"], "channels": [1]}
+    return Bus(settings=settings, platform_instruments=Instruments(elements=qdac_instrument))
 
 
-# @pytest.fixture(name="flux2")
-# def fixture_bus(qdac_instrument) -> Bus:
-#     settings = {"alias": "flux2", "instruments": ["qdac"], "channels": [2]}
-#     return Bus(settings=settings, platform_instruments=Instruments(elements=qdac_instrument))
+@pytest.fixture(name="flux2")
+def fixture_bus_flux2(qdac_instrument) -> Bus:
+    settings = {"alias": "flux2", "instruments": ["qdac"], "channels": [2]}
+    return Bus(settings=settings, platform_instruments=Instruments(elements=qdac_instrument))
 
 
-# @pytest.fixture(name="qdac")
-# def fixture_qdac() -> QDevilQDac2:
-#     """Fixture that returns an instance of a dummy QDAC-II."""
-#     qdac = QDevilQDac2(
-#         {
-#             "alias": "qdac",
-#             "voltage": [0.5, 0.5, 0.5, 0.5],
-#             "span": ["low", "low", "low", "low"],
-#             "ramping_enabled": [True, True, True, False],
-#             "ramp_rate": [0.01, 0.01, 0.01, 0.01],
-#             "dacs": [1, 2, 3, 4],
-#             "low_pass_filter": ["dc", "dc", "dc", "dc"],
-#         }
-#     )
-#     qdac.device = MagicMock()
-#     return qdac
+@pytest.fixture(name="qdac")
+def fixture_qdac() -> QDevilQDac2:
+    """Fixture that returns an instance of a dummy QDAC-II."""
+    qdac = QDevilQDac2(
+        {
+            "alias": "qdac",
+            "voltage": [0.5, 0.5, 0.5, 0.5],
+            "span": ["low", "low", "low", "low"],
+            "ramping_enabled": [True, True, True, False],
+            "ramp_rate": [0.01, 0.01, 0.01, 0.01],
+            "dacs": [1, 2, 3, 4],
+            "low_pass_filter": ["dc", "dc", "dc", "dc"],
+        }
+    )
+    qdac.device = MagicMock()
+    return qdac
 
 
-# @pytest.fixture(name="calibration")
-# def fixture_calibration() -> Calibration:
-#     calibration = Calibration()
-#     calibration.add_waveform(bus="flux1", name="calibrated_square", waveform=Square(1.0, 100))
+@pytest.fixture(name="calibration")
+def fixture_calibration() -> Calibration:
+    calibration = Calibration()
+    calibration.add_waveform(bus="flux1", name="calibrated_square", waveform=Square(1.0, 100))
 
-#     return calibration
-
-
-# @pytest.fixture(name="calibrated_execution")
-# def fixture_calibrated_execution() -> QProgram:
-#     qp = QProgram()
-#     qp.play(bus="flux1", waveform="calibrated_square")
-#     return qp
+    return calibration
 
 
-# class TestQdacCompiler:
-#     def test_play_and_set_trigger(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
-#         pulse_wf = Square(1.0, 100)
-#         dwell_us = 2
-#         out_port = 1
+@pytest.fixture(name="calibrated_execution")
+def fixture_calibrated_execution() -> QProgram:
+    qp = QProgram()
+    qp.play(bus="flux1", waveform="calibrated_square")
+    return qp
 
-#         qp = QProgram()
-#         qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-#         qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-#         qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, marker="start")
 
-#         compiler = QdacCompiler()
-#         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses={flux1, flux2})
+class TestQdacCompiler:
+    def test_play_and_set_trigger(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        pulse_wf = Square(1.0, 100)
+        dwell_us = 2
+        out_port = 1
+
+        qp = QProgram()
+        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="start")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2])
+
+        # compiler._qdac.set_start_marker_external_trigger.assert_called_once()
+        # compiler._qdac.upload_voltage_list.assert_called_twice()
 
 
 #     def test_qdac_bus_ignored(self, run_qdac_buses: QProgram):

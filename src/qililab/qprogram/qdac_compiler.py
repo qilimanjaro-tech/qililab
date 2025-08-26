@@ -14,11 +14,10 @@
 
 import math
 from collections import deque
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from qililab.config import logger
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.platform.components.bus import Bus
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, LinspaceLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -40,6 +39,9 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
 from qililab.waveforms import Waveform
+
+if TYPE_CHECKING:
+    from qililab.platform.components.bus import Bus
 
 
 class QdacCompilationOutput:
@@ -91,7 +93,7 @@ class QdacCompiler:
 
         self._qprogram: QProgram
         self._buses: dict[str, QdacBusCompilationInfo]
-        self._qdac_buses: list[Bus]
+        self._qdac_buses: list["Bus"]
         self._qdac_buses_alias: list[str]
         self._channels: dict[str, int]
         self._qdac: QDevilQDac2
@@ -108,7 +110,7 @@ class QdacCompiler:
         self,
         qprogram: QProgram,
         qdac: QDevilQDac2,
-        qdac_buses: list[Bus],
+        qdac_buses: list["Bus"],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
     ) -> QdacCompilationOutput:
@@ -263,7 +265,6 @@ class QdacCompiler:
 
     def _handle_wait_trigger(self, element: WaitTrigger):
         if element.bus in self._qdac_buses_alias:
-
             if element.port:
                 self._qdac.set_in_external_trigger(channel_id=self._channels[element.bus], in_port=element.port)
                 if not self._trigger_position:
@@ -275,7 +276,6 @@ class QdacCompiler:
 
     def _handle_play(self, element: Play):
         if element.bus in self._qdac_buses_alias:
-
             convert = QdacCompiler._convert_value(element)
             waveform, _ = element.get_waveforms()
             waveform_variables = element.get_waveform_variables()
