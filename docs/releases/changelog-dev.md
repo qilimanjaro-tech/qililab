@@ -139,6 +139,9 @@ The data automatically selects between the local or shared domains depending on 
 
 ### Bug fixes
 
+- Removed the unsupported zorder kwarg from QbloxDraw plotting to prevent Plotly errors across environments.
+  [#974](https://github.com/qilimanjaro-tech/qililab/pull/974)
+
 - A bug on the tests of Qblox Draw has been fixed. Previously, the test compared `figure.data` using the position of items in the list. Since the order of items can change, this caused inconsistent results. The test now compares the data based on the bus name.
   [#965](https://github.com/qilimanjaro-tech/qililab/pull/965)
 
