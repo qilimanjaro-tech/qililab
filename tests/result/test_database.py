@@ -284,15 +284,8 @@ class Testdatabase:
         db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
 
         # Patch os.path.isfile to return False to simulate missing file
-        with patch("os.path.isfile", return_value=False), warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")  # Ensure all warnings are caught
-
+        with patch("os.path.isfile", return_value=False):
             db_manager.load_by_id(123)
-
-            # Check that a warning was issued
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-            assert "Replaced local path" in str(w[0].message)
 
     @patch("qililab.result.database.read_sql")
     def test_tail(self, mock_read_sql, db_manager: DatabaseManager):

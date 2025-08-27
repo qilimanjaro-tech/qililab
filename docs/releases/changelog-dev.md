@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
+[#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
+
 - Previously, `platform.draw(qprogram)` and `qprogram.draw()` returned the plotly object and the raw data being plotted. Now they return only the plotly object. This change ensures:
 
   - When calling `qprogram.draw()` or  `platform.draw(qprogram)` directly, the figure is displayed.
@@ -125,8 +128,12 @@ The data automatically selects between the local or shared domains depending on 
 - Modified smoothed square waveform class `FlatTop(amplitude, duration, smooth_duration, buffer = 0)` which works similar to the `Square` waveform with an additional smoothing on the edges. The only additional parameters are the smoothing duration and the buffer time. In `QbloxCompiler` if the duration exceeds a threshold of 100 ns the pulses are divide into two arbitrary pulses at the beginning and the end for the smooth parts and a loop of square pulses in the middle, with the exact same behavior as `Square` pulses.
   [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
 
-- Modified `StreamArray` to work with live plot. Now the H5 file has the `swmr_mode` set as true allowing for live reading and `StreamArray`'s `__enter__` and `__setitem__` have `file.flush()` to update the H5 live. Moved `create_dataset` to `__enter__` instead of `__setitem__` to allow for live plot while acounting for VNA results with different data structure.
+- Modified `StreamArray` to work with live plot. Now the H5 file has the `swmr_mode` set as true allowing for live reading and `StreamArray`'s `__enter__` and `__setitem__` have `file.flush()` to update the H5 live. Moved `create_dataset` to `__enter__` instead of `__setitem__` to allow for live plot while acounting for VNA results with different data structure. Modified the `experiment_completed` to set as `True` after the execution, now in case of a crash the experiment will not be set as Completed.
   [#966](https://github.com/qilimanjaro-tech/qililab/pull/966)
+  [#976](https://github.com/qilimanjaro-tech/qililab/pull/976)
+
+- Modified the `experiment_completed` to set as `True` after the execution, now in case of a crash the experiment will not be set as Completed.
+  [#972](https://github.com/qilimanjaro-tech/qililab/pull/972)
 
 ### Breaking changes
 
@@ -138,6 +145,9 @@ The data automatically selects between the local or shared domains depending on 
 ### Documentation
 
 ### Bug fixes
+
+- Removed the unsupported zorder kwarg from QbloxDraw plotting to prevent Plotly errors across environments.
+  [#974](https://github.com/qilimanjaro-tech/qililab/pull/974)
 
 - A bug on the tests of Qblox Draw has been fixed. Previously, the test compared `figure.data` using the position of items in the list. Since the order of items can change, this caused inconsistent results. The test now compares the data based on the bus name.
   [#965](https://github.com/qilimanjaro-tech/qililab/pull/965)
@@ -171,3 +181,6 @@ The data automatically selects between the local or shared domains depending on 
 
 - Added an integer transformation for the play pulse duration at the `QbloxCompiler` `compile`. Before this fix, if a user introduced a pulse duration as a float and greater than 100 ns in `qp.play`, the program would crash with a weir and difficul to trace error report. Now this is fixed.
   [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
+
+- Fixed an error inside set_parameter for OUT0_ATT and OUT1_ATT for the QRM-RF and QCM-RF. When the device was disconnected qililab tried to get the non existent device. not it executes as expected.
+  [#973](https://github.com/qilimanjaro-tech/qililab/pull/973)
