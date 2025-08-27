@@ -435,7 +435,6 @@ class DatabaseManager:
                 )
             
             if pandas_output:
-                print(query.statement)
                 return read_sql(query.statement, con=con)
             return query.all()    
     
