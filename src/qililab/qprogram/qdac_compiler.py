@@ -38,7 +38,6 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
-from qililab.waveforms import Waveform
 
 if TYPE_CHECKING:
     from qililab.platform.components.bus import Bus
@@ -271,7 +270,8 @@ class QdacCompiler:
                     self._trigger_position = "back"
             else:
                 self._qdac.set_in_internal_trigger(
-                    channel_id=self._channels[element.bus], trigger=self._trigger_hashes[element.bus]
+                    channel_id=self._channels[element.bus],
+                    trigger=next(trigger for _, trigger in self._trigger_hashes.items()),
                 )
 
     def _handle_play(self, element: Play):
@@ -338,13 +338,6 @@ class QdacCompiler:
     def _convert_for_loop_values(for_loop: ForLoop):
         iterations = QdacCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
         return iterations
-
-    @staticmethod
-    def _hash_waveform(waveform: Waveform):
-        hashes = {
-            key: (value.__dict__ if isinstance(value, Waveform) else value) for key, value in waveform.__dict__.items()
-        }
-        return f"{waveform.__class__.__name__} {hashes}"
 
     @staticmethod
     def _convert_value(operation: Operation) -> Callable[[Any], Any]:

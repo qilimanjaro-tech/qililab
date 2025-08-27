@@ -22,6 +22,14 @@ def mock_instrument() -> list[Instrument]:
     return [instrument1]
 
 
+@pytest.fixture(name="calibration")
+def fixture_calibration() -> Calibration:
+    calibration = Calibration()
+    calibration.add_waveform(bus="flux1", name="Xpi", waveform=Square(1.0, 100))
+
+    return calibration
+
+
 @pytest.fixture(name="flux1")
 def fixture_bus_flux1(qdac_instrument) -> Bus:
     settings = {"alias": "flux1", "instruments": ["qdac"], "channels": [1]}
@@ -58,21 +66,6 @@ def fixture_qdac() -> QDevilQDac2:
     qdac.upload_voltage_list = MagicMock()
 
     return qdac
-
-
-@pytest.fixture(name="calibration")
-def fixture_calibration() -> Calibration:
-    calibration = Calibration()
-    calibration.add_waveform(bus="flux1", name="calibrated_square", waveform=Square(1.0, 100))
-
-    return calibration
-
-
-@pytest.fixture(name="calibrated_execution")
-def fixture_calibrated_execution() -> QProgram:
-    qp = QProgram()
-    qp.play(bus="flux1", waveform="calibrated_square")
-    return qp
 
 
 class TestQdacCompiler:
@@ -149,6 +142,44 @@ class TestQdacCompiler:
 
         qdac.set_end_marker_internal_trigger.assert_called_once()
         assert qdac.upload_voltage_list.call_count == 8  # accumulative with last calls
+
+    def test_play_bus_map(self, qdac: QDevilQDac2, flux1: Bus):
+        """Test all possible combinations of play + set_trigger on the QDACII."""
+        pulse_wf = Square(1.0, 100)
+        dwell_us = 2
+
+        # Setting external trigger at the beginning of the iteration
+        qp = QProgram()
+        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+
+        compiler = QdacCompiler()
+        compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], bus_mapping={"flux1": "flux1"})
+
+        assert qdac.upload_voltage_list.call_count == 1
+
+    def test_play_named_operation_in_calibration(self, calibration: Calibration, qdac: QDevilQDac2, flux1: Bus):
+        qp = QProgram()
+        qp.play(bus="flux1", waveform="Xpi")
+
+        compiler = QdacCompiler()
+        compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], calibration=calibration)
+
+        qdac.upload_voltage_list.assert_called_with(
+            waveform=calibration.get_waveform(bus="flux1", name="Xpi"),
+            channel_id=1,
+            dwell_us=2 * 1e-6,
+            sync_delay_s=0,
+            repetitions=1,
+        )
+
+    def test_play_incorrect_named_operation_raises_error(self, qdac: QDevilQDac2, flux1: Bus):
+        calibration = Calibration()
+        qp = QProgram()
+        qp.play(bus="flux1", waveform="Xpi")
+
+        compiler = QdacCompiler()
+        with pytest.raises(RuntimeError):
+            _ = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], calibration=calibration)
 
     def test_play_repetitions(self, qdac: QDevilQDac2, flux1: Bus):
         """Test all possible combinations of play repetitions as a manual input."""
@@ -244,6 +275,15 @@ class TestQdacCompiler:
         qp = QProgram()
         loop_variable = qp.variable("test", Domain.Time)
         with qp.for_loop(loop_variable, 0, 10, 1):
+            qp.play(bus="flux1", waveform=wf, dwell=dwell)
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
+
+        # For loop decimals
+        qp = QProgram()
+        loop_variable = qp.variable("test", Domain.Voltage)
+        with qp.for_loop(loop_variable, 0, 1, 0.1):
             qp.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
@@ -345,3 +385,91 @@ class TestQdacCompiler:
         qdac.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell * 1e-6, sync_delay_s=0, repetitions=-1
         )
+
+    def test_for_loops_with_no_iterations_raises_error(self, qdac: QDevilQDac2, flux1: Bus):
+        """Test all possible combinations of play repetitions as a manual input."""
+        wf = Square(1.0, 100)
+        dwell = 2
+        # Linspace loop
+        qp = QProgram()
+        loop_variable = qp.variable("test", Domain.Time)
+        with qp.for_loop(loop_variable, 0, 10, 0):
+            qp.play(bus="flux1", waveform=wf, dwell=dwell)
+
+        compiler = QdacCompiler()
+        with pytest.raises(ValueError, match="Step value cannot be zero"):
+            compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
+
+    def test_play_wait_trigger(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Test all possible combinations of play + set_trigger on the QDACII."""
+        pulse_wf = Square(1.0, 100)
+        dwell_us = 2
+        in_port = 1
+
+        # Setting wait trigger at external
+        qp = QProgram()
+        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.wait_trigger(bus="flux1", duration=10e-6, port=in_port)
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2])
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._qprogram == qp
+        assert compiler._qdac == qdac
+        assert compiler._trigger_position == "back"
+
+        qdac.set_in_external_trigger.assert_called_once()
+        assert qdac.upload_voltage_list.call_count == 2
+
+        # Setting external trigger at the end of the iteration
+        qp = QProgram()
+        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.set_trigger(bus="flux1", duration=10e-6, position="start")
+        qp.wait_trigger(bus="flux1", duration=10e-6)
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2])
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._qprogram == qp
+        assert compiler._qdac == qdac
+        assert compiler._trigger_position == None
+
+        qdac.set_in_internal_trigger.assert_called_once()
+        qdac.set_start_marker_internal_trigger.assert_called_once()
+        assert qdac.upload_voltage_list.call_count == 4
+
+    def test_block_operation(self, qdac: QDevilQDac2, flux1: Bus):
+        """Test all possible combinations of play + set_trigger on the QDACII."""
+        pulse_wf = Square(1.0, 100)
+        dwell_us = 2
+
+        # Setting external trigger at the beginning of the iteration
+        qp = QProgram()
+        with qp.block():
+            qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+
+        compiler = QdacCompiler()
+        compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
+
+        assert qdac.upload_voltage_list.call_count == 1
+
+    def test_sync_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Test all possible combinations of play + set_trigger on the QDACII."""
+        pulse_wf = Square(1.0, 100)
+        dwell_us = 2
+
+        # Setting external trigger at the beginning of the iteration
+        qp = QProgram()
+        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.sync(buses=["flux1", "flux2"])
+
+        compiler = QdacCompiler()
+        with pytest.raises(
+            NotImplementedError, match=f"<class 'qililab.qprogram.operations.sync.Sync'> is not supported in QDACII."
+        ):
+            compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2])
