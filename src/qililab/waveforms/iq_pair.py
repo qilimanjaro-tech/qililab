@@ -24,6 +24,7 @@ from qililab.waveforms.drag_correction import DragCorrection
 from qililab.waveforms.gaussian import Gaussian
 from qililab.waveforms.waveform import Waveform
 from qililab.yaml import yaml
+import numpy as np
 
 
 @dataclass
@@ -33,11 +34,11 @@ class IQPair:
 
     I: Waveform
     Q: Waveform
-
+    
     def __post_init__(self):
         if not isinstance(self.I, Waveform) or not isinstance(self.Q, Waveform):
             raise TypeError("Waveform inside IQPair must have Waveform type.")
-
+            
         if self.I.get_duration() != self.Q.get_duration():
             raise ValueError("Waveforms of an IQ pair must have the same duration.")
 
@@ -53,8 +54,9 @@ class IQPair:
     @requires_domain("duration", Domain.Time)
     @requires_domain("num_sigmas", Domain.Scalar)
     @requires_domain("drag_coefficient", Domain.Scalar)
+    @requires_domain("phase", Domain.Scalar)
     @staticmethod
-    def DRAG(amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float) -> IQPair:
+    def DRAG(amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float, phase:float) -> IQPair:
         """Create a DRAG pulse. This is an IQ pair where the I channel corresponds to the gaussian wave and the Q is the drag correction, which corresponds to the derivative of the I channel times a ``drag_coefficient``.
 
         Args:
@@ -63,7 +65,14 @@ class IQPair:
             num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
             drag_coefficient (float): Drag coefficient that gives the DRAG its imaginary components.
         """
+        
         waveform_i = Gaussian(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas)
         waveform_q = DragCorrection(drag_coefficient=drag_coefficient, waveform=waveform_i)
 
-        return IQPair(I=waveform_i, Q=waveform_q)
+        if np.isclose(phase,0):
+            return IQPair(I=waveform_i, Q=waveform_q)
+        elif np.isclose(phase,90):
+            return IQPair(I=waveform_q, Q=waveform_i)
+        else:
+            raise NotImplementedError('Arbitrary phase not implemented for a Drag pulse')
+
