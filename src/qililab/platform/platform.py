@@ -1731,6 +1731,7 @@ class Platform:
         averages_displayed: bool = False,
         acquisition_showing: bool = True,
         bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None
     ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 
@@ -1747,7 +1748,7 @@ class Platform:
         """
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        sequencer, _ = self.compile_qprogram(qprogram, bus_mapping)
+        sequencer, _ = self.compile_qprogram(qprogram, bus_mapping, calibration)
         plotly_figure, _ = qblox_draw.draw(
             sequencer, runcard_data, time_window, averages_displayed, acquisition_showing
         )
