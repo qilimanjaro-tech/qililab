@@ -283,7 +283,7 @@ class TestQdacCompiler:
         # For loop decimals
         qp = QProgram()
         loop_variable = qp.variable("test", Domain.Voltage)
-        with qp.for_loop(loop_variable, 0, 1, 0.1):
+        with qp.for_loop(loop_variable, 0, 0.1, 0.011):
             qp.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
@@ -291,7 +291,7 @@ class TestQdacCompiler:
 
         assert isinstance(output, QdacCompilationOutput)
         qdac.upload_voltage_list.assert_called_with(
-            waveform=wf, channel_id=1, dwell_us=dwell * 1e-6, sync_delay_s=0, repetitions=12
+            waveform=wf, channel_id=1, dwell_us=dwell * 1e-6, sync_delay_s=0, repetitions=11
         )
 
         # Linspace loop
