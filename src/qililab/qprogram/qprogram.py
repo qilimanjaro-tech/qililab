@@ -723,9 +723,8 @@ class QProgram(StructuredProgram):
         time_window: int | None = None,
         averages_displayed: bool = False,
         acquisition_showing: bool = True,
-        calibration: Calibration | None = None
-        ):
-        
+        calibration: Calibration | None = None,
+    ):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -744,6 +743,11 @@ class QProgram(StructuredProgram):
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
         sequencer = compiler.compile(qprogram=self, calibration=calibration)
-        plotly_figure, _ = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
+        plotly_figure, _ = qblox_draw.draw(
+            sequencer=sequencer,
+            time_window=time_window,
+            averages_displayed=averages_displayed,
+            acquisition_showing=acquisition_showing,
+        )
         logger.warning("The drawing feature is currently only supported for QBlox.")
         return plotly_figure
