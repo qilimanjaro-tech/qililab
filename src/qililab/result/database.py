@@ -371,16 +371,16 @@ class DatabaseManager:
 
     def load_by_id(self, id):
         """Load measurement by its measurement_id."""
+        with self.Session() as session:
+            measurement_by_id = session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
 
-        measurement_by_id = self.Session().query(Measurement).where(Measurement.measurement_id == id).one_or_none()
+            path = measurement_by_id.result_path
+            if not os.path.isfile(path):
 
-        path = measurement_by_id.result_path
-        if not os.path.isfile(path):
+                new_path = path.replace(self.base_path_local, self.base_path_share)
+                measurement_by_id.result_path = new_path
 
-            new_path = path.replace(self.base_path_local, self.base_path_share)
-            measurement_by_id.result_path = new_path
-
-        return measurement_by_id
+            return measurement_by_id
 
     def tail(
         self,
@@ -388,6 +388,8 @@ class DatabaseManager:
         current_sample: bool = True,
         order_limit: int | None = 5,
         pandas_output: bool = False,
+        light_read: bool = False,
+        since_id: int | None = None
     ):
         """Add an index at the end of the database.
 
@@ -402,6 +404,8 @@ class DatabaseManager:
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
+            if since_id:
+                query = query.filter(Measurement.measurement_id > since_id)
 
             if exp_name is not None:
                 query = query.filter(Measurement.experiment_name == exp_name)
@@ -410,11 +414,31 @@ class DatabaseManager:
                 query = query.order_by(Measurement.measurement_id.desc()).limit(order_limit)
             else:
                 query = query.order_by(Measurement.measurement_id.desc())
-
+                
+                
+            if light_read:
+                query = query.with_entities(# Note that some columns are missing that currently are not being used
+                    Measurement.measurement_id,
+                    Measurement.experiment_name,
+                    Measurement.optional_identifier,
+                    Measurement.start_time,
+                    Measurement.end_time,
+                    Measurement.run_length,
+                    Measurement.experiment_completed,
+                    Measurement.cooldown,
+                    Measurement.sample_name,
+                    Measurement.result_path,
+                    Measurement.created_by,
+                    Measurement.debug_file,
+                    (Measurement.qprogram.isnot(None)).label("has_qprogram"),
+                    (Measurement.platform.isnot(None)).label("has_platform"),
+                )
+            
             if pandas_output:
+                print(query.statement)
                 return read_sql(query.statement, con=con)
-            return query.all()
-
+            return query.all()    
+    
     def head(
         self,
         exp_name: str | None = None,
@@ -448,6 +472,15 @@ class DatabaseManager:
                 return read_sql(query.statement, con=con)
             return query.all()
 
+    def get_qprogram(self, measurement_id: int): # To be used when you have light loaded measurements
+        with self.Session() as session:
+            return session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
+
+    def get_platform(self, measurement_id: int): # To be used when you have light loaded measurements
+        with self.Session() as session:
+            return session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
+    
+    
     def add_measurement(
         self,
         experiment_name: str,
@@ -653,3 +686,4 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
     """
     url = f"postgresql://{user}:{passwd}@{host}:{port}/{database}"
     return create_engine(url)
+
