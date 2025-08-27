@@ -46,7 +46,7 @@ class TestResultsData:
         load_results(path=path)
 
         # Mocks
-        mock_file.assert_called_once_with(path, "r")
+        mock_file.assert_called_once_with(path, "r", libver="latest", swmr=True)
         mock_makedirs.assert_not_called()
 
     def test_load_results_with_dict_data(self, mock_file: MagicMock, mock_makedirs: MagicMock):
@@ -87,5 +87,5 @@ class TestResultsData:
         assert "loop2" in loops
 
         # Mocks
-        mock_file.assert_called_once_with(path, "r")
+        mock_file.assert_called_once_with(path, "r", libver="latest", swmr=True)
         mock_makedirs.assert_not_called()

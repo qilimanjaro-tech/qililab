@@ -111,21 +111,23 @@ class QbloxQCMRF(QbloxQCM):
 
         if parameter == Parameter.OUT0_ATT:
             value = int(value)
-            max_att = self.device._get_max_out_att_0()
-            if value > max_att:
-                raise Exception(
-                    f"`{Parameter.OUT0_ATT}` for this module cannot be higher than {max_att}dB.\n"
-                    "Please specify an attenuation level, multiple of 2, below this value."
-                )
+            if self.is_device_active():
+                max_att = self.device._get_max_out_att_0()
+                if value > max_att:
+                    raise Exception(
+                        f"`{Parameter.OUT0_ATT}` for this module cannot be higher than {max_att}dB.\n"
+                        "Please specify an attenuation level, multiple of 2, below this value."
+                    )
 
         if parameter == Parameter.OUT1_ATT:
             value = int(value)
-            max_att = self.device._get_max_out_att_1()
-            if value > max_att:
-                raise Exception(
-                    f"`{Parameter.OUT1_ATT}` for this module cannot be higher than {max_att}dB.\n"
-                    "Please specify an attenuation level, multiple of 2, below this value."
-                )
+            if self.is_device_active():
+                max_att = self.device._get_max_out_att_1()
+                if value > max_att:
+                    raise Exception(
+                        f"`{Parameter.OUT1_ATT}` for this module cannot be higher than {max_att}dB.\n"
+                        "Please specify an attenuation level, multiple of 2, below this value."
+                    )
 
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
