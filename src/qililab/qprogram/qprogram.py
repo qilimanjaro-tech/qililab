@@ -718,7 +718,13 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-    def draw(self, time_window=None, averages_displayed=False, acquisition_showing=True):
+    def draw(
+        self,
+        time_window: int | None = None,
+        averages_displayed: bool = False,
+        acquisition_showing: bool = True,
+        calibration: Calibration | None = None,
+    ):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -736,7 +742,7 @@ class QProgram(StructuredProgram):
 
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
-        sequencer = compiler.compile(self)
+        sequencer = compiler.compile(qprogram=self, calibration=calibration)
         plotly_figure, _ = qblox_draw.draw(
             sequencer=sequencer,
             time_window=time_window,
