@@ -14,7 +14,6 @@
 from copy import deepcopy
 from typing import overload
 
-from qililab.config import logger
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.decorators import requires_domain
