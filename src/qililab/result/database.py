@@ -398,6 +398,8 @@ class DatabaseManager:
             current_sample (bool, optional): Conditional to define if the sample is currently on use. Defaults to True.
             order_limit (int | None, optional): Limit of the order by query. Defaults to 5.
             pandas_output (bool, optional): If True, read database table into a DataFrame. Defaults to False.
+            light_read (bool, optional): If True, load only a subset of the columns. Replace heavy columns Platform and Qprogram by True or False. Defaults to False.
+            since_id (int | None, optional): If provided, only load measurements with measurement_id greater than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
             query = self.Session().query(Measurement)
@@ -414,7 +416,6 @@ class DatabaseManager:
                 query = query.order_by(Measurement.measurement_id.desc()).limit(order_limit)
             else:
                 query = query.order_by(Measurement.measurement_id.desc())
-                
                 
             if light_read:
                 query = query.with_entities(# Note that some columns are missing that currently are not being used
@@ -444,6 +445,8 @@ class DatabaseManager:
         current_sample: bool = True,
         order_limit: int | None = 5,
         pandas_output: bool = False,
+        light_read: bool = False,
+        before_id: int | None = None
     ):
         """Add an index at the beginning of the database.
 
@@ -452,12 +455,17 @@ class DatabaseManager:
             current_sample (bool, optional): Conditional to define if the sample is currently on use. Defaults to True.
             order_limit (int | None, optional): Limit of the order by query. Defaults to 5.
             pandas_output (bool, optional): If True, read database table into a DataFrame. Defaults to False.
+            light_read (bool, optional): If True, load only a subset of the columns. Replace heavy columns Platform and Qprogram by True or False. Defaults to False.
+            before_id (int | None, optional): If provided, only load measurements with measurement_id lower than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
             query = self.Session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
+            
+            if before_id:
+                query = query.filter(Measurement.measurement_id < before_id)
 
             if exp_name is not None:
                 query = query.filter(Measurement.experiment_name == exp_name)
@@ -466,16 +474,40 @@ class DatabaseManager:
                 query = query.order_by(Measurement.measurement_id).limit(order_limit)
             else:
                 query = query.order_by(Measurement.measurement_id)
+                
+            if light_read:
+                query = query.with_entities(# Note that some columns are missing that currently are not being used
+                    Measurement.measurement_id,
+                    Measurement.experiment_name,
+                    Measurement.optional_identifier,
+                    Measurement.start_time,
+                    Measurement.end_time,
+                    Measurement.run_length,
+                    Measurement.experiment_completed,
+                    Measurement.cooldown,
+                    Measurement.sample_name,
+                    Measurement.result_path,
+                    Measurement.created_by,
+                    Measurement.debug_file,
+                    (Measurement.qprogram.isnot(None)).label("has_qprogram"),
+                    (Measurement.platform.isnot(None)).label("has_platform"),
+                )
 
             if pandas_output:
                 return read_sql(query.statement, con=con)
             return query.all()
 
-    def get_qprogram(self, measurement_id: int): # To be used when you have light loaded measurements
+    def get_qprogram(self, measurement_id: int): 
+        """ Get QProgram of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+        """
         with self.Session() as session:
             return session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
 
-    def get_platform(self, measurement_id: int): # To be used when you have light loaded measurements
+    def get_platform(self, measurement_id: int): 
+        """ Get Platform of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+        """
         with self.Session() as session:
             return session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
     
