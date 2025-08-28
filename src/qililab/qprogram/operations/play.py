@@ -15,17 +15,20 @@
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.qprogram.variable import Variable
-from qililab.waveforms import IQPair, Waveform
+from qililab.waveforms import IQPair, Waveform, Arbitrary
 from qililab.yaml import yaml
+import numpy as np
 
 
 @yaml.register_class
 class Play(Operation):
-    def __init__(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None) -> None:
+    def __init__(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None, phase: float = 0, gain: float = 1) -> None:
         super().__init__()
         self.bus: str = bus
         self.waveform: Waveform | IQPair = waveform
         self.wait_time: int | None = wait_time  # TODO: remove this in clean fix
+        self.phase: float = phase
+        self.gain: float = gain
 
     def get_waveforms(self) -> tuple[Waveform, Waveform | None]:
         """Get the waveforms.
@@ -33,8 +36,14 @@ class Play(Operation):
         Returns:
             tuple[Waveform, Waveform | None]: The waveforms as tuple. The second waveform can be None.
         """
-        wf_I: Waveform = self.waveform.I if isinstance(self.waveform, IQPair) else self.waveform
-        wf_Q: Waveform | None = self.waveform.Q if isinstance(self.waveform, IQPair) else None
+        phase = self.phase/180*np.pi
+        if isinstance(self.waveform, IQPair ):
+            wf_I: Waveform = Arbitrary((self.waveform.I.envelope() * np.cos(phase) - self.waveform.Q.envelope() * np.sin(phase)) * self.gain)
+            wf_Q: Waveform = Arbitrary((self.waveform.I.envelope() * np.sin(phase) + self.waveform.Q.envelope() * np.cos(phase)) * self.gain)
+        else:
+            wf_I: Waveform = Arbitrary(self.waveform.I.envelope() * self.gain)
+            wf_Q: Waveform = None
+
         return wf_I, wf_Q
 
     def get_waveform_variables(self) -> set[Variable]:
@@ -61,8 +70,10 @@ class Play(Operation):
 
 @yaml.register_class
 class PlayWithCalibratedWaveform(Operation):
-    def __init__(self, bus: str, waveform: str, wait_time: int | None = None) -> None:
+    def __init__(self, bus: str, waveform: str, wait_time: int | None = None, phase: float = 0, gain: float = 1) -> None:
         super().__init__()
         self.bus: str = bus
         self.waveform: str = waveform
         self.wait_time: int | None = wait_time
+        self.phase: float = phase
+        self.gain: float = gain

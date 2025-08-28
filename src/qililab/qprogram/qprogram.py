@@ -233,7 +233,7 @@ class QProgram(StructuredProgram):
                     bus=element.bus, name=element.waveform
                 ):
                     waveform = calibration.get_waveform(bus=element.bus, name=element.waveform)
-                    play_operation = Play(bus=element.bus, waveform=waveform, wait_time=element.wait_time)
+                    play_operation = Play(bus=element.bus, waveform=waveform, wait_time=element.wait_time,phase=element.phase,gain=element.gain)
                     block.elements[index] = play_operation
                 elif isinstance(element, AcquireWithCalibratedWeights) and calibration.has_weights(
                     bus=element.bus, name=element.weights
@@ -286,7 +286,7 @@ class QProgram(StructuredProgram):
         return copied_qprogram
 
     @overload
-    def play(self, bus: str, waveform: Waveform | IQPair) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair, phase: float = 0, gain: float = 1) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
@@ -295,7 +295,7 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def play(self, bus: str, waveform: str) -> None:
+    def play(self, bus: str, waveform: str, phase: float = 0, gain: float = 1) -> None:
         """Play a named waveform on the bus.
 
         Args:
@@ -303,7 +303,7 @@ class QProgram(StructuredProgram):
             waveform (str): An identifier of a named waveform.
         """
 
-    def play(self, bus: str, waveform: Waveform | IQPair | str) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair | str, phase: float = 0, gain: float = 1) -> None:
         """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
         This method handles both playing a waveform or IQPair, and playing a
@@ -314,9 +314,9 @@ class QProgram(StructuredProgram):
             waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
         """
         operation = (
-            PlayWithCalibratedWaveform(bus=bus, waveform=waveform)
+            PlayWithCalibratedWaveform(bus=bus, waveform=waveform, phase=phase, gain=gain)
             if isinstance(waveform, str)
-            else Play(bus=bus, waveform=waveform)
+            else Play(bus=bus, waveform=waveform, phase=phase, gain=gain)
         )
         self._active_block.append(operation)
         self._buses.add(bus)
