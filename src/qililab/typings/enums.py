@@ -443,6 +443,9 @@ class Parameter(str, Enum):
     TRIGGER_SLOPE = "trigger_slope"
     TRIGGER_TYPE = "trigger_type"
     SWEEP_GROUP_COUNT = "sweep_group_count"
+    FILTERS = "filters"
+    EXPONENTIAL = "exponential"
+    FIR = "FIR"
 
     @classmethod
     def to_yaml(cls, representer, node):

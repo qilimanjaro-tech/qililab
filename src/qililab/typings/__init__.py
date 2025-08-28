@@ -43,7 +43,7 @@ from .instruments import (
     RohdeSchwarzSGS100A,
     YokogawaGS200,
 )
-from .type_aliases import ChannelID, ParameterValue
+from .type_aliases import ChannelID, ParameterValue, ModuleID
 
 __all__ = [
     "AcquireTriggerMode",
@@ -59,6 +59,7 @@ __all__ = [
     "InstrumentName",
     "IntegrationMode",
     "Keithley2600Driver",
+    "ModuleID",
     "MiniCircuitsDriver",
     "Parameter",
     "ParameterValue",

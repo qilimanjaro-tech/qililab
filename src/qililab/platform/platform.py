@@ -67,7 +67,7 @@ from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, ModuleID
 from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
@@ -468,13 +468,14 @@ class Platform:
         """
         return self.buses.get(alias=alias)
 
-    def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None):
         """Get platform parameter.
 
         Args:
             parameter (Parameter): Name of the parameter to get.
             alias (str): Alias of the bus where the parameter is set.
             channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
+            module_id (int, optional): ID of the module we want to use to set the parameter, used for Qblox distortion filters. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
@@ -488,7 +489,7 @@ class Platform:
                 self.flux_parameter[alias] = 0.0
             return self.flux_parameter[alias]
         element = self.get_element(alias=alias)
-        return element.get_parameter(parameter=parameter, channel_id=channel_id)
+        return element.get_parameter(parameter=parameter, channel_id=channel_id, module_id=module_id)
 
     def _data_draw(self):
         """From the runcard retrieve the parameters necessary to draw the qprogram."""
