@@ -16,23 +16,16 @@ from dataclasses import asdict, dataclass
 
 from qililab.utils.asdict_factory import dict_factory
 from qililab.constants import DistortionState
-
-@dataclass
-class ExponentialFilter:
-    amplitude: float
-    time_constant: float
-    state: DistortionState
-
-@dataclass
-class FIRFilter:
-    coeff: list[float]
-    state: DistortionState
+from typing import Sequence
 
 @dataclass
 class QbloxFilter:
-    module_number: int | None = None
-    exponential_filter: list[ExponentialFilter] | None = None
-    fir_filter: list[FIRFilter] | None = None
+    module: int | None = None
+    exponential_amplitude: float | None = None
+    exponential_tau: float | None = None
+    exponential_state: DistortionState = None
+    fir_coeff: Sequence | None = None
+    fir_state: DistortionState | None = None
 
     def to_dict(self):
         """Return a dict representation of a Qblox Filter."""

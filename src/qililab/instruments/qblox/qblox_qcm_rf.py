@@ -24,6 +24,9 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 
 from .qblox_qcm import QbloxQCM
+from typing import Sequence
+
+from qililab.instruments.qblox.qblox_filters import QbloxFilter
 
 
 @InstrumentFactory.register
@@ -50,6 +53,10 @@ class QbloxQCMRF(QbloxQCM):
         out_offsets: list[float] = field(
             init=False,
             default_factory=list,  # QCM-RF module doesn't have an `out_offsets` parameter
+        )
+        filters: Sequence[QbloxFilter] = field(
+            init=False,
+            default_factory=list,  # QCM-RF module doesn't have filters
         )
         out0_lo_freq_cal_type_default: Optional[str] = "off"
         out1_lo_freq_cal_type_default: Optional[str] = "off"
@@ -162,6 +169,7 @@ class QbloxQCMRF(QbloxQCM):
         """Return a dict representation of an `QCM-RF` instrument."""
         dictionary = super().to_dict()
         dictionary.pop("out_offsets")
+        dictionary.pop("filters")
         return dictionary
 
     def calibrate_mixers(self, cal_type: str, channel_id: ChannelID | None = None):

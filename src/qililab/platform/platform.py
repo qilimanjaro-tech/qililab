@@ -83,7 +83,7 @@ if TYPE_CHECKING:
     from qililab.settings import Runcard
     from qililab.settings.digital.gate_event_settings import GateEventSettings
 
-
+from qililab.constants import DistortionState
 class Platform:
     """Platform object representing the laboratory setup used to control quantum devices.
 
@@ -351,6 +351,9 @@ class Platform:
         self.save_experiment_results_in_database: bool = True
         """Database trigger to define if the experiment metadata will be saved in a database or not"""
 
+        self.qblox_active_filter: list = []
+        #fuck docstring EVERYWHERE
+
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
 
@@ -381,6 +384,7 @@ class Platform:
         if not self._connected_to_instruments:
             raise AttributeError("Can not do initial_setup without being connected to the instruments.")
         self.instrument_controllers.initial_setup()
+        self.instruments
         logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
@@ -467,6 +471,10 @@ class Platform:
 
         """
         return self.buses.get(alias=alias)
+
+    def get_qblox_module(self):
+
+        return
 
     def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None):
         """Get platform parameter.
@@ -562,6 +570,7 @@ class Platform:
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
+        module_id: ModuleID | None = None,
     ):
         """Set a parameter for a platform element.
 
@@ -594,8 +603,20 @@ class Platform:
             self._process_crosstalk(alias, value)
             self._set_bias_from_element(element)
             return
+        
+        #fuck do it for fir as well
+        if parameter == Parameter.EXPONENTIAL_STATE:
+            if parameter.value in {DistortionState.BYPASSED, DistortionState.DELAY_COMP}:
+                self.qblox_active_filter.append({alias:module_id})
+                #fuck create the function, be careful not to change any modules/channels inside the self.qblox_active_filter
+                self._update_qblox_filter_state(parameter)
+            else:
+                try:
+                    self.qblox_active_filter.remove({alias: module_id})
+                except:
+                    pass
 
-        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, module_id=module_id)
 
     def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
         """Sets the right parameter depending on the instrument defined inside the element.

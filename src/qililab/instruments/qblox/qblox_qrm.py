@@ -26,7 +26,10 @@ from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.typings import AcquireTriggerMode, ChannelID, InstrumentName, IntegrationMode, Parameter, ParameterValue
+from typing import Sequence
 
+from dataclasses import field
+from qililab.instruments.qblox.qblox_filters import QbloxFilter
 
 @InstrumentFactory.register
 class QbloxQRM(QbloxModule):
@@ -44,6 +47,10 @@ class QbloxQRM(QbloxModule):
         """Contains the settings of a specific QRM."""
 
         awg_sequencers: Sequence[QbloxADCSequencer]
+        # filters: Sequence[QbloxFilter] = field(
+        #     init=False,
+        #     default_factory=list,  # QCM-RF module doesn't have filters
+        # )
 
         def __post_init__(self):
             """build AWGQbloxADCSequencer"""
@@ -56,6 +63,7 @@ class QbloxQRM(QbloxModule):
                 QbloxADCSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
                 for sequencer in self.awg_sequencers
             ]
+
             super().__post_init__()
 
     settings: QbloxQRMSettings

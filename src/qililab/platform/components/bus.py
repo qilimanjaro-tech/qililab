@@ -27,7 +27,7 @@ from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.result.qprogram import MeasurementResult
 from qililab.settings import Settings
-from qililab.typings import ChannelID, Parameter, ParameterValue
+from qililab.typings import ChannelID, Parameter, ParameterValue, ModuleID
 
 
 class Bus:
@@ -153,7 +153,7 @@ class Bus:
         """Return true if bus has ADC capabilities."""
         return any(instrument.is_adc() for instrument in self.instruments)
 
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, module_id: ModuleID | None = None):
         """Set a parameter to the bus.
 
         Args:
@@ -170,7 +170,7 @@ class Bus:
                 return
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None):
         """Gets a parameter of the bus.
 
         Args:

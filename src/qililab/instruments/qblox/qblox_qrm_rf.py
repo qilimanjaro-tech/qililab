@@ -24,7 +24,9 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 
 from .qblox_qrm import QbloxQRM
+from typing import Sequence
 
+from qililab.instruments.qblox.qblox_filters import QbloxFilter
 
 @InstrumentFactory.register
 class QbloxQRMRF(QbloxQRM):
@@ -45,6 +47,10 @@ class QbloxQRMRF(QbloxQRM):
         out0_offset_path1: float
         out_offsets: list[float] = field(init=False, default_factory=list)
         out0_in0_lo_freq_cal_type_default: Optional[str] = "off"
+        filters: Sequence[QbloxFilter] = field(
+            init=False,
+            default_factory=list,  # QCM-RF module doesn't have filters
+        )
 
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
@@ -126,6 +132,7 @@ class QbloxQRMRF(QbloxQRM):
         """Return a dict representation of an `QRM-RF` instrument."""
         dictionary = super().to_dict()
         dictionary.pop("out_offsets")
+        dictionary.pop("filters")
         return dictionary
 
     def calibrate_mixers(self, cal_type: str, channel_id: ChannelID | None = None):
