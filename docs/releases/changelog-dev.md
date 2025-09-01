@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
+[#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
+
 - Previously, `platform.draw(qprogram)` and `qprogram.draw()` returned the plotly object and the raw data being plotted. Now they return only the plotly object. This change ensures:
 
   - When calling `qprogram.draw()` or  `platform.draw(qprogram)` directly, the figure is displayed.
