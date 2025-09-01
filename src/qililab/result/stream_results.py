@@ -58,7 +58,7 @@ class StreamArray:
         optional_identifier: str | None = None,
     ):
         self.results: np.ndarray
-        self.shape = shape
+        self.shape = [shape] if isinstance(shape, int) else shape
         self.loops = loops
         self.experiment_name = experiment_name
         self.db_manager = db_manager
