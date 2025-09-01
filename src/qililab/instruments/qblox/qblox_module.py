@@ -76,6 +76,8 @@ class QbloxModule(Instrument):
                     (QbloxFilter(**filter) if isinstance(filter, dict) else filter)
                     for filter in self.filters
                 ]
+            else:
+                self.filters = []
             super().__post_init__()
 
     settings: QbloxModuleSettings
@@ -406,9 +408,12 @@ class QbloxModule(Instrument):
         """
         #TODO UPDATE DOSCTRING
         # update value in qililab
-        self.filters[module_number].fir_state = value
+        try:
+            self.filters[module_number].fir_state = value
+        except IndexError:
+            self.filters.extend([QbloxFilter(module=module_number,fir_state=value)])
         if value == DistortionState.ENABLED or value == DistortionState.BYPASSED:
-            self.fir_delay_comp = True
+            self.fir_delay_comp += 1
 
         # update value in the instrument
         if self.is_device_active():
@@ -443,7 +448,13 @@ class QbloxModule(Instrument):
             getattr(self.device, f"out{module_number}_exp0_time_constant")(float(value))
 
     def _set_exponential_filter_state(self, module_number: int, value: DistortionState):
-        self.filters[module_number].exponential_state = DistortionState(value)
+        try:
+            self.filters[module_number].exponential_state = value
+        except IndexError:
+            self.filters.extend([QbloxFilter(module=module_number,exponential_state=value)])
+        # except TypeError:
+        #     elf.filters = []s
+            # self.filters.extend(QbloxFilter(module=module_number,exponential_state=value))
         if value == DistortionState.ENABLED or value == DistortionState.BYPASSED:
             self.exp_delay_comp += 1
 

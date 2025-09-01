@@ -352,6 +352,7 @@ class Platform:
         """Database trigger to define if the experiment metadata will be saved in a database or not"""
 
         self.qblox_active_filter: list = []
+        self.qblox_alias_module: list = []
         #fuck docstring EVERYWHERE
 
     def connect(self):
@@ -606,10 +607,13 @@ class Platform:
         
         #fuck do it for fir as well
         if parameter == Parameter.EXPONENTIAL_STATE:
-            if parameter.value in {DistortionState.BYPASSED, DistortionState.DELAY_COMP}:
-                self.qblox_active_filter.append({alias:module_id})
+            print(parameter.value)
+            if value in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
+                pair = {alias:module_id}
+                if pair not in self.qblox_active_filter:
+                    self.qblox_active_filter.append(pair)
                 #fuck create the function, be careful not to change any modules/channels inside the self.qblox_active_filter
-                self._update_qblox_filter_state(parameter)
+                self._update_qblox_filter_state()
             else:
                 try:
                     self.qblox_active_filter.remove({alias: module_id})
@@ -617,6 +621,27 @@ class Platform:
                     pass
 
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, module_id=module_id)
+
+    def _get_qblox_alias_module(self):
+        buses = list(self.buses)
+        instruments = {
+            instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
+        }
+        if instruments and all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            for bus in buses:
+                for instrument, _ in zip(bus.instruments, bus.channels):
+                    if isinstance(instrument, QbloxModule):
+                        self.qblox_alias_module.append({instrument.alias:bus.channels[0]})
+        self.qblox_alias_module
+
+    def _update_qblox_filter_state(self):
+        if not self.qblox_alias_module: #  update the list only once
+            self._get_qblox_alias_module()
+        for pair in self.qblox_alias_module:
+            if pair not in self.qblox_active_filter:
+                alias, module_id = next(iter(pair.items()))
+                self.set_parameter(alias=alias, parameter=Parameter.EXPONENTIAL_STATE, value=DistortionState.BYPASSED, module_id=module_id)
+
 
     def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
         """Sets the right parameter depending on the instrument defined inside the element.
