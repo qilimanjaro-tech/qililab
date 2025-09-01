@@ -122,7 +122,7 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
                 0.66, 0.68, 0.7 , 0.72, 0.74, 0.76, 0.78, 0.8 , 0.82, 0.84, 0.86,
                 0.88, 0.9 , 0.92, 0.94, 0.96, 0.98])}
     """
-    with h5py.File(path, "r") as hf:
+    with h5py.File(path, "r", libver="latest", swmr=True) as hf:
         loops = {}
         for name, data in hf["loops"].items():
             loops[name] = {
