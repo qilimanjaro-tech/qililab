@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from dataclasses import asdict, dataclass
-
-from qililab.utils.asdict_factory import dict_factory
-from qililab.constants import DistortionState
 from typing import Sequence
+
+from qililab.constants import DistortionState
+from qililab.utils.asdict_factory import dict_factory
 
 
 @dataclass

@@ -21,7 +21,7 @@ from typing import get_type_hints
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import Settings
-from qililab.typings import ChannelID, Device, InstrumentName, Parameter, ParameterValue, ModuleID
+from qililab.typings import ChannelID, Device, InstrumentName, ModuleID, Parameter, ParameterValue
 
 
 class Instrument(BusElement, ABC):

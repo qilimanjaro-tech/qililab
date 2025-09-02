@@ -14,10 +14,9 @@
 
 """Qblox module class"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar, Sequence
-from qililab.config import logger
-from dataclasses import field
+
 from qpysequence import Sequence as QpySequence
 
 from qililab.config import logger
@@ -27,7 +26,7 @@ from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_filters import QbloxFilter
 from qililab.instruments.qblox.qblox_sequencer import QbloxSequencer
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
-from qililab.typings import ChannelID, Parameter, ParameterValue, ModuleID
+from qililab.typings import ChannelID, ModuleID, Parameter, ParameterValue
 from qililab.typings.instruments import QcmQrm
 
 
@@ -456,7 +455,6 @@ class QbloxModule(Instrument):
             getattr(self.device, f"out{module_id}_exp0_amplitude")(float(value))
         if initial_setup is False:
             logger.warning("The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects.")
-
 
     def _set_exponential_filter_tau(self, module_id: int, value: float, initial_setup: bool = False):
         """Set filters of the Qblox device.
