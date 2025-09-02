@@ -223,14 +223,14 @@ class FluxVector:
 
         for bus_1 in self.crosstalk_inverse.matrix.keys():
             self.bias_vector[bus_1] = sum(
-                (self.flux_vector[bus_2] + self.crosstalk_inverse.flux_offsets[bus_2])
+                (self.flux_vector[bus_2] - self.crosstalk_inverse.flux_offsets[bus_2])
                 * self.crosstalk_inverse.matrix[bus_1][bus_2]
                 for bus_2 in self.crosstalk_inverse.matrix[bus_1].keys()
             )
 
         return self.bias_vector
 
-    def set_crosstalk_from_bias(self, crosstalk: CrosstalkMatrix):
+    def set_crosstalk_from_bias(self, crosstalk: CrosstalkMatrix, bias_vector: dict[str, float] | None = None):
         """Set the crosstalk compensation on the existing flux vector. This function does the matrix product to calculate the correct flux
 
         Args:
@@ -238,17 +238,21 @@ class FluxVector:
 
         """
         self.crosstalk = crosstalk
-        self.crosstalk_inverse = crosstalk.inverse()
 
-        self.bias_vector = self.flux_vector.copy()
+        if bias_vector:
+            self.bias_vector = bias_vector.copy()
 
-        for bus_1 in self.crosstalk_inverse.matrix.keys():
-            self.bias_vector[bus_1] = sum(
-                self.flux_vector[bus_2] * self.crosstalk_inverse.matrix[bus_1][bus_2]
-                for bus_2 in self.crosstalk_inverse.matrix[bus_1].keys()
+        for bus_1 in self.crosstalk.matrix.keys():
+
+            self.flux_vector[bus_1] = (
+                sum(
+                    (self.bias_vector[bus_2] * self.crosstalk.matrix[bus_1][bus_2])
+                    for bus_2 in self.crosstalk.matrix[bus_1].keys()
+                )
+                + self.crosstalk.flux_offsets[bus_1]
             )
 
-        return self.bias_vector
+        return self.flux_vector
 
     def to_dict(self):
         """To dictionary method, returns the vector's dictionary
