@@ -89,8 +89,6 @@ class QbloxModule(Instrument):
         # The sequences dictionary contains all the compiled sequences for each sequencer. Sequences are saved and handled at the compiler
         self.sequences: dict[int, QpySequence] = {}  # {sequencer_idx: (program), ...}
         self.num_bins: int = 1
-        self.exp_delay_comp: int = 0
-        self.fir_delay_comp: int = 0
         super().__init__(settings=settings)
 
     @property
@@ -121,6 +119,21 @@ class QbloxModule(Instrument):
                 return sequencer
         raise IndexError(f"There is no sequencer with id={sequencer_id}.")
 
+
+    def get_filter(self, module_id: int) -> QbloxFilter:
+        """Get filter from the module_id
+
+        Args:
+            module_id (int): module id
+
+        Returns:
+            QbloxFilter: filter associated with the module_id
+        """
+        for filter in self.filters:
+            if filter.module == module_id:
+                return filter
+        raise IndexError(f"There is no filter with id={module_id}.")
+
     @check_device_initialized
     def initial_setup(self):
         """Initial setup"""
@@ -144,19 +157,16 @@ class QbloxModule(Instrument):
             self._set_out_offset(output=idx, value=offset)
         
         for module in self.filters:
-            module_number = module.module
-            # exponential_filter = module.exponential
-            # fir_filter = module.FIR
+            module_id = module.module
 
             # if module.exp_amp and module.EXPONENTIAL_STATE and module.EXPONENTIAL_STATE is not None:
-            self._set_exponential_filter_amplitude(module_number=module_number,value=module.exponential_amplitude)
-            self._set_exponential_filter_tau(module_number=module_number,value=module.exponential_tau)
-            self._set_exponential_filter_state(module_number=module_number,value=module.exponential_state)
+            self._set_exponential_filter_amplitude(module_id=module_id,value=module.exponential_amplitude)
+            self._set_exponential_filter_tau(module_id=module_id,value=module.exponential_tau)
+            self._set_exponential_filter_state(module_id=module_id,value=module.exponential_state)
 
             # if module.fir_coeff and module.fir_state is not None:
-            # coeff = fir_filter.fir_coeff
-            self._set_fir_filter_coeff(module_number=module_number, value=module.fir_coeff)
-            self._set_fir_filter_state(module_number=module_number, value=module.fir_state)
+            self._set_fir_filter_coeff(module_id=module_id, value=module.fir_coeff)
+            self._set_fir_filter_state(module_id=module_id, value=module.fir_state)
 
     def sync_sequencer(self, sequencer_id: int) -> None:
         """Syncs all sequencers."""
@@ -208,27 +218,27 @@ class QbloxModule(Instrument):
             module_id = int(module_id)
             #TODO: SHOULD NOT SET ON THE DEVICE (COULD HAVE IT AS AN ARGUMENT AND SHOULD GIVE A WARNING)
             if parameter == Parameter.EXPONENTIAL_AMPLITUDE:
-                self._set_exponential_filter_amplitude(module_number=module_id, value=value)
+                self._set_exponential_filter_amplitude(module_id=module_id, value=value)
                 return
 
             if parameter == Parameter.EXPONENTIAL_TAU:
-                self._set_exponential_filter_tau(module_number=module_id, value=value)
+                self._set_exponential_filter_tau(module_id=module_id, value=value)
                 return
 
             if parameter == Parameter.EXPONENTIAL_STATE:
-                self._set_exponential_filter_state(module_number=module_id, value=value)
+                self._set_exponential_filter_state(module_id=module_id, value=value)
                 return
         
             if parameter == Parameter.EXPONENTIAL_STATE:
-                self._set_exponential_filter_state(module_number=module_id, value=value)
+                self._set_exponential_filter_state(module_id=module_id, value=value)
                 return
             
             if parameter == Parameter.FIR_COEFF:
-                self._set_fir_filter_coeff(module_number=module_id, value=value)
+                self._set_fir_filter_coeff(module_id=module_id, value=value)
                 return
 
             if parameter == Parameter.FIR_STATE:
-                self._set_fir_filter_state(module_number=module_id, value=value)
+                self._set_fir_filter_state(module_id=module_id, value=value)
                 return
                         
 
@@ -280,13 +290,9 @@ class QbloxModule(Instrument):
             if module_id is None:
                 raise Exception(f"Cannot retrieve parameter {parameter.value} without specifying a module_id.")
             module_id = int(module_id)
-            filter = self.filters[module_id]
+            filter = self.get_filter(module_id=module_id)
             if hasattr(filter, parameter.value):
                 return getattr(filter, parameter.value)
-            # if parameter.startswith("exp_"):
-            #     return filter.exponential[parameter]
-            # elif parameter.startswith("fir_"):
-            #     return filter.FIR[parameter]
 
         if channel_id is None:
             raise Exception(f"Cannot retrieve parameter {parameter.value} without specifying a channel_id.")
@@ -387,39 +393,35 @@ class QbloxModule(Instrument):
         if self.is_device_active():
             getattr(self.device, f"out{output}_offset")(float(value))
     
-    def _set_fir_filter_coeff(self, module_number: int, value: Sequence):
+    def _set_fir_filter_coeff(self, module_id: int, value: Sequence):
         """Set filters of the Qblox device.
         Args:
             output (int): output to update
             value (float | str | bool): value to update
         """
-        #TODO UPDATE DOSCTRING
         # update value in qililab
-        self.filters[module_number].fir_coeff = value
+        self.get_filter(module_id).fir_coeff = Sequence(value)
         # update value in the instrument
         if self.is_device_active():
-            getattr(self.device, f"out{module_number}_fir_coeffs")(value)
-    
-    def _set_fir_filter_state(self, module_number: int, value: DistortionState):
+            getattr(self.device, f"out{module_id}_fir_coeffs")(value)
+
+    def _set_fir_filter_state(self, module_id: int, value: DistortionState):
         """Set filters of the Qblox device.
         Args:
             output (int): output to update
             value (float | str | bool): value to update
         """
-        #TODO UPDATE DOSCTRING
         # update value in qililab
         try:
-            self.filters[module_number].fir_state = value
+            self.get_filter(module_id).fir_state = value
         except IndexError:
-            self.filters.extend([QbloxFilter(module=module_number,fir_state=value)])
-        if value == DistortionState.ENABLED or value == DistortionState.BYPASSED:
-            self.fir_delay_comp += 1
+            self.filters.extend([QbloxFilter(module=module_id,fir_state=value)])
 
         # update value in the instrument
         if self.is_device_active():
-            getattr(self.device, f"out{module_number}_fir_config")(value)
+            getattr(self.device, f"out{module_id}_fir_config")(value)
     
-    def _set_exponential_filter_amplitude(self, module_number: int, value: float):
+    def _set_exponential_filter_amplitude(self, module_id: int, value: float):
         """Set filters of the Qblox device.
 
         Args:
@@ -429,11 +431,11 @@ class QbloxModule(Instrument):
         Raises:
             ValueError: when value type is not float or int
         """
-        self.filters[module_number].exponential_amplitude = float(value)
+        self.get_filter(module_id).exponential_amplitude = float(value)
         if self.is_device_active():
-            getattr(self.device, f"out{module_number}_exp0_amplitude")(float(value))
+            getattr(self.device, f"out{module_id}_exp0_amplitude")(float(value))
 
-    def _set_exponential_filter_tau(self, module_number: int, value: float):
+    def _set_exponential_filter_tau(self, module_id: int, value: float):
         """Set filters of the Qblox device.
 
         Args:
@@ -443,24 +445,20 @@ class QbloxModule(Instrument):
         Raises:
             ValueError: when value type is not float or int
         """
-        self.filters[module_number].exponential_tau = float(value)
+        self.get_filter(module_id).exponential_tau = float(value)
         if self.is_device_active():
-            getattr(self.device, f"out{module_number}_exp0_time_constant")(float(value))
+            getattr(self.device, f"out{module_id}_exp0_time_constant")(float(value))
 
-    def _set_exponential_filter_state(self, module_number: int, value: DistortionState):
+    def _set_exponential_filter_state(self, module_id: int, value: DistortionState):
         try:
-            self.filters[module_number].exponential_state = value
+            # self.filters[module_id].exponential_state = value
+            self.get_filter(module_id).exponential_state = value
         except IndexError:
-            self.filters.extend([QbloxFilter(module=module_number,exponential_state=value)])
-        # except TypeError:
-        #     elf.filters = []s
-            # self.filters.extend(QbloxFilter(module=module_number,exponential_state=value))
-        if value == DistortionState.ENABLED or value == DistortionState.BYPASSED:
-            self.exp_delay_comp += 1
+            self.filters.extend([QbloxFilter(module=module_id,exponential_state=value)])
 
         if self.is_device_active():
-            getattr(self.device, f"out{module_number}_exp0_config")(float(value))
-            # out{module_number}_exp0_config
+            getattr(self.device, f"out{module_id}_exp0_config")(float(value))
+            # out{module_id}_exp0_config
 
     def _set_gain_i(self, value: float | str | bool, sequencer_id: int):
         """Set the gain of the I channel of the given sequencer.

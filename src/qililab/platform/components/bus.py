@@ -166,6 +166,9 @@ class Bus:
                 if channel_id is not None and channel_id == instrument_channel:
                     instrument.set_parameter(parameter, value, channel_id)
                     return
+                if module_id is not None:
+                    instrument.set_parameter(parameter=parameter, value=value, module_id=module_id)
+                    return
                 instrument.set_parameter(parameter, value, instrument_channel)
                 return
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
