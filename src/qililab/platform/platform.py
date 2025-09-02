@@ -689,9 +689,10 @@ class Platform:
             bus_list (list[str] | None, optional): Optional bus list for all the flux used in the experiment. Defaults to the Crosstalk buses.
         """
 
+        if not self.crosstalk:
+            raise ValueError("Crosstalk matrix has not been set")
+
         if not bus_list:
-            if not self.crosstalk:
-                raise ValueError("Neither crosstalk matrix nor bus_list has been set")
             bus_list = list(self.crosstalk.matrix.keys())
 
         if not self.flux_vector:
