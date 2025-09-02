@@ -51,17 +51,18 @@ class TestFluxVector:
         assert flux_vector["flux_0"] == 0.5
 
     def test_set_crosstalk_from_bias(self, flux_vector, crosstalk_matrix):
-        bias_vector = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
+        flux = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
         assert flux_vector.crosstalk == crosstalk_matrix
-        assert flux_vector.bias_vector == bias_vector
+        assert flux_vector.flux_vector == flux
+        assert flux_vector.to_dict() == flux_vector.bias_vector
 
-    def test_to_dict_with_crosstalk(self, flux_vector, crosstalk_matrix):
-        bias_vector = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
-        assert flux_vector.to_dict() == bias_vector
-
-    def test_get_with_crosstalk(self, flux_vector, crosstalk_matrix):
-        bias_vector = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
-        assert flux_vector["flux_0"] == bias_vector["flux_0"]
+    def test_set_crosstalk_from_bias_set_vector(self, flux_vector, crosstalk_matrix):
+        flux = flux_vector.set_crosstalk_from_bias(
+            crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
+        )
+        assert flux_vector.crosstalk == crosstalk_matrix
+        assert flux_vector.flux_vector == flux
+        assert flux_vector.to_dict() == flux_vector.bias_vector
 
 
 class TestCrosstalkMatrix:

@@ -241,6 +241,8 @@ class FluxVector:
 
         if bias_vector:
             self.bias_vector = bias_vector.copy()
+        if not self.bias_vector:
+            self.bias_vector = self.flux_vector.copy()
 
         for bus_1 in self.crosstalk.matrix.keys():
 
