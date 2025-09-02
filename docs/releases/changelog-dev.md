@@ -146,6 +146,11 @@ The data automatically selects between the local or shared domains depending on 
 
 ### Bug fixes
 
+- Qblox Draw: Previously, when plotting from the platform, the integration length was incorrectly taken from the runcard parameter. However, since Qililab currently only implements acquire_weighted, the integration length should instead be determined by the duration of the weight.
+This has been corrected and now the behaviour of the acquire is the same when plotting from the platform or the qprogram.
+The integration length is defined as the duration of the acquire, not the weight, because Qililab ensures they are always equal. As a result, two acquires cannot overlap in Qililab. However, in QbloxDraw’s logic, interruptions remain possible, similar to Play.
+  [#982](https://github.com/qilimanjaro-tech/qililab/pull/982)
+
 - Removed the unsupported zorder kwarg from QbloxDraw plotting to prevent Plotly errors across environments.
   [#974](https://github.com/qilimanjaro-tech/qililab/pull/974)
 
