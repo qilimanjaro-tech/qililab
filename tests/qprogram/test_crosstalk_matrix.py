@@ -50,6 +50,10 @@ class TestFluxVector:
     def test_get(self, flux_vector):
         assert flux_vector["flux_0"] == 0.5
 
+    def test_get_bias(self, flux_vector):
+        flux_vector.bias_vector = {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
+        assert flux_vector["flux_0"] == 0.1
+
     def test_set_crosstalk_from_bias(self, flux_vector, crosstalk_matrix):
         flux = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
         assert flux_vector.crosstalk == crosstalk_matrix
