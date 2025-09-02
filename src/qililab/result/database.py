@@ -376,9 +376,8 @@ class DatabaseManager:
 
             path = measurement_by_id.result_path
             if not os.path.isfile(path):
-
-            new_path = path.replace(self.base_path_local, self.base_path_share)
-            measurement_by_id.result_path = new_path
+                new_path = path.replace(self.base_path_local, self.base_path_share)
+                measurement_by_id.result_path = new_path
 
             return measurement_by_id
 
