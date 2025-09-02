@@ -22,7 +22,7 @@ import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
-from qpysequence.constants import INST_MAX_WAIT
+from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 
 from qililab.config import logger
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
@@ -109,7 +109,7 @@ class BusCompilationInfo:
         self.next_acquisition_index = 0
         self.loop_counter = 0
         self.average_counter = 0
-        self.square_optimization_counter = 0
+        self.waveform_optimization_counter = 0
 
         # Syncing durations
         self.static_duration = 0
@@ -667,7 +667,7 @@ class QbloxCompiler:
                 bus=element.bus, waveform_I=copied_waveform_I, waveform_Q=copied_waveform_Q
             )
             loop = QPyProgram.IterativeLoop(
-                name=f"square_{self._buses[element.bus].square_optimization_counter}", iterations=iterations
+                name=f"square_{self._buses[element.bus].waveform_optimization_counter}", iterations=iterations
             )
             loop.append_component(component=QPyInstructions.Play(index_I, index_Q, wait_time=chunk_duration))
             self._buses[element.bus].qpy_block_stack[-1].append_component(component=loop)
@@ -681,7 +681,7 @@ class QbloxCompiler:
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Play(index_I, index_Q, wait_time=remainder)
                 )
-            self._buses[element.bus].square_optimization_counter += 1
+            self._buses[element.bus].waveform_optimization_counter += 1
         elif (
             isinstance(waveform_I, FlatTop)
             and (waveform_Q is None or isinstance(waveform_Q, FlatTop))
@@ -692,8 +692,8 @@ class QbloxCompiler:
             duration = smooth_waveform_I.duration
             smooth_duration_I = (
                 smooth_waveform_I.sigma + smooth_waveform_I.buffer
-                if smooth_waveform_I.sigma + smooth_waveform_I.buffer > 4
-                else 4
+                if smooth_waveform_I.sigma + smooth_waveform_I.buffer > INST_MIN_WAIT
+                else INST_MIN_WAIT
             )
             square_duration = duration - smooth_duration_I * 2
 
@@ -703,7 +703,10 @@ class QbloxCompiler:
             end_envelope_Q = None
 
             if isinstance(smooth_waveform_Q, FlatTop):
-                if smooth_waveform_Q.sigma + smooth_waveform_Q.buffer != smooth_duration_I and smooth_duration_I != 4:
+                if (
+                    smooth_waveform_Q.sigma + smooth_waveform_Q.buffer != smooth_duration_I
+                    and smooth_duration_I != INST_MIN_WAIT
+                ):
                     raise ValueError("smooth_duration + buffer of both I and Q must be the same.")
                 inital_envelope_Q = Arbitrary(samples=smooth_waveform_Q.envelope()[:smooth_duration_I])
                 end_envelope_Q = Arbitrary(samples=smooth_waveform_Q.envelope()[-smooth_duration_I:])
@@ -726,7 +729,7 @@ class QbloxCompiler:
                 bus=element.bus, waveform_I=square_waveform_I, waveform_Q=square_waveform_Q
             )
             loop = QPyProgram.IterativeLoop(
-                name=f"square_{self._buses[element.bus].square_optimization_counter}", iterations=iterations
+                name=f"square_{self._buses[element.bus].waveform_optimization_counter}", iterations=iterations
             )
             loop.append_component(component=QPyInstructions.Play(index_I, index_Q, wait_time=chunk_duration))
             self._buses[element.bus].qpy_block_stack[-1].append_component(component=loop)
@@ -748,7 +751,7 @@ class QbloxCompiler:
                 component=QPyInstructions.Play(index_I, index_Q, wait_time=smooth_duration_I)
             )
 
-            self._buses[element.bus].square_optimization_counter += 1
+            self._buses[element.bus].waveform_optimization_counter += 1
         else:
             index_I, index_Q, duration = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
