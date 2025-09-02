@@ -83,10 +83,10 @@ class QbloxDraw:
             param["acquire_idx"] += 1
             classical_duration_acquire = self._get_value(program_line[1].split(',')[-1].strip(), register)
 
-            # If plotting from qprogram - assume that the integration_length is the classical duration of the Q1ASM command
-            integration_length = param.get("integration_length")
-            if integration_length is None:
-                integration_length = classical_duration_acquire
+            # the integration is different from the acquire duration but qililab always equate both, if qililab ever allows to have a different
+            # integration length from acquisition duration, the below line should be modified and the rest of the code will be able to handle
+            # the difference
+            integration_length = classical_duration_acquire
 
             #  Essentially interrupting the previous acquire that is still running and extend the acquiring status to the current acquire
             if len(param["acquiring_status"]) != param["classical_time_counter"]:
