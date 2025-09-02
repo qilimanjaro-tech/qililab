@@ -26,10 +26,7 @@ from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.typings import AcquireTriggerMode, ChannelID, InstrumentName, IntegrationMode, Parameter, ParameterValue
-from typing import Sequence
 
-from dataclasses import field
-from qililab.instruments.qblox.qblox_filters import QbloxFilter
 
 @InstrumentFactory.register
 class QbloxQRM(QbloxModule):

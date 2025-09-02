@@ -18,6 +18,7 @@ from qililab.utils.asdict_factory import dict_factory
 from qililab.constants import DistortionState
 from typing import Sequence
 
+
 @dataclass
 class QbloxFilter:
     module: int | None = None

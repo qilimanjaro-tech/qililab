@@ -104,7 +104,9 @@ class Instrument(BusElement, ABC):
         """Set initial instrument settings."""
 
     @abstractmethod
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None) -> ParameterValue:
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None
+    ) -> ParameterValue:
         """Gets the parameter of a specific instrument.
 
         Args:
@@ -117,7 +119,13 @@ class Instrument(BusElement, ABC):
 
     @log_set_parameter
     @abstractmethod
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, module_id: ModuleID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        module_id: ModuleID | None = None,
+    ):
         """Sets the parameter of a specific instrument.
 
         Args:

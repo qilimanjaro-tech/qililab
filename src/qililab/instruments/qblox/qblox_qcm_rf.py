@@ -15,18 +15,16 @@
 """This file contains the QbloxQCMRF class."""
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Sequence
 
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
+from qililab.instruments.qblox.qblox_filters import QbloxFilter
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 
 from .qblox_qcm import QbloxQCM
-from typing import Sequence
-
-from qililab.instruments.qblox.qblox_filters import QbloxFilter
 
 
 @InstrumentFactory.register

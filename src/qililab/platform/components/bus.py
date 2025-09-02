@@ -27,7 +27,7 @@ from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.result.qprogram import MeasurementResult
 from qililab.settings import Settings
-from qililab.typings import ChannelID, Parameter, ParameterValue, ModuleID
+from qililab.typings import ChannelID, ModuleID, Parameter, ParameterValue
 
 
 class Bus:

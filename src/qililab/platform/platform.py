@@ -67,7 +67,7 @@ from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, ModuleID
+from qililab.typings import ChannelID, InstrumentName, ModuleID, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
@@ -84,6 +84,8 @@ if TYPE_CHECKING:
     from qililab.settings.digital.gate_event_settings import GateEventSettings
 
 from qililab.constants import DistortionState
+
+
 class Platform:
     """Platform object representing the laboratory setup used to control quantum devices.
 
@@ -570,12 +572,12 @@ class Platform:
     def _get_qblox_active_filter(self, parameter: Parameter):
         qblox_active_filter = []
         for pair in self.qblox_alias_module:
-            module_alias, module_id= next(iter(pair.items()))
+            module_alias, module_id = next(iter(pair.items()))
             qblox_instrument = self.instruments.get_instrument(module_alias)
             for filter in qblox_instrument.filters:
                 if filter.module == module_id:
                     state = self.get_parameter(alias=module_alias, parameter=parameter, module_id=module_id)
-                    if state in {DistortionState.ENABLED,DistortionState.DELAY_COMP}:
+                    if state in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
                         qblox_active_filter.append(pair)
         return qblox_active_filter
 
@@ -589,7 +591,7 @@ class Platform:
             for bus in buses:
                 for instrument, _ in zip(bus.instruments, bus.channels):
                     if isinstance(instrument, QbloxModule):
-                        qblox_alias_module.append({instrument.alias:bus.channels[0]})
+                        qblox_alias_module.append({instrument.alias: bus.channels[0]})
         return qblox_alias_module
 
     def set_parameter(
@@ -631,29 +633,29 @@ class Platform:
             self._process_crosstalk(alias, value)
             self._set_bias_from_element(element)
             return
-        
+
         if parameter == Parameter.EXPONENTIAL_STATE:
             if value in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
-                pair = {alias:module_id}
+                pair = {alias: module_id}
                 if pair not in self.qblox_active_filter_exponential:
                     self.qblox_active_filter_exponential.append(pair)
                 self._update_qblox_filter_state_exponential()
             else:
                 try:
                     self.qblox_active_filter_exponential.remove({alias: module_id})
-                except:
+                except ValueError:
                     pass
-        
+
         if parameter == Parameter.FIR_STATE:
             if value in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
-                pair = {alias:module_id}
+                pair = {alias: module_id}
                 if pair not in self.qblox_active_filter_fir:
                     self.qblox_active_filter_fir.append(pair)
                 self._update_qblox_filter_state_fir()
             else:
                 try:
                     self.qblox_active_filter_fir.remove({alias: module_id})
-                except:
+                except ValueError:
                     pass
 
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, module_id=module_id)
