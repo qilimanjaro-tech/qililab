@@ -580,3 +580,16 @@ class TestQBloxDraw:
 
         np.testing.assert_allclose(figure.data[0].y, np.array(expected_results[figure.data[0].name]), rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(figure.data[1].y, np.array(expected_results[figure.data[1].name]), rtol=1e-2, atol=1e-12)
+
+
+    def test_interrupt_acquire(self):
+        """Even though Qililab prevents overlapping acquires, this has been tested and the interruption will be possible if qililab ever allows for it."""
+
+        qblox_draw = QbloxDraw()
+        param = {
+            "acquiring_status": [1, 1, 1],
+            "intermediate_frequency": [10, 20]
+        }
+        out = qblox_draw._interrupt_acquire(param)
+        assert len(out["acquiring_status"]) == len(out["intermediate_frequency"])
+        assert out["acquiring_status"] == [1, 1]
