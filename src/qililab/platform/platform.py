@@ -546,9 +546,6 @@ class Platform:
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
 
-                        if instrument.name == InstrumentName.QRMRF or instrument.name == InstrumentName.QBLOX_QRM:
-                            integration_length = bus.get_parameter(Parameter.INTEGRATION_LENGTH)
-                            data_oscilloscope[bus.alias]["integration_length"] = integration_length
         else:
             # TODO: the same information could be generated with a Quantum Machine runcard, even if the QBlox Compiler is used in the background.
             raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
