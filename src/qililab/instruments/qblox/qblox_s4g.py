@@ -25,7 +25,7 @@ from qililab.instruments.current_source import CurrentSource
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, ModuleID
 from qililab.typings import QbloxS4g as QbloxS4gDriver
 
 
@@ -60,7 +60,13 @@ class QbloxS4g(CurrentSource):
         return getattr(self.device, f"dac{dac_index}")
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        module_id: ModuleID | None = None,
+    ):
         """Set Qblox instrument calibration settings."""
 
         if channel_id is None:
@@ -92,7 +98,9 @@ class QbloxS4g(CurrentSource):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None
+    ):
         """Get instrument parameter.
 
         Args:

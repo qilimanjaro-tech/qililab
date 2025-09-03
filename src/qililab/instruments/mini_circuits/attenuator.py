@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, ModuleID
 from qililab.typings.instruments.mini_circuits import MiniCircuitsDriver
 
 
@@ -45,7 +45,7 @@ class Attenuator(Instrument):
     device: MiniCircuitsDriver
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, module_id: ModuleID | None = None):
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:
             self.settings.attenuation = float(value)
@@ -54,7 +54,7 @@ class Attenuator(Instrument):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None):
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:
             return self.attenuation

@@ -105,7 +105,10 @@ class Instrument(BusElement, ABC):
 
     @abstractmethod
     def get_parameter(
-        self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None
+        self,
+        parameter: Parameter,
+        channel_id: ChannelID | None = None,
+        module_id: ModuleID | None = None,
     ) -> ParameterValue:
         """Gets the parameter of a specific instrument.
 

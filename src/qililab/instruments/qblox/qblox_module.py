@@ -15,7 +15,7 @@
 """Qblox module class"""
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Sequence
+from typing import ClassVar, Sequence, Iterable, cast
 
 from qpysequence import Sequence as QpySequence
 
@@ -156,8 +156,10 @@ class QbloxModule(Instrument):
         for module in self.filters:
             module_id = module.module
 
-            self._set_exponential_filter_amplitude(module_id=module_id, value=module.exponential_amplitude, initial_setup=True)
-            self._set_exponential_filter_tau(module_id=module_id, value=module.exponential_tau, initial_setup=True)
+            self._set_exponential_filter_amplitude(
+                module_id=module_id, value=module.exponential_amplitude, initial_setup=True
+            )
+            self._set_exponential_filter_time_constant(module_id=module_id, value=module.exponential_time_constant, initial_setup=True)
             self._set_exponential_filter_state(module_id=module_id, value=module.exponential_state, initial_setup=True)
 
             # if module.fir_coeff and module.fir_state is not None:
@@ -216,7 +218,7 @@ class QbloxModule(Instrument):
 
         if parameter in {
             Parameter.EXPONENTIAL_AMPLITUDE,
-            Parameter.EXPONENTIAL_TAU,
+            Parameter.EXPONENTIAL_TIME_CONSTANT,
             Parameter.EXPONENTIAL_STATE,
             Parameter.FIR_COEFF,
             Parameter.FIR_STATE,
@@ -226,27 +228,25 @@ class QbloxModule(Instrument):
             module_id = int(module_id)
 
             if parameter == Parameter.EXPONENTIAL_AMPLITUDE:
-                self._set_exponential_filter_amplitude(module_id=module_id, value=value)
+                self._set_exponential_filter_amplitude(module_id=module_id, value=float(value))
                 return
 
-            if parameter == Parameter.EXPONENTIAL_TAU:
-                self._set_exponential_filter_tau(module_id=module_id, value=value)
-                return
-
-            if parameter == Parameter.EXPONENTIAL_STATE:
-                self._set_exponential_filter_state(module_id=module_id, value=value)
+            if parameter == Parameter.EXPONENTIAL_TIME_CONSTANT:
+                self._set_exponential_filter_time_constant(module_id=module_id, value=float(value))
                 return
 
             if parameter == Parameter.EXPONENTIAL_STATE:
-                self._set_exponential_filter_state(module_id=module_id, value=value)
+                self._set_exponential_filter_state(module_id=module_id, value=str(value))
                 return
 
             if parameter == Parameter.FIR_COEFF:
-                self._set_fir_filter_coeff(module_id=module_id, value=value)
+                vals = cast(Iterable[float | int | str], value)
+                coeffs: list[float] = [float(x) for x in vals]
+                self._set_fir_filter_coeff(module_id=module_id, value=coeffs)
                 return
 
             if parameter == Parameter.FIR_STATE:
-                self._set_fir_filter_state(module_id=module_id, value=value)
+                self._set_fir_filter_state(module_id=module_id, value=str(value))
                 return
 
         if channel_id is None:
@@ -297,7 +297,7 @@ class QbloxModule(Instrument):
 
         if parameter in {
             Parameter.EXPONENTIAL_AMPLITUDE,
-            Parameter.EXPONENTIAL_TAU,
+            Parameter.EXPONENTIAL_TIME_CONSTANT,
             Parameter.EXPONENTIAL_STATE,
             Parameter.FIR_COEFF,
             Parameter.FIR_STATE,
@@ -408,21 +408,23 @@ class QbloxModule(Instrument):
         if self.is_device_active():
             getattr(self.device, f"out{output}_offset")(float(value))
 
-    def _set_fir_filter_coeff(self, module_id: int, value: Sequence, initial_setup: bool = False):
+    def _set_fir_filter_coeff(self, module_id: int, value: list, initial_setup: bool = False):
         """Set filters of the Qblox device.
         Args:
             output (int): output to update
             value (float | str | bool): value to update
         """
         # update value in qililab
-        self.get_filter(module_id).fir_coeff = Sequence(value)
+        self.get_filter(module_id).fir_coeff = value
         # update value in the instrument
         if self.is_device_active() and initial_setup is True:
             getattr(self.device, f"out{module_id}_fir_coeffs")(value)
         if initial_setup is False:
-            logger.warning("The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects.")
+            logger.warning(
+                "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
+            )
 
-    def _set_fir_filter_state(self, module_id: int, value: DistortionState, initial_setup: bool = False):
+    def _set_fir_filter_state(self, module_id: int, value: DistortionState | str, initial_setup: bool = False):
         """Set filters of the Qblox device.
         Args:
             output (int): output to update
@@ -436,9 +438,11 @@ class QbloxModule(Instrument):
 
         # update value in the instrument
         if self.is_device_active() and initial_setup is True:
-            getattr(self.device, f"out{module_id}_fir_config")(value)
+            getattr(self.device, f"out{module_id}_fir_config")(str(value))
         if initial_setup is False:
-            logger.warning("The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects.")
+            logger.warning(
+                "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
+            )
 
     def _set_exponential_filter_amplitude(self, module_id: int, value: float, initial_setup: bool = False):
         """Set filters of the Qblox device.
@@ -454,9 +458,11 @@ class QbloxModule(Instrument):
         if self.is_device_active() and initial_setup is True:
             getattr(self.device, f"out{module_id}_exp0_amplitude")(float(value))
         if initial_setup is False:
-            logger.warning("The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects.")
+            logger.warning(
+                "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
+            )
 
-    def _set_exponential_filter_tau(self, module_id: int, value: float, initial_setup: bool = False):
+    def _set_exponential_filter_time_constant(self, module_id: int, value: float, initial_setup: bool = False):
         """Set filters of the Qblox device.
 
         Args:
@@ -466,23 +472,26 @@ class QbloxModule(Instrument):
         Raises:
             ValueError: when value type is not float or int
         """
-        self.get_filter(module_id).exponential_tau = float(value)
+        self.get_filter(module_id).exponential_time_constant = float(value)
         if self.is_device_active() and initial_setup is True:
             getattr(self.device, f"out{module_id}_exp0_time_constant")(float(value))
         if initial_setup is False:
-            logger.warning("The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects.")
+            logger.warning(
+                "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
+            )
 
-    def _set_exponential_filter_state(self, module_id: int, value: DistortionState, initial_setup: bool = False):
+    def _set_exponential_filter_state(self, module_id: int, value: DistortionState | str, initial_setup: bool = False):
         try:
-            # self.filters[module_id].exponential_state = value
             self.get_filter(module_id).exponential_state = value
         except IndexError:
             self.filters.extend([QbloxFilter(module=module_id, exponential_state=value)])
 
         if self.is_device_active() and initial_setup is True:
-            getattr(self.device, f"out{module_id}_exp0_config")(float(value))
+            getattr(self.device, f"out{module_id}_exp0_config")(str(value))
         if initial_setup is False:
-            logger.warning("The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects.")
+            logger.warning(
+                "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
+            )
 
     def _set_gain_i(self, value: float | str | bool, sequencer_id: int):
         """Set the gain of the I channel of the given sequencer.

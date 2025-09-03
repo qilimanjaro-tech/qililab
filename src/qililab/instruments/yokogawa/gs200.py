@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.current_source import CurrentSource
 from qililab.instruments.voltage_source import VoltageSource
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, ModuleID
 from qililab.typings import YokogawaGS200 as YokogawaGS200Driver
 from qililab.typings.enums import SourceMode
 
@@ -162,7 +162,13 @@ class GS200(CurrentSource, VoltageSource):
                 self.device.voltage(value)
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        module_id: ModuleID | None = None,
+    ):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -196,7 +202,9 @@ class GS200(CurrentSource, VoltageSource):
 
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None
+    ):
         if parameter == Parameter.CURRENT:
             return float(self.current)
 

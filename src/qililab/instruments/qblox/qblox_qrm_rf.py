@@ -22,7 +22,7 @@ from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.qblox.qblox_filters import QbloxFilter
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, ModuleID
 
 from .qblox_qrm import QbloxQRM
 
@@ -113,7 +113,9 @@ class QbloxQRMRF(QbloxQRM):
             return
         super().set_parameter(parameter, value, channel_id)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None
+    ):
         """Get a parameter of the Qblox QRM-RF module.
         Args:
             parameter (Parameter): Parameter name.

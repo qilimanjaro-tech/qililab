@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from dataclasses import asdict, dataclass
-from typing import Sequence
 
 from qililab.constants import DistortionState
 from qililab.utils.asdict_factory import dict_factory
@@ -23,10 +22,10 @@ from qililab.utils.asdict_factory import dict_factory
 class QbloxFilter:
     module: int | None = None
     exponential_amplitude: float | None = None
-    exponential_tau: float | None = None
-    exponential_state: DistortionState = None
-    fir_coeff: Sequence | None = None
-    fir_state: DistortionState | None = None
+    exponential_time_constant: float | None = None
+    exponential_state: DistortionState | str | None = None
+    fir_coeff: list | None = None
+    fir_state: DistortionState | str | None = None
 
     def to_dict(self):
         """Return a dict representation of a Qblox Filter."""
