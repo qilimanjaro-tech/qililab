@@ -8,6 +8,7 @@ from pathlib import Path
 from queue import Queue
 from types import MethodType
 from unittest.mock import MagicMock, create_autospec, patch
+import logging
 
 import numpy as np
 import pytest
@@ -536,8 +537,8 @@ class TestPlatform:
         else:
             assert bus in platform.buses
 
-    def test_filter(self, platform: Platform):
-        """Test filters"""
+    def test_get_filter(self, platform: Platform):
+        """Test Get filters"""
         #  Check that the parameters can be retrieved by bus and by module
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_AMPLITUDE, output_id=0) == 0.7
         assert platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_AMPLITUDE, output_id=0) == 0.7
@@ -555,8 +556,36 @@ class TestPlatform:
         assert platform.get_parameter(alias="QRM_0", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
         assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.EXPONENTIAL_STATE, output_id=0) == "delay_comp"
         assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
-        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.EXPONENTIAL_STATE, output_id=1) == "delay_comp"
         assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.FIR_STATE, output_id=1) == "delay_comp"
+        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.EXPONENTIAL_STATE, output_id=1) == "delay_comp"
+
+    def test_setting_filter_bypassed_give_warning(self, caplog, platform: Platform):
+        #  Check that setting a filter as bypassed will actually put/leave it as delay_comp if needed
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, value="bypassed", output_id=1)
+        with caplog.at_level(logging.WARNING):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=1)
+            assert ("Another filter is marked as active hence it is not possible to bypass this filter otherwise this would cause a delay with the other sequencers."
+                in caplog.text)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=1) == "delay_comp"
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value="bypassed", output_id=1)
+        with caplog.at_level(logging.WARNING):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=1)
+            assert ("Another filter is marked as active hence it is not possible to bypass this filter otherwise this would cause a delay with the other sequencers."
+                in caplog.text)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=1) == "delay_comp"
+
+
+    def test_filter_parameter_without_output_id_raises_exception(self, platform: Platform):
+        """Test that setting or getting a filter parameter without giving an output_id raises an Exception."""
+        parameter = Parameter.EXPONENTIAL_STATE
+
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=parameter, value="bypassed")
+
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=parameter)
+    
 
     def test_print_platform(self, platform: Platform):
         """Test print platform."""

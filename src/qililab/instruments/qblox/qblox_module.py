@@ -223,7 +223,7 @@ class QbloxModule(Instrument):
             Parameter.FIR_STATE,
         }:
             if output_id is None:
-                raise Exception(f"Cannot update parameter {parameter.value} without specifying a output_id.")
+                raise Exception(f"Cannot update parameter {parameter.value} without specifying an output_id.")
             output_id = int(output_id)
 
             if parameter == Parameter.EXPONENTIAL_AMPLITUDE:
@@ -302,7 +302,7 @@ class QbloxModule(Instrument):
             Parameter.FIR_STATE,
         }:
             if output_id is None:
-                raise Exception(f"Cannot retrieve parameter {parameter.value} without specifying a output_id.")
+                raise Exception(f"Cannot retrieve parameter {parameter.value} without specifying an output_id.")
             output_id = int(output_id)
             filter = self.get_filter(output_id=output_id)
             if hasattr(filter, parameter.value):

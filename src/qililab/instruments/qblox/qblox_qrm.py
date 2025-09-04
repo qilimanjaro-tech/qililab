@@ -25,7 +25,15 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
-from qililab.typings import AcquireTriggerMode, ChannelID, InstrumentName, IntegrationMode, OutputID, Parameter, ParameterValue
+from qililab.typings import (
+    AcquireTriggerMode,
+    ChannelID,
+    InstrumentName,
+    IntegrationMode,
+    OutputID,
+    Parameter,
+    ParameterValue,
+)
 
 
 @InstrumentFactory.register
@@ -292,7 +300,7 @@ class QbloxQRM(QbloxModule):
         if output_id is not None:
             super().set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
             return
-        
+
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
 
