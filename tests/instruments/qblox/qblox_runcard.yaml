@@ -26,7 +26,7 @@ instruments:
         offset_i: 0.1
         offset_q: 0.1
     filters:
-      - module_id: 0
+      - output_id: 0
         exponential_amplitude: 0.31
         exponential_time_constant: 200
         exponential_state: enabled

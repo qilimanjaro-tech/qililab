@@ -218,9 +218,9 @@ class TestQbloxQCM:
     )
     def test_set_parameter_filters(self, qcm: QbloxQCM, parameter, value):
         """Test setting parameters for QCM filters using parameterized values."""
-        module_id = 0
-        qcm.set_parameter(parameter=parameter, value=value, module_id=module_id)
-        filter = qcm.get_filter(module_id)
+        output_id = 0
+        qcm.set_parameter(parameter=parameter, value=value, output_id=output_id)
+        filter = qcm.get_filter(output_id)
         # Check values based on the parameter
         if parameter == Parameter.EXPONENTIAL_AMPLITUDE:
             assert filter.exponential_amplitude == value
@@ -299,8 +299,8 @@ class TestQbloxQCM:
     )
     def test_get_parameter_filter(self, qcm: QbloxQCM, parameter, expected_value):
         """Test getting parameters for QCM filters using parameterized values."""
-        module_id = 0
-        value = qcm.get_parameter(parameter, module_id=module_id)
+        output_id = 0
+        value = qcm.get_parameter(parameter, output_id=output_id)
         assert value == expected_value
 
     def test_get_parameter_raises_error(self, qcm: QbloxQCM):
@@ -312,7 +312,7 @@ class TestQbloxQCM:
             qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=4)
         
         with pytest.raises(IndexError):
-            qcm.get_parameter(Parameter.EXPONENTIAL_STATE, module_id=2)
+            qcm.get_parameter(Parameter.EXPONENTIAL_STATE, output_id=2)
 
         with pytest.raises(Exception):
             qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=None)
