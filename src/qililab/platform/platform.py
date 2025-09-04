@@ -647,7 +647,7 @@ class Platform:
                     self.qblox_active_filter_exponential.remove({alias: output_id})
                 except ValueError:
                     pass
-                if self.qblox_active_filter_exponential: #  cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                if self.qblox_active_filter_exponential:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
                     self.qblox_active_filter_exponential.append({alias: output_id})
                     element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
                     logger.warning("Another filter is marked as active hence it is not possible to bypass this filter otherwise this would cause a delay with the other sequencers.")
@@ -664,7 +664,7 @@ class Platform:
                     self.qblox_active_filter_fir.remove({alias: output_id})
                 except ValueError:
                     pass
-                if self.qblox_active_filter_fir: #  cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                if self.qblox_active_filter_fir:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
                     self.qblox_active_filter_fir.append({alias: output_id})
                     element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
                     logger.warning("Another filter is marked as active hence it is not possible to bypass this filter otherwise this would cause a delay with the other sequencers.")

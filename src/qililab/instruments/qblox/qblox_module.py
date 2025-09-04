@@ -429,11 +429,11 @@ class QbloxModule(Instrument):
             output (int): output to update
             value (float | str | bool): value to update
         """
+        if output_id > self._NUM_MAX_AWG_OUT_CHANNELS:
+            raise IndexError(f"Output {output_id} exceeds the maximum number of outputs of this QBlox module.")
+
         # update value in qililab
-        try:
-            self.get_filter(output_id).fir_state = value
-        except IndexError:
-            self.filters.extend([QbloxFilter(output_id=output_id, fir_state=value)])
+        self.get_filter(output_id).fir_state = value
 
         # update value in the instrument
         if self.is_device_active() and initial_setup is True:
@@ -480,6 +480,8 @@ class QbloxModule(Instrument):
             )
 
     def _set_exponential_filter_state(self, output_id: int, value: DistortionState | str, initial_setup: bool = False):
+        if output_id > self._NUM_MAX_AWG_OUT_CHANNELS:
+            raise IndexError(f"Output {output_id} exceeds the maximum number of outputs of this QBlox module.")
         try:
             self.get_filter(output_id).exponential_state = value
         except IndexError:

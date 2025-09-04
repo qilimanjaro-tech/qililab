@@ -575,7 +575,6 @@ class TestPlatform:
                 in caplog.text)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=1) == "delay_comp"
 
-
     def test_filter_parameter_without_output_id_raises_exception(self, platform: Platform):
         """Test that setting or getting a filter parameter without giving an output_id raises an Exception."""
         parameter = Parameter.EXPONENTIAL_STATE
@@ -585,7 +584,15 @@ class TestPlatform:
 
         with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
             platform.get_parameter(alias="drive_line_q0_bus", parameter=parameter)
-    
+
+    def test_filter_parameter_with_wrong_output_id_raises_exception(self, platform: Platform):
+        """Test that setting a filter parameter with an output_id>max_output of the instrument raises an Exception."""
+        output_id = 10
+        with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, value="bypassed", output_id=output_id)
+
+        with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value="bypassed", output_id=output_id)
 
     def test_print_platform(self, platform: Platform):
         """Test print platform."""
