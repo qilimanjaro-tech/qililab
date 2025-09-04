@@ -20,7 +20,7 @@ import numpy as np
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Keithley2600Driver, Parameter, ParameterValue, ModuleID
+from qililab.typings import ChannelID, InstrumentName, Keithley2600Driver, OutputID, Parameter, ParameterValue
 
 
 @InstrumentFactory.register
@@ -49,7 +49,7 @@ class Keithley2600(Instrument):
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
-        module_id: ModuleID | None = None,
+        output_id: OutputID | None = None,
     ):
         """Setup instrument."""
         if parameter == Parameter.MAX_CURRENT:
@@ -65,7 +65,7 @@ class Keithley2600(Instrument):
         raise ParameterNotFound(self, parameter)
 
     def get_parameter(
-        self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
     ):
         """Setup instrument."""
         if parameter == Parameter.MAX_CURRENT:

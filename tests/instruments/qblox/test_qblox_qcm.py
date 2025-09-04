@@ -403,3 +403,9 @@ class TestQbloxSequencer:
         sequencer = qcm.get_sequencer(0)
         as_dict = sequencer.to_dict()
         assert isinstance(as_dict, dict)
+
+class TestQbloxFilter:
+    def test_to_dict(self, qcm: QbloxQCM):
+        filter = qcm.get_filter(0)
+        as_dict = filter.to_dict()
+        assert isinstance(as_dict, dict)

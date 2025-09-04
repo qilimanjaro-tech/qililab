@@ -16,4 +16,4 @@
 
 ChannelID = int | str
 ParameterValue = int | float | bool | str
-ModuleID = int | str
+OutputID = int | str

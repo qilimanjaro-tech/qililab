@@ -25,7 +25,7 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
-from qililab.typings import AcquireTriggerMode, ChannelID, InstrumentName, IntegrationMode, Parameter, ParameterValue
+from qililab.typings import AcquireTriggerMode, ChannelID, InstrumentName, IntegrationMode, OutputID, Parameter, ParameterValue
 
 
 @InstrumentFactory.register
@@ -287,8 +287,12 @@ class QbloxQRM(QbloxModule):
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
 
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """set a specific parameter to the instrument"""
+        if output_id is not None:
+            super().set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
+            return
+        
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
 
@@ -329,7 +333,7 @@ class QbloxQRM(QbloxModule):
         if parameter == Parameter.TIME_OF_FLIGHT:
             self._set_time_of_flight(value=int(value), sequencer_id=channel_id)
             return
-        super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        super().set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
 
     def _set_scope_hardware_averaging(self, value: float | str | bool, sequencer_id: int):
         """set scope_hardware_averaging for the specific channel

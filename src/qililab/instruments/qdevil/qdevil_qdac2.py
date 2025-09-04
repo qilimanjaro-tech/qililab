@@ -20,7 +20,7 @@ import numpy as np
 
 from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.voltage_source import VoltageSource
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, ModuleID
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
 from qililab.waveforms import Waveform
 
@@ -65,7 +65,7 @@ class QDevilQDac2(VoltageSource):
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
-        module_id: ModuleID | None = None,
+        output_id: OutputID | None = None,
     ):
         """Set parameter to the corresponding value for an instrument's channel.
 
@@ -185,7 +185,7 @@ class QDevilQDac2(VoltageSource):
         self._cache = {}
 
     def get_parameter(
-        self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
     ):
         """Get parameter's value for an instrument's channel.
 

@@ -303,6 +303,9 @@ class TestPlatformInitialization:
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
         assert isinstance(platform.buses, Buses)
+        assert isinstance(platform.qblox_active_filter_exponential, list)
+        assert isinstance(platform.qblox_active_filter_fir, list)
+        assert isinstance(platform.qblox_alias_module, list)
         assert platform._connected_to_instruments is False
 
 
@@ -532,6 +535,28 @@ class TestPlatform:
             assert bus is None
         else:
             assert bus in platform.buses
+
+    def test_filter(self, platform: Platform):
+        """Test filters"""
+        #  Check that the parameters can be retrieved by bus and by module
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_AMPLITUDE, output_id=0) == 0.7
+        assert platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_AMPLITUDE, output_id=0) == 0.7
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT, output_id=0) == 200
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=0) == "enabled"
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_COEFF, output_id=0)== [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+        
+        #  Check that filters marked as delay_comp in the runcard have not been changed
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=3) == "delay_comp"
+
+        #  Check that the state of the filters have been updated to delaycomp as needed (even for modules without filters in the runcard)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=1) == "delay_comp"
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=2) == "delay_comp"
+        assert platform.get_parameter(alias="QRM_0", parameter=Parameter.EXPONENTIAL_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM_0", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.EXPONENTIAL_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.EXPONENTIAL_STATE, output_id=1) == "delay_comp"
+        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.FIR_STATE, output_id=1) == "delay_comp"
 
     def test_print_platform(self, platform: Platform):
         """Test print platform."""

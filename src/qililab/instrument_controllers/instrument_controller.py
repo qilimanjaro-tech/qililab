@@ -28,7 +28,7 @@ from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.instruments.utils.loader import Loader
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import Settings
-from qililab.typings import ChannelID, Device, InstrumentControllerName, ModuleID, Parameter, ParameterValue
+from qililab.typings import ChannelID, Device, InstrumentControllerName, OutputID, Parameter, ParameterValue
 from qililab.utils import Factory
 
 
@@ -161,7 +161,7 @@ class InstrumentController(BusElement, ABC):
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
-        module_id: ModuleID | None = None
+        output_id: OutputID | None = None
     ):
         """Updates the reset settings for the controller."""
         if parameter == Parameter.RESET:
@@ -173,7 +173,7 @@ class InstrumentController(BusElement, ABC):
         self,
         parameter: Parameter,
         channel_id: ChannelID | None = None,
-        module_id: ModuleID | None = None
+        output_id: OutputID | None = None
     ):
         """Updates the reset settings for the controller."""
         if parameter == Parameter.RESET:

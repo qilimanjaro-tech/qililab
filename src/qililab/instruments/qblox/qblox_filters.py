@@ -20,7 +20,7 @@ from qililab.utils.asdict_factory import dict_factory
 
 @dataclass
 class QbloxFilter:
-    module: int | None = None
+    output_id: int | None = None
     exponential_amplitude: float | None = None
     exponential_time_constant: float | None = None
     exponential_state: DistortionState | str | None = None

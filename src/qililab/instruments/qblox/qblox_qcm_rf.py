@@ -22,7 +22,7 @@ from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.qblox.qblox_filters import QbloxFilter
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, ModuleID
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 
 from .qblox_qcm import QbloxQCM
 
@@ -99,7 +99,7 @@ class QbloxQCMRF(QbloxQCM):
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
-        module_id: ModuleID | None = None,
+        output_id: OutputID | None = None,
     ):
         """Set a parameter of the Qblox QCM-RF module.
 
@@ -145,10 +145,10 @@ class QbloxQCMRF(QbloxQCM):
             if self.is_device_active():
                 self.device.set(parameter.value, value)
             return
-        super().set_parameter(parameter, value, channel_id)
+        super().set_parameter(parameter, value, channel_id, output_id)
 
     def get_parameter(
-        self, parameter: Parameter, channel_id: ChannelID | None = None, module_id: ModuleID | None = None
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
     ):
         """Set a parameter of the Qblox QCM-RF module.
 
@@ -169,7 +169,7 @@ class QbloxQCMRF(QbloxQCM):
 
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)
-        return super().get_parameter(parameter, channel_id)
+        return super().get_parameter(parameter, channel_id, output_id)
 
     def to_dict(self):
         """Return a dict representation of an `QCM-RF` instrument."""

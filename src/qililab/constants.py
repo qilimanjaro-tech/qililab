@@ -270,6 +270,7 @@ class AWGTypes:
 
     AWG_SEQUENCERS = "awg_sequencers"
     OUT_OFFSETS = "out_offsets"
+    FILTERS = "filters"
 
 
 class AWGSequencerTypes:

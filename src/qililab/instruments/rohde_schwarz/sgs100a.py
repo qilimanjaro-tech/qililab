@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, RohdeSchwarzSGS100A, ModuleID
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue, RohdeSchwarzSGS100A
 
 
 @InstrumentFactory.register
@@ -138,7 +138,7 @@ class SGS100A(Instrument):
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
-        module_id: ModuleID | None = None,
+        output_id: OutputID | None = None,
     ):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
@@ -198,7 +198,7 @@ class SGS100A(Instrument):
         self,
         parameter: Parameter,
         channel_id: ChannelID | None = None,
-        module_id: ModuleID | None = None,
+        output_id: OutputID | None = None,
     ) -> ParameterValue:
         if parameter == Parameter.POWER:
             return self.settings.power
