@@ -393,7 +393,6 @@ class Platform:
         if not self._connected_to_instruments:
             raise AttributeError("Can not do initial_setup without being connected to the instruments.")
         self.instrument_controllers.initial_setup()
-        self.instruments
         logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
@@ -480,10 +479,6 @@ class Platform:
 
         """
         return self.buses.get(alias=alias)
-
-    def get_qblox_module(self):
-
-        return
 
     def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Get platform parameter.
