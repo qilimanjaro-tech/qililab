@@ -668,16 +668,18 @@ class Platform:
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
 
     def _update_qblox_filter_state_exponential(self):
-        for pair in self.qblox_alias_module:
-            if pair not in self.qblox_active_filter_exponential:
-                alias, output_id = next(iter(pair.items()))
-                self.set_parameter(alias=alias, parameter=Parameter.EXPONENTIAL_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
+        if self.qblox_active_filter_exponential:
+            for pair in self.qblox_alias_module:
+                if pair not in self.qblox_active_filter_exponential:
+                    alias, output_id = next(iter(pair.items()))
+                    self.set_parameter(alias=alias, parameter=Parameter.EXPONENTIAL_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
 
     def _update_qblox_filter_state_fir(self):
-        for pair in self.qblox_alias_module:
-            if pair not in self.qblox_active_filter_fir:
-                alias, output_id = next(iter(pair.items()))
-                self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
+        if self.qblox_active_filter_fir:
+            for pair in self.qblox_alias_module:
+                if pair not in self.qblox_active_filter_fir:
+                    alias, output_id = next(iter(pair.items()))
+                    self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
 
     def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
         """Sets the right parameter depending on the instrument defined inside the element.

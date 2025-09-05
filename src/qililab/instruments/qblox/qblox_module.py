@@ -42,6 +42,7 @@ class QbloxModule(Instrument):
     _NUM_MAX_SEQUENCERS: int = 6
     _NUM_MAX_AWG_OUT_CHANNELS: int = 4
     _MIN_WAIT_TIME: int = 4  # in ns
+    _FILTER_FIR_COEFF_LENGTH: int = 32
 
     @dataclass
     class QbloxModuleSettings(Instrument.InstrumentSettings):
@@ -56,7 +57,6 @@ class QbloxModule(Instrument):
         awg_sequencers: Sequence[QbloxSequencer]
         out_offsets: list[float]
         filters: Sequence[QbloxFilter] | None = field(default=None, kw_only=True)
-        # filters: Sequence[QbloxFilter] | None = None
 
         def __post_init__(self):
             """build QbloxSequencer"""
@@ -413,15 +413,19 @@ class QbloxModule(Instrument):
             output (int): output to update
             value (float | str | bool): value to update
         """
-        # update value in qililab
-        self.get_filter(output_id).fir_coeff = value
-        # update value in the instrument
-        if self.is_device_active() and initial_setup is True:
-            getattr(self.device, f"out{output_id}_fir_coeffs")(value)
-        if initial_setup is False:
-            logger.warning(
-                "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
-            )
+        if value is not None:
+            # update value in qililab
+            if len(value) != 32:
+                raise ValueError(f"The number of elements in the list must be exactly {QbloxModule._FILTER_FIR_COEFF_LENGTH}. Received: {len(value)}")
+            else: 
+                self.get_filter(output_id).fir_coeff = value
+                # update value in the instrument
+                if self.is_device_active() and initial_setup is True:
+                    getattr(self.device, f"out{output_id}_fir_coeffs")(value)
+                if initial_setup is False:
+                    logger.warning(
+                        "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
+                    )
 
     def _set_fir_filter_state(self, output_id: int, value: DistortionState | str, initial_setup: bool = False):
         """Set filters of the Qblox device.
@@ -429,19 +433,20 @@ class QbloxModule(Instrument):
             output (int): output to update
             value (float | str | bool): value to update
         """
-        if output_id > self._NUM_MAX_AWG_OUT_CHANNELS:
-            raise IndexError(f"Output {output_id} exceeds the maximum number of outputs of this QBlox module.")
+        if value is not None:
+            if output_id > self._NUM_MAX_AWG_OUT_CHANNELS:
+                raise IndexError(f"Output {output_id} exceeds the maximum number of outputs of this QBlox module.")
 
-        # update value in qililab
-        self.get_filter(output_id).fir_state = value
+            # update value in qililab
+            self.get_filter(output_id).fir_state = value
 
-        # update value in the instrument
-        if self.is_device_active() and initial_setup is True:
-            getattr(self.device, f"out{output_id}_fir_config")(str(value))
-        if initial_setup is False:
-            logger.warning(
-                "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
-            )
+            # update value in the instrument
+            if self.is_device_active() and initial_setup is True:
+                getattr(self.device, f"out{output_id}_fir_config")(str(value))
+            if initial_setup is False:
+                logger.warning(
+                    "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
+                )
 
     def _set_exponential_filter_amplitude(self, output_id: int, value: float, initial_setup: bool = False):
         """Set filters of the Qblox device.
@@ -453,13 +458,14 @@ class QbloxModule(Instrument):
         Raises:
             ValueError: when value type is not float or int
         """
-        self.get_filter(output_id).exponential_amplitude = float(value)
-        if self.is_device_active() and initial_setup is True:
-            getattr(self.device, f"out{output_id}_exp0_amplitude")(float(value))
-        if initial_setup is False:
-            logger.warning(
-                "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
-            )
+        if value is not None:
+            self.get_filter(output_id).exponential_amplitude = float(value)
+            if self.is_device_active() and initial_setup is True:
+                getattr(self.device, f"out{output_id}_exp0_amplitude")(float(value))
+            if initial_setup is False:
+                logger.warning(
+                    "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
+                )
 
     def _set_exponential_filter_time_constant(self, output_id: int, value: float, initial_setup: bool = False):
         """Set filters of the Qblox device.
@@ -471,28 +477,30 @@ class QbloxModule(Instrument):
         Raises:
             ValueError: when value type is not float or int
         """
-        self.get_filter(output_id).exponential_time_constant = float(value)
-        if self.is_device_active() and initial_setup is True:
-            getattr(self.device, f"out{output_id}_exp0_time_constant")(float(value))
-        if initial_setup is False:
-            logger.warning(
-                "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
-            )
+        if value is not None:
+            self.get_filter(output_id).exponential_time_constant = float(value)
+            if self.is_device_active() and initial_setup is True:
+                getattr(self.device, f"out{output_id}_exp0_time_constant")(float(value))
+            if initial_setup is False:
+                logger.warning(
+                    "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
+                )
 
     def _set_exponential_filter_state(self, output_id: int, value: DistortionState | str, initial_setup: bool = False):
-        if output_id > self._NUM_MAX_AWG_OUT_CHANNELS:
-            raise IndexError(f"Output {output_id} exceeds the maximum number of outputs of this QBlox module.")
-        try:
-            self.get_filter(output_id).exponential_state = value
-        except IndexError:
-            self.filters.extend([QbloxFilter(output_id=output_id, exponential_state=value)])
+        if value is not None:
+            if output_id > self._NUM_MAX_AWG_OUT_CHANNELS:
+                raise IndexError(f"Output {output_id} exceeds the maximum number of outputs of this QBlox module.")
+            try:
+                self.get_filter(output_id).exponential_state = value
+            except IndexError:
+                self.filters.extend([QbloxFilter(output_id=output_id, exponential_state=value)])
 
-        if self.is_device_active() and initial_setup is True:
-            getattr(self.device, f"out{output_id}_exp0_config")(str(value))
-        if initial_setup is False:
-            logger.warning(
-                "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
-            )
+            if self.is_device_active() and initial_setup is True:
+                getattr(self.device, f"out{output_id}_exp0_config")(str(value))
+            if initial_setup is False:
+                logger.warning(
+                    "The setting has been saved but not applied to the instrument. Qililab does not allow distortion filter settings to be modified outside of initial setup due to transient effects."
+                )
 
     def _set_gain_i(self, value: float | str | bool, sequencer_id: int):
         """Set the gain of the I channel of the given sequencer.
