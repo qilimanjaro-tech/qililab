@@ -28,7 +28,7 @@ from qm.program import Program
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, QMMDriver
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue, QMMDriver
 from qililab.utils import hash_qua_program, merge_dictionaries
 
 
@@ -585,7 +585,13 @@ class QuantumMachinesCluster(Instrument):
         return (con_name, con_port, con_fem)
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None) -> None:
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ) -> None:
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 
         And if connection to instruments is established, then to the instruments as well.
@@ -770,7 +776,9 @@ class QuantumMachinesCluster(Instrument):
 
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
+    ) -> ParameterValue:
         """Gets the value of a parameter.
 
         Args:

@@ -27,7 +27,7 @@ from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.result.qprogram import MeasurementResult
 from qililab.settings import Settings
-from qililab.typings import ChannelID, Parameter, ParameterValue
+from qililab.typings import ChannelID, OutputID, Parameter, ParameterValue
 
 
 class Bus:
@@ -153,7 +153,7 @@ class Bus:
         """Return true if bus has ADC capabilities."""
         return any(instrument.is_adc() for instrument in self.instruments)
 
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Set a parameter to the bus.
 
         Args:
@@ -166,11 +166,14 @@ class Bus:
                 if channel_id is not None and channel_id == instrument_channel:
                     instrument.set_parameter(parameter, value, channel_id)
                     return
+                if output_id is not None:
+                    instrument.set_parameter(parameter=parameter, value=value, output_id=output_id)
+                    return
                 instrument.set_parameter(parameter, value, instrument_channel)
                 return
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Gets a parameter of the bus.
 
         Args:
@@ -184,6 +187,8 @@ class Bus:
             with contextlib.suppress(ParameterNotFound):
                 if channel_id is not None and channel_id == instrument_channel:
                     return instrument.get_parameter(parameter, channel_id)
+                if output_id is not None:
+                    return instrument.get_parameter(parameter=parameter, output_id=output_id)
                 return instrument.get_parameter(parameter, instrument_channel)
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 

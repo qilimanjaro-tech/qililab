@@ -67,7 +67,7 @@ from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
@@ -82,6 +82,8 @@ if TYPE_CHECKING:
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
     from qililab.settings.digital.gate_event_settings import GateEventSettings
+
+from qililab.constants import DistortionState
 
 
 class Platform:
@@ -351,6 +353,16 @@ class Platform:
         self.save_experiment_results_in_database: bool = True
         """Database trigger to define if the experiment metadata will be saved in a database or not"""
 
+        self.qblox_alias_module: list = self._get_qblox_alias_module()
+
+        self.qblox_active_filter_exponential: list = self._get_qblox_active_filter(parameter=Parameter.EXPONENTIAL_STATE)
+
+        self.qblox_active_filter_fir: list = self._get_qblox_active_filter(parameter=Parameter.FIR_STATE)
+
+        self._update_qblox_filter_state_exponential()
+
+        self._update_qblox_filter_state_fir()
+
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
 
@@ -468,13 +480,14 @@ class Platform:
         """
         return self.buses.get(alias=alias)
 
-    def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Get platform parameter.
 
         Args:
             parameter (Parameter): Name of the parameter to get.
             alias (str): Alias of the bus where the parameter is set.
             channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
+            output_id (int, optional): ID of the module we want to use to set the parameter, used for Qblox distortion filters. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
@@ -488,7 +501,7 @@ class Platform:
                 self.flux_parameter[alias] = 0.0
             return self.flux_parameter[alias]
         element = self.get_element(alias=alias)
-        return element.get_parameter(parameter=parameter, channel_id=channel_id)
+        return element.get_parameter(parameter=parameter, channel_id=channel_id, output_id=output_id)
 
     def _data_draw(self):
         """From the runcard retrieve the parameters necessary to draw the qprogram."""
@@ -552,12 +565,39 @@ class Platform:
 
         return data_oscilloscope
 
+    def _get_qblox_active_filter(self, parameter: Parameter):
+        qblox_active_filter = []
+        for pair in self.qblox_alias_module:
+            module_alias, output_id = next(iter(pair.items()))
+            qblox_instrument = self.instruments.get_instrument(module_alias)
+            for filter in qblox_instrument.filters:
+                if filter.output_id == output_id:
+                    state = self.get_parameter(alias=module_alias, parameter=parameter, output_id=output_id)
+                    if state in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and pair not in qblox_active_filter:
+                        qblox_active_filter.append(pair)
+        return qblox_active_filter
+
+    def _get_qblox_alias_module(self):
+        buses = list(self.buses)
+        qblox_alias_module = []
+        instruments = {
+            instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
+        }
+        if instruments and all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            for bus in buses:
+                for instrument, _ in zip(bus.instruments, bus.channels):
+                    pair = {instrument.alias: bus.channels[0]}
+                    if isinstance(instrument, QbloxModule) and pair not in qblox_alias_module:
+                        qblox_alias_module.append(pair)
+        return qblox_alias_module
+
     def set_parameter(
         self,
         alias: str,
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
     ):
         """Set a parameter for a platform element.
 
@@ -591,7 +631,55 @@ class Platform:
             self._set_bias_from_element(element)
             return
 
-        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        if parameter == Parameter.EXPONENTIAL_STATE:
+            if value in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
+                pair = {alias: output_id}
+                if pair not in self.qblox_active_filter_exponential:
+                    self.qblox_active_filter_exponential.append(pair)
+                self._update_qblox_filter_state_exponential()
+            else:
+                try:
+                    self.qblox_active_filter_exponential.remove({alias: output_id})
+                except ValueError:
+                    pass
+                if self.qblox_active_filter_exponential:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                    self.qblox_active_filter_exponential.append({alias: output_id})
+                    element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
+                    logger.warning("Another filter is marked as active hence it is not possible to bypass this filter otherwise this would cause a delay with the other sequencers.")
+                    return
+
+        if parameter == Parameter.FIR_STATE:
+            if value in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
+                pair = {alias: output_id}
+                if pair not in self.qblox_active_filter_fir:
+                    self.qblox_active_filter_fir.append(pair)
+                self._update_qblox_filter_state_fir()
+            else:
+                try:
+                    self.qblox_active_filter_fir.remove({alias: output_id})
+                except ValueError:
+                    pass
+                if self.qblox_active_filter_fir:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                    self.qblox_active_filter_fir.append({alias: output_id})
+                    element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
+                    logger.warning("Another filter is marked as active hence it is not possible to bypass this filter otherwise this would cause a delay with the other sequencers.")
+                    return
+
+        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
+
+    def _update_qblox_filter_state_exponential(self):
+        if self.qblox_active_filter_exponential:
+            for pair in self.qblox_alias_module:
+                if pair not in self.qblox_active_filter_exponential:
+                    alias, output_id = next(iter(pair.items()))
+                    self.set_parameter(alias=alias, parameter=Parameter.EXPONENTIAL_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
+
+    def _update_qblox_filter_state_fir(self):
+        if self.qblox_active_filter_fir:
+            for pair in self.qblox_alias_module:
+                if pair not in self.qblox_active_filter_fir:
+                    alias, output_id = next(iter(pair.items()))
+                    self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
 
     def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
         """Sets the right parameter depending on the instrument defined inside the element.

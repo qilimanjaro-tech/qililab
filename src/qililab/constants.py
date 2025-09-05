@@ -270,6 +270,7 @@ class AWGTypes:
 
     AWG_SEQUENCERS = "awg_sequencers"
     OUT_OFFSETS = "out_offsets"
+    FILTERS = "filters"
 
 
 class AWGSequencerTypes:
@@ -300,3 +301,11 @@ class AWGOutputChannelTypes:
     """Types from AWG Ouput Channel Types"""
 
     IDENTIFIER = "identifier"
+
+
+class DistortionState:
+    """Types for the distortion state"""
+
+    ENABLED = "enabled"
+    BYPASSED = "bypassed"
+    DELAY_COMP = "delay_comp"
