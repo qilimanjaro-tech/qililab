@@ -580,15 +580,14 @@ class Platform:
     def _get_qblox_alias_module(self):
         buses = list(self.buses)
         qblox_alias_module = []
-        instruments = {
-            instrument for bus in buses for instrument in bus.instruments if isinstance(instrument, (QbloxModule))
-        }
-        if instruments and all(isinstance(instrument, QbloxModule) for instrument in instruments):
-            for bus in buses:
-                for instrument, _ in zip(bus.instruments, bus.channels):
-                    pair = {instrument.alias: bus.channels[0]}
-                    if isinstance(instrument, QbloxModule) and pair not in qblox_alias_module:
-                        qblox_alias_module.append(pair)
+        for bus in buses:
+            for instrument, channel in zip(bus.instruments, bus.channels):
+                if isinstance(instrument, QbloxModule):
+                    output_channels = instrument.awg_sequencers[channel].outputs
+                    for output_channel in output_channels:
+                        pair = {instrument.alias: output_channel}
+                        if pair not in qblox_alias_module:
+                            qblox_alias_module.append(pair)
         return qblox_alias_module
 
     def set_parameter(
