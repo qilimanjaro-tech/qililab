@@ -70,9 +70,7 @@ class CalibrationController:
             making the calibration process faster, but less accurate,and a small value will make the calibration process slower, but more accurate and robust.
             A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (3h).
 
-    Examples:
-
-        **Calibration Workflow:**
+   Calibration Workflow:
 
         The calibration process is structured into three levels of methods:
 
@@ -93,7 +91,7 @@ class CalibrationController:
 
         ----------
 
-        **Practical examples:**
+    Practical examples:
 
         To calibrate four different qubits, each with two sequential nodes. And two 2Q gate connecting qubits 0-1 and 2-3:
 
