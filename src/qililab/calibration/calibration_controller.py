@@ -266,7 +266,7 @@ class CalibrationController:
         return self.get_qubit_fidelities_and_parameters_df_tables()
 
     def calibrate_all(self, node: CalibrationNode):
-        """Given a node to start from, calibrates all the dependency notebooks sequentially, so the given node is able to be calibrated last.
+        """Given a node to start from, calibrates all the dependency notebooks sequentially, so that the given node can be calibrated last.
 
         Args:
             node (CalibrationNode): The node where we want to start the `calibration_all()` on. Normally you would want
