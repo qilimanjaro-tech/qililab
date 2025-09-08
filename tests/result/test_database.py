@@ -310,7 +310,7 @@ class Testdatabase:
         mock_session.query.return_value = query_mock
 
         # Call the method
-        result = db_manager.tail(exp_name="test")
+        result = db_manager.tail(exp_name="test", since_id=1)
 
         # Assertions
         mock_session.query.assert_called_with(Measurement)
@@ -326,10 +326,11 @@ class Testdatabase:
         mock_read_sql.return_value = df_mock
 
         # Pandas output path
-        result_pandas = db_manager.tail(order_limit=None, pandas_output=True)
+        result_pandas = db_manager.tail(order_limit=None, pandas_output=True, light_read=True)
 
         # Assertions
         assert query_mock.order_by.called  # same mock
+        assert query_mock.with_entities.called
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
 
