@@ -387,7 +387,7 @@ class Testdatabase:
         mock_session.__enter__.return_value = mock_session
 
         with patch("os.path.isfile", return_value=False):
-            platform = db_manager.get_qprogram(123)
+            platform = db_manager.get_platform(123)
 
         assert platform == mock_session.query(Measurement.platform).filter(Measurement.measurement_id == 123).scalar()
 
