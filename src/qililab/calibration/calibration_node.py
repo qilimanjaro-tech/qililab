@@ -65,7 +65,9 @@ class CalibrationNode:
         input_parameters (dict, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
         sweep_interval (np.ndarray, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
 
-    Notebooks execution workflow:
+    |
+
+    **Notebooks execution workflow:**
 
         First the key functionality of this class is implemented in the ``run_node()`` method**. The workflow of ``run_node()`` is as follows:
 
@@ -100,7 +102,7 @@ class CalibrationNode:
 
         ----------
 
-    Practical example:
+    Examples:
 
         To calibrate two linked experiments (first and second), for 2 distinct qubits:
 
