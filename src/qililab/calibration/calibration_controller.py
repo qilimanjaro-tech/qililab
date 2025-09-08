@@ -100,11 +100,12 @@ class CalibrationController:
         .. code-block:: python
 
             # qubit_0: first -> second \\
-            #                            --> joint[0,1]
+            #                           --> joint[0,1]
             # qubit_1: first -> second /
             #
+            #
             # qubit_2: first -> second \\
-            #                          --> joint[2,3]
+            #                           --> joint[2,3]
             # qubit_3: first -> second /
 
         you need to create the 1Q nodes:
