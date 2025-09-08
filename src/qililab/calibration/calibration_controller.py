@@ -97,13 +97,15 @@ class CalibrationController:
 
         To calibrate four different qubits, each with two sequential nodes. And two 2Q gate connecting qubits 0-1 and 2-3:
 
-            qubit_0: first -> second \\
-                                       --> joint[0,1]
-            qubit_1: first -> second /
+        .. code-block:: python
 
-            qubit_2: first -> second \\
-                                      --> joint[2,3]
-            qubit_3: first -> second /
+            # qubit_0: first -> second \\
+            #                            --> joint[0,1]
+            # qubit_1: first -> second /
+            #
+            # qubit_2: first -> second \\
+            #                          --> joint[2,3]
+            # qubit_3: first -> second /
 
         you need to create the 1Q nodes:
 

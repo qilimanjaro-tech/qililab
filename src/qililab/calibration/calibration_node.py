@@ -104,7 +104,15 @@ class CalibrationNode:
 
         **Practical example:**
 
-        To calibrate two linked experiments, for 2 distinct qubits, you need:
+        To calibrate two linked experiments, for 2 distinct qubits:
+
+        .. code-block:: python
+
+            # qubit_0: first -> second
+            #
+            # qubit_1: first -> second
+
+        you need:
 
         .. code-block:: python
 
