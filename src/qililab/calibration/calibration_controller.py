@@ -140,8 +140,8 @@ class CalibrationController:
                 # GRAPH BUILDING (1st --> 2nd):
                 G.add_edge(first.node_id, second.node_id)
 
-    Then you can add the 2Q nodes, explicitly writing the dependence, which would calibrate separately each of the two separate
-    subgraphs (joint[0,1] with qubits 0,1 first, and joint[2,3] with qubits 2,3 later):
+    Then you can add the 2Q nodes, explicitly writing its dependence, which would calibrate sequentially each of the two separate
+    graphs (joint[0,1] with qubits 0,1 first, and joint[2,3] with qubits 2,3 later):
 
         .. code-block:: python
 
