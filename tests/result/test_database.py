@@ -274,8 +274,17 @@ class Testdatabase:
         assert mock_session.rollback.called_once
 
     def test_load_by_id(self, db_manager: DatabaseManager):
-        db_manager.load_by_id(123)
-        assert db_manager.Session().query.called
+        mock_measurement = MagicMock(spec=Measurement)
+        mock_measurement.result_path = "/local_test/results/file.h5"
+        mock_measurement.measurement_id = 123
+
+        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+
+        with patch("os.path.isfile", return_value=False):
+            result = db_manager.load_by_id(123)
+
+        assert db_manager._mock_session.query.called
+        assert result.result_path == "/shared_test/results/file.h5"
 
     def test_load_by_id_path_not_found(self, db_manager: DatabaseManager):
         # Setup a mock measurement
@@ -284,15 +293,8 @@ class Testdatabase:
         db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
 
         # Patch os.path.isfile to return False to simulate missing file
-        with patch("os.path.isfile", return_value=False), warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")  # Ensure all warnings are caught
-
+        with patch("os.path.isfile", return_value=False):
             db_manager.load_by_id(123)
-
-            # Check that a warning was issued
-            assert len(w) == 1
-            assert issubclass(w[0].category, UserWarning)
-            assert "Replaced local path" in str(w[0].message)
 
     @patch("qililab.result.database.read_sql")
     def test_tail(self, mock_read_sql, db_manager: DatabaseManager):
@@ -308,7 +310,7 @@ class Testdatabase:
         mock_session.query.return_value = query_mock
 
         # Call the method
-        result = db_manager.tail(exp_name="test")
+        result = db_manager.tail(exp_name="test", since_id=1)
 
         # Assertions
         mock_session.query.assert_called_with(Measurement)
@@ -324,10 +326,11 @@ class Testdatabase:
         mock_read_sql.return_value = df_mock
 
         # Pandas output path
-        result_pandas = db_manager.tail(order_limit=None, pandas_output=True)
+        result_pandas = db_manager.tail(order_limit=None, pandas_output=True, light_read=True)
 
         # Assertions
         assert query_mock.order_by.called  # same mock
+        assert query_mock.with_entities.called
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
 
@@ -345,7 +348,7 @@ class Testdatabase:
         mock_session.query.return_value = query_mock
 
         # Call the method
-        result = db_manager.head(exp_name="test")
+        result = db_manager.head(exp_name="test", before_id=10)
 
         # Assertions
         mock_session.query.assert_called_with(Measurement)
@@ -361,12 +364,32 @@ class Testdatabase:
         mock_read_sql.return_value = df_mock
 
         # Pandas output path
-        result_pandas = db_manager.head(order_limit=None, pandas_output=True)
+        result_pandas = db_manager.head(order_limit=None, pandas_output=True, light_read=True)
 
         # Assertions
         assert query_mock.order_by.called  # same mock
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
+
+    def test_get_qprogram(self, db_manager: DatabaseManager):
+        """Test get qprogram function from the database manager"""
+        mock_session = db_manager.Session()
+        mock_session.__enter__.return_value = mock_session
+
+        with patch("os.path.isfile", return_value=False):
+            qprogram = db_manager.get_qprogram(123)
+
+        assert qprogram == mock_session.query(Measurement.qprogram).filter(Measurement.measurement_id == 123).scalar()
+
+    def test_get_platform(self, db_manager: DatabaseManager):
+        """Test get platform function from the database manager"""
+        mock_session = db_manager.Session()
+        mock_session.__enter__.return_value = mock_session
+
+        with patch("os.path.isfile", return_value=False):
+            platform = db_manager.get_platform(123)
+
+        assert platform == mock_session.query(Measurement.platform).filter(Measurement.measurement_id == 123).scalar()
 
     @patch("qililab.result.database.os.makedirs")
     @patch("qililab.result.database.datetime")

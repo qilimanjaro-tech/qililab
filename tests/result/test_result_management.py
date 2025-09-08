@@ -17,7 +17,7 @@ class TestResultsData:
 
         path = save_results(results=np.array([]), loops={"one_loop": np.arange(0, 100, 0.1)}, data_path="", name="test")
 
-        mock_file.assert_called_once_with(f"{path}/results.h5", "w")
+        mock_file.assert_called_once_with(f"{path}/results.h5", "w", libver="latest", swmr=True)
         assert mock_makedirs.call_count == 2
         mock_makedirs.assert_called_with(path)
 
@@ -46,7 +46,7 @@ class TestResultsData:
         load_results(path=path)
 
         # Mocks
-        mock_file.assert_called_once_with(path, "r")
+        mock_file.assert_called_once_with(path, "r", libver="latest", swmr=True)
         mock_makedirs.assert_not_called()
 
     def test_load_results_with_dict_data(self, mock_file: MagicMock, mock_makedirs: MagicMock):
@@ -87,5 +87,5 @@ class TestResultsData:
         assert "loop2" in loops
 
         # Mocks
-        mock_file.assert_called_once_with(path, "r")
+        mock_file.assert_called_once_with(path, "r", libver="latest", swmr=True)
         mock_makedirs.assert_not_called()

@@ -22,19 +22,23 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class QbloxMeasurementResult(MeasurementResult):
-    """QbloxQProgramMeasurementResult class. Contains the acquisitions results for a single measurement obtained from the `Cluster.get_acquisitions` method.
+    """QbloxMeasurementResult class. Contains the acquisitions results for a
+    single measurement obtained from the `Cluster.get_acquisitions` method.
 
-    The input to the constructor should be a dictionary with the following structure:
-
-    - integration: integration data.
-        - path_0: input path 0 integration result bin list.
-        - path_1: input path 1 integration result bin list.
-    - threshold: threshold result bin list.
-    - valid: list of valid indications per bin.
-    - avg_cnt: list of number of averages per bin.
+    This class stores the acquisition results from a single measurement
+    obtained via the `Cluster.get_acquisitions` method. It parses and
+    reshapes the raw data provided by the Qblox hardware into standardized
+    numpy arrays for further processing.
 
     Args:
-        raw_measurement_data (dict): Raw data obtained from the Qblox digitiser.
+        name : ResultName
+            Identifier for the type of result.
+        raw_measurement_data : dict
+            Raw dictionary of measurement data from the digitiser.
+        shape : tuple of int or None
+            Expected shape to reshape the raw measurement arrays into.
+        bus : str
+            Identifier for the acquisition bus.
     """
 
     name = ResultName.QBLOX_QPROGRAM_MEASUREMENT
