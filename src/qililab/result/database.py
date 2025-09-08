@@ -134,6 +134,7 @@ class Measurement(base):  # type: ignore
     data_shape: Column = Column("data_shape", ARRAY(Integer))
     debug_file = Column("debug_file", Text)
     created_by = Column("created_by", String, server_default=text("current_user"))
+    # TODO: add error_report = Column("error_report", String, nullable=True)
 
     def end_experiment(self, Session):
         """Function to end measurement of the experiment. The function sets inside the database information
@@ -143,13 +144,14 @@ class Measurement(base):  # type: ignore
             # Merge the detached instance into the current session
             persistent_instance = session.merge(self)
             persistent_instance.end_time = datetime.datetime.now()
-            persistent_instance.experiment_completed = True
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
                 session.commit()
+                persistent_instance.experiment_completed = True
                 return persistent_instance
             except Exception as e:
                 session.rollback()
+                # TODO: add persistent_instance.error_report = e.__str__()
                 raise e
 
     def read_experiment(self):
@@ -369,17 +371,16 @@ class DatabaseManager:
 
     def load_by_id(self, id):
         """Load measurement by its measurement_id."""
+        with self.Session() as session:
+            measurement_by_id = session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
 
-        measurement_by_id = self.Session().query(Measurement).where(Measurement.measurement_id == id).one_or_none()
+            path = measurement_by_id.result_path
+            if not os.path.isfile(path):
 
-        path = measurement_by_id.result_path
-        if not os.path.isfile(path):
+                new_path = path.replace(self.base_path_local, self.base_path_share)
+                measurement_by_id.result_path = new_path
 
-            new_path = path.replace(self.base_path_local, self.base_path_share)
-            measurement_by_id.result_path = new_path
-            warnings.warn(f"Replaced local path {path} by {new_path} as it was not found.")
-
-        return measurement_by_id
+            return measurement_by_id
 
     def tail(
         self,
@@ -387,6 +388,8 @@ class DatabaseManager:
         current_sample: bool = True,
         order_limit: int | None = 5,
         pandas_output: bool = False,
+        light_read: bool = False,
+        since_id: int | None = None,
     ):
         """Add an index at the end of the database.
 
@@ -395,12 +398,16 @@ class DatabaseManager:
             current_sample (bool, optional): Conditional to define if the sample is currently on use. Defaults to True.
             order_limit (int | None, optional): Limit of the order by query. Defaults to 5.
             pandas_output (bool, optional): If True, read database table into a DataFrame. Defaults to False.
+            light_read (bool, optional): If True, load only a subset of the columns. Replace heavy columns Platform and Qprogram by True or False. Defaults to False.
+            since_id (int | None, optional): If provided, only load measurements with measurement_id greater than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
             query = self.Session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
+            if since_id:
+                query = query.filter(Measurement.measurement_id > since_id)
 
             if exp_name is not None:
                 query = query.filter(Measurement.experiment_name == exp_name)
@@ -409,6 +416,24 @@ class DatabaseManager:
                 query = query.order_by(Measurement.measurement_id.desc()).limit(order_limit)
             else:
                 query = query.order_by(Measurement.measurement_id.desc())
+
+            if light_read:
+                query = query.with_entities(  # Note that some columns are missing that currently are not being used
+                    Measurement.measurement_id,
+                    Measurement.experiment_name,
+                    Measurement.optional_identifier,
+                    Measurement.start_time,
+                    Measurement.end_time,
+                    Measurement.run_length,
+                    Measurement.experiment_completed,
+                    Measurement.cooldown,
+                    Measurement.sample_name,
+                    Measurement.result_path,
+                    Measurement.created_by,
+                    Measurement.debug_file,
+                    (Measurement.qprogram.isnot(None)).label("has_qprogram"),
+                    (Measurement.platform.isnot(None)).label("has_platform"),
+                )
 
             if pandas_output:
                 return read_sql(query.statement, con=con)
@@ -420,6 +445,8 @@ class DatabaseManager:
         current_sample: bool = True,
         order_limit: int | None = 5,
         pandas_output: bool = False,
+        light_read: bool = False,
+        before_id: int | None = None,
     ):
         """Add an index at the beginning of the database.
 
@@ -428,12 +455,17 @@ class DatabaseManager:
             current_sample (bool, optional): Conditional to define if the sample is currently on use. Defaults to True.
             order_limit (int | None, optional): Limit of the order by query. Defaults to 5.
             pandas_output (bool, optional): If True, read database table into a DataFrame. Defaults to False.
+            light_read (bool, optional): If True, load only a subset of the columns. Replace heavy columns Platform and Qprogram by True or False. Defaults to False.
+            before_id (int | None, optional): If provided, only load measurements with measurement_id lower than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
             query = self.Session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
+
+            if before_id:
+                query = query.filter(Measurement.measurement_id < before_id)
 
             if exp_name is not None:
                 query = query.filter(Measurement.experiment_name == exp_name)
@@ -443,9 +475,41 @@ class DatabaseManager:
             else:
                 query = query.order_by(Measurement.measurement_id)
 
+            if light_read:
+                query = query.with_entities(  # Note that some columns are missing that currently are not being used
+                    Measurement.measurement_id,
+                    Measurement.experiment_name,
+                    Measurement.optional_identifier,
+                    Measurement.start_time,
+                    Measurement.end_time,
+                    Measurement.run_length,
+                    Measurement.experiment_completed,
+                    Measurement.cooldown,
+                    Measurement.sample_name,
+                    Measurement.result_path,
+                    Measurement.created_by,
+                    Measurement.debug_file,
+                    (Measurement.qprogram.isnot(None)).label("has_qprogram"),
+                    (Measurement.platform.isnot(None)).label("has_platform"),
+                )
+
             if pandas_output:
                 return read_sql(query.statement, con=con)
             return query.all()
+
+    def get_qprogram(self, measurement_id: int):
+        """Get QProgram of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+        """
+        with self.Session() as session:
+            return session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
+
+    def get_platform(self, measurement_id: int):
+        """Get Platform of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+        """
+        with self.Session() as session:
+            return session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
 
     def add_measurement(
         self,
@@ -495,9 +559,6 @@ class DatabaseManager:
         base_path = f"{self.base_path_local}{self.folder_path}"
         if not os.path.isdir(base_path):
             base_path = f"{self.base_path_share}{self.folder_path}"
-            warnings.warn(
-                f"Local base path ({self.base_path_local}) did not exist, using shared base path: {self.base_path_share}"
-            )
         dir_path = (
             f"{base_path}{self.current_sample}/{self.current_cd}/{formatted_time}"
             if base_path[-1] == "/"
@@ -578,9 +639,6 @@ class DatabaseManager:
         base_path = f"{self.base_path_local}{self.folder_path}"
         if not os.path.isdir(base_path):
             base_path = f"{self.base_path_share}{self.folder_path}"
-            warnings.warn(
-                f"Local base path ({self.base_path_local}) did not exist, using shared base path: {self.base_path_share}"
-            )
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         result_path = f"{dir_path}/{experiment_name}.h5"
