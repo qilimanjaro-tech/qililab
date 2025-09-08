@@ -100,12 +100,12 @@ class CalibrationController:
         .. code-block:: python
 
             # qubit_0: first -> second \\
-            #                           --> joint[0,1]
+            #                           -> joint_first[0,1] -> joint_second[0,1]
             # qubit_1: first -> second /
             #
             #
             # qubit_2: first -> second \\
-            #                           --> joint[2,3]
+            #                           -> joint_first[2,3] -> joint_second[2,3]
             # qubit_3: first -> second /
 
         you need to create the 1Q nodes:
@@ -150,16 +150,26 @@ class CalibrationController:
 
             # ADD 2Q NODES DEPENDING ON THE 1Q NODES:
             for qubits in [[0, 1], [2, 3]]:
-                joint = CalibrationNode(
-                    nb_path="notebooks/joint.ipynb",
+                joint_first = CalibrationNode(
+                    nb_path="notebooks/joint_first.ipynb",
                     qubit_index=qubits,
                     sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
-                nodes[joint.node_id] = joint
+                nodes[joint_first.node_id] = joint_first
 
-                # GRAPH BUILDING (joint):
-                G.add_edge(last_layer_1qb_nodes[qubits[0]], joint.node_id)
-                G.add_edge(last_layer_1qb_nodes[qubits[1]], joint.node_id)
+                joint_second = CalibrationNode(
+                    nb_path="notebooks/joint_second.ipynb",
+                    qubit_index=qubits,
+                    sweep_interval=np.arange(start=0, stop=19, step=1),
+                )
+                nodes[joint_second.node_id] = joint_second
+
+                # GRAPH BUILDING (joint 1st --> joint 2nd):
+                G.add_edge(joint_first.node_id, joint_second.node_id)
+
+                # GRAPH BUILDING (1Q -> 2Q):
+                G.add_edge(last_layer_1qb_nodes[qubits[0]], joint_first.node_id)
+                G.add_edge(last_layer_1qb_nodes[qubits[1]], joint_first.node_id)
 
     Or in reality you can skip the explicit connection of the 1Q gates to the 2Q gates, and just pass them as a separate graph
     posteriorly, calibrating all the 1Q gates first, and then all the 2Q gates:
@@ -168,15 +178,22 @@ class CalibrationController:
 
             # ADD 2Q NODES DEPENDING ON THE 1Q NODES:
             for qubits in [[0, 1], [2, 3]]:
-                joint = CalibrationNode(
-                    nb_path="notebooks/joint.ipynb",
+                joint_first = CalibrationNode(
+                    nb_path="notebooks/joint_first.ipynb",
                     qubit_index=qubits,
                     sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
-                nodes[joint.node_id] = joint
+                nodes[joint_first.node_id] = joint_first
+
+                joint_second = CalibrationNode(
+                    nb_path="notebooks/joint_second.ipynb",
+                    qubit_index=qubits,
+                    sweep_interval=np.arange(start=0, stop=19, step=1),
+                )
+                nodes[joint_second.node_id] = joint_second
 
                 # GRAPH BUILDING (joint):
-                G.add_node(joint.node_id)
+                G.add_edge(joint_first.node_id, joint_second.node_id) # If you only have one, you can just add_node(...).
 
     To finally create the ``CalibrationController`` and run the automatic calibration:
 
