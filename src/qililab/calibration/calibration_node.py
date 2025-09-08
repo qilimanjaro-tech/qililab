@@ -104,7 +104,7 @@ class CalibrationNode:
 
         **Practical example:**
 
-        To create two linked nodes, and pass them to a :class:`.CalibrationController`, you need:
+        To calibrate two linked experiments, for 2 distinct qubits, you need:
 
         .. code-block:: python
 
@@ -116,7 +116,6 @@ class CalibrationNode:
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
             G = nx.DiGraph()
-            qubit = 0
 
             # CREATE NODES :
             for qubit in [0, 1]:
@@ -139,13 +138,15 @@ class CalibrationNode:
             # CREATE CALIBRATION CONTROLLER:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
 
-            ### WORKFLOW TO DO:
-            controller.maintain(nodes["second_q1"])  # maintain second node for qubit 1
+            ### MAIN WORKFLOW TO DO:
+            controller.run_automatic_calibration()  # calibrate all the nodes in the graph, starting from the roots until the leaves.
 
+            ### OPTIONAL WORKFLOW TO DO:
+            controller.calibrate_all(second[1])  # calibrate all the needed dependencies until you can calibrate the second node for qubit 1
+                                                 # and then calibrate it. So in this case it will calibrate first[1] and second[1] in this order.
         .. note::
 
-            You can find the above code, but defining ``first`` and ``second`` as lists, in the :class:`CalibrationController` class documentation.
-
+            A more complex example is found in the :class:`CalibrationController` class documentation.
 
         |
 

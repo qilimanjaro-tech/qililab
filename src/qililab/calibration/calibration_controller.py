@@ -93,9 +93,19 @@ class CalibrationController:
 
         ----------
 
-        **Practical example:**
+        **Practical examples:**
 
-        To create two linked nodes twice, for two different qubits, and pass them to a :class:`.CalibrationController` and run a ``calibrate_all()``, you need:
+        To calibrate four different qubits, each with two sequential nodes. And two 2Q gate connecting qubits 0-1 and 2-3:
+
+            qubit_0: first -> second \\
+                                       --> joint[0,1]
+            qubit_1: first -> second /
+
+            qubit_2: first -> second \\
+                                      --> joint[2,3]
+            qubit_3: first -> second /
+
+        you need to create the 1Q nodes:
 
         .. code-block:: python
 
@@ -107,41 +117,74 @@ class CalibrationController:
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
             G = nx.DiGraph()
-            first, second = [], []
+            last_layer_1qb_nodes = []
 
             # CREATE NODES:
-            for qubit in [0, 1]:
-                first[qubit] = CalibrationNode(
+            for qubit in [0, 1, 2, 3]:
+                first = CalibrationNode(
                     nb_path="notebooks/first.ipynb",
                     qubit_index=qubit,
                 )
-                nodes[first[qubit].node_id] = first[qubit]
+                nodes[first.node_id] = first
 
-                second[qubit] = CalibrationNode(
+                second = CalibrationNode(
                     nb_path="notebooks/second.ipynb",
                     qubit_index=qubit,
                     sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
-                nodes[second[qubit].node_id] = second[qubit]
+                nodes[second.node_id] = second
 
-                # GRAPH BUILDING (1 --> 2):
-                G.add_edge(first[qubit].node_id, second[qubit].node_id)
+                # STORE LAST NODE OF EACH QUBIT, TO CONNECT THEM LATER TO A 2Q NODE:
+                last_layer_1qb_nodes.append(second.node_id)
+
+                # GRAPH BUILDING (1st --> 2nd):
+                G.add_edge(first.node_id, second.node_id)
+
+    Then you can add the 2Q nodes, explicitly writing the dependence, which would calibrate separately each of the two separate
+    subgraphs (joint[0,1] with qubits 0,1 first, and joint[2,3] with qubits 2,3 later):
+
+        .. code-block:: python
+
+            # ADD 2Q NODES DEPENDING ON THE 1Q NODES:
+            for qubits in [[0, 1], [2, 3]]:
+                joint = CalibrationNode(
+                    nb_path="notebooks/joint.ipynb",
+                    qubit_index=qubits,
+                    sweep_interval=np.arange(start=0, stop=19, step=1),
+                )
+                # GRAPH BUILDING (joint):
+                G.add_edge(last_layer_1qb_nodes[qubits[0]], joint.node_id)
+                G.add_edge(last_layer_1qb_nodes[qubits[1]], joint.node_id)
+
+    Or in reality you can skip the explicit connection of the 1Q gates to the 2Q gates, and just pass them as a separate graph
+    posteriorly, calibrating all the 1Q gates first, and then all the 2Q gates:
+
+     .. code-block:: python
+
+            # ADD 2Q NODES DEPENDING ON THE 1Q NODES:
+            for qubits in [[0, 1], [2, 3]]:
+                joint = CalibrationNode(
+                    nb_path="notebooks/joint.ipynb",
+                    qubit_index=qubits,
+                    sweep_interval=np.arange(start=0, stop=19, step=1),
+                )
+                # GRAPH BUILDING (joint):
+                G.add_node(joint.node_id)
+
+    To finally create the ``CalibrationController`` and run the automatic calibration:
+
+        .. code-block:: python
 
             # CREATE CALIBRATION CONTROLLER:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
 
             ### MAIN WORKFLOW TO DO:
-            controller.run_automatic_calibration() # calibrate all the nodes in the graph, starting from the roots until the leaves.
-
-            ### OPTIONAL WORKFLOW TO DO:
-            controller.calibrate_all(second[1]) # calibrate all the needed dependencies until you can calibrate the second node for qubit 1
-                                                # and then calibrate it. So in this case it will calibrate first[1] and second[1] in this order.
+            controller.run_automatic_calibration() # calibrate all the nodes in the graph, starting from the root until the leaves.
 
         .. note::
 
             Find information about how these nodes and their notebooks need to be in the :class:`CalibrationNode` class documentation.
 
-            There you will also find the above code, but without defining ``first`` and ``second`` as lists.
     """
 
     def __init__(
