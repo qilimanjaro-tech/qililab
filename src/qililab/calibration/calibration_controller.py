@@ -152,6 +152,8 @@ class CalibrationController:
                     qubit_index=qubits,
                     sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
+                nodes[joint.node_id] = joint
+
                 # GRAPH BUILDING (joint):
                 G.add_edge(last_layer_1qb_nodes[qubits[0]], joint.node_id)
                 G.add_edge(last_layer_1qb_nodes[qubits[1]], joint.node_id)
@@ -168,6 +170,8 @@ class CalibrationController:
                     qubit_index=qubits,
                     sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
+                nodes[joint.node_id] = joint
+
                 # GRAPH BUILDING (joint):
                 G.add_node(joint.node_id)
 
