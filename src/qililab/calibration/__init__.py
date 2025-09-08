@@ -16,9 +16,7 @@
 This module contains all the methods and classes used for automatic calibration.
 
 A high level view of how the automatic calibration algorithm works and how the different classes and methods are used
-can be read from: https://arxiv.org/abs/1803.03226
-
-**Examples** are found in the `qililab/examples/calibration` folder
+can be found in the :class:`CalibrationController` class documentation.
 
 .. currentmodule:: qililab.calibration
 

@@ -229,7 +229,8 @@ class CalibrationNode:
                     }
                 )
 
-        where the ``platform_parameters`` are a list of parameters to set on the platform.
+        where the ``platform_parameters`` are a list of parameters to set on the platform. And the ``fidelities`` are for showing results
+        in the calibration report, or for using the checkpoints in the calibration with the ``checkpoint`` and ``check_value`` arguments.
 
         .. note::
 

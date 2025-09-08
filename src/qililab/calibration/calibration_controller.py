@@ -130,8 +130,12 @@ class CalibrationController:
             # CREATE CALIBRATION CONTROLLER:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
 
-            ### WORKFLOW TO DO:
-            controller.calibrate_all(second[1]) # calibrate_all starting at second node for qubit 1
+            ### MAIN WORKFLOW TO DO:
+            controller.run_automatic_calibration() # calibrate all the nodes in the graph, starting from the roots until the leaves.
+
+            ### OPTIONAL WORKFLOW TO DO:
+            controller.calibrate_all(second[1]) # calibrate all the needed dependencies until you can calibrate the second node for qubit 1
+                                                # and then calibrate it. So in this case it will calibrate first[1] and second[1] in this order.
 
         .. note::
 
@@ -188,27 +192,6 @@ class CalibrationController:
         A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (2h).
         """
 
-    def calibrate_all(self, node: CalibrationNode):
-        """Calibrates all the nodes sequentially.
-
-        Args:
-            node (CalibrationNode): The node where we want to start the `calibration_all()` on. Normally you would want
-                this node to be the furthest node in the calibration graph.
-        """
-        logger.info("WORKFLOW: Calibrating all %s.\n", node.node_id)
-        for n in self._dependencies(node):
-            self.calibrate_all(n)
-
-        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
-        # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
-        if not node.been_calibrated:
-            if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
-                self.calibrate(node)
-                self._update_parameters(node)
-
-            node.been_calibrated = True
-        # After passing this block `node.been_calibrated` will always be True, so it will not be recalibrated again.
-
     def run_automatic_calibration(self) -> dict[str, dict]:
         """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
@@ -238,6 +221,27 @@ class CalibrationController:
             "#############################################\n"
         )
         return self.get_qubit_fidelities_and_parameters_df_tables()
+
+    def calibrate_all(self, node: CalibrationNode):
+        """Given a node to start from, calibrates all the dependency notebooks sequentially, so the given node is able to be calibrated last.
+
+        Args:
+            node (CalibrationNode): The node where we want to start the `calibration_all()` on. Normally you would want
+                this node to be the furthest node in the calibration graph.
+        """
+        logger.info("WORKFLOW: Calibrating all %s.\n", node.node_id)
+        for n in self._dependencies(node):
+            self.calibrate_all(n)
+
+        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
+        # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
+        if not node.been_calibrated:
+            if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
+                self.calibrate(node)
+                self._update_parameters(node)
+
+            node.been_calibrated = True
+        # After passing this block `node.been_calibrated` will always be True, so it will not be recalibrated again.
 
     def get_qubit_fidelities_and_parameters_df_tables(self) -> dict[str, pd.DataFrame]:
         """Generates the 1q, 2q, fidelities and parameters dataframes, with the last calibrations.
