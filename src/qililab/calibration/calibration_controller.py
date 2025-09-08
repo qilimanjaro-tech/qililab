@@ -74,24 +74,24 @@ class CalibrationController:
 
     **Calibration Workflow:**
 
-        The calibration process is structured into three levels of methods:
+    The calibration process is structured into three levels of methods:
 
-        1. **Highest Level Method**: The ``run_automatic_calibration()`` method finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``calibrate_all()`` on them.
+    1. **Highest Level Method**: The ``run_automatic_calibration()`` method finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``calibrate_all()`` on them.
 
-        2. **Mid-Level Method**: ``calibrate_all()``.
-            - ``calibrate_all(node)`` starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``, checking the last time executions at each step.
+    2. **Mid-Level Method**: ``calibrate_all()``.
+        - ``calibrate_all(node)`` starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``, checking the last time executions at each step.
 
-        3. **Low-Level Method**: ``calibrate()`` is the method you would be calling during this process to interact with the ``nodes``.
+    3. **Low-Level Method**: ``calibrate()`` is the method you would be calling during this process to interact with the ``nodes``.
 
 
-        ----------
+    ----------
 
-        **Dangerous Behaviors:**
+    **Dangerous Behaviors:**
 
-        Note that depending on your ``CalibrationController`` construction, you can have dangerous behaviors in the workflow. You need to watch out for:
-        - If you give too long ``drift_timeout``'s, since ``calibrate_all()`` will assume the node is 100% working.. To start the calibration from the start again, just reduce the ``drift_timeout``, or remove the executed files!
+    Note that depending on your ``CalibrationController`` construction, you can have dangerous behaviors in the workflow. You need to watch out for:
+    - If you give too long ``drift_timeout``'s, since ``calibrate_all()`` will assume the node is 100% working.. To start the calibration from the start again, just reduce the ``drift_timeout``, or remove the executed files!
 
-        ----------
+    ----------
 
     Examples:
 

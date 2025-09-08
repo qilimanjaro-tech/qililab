@@ -69,38 +69,38 @@ class CalibrationNode:
 
     **Notebooks execution workflow:**
 
-        First the key functionality of this class is implemented in the ``run_node()`` method**. The workflow of ``run_node()`` is as follows:
+    First the key functionality of this class is implemented in the ``run_node()`` method**. The workflow of ``run_node()`` is as follows:
 
-        1. Prepare any input parameters needed for the notebook, including extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
+    1. Prepare any input parameters needed for the notebook, including extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
 
-        2. Create a file with a temporary name. This file will be used to save the execution of the notebook and initially has the following format:
+    2. Create a file with a temporary name. This file will be used to save the execution of the notebook and initially has the following format:
+
+        ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+
+        The ``_dirty`` flag is added to identify executions that are not completed. Since the data we would find such file is ``dirty``, not completed.
+
+    3. Start the execution of the notebook. There are three possible outcomes:
+
+        3.1) The execution succeeds. If the execution succeeds, the execution file is renamed by updating the timestamp and removing the dirty flag:
+
+            ``NameOfTheNode_TimeExecutionEnded.ipynb``
+
+        3.2) The execution is interrupted. If the execution is interrupted, the ``_dirty`` flag remains in the filename, and the program exits:
 
             ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
 
-            The ``_dirty`` flag is added to identify executions that are not completed. Since the data we would find such file is ``dirty``, not completed.
+        3.2) An exception is thrown. This case is not controlled by the user like interruptions. Instead, exceptions are automatically thrown when
+        an error is detected. When an execution error is found, the execution file is renamed with the time the error occurred, adding the `_error` flag, and the program exits:
 
-        3. Start the execution of the notebook. There are three possible outcomes:
+            ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
 
-            3.1) The execution succeeds. If the execution succeeds, the execution file is renamed by updating the timestamp and removing the dirty flag:
+        A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation
+        <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).
 
-                ``NameOfTheNode_TimeExecutionEnded.ipynb``
+    At the end of this process, you obtain an executed and saved notebook for manual inspection, along with the optimal parameters to set in the runcard
+    and the achieved fidelities.
 
-            3.2) The execution is interrupted. If the execution is interrupted, the ``_dirty`` flag remains in the filename, and the program exits:
-
-                ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
-
-            3.2) An exception is thrown. This case is not controlled by the user like interruptions. Instead, exceptions are automatically thrown when
-            an error is detected. When an execution error is found, the execution file is renamed with the time the error occurred, adding the `_error` flag, and the program exits:
-
-                ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
-
-            A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation
-            <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).
-
-        At the end of this process, you obtain an executed and saved notebook for manual inspection, along with the optimal parameters to set in the runcard
-        and the achieved fidelities.
-
-        ----------
+    ----------
 
     Examples:
 
