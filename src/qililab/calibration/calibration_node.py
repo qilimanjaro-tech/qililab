@@ -60,7 +60,7 @@ class CalibrationNode:
     Args:
         nb_path (str): Full notebook path with the folder, nb_name, and ``.ipynb`` extension, written in unix format: `folder/subfolder/.../file.ipynb`.
         qubit_index (int | list[int], optional): Qubit on which this notebook will be executed. Defaults to None.
-        node_distinguishier (int | str, optional): Distinguisher for when the same notebook its used multiple times in the same qubit. Mandatory to use in such case, or
+        node_distinguisher (int | str, optional): Distinguisher for when the same notebook its used multiple times in the same qubit. Mandatory to use in such case, or
             the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         input_parameters (dict, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
         sweep_interval (np.ndarray, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
@@ -223,7 +223,7 @@ class CalibrationNode:
 
             .. code-block:: python
 
-                from qililab.automatic_calibration.calibration_node import export_nb_outputs
+                from qililab.calibration.calibration_node import export_nb_outputs
 
                 export_nb_outputs(
                     {

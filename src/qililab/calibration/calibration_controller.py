@@ -95,7 +95,7 @@ class CalibrationController:
 
     Examples:
 
-        To calibrate four different qubits, each with two sequential nodes. And two 2Q gate connecting qubits 0-1 and 2-3:
+        To calibrate four different qubits, each with two sequential 1Q nodes, and two 2Q gate connecting qubits 0-1 and 2-3:
 
         .. code-block:: python
 
