@@ -142,8 +142,8 @@ class CalibrationNode:
             controller.run_automatic_calibration()  # calibrate all the nodes in the graph, starting from the roots until the leaves.
 
             ### OPTIONAL WORKFLOW TO DO:
-            controller.calibrate_all(second[1])  # calibrate all the needed dependencies until you can calibrate the second node for qubit 1
-                                                 # and then calibrate it. So in this case it will calibrate first[1] and second[1] in this order.
+            controller.calibrate_all(second)    # calibrate all the needed dependencies until you can calibrate the second node for qubit 1
+                                                # and then calibrate it. Calibrating first and second for qubit 1, in this order.
         .. note::
 
             A more complex example is found in the :class:`CalibrationController` class documentation.

@@ -159,7 +159,7 @@ class CalibrationController:
     Or in reality you can skip the explicit connection of the 1Q gates to the 2Q gates, and just pass them as a separate graph
     posteriorly, calibrating all the 1Q gates first, and then all the 2Q gates:
 
-     .. code-block:: python
+        .. code-block:: python
 
             # ADD 2Q NODES DEPENDING ON THE 1Q NODES:
             for qubits in [[0, 1], [2, 3]]:
