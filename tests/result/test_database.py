@@ -348,7 +348,7 @@ class Testdatabase:
         mock_session.query.return_value = query_mock
 
         # Call the method
-        result = db_manager.head(exp_name="test")
+        result = db_manager.head(exp_name="test", before_id=10)
 
         # Assertions
         mock_session.query.assert_called_with(Measurement)
@@ -364,12 +364,32 @@ class Testdatabase:
         mock_read_sql.return_value = df_mock
 
         # Pandas output path
-        result_pandas = db_manager.head(order_limit=None, pandas_output=True)
+        result_pandas = db_manager.head(order_limit=None, pandas_output=True, light_read=True)
 
         # Assertions
         assert query_mock.order_by.called  # same mock
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
+
+    def test_get_qprogram(self, db_manager: DatabaseManager):
+        """Test get qprogram function from the database manager"""
+        mock_session = db_manager.Session()
+        mock_session.__enter__.return_value = mock_session
+
+        with patch("os.path.isfile", return_value=False):
+            qprogram = db_manager.get_qprogram(123)
+
+        assert qprogram == mock_session.query(Measurement.qprogram).filter(Measurement.measurement_id == 123).scalar()
+
+    def test_get_platform(self, db_manager: DatabaseManager):
+        """Test get platform function from the database manager"""
+        mock_session = db_manager.Session()
+        mock_session.__enter__.return_value = mock_session
+
+        with patch("os.path.isfile", return_value=False):
+            platform = db_manager.get_qprogram(123)
+
+        assert platform == mock_session.query(Measurement.platform).filter(Measurement.measurement_id == 123).scalar()
 
     @patch("qililab.result.database.os.makedirs")
     @patch("qililab.result.database.datetime")
