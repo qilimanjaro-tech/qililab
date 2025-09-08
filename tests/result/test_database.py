@@ -274,8 +274,17 @@ class Testdatabase:
         assert mock_session.rollback.called_once
 
     def test_load_by_id(self, db_manager: DatabaseManager):
-        db_manager.load_by_id(123)
-        assert db_manager.Session().query.called
+        mock_measurement = MagicMock(spec=Measurement)
+        mock_measurement.result_path = "/local_test/results/file.h5"
+        mock_measurement.measurement_id = 123
+
+        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+
+        with patch("os.path.isfile", return_value=False):
+            result = db_manager.load_by_id(123)
+
+        assert db_manager._mock_session.query.called
+        assert result.result_path == "/shared_test/results/file.h5"
 
     def test_load_by_id_path_not_found(self, db_manager: DatabaseManager):
         # Setup a mock measurement
