@@ -141,7 +141,7 @@ class CalibrationController:
                 G.add_edge(first.node_id, second.node_id)
 
     Then you can add the 2Q nodes, explicitly writing its dependence, which would calibrate sequentially each of the two separate
-    graphs (joint[0,1] with qubits 0,1 first, and joint[2,3] with qubits 2,3 later):
+    graphs (qubits 0 and 1 + joint[0,1] first, and qubits 2 and 3 + joint[2,3] later):
 
         .. code-block:: python
 
