@@ -85,7 +85,7 @@ def save_results(results: np.ndarray, loops: dict[str, np.ndarray], data_path: s
         os.makedirs(now_path)
 
     # Create or open an HDF5 file
-    with h5py.File(f"{now_path}/results.h5", "w") as hf:
+    with h5py.File(f"{now_path}/results.h5", "w", libver="latest", swmr=True) as hf:
         # Save loops
         g = hf.create_group(name="loops")
         for loop_name, array in loops.items():
@@ -122,7 +122,7 @@ def load_results(path: str) -> tuple[np.ndarray, dict[str, np.ndarray]]:
                 0.66, 0.68, 0.7 , 0.72, 0.74, 0.76, 0.78, 0.8 , 0.82, 0.84, 0.86,
                 0.88, 0.9 , 0.92, 0.94, 0.96, 0.98])}
     """
-    with h5py.File(path, "r") as hf:
+    with h5py.File(path, "r", libver="latest", swmr=True) as hf:
         loops = {}
         for name, data in hf["loops"].items():
             loops[name] = {

@@ -64,12 +64,14 @@ class QbloxDraw:
             #  Essentially interrupting the previous play that is still running and extend the play status to the current play
             if len(data_draw[0]) != param["classical_time_counter"]:
                 for i in [0, 1]:
-                    data_draw[i] = data_draw[i][:param["classical_time_counter"]]
+                    data_draw[i] = data_draw[i][: param["classical_time_counter"]]
                 for key in ["intermediate_frequency", "phase", "q1asm_offset_i", "q1asm_offset_q"]:
-                    param[key] = param[key][:param["classical_time_counter"]]
+                    param[key] = param[key][: param["classical_time_counter"]]
                     param[f"{key}_new"] = False
 
-            data_draw, wf_length, classical_duration_play = self._handle_play_draw(data_draw, program_line, waveform_seq, param)
+            data_draw, wf_length, classical_duration_play = self._handle_play_draw(
+                data_draw, program_line, waveform_seq, param
+            )
             param["classical_time_counter"] += int(classical_duration_play)
             if wf_length > classical_duration_play:
                 real_time_counter = wf_length - classical_duration_play
@@ -83,16 +85,16 @@ class QbloxDraw:
 
         elif action_type == "acquire_weighed":
             param["acquire_idx"] += 1
-            classical_duration_acquire = self._get_value(program_line[1].split(',')[-1].strip(), register)
+            classical_duration_acquire = self._get_value(program_line[1].split(",")[-1].strip(), register)
 
-            # If plotting from qprogram - assume that the integration_length is the classical duration of the Q1ASM command
-            integration_length = param.get("integration_length")
-            if integration_length is None:
-                integration_length = classical_duration_acquire
+            # the integration is different from the acquire duration but qililab always equate both, if qililab ever allows to have a different
+            # integration length from acquisition duration, the below line should be modified and the rest of the code will be able to handle
+            # the difference
+            integration_length = classical_duration_acquire
 
             #  Essentially interrupting the previous acquire that is still running and extend the acquiring status to the current acquire
             if len(param["acquiring_status"]) != param["classical_time_counter"]:
-                param["acquiring_status"] = param["acquiring_status"][:param["classical_time_counter"]]
+                param["acquiring_status"] = param["acquiring_status"][: param["classical_time_counter"]]
 
             param["classical_time_counter"] += int(classical_duration_acquire)
 
@@ -125,7 +127,9 @@ class QbloxDraw:
             pass
 
         else:
-            raise NotImplementedError(f'The Q1ASM operation "{action_type}" is not implemented in the plotter yet. Please contact someone from QHC.')
+            raise NotImplementedError(
+                f'The Q1ASM operation "{action_type}" is not implemented in the plotter yet. Please contact someone from QHC.'
+            )
 
         return param, register, data_draw
 
@@ -191,7 +195,9 @@ class QbloxDraw:
 
         if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
             extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
-            param["acquiring_status"] = np.concatenate([param["acquiring_status"], np.zeros(extension_length, dtype=int)])
+            param["acquiring_status"] = np.concatenate(
+                [param["acquiring_status"], np.zeros(extension_length, dtype=int)]
+            )
 
         return data_draw, wf_length, classical_duration_play
 
@@ -222,7 +228,9 @@ class QbloxDraw:
 
         if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
             extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
-            param["acquiring_status"] = np.concatenate([param["acquiring_status"], np.zeros(extension_length, dtype=int)])
+            param["acquiring_status"] = np.concatenate(
+                [param["acquiring_status"], np.zeros(extension_length, dtype=int)]
+            )
 
         return data_draw
 
@@ -448,7 +456,9 @@ class QbloxDraw:
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
-    def draw(self, sequencer, runcard_data=None, time_window=None, averages_displayed=False, acquisition_showing=True) -> dict:
+    def draw(
+        self, sequencer, runcard_data=None, time_window=None, averages_displayed=False, acquisition_showing=True
+    ) -> dict:
         """Parses the program dictionary of the sequence, plots the waveforms and generates waveform data.
         Args:
             sequencer: The compiled qprogram, either at the platform or qprogram level.
@@ -590,6 +600,7 @@ class QbloxDraw:
                                 return current_idx
                             current_idx += 1
                 return current_idx
+
             for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
                 if parameters[bus]["time_reached"]:
                     break
@@ -615,12 +626,18 @@ class QbloxDraw:
                 if param[f"{key}_new"]:
                     param[key].pop()
 
-            if len(param["acquiring_status"]) != len(param["intermediate_frequency"]):  # essentially interrupting the last acquire that is still running
-                param["acquiring_status"] = param["acquiring_status"][:len(param["intermediate_frequency"])]
+            self._interrupt_acquire(param)
             parameters[bus] = param
 
         data_draw = self._oscilloscope_plotting(data_draw, parameters)
         return data_draw
+
+    def _interrupt_acquire(self, param):
+        """Interrupts the last acquire that is still running. This function is not actually used in qililab but if the duration of the acquire
+        and the intergration were to be different, this will allow interrupting acquires similarly to play"""
+        if len(param["acquiring_status"]) != len(param["intermediate_frequency"]):
+            param["acquiring_status"] = param["acquiring_status"][: len(param["intermediate_frequency"])]
+        return param
 
     def _oscilloscope_plotting(self, data_draw, parameters):
         """Plots the waveform data and applies the phase and frequency np array to the data
@@ -636,6 +653,7 @@ class QbloxDraw:
             fig (plotly object): the plotly figure of the data_draw dictionary
 
         """
+
         def range_acquire(nparray):
             ranges = []
             start = None
@@ -654,8 +672,8 @@ class QbloxDraw:
             return ranges
 
         def adjust_color_hex(color_hex, factor):
-            rgb_color = [int(color_hex[i:i + 2], 16) for i in (1, 3, 5)]
-            adjusted_color = ['{0:02x}'.format(int(min(255, max(0, c * factor)))) for c in rgb_color]
+            rgb_color = [int(color_hex[i : i + 2], 16) for i in (1, 3, 5)]
+            adjusted_color = ["{0:02x}".format(int(min(255, max(0, c * factor)))) for c in rgb_color]
             adjusted_color_hex = f"#{''.join(adjusted_color)}"
             return adjusted_color_hex
 
@@ -685,9 +703,9 @@ class QbloxDraw:
 
             else:
                 sequencer_runcard_offset_i, sequencer_runcard_offset_q = (
-                parameters[key]["sequencer_runcard_offset_i"] * volt_bounds / np.sqrt(2),
-                parameters[key]["sequencer_runcard_offset_q"] * volt_bounds / np.sqrt(2),
-            )
+                    parameters[key]["sequencer_runcard_offset_i"] * volt_bounds / np.sqrt(2),
+                    parameters[key]["sequencer_runcard_offset_q"] * volt_bounds / np.sqrt(2),
+                )
                 wf1, wf2 = data_draw[key][0], data_draw[key][1]
                 fs = 1e9  # sampling frequency of the qblox
                 t = np.arange(0, len(wf1)) / fs
@@ -700,43 +718,50 @@ class QbloxDraw:
                 sin_term = np.sin(2 * np.pi * freq * t + phase)
 
                 # Add the offsets to the waveforms and ensure it is in the voltage range of the instrument
-                wf1_offsetted = np.clip((np.array(wf1) + q1asm_offset_i + sequencer_runcard_offset_i), -volt_bounds, volt_bounds)
-                wf2_offsetted = np.clip((np.array(wf2) + q1asm_offset_q + sequencer_runcard_offset_q), -volt_bounds, volt_bounds)
-                path0 = (
-                    (cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted))
-                    + dac_offset_i
+                wf1_offsetted = np.clip(
+                    (np.array(wf1) + q1asm_offset_i + sequencer_runcard_offset_i), -volt_bounds, volt_bounds
                 )
-                path1 = (
-                    (sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted))
-                    + dac_offset_q
+                wf2_offsetted = np.clip(
+                    (np.array(wf2) + q1asm_offset_q + sequencer_runcard_offset_q), -volt_bounds, volt_bounds
                 )
+                path0 = (cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted)) + dac_offset_i
+                path1 = (sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted)) + dac_offset_q
 
                 # clip the final signal
                 path0_clipped = np.clip(path0, -volt_bounds, volt_bounds)
                 path1_clipped = np.clip(path1, -volt_bounds, volt_bounds)
 
                 data_draw[key][0], data_draw[key][1] = path0_clipped, path1_clipped
-                fig.add_trace(go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I", line={"color": base_color}, zorder=1))
-                fig.add_trace(go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q", line={"color": adjust_color_hex(base_color, 1.5)}, zorder=1))
+                fig.add_trace(go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I", line={"color": base_color}))
+                fig.add_trace(
+                    go.Scatter(
+                        y=path1_clipped,
+                        mode="lines",
+                        name=f"{key} Q",
+                        line={"color": adjust_color_hex(base_color, 1.5)},
+                    )
+                )
                 if self.acquisition_showing is True:
                     ranges = range_acquire(parameters[key]["acquiring_status"])
-                    y_max = ((y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8))
-                    y_min = ((y_min := min(path0_clipped.min(), path1_clipped.min())) * (1.2 if y_min < 0 else 0.8))
+                    y_max = (y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8)
+                    y_min = (y_min := min(path0_clipped.min(), path1_clipped.min())) * (1.2 if y_min < 0 else 0.8)
 
                     for i, range in enumerate(ranges):
-                        fig.add_trace(go.Scatter(
-                            x=[range[0], range[1], range[1], range[0]],
-                            y=[y_min, y_min, y_max, y_max, y_min],
-                            fill="toself",
-                            mode='none',
-                            fillcolor=base_color,
-                            line={"width": 0},
-                            opacity=0.2,
-                            line_width=0,
-                            name=f"{key} Acquisition" if i == 0 else f"{key} Acquisition {i}",
-                            showlegend=(i == 0),
-                            legendgroup=f"{key} Acquisition"
-                        ))
+                        fig.add_trace(
+                            go.Scatter(
+                                x=[range[0], range[1], range[1], range[0]],
+                                y=[y_min, y_min, y_max, y_max, y_min],
+                                fill="toself",
+                                mode="none",
+                                fillcolor=base_color,
+                                line={"width": 0},
+                                opacity=0.2,
+                                line_width=0,
+                                name=f"{key} Acquisition" if i == 0 else f"{key} Acquisition {i}",
+                                showlegend=(i == 0),
+                                legendgroup=f"{key} Acquisition",
+                            )
+                        )
 
         if parameters[key]["instrument_name"] == "QProgram":
             fig.update_yaxes(title_text="Amplitude [a.u.]")

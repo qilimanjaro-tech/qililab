@@ -170,6 +170,15 @@ def fixture_qp_real_time() -> QProgram:
     qp.qblox.acquire(bus="feedline_input_output_bus_1", weights= IQPair(I=weights_shape, Q=weights_shape))
     return qp
 
+@pytest.fixture(name="qp_acquire")
+def fixture_qp_acquire() -> QProgram:
+    qp = QProgram()
+    weights_shape = Square(amplitude=1, duration=20)
+    square_wf = Square(1,10)
+    qp.qblox.play("feedline_input_output_bus_1",square_wf,2)
+    qp.qblox.acquire(bus="feedline_input_output_bus_1", weights= IQPair(I=weights_shape, Q=weights_shape))
+    return qp
+
 class TestQBloxDraw:
     def test_parsing(self, parsing: QProgram):
         compiler = QbloxCompiler()
@@ -555,3 +564,31 @@ class TestQBloxDraw:
             platform.draw(qprogram)
     
         assert str(exc_info.value) == "QbloxDraw does not support hardware time-domain loops at the moment."
+
+    def test_platform_acquire(self,platform: Platform, qp_acquire: QProgram):
+        expected_results = {
+        "feedline_input_output_bus_1 I": [0.12335355, 0.12335077, 0.12334245, 0.12332873, 0.12330982, 0.12328603,
+                 0.12325773, 0.12322536, 0.12318944, 0.12315054, 0.123     , 0.123     ,
+                 0.123     , 0.123     , 0.123     , 0.123     , 0.123     , 0.123     ,
+                 0.123     , 0.123     , 0.123     , 0.123     , 0.123     , 0.123     ],
+        
+        "feedline_input_output_bus_1 Q":  [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+                 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]}
+        pio.renderers.default = "json"
+        figure = platform.draw(qp_acquire)
+
+        np.testing.assert_allclose(figure.data[0].y, np.array(expected_results[figure.data[0].name]), rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[1].y, np.array(expected_results[figure.data[1].name]), rtol=1e-2, atol=1e-12)
+
+    def test_interrupt_acquire(self):
+        """Even though Qililab prevents overlapping acquires, this has been tested and the interruption will be possible if qililab ever allows for it."""
+
+        qblox_draw = QbloxDraw()
+        param = {
+            "acquiring_status": [1, 1, 1],
+            "intermediate_frequency": [10, 20]
+        }
+        out = qblox_draw._interrupt_acquire(param)
+        assert len(out["acquiring_status"]) == len(out["intermediate_frequency"])
+        assert out["acquiring_status"] == [1, 1]
+
