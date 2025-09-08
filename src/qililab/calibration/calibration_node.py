@@ -112,7 +112,7 @@ class CalibrationNode:
             #
             # qubit_1: first -> second
 
-        you need:
+        you first need to create the 1Q nodes (and import the needed packages), and build the :class:`.CalibrationController` graph with which to calibrate them:
 
         .. code-block:: python
 
