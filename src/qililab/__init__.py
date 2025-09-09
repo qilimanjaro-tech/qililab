@@ -84,6 +84,7 @@ __all__ = [
     "deserialize_from",
     "execute",
     "get_db_manager",
+    "load_by_id",
     "load_results",
     "logger",
     "save_platform",
