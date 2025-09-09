@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, PLATFORM, RUNCARD, AWGTypes
+from qililab.constants import DistortionState, CONNECTION, INSTRUMENTCONTROLLER, PLATFORM, RUNCARD, AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
     ConnectionName,
@@ -242,6 +242,29 @@ class Galadriel:
         "name": InstrumentName.QBLOX_QCM.value,
         "alias": InstrumentName.QBLOX_QCM.value,
         AWGTypes.OUT_OFFSETS: [0, 0, 0.7, 0.8],
+        AWGTypes.FILTERS:[
+            {   "output_id": 0,
+                Parameter.EXPONENTIAL_AMPLITUDE.value: 0.7,
+                Parameter.EXPONENTIAL_TIME_CONSTANT.value: 200,
+                Parameter.EXPONENTIAL_STATE.value: DistortionState.ENABLED,
+                Parameter.FIR_COEFF.value: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],
+                Parameter.FIR_STATE.value: DistortionState.ENABLED,
+            },
+            {   "output_id": 1,
+                Parameter.EXPONENTIAL_AMPLITUDE.value: 1,
+                Parameter.EXPONENTIAL_TIME_CONSTANT.value: 20,
+                Parameter.EXPONENTIAL_STATE.value: DistortionState.BYPASSED,
+                Parameter.FIR_COEFF.value: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],
+                Parameter.FIR_STATE.value: DistortionState.ENABLED,
+            },
+            {   "output_id": 3,
+                Parameter.EXPONENTIAL_AMPLITUDE: 0.1,
+                Parameter.EXPONENTIAL_TIME_CONSTANT: 2000,
+                Parameter.EXPONENTIAL_STATE: DistortionState.DELAY_COMP,
+                Parameter.FIR_COEFF: None,
+                Parameter.FIR_STATE: DistortionState.BYPASSED,
+            },
+        ],
         AWGTypes.AWG_SEQUENCERS: [
             {
                 "identifier": 0,
@@ -249,7 +272,7 @@ class Galadriel:
                 Parameter.IF.value: 100_000_000,
                 Parameter.GAIN_I.value: 1,
                 Parameter.GAIN_Q.value: 1,
-                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.GAIN_IMBALANCE.value: 0.34,
                 Parameter.PHASE_IMBALANCE.value: 0,
                 Parameter.OFFSET_I.value: 0,
                 Parameter.OFFSET_Q.value: 0,

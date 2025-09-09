@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
+from qililab.constants import DistortionState
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM
 from qililab.platform import Platform
@@ -70,7 +71,27 @@ def fixture_qrm(platform: Platform):
         "arm_sequencer",
         "start_sequencer",
         "reset",
-        "module_type"
+        "module_type",
+        "out0_exp0_amplitude",
+        "out1_exp0_amplitude",
+        "out2_exp0_amplitude",
+        "out3_exp0_amplitude",
+        "out0_exp0_time_constant",
+        "out1_exp0_time_constant",
+        "out2_exp0_time_constant",
+        "out3_exp0_time_constant",
+        "out0_fir_coeffs",
+        "out1_fir_coeffs",
+        "out2_fir_coeffs",
+        "out3_fir_coeffs",
+        "out0_fir_config",
+        "out1_fir_config",
+        "out2_fir_config",
+        "out3_fir_config",
+        "out0_exp0_config",
+        "out1_exp0_config",
+        "out2_exp0_config",
+        "out3_exp0_config",
     ]
 
     # Create a mock device using create_autospec to follow the interface of the expected device
@@ -95,6 +116,12 @@ class TestQbloxQCM:
         assert not qcm.is_adc()
         assert len(qcm.awg_sequencers) == 2  # As per the YAML config
         assert qcm.out_offsets == [0.0, 0.1, 0.2, 0.3]
+        filter = qcm.get_filter(0)
+        assert filter.exponential_amplitude == 0.31
+        assert filter.exponential_time_constant == 200
+        assert filter.exponential_state == "enabled"
+        assert filter.fir_coeff == [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+        assert filter.fir_state == "enabled"
         sequencer = qcm.get_sequencer(0)
         assert sequencer.identifier == 0
         assert sequencer.outputs == [3, 2]
@@ -146,7 +173,7 @@ class TestQbloxQCM:
             (Parameter.OFFSET_OUT0, 0.1),
             (Parameter.OFFSET_OUT1, 0.15),
             (Parameter.OFFSET_OUT2, 0.2),
-            (Parameter.OFFSET_OUT3, 0.25),
+            (Parameter.OFFSET_OUT3, 0.25)
         ]
     )
     def test_set_parameter(self, qcm: QbloxQCM, parameter, value):
@@ -177,6 +204,34 @@ class TestQbloxQCM:
         elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
             assert qcm.out_offsets[output] == value
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Test filters settings
+            (Parameter.EXPONENTIAL_AMPLITUDE, 0.7),
+            (Parameter.EXPONENTIAL_TIME_CONSTANT, 200),
+            (Parameter.EXPONENTIAL_STATE, DistortionState.ENABLED),
+            (Parameter.FIR_COEFF, [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]),
+            (Parameter.FIR_STATE, DistortionState.ENABLED),
+        ]
+    )
+    def test_set_parameter_filters(self, qcm: QbloxQCM, parameter, value):
+        """Test setting parameters for QCM filters using parameterized values."""
+        output_id = 0
+        qcm.set_parameter(parameter=parameter, value=value, output_id=output_id)
+        filter = qcm.get_filter(output_id)
+        # Check values based on the parameter
+        if parameter == Parameter.EXPONENTIAL_AMPLITUDE:
+            assert filter.exponential_amplitude == value
+        elif parameter == Parameter.EXPONENTIAL_TIME_CONSTANT:
+            assert filter.exponential_time_constant == value
+        elif parameter == Parameter.EXPONENTIAL_AMPLITUDE:
+            assert filter.exponential_state == value
+        elif parameter == Parameter.FIR_COEFF:
+            assert filter.fir_coeff == value
+        elif parameter == Parameter.FIR_STATE:
+            assert filter.fir_state == value
 
     def test_set_parameter_gain(self, qcm: QbloxQCM):
         """Test handling invalid channel IDs when setting parameters."""
@@ -231,13 +286,33 @@ class TestQbloxQCM:
         value = qcm.get_parameter(parameter, channel_id=0)
         assert value == expected_value
 
+    @pytest.mark.parametrize(
+        "parameter, expected_value",
+        [
+            # Test filters settings
+            (Parameter.EXPONENTIAL_AMPLITUDE, 0.31),
+            (Parameter.EXPONENTIAL_TIME_CONSTANT, 200),
+            (Parameter.EXPONENTIAL_STATE, DistortionState.ENABLED),
+            (Parameter.FIR_COEFF, [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]),
+            (Parameter.FIR_STATE, DistortionState.ENABLED),
+        ]
+    )
+    def test_get_parameter_filter(self, qcm: QbloxQCM, parameter, expected_value):
+        """Test getting parameters for QCM filters using parameterized values."""
+        output_id = 0
+        value = qcm.get_parameter(parameter, output_id=output_id)
+        assert value == expected_value
+
     def test_get_parameter_raises_error(self, qcm: QbloxQCM):
-        """Test setting parameters for QCM sequencers using parameterized values."""
+        """Test setting parameters for QCM sequencers and filters using parameterized values."""
         with pytest.raises(ParameterNotFound):
             qcm.get_parameter(Parameter.BUS_FREQUENCY, channel_id=0)
 
         with pytest.raises(IndexError):
             qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=4)
+        
+        with pytest.raises(IndexError):
+            qcm.get_parameter(Parameter.EXPONENTIAL_STATE, output_id=2)
 
         with pytest.raises(Exception):
             qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=None)
@@ -327,4 +402,10 @@ class TestQbloxSequencer:
     def test_to_dict(self, qcm: QbloxQCM):
         sequencer = qcm.get_sequencer(0)
         as_dict = sequencer.to_dict()
+        assert isinstance(as_dict, dict)
+
+class TestQbloxFilter:
+    def test_to_dict(self, qcm: QbloxQCM):
+        filter = qcm.get_filter(0)
+        as_dict = filter.to_dict()
         assert isinstance(as_dict, dict)

@@ -8,6 +8,7 @@ from pathlib import Path
 from queue import Queue
 from types import MethodType
 from unittest.mock import MagicMock, create_autospec, patch
+import logging
 
 import numpy as np
 import pytest
@@ -303,6 +304,9 @@ class TestPlatformInitialization:
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
         assert isinstance(platform.buses, Buses)
+        assert isinstance(platform.qblox_active_filter_exponential, list)
+        assert isinstance(platform.qblox_active_filter_fir, list)
+        assert isinstance(platform.qblox_alias_module, list)
         assert platform._connected_to_instruments is False
 
 
@@ -532,6 +536,63 @@ class TestPlatform:
             assert bus is None
         else:
             assert bus in platform.buses
+
+    def test_get_filter(self, platform: Platform):
+        """Test Get filters"""
+        #  Check that the parameters can be retrieved by bus and by module
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_AMPLITUDE, output_id=0) == 0.7
+        assert platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_AMPLITUDE, output_id=0) == 0.7
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT, output_id=0) == 200
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=0) == "enabled"
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_COEFF, output_id=0)== [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+        
+        #  Check that filters marked as delay_comp in the runcard have not been changed
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=3) == "delay_comp"
+
+        #  Check that the state of the filters have been updated to delaycomp as needed (even for modules without filters in the runcard)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=1) == "delay_comp"
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=2) == "delay_comp"
+        assert platform.get_parameter(alias="QRM_0", parameter=Parameter.EXPONENTIAL_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM_0", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.EXPONENTIAL_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.FIR_STATE, output_id=1) == "delay_comp"
+        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.EXPONENTIAL_STATE, output_id=1) == "delay_comp"
+
+    def test_setting_filter_bypassed_give_warning(self, caplog, platform: Platform):
+        #  Check that setting a filter as bypassed will actually put/leave it as delay_comp if needed
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, value="bypassed", output_id=1)
+        with caplog.at_level(logging.WARNING):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=1)
+            assert ("Another filter is marked as active hence it is not possible to bypass this filter otherwise this would cause a delay with the other sequencers."
+                in caplog.text)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, output_id=1) == "delay_comp"
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value="bypassed", output_id=1)
+        with caplog.at_level(logging.WARNING):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=1)
+            assert ("Another filter is marked as active hence it is not possible to bypass this filter otherwise this would cause a delay with the other sequencers."
+                in caplog.text)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=1) == "delay_comp"
+
+    def test_filter_parameter_without_output_id_raises_exception(self, platform: Platform):
+        """Test that setting or getting a filter parameter without giving an output_id raises an Exception."""
+        parameter = Parameter.EXPONENTIAL_STATE
+
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=parameter, value="bypassed")
+
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=parameter)
+
+    def test_filter_parameter_with_wrong_output_id_raises_exception(self, platform: Platform):
+        """Test that setting a filter parameter with an output_id>max_output of the instrument raises an Exception."""
+        output_id = 10
+        with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE, value="bypassed", output_id=output_id)
+
+        with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value="bypassed", output_id=output_id)
 
     def test_print_platform(self, platform: Platform):
         """Test print platform."""
