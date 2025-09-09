@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import networkx as nx
+from qibo.gates import SWAP, M
 
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.circuit_router import CircuitRouter
@@ -41,7 +42,7 @@ class DigitalTranspilationConfig:
     """Dataclass containing the digital transpilation configuration. Used in the :meth:`.CircuitTranspiler.transpile_circuit()` method"""
 
     routing: bool = False  # TODO: Change to True, when user confirms it works well.
-    """(bool, optional): Whether to route the circuit. Defaults to False."""
+    """(bool, optional): Whether to route the circuit. Currently this only works if no SWAP gate is after a Measurement for each qubit. Defaults to False."""
 
     placer: Placer | type[Placer] | tuple[type[Placer], dict] | None = None
     """(Placer | type[Placer] | tuple[type[Placer], dict], optional): ``Placer`` instance, or subclass ``type[Placer]`` to
@@ -64,11 +65,9 @@ class DigitalTranspilationConfig:
 
 
 class CircuitTranspiler:
-    """Handles circuit transpilation. It has 3 accessible methods:
+    """Handles circuit transpilation (routing, optimization, native gate translation, and pulse scheduling).
 
-    - ``circuit_to_native``: transpiles a qibo circuit to native gates (Drag, CZ, Wait, M) and optionally RZ if optimize=False (optimize=True by default)
-    - ``circuit_to_pulses``: transpiles a native gate circuit to a ``PulseSchedule``
-    - ``transpile_circuit``: runs both of the methods above sequentially
+    Its main method, which sequentially calls the rest, is: :meth:`.transpile_circuit()`.
 
     Args:
         settings (DigitalCompilationSettings): Object containing the Digital Compilations Settings and the info on chip's physical qubits.
@@ -112,6 +111,10 @@ class CircuitTranspiler:
 
             To do Steps **2.** and **5.** set ``optimize=True`` (default behavior skips it).
 
+        .. note::
+
+            If the circuit has SWAP gates after a Measurement gate, the automatic routing will not work, better to use the :meth:`.CircuitRouter.route()` method manually, and track the mapping of measurement results before execution.
+
         **Examples:**
 
         If we instantiate some ``Circuit``, ``Platform`` and ``CircuitTranspiler`` objects like:
@@ -140,13 +143,15 @@ class CircuitTranspiler:
         .. code-block:: python
 
             # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
-            transpiled_circuit, final_layouts = transpiler.transpile_circuit(c)
+            transpiled_pulses, final_layouts = transpiler.transpile_circuit(c)
 
             # Or another case, not doing optimization for some reason, and with Non-Default placer:
-            transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Random, optimize=False)
+            transpilation_settings = DigitalTranspilationConfig(placer=Random, optimize=False)
+            transpiled_pulses, final_layout = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
             # Or also specifying the `router` with kwargs:
-            transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
+            transpilation_settings = DigitalTranspilationConfig(router=(Sabre, {"lookahead": 2}))
+            transpiled_pulses, final_layouts = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
         .. note::
 
@@ -171,12 +176,18 @@ class CircuitTranspiler:
 
         # Routing stage;
         if routing:
-            circuit_gates, nqubits, final_layout = self.route_circuit(circuit, placer, router, routing_iterations)
+            # Check that no gate is after a M gate in each qubit of the circuit, else automatic un-reordering will not work.
+            CircuitTranspiler._check_that_no_SWAP_gate_is_after_measurement(circuit, before_or_after="before")
+            circuit, final_layout = self.route_circuit(circuit, placer, router, routing_iterations)
+            CircuitTranspiler._check_that_no_SWAP_gate_is_after_measurement(circuit, before_or_after="after")
+            # Check again, after routing, so no SWAP gate has appeared behind a measurement gate.
         else:
-            circuit_gates, nqubits = circuit.queue, circuit.nqubits
             final_layout = None  # Random mapping
 
-        # Optimze qibo gates, cancelling redundant gates:
+        # Pass to list of gates, for next stages:
+        circuit_gates, nqubits = circuit.queue, circuit.nqubits
+
+        # Optimize qibo gates, cancelling redundant gates:
         if optimize:
             circuit_gates = self.optimize_gates(circuit_gates)
 
@@ -202,7 +213,7 @@ class CircuitTranspiler:
         router: Router | type[Router] | tuple[type[Router], dict] | None = None,
         iterations: int = 10,
         coupling_map: tuple[int, int] | None = None,
-    ) -> tuple[list[gates.Gate], int, list[int]]:
+    ) -> tuple[Circuit, list[int]]:
         """Routes the virtual/logical qubits of a circuit to the physical qubits of a chip. Returns and logs the final qubit layout.
 
         This process uses the provided ``placer``, ``router``, and ``routing_iterations`` parameters if they are passed; otherwise, default values are applied.
@@ -236,13 +247,13 @@ class CircuitTranspiler:
         .. code-block:: python
 
             # Default Transpilation:
-            routed_circuit, qubits, final_layouts = transpiler.route_circuit(c)  # Defaults to ReverseTraversal, Sabre and platform connectivity
+            routed_circuit, final_layouts = transpiler.route_circuit(c)  # Defaults to ReverseTraversal, Sabre and platform connectivity
 
             # Non-Default Random placer, and coupling_map specified:
-            routed_circuit, qubits, final_layouts = transpiler.route_circuit(c, placer=Random, router=Sabre, coupling_map)
+            routed_circuit, final_layouts = transpiler.route_circuit(c, placer=Random, router=Sabre, coupling_map)
 
             # Specifying one of the a kwargs:
-            routed_circuit, qubits, final_layouts = transpiler.route_circuit(c, placer=Random, router=(Sabre, {"lookahead": 2}))
+            routed_circuit, final_layouts = transpiler.route_circuit(c, placer=Random, router=(Sabre, {"lookahead": 2}))
 
         Args:
             circuit (Circuit): circuit to route.
@@ -255,8 +266,8 @@ class CircuitTranspiler:
                 which will overwrite any other in an instance of router or placer. Defaults to the platform topology.
 
         Returns:
-            tuple[list[Gate], int, list[int]]: List of gates of the routed circuit, number of qubits in it, and its corresponding final layout (Initial
-                Re-mapping + SWAPs routing) of the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...].
+            tuple[Circuit, list[int]]: The routed circuit and its corresponding final layout (Initial Re-mapping + SWAPs routing)
+                of the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...].
 
         Raises:
             ValueError: If StarConnectivity Placer and Router are used with non-star topologies.
@@ -265,9 +276,7 @@ class CircuitTranspiler:
         topology = nx.Graph(coupling_map if coupling_map is not None else self.settings.topology)
         circuit_router = CircuitRouter(topology, placer, router)
 
-        circuit, final_layout = circuit_router.route(circuit, iterations)
-
-        return circuit.queue, circuit.nqubits, final_layout
+        return circuit_router.route(circuit, iterations)
 
     @staticmethod
     def optimize_gates(circuit_gates: list[gates.Gate]) -> list[gates.Gate]:
@@ -378,3 +387,35 @@ class CircuitTranspiler:
         circuit_to_pulses = CircuitToPulses(self.settings)
 
         return circuit_to_pulses.run(circuit_gates)
+
+    @staticmethod
+    def _check_that_no_SWAP_gate_is_after_measurement(circuit: Circuit, before_or_after: str) -> None:
+        """Checks that no SWAP gate is after a measurement gate in each qubit of the circuit.
+
+        Args:
+            circuit (Circuit): Qibo circuit to check.
+            before_or_after (str): Whether to check before or after the measurement gate. Should be "before" or "after".
+
+        Raises:
+            ValueError: If there is a gate after a measurement gate.
+        """
+        for qubit in range(circuit.nqubits):
+            first_measurement = None
+            last_SWAP = None
+            for i, gate in enumerate(circuit.queue):
+                if qubit in gate.qubits:
+                    if isinstance(gate, M):
+                        first_measurement = i if first_measurement is None else first_measurement
+                    elif isinstance(gate, SWAP):
+                        last_SWAP = i
+            if first_measurement is not None and last_SWAP is not None and first_measurement < last_SWAP:
+                # Error if SWAP is after Measurement in original circuit
+                if before_or_after == "before":
+                    raise ValueError(
+                        f"Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit.Review the circuit gates for qubit {qubit}."
+                    )
+                # Error if SWAP gate has been added after Measurement in routing
+                if before_or_after == "after":
+                    raise ValueError(
+                        f"Routing error: A SWAP gate was added after a Measurement on qubit {qubit}, which is not allowed in automatic routing. This likely occurred because 2-qubit gates were used after a Measurement. To route such circuits, use `CircuitRouter` manually and track the mapping of measurement results before execution."
+                    )
