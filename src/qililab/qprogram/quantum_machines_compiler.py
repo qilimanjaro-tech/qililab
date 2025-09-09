@@ -23,7 +23,6 @@ import numpy as np
 from qm import qua
 from qm.program import Program
 from qm.qua import _dsl as qua_dsl
-from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
@@ -588,12 +587,12 @@ class QuantumMachinesCompiler:
         minus_cos_Q = -np.cos(rotation) * envelope_Q
 
         # Convert weights to QM-specific format
-        cos_I_converted = convert_integration_weights(integration_weights=cos_I, N=len(cos_I))
-        sin_I_converted = convert_integration_weights(integration_weights=sin_I, N=len(sin_I))
-        cos_Q_converted = convert_integration_weights(integration_weights=cos_Q, N=len(cos_Q))
-        sin_Q_converted = convert_integration_weights(integration_weights=sin_Q, N=len(sin_Q))
-        minus_sin_I_converted = convert_integration_weights(integration_weights=minus_sin_I, N=len(minus_sin_I))
-        minus_cos_Q_converted = convert_integration_weights(integration_weights=minus_cos_Q, N=len(minus_cos_Q))
+        cos_I_converted = _convert_integration_weights(integration_weights=cos_I, N=len(cos_I))
+        sin_I_converted = _convert_integration_weights(integration_weights=sin_I, N=len(sin_I))
+        cos_Q_converted = _convert_integration_weights(integration_weights=cos_Q, N=len(cos_Q))
+        sin_Q_converted = _convert_integration_weights(integration_weights=sin_Q, N=len(sin_Q))
+        minus_sin_I_converted = _convert_integration_weights(integration_weights=minus_sin_I, N=len(minus_sin_I))
+        minus_cos_Q_converted = _convert_integration_weights(integration_weights=minus_cos_Q, N=len(minus_cos_Q))
 
         # Define weights names
         A = f"{prefix}_A"
@@ -651,3 +650,33 @@ class QuantumMachinesCompiler:
 
         # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
         return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
+
+
+def _convert_integration_weights(integration_weights, N=100, accuracy=2**-15):
+    integration_weights = np.array(integration_weights)
+    integration_weights = np.round(integration_weights / accuracy) * accuracy
+    changes_indices = np.where(np.abs(np.diff(integration_weights)) > 0)[0].tolist()
+    prev_index = -1
+    new_integration_weights = []
+    for curr_index in [*changes_indices, len(integration_weights) - 1]:
+        constant_part = (
+            integration_weights[curr_index].tolist(),
+            round(4 * (curr_index - prev_index)),
+        )
+        new_integration_weights.append(constant_part)
+        prev_index = curr_index
+
+    new_integration_weights = _compress_integration_weights(new_integration_weights, N=N)
+
+    return new_integration_weights
+
+
+def _compress_integration_weights(integration_weights, N=100):
+    integration_weights = np.array(integration_weights)
+    integration_weights = list(
+        zip(
+            integration_weights.T[0].tolist(),
+            integration_weights.T[1].astype(int).tolist(),
+        )
+    )
+    return integration_weights
