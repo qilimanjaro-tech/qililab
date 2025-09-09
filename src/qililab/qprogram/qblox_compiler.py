@@ -815,14 +815,14 @@ class QbloxCompiler:
         elif (
             isinstance(waveform_I, FlatTop)
             and (waveform_Q is None or isinstance(waveform_Q, FlatTop))
-            and ((waveform_I.duration - (waveform_I.sigma + waveform_I.buffer) * 2) >= 100)
+            and ((waveform_I.duration - (waveform_I.smooth_duration + waveform_I.buffer) * 2) >= 100)
         ):
             smooth_waveform_I: FlatTop = deepcopy(waveform_I)
             smooth_waveform_Q: FlatTop | None = deepcopy(waveform_Q)
             duration = smooth_waveform_I.duration
             smooth_duration_I = (
-                smooth_waveform_I.sigma + smooth_waveform_I.buffer
-                if smooth_waveform_I.sigma + smooth_waveform_I.buffer > INST_MIN_WAIT
+                smooth_waveform_I.smooth_duration + smooth_waveform_I.buffer
+                if smooth_waveform_I.smooth_duration + smooth_waveform_I.buffer > INST_MIN_WAIT
                 else INST_MIN_WAIT
             )
             square_duration = duration - smooth_duration_I * 2
@@ -834,7 +834,7 @@ class QbloxCompiler:
 
             if isinstance(smooth_waveform_Q, FlatTop):
                 if (
-                    smooth_waveform_Q.sigma + smooth_waveform_Q.buffer != smooth_duration_I
+                    smooth_waveform_Q.smooth_duration + smooth_waveform_Q.buffer != smooth_duration_I
                     and smooth_duration_I != INST_MIN_WAIT
                 ):
                     raise ValueError("smooth_duration + buffer of both I and Q must be the same.")
