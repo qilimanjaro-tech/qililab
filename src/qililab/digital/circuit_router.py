@@ -19,14 +19,19 @@ import contextlib
 import networkx as nx
 import numpy as np
 from qibo import Circuit, gates
-from qibo.transpiler.optimizer import Preprocessing
-from qibo.transpiler.pipeline import Passes
-from qibo.transpiler.placer import Placer, ReverseTraversal, StarConnectivityPlacer
-from qibo.transpiler.router import Router, Sabre, StarConnectivityRouter
 
 from qililab.config import logger
 from qililab.digital.circuit_optimizer import CircuitOptimizer
 from qililab.digital.native_gates import _GateHandler
+from qililab.digital.routing.abstract import Placer, Router
+from qililab.digital.routing.algorithms import (
+    Preprocessing,
+    ReverseTraversal,
+    Sabre,
+    StarConnectivityPlacer,
+    StarConnectivityRouter,
+)
+from qililab.digital.routing.passes import Passes
 
 
 class CircuitRouter:
@@ -249,7 +254,7 @@ class CircuitRouter:
         if router is None:
             return Sabre(connectivity=connectivity)
 
-        kwargs = {}
+        kwargs: dict = {}
         if isinstance(router, tuple):
             router, kwargs = router
 
@@ -289,7 +294,7 @@ class CircuitRouter:
         if placer is None:
             return ReverseTraversal(connectivity=connectivity, routing_algorithm=router)
 
-        kwargs = {}
+        kwargs: dict = {}
         if isinstance(placer, tuple):
             placer, kwargs = placer
 

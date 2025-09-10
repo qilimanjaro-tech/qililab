@@ -67,7 +67,7 @@ def execute(
 
         import numpy as np
         from qibo import Circuit, gates
-        from qibo.transpiler import Sabre, ReverseTraversal
+        from qililab.digital.routing.algorithms import Sabre, ReverseTraversal
         from qililab.digital import DigitalTranspilationConfig
         import qililab as ql
 
