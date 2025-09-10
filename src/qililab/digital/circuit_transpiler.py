@@ -29,9 +29,8 @@ from .gate_decompositions import translate_gates
 
 if TYPE_CHECKING:
     from qibo import Circuit, gates
-    from qibo.transpiler.placer import Placer
-    from qibo.transpiler.router import Router
 
+    from qililab.digital.routing.abstract import Placer, Router
     from qililab.pulse.pulse_schedule import PulseSchedule
     from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
@@ -120,8 +119,7 @@ class CircuitTranspiler:
 
             from qibo import gates
             from qibo.models import Circuit
-            from qibo.transpiler.placer import ReverseTraversal, Random
-            from qibo.transpiler.router import Sabre
+            from qililab.digital.routing.algorithms import ReverseTraversal, Sabre
             from qililab import build_platform
             from qililab.digital import CircuitTranspiler
 
@@ -142,8 +140,8 @@ class CircuitTranspiler:
             # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
             transpiled_circuit, final_layouts = transpiler.transpile_circuit(c)
 
-            # Or another case, not doing optimization for some reason, and with Non-Default placer:
-            transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Random, optimize=False)
+            # Or another case, not doing optimization for some reason, and specifying the placer:
+            transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=ReverseTraversal, optimize=False)
 
             # Or also specifying the `router` with kwargs:
             transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
@@ -215,8 +213,7 @@ class CircuitTranspiler:
 
             from qibo import gates
             from qibo.models import Circuit
-            from qibo.transpiler.placer import ReverseTraversal, Random
-            from qibo.transpiler.router import Sabre
+            from qililab.digital.routing.algorithms import ReverseTraversal, Sabre
             from qililab import build_platform
             from qililab.digital import CircuitTranspiler
 
@@ -238,11 +235,11 @@ class CircuitTranspiler:
             # Default Transpilation:
             routed_circuit, qubits, final_layouts = transpiler.route_circuit(c)  # Defaults to ReverseTraversal, Sabre and platform connectivity
 
-            # Non-Default Random placer, and coupling_map specified:
-            routed_circuit, qubits, final_layouts = transpiler.route_circuit(c, placer=Random, router=Sabre, coupling_map)
+            # Placer and coupling_map specified:
+            routed_circuit, qubits, final_layouts = transpiler.route_circuit(c, placer=ReverseTraversal, router=Sabre, coupling_map)
 
             # Specifying one of the a kwargs:
-            routed_circuit, qubits, final_layouts = transpiler.route_circuit(c, placer=Random, router=(Sabre, {"lookahead": 2}))
+            routed_circuit, qubits, final_layouts = transpiler.route_circuit(c, placer=ReverseTraversal, router=(Sabre, {"lookahead": 2}))
 
         Args:
             circuit (Circuit): circuit to route.

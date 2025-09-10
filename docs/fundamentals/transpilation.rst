@@ -36,7 +36,7 @@ For example, the most basic use, would be to automatically transpile during an e
 .. code-block:: python
 
     from qibo import gates, Circuit
-    from qibo.transpiler import ReverseTraversal, Sabre
+    from qililab.digital.routing.algorithms import ReverseTraversal, Sabre
     import qililab as ql
 
     # Create circuit:
@@ -54,7 +54,7 @@ Or from a ``platform.execute()`` and using `DigitalTranspilationConfig` for argu
 .. code-block:: python
 
     from qibo import gates, Circuit
-    from qibo.transpiler import ReverseTraversal, Sabre
+    from qililab.digital.routing.algorithms import ReverseTraversal, Sabre
     from qililab import build_platform
     from qililab.digital import DigitalTranspilationConfig
 
@@ -75,8 +75,8 @@ Now, if we want more manual control instead, we can instantiate the ``CircuitTra
 
     from qibo import gates
     from qibo.models import Circuit
-    from qibo.transpiler.placer import ReverseTraversal, Random
-    from qibo.transpiler.router import Sabre
+    from qililab.digital.routing.algorithms import ReverseTraversal, Random
+    from qililab.digital.routing.algorithms import Sabre
     from qililab import build_platform
     from qililab.digital import CircuitTranspiler
 

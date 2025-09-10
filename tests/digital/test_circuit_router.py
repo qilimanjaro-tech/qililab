@@ -3,10 +3,9 @@ from unittest.mock import call, patch
 import pytest
 import networkx as nx
 from qibo import Circuit, gates
-from qibo.transpiler.optimizer import Preprocessing
+from qililab.digital.routing.algorithms import Preprocessing
 
-from qibo.transpiler.placer import ReverseTraversal, StarConnectivityPlacer
-from qibo.transpiler.router import Sabre, StarConnectivityRouter
+from qililab.digital.routing.algorithms import ReverseTraversal, StarConnectivityPlacer, Sabre, StarConnectivityRouter
 
 from qililab.digital.circuit_router import CircuitRouter
 
