@@ -21,11 +21,10 @@ from qililab.qprogram.variable import Domain
 from qililab.yaml import yaml
 
 from .gaussian import Gaussian
-from .waveform import Waveform
 
 
 @yaml.register_class
-class DragCorrection(Waveform):
+class GaussianDragCorrection(Gaussian):
     """Calculates the first order drag correction of the imaginary (Ey) channel of a drive pulse. See https://arxiv.org/abs/0901.0534 (10).
 
     So far only implemented for Gaussian pulses.
@@ -35,11 +34,13 @@ class DragCorrection(Waveform):
         waveform (Waveform): waveform on which the drag transformation is calculated
     """
 
+    @requires_domain("amplitude", Domain.Voltage)
+    @requires_domain("duration", Domain.Time)
+    @requires_domain("num_sigmas", Domain.Scalar)
     @requires_domain("drag_coefficient", Domain.Scalar)
-    def __init__(self, drag_coefficient: float, waveform: Waveform):
-        super().__init__()
+    def __init__(self, amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float):
+        super().__init__(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas)
         self.drag_coefficient = drag_coefficient
-        self.waveform = waveform
 
     def envelope(self, resolution: int = 1) -> np.ndarray:
         """Returns the envelope corresponding to the drag correction.
@@ -50,13 +51,11 @@ class DragCorrection(Waveform):
         Returns:
             np.ndarray: Height of the envelope for each time step.
         """
-        if isinstance(self.waveform, Gaussian):
-            sigma = self.waveform.duration / self.waveform.num_sigmas
-            mu = self.waveform.duration / 2
-            x = np.arange(self.waveform.duration / resolution) * resolution
+        sigma = self.duration / self.num_sigmas
+        mu = self.duration / 2
+        x = np.arange(self.duration / resolution) * resolution
 
-            return (-1 * self.drag_coefficient * (x - mu) / sigma**2) * self.waveform.envelope()
-        raise NotImplementedError(f"Cannot apply drag correction on a {self.waveform.__class__.__name__} waveform.")
+        return (-1 * self.drag_coefficient * (x - mu) / sigma**2) * super().envelope(resolution=resolution)
 
     def get_duration(self) -> int:
         """Get the duration of the waveform.
@@ -64,4 +63,4 @@ class DragCorrection(Waveform):
         Returns:
             int: The duration of the waveform in ns.
         """
-        return self.waveform.get_duration()
+        return self.duration

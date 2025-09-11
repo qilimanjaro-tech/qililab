@@ -12,37 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""IQPair dataclass."""
+"""Waveform protocol class."""
 
+from qililab.waveforms.gaussian import Gaussian
+from qililab.waveforms.gaussian_drag_correction import GaussianDragCorrection
 from qililab.waveforms.iq_waveform import IQWaveform
 from qililab.waveforms.waveform import Waveform
 from qililab.yaml import yaml
 
 
 @yaml.register_class
-class IQPair(IQWaveform):
-    """IQPair containing the 'in-phase' (I) and 'quadrature' (Q) parts of a signal."""
-
-    def __init__(self, I: Waveform, Q: Waveform):
-        if not isinstance(I, Waveform) or not isinstance(Q, Waveform):
-            raise TypeError("Waveform inside IQPair must have Waveform type.")
-
-        if I.get_duration() != Q.get_duration():
-            raise ValueError("Waveforms of an IQ pair must have the same duration.")
-
-        self.I = I
-        self.Q = Q
+class IQDrag(IQWaveform):
+    def __init__(self, amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float):
+        self.amplitude = amplitude
+        self.duration = duration
+        self.num_sigmas = num_sigmas
+        self.drag_coefficient = drag_coefficient
 
     def get_I(self) -> Waveform:
-        return self.I
+        return Gaussian(amplitude=self.amplitude, duration=self.duration, num_sigmas=self.num_sigmas)
 
     def get_Q(self) -> Waveform:
-        return self.Q
+        return GaussianDragCorrection(
+            amplitude=self.amplitude,
+            duration=self.duration,
+            num_sigmas=self.num_sigmas,
+            drag_coefficient=self.drag_coefficient,
+        )
 
     def get_duration(self) -> int:
-        """Get the duration of the waveforms
-
-        Returns:
-            int: The duration of the waveforms.
-        """
-        return self.I.get_duration()
+        raise NotImplementedError
