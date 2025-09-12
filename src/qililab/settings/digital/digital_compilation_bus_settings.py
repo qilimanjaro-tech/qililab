@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
-from qililab.pulse.pulse_distortion import PulseDistortion
+from qililab.pulse_distortion import PulseDistortion
 from qililab.typings.enums import Line
 from qililab.utils.castings import cast_enum_fields
 

@@ -12,12 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Class Qblox D5a"""
-
-from qblox_instruments.qcodes_drivers.spi_rack_modules import D5aModule as Driver_D5aModule
-
-from qililab.typings.instruments.device import Device
+from qililab.qprogram import QProgram
 
 
-class QbloxD5a(Driver_D5aModule, Device):
-    """Typing class of the D5a class defined by Qblox."""
+class CircuitToQProgramCompiler:
+    def compile() -> QProgram: ...

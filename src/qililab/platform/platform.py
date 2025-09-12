@@ -26,16 +26,14 @@ from copy import deepcopy
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Callable, cast
 
-import numpy as np
-from qibo.gates import M
-from qibo.models import Circuit
+from qilisdk.digital import Circuit, M
 from qm import generate_qua_script
 from ruamel.yaml import YAML
 
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
-from qililab.digital import CircuitTranspiler
+from qililab.digital import CircuitToQProgramCompiler, CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
@@ -47,9 +45,6 @@ from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
-from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.pulse.qblox_compiler import ModuleSequencer
-from qililab.pulse.qblox_compiler import QbloxCompiler as PulseQbloxCompiler
 from qililab.qprogram import (
     Calibration,
     Domain,
@@ -73,6 +68,7 @@ from qililab.utils import hash_qpy_sequence
 if TYPE_CHECKING:
     from queue import Queue
 
+    import numpy as np
     from qpysequence import Sequence as QpySequence
 
     from qililab.digital import DigitalTranspilationConfig
@@ -1365,10 +1361,8 @@ class Platform:
 
     def execute(
         self,
-        program: PulseSchedule | Circuit,
-        num_avg: int,
-        repetition_duration: int = 200_000,
-        num_bins: int = 1,
+        circuit: Circuit,
+        nshots: int = 1000,
         queue: Queue | None = None,
         transpilation_config: DigitalTranspilationConfig | None = None,
     ) -> Result | QbloxResult:
@@ -1435,47 +1429,11 @@ class Platform:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
         """
         # Compile pulse schedule
-        programs, final_layout = self.compile(program, num_avg, repetition_duration, num_bins, transpilation_config)
+        qprogram = self.compile(circuit, nshots, transpilation_config)
 
-        # Upload pulse schedule
-        for bus_alias in programs:
-            bus = self.buses.get(alias=bus_alias)
-            bus.upload()
+        results = self.execute_qprogram(qprogram)
 
-        # Execute pulse schedule
-        for bus_alias in programs:
-            bus = self.buses.get(alias=bus_alias)
-            bus.run()
-
-        # Acquire results
-        readout_buses = [bus for bus in self.buses if bus.alias in programs and bus.has_adc()]
-        results: list[Result] = []
-        for bus in readout_buses:
-            result = bus.acquire_result()
-            if queue is not None:
-                queue.put_nowait(item=result)
-            if not np.all(np.isnan(result.array)):
-                results.append(result)
-
-        for instrument in self.instruments.elements:
-            if isinstance(instrument, QbloxModule):
-                instrument.desync_sequencers()
-
-        # Flatten results if more than one readout bus was used for a qblox module
-        if len(results) > 1:
-            result = QbloxResult(
-                integration_lengths=[length for result in results for length in result.integration_lengths],  # type: ignore[attr-defined]
-                qblox_raw_results=[raw_result for result in results for raw_result in result.qblox_raw_results],  # type: ignore[attr-defined]
-            )
-        elif not results:
-            raise ValueError("There are no readout buses in the platform.")
-        else:
-            result = results[0]
-
-        if isinstance(program, Circuit):
-            result = self._order_result(result, program, final_layout)
-
-        return result
+        return results
 
     @staticmethod
     def _order_result(result: Result, circuit: Circuit, final_layout: list[int] | None) -> Result:
@@ -1534,10 +1492,8 @@ class Platform:
 
     def compile(
         self,
-        program: PulseSchedule | Circuit,
-        num_avg: int,
-        repetition_duration: int,
-        num_bins: int,
+        circuit: Circuit,
+        nshots: int,
         transpilation_config: DigitalTranspilationConfig | None = None,
     ) -> tuple[dict[str, list[QpySequence]], list[int] | None]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
@@ -1580,44 +1536,15 @@ class Platform:
         """
         # We have a circular import because Platform uses CircuitToPulses and vice versa
         if self.digital_compilation_settings is None:
-            raise ValueError("Cannot compile Qibo Circuit or Pulse Schedule without gates settings.")
+            raise ValueError("Cannot compile Circuit without gates settings.")
 
-        if isinstance(program, Circuit):
-            transpiler = CircuitTranspiler(settings=self.digital_compilation_settings)
-            pulse_schedule, final_layout = transpiler.transpile_circuit(program, transpilation_config)
+        transpiler = CircuitTranspiler()
+        circuit = transpiler.run(circuit)
 
-        elif isinstance(program, PulseSchedule):
-            pulse_schedule = program
-            final_layout = None
+        compiler = CircuitToQProgramCompiler()
+        qprogram = compiler.compile()
 
-        else:
-            raise ValueError(
-                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
-            )
-
-        module_and_sequencer_per_bus: dict[str, ModuleSequencer] = {}
-        for element in pulse_schedule.elements:
-            bus = self.buses.get(alias=element.bus_alias)
-            if bus is None:
-                raise ValueError(
-                    f"Bus with alias '{element.bus_alias}' defined in Digital/Buses section of the Runcard, not found in main Buses section of the same Runcard."
-                )
-            for instrument, channel in zip(bus.instruments, bus.channels):
-                if isinstance(instrument, QbloxModule):
-                    module_and_sequencer_per_bus[element.bus_alias] = ModuleSequencer(
-                        module=instrument, sequencer=instrument.get_sequencer(channel)
-                    )
-
-        compiler = PulseQbloxCompiler(
-            buses=self.digital_compilation_settings.buses,
-            module_and_sequencer_per_bus=module_and_sequencer_per_bus,
-        )
-
-        compiled_programs = compiler.compile(
-            pulse_schedule=pulse_schedule, num_avg=num_avg, repetition_duration=repetition_duration, num_bins=num_bins
-        )
-
-        return compiled_programs, final_layout
+        return qprogram
 
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
         bus = self.get_element(alias=alias)
@@ -1638,7 +1565,7 @@ class Platform:
         averages_displayed: bool = False,
         acquisition_showing: bool = True,
         bus_mapping: dict[str, str] | None = None,
-        calibration: Calibration | None = None
+        calibration: Calibration | None = None,
     ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 

@@ -2,8 +2,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from qibo.gates import CNOT, RY, H, M, X
-from qibo.models import Circuit
+from qilisdk.digital import Circuit, X, H, RY, CNOT, M
 
 import qililab as ql
 
@@ -14,7 +13,7 @@ class TestExecute:
     def test_execute(self):
         n_qubits = 5
         circuit = Circuit(n_qubits)
-        circuit.add([X(1), H(2), RY(0, 2), CNOT(4, 1), X(4), H(3), M(*range(5))])
+        circuit.add([X(1), H(2), RY(0, theta=2), CNOT(4, 1), X(4), H(3), M(*range(5))])
         runcard = "galadriel.yml"
         mock_platform = MagicMock()
         with patch("qililab.execute_circuit.build_platform", return_value=mock_platform) as mock_build:
@@ -30,7 +29,7 @@ class TestExecute:
     def test_execute_calls_disconnect_after_error(self):
         n_qubits = 5
         circuit = Circuit(n_qubits)
-        circuit.add([X(1), H(2), RY(0, 2), CNOT(4, 1), X(4), H(3), M(*range(5))])
+        circuit.add([X(1), H(2), RY(0, theta=2), CNOT(4, 1), X(4), H(3), M(*range(5))])
         runcard = "galadriel.yml"
         with pytest.raises(Exception):
             mock_platform = MagicMock()
@@ -48,7 +47,7 @@ class TestExecute:
         """Test that executing a list of circuits returns a list of results."""
         n_qubits = 5
         circuit = Circuit(n_qubits)
-        circuit.add([X(1), H(2), RY(0, 2), CNOT(4, 1), X(4), H(3), M(*range(5))])
+        circuit.add([X(1), H(2), RY(0, theta=2), CNOT(4, 1), X(4), H(3), M(*range(5))])
         runcard = "galadriel.yml"
         mock_platform = MagicMock()
         with patch("qililab.execute_circuit.build_platform", return_value=mock_platform) as mock_build:

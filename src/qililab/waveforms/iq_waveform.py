@@ -12,15 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""__init__.py"""
+"""Waveform protocol class."""
 
-from .cosine import Cosine
-from .drag import Drag
-from .flat_top import FlatTop
-from .gaussian import Gaussian
-from .pulse_shape import PulseShape
-from .rectangular import Rectangular
-from .snz import SNZ
-from .two_step import TwoStep
+from abc import ABC, abstractmethod
 
-__all__ = ["SNZ", "Cosine", "Drag", "FlatTop", "Gaussian", "PulseShape", "Rectangular", "TwoStep"]
+from qililab.waveforms.waveform import Waveform
+
+
+class IQWaveform(ABC):
+    @abstractmethod
+    def get_I(self) -> Waveform:
+        pass
+
+    @abstractmethod
+    def get_Q(self) -> Waveform:
+        pass
+
+    @abstractmethod
+    def get_duration(self) -> int:
+        pass

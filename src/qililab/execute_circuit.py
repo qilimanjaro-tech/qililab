@@ -14,7 +14,7 @@
 
 """Execute function used to execute a qibo Circuit using the given runcard."""
 
-from qibo.models import Circuit
+from qilisdk.digital import Circuit
 from tqdm.auto import tqdm
 
 from qililab.digital import DigitalTranspilationConfig
