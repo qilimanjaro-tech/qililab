@@ -174,7 +174,7 @@ class QbloxQCMRF(QbloxQCM):
                 sequencer.sideband_cal()
         else:
             raise Exception(
-                f"`{cal_type}` for this module must be one of the following values: " "'lo' or 'lo_and_sidebands'."
+                f"`{cal_type}` for this module must be one of the following values: 'lo' or 'lo_and_sidebands'."
             )
 
         return

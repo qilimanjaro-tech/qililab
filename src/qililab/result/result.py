@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Result class."""
+
 from abc import ABC, abstractmethod
 
 import numpy as np

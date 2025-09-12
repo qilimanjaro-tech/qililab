@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utiliy class for hashing common classes."""
+
 import hashlib
 
 from qm import Program

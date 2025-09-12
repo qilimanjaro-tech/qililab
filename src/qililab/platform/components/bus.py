@@ -22,7 +22,7 @@ from qpysequence import Sequence as QpySequence
 from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, Instruments, ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
-from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
+from qililab.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.result.qprogram import MeasurementResult

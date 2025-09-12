@@ -40,7 +40,6 @@ Functions
 
 """
 
-
 # isort: skip_file
 from .experiment_live_plot import ExperimentLivePlot
 from .experiment_results import ExperimentResults
@@ -67,5 +66,5 @@ __all__ = [
     "get_db_manager",
     "load_results",
     "save_results",
-    "stream_results"
+    "stream_results",
 ]

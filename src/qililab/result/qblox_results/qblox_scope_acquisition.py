@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Qblox Bin Acquisition Result """
+"""Qblox Bin Acquisition Result"""
 
 from dataclasses import dataclass
 

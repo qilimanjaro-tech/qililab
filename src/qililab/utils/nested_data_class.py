@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Nested dataclass decorator."""
+
 from dataclasses import dataclass, is_dataclass
 from typing import get_type_hints
 
