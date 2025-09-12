@@ -4,7 +4,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from qililab import Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square
+from qililab import Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square, IQDrag
 from qililab.qprogram.blocks import Average
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -120,7 +120,7 @@ class TestQProgram(TestStructuredProgram):
 
     def test_with_calibration_method(self):
         """Test with_bus_mapping method"""
-        xgate = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
+        xgate = IQDrag(amplitude=1.0, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
         readout = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
         weights = IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000))
 
@@ -396,15 +396,14 @@ class TestQProgram(TestStructuredProgram):
                 _ = Gaussian(amplitude=amplitude_var, duration=duration_var, num_sigmas=num_sigmas_var)
 
         for var in all_types - {scalar}:
-            gaussian = Gaussian(amplitude=1.0, duration=40, num_sigmas=2.5)
             with pytest.raises(ValueError):
-                _ = GaussianDragCorrection(drag_coefficient=var, waveform=gaussian)
+                _ = GaussianDragCorrection(drag_coefficient=var, amplitude=1.0, duration=40, num_sigmas=2.5)
 
         for amplitude_var, duration_var, num_sigmas_var, drag_coefficient_var in set(product(all_types, repeat=4)) - {
             (voltage, time, scalar, scalar)
         }:
             with pytest.raises(ValueError):
-                _ = IQPair.DRAG(
+                _ = IQDrag(
                     amplitude=amplitude_var,
                     duration=duration_var,
                     num_sigmas=num_sigmas_var,

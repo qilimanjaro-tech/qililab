@@ -41,4 +41,4 @@ class IQDrag(IQWaveform):
         )
 
     def get_duration(self) -> int:
-        raise NotImplementedError
+        return self.duration

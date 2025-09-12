@@ -38,10 +38,10 @@ class TestIQPair:
         """Test __init__ method"""
         drag = IQDrag(drag_coefficient=0.4, amplitude=0.7, duration=40, num_sigmas=2)
         gaus = Gaussian(amplitude=0.7, duration=40, num_sigmas=2)
-        corr = GaussianDragCorrection(drag_coefficient=0.4, waveform=gaus)
+        corr = GaussianDragCorrection(amplitude=gaus.amplitude, duration=gaus.duration, num_sigmas=gaus.num_sigmas, drag_coefficient=0.4)
 
-        assert isinstance(drag, IQPair)
-        assert isinstance(drag.I, Gaussian)
-        assert isinstance(drag.Q, GaussianDragCorrection)
-        assert np.allclose(drag.I.envelope(), gaus.envelope())
-        assert np.allclose(drag.Q.envelope(), corr.envelope())
+        assert isinstance(drag, IQDrag)
+        assert isinstance(drag.get_I(), Gaussian)
+        assert isinstance(drag.get_Q(), GaussianDragCorrection)
+        assert np.allclose(drag.get_I().envelope(), gaus.envelope())
+        assert np.allclose(drag.get_Q().envelope(), corr.envelope())

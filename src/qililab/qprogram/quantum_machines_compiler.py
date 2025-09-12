@@ -41,7 +41,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
-from qililab.waveforms import IQPair, Square, Waveform
+from qililab.waveforms import IQWaveform, Square, Waveform
 
 # mypy: disable-error-code="operator"
 
@@ -573,11 +573,11 @@ class QuantumMachinesCompiler:
             )
         return pulse_name
 
-    def __add_weights_to_configuration(self, weights: IQPair, rotation: float):
-        prefix = f"{QuantumMachinesCompiler.__hash_waveform(weights.I)}_{QuantumMachinesCompiler.__hash_waveform(weights.Q)}_{rotation}"
+    def __add_weights_to_configuration(self, weights: IQWaveform, rotation: float):
+        prefix = f"{QuantumMachinesCompiler.__hash_waveform(weights.get_I())}_{QuantumMachinesCompiler.__hash_waveform(weights.get_Q())}_{rotation}"
 
-        envelope_I = weights.I.envelope(4)
-        envelope_Q = weights.Q.envelope(4)
+        envelope_I = weights.get_I().envelope(4)
+        envelope_Q = weights.get_Q().envelope(4)
 
         # Define weights as numpy array
         cos_I = np.cos(rotation) * envelope_I

@@ -15,16 +15,16 @@
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.qprogram.variable import Variable
-from qililab.waveforms import IQPair, Waveform
+from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
 
 @yaml.register_class
 class Play(Operation):
-    def __init__(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None) -> None:
+    def __init__(self, bus: str, waveform: Waveform | IQWaveform, wait_time: int | None = None) -> None:
         super().__init__()
         self.bus: str = bus
-        self.waveform: Waveform | IQPair = waveform
+        self.waveform: Waveform | IQWaveform = waveform
         self.wait_time: int | None = wait_time  # TODO: remove this in clean fix
 
     def get_waveforms(self) -> tuple[Waveform, Waveform | None]:
@@ -33,8 +33,8 @@ class Play(Operation):
         Returns:
             tuple[Waveform, Waveform | None]: The waveforms as tuple. The second waveform can be None.
         """
-        wf_I: Waveform = self.waveform.I if isinstance(self.waveform, IQPair) else self.waveform
-        wf_Q: Waveform | None = self.waveform.Q if isinstance(self.waveform, IQPair) else None
+        wf_I: Waveform = self.waveform.get_I() if isinstance(self.waveform, IQWaveform) else self.waveform
+        wf_Q: Waveform | None = self.waveform.get_Q() if isinstance(self.waveform, IQWaveform) else None
         return wf_I, wf_Q
 
     def get_waveform_variables(self) -> set[Variable]:
