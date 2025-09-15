@@ -128,9 +128,6 @@ class StreamArray:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exits the context manager."""
-        print(exc_type)
-        print(exc_val) 
-        print(exc_tb)
         if self._file is not None:
             self._file.__exit__()
             self._file = None
