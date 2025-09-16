@@ -194,4 +194,4 @@ The data automatically selects between the local or shared domains depending on 
   [#973](https://github.com/qilimanjaro-tech/qililab/pull/973)
 
 - Fixed documentation for results `counts`, now it warns the user that instead of `num_avg` they must use `num_bins`.
-  [#973](https://github.com/qilimanjaro-tech/qililab/pull/973)
+  [#989](https://github.com/qilimanjaro-tech/qililab/pull/989)

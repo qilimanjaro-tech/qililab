@@ -178,6 +178,7 @@ class Platform:
         To do so the call to execute circuit must be slightly different, as the number of averages must be 1:
 
         .. code-block:: python
+
             # Executing the platform with the same amount of loops but using bins:
             result = platform.execute(program=circuit, num_avg=1, num_bins=1000, repetition_duration=6000)
 
