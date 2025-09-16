@@ -17,7 +17,7 @@
 from collections.abc import Callable
 
 import numpy as np
-from qilisdk.digital import CNOT, CZ, RX, RY, RZ, SWAP, U1, U2, U3, Gate, H, M, S, T, X, Y, Z
+from qilisdk.digital import CNOT, CZ, RX, RY, RZ, SWAP, U1, U2, U3, Gate, H, I, M, S, T, X, Y, Z
 
 from .native_gates import Drag
 
@@ -28,7 +28,7 @@ class GateDecompositions:
     def __init__(self):
         self.decompositions = {}
 
-    def add(self, gate: Gate, decomposition: list[Gate] | Callable[[Gate], list[Gate]]):
+    def add(self, gate: type[Gate], decomposition: list[Gate] | Callable[[Gate], list[Gate]]):
         """Register a decomposition for a gate. Note that the decomposition list can have
         non-native gates
 
@@ -108,7 +108,7 @@ def native_gates():
 # i.e. to perform the operation AB|psi> the order of the operators
 # returned as a list must be  [B, A] so that B is applied to |psi> 1st
 qili_dec = GateDecompositions()
-# qili_dec.add(I, [RZ(0, 0)])
+qili_dec.add(I, [RZ(0, phi=0)])
 # qili_dec.add(Align, lambda gate: [Wait(0, gate.parameters[0])])
 qili_dec.add(H, [Drag(0, theta=np.pi / 2, phase=-np.pi / 2), RZ(0, phi=np.pi)])
 qili_dec.add(X, [Drag(0, theta=np.pi, phase=0)])

@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from qilisdk.digital import Circuit
+
 from qililab.qprogram import QProgram
 
 
 class CircuitToQProgramCompiler:
-    def compile() -> QProgram: ...
+    def compile(self, circuit: Circuit) -> QProgram:
+        return QProgram()

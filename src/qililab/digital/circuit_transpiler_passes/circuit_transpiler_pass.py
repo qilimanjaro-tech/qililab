@@ -12,24 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
+from abc import ABC, abstractmethod
 
 from qilisdk.digital import Circuit
 
-from .circuit_transpiler_passes import CancelPairsOfHermitianGatesPass, CircuitTranspilerPass
 
-
-class DigitalTranspilationConfig: ...
-
-
-class CircuitTranspiler:
-    def __init__(self) -> None:
-        self._pipeline: list[CircuitTranspilerPass] = [
-            CancelPairsOfHermitianGatesPass()
-        ]
-
-    def run(self, circuit: Circuit) -> Circuit:
-        for transpiler_pass in self._pipeline:
-            circuit = deepcopy(circuit)
-            circuit = transpiler_pass.run(circuit)
-        return circuit
+class CircuitTranspilerPass(ABC):
+    @abstractmethod
+    def run(self, circuit: Circuit) -> Circuit: ...

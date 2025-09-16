@@ -12,24 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
+from .cancel_pairs_of_hermitian_gates_pass import CancelPairsOfHermitianGatesPass
+from .circuit_transpiler_pass import CircuitTranspilerPass
 
-from qilisdk.digital import Circuit
-
-from .circuit_transpiler_passes import CancelPairsOfHermitianGatesPass, CircuitTranspilerPass
-
-
-class DigitalTranspilationConfig: ...
-
-
-class CircuitTranspiler:
-    def __init__(self) -> None:
-        self._pipeline: list[CircuitTranspilerPass] = [
-            CancelPairsOfHermitianGatesPass()
-        ]
-
-    def run(self, circuit: Circuit) -> Circuit:
-        for transpiler_pass in self._pipeline:
-            circuit = deepcopy(circuit)
-            circuit = transpiler_pass.run(circuit)
-        return circuit
+__all__ = ["CancelPairsOfHermitianGatesPass", "CircuitTranspilerPass"]
