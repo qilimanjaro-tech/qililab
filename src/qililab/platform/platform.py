@@ -692,7 +692,7 @@ class Platform:
             elif self.qblox_active_filter_fir:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
                 # self.qblox_active_filter_fir.append({alias: output_id})
                 element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
-                logger.warning("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.") if value is False else None
+                logger.warning("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
                 return
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
 
