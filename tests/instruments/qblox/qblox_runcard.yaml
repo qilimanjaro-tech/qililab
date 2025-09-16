@@ -27,11 +27,11 @@ instruments:
         offset_q: 0.1
     filters:
       - output_id: 0
-        exponential_amplitude: 0.31
-        exponential_time_constant: 200
-        exponential_state: enabled
+        exponential_amplitude: [0.31, 1, 0.1]
+        exponential_time_constant: [200, 100, 0.5]
+        exponential_state: [True, True, False]
         fir_coeff: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
-        fir_state: enabled
+        fir_state: True
   - name: QRM
     alias: qrm
     out_offsets: [0.0, 0.1, 0.2, 0.3]

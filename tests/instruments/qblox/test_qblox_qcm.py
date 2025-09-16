@@ -76,10 +76,19 @@ def fixture_qrm(platform: Platform):
         "out1_exp0_amplitude",
         "out2_exp0_amplitude",
         "out3_exp0_amplitude",
+        "out0_exp1_amplitude",
+        "out1_exp1_amplitude",
+        "out2_exp1_amplitude",
+        "out3_exp1_amplitude",
+        "out0_exp2_amplitude",
+        "out1_exp2_amplitude",
+        "out2_exp2_amplitude",
+        "out3_exp2_amplitude",
         "out0_exp0_time_constant",
         "out1_exp0_time_constant",
         "out2_exp0_time_constant",
         "out3_exp0_time_constant",
+        "out0_exp2_time_constant",
         "out0_fir_coeffs",
         "out1_fir_coeffs",
         "out2_fir_coeffs",
@@ -92,6 +101,14 @@ def fixture_qrm(platform: Platform):
         "out1_exp0_config",
         "out2_exp0_config",
         "out3_exp0_config",
+        "out0_exp1_config",
+        "out1_exp1_config",
+        "out2_exp1_config",
+        "out3_exp1_config",
+        "out0_exp2_config",
+        "out1_exp2_config",
+        "out2_exp2_config",
+        "out3_exp2_config",
     ]
 
     # Create a mock device using create_autospec to follow the interface of the expected device
@@ -117,9 +134,9 @@ class TestQbloxQCM:
         assert len(qcm.awg_sequencers) == 2  # As per the YAML config
         assert qcm.out_offsets == [0.0, 0.1, 0.2, 0.3]
         filter = qcm.get_filter(0)
-        assert filter.exponential_amplitude == 0.31
-        assert filter.exponential_time_constant == 200
-        assert filter.exponential_state == "enabled"
+        assert filter.exponential_amplitude[0] == 0.31
+        assert filter.exponential_time_constant[0] == 200
+        assert filter.exponential_state == ['enabled', "enabled", "bypassed", None]
         assert filter.fir_coeff == [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
         assert filter.fir_state == "enabled"
         sequencer = qcm.get_sequencer(0)
@@ -209,9 +226,9 @@ class TestQbloxQCM:
         "parameter, value",
         [
             # Test filters settings
-            (Parameter.EXPONENTIAL_AMPLITUDE, 0.7),
-            (Parameter.EXPONENTIAL_TIME_CONSTANT, 200),
-            (Parameter.EXPONENTIAL_STATE, DistortionState.ENABLED),
+            (Parameter.EXPONENTIAL_AMPLITUDE_1, 0.7),
+            (Parameter.EXPONENTIAL_TIME_CONSTANT_2, 200),
+            (Parameter.EXPONENTIAL_STATE_0, "enabled"),
             (Parameter.FIR_COEFF, [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]),
             (Parameter.FIR_STATE, DistortionState.ENABLED),
         ]
@@ -222,12 +239,12 @@ class TestQbloxQCM:
         qcm.set_parameter(parameter=parameter, value=value, output_id=output_id)
         filter = qcm.get_filter(output_id)
         # Check values based on the parameter
-        if parameter == Parameter.EXPONENTIAL_AMPLITUDE:
-            assert filter.exponential_amplitude == value
-        elif parameter == Parameter.EXPONENTIAL_TIME_CONSTANT:
-            assert filter.exponential_time_constant == value
-        elif parameter == Parameter.EXPONENTIAL_AMPLITUDE:
-            assert filter.exponential_state == value
+        if parameter == Parameter.EXPONENTIAL_AMPLITUDE_1:
+            assert filter.exponential_amplitude[1] == value
+        elif parameter == Parameter.EXPONENTIAL_TIME_CONSTANT_2:
+            assert filter.exponential_time_constant[2] == value
+        elif parameter == Parameter.EXPONENTIAL_STATE_0:
+            assert filter.exponential_state[0] == value
         elif parameter == Parameter.FIR_COEFF:
             assert filter.fir_coeff == value
         elif parameter == Parameter.FIR_STATE:
@@ -290,14 +307,14 @@ class TestQbloxQCM:
         "parameter, expected_value",
         [
             # Test filters settings
-            (Parameter.EXPONENTIAL_AMPLITUDE, 0.31),
-            (Parameter.EXPONENTIAL_TIME_CONSTANT, 200),
-            (Parameter.EXPONENTIAL_STATE, DistortionState.ENABLED),
+            (Parameter.EXPONENTIAL_AMPLITUDE_2, 0.1),
+            (Parameter.EXPONENTIAL_TIME_CONSTANT_2, 0.5),
+            (Parameter.EXPONENTIAL_STATE_2, DistortionState.BYPASSED),
             (Parameter.FIR_COEFF, [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]),
             (Parameter.FIR_STATE, DistortionState.ENABLED),
         ]
     )
-    def test_get_parameter_filter(self, qcm: QbloxQCM, parameter, expected_value):
+    def test_get_parameter_filters(self, qcm: QbloxQCM, parameter, expected_value):
         """Test getting parameters for QCM filters using parameterized values."""
         output_id = 0
         value = qcm.get_parameter(parameter, output_id=output_id)
@@ -312,7 +329,7 @@ class TestQbloxQCM:
             qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=4)
         
         with pytest.raises(IndexError):
-            qcm.get_parameter(Parameter.EXPONENTIAL_STATE, output_id=2)
+            qcm.get_parameter(Parameter.EXPONENTIAL_STATE_2, output_id=2)
 
         with pytest.raises(Exception):
             qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=None)

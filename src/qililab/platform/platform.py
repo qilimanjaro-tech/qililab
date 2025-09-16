@@ -355,9 +355,9 @@ class Platform:
 
         self.qblox_alias_module: list = self._get_qblox_alias_module()
 
-        self.qblox_active_filter_exponential: list = self._get_qblox_active_filter(parameter=Parameter.EXPONENTIAL_STATE)
+        self.qblox_active_filter_exponential: list = self._get_qblox_active_filter_exponential()
 
-        self.qblox_active_filter_fir: list = self._get_qblox_active_filter(parameter=Parameter.FIR_STATE)
+        self.qblox_active_filter_fir: bool = self._get_qblox_active_filter_fir()
 
         self._update_qblox_filter_state_exponential()
 
@@ -565,16 +565,54 @@ class Platform:
 
         return data_oscilloscope
 
-    def _get_qblox_active_filter(self, parameter: Parameter):
+    # def _get_qblox_active_filter_fir(self):
+    #     qblox_active_filter = []
+    #     for pair in self.qblox_alias_module:
+    #         module_alias, output_id = next(iter(pair.items()))
+    #         qblox_instrument = self.instruments.get_instrument(module_alias)
+    #         for filter in qblox_instrument.filters:
+    #             if filter.output_id == output_id:
+    #                 state = self.get_parameter(alias=module_alias, parameter=Parameter.FIR_STATE, output_id=output_id)
+    #                 if state in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and pair not in qblox_active_filter:
+    #                     qblox_active_filter.append(pair)
+    #     return qblox_active_filter
+
+    # def _get_qblox_active_filter_exponential(self):
+    #     qblox_active_filter = []
+    #     for pair in self.qblox_alias_module:
+    #         module_alias, output_id = next(iter(pair.items()))
+    #         qblox_instrument = self.instruments.get_instrument(module_alias)
+    #         for filter in qblox_instrument.filters:
+    #             if filter.output_id == output_id:
+    #                 for idx, state_exponential in enumerate([filter.exponential_state]): #fuck not clean use range
+    #                     state = self.get_parameter(alias=module_alias, parameter=Parameter[f"EXPONENTIAL_STATE_{idx}"], output_id=output_id)
+    #                     if state in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and pair not in qblox_active_filter:
+    #                         qblox_active_filter.append({module_alias:[output_id,idx]})
+    #     return qblox_active_filter
+
+    def _get_qblox_active_filter_fir(self):
+        qblox_active_filter = False
+        for pair in self.qblox_alias_module:
+            module_alias, output_id = next(iter(pair.items()))
+            qblox_instrument = self.instruments.get_instrument(module_alias)
+            for filter in qblox_instrument.filters:
+                if filter.output_id == output_id:
+                    # state = self.get_parameter(alias=module_alias, parameter=Parameter.FIR_STATE, output_id=output_id)
+                    if filter.fir_state in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
+                        qblox_active_filter = True
+        return qblox_active_filter
+
+    def _get_qblox_active_filter_exponential(self):
         qblox_active_filter = []
         for pair in self.qblox_alias_module:
             module_alias, output_id = next(iter(pair.items()))
             qblox_instrument = self.instruments.get_instrument(module_alias)
             for filter in qblox_instrument.filters:
                 if filter.output_id == output_id:
-                    state = self.get_parameter(alias=module_alias, parameter=parameter, output_id=output_id)
-                    if state in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and pair not in qblox_active_filter:
-                        qblox_active_filter.append(pair)
+                    for idx, state_exponential in enumerate(filter.exponential_state): #fuck not clean use range
+                        # state = self.get_parameter(alias=module_alias, parameter=Parameter[f"EXPONENTIAL_STATE_{idx}"], output_id=output_id)
+                        if state_exponential in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and idx not in qblox_active_filter:
+                            qblox_active_filter.append(idx)
         return qblox_active_filter
 
     def _get_qblox_alias_module(self):
@@ -630,54 +668,65 @@ class Platform:
             self._set_bias_from_element(element)
             return
 
-        if parameter == Parameter.EXPONENTIAL_STATE:
-            if value in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
-                pair = {alias: output_id}
-                if pair not in self.qblox_active_filter_exponential:
-                    self.qblox_active_filter_exponential.append(pair)
+        if parameter in {Parameter.EXPONENTIAL_STATE_0, Parameter.EXPONENTIAL_STATE_1, Parameter.EXPONENTIAL_STATE_2, Parameter.EXPONENTIAL_STATE_3}:
+            exponential_idx = int(parameter.value[-1])
+            if value is True:
+                if exponential_idx not in self.qblox_active_filter_exponential:
+                    self.qblox_active_filter_exponential.append(exponential_idx)
                 self._update_qblox_filter_state_exponential()
             else:
-                try:
-                    self.qblox_active_filter_exponential.remove({alias: output_id})
-                except ValueError:
-                    pass
                 if self.qblox_active_filter_exponential:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
-                    self.qblox_active_filter_exponential.append({alias: output_id})
+                    if exponential_idx not in self.qblox_active_filter_exponential:
+                        self.qblox_active_filter_exponential.append(exponential_idx)
                     element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
-                    logger.warning("Another filter is marked as active hence it is not possible to bypass this filter otherwise this would cause a delay with the other sequencers.")
+                    logger.warning("Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
                     return
+                else:
+                    element.set_parameter(parameter=parameter, value=DistortionState.BYPASSED, channel_id=channel_id, output_id=output_id)
 
         if parameter == Parameter.FIR_STATE:
-            if value in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
-                pair = {alias: output_id}
-                if pair not in self.qblox_active_filter_fir:
-                    self.qblox_active_filter_fir.append(pair)
+            if value is True:
+                self.qblox_active_filter_fir = True
                 self._update_qblox_filter_state_fir()
-            else:
-                try:
-                    self.qblox_active_filter_fir.remove({alias: output_id})
-                except ValueError:
-                    pass
-                if self.qblox_active_filter_fir:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
-                    self.qblox_active_filter_fir.append({alias: output_id})
-                    element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
-                    logger.warning("Another filter is marked as active hence it is not possible to bypass this filter otherwise this would cause a delay with the other sequencers.")
-                    return
 
+            elif self.qblox_active_filter_fir:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                # self.qblox_active_filter_fir.append({alias: output_id})
+                element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
+                logger.warning("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.") if value is False else None
+                return
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
 
     def _update_qblox_filter_state_exponential(self):
         if self.qblox_active_filter_exponential:
             for pair in self.qblox_alias_module:
-                if pair not in self.qblox_active_filter_exponential:
-                    alias, output_id = next(iter(pair.items()))
-                    self.set_parameter(alias=alias, parameter=Parameter.EXPONENTIAL_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
+                alias, output_id = next(iter(pair.items()))
+                for expo_idx in self.qblox_active_filter_exponential:
+                    parameter = getattr(Parameter, f"EXPONENTIAL_STATE_{expo_idx}")
+                    pre_exisisting_filter = False
+                    qblox_instrument = self.get_element(alias=alias)
+                    for filter in qblox_instrument.filters:
+                        if filter.output_id == output_id and pre_exisisting_filter is False:
+                            if len(filter.exponential_state)>expo_idx:
+                                pre_exisisting_filter = True
+                                state_exponential = self.get_parameter(alias=alias, parameter=parameter, output_id=output_id)
+                                if state_exponential not in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
+                                    self.set_parameter(alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id)
+                    if pre_exisisting_filter is False:
+                        self.set_parameter(alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id)            
 
     def _update_qblox_filter_state_fir(self):
         if self.qblox_active_filter_fir:
             for pair in self.qblox_alias_module:
-                if pair not in self.qblox_active_filter_fir:
-                    alias, output_id = next(iter(pair.items()))
+                alias, output_id = next(iter(pair.items()))
+                qblox_instrument = self.get_element(alias=alias)
+                pre_exisisting_filter = False
+                for filter in qblox_instrument.filters:
+                    if filter.output_id == output_id and pre_exisisting_filter is False:
+                        pre_exisisting_filter = True
+                        state_fir = self.get_parameter(alias=alias, parameter=Parameter.FIR_STATE, output_id=output_id)
+                        if state_fir not in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
+                            self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
+                if pre_exisisting_filter is False: #filter needs ot be created
                     self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
 
     def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]

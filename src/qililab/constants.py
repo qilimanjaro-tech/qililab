@@ -263,6 +263,7 @@ class QBLOXCONSTANTS:
     """Qblox Constants"""
 
     SCOPE_LENGTH = 16380
+    FILTER_FIR_COEFF_LENGTH = 32
 
 
 class AWGTypes:
