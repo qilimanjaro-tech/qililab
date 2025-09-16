@@ -27,7 +27,6 @@ import contextlib
 from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
-from .execute_circuit import execute
 from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
 from .result import ExperimentResults, stream_results
 from .typings import Parameter
@@ -83,7 +82,6 @@ __all__ = [
     "build_platform",
     "deserialize",
     "deserialize_from",
-    "execute",
     "get_db_manager",
     "load_results",
     "logger",

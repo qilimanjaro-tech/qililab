@@ -30,7 +30,6 @@ from qililab.platform import Bus, Buses, Platform
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
-from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
@@ -1086,86 +1085,86 @@ class TestMethods:
     #     assert queue.get() == qblox_result
     #     desync.assert_called()
 
-    def test_execute_returns_ordered_measurements(self, platform: Platform, qblox_results: list[dict]):
-        """Test that executing with some circuit returns acquisitions with multiple measurements in same order
-        as they appear in circuit"""
+    # def test_execute_returns_ordered_measurements(self, platform: Platform, qblox_results: list[dict]):
+    #     """Test that executing with some circuit returns acquisitions with multiple measurements in same order
+    #     as they appear in circuit"""
 
-        # Define circuit
-        c = Circuit(2)
-        c.add([M(1), M(0), M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
-        # the order from qblox qrm will be M(0),M(0),M(1),M(1)
+    #     # Define circuit
+    #     c = Circuit(2)
+    #     c.add([M(1), M(0), M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
+    #     # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
-        for idx, final_layout in enumerate([{0: 0, 1: 1}, {0: 1, 1: 0}]):
-            platform.compile = MagicMock()  # type: ignore # don't care about compilation
-            platform.compile.return_value = {"feedline_input_output_bus": None}, final_layout
-            with patch.object(Bus, "upload"):
-                with patch.object(Bus, "run"):
-                    with patch.object(Bus, "acquire_result") as acquire_result:
-                        with patch.object(QbloxModule, "desync_sequencers"):
-                            acquire_result.return_value = QbloxResult(
-                                qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
-                            )
-                            result = platform.execute(circuit=c, num_avg=1000, repetition_duration=2000, num_bins=1)
+    #     for idx, final_layout in enumerate([{0: 0, 1: 1}, {0: 1, 1: 0}]):
+    #         platform.compile = MagicMock()  # type: ignore # don't care about compilation
+    #         platform.compile.return_value = {"feedline_input_output_bus": None}, final_layout
+    #         with patch.object(Bus, "upload"):
+    #             with patch.object(Bus, "run"):
+    #                 with patch.object(Bus, "acquire_result") as acquire_result:
+    #                     with patch.object(QbloxModule, "desync_sequencers"):
+    #                         acquire_result.return_value = QbloxResult(
+    #                             qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
+    #                         )
+    #                         result = platform.execute(circuit=c, num_avg=1000, repetition_duration=2000, num_bins=1)
 
-            # check that the order of #measurement # qubit is the same as in the circuit
-            order_measurement_qubit = [(result["qubit"], result["measurement"]) for result in result.qblox_raw_results]  # type: ignore
+    #         # check that the order of #measurement # qubit is the same as in the circuit
+    #         order_measurement_qubit = [(result["qubit"], result["measurement"]) for result in result.qblox_raw_results]  # type: ignore
 
-            # Change the qubit mappings, given the final_layout:
-            assert (
-                order_measurement_qubit == [(1, 0), (0, 0), (0, 1), (1, 1)]
-                if idx == 0
-                else [(0, 0), (1, 0), (1, 1), (0, 1)]
-            )
+    #         # Change the qubit mappings, given the final_layout:
+    #         assert (
+    #             order_measurement_qubit == [(1, 0), (0, 0), (0, 1), (1, 1)]
+    #             if idx == 0
+    #             else [(0, 0), (1, 0), (1, 1), (0, 1)]
+    #         )
 
-    def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):
-        """Test that executing with some circuit returns acquisitions with multiple measurements in same order
-        as they appear in circuit"""
+    # def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):
+    #     """Test that executing with some circuit returns acquisitions with multiple measurements in same order
+    #     as they appear in circuit"""
 
-        # Define circuit
-        c = Circuit(2)
-        c.add([M(1), M(0), M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
-        # the order from qblox qrm will be M(0),M(0),M(1),M(1)
+    #     # Define circuit
+    #     c = Circuit(2)
+    #     c.add([M(1), M(0), M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
+    #     # the order from qblox qrm will be M(0),M(0),M(1),M(1)
 
-        # compile will return nothing and thus
-        # readout_buses = [
-        #     bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl) and bus.alias in programs
-        # ]
-        # in platform will be empty
-        platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"drive_line_q0_bus": None}, {"q0": 0}
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers"):
-                        acquire_result.return_value = QbloxResult(
-                            qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
-                        )
-                        error_string = "There are no readout buses in the platform."
-                        with pytest.raises(ValueError, match=error_string):
-                            _ = platform.execute(circuit=c, num_avg=1000, repetition_duration=20_000, num_bins=1)
+    #     # compile will return nothing and thus
+    #     # readout_buses = [
+    #     #     bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl) and bus.alias in programs
+    #     # ]
+    #     # in platform will be empty
+    #     platform.compile = MagicMock()  # type: ignore # don't care about compilation
+    #     platform.compile.return_value = {"drive_line_q0_bus": None}, {"q0": 0}
+    #     with patch.object(Bus, "upload"):
+    #         with patch.object(Bus, "run"):
+    #             with patch.object(Bus, "acquire_result") as acquire_result:
+    #                 with patch.object(QbloxModule, "desync_sequencers"):
+    #                     acquire_result.return_value = QbloxResult(
+    #                         qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
+    #                     )
+    #                     error_string = "There are no readout buses in the platform."
+    #                     with pytest.raises(ValueError, match=error_string):
+    #                         _ = platform.execute(circuit=c, num_avg=1000, repetition_duration=20_000, num_bins=1)
 
-    def test_order_results_circuit_M_neq_acquisitions(self, platform: Platform, qblox_results: list[dict]):
-        """Test that executing with some circuit returns acquisitions with multiple measurements in same order
-        as they appear in circuit"""
+    # def test_order_results_circuit_M_neq_acquisitions(self, platform: Platform, qblox_results: list[dict]):
+    #     """Test that executing with some circuit returns acquisitions with multiple measurements in same order
+    #     as they appear in circuit"""
 
-        # Define circuit
-        c = Circuit(2)
-        c.add([M(1), M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
-        # the order from qblox qrm will be M(0),M(1),M(1)
-        n_m = len([qubit for gate in c.queue for qubit in gate.qubits if isinstance(gate, M)])
+    #     # Define circuit
+    #     c = Circuit(2)
+    #     c.add([M(1), M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
+    #     # the order from qblox qrm will be M(0),M(1),M(1)
+    #     n_m = len([qubit for gate in c.queue for qubit in gate.qubits if isinstance(gate, M)])
 
-        platform.compile = MagicMock()  # type: ignore[method-assign] # don't care about compilation
-        platform.compile.return_value = {"feedline_input_output_bus": None}, {"q0": 0}
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers"):
-                        acquire_result.return_value = QbloxResult(
-                            qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
-                        )
-                        error_string = f"Number of measurements in the circuit {n_m} does not match number of acquisitions {len(qblox_results)}"
-                        with pytest.raises(ValueError, match=error_string):
-                            _ = platform.execute(circuit=c, num_avg=1000, repetition_duration=2000, num_bins=1)
+    #     platform.compile = MagicMock()  # type: ignore[method-assign] # don't care about compilation
+    #     platform.compile.return_value = {"feedline_input_output_bus": None}, {"q0": 0}
+    #     with patch.object(Bus, "upload"):
+    #         with patch.object(Bus, "run"):
+    #             with patch.object(Bus, "acquire_result") as acquire_result:
+    #                 with patch.object(QbloxModule, "desync_sequencers"):
+    #                     acquire_result.return_value = QbloxResult(
+    #                         qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
+    #                     )
+    #                     error_string = f"Number of measurements in the circuit {n_m} does not match number of acquisitions {len(qblox_results)}"
+    #                     with pytest.raises(ValueError, match=error_string):
+    #                         _ = platform.execute(circuit=c, num_avg=1000, repetition_duration=2000, num_bins=1)
 
     # def test_execute_raises_error_if_program_type_wrong(self, platform: Platform):
     #     """Test that `Platform.execute` raises an error if the program sent is not a Circuit or a PulseSchedule."""

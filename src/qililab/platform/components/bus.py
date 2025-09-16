@@ -24,7 +24,6 @@ from qililab.instruments import Instrument, Instruments, ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.qprogram.qblox_compiler import AcquisitionData
-from qililab.result import Result
 from qililab.result.qprogram import MeasurementResult
 from qililab.settings import Settings
 from qililab.typings import ChannelID, Parameter, ParameterValue
@@ -211,30 +210,6 @@ class Bus:
             if isinstance(instrument, (QbloxQCM, QbloxQRM)):
                 instrument.run(channel_id=instrument_channel)  # type: ignore
                 return
-
-    def acquire_result(self) -> Result:
-        """Read the result from the vector network analyzer instrument
-
-        Returns:
-            Result: Acquired result
-        """
-        # TODO: Support acquisition from multiple instruments
-        results: list[Result] = []
-        for instrument in self.instruments:
-            if isinstance(instrument, QbloxQRM):
-                result = instrument.acquire_result()
-                if result is not None:
-                    results.append(result)
-
-        if len(results) > 1:
-            raise ValueError(
-                f"Acquisition from multiple instruments is not supported. Obtained a total of {len(results)} results."
-            )
-
-        if len(results) == 0:
-            raise AttributeError(f"The bus {self.alias} cannot acquire results.")
-
-        return results[0]
 
     def acquire_qprogram_results(
         self, acquisitions: dict[str, AcquisitionData], channel_id: ChannelID | None = None

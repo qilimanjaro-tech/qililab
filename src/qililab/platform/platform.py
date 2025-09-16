@@ -26,7 +26,6 @@ from copy import deepcopy
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Callable, cast
 
-from qilisdk.digital import Circuit, M
 from qm import generate_qua_script
 from ruamel.yaml import YAML
 
@@ -58,7 +57,6 @@ from qililab.qprogram import (
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
-from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
@@ -66,15 +64,12 @@ from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
-    from queue import Queue
-
     import numpy as np
-    from qpysequence import Sequence as QpySequence
+    from qilisdk.digital import Circuit
 
     from qililab.digital import DigitalTranspilationConfig
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
-    from qililab.result import Result
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
     from qililab.settings.digital.gate_event_settings import GateEventSettings
@@ -1363,9 +1358,8 @@ class Platform:
         self,
         circuit: Circuit,
         nshots: int = 1000,
-        queue: Queue | None = None,
         transpilation_config: DigitalTranspilationConfig | None = None,
-    ) -> Result | QbloxResult:
+    ) -> QProgramResults:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
@@ -1435,67 +1429,67 @@ class Platform:
 
         return results
 
-    @staticmethod
-    def _order_result(result: Result, circuit: Circuit, final_layout: list[int] | None) -> Result:
-        """Order the results of the execution as they are ordered in the input circuit.
+    # @staticmethod
+    # def _order_result(result: Result, circuit: Circuit, final_layout: list[int] | None) -> Result:
+    #     """Order the results of the execution as they are ordered in the input circuit.
 
-        Finds the absolute order of each measurement for each qubit and its corresponding key in the
-        same format as in qblox's aqcuisitions dictionary (#qubit, #qubit_measurement).
+    #     Finds the absolute order of each measurement for each qubit and its corresponding key in the
+    #     same format as in qblox's aqcuisitions dictionary (#qubit, #qubit_measurement).
 
-        Then it orders results in the same measurement order as the one in circuit.queue.
+    #     Then it orders results in the same measurement order as the one in circuit.queue.
 
-        Args:
-            result (Result): Result obtained from the execution
-            circuit (Circuit): Qibo circuit being executed
-            final_layouts (list[int], optional): Final layout of the original logical qubits in the physical circuit:
-                [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
+    #     Args:
+    #         result (Result): Result obtained from the execution
+    #         circuit (Circuit): Qibo circuit being executed
+    #         final_layouts (list[int], optional): Final layout of the original logical qubits in the physical circuit:
+    #             [Logical qubit in wire 1, Logical qubit in wire 2, ...] (None = trivial mapping).
 
-        Returns:
-            Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue.
-        """
-        if not isinstance(result, QbloxResult):
-            raise NotImplementedError("Result ordering is only implemented for qblox results")
+    #     Returns:
+    #         Result: Result obtained from the execution, with each measurement in the same order as in circuit.queue.
+    #     """
+    #     if not isinstance(result, QbloxResult):
+    #         raise NotImplementedError("Result ordering is only implemented for qblox results")
 
-        # register the overall order of all qubit measurements.
-        qubits_m = {}
-        order = {}
-        # iterate over qubits measured in same order as they appear in the circuit
-        # TODO: You need to check where each measurement is, since SWAPs can be after a measurement...
-        # FIXME: In the meanwhile do it asuming the Measurement is the last gate for each qubit
-        for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
-            if qubit not in qubits_m:
-                qubits_m[qubit] = 0
-            order[qubit, qubits_m[qubit]] = i
-            qubits_m[qubit] += 1
-        if len(order) != len(result.qblox_raw_results):
-            raise ValueError(
-                f"Number of measurements in the circuit {len(order)} does not match number of acquisitions {len(result.qblox_raw_results)}"
-            )
+    #     # register the overall order of all qubit measurements.
+    #     qubits_m = {}
+    #     order = {}
+    #     # iterate over qubits measured in same order as they appear in the circuit
+    #     # TODO: You need to check where each measurement is, since SWAPs can be after a measurement...
+    #     # FIXME: In the meanwhile do it asuming the Measurement is the last gate for each qubit
+    #     for i, qubit in enumerate(qubit for gate in circuit.queue for qubit in gate.qubits if isinstance(gate, M)):
+    #         if qubit not in qubits_m:
+    #             qubits_m[qubit] = 0
+    #         order[qubit, qubits_m[qubit]] = i
+    #         qubits_m[qubit] += 1
+    #     if len(order) != len(result.qblox_raw_results):
+    #         raise ValueError(
+    #             f"Number of measurements in the circuit {len(order)} does not match number of acquisitions {len(result.qblox_raw_results)}"
+    #         )
 
-        # Tell users that the final layout is being undone:
-        logger.info(
-            "Undoing final physical qubit mapping, so you get back the original qubit order in your logical circuit."
-        )
+    #     # Tell users that the final layout is being undone:
+    #     logger.info(
+    #         "Undoing final physical qubit mapping, so you get back the original qubit order in your logical circuit."
+    #     )
 
-        # allocate each measurement its corresponding index in the results list
-        results = [None] * len(order)  # type: list | list[dict]
-        for qblox_result in result.qblox_raw_results:
-            measurement = qblox_result["measurement"]
-            physical_qubit = qblox_result["qubit"]
-            original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
+    #     # allocate each measurement its corresponding index in the results list
+    #     results = [None] * len(order)  # type: list | list[dict]
+    #     for qblox_result in result.qblox_raw_results:
+    #         measurement = qblox_result["measurement"]
+    #         physical_qubit = qblox_result["qubit"]
+    #         original_logical_qubit = final_layout[physical_qubit] if final_layout else physical_qubit
 
-            # TODO:Check this is correct, or how it works with multiple measurements per qubit:
-            original_measure_num = order[original_logical_qubit, measurement]
-            results[original_measure_num] = qblox_result
+    #         # TODO:Check this is correct, or how it works with multiple measurements per qubit:
+    #         original_measure_num = order[original_logical_qubit, measurement]
+    #         results[original_measure_num] = qblox_result
 
-        return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
+    #     return QbloxResult(integration_lengths=result.integration_lengths, qblox_raw_results=results)
 
     def compile(
         self,
         circuit: Circuit,
         nshots: int,
         transpilation_config: DigitalTranspilationConfig | None = None,
-    ) -> tuple[dict[str, list[QpySequence]], list[int] | None]:
+    ) -> QProgram:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
@@ -1542,7 +1536,7 @@ class Platform:
         circuit = transpiler.run(circuit)
 
         compiler = CircuitToQProgramCompiler()
-        qprogram = compiler.compile()
+        qprogram = compiler.compile(circuit)
 
         return qprogram
 
