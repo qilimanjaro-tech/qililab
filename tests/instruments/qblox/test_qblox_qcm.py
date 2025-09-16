@@ -89,6 +89,7 @@ def fixture_qrm(platform: Platform):
         "out2_exp0_time_constant",
         "out3_exp0_time_constant",
         "out0_exp2_time_constant",
+        "out0_exp1_time_constant",
         "out0_fir_coeffs",
         "out1_fir_coeffs",
         "out2_fir_coeffs",
