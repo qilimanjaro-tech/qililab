@@ -31,17 +31,17 @@ class FlatTop(Waveform):
     Args:
         duration (int): Duration of the pulse (ns).
         amplitude (float): Maximum amplitude of the pulse.
-        sigma (float, optional): duration of the smoothing component in ns.
+        smooth_duration (float, optional): duration of the smoothing component in ns.
         buffer (float, optional): Buffer of the waveform. Defaults to 0.
     """
 
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)
-    def __init__(self, amplitude: float, duration: int, sigma: int, buffer: int = 0):
+    def __init__(self, amplitude: float, duration: int, smooth_duration: int, buffer: int = 0):
         super().__init__()
         self.amplitude = amplitude
         self.duration = duration
-        self.sigma = sigma
+        self.smooth_duration = smooth_duration
         self.buffer = buffer
 
     def envelope(self, resolution: int = 1) -> np.ndarray:
@@ -55,7 +55,7 @@ class FlatTop(Waveform):
         """
         x = np.arange(-self.duration / 2, self.duration / 2 + 1, resolution)
         A = self.amplitude
-        sigma = self.sigma
+        sigma = self.smooth_duration
         buf = self.buffer
         dur = self.duration
         return (

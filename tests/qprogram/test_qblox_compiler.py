@@ -379,31 +379,42 @@ def fixture_play_square_smooth_waveforms_with_optimization() -> QProgram:
     qp = QProgram()
     qp.play(
         bus="drive",
-        waveform=IQPair(I=FlatTop(1.0, duration=25, sigma=10), Q=FlatTop(0.5, duration=25, sigma=10)),
+        waveform=IQPair(
+            I=FlatTop(1.0, duration=25, smooth_duration=10), Q=FlatTop(0.5, duration=25, smooth_duration=10)
+        ),
     )
-    qp.play(bus="drive", waveform=FlatTop(1.0, duration=50, sigma=10))
-    qp.play(bus="drive", waveform=FlatTop(1.0, duration=500, sigma=10))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=50, smooth_duration=10))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=500, smooth_duration=10))
     qp.play(
         bus="drive",
-        waveform=IQPair(I=FlatTop(1.0, duration=25, sigma=1, buffer=1), Q=FlatTop(0.5, duration=25, sigma=1, buffer=1)),
+        waveform=IQPair(
+            I=FlatTop(1.0, duration=25, smooth_duration=1, buffer=1),
+            Q=FlatTop(0.5, duration=25, smooth_duration=1, buffer=1),
+        ),
     )
-    qp.play(bus="drive", waveform=FlatTop(1.0, duration=50, sigma=1, buffer=1))
-    qp.play(bus="drive", waveform=FlatTop(1.0, duration=104, sigma=1, buffer=1))
-    qp.play(bus="drive", waveform=FlatTop(1.0, duration=500, sigma=1, buffer=1))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=50, smooth_duration=1, buffer=1))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=104, smooth_duration=1, buffer=1))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=500, smooth_duration=1, buffer=1))
     qp.play(
         bus="drive",
-        waveform=IQPair(I=FlatTop(1.0, duration=500, sigma=10), Q=FlatTop(0.5, duration=500, sigma=10)),
+        waveform=IQPair(
+            I=FlatTop(1.0, duration=500, smooth_duration=10), Q=FlatTop(0.5, duration=500, smooth_duration=10)
+        ),
     )
-    qp.play(bus="drive", waveform=FlatTop(1.0, duration=50_000, sigma=10))
-    qp.play(bus="drive", waveform=FlatTop(1.0, duration=9790223, sigma=10))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=50_000, smooth_duration=10))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=9790223, smooth_duration=10))
     qp.play(
         bus="drive",
-        waveform=IQPair(I=FlatTop(1.0, duration=9790223, sigma=10), Q=FlatTop(1.0, duration=9790223, sigma=10)),
+        waveform=IQPair(
+            I=FlatTop(1.0, duration=9790223, smooth_duration=10), Q=FlatTop(1.0, duration=9790223, smooth_duration=10)
+        ),
     )
-    qp.play(bus="drive", waveform=FlatTop(0.5, duration=1234567, sigma=10))
+    qp.play(bus="drive", waveform=FlatTop(0.5, duration=1234567, smooth_duration=10))
     qp.play(
         bus="drive",
-        waveform=IQPair(I=FlatTop(1.0, duration=1234567, sigma=10), Q=FlatTop(1.0, duration=1234567, sigma=10)),
+        waveform=IQPair(
+            I=FlatTop(1.0, duration=1234567, smooth_duration=10), Q=FlatTop(1.0, duration=1234567, smooth_duration=10)
+        ),
     )
     return qp
 
@@ -1506,7 +1517,10 @@ set_freq         R5
         qp = QProgram()
         qp.play(
             bus="drive",
-            waveform=IQPair(I=FlatTop(1.0, duration=250, sigma=10, buffer=10), Q=FlatTop(0.5, duration=250, sigma=10)),
+            waveform=IQPair(
+                I=FlatTop(1.0, duration=250, smooth_duration=10, buffer=10),
+                Q=FlatTop(0.5, duration=250, smooth_duration=10),
+            ),
         )
 
         compiler = QbloxCompiler()
