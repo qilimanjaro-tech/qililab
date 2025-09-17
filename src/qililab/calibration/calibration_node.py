@@ -164,79 +164,79 @@ class CalibrationNode:
 
         **1) An input parameters cell** (tagged as `parameters`). These parameters are the ones to be overwritten by the ``input_parameters``:
 
-            .. code-block:: python
+        .. code-block:: python
 
-                import numpy as np
+            import numpy as np
 
-                qubit = 0
+            qubit = 0
 
-                # Sweep interval:
-                sweep_interval = np.arange(start=0, stop=19, step=1)
+            # Sweep interval:
+            sweep_interval = np.arange(start=0, stop=19, step=1)
 
-                # Extra parameters for this concrete notebook:
-                param1 = 0
-                param2 = 0
-                ...
+            # Extra parameters for this concrete notebook:
+            param1 = 0
+            param2 = 0
+            ...
 
         |
 
         **2) An experiment/circuit** with its corresponding loops for the sweep given by ``sweep_interval``.
 
-            .. code-block:: python
+        .. code-block:: python
 
-                # Set the environment and paths:
-                ...
+            # Set the environment and paths:
+            ...
 
-                # Set the platform:
-                platform = ql.build_platform(path=platform_path)
-                platform.connect()
-                platform.initial_setup()
-                platform.turn_on_instruments()
+            # Set the platform:
+            platform = ql.build_platform(path=platform_path)
+            platform.connect()
+            platform.initial_setup()
+            platform.turn_on_instruments()
 
-                # Define circuit
-                circuit = ...
+            # Define circuit
+            circuit = ...
 
-                # Loop over the sweeps executing the platform:
-                results = []
-                for X in sweep_interval:
-                    platform.set_parameter(alias=alias, parameter=ql.Parameter.X, value=X)
-                    result = platform.execute(program=circuit, num_avg=hw_avg, repetition_duration=repetition_duration)
-                    results.append(result.array)
+            # Loop over the sweeps executing the platform:
+            results = []
+            for X in sweep_interval:
+                platform.set_parameter(alias=alias, parameter=ql.Parameter.X, value=X)
+                result = platform.execute(program=circuit, num_avg=hw_avg, repetition_duration=repetition_duration)
+                results.append(result.array)
 
-                results = np.hstack(results)
+            results = np.hstack(results)
 
         |
 
         **3) An analysis procedure**, that plots and fits the obtained data to the expected theoretical behaviour and finds the optimal desired parameters.
 
-            .. code-block:: python
+        .. code-block:: python
 
-                def fit(xdata, results): ...
+            def fit(xdata, results): ...
 
 
-                fitted_values, x_data, y_data, figure = fit(xdata=sweep_interval, results=results)
-                plt.show()
+            fitted_values, x_data, y_data, figure = fit(xdata=sweep_interval, results=results)
+            plt.show()
 
         |
 
         **4) An export data cell**, that calls ``export_nb_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow:
 
-            .. code-block:: python
+        .. code-block:: python
 
-                from qililab.calibration.calibration_node import export_nb_outputs
+            from qililab.calibration.calibration_node import export_nb_outputs
 
-                export_nb_outputs(
-                    {
-                        "platform_parameters": [
-                            (param_name0, fitted_values[0], bus_alias0, qubit),
-                            (param_name1, fitted_values[1], bus_alias1, qubit),
-                        ],
-                        "fidelities": [
-                            (qubit, "fidelity1", 0.9),
-                            (qubit, "fidelity2", 0.95),
-                        ],  # Fidelities in the output dictionary are optional.
-                    }
-                )
+            export_nb_outputs(
+                {
+                    "platform_parameters": [
+                        (param_name0, fitted_values[0], bus_alias0, qubit),
+                        (param_name1, fitted_values[1], bus_alias1, qubit),
+                    ],
+                    "fidelities": [
+                        (qubit, "fidelity1", 0.9),
+                        (qubit, "fidelity2", 0.95),
+                    ],  # Fidelities in the output dictionary are optional.
+                }
+            )
 
         where the ``platform_parameters`` are a list of parameters to set on the platform. And the ``fidelities`` are for showing results
         in the calibration report, or for using the checkpoints in the calibration with the ``checkpoint`` and ``check_value`` arguments.
