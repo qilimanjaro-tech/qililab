@@ -60,7 +60,7 @@ class CalibrationNode:
     Args:
         nb_path (str): Full notebook path with the folder, nb_name, and ``.ipynb`` extension, written in unix format: `folder/subfolder/.../file.ipynb`.
         qubit_index (int | list[int], optional): Qubit on which this notebook will be executed. Defaults to None.
-        node_distinguisher (int | str, optional): Distinguisher for when the same notebook its used multiple times in the same qubit. Mandatory to use in such case, or
+        node_distinguisher (int | str, optional): Distinguisher for when the same notebook is used multiple times in the same qubit. Mandatory to use in such case, or
             the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         input_parameters (dict, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
         sweep_interval (np.ndarray, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
@@ -150,8 +150,8 @@ class CalibrationNode:
             controller.run_automatic_calibration()  # calibrate all the nodes in the graph, starting from the roots until the leaves.
 
             ### OPTIONAL WORKFLOW TO DO:
-            controller.calibrate_all(second)    # calibrate all the needed dependencies until you can calibrate the second node for qubit 1
-                                                # and then calibrate it. Calibrating first and second for qubit 1, in this order.
+            controller.calibrate_all(nodes["second_q1"])  # calibrate all the needed dependencies until you can calibrate the second node for
+                                                          # qubit 1and then calibrate it. Calibrating first and second for qubit 1, in this order.
         .. note::
 
             A more complex graph to calibrate is found in the :class:`CalibrationController` class documentation.
