@@ -44,7 +44,8 @@ dependencies = [
     "tqdm>=4.67.1",
     "urllib3>=2.3.0",
     "xarray>=2024.3.0",
-    "qilisdk"
+    "qilisdk",
+    "rustworkx>=0.17.1",
 ]
 
 [dependency-groups]

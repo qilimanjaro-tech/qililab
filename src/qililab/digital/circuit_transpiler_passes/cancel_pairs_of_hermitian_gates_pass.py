@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from copy import deepcopy
 from typing import ClassVar
 
 from qilisdk.digital import CNOT, CZ, SWAP, Circuit, Gate, H, X, Y, Z
@@ -44,15 +45,15 @@ class CancelPairsOfHermitianGatesPass(CircuitTranspilerPass):
     hermitian_gates: ClassVar[set[type[Gate]]] = {H, X, Y, Z, CNOT, CZ, SWAP}
 
     def run(self, circuit: Circuit) -> Circuit:
+        gates: list[Gate] = list(circuit.gates)
+
         while True:
             # Stack of unmatched Hermitian candidates:
-            #   key = (semantic_kind, qubits_tuple) -> index in circuit.gates
+            #   key = (semantic_kind, qubits_tuple) -> index in `ops`
             stack: dict[tuple[object, tuple[int, ...]], int] = {}
-
-            # Indices to delete this round (collect, then delete in reverse order)
             to_delete: set[int] = set()
 
-            for idx, gate in enumerate(circuit.gates):
+            for idx, gate in enumerate(gates):
                 qubits = gate.qubits
 
                 if self._is_hermitian(gate):
@@ -63,25 +64,27 @@ class CancelPairsOfHermitianGatesPass(CircuitTranspilerPass):
                         prev_idx = stack.pop(key)
                         to_delete.add(prev_idx)
                         to_delete.add(idx)
-                        # Do not push current gate; both will be removed.
                         continue
 
-                    # No match: this gate becomes the latest candidate, but first
-                    # block older candidates that share any qubit.
+                    # No match yet: register this candidate,
+                    # but first block older candidates that share any qubit.
                     self._block_overlapping(stack, qubits)
                     stack[key] = idx
                 else:
-                    # Non-Hermitian operations block across the qubits they touch.
+                    # Non-Hermitian ops block across the qubits they touch.
                     self._block_overlapping(stack, qubits)
 
             if not to_delete:
                 break  # fixed point reached
 
-            # Perform in-place deletions on circuit.gates (reverse order to keep indices valid)
-            for j in sorted(to_delete, reverse=True):
-                del circuit.gates[j]
+            # Filter out canceled gates and iterate again (to expose new opportunities).
+            gates = [gate for i, gate in enumerate(gates) if i not in to_delete]
 
-        return circuit
+        # Build and return a **new** circuit; deep-copy gates to avoid sharing Parameter objects.
+        new_circuit = Circuit(circuit.nqubits)
+        for gate in gates:
+            new_circuit.add(deepcopy(gate))
+        return new_circuit
 
     # ----------------- helpers -----------------
 
@@ -92,7 +95,7 @@ class CancelPairsOfHermitianGatesPass(CircuitTranspilerPass):
         if isinstance(gate, Modified):
             return self._is_hermitian(gate.basic_gate)
         return False
-    
+
     def _semantic_key(self, gate: Gate) -> object:
         """
         Canonical identity for matching cancellations.
