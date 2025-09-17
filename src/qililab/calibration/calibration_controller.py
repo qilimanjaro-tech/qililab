@@ -63,7 +63,7 @@ class CalibrationController:
         calibration_graph (nx.DiGraph): The calibration (directed acyclic) graph, where each node is a ``string`` corresponding to a :attr:`.CalibrationNode.node_id`. Directions should be given
             by `nodes` pointing to their next `dependents` (natural time flow for calibration), defining our `starts` and `ends` of the calibration as the `roots` (``in_degree=0``) and `leaves`
             (``out_degree=0``) of the graph.
-        node_sequence (dict[str, :class:`CalibrationNode`]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
+        node_sequence (dict[str, `CalibrationNode`]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
         runcard (str): The runcard path, containing the serialized platform where the experiments will be run.
         drift_timeout (float, optional): Duration in seconds, representing an estimate of how long it takes for the calibration parameters to drift.
             During that time the parameters of this node should be considered calibrated. Thus a big value will tend to skip recently calibrated nodes,
