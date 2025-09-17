@@ -201,7 +201,7 @@ class CalibrationController:
         .. code-block:: python
 
             # CREATE CALIBRATION CONTROLLER:
-            controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
+            controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard, drift_timeout=1)
 
             ### MAIN WORKFLOW TO DO:
             controller.run_automatic_calibration() # calibrate all the nodes in the graph, starting from the root until the leaves.
