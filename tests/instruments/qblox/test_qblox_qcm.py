@@ -415,6 +415,53 @@ class TestQbloxQCM:
 
         for sequencer in qcm.awg_sequencers:
             qcm.device.sequencers[sequencer.identifier].sync_en.assert_called_once_with(False)
+    
+    def test_set_filter_no_output_id(self, qcm: QbloxQCM):
+        "Tests that setting a filter parameter without specifying the output id raises an exception"
+        parameter = Parameter.EXPONENTIAL_AMPLITUDE_0
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            qcm.set_parameter(parameter, value=0.5)
+
+        parameter = Parameter.EXPONENTIAL_TIME_CONSTANT_0
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            qcm.set_parameter(parameter, value=15)
+
+        parameter = Parameter.EXPONENTIAL_STATE_0
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            qcm.set_parameter(parameter, value=True)
+
+        parameter = Parameter.FIR_STATE
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            qcm.set_parameter(parameter, value=True)
+
+        parameter = Parameter.FIR_COEFF
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            qcm.set_parameter(parameter, value=None)
+
+    def test_get_filter_no_output_id(self, qcm: QbloxQCM):
+        "Tests that getting a filter parameter without specifying the output id raises an exception"
+        parameter = Parameter.EXPONENTIAL_AMPLITUDE_0
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            qcm.get_parameter(parameter)
+
+        parameter = Parameter.EXPONENTIAL_TIME_CONSTANT_0
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            qcm.get_parameter(parameter)
+
+        parameter = Parameter.EXPONENTIAL_STATE_0
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            qcm.get_parameter(parameter)
+
+        parameter = Parameter.FIR_STATE
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            qcm.get_parameter(parameter)
+
+        parameter = Parameter.FIR_COEFF
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            qcm.get_parameter(parameter)
+    
+    def test_index_error_exponential(self,qcm: QbloxQCM):
+        "Tests that an index error is raised when "
 
 class TestQbloxSequencer:
     def test_to_dict(self, qcm: QbloxQCM):
