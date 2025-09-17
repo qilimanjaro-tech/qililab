@@ -15,27 +15,37 @@
 from copy import deepcopy
 
 from qilisdk.digital import Circuit
+from rustworkx import PyGraph
 
 from .circuit_transpiler_passes import (
     CancelPairsOfHermitianGatesPass,
+    CanonicalToCircuitBasisPass,
     CircuitTranspilerPass,
+    DecomposeToNativePass,
     SabreLayoutPass,
     SabreSwapPass,
     TranspilationContext,
 )
-from rustworkx import PyGraph
+
 
 class DigitalTranspilationConfig: ...
 
 
 class CircuitTranspiler:
-    def __init__(self, topology: PyGraph, pipeline: list[CircuitTranspilerPass] | None = None, context: TranspilationContext | None = None) -> None:
+    def __init__(
+        self,
+        topology: PyGraph,
+        pipeline: list[CircuitTranspilerPass] | None = None,
+        context: TranspilationContext | None = None,
+    ) -> None:
         self._topology = topology
         self._pipeline = pipeline or [
+            CanonicalToCircuitBasisPass(),
             CancelPairsOfHermitianGatesPass(),
             SabreLayoutPass(self._topology),
             SabreSwapPass(self._topology),
             CancelPairsOfHermitianGatesPass(),
+            DecomposeToNativePass(),
         ]
         self._context = context or TranspilationContext()
 

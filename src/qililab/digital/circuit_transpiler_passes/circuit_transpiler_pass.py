@@ -24,10 +24,20 @@ class CircuitTranspilerPass(ABC):
     Base class for passes. Each pass can read/write a shared context.
     Subclasses should implement `run(self, circuit) -> Circuit` and must NOT mutate the input circuit.
     """
+
     context: TranspilationContext | None = None  # injected by CircuitTranspiler
 
     def attach_context(self, ctx: TranspilationContext) -> None:
         self.context = ctx
+
+    def append_circuit_to_context(self, circuit: Circuit) -> None:
+        name = self.__class__.__name__
+        if self.context is not None:
+            key, i = name, 1
+            while key in self.context.circuits:
+                i += 1
+                key = f"{name}_{i}"
+            self.context.circuits[key] = circuit
 
     @abstractmethod
     def run(self, circuit: Circuit) -> Circuit: ...

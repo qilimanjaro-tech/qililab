@@ -1,35 +1,35 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import math
 import random
-from abc import ABC, abstractmethod
 from collections import deque
-from copy import deepcopy
 from typing import ClassVar, Iterable
 
-import rustworkx as rx
 from qilisdk.digital import (
-    CNOT,
     CZ,
     RX,
     RY,
     RZ,
     SWAP,
-    U1,
-    U2,
     U3,
     Circuit,
     Gate,
-    H,
-    I,
     M,
-    S,
-    T,
-    X,
-    Y,
-    Z,
 )
-from qilisdk.digital.gates import Adjoint, BasicGate, Controlled, Exponential, Modified
 from rustworkx import PyGraph
 
 from .circuit_transpiler_pass import CircuitTranspilerPass
@@ -102,10 +102,7 @@ class SabreSwapPass(CircuitTranspilerPass):
     # ----------------------- public API -----------------------
 
     def run(self, circuit: Circuit) -> Circuit:
-        # if self.initial_layout is None and self.context is not None:
-        #     self.initial_layout = self.context.initial_layout
-
-        rng = random.Random(self.seed)
+        rng = random.Random(self.seed)  # noqa: S311
 
         n_logical = circuit.nqubits
         phys_nodes = list(self.coupling.node_indices())
@@ -188,7 +185,8 @@ class SabreSwapPass(CircuitTranspilerPass):
                 for gi in F:
                     a, b = twoq_pairs[gi]
                     pa, pb = layout[a], layout[b]
-                    touched.add(pa); touched.add(pb)
+                    touched.add(pa)
+                    touched.add(pb)
                     for nb in self.coupling.neighbors(pa):
                         x, y = int(pa), int(nb)
                         if x != y:
@@ -232,7 +230,7 @@ class SabreSwapPass(CircuitTranspilerPass):
                         best_edge = (a, b)
 
                 # Apply chosen SWAP physically and in the mapping
-                assert best_edge is not None
+                # assert best_edge is not None
                 a, b = best_edge
                 out.add(SWAP(a, b))
                 swap_count += 1
@@ -255,6 +253,8 @@ class SabreSwapPass(CircuitTranspilerPass):
         if self.context is not None:
             self.context.final_layout = list(self.last_final_layout or [])
             self.context.metrics["swap_count"] = self.last_swap_count
+
+        self.append_circuit_to_context(out)
 
         return out
 
@@ -349,8 +349,10 @@ class SabreSwapPass(CircuitTranspilerPass):
     def _swap_mapping(
         layout: list[int],
         inv_layout: list[int | None],
-        a: int, b: int,
-        la: int | None, lb: int | None,
+        a: int,
+        b: int,
+        la: int | None,
+        lb: int | None,
     ) -> None:
         # update inverse
         inv_layout[a], inv_layout[b] = lb, la
@@ -383,15 +385,11 @@ class SabreSwapPass(CircuitTranspilerPass):
     def _init_layout(self, n_logical: int, n_physical: int) -> list[int]:
         if self.initial_layout is not None:
             if len(self.initial_layout) != n_logical:
-                raise ValueError(
-                    f"initial_layout length {len(self.initial_layout)} != circuit.nqubits {n_logical}"
-                )
+                raise ValueError(f"initial_layout length {len(self.initial_layout)} != circuit.nqubits {n_logical}")
             return list(self.initial_layout)
         # identity by default
         if n_physical < n_logical:
-            raise ValueError(
-                f"Coupling graph has {n_physical} qubits but circuit needs {n_logical}."
-            )
+            raise ValueError(f"Coupling graph has {n_physical} qubits but circuit needs {n_logical}.")
         return list(range(n_logical))
 
     # ----------------------- gate (re)construction -----------------------
@@ -402,36 +400,16 @@ class SabreSwapPass(CircuitTranspilerPass):
         defined in this SDK.
         """
         # 1-qubit basics
-        if isinstance(g, I):
-            return I(new_qubits[0])
-        if isinstance(g, X):
-            return X(new_qubits[0])
-        if isinstance(g, Y):
-            return Y(new_qubits[0])
-        if isinstance(g, Z):
-            return Z(new_qubits[0])
-        if isinstance(g, H):
-            return H(new_qubits[0])
-        if isinstance(g, S):
-            return S(new_qubits[0])
-        if isinstance(g, T):
-            return T(new_qubits[0])
         if isinstance(g, RX):
             return RX(new_qubits[0], theta=g.theta)
         if isinstance(g, RY):
             return RY(new_qubits[0], theta=g.theta)
         if isinstance(g, RZ):
             return RZ(new_qubits[0], phi=g.phi)
-        if isinstance(g, U1):
-            return U1(new_qubits[0], phi=g.phi)
-        if isinstance(g, U2):
-            return U2(new_qubits[0], phi=g.phi, gamma=g.gamma)
         if isinstance(g, U3):
             return U3(new_qubits[0], theta=g.theta, phi=g.phi, gamma=g.gamma)
 
         # 2-qubit basics
-        if isinstance(g, CNOT):
-            return CNOT(new_qubits[0], new_qubits[1])
         if isinstance(g, CZ):
             return CZ(new_qubits[0], new_qubits[1])
         if isinstance(g, SWAP):
@@ -440,18 +418,6 @@ class SabreSwapPass(CircuitTranspilerPass):
         # Measurement (possibly multi-qubit)
         if isinstance(g, M):
             return M(*new_qubits)
-
-        # Generic Modified gates
-        if isinstance(g, Adjoint):
-            return Adjoint(self._retarget_gate(g.basic_gate, new_qubits))
-        if isinstance(g, Exponential):
-            return Exponential(self._retarget_gate(g.basic_gate, new_qubits))
-        if isinstance(g, Controlled):
-            n_ctrl = len(g.control_qubits)
-            controls = new_qubits[:n_ctrl]
-            targets = new_qubits[n_ctrl:]
-            retargeted_basic = self._retarget_gate(g.basic_gate, targets)
-            return Controlled(*controls, basic_gate=retargeted_basic)
 
         # If you introduce more gates, add cases above.
         # Falling back to a generic reconstruction is unsafe without a uniform API.

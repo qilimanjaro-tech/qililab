@@ -15,17 +15,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Optional, Set, Type
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from qilisdk.digital.gates import Gate
-    from rustworkx import PyGraph
+    from qilisdk.digital import Circuit
 
 
 @dataclass
 class TranspilationContext:
     """Shared, mutable state for passes."""
+
     # Artifacts produced/consumed by passes:
-    initial_layout: Optional[list[int]] = None              # logical -> physical (from layout)
-    final_layout: Optional[list[int]] = None                # (from router)
+    initial_layout: list[int] | None = None  # logical -> physical (from layout)
+    final_layout: list[int] | None = None  # physical -> physical (from router)
     metrics: dict[str, Any] = field(default_factory=dict)
+    circuits: dict[str, Circuit] = field(default_factory=dict)

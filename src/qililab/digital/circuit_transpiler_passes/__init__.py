@@ -13,9 +13,19 @@
 # limitations under the License.
 
 from .cancel_pairs_of_hermitian_gates_pass import CancelPairsOfHermitianGatesPass
+from .canonical_to_circuit_basis_pass import CanonicalToCircuitBasisPass
 from .circuit_transpiler_pass import CircuitTranspilerPass
+from .decompose_to_native_pass import DecomposeToNativePass
 from .sabre_layout_pass import SabreLayoutPass
 from .sabre_swap_pass import SabreSwapPass
 from .transpilation_context import TranspilationContext
 
-__all__ = ["CancelPairsOfHermitianGatesPass", "CircuitTranspilerPass", "SabreLayoutPass", "SabreSwapPass", "TranspilationContext"]
+__all__ = [
+    "CancelPairsOfHermitianGatesPass",
+    "CanonicalToCircuitBasisPass",
+    "CircuitTranspilerPass",
+    "DecomposeToNativePass",
+    "SabreLayoutPass",
+    "SabreSwapPass",
+    "TranspilationContext",
+]

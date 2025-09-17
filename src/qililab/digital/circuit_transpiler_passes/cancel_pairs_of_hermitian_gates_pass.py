@@ -42,6 +42,7 @@ class CancelPairsOfHermitianGatesPass(CircuitTranspilerPass):
         treats a `Modified` gate as Hermitian when its `basic_gate` type is
         in the set.
     """
+
     hermitian_gates: ClassVar[set[type[Gate]]] = {H, X, Y, Z, CNOT, CZ, SWAP}
 
     def run(self, circuit: Circuit) -> Circuit:
@@ -84,6 +85,9 @@ class CancelPairsOfHermitianGatesPass(CircuitTranspilerPass):
         new_circuit = Circuit(circuit.nqubits)
         for gate in gates:
             new_circuit.add(deepcopy(gate))
+
+        self.append_circuit_to_context(new_circuit)
+
         return new_circuit
 
     # ----------------- helpers -----------------
