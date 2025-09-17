@@ -459,9 +459,44 @@ class TestQbloxQCM:
         parameter = Parameter.FIR_COEFF
         with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
             qcm.get_parameter(parameter)
-    
-    def test_index_error_exponential(self,qcm: QbloxQCM):
-        "Tests that an index error is raised when "
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Test filters settings
+            (Parameter.EXPONENTIAL_STATE_0, True),
+            (Parameter.FIR_STATE, True),
+        ]
+    )
+    def test_state_converted_to_string_true(self, qcm: QbloxQCM, parameter, value):
+        """Test setting state parameters of filters as bool converts them to the string from DistortionState."""
+        output_id = 0
+        qcm.set_parameter(parameter=parameter, value=value, output_id=output_id)
+        filter = qcm.get_filter(output_id)
+        # Check values based on the parameter
+        if parameter == Parameter.EXPONENTIAL_STATE_0:
+            assert filter.exponential_state[0] == DistortionState.ENABLED
+        elif parameter == Parameter.FIR_STATE:
+            assert filter.fir_state == DistortionState.ENABLED
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Test filters settings
+            (Parameter.EXPONENTIAL_STATE_0, False),
+            (Parameter.FIR_STATE, False),
+        ]
+    )
+    def test_state_converted_to_string_false(self, qcm: QbloxQCM, parameter, value):
+        """Test setting state parameters of filters as bool converts them to the string from DistortionState."""
+        output_id = 0
+        qcm.set_parameter(parameter=parameter, value=value, output_id=output_id)
+        filter = qcm.get_filter(output_id)
+        # Check values based on the parameter
+        if parameter == Parameter.EXPONENTIAL_STATE_0:
+            assert filter.exponential_state[0] == DistortionState.BYPASSED
+        elif parameter == Parameter.FIR_STATE:
+            assert filter.fir_state == DistortionState.BYPASSED
 
 class TestQbloxSequencer:
     def test_to_dict(self, qcm: QbloxQCM):

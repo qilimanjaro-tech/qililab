@@ -4,21 +4,6 @@ import numpy as np
 from qililab.instruments.qblox import QbloxFilter
 from qililab.constants import QBLOXCONSTANTS
 
-# @pytest.fixture(name="qblox_filter")
-# def fixture_qblox_filter():
-#     """Fixture that returns an instance of a dummy QbloxFilter."""
-#     return QbloxFilter(
-#         {
-#             "alias": "s4g",
-#             "current": [],
-#             "span": [],
-#             "ramping_enabled": [],
-#             "ramp_rate": [],
-#             "dacs": [],
-#         }
-#     )
-
-
 class TestQbloxFilter:
     """This class contains the unit tests for the ``qblox_filter`` class."""
     def test_filter(self):
@@ -49,7 +34,7 @@ class TestQbloxFilter:
             exponential_time_constant=10,
             exponential_state=True,
             fir_coeff=fir_coeff ,
-            fir_state=True
+            fir_state=False
         )
 
 
@@ -60,6 +45,8 @@ class TestQbloxFilter:
         assert filter.exponential_amplitude == [1, None, None, None]
         assert filter.exponential_time_constant == [10, None, None, None]
         assert filter.exponential_state == ["enabled", None, None, None]
+
+        assert filter.fir_state == "bypassed"
 
     def test_filter_coeff_wrong_length(self):
         fir_coeff = np.ones(30)

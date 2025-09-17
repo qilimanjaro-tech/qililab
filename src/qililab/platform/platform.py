@@ -683,6 +683,7 @@ class Platform:
                     return
                 else:
                     element.set_parameter(parameter=parameter, value=DistortionState.BYPASSED, channel_id=channel_id, output_id=output_id)
+                    return
 
         if parameter == Parameter.FIR_STATE:
             if value is True:
