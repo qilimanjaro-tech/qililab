@@ -891,7 +891,7 @@ class TestCircuitTranspiler:
         circuit.add(gates.X(0))
         circuit.add(gates.M(0))
         circuit.add(gates.SWAP(0, 1))  # Gate after measurement on qubit 0
-        with pytest.raises(ValueError, match=re.escape("Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit.Review the circuit gates for qubit 0.")):
+        with pytest.raises(ValueError, match=re.escape("Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit. Review the circuit gates for qubit 0.")):
             transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")
 
         circuit = Circuit(2)
@@ -899,7 +899,7 @@ class TestCircuitTranspiler:
         circuit.add(gates.M(0))
         circuit.add(gates.SWAP(0,1))  # Gate after measurement on qubit 0
         circuit.add(gates.M(1))
-        with pytest.raises(ValueError, match=re.escape("Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit.Review the circuit gates for qubit 0.")):
+        with pytest.raises(ValueError, match=re.escape("Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit. Review the circuit gates for qubit 0.")):
             transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")
 
     def test__check_that_no_SWAP_gate_is_after_measurement_violation_multiple_qubits(self):
@@ -911,7 +911,7 @@ class TestCircuitTranspiler:
         circuit.add(gates.SWAP(0, 1))  # Violation on qubit 0
         circuit.add(gates.M(1))
         circuit.add(gates.X(1))
-        with pytest.raises(ValueError, match=re.escape("Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit.Review the circuit gates for qubit 0.")):
+        with pytest.raises(ValueError, match=re.escape("Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit. Review the circuit gates for qubit 0.")):
             transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")
 
     def test__check_that_no_SWAP_gate_is_after_measurement_measurement_last(self):
