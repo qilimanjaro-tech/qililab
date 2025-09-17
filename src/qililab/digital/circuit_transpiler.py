@@ -126,7 +126,7 @@ class CircuitTranspiler:
             from qibo.transpiler.placer import ReverseTraversal, Random
             from qibo.transpiler.router import Sabre
             from qililab import build_platform
-            from qililab.digital import CircuitTranspiler
+            from qililab.digital import CircuitTranspiler, DigitalTranspilationConfig
 
             # Create circuit:
             c = Circuit(5)
@@ -142,15 +142,15 @@ class CircuitTranspiler:
 
         .. code-block:: python
 
-            # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
+            # Default Transpilation (with routing and optimization off):
             transpiled_pulses, final_layouts = transpiler.transpile_circuit(c)
 
-            # Or another case, not doing optimization for some reason, and with Non-Default placer:
-            transpilation_settings = DigitalTranspilationConfig(placer=Random, optimize=False)
+            # Or another case, doing routing but not optimization:
+            transpilation_settings = DigitalTranspilationConfig(routing=True, placer=Random, optimize=False)
             transpiled_pulses, final_layout = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
-            # Or also specifying the `router` with kwargs:
-            transpilation_settings = DigitalTranspilationConfig(router=(Sabre, {"lookahead": 2}))
+            # Or same, but specifying the `router` with more precision, with its kwargs:
+            transpilation_settings = DigitalTranspilationConfig(routing=True, router=(Sabre, {"lookahead": 2}))
             transpiled_pulses, final_layouts = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
         .. note::

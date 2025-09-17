@@ -1427,9 +1427,7 @@ class Platform:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(
-                routing=True, optimize=False, router=Sabre, placer=ReverseTraversal
-            )
+            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
             # Execute with automatic transpilation:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
@@ -1637,7 +1635,7 @@ class Platform:
         averages_displayed: bool = False,
         acquisition_showing: bool = True,
         bus_mapping: dict[str, str] | None = None,
-        calibration: Calibration | None = None
+        calibration: Calibration | None = None,
     ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 

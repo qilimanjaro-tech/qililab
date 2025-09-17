@@ -84,9 +84,9 @@ def execute(
         c.add(gates.RX(1, 3 * np.pi / 2))
 
         # Create transpilation config:
-        transpilation = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
+        transpilation = DigitalTranspilationConfig(routing=True, router=Sabre, placer=ReverseTraversal)
 
-        # Execute with automatic transpilation:
+        # Execute with routing during the transpilation:
         probabilities = ql.execute(c, runcard="./runcards/galadriel.yml", transpilation_config=transpilation)
     """
     if isinstance(program, Circuit):
