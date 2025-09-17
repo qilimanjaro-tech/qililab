@@ -143,8 +143,8 @@ class CalibrationController:
                 # GRAPH BUILDING (1st --> 2nd):
                 G.add_edge(first.node_id, second.node_id)
 
-    Then you can add the 2Q nodes, explicitly writing its dependence, which would calibrate sequentially each of the two separate
-    graphs (qubits 0 and 1 + joint[0,1] first, and qubits 2 and 3 + joint[2,3] later):
+        Then you can add the 2Q nodes, explicitly writing its dependence, which would calibrate sequentially each of the two separate
+        graphs (qubits 0 and 1 + joint[0,1] first, and qubits 2 and 3 + joint[2,3] later):
 
         .. code-block:: python
 
@@ -171,8 +171,8 @@ class CalibrationController:
                 G.add_edge(last_layer_1qb_nodes[qubits[0]], joint_first.node_id)
                 G.add_edge(last_layer_1qb_nodes[qubits[1]], joint_first.node_id)
 
-    Or in reality you can skip the explicit connection of the 1Q gates to the 2Q gates, and just pass them as a separate graph
-    posteriorly, calibrating all the 1Q gates first, and then all the 2Q gates:
+        Or in reality you can skip the explicit connection of the 1Q gates to the 2Q gates, and just pass them as a separate graph
+        posteriorly, calibrating all the 1Q gates first, and then all the 2Q gates:
 
         .. code-block:: python
 
@@ -195,7 +195,7 @@ class CalibrationController:
                 # GRAPH BUILDING (joint):
                 G.add_edge(joint_first.node_id, joint_second.node_id) # If you only have one, you can just add_node(...).
 
-    To finally create the ``CalibrationController`` and run the automatic calibration:
+        To finally create the ``CalibrationController`` and run the automatic calibration:
 
         .. code-block:: python
 
