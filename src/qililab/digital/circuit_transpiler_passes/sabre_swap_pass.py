@@ -102,6 +102,9 @@ class SabreSwapPass(CircuitTranspilerPass):
     # ----------------------- public API -----------------------
 
     def run(self, circuit: Circuit) -> Circuit:
+        # if self.initial_layout is None and self.context is not None:
+        #     self.initial_layout = self.context.initial_layout
+
         rng = random.Random(self.seed)
 
         n_logical = circuit.nqubits
@@ -248,6 +251,11 @@ class SabreSwapPass(CircuitTranspilerPass):
 
         self.last_swap_count = swap_count
         self.last_final_layout = layout[:]  # mapping at the end of routing
+
+        if self.context is not None:
+            self.context.final_layout = list(self.last_final_layout or [])
+            self.context.metrics["swap_count"] = self.last_swap_count
+
         return out
 
     # ----------------------- SABRE helpers -----------------------

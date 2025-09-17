@@ -16,17 +16,35 @@ from copy import deepcopy
 
 from qilisdk.digital import Circuit
 
-from .circuit_transpiler_passes import CancelPairsOfHermitianGatesPass, CircuitTranspilerPass
-
+from .circuit_transpiler_passes import (
+    CancelPairsOfHermitianGatesPass,
+    CircuitTranspilerPass,
+    SabreLayoutPass,
+    SabreSwapPass,
+    TranspilationContext,
+)
+from rustworkx import PyGraph
 
 class DigitalTranspilationConfig: ...
 
 
 class CircuitTranspiler:
-    def __init__(self) -> None:
-        self._pipeline: list[CircuitTranspilerPass] = [
-            CancelPairsOfHermitianGatesPass()
+    def __init__(self, topology: PyGraph, pipeline: list[CircuitTranspilerPass] | None = None, context: TranspilationContext | None = None) -> None:
+        self._topology = topology
+        self._pipeline = pipeline or [
+            CancelPairsOfHermitianGatesPass(),
+            SabreLayoutPass(self._topology),
+            SabreSwapPass(self._topology),
+            CancelPairsOfHermitianGatesPass(),
         ]
+        self._context = context or TranspilationContext()
+
+        for p in self._pipeline:
+            p.attach_context(self._context)
+
+    @property
+    def context(self) -> TranspilationContext:
+        return self._context
 
     def run(self, circuit: Circuit) -> Circuit:
         for transpiler_pass in self._pipeline:

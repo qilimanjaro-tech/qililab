@@ -16,11 +16,7 @@ from __future__ import annotations
 
 import math
 import random
-from collections import deque
-from copy import deepcopy
-from typing import ClassVar, Iterable, Sequence
 
-import rustworkx as rx
 from qilisdk.digital import (
     CNOT,
     CZ,
@@ -42,7 +38,7 @@ from qilisdk.digital import (
     Y,
     Z,
 )
-from qilisdk.digital.gates import Adjoint, BasicGate, Controlled, Exponential, Modified
+from qilisdk.digital.gates import Adjoint, Controlled, Exponential
 from rustworkx import PyGraph
 
 from .circuit_transpiler_pass import CircuitTranspilerPass
@@ -99,7 +95,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
 
     def __init__(
         self,
-        coupling: PyGraph,
+        topology: PyGraph,
         *,
         num_trials: int = 8,
         seed: int | None = None,
@@ -108,7 +104,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
         decay_delta: float = 0.001,
         decay_lambda: float = 0.99,
     ) -> None:
-        self.coupling = coupling
+        self.topology = topology
         self.num_trials = max(1, int(num_trials))
         self.seed = seed
         self.lookahead_size = int(lookahead_size)
@@ -120,7 +116,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
         self.last_score: float | None = None
 
         # Validate coupling graph is undirected PyGraph (rustworkx enforces this by type)
-        if not isinstance(coupling, PyGraph):
+        if not isinstance(topology, PyGraph):
             raise TypeError("SabreLayoutPass requires a rustworkx.PyGraph (undirected).")
 
     # --------- public API ---------
@@ -129,7 +125,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
         rng = random.Random(self.seed)
 
         n_logical = circuit.nqubits
-        phys_nodes = list(self.coupling.node_indices())
+        phys_nodes = list(self.topology.node_indices())
         if not phys_nodes:
             raise ValueError("Coupling graph has no nodes.")
         n_physical = max(int(x) for x in phys_nodes) + 1
@@ -140,7 +136,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
 
         # Precompute all-pairs shortest-path distances on the coupling graph.
         # We use an internal BFS on the rustworkx graph to avoid relying on version-specific APIs.
-        dist = self._all_pairs_shortest_path_unweighted(self.coupling, n_physical)
+        dist = self._all_pairs_shortest_path_unweighted(self.topology, n_physical)
 
         # Build the list of 2Q gates and per-qubit indices for the SABRE simulation.
         twoq_indices, twoq_qubits, per_qubit = self._twoq_structure(circuit)
@@ -169,6 +165,9 @@ class SabreLayoutPass(CircuitTranspilerPass):
         assert best_layout is not None
         self.last_layout = best_layout
         self.last_score = best_score
+
+        if self.context is not None:
+            self.context.initial_layout = list(self.last_layout or [])
 
         # Return a new circuit with all gates mapped to the chosen physical qubits.
         return self._retarget_circuit(circuit, best_layout, n_physical)
@@ -256,11 +255,11 @@ class SabreLayoutPass(CircuitTranspilerPass):
                 pu, pv = layout[u], layout[v]
                 touched_phys.add(pu)
                 touched_phys.add(pv)
-                for nb in self.coupling.neighbors(pu):
+                for nb in self.topology.neighbors(pu):
                     a, b = int(pu), int(nb)
                     if a != b:
                         candidate_edges.add((min(a, b), max(a, b)))
-                for nb in self.coupling.neighbors(pv):
+                for nb in self.topology.neighbors(pv):
                     a, b = int(pv), int(nb)
                     if a != b:
                         candidate_edges.add((min(a, b), max(a, b)))
@@ -393,7 +392,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
         Pick a random injective mapping logical->physical using *existing* graph nodes.
         Returns a list L of length n_logical where L[q_logical] = p_physical.
         """
-        phys_nodes = list(self.coupling.node_indices())
+        phys_nodes = list(self.topology.node_indices())
         if len(phys_nodes) < n_logical:
             raise ValueError(
                 f"Coupling graph has only {len(phys_nodes)} nodes; need ≥ {n_logical}."

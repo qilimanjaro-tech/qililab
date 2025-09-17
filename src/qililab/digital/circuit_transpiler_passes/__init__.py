@@ -14,5 +14,8 @@
 
 from .cancel_pairs_of_hermitian_gates_pass import CancelPairsOfHermitianGatesPass
 from .circuit_transpiler_pass import CircuitTranspilerPass
+from .sabre_layout_pass import SabreLayoutPass
+from .sabre_swap_pass import SabreSwapPass
+from .transpilation_context import TranspilationContext
 
-__all__ = ["CancelPairsOfHermitianGatesPass", "CircuitTranspilerPass"]
+__all__ = ["CancelPairsOfHermitianGatesPass", "CircuitTranspilerPass", "SabreLayoutPass", "SabreSwapPass", "TranspilationContext"]

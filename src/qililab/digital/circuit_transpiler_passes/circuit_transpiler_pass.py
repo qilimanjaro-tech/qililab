@@ -16,7 +16,18 @@ from abc import ABC, abstractmethod
 
 from qilisdk.digital import Circuit
 
+from .transpilation_context import TranspilationContext
+
 
 class CircuitTranspilerPass(ABC):
+    """
+    Base class for passes. Each pass can read/write a shared context.
+    Subclasses should implement `run(self, circuit) -> Circuit` and must NOT mutate the input circuit.
+    """
+    context: TranspilationContext | None = None  # injected by CircuitTranspiler
+
+    def attach_context(self, ctx: TranspilationContext) -> None:
+        self.context = ctx
+
     @abstractmethod
     def run(self, circuit: Circuit) -> Circuit: ...
