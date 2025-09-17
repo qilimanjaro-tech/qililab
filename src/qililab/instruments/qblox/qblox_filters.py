@@ -14,7 +14,7 @@
 
 from dataclasses import asdict, dataclass
 
-from qililab.constants import DistortionState, QBLOXCONSTANTS
+from qililab.constants import QBLOXCONSTANTS, DistortionState
 from qililab.utils.asdict_factory import dict_factory
 
 
@@ -28,7 +28,7 @@ class QbloxFilter:
     fir_state: bool | None = None
 
     def __post_init__(self):
-        if isinstance(self.exponential_state, (bool,str)):
+        if isinstance(self.exponential_state, (bool, str)):
             self.exponential_state = [self.exponential_state]
 
         if isinstance(self.exponential_time_constant, (int, float)):
@@ -36,7 +36,7 @@ class QbloxFilter:
 
         if isinstance(self.exponential_amplitude, (int, float)):
             self.exponential_amplitude = [self.exponential_amplitude]
-        
+
         if self.exponential_state is not None:
             for idx, state in enumerate(self.exponential_state):
                 if state is True:
@@ -47,18 +47,17 @@ class QbloxFilter:
 
         if self.exponential_time_constant is not None:
             self.exponential_time_constant = self.exponential_time_constant + [None] * (4 - len(self.exponential_time_constant))
-        
+
         if self.exponential_amplitude is not None:
             self.exponential_amplitude = self.exponential_amplitude + [None] * (4 - len(self.exponential_amplitude))
-        
+
         if self.fir_state is True:
             self.fir_state = DistortionState.ENABLED
         elif self.fir_state is False:
             self.fir_state = DistortionState.BYPASSED
-        
+
         if self.fir_coeff is not None and len(self.fir_coeff) != 32:
             raise ValueError(f"The number of elements in the list must be exactly {QBLOXCONSTANTS.FILTER_FIR_COEFF_LENGTH}. Received: {len(self.fir_coeff)}")
-
 
     def to_dict(self):
         """Return a dict representation of a Qblox Filter."""

@@ -97,6 +97,18 @@ def fixture_platform_with_orphan_digital_bus():
     # For Galadriel.runcard, a unique name like this won't exist in the main buses.
     return build_platform(runcard)
 
+@pytest.fixture(name="platform_galadriel_no_filter")
+def fixture_platform_galadriel_no_filter():
+    """
+    Platform fixture where a bus alias is defined in runcard.digital.buses
+    but not in the main runcard.buses list.
+    The input 'runcard' is a deepcopy from Galadriel.runcard.
+    """
+    # Start from base Galadriel runcard
+    runcard = copy.deepcopy(Galadriel.runcard)
+    del runcard["instruments"][0]["filters"]
+
+    return build_platform(runcard)
 
 @pytest.fixture(name="qblox_results")
 def fixture_qblox_results():
@@ -558,6 +570,26 @@ class TestPlatform:
         assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
         assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.FIR_STATE, output_id=1) == "delay_comp"
         assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
+
+    def test_set_filter(self, platform: Platform):
+        """Test Set filters"""
+        #  Check that the parameters can be set
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, value = True, output_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, output_id=0) == "enabled"
+
+        print(platform)
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, value = False, output_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, output_id=0) == "bypassed"
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
+
+    def test_update_qblox_filter_state_fir(self, platform_galadriel_no_filter: Platform):
+        """Test that the filter is created if needed"""
+        platform_galadriel_no_filter.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
+        assert platform_galadriel_no_filter.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
+        
 
     def test_setting_filter_bypassed_give_warning(self, caplog, platform: Platform):
         #  Check that setting a filter as bypassed will actually put/leave it as delay_comp if needed

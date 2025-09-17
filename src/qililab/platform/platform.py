@@ -565,31 +565,6 @@ class Platform:
 
         return data_oscilloscope
 
-    # def _get_qblox_active_filter_fir(self):
-    #     qblox_active_filter = []
-    #     for pair in self.qblox_alias_module:
-    #         module_alias, output_id = next(iter(pair.items()))
-    #         qblox_instrument = self.instruments.get_instrument(module_alias)
-    #         for filter in qblox_instrument.filters:
-    #             if filter.output_id == output_id:
-    #                 state = self.get_parameter(alias=module_alias, parameter=Parameter.FIR_STATE, output_id=output_id)
-    #                 if state in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and pair not in qblox_active_filter:
-    #                     qblox_active_filter.append(pair)
-    #     return qblox_active_filter
-
-    # def _get_qblox_active_filter_exponential(self):
-    #     qblox_active_filter = []
-    #     for pair in self.qblox_alias_module:
-    #         module_alias, output_id = next(iter(pair.items()))
-    #         qblox_instrument = self.instruments.get_instrument(module_alias)
-    #         for filter in qblox_instrument.filters:
-    #             if filter.output_id == output_id:
-    #                 for idx, state_exponential in enumerate([filter.exponential_state]): #fuck not clean use range
-    #                     state = self.get_parameter(alias=module_alias, parameter=Parameter[f"EXPONENTIAL_STATE_{idx}"], output_id=output_id)
-    #                     if state in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and pair not in qblox_active_filter:
-    #                         qblox_active_filter.append({module_alias:[output_id,idx]})
-    #     return qblox_active_filter
-
     def _get_qblox_active_filter_fir(self):
         qblox_active_filter = False
         for pair in self.qblox_alias_module:
@@ -609,7 +584,7 @@ class Platform:
             qblox_instrument = self.instruments.get_instrument(module_alias)
             for filter in qblox_instrument.filters:
                 if filter.output_id == output_id:
-                    for idx, state_exponential in enumerate(filter.exponential_state): #fuck not clean use range
+                    for idx, state_exponential in enumerate(filter.exponential_state):  # fuck not clean use range
                         # state = self.get_parameter(alias=module_alias, parameter=Parameter[f"EXPONENTIAL_STATE_{idx}"], output_id=output_id)
                         if state_exponential in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and idx not in qblox_active_filter:
                             qblox_active_filter.append(idx)
@@ -675,14 +650,9 @@ class Platform:
                     self.qblox_active_filter_exponential.append(exponential_idx)
                 self._update_qblox_filter_state_exponential()
             else:
-                if self.qblox_active_filter_exponential:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
-                    if exponential_idx not in self.qblox_active_filter_exponential:
-                        self.qblox_active_filter_exponential.append(exponential_idx)
+                if exponential_idx in self.qblox_active_filter_exponential:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
                     element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
                     logger.warning("Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
-                    return
-                else:
-                    element.set_parameter(parameter=parameter, value=DistortionState.BYPASSED, channel_id=channel_id, output_id=output_id)
                     return
 
         if parameter == Parameter.FIR_STATE:
@@ -707,13 +677,13 @@ class Platform:
                     qblox_instrument = self.get_element(alias=alias)
                     for filter in qblox_instrument.filters:
                         if filter.output_id == output_id and pre_exisisting_filter is False:
-                            if len(filter.exponential_state)>expo_idx:
+                            if len(filter.exponential_state) > expo_idx:
                                 pre_exisisting_filter = True
                                 state_exponential = self.get_parameter(alias=alias, parameter=parameter, output_id=output_id)
                                 if state_exponential not in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
                                     self.set_parameter(alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id)
-                    if pre_exisisting_filter is False:
-                        self.set_parameter(alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id)            
+                    if pre_exisisting_filter is False:  # filter needs to be created
+                        self.set_parameter(alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id)
 
     def _update_qblox_filter_state_fir(self):
         if self.qblox_active_filter_fir:
@@ -727,7 +697,7 @@ class Platform:
                         state_fir = self.get_parameter(alias=alias, parameter=Parameter.FIR_STATE, output_id=output_id)
                         if state_fir not in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
                             self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
-                if pre_exisisting_filter is False: #filter needs ot be created
+                if pre_exisisting_filter is False:  # filter needs to be created
                     self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
 
     def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
