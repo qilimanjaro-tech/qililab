@@ -412,7 +412,7 @@ class CircuitTranspiler:
                 # Error if SWAP is after Measurement in original circuit
                 if before_or_after == "before":
                     raise ValueError(
-                        f"Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit.Review the circuit gates for qubit {qubit}."
+                        f"Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit. Review the circuit gates for qubit {qubit}."
                     )
                 # Error if SWAP gate has been added after Measurement in routing
                 if before_or_after == "after":
