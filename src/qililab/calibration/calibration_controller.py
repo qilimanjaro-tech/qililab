@@ -95,7 +95,7 @@ class CalibrationController:
 
     Examples:
 
-        To calibrate four different qubits, each with two sequential 1Q nodes, and two 2Q gate connecting qubits 0-1 and 2-3:
+        To calibrate four different qubits, each with two sequential 1Q experiments (nodes: first and second), and two 2Q gate experiments connecting qubits 0-1 and 2-3 (nodes: joint_first and joint_second):
 
         .. code-block:: python
 
@@ -164,12 +164,13 @@ class CalibrationController:
                 )
                 nodes[joint_second.node_id] = joint_second
 
-                # GRAPH BUILDING (joint 1st --> joint 2nd):
-                G.add_edge(joint_first.node_id, joint_second.node_id)
-
-                # GRAPH BUILDING (1Q -> 2Q):
+                # GRAPH BUILDING (second 1Q Nodes -> first 2Q (joint) Nodes):
                 G.add_edge(last_layer_1qb_nodes[qubits[0]], joint_first.node_id)
                 G.add_edge(last_layer_1qb_nodes[qubits[1]], joint_first.node_id)
+
+                # GRAPH BUILDING (joint_1st --> joint_2nd):
+                G.add_edge(joint_first.node_id, joint_second.node_id)
+
 
         Or in reality you can skip the explicit connection of the 1Q gates to the 2Q gates, and just pass them as a separate graph
         posteriorly, calibrating all the 1Q gates first, and then all the 2Q gates:
@@ -192,7 +193,7 @@ class CalibrationController:
                 )
                 nodes[joint_second.node_id] = joint_second
 
-                # GRAPH BUILDING (joint):
+                # GRAPH BUILDING (joints_1st --> joints_2nd):
                 G.add_edge(joint_first.node_id, joint_second.node_id) # If you only have one, you can just add_node(...).
 
         To finally create the ``CalibrationController`` and run the automatic calibration:
