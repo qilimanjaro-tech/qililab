@@ -487,6 +487,7 @@ class ResultName(str, Enum):
     QUANTUM_MACHINES = "quantum_machines"
     QUANTUM_MACHINES_MEASUREMENT = "quantum_machines_measurement"
 
+
 class DistortionState(str, Enum):
     """Distortion State
 
@@ -500,6 +501,7 @@ class DistortionState(str, Enum):
     ENABLED = "enabled"
     BYPASSED = "bypassed"
     DELAY_COMP = "delay_comp"
+
 
 class ConnectionName(str, Enum):
     """Connection names.
