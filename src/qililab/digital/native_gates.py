@@ -19,8 +19,10 @@ from typing import ClassVar
 import numpy as np
 from qilisdk.common import Parameter
 from qilisdk.digital.gates import BasicGate
+from qilisdk.yaml import yaml
 
 
+@yaml.register_class
 class Drag(BasicGate):
     r"""Native drag pulse dummy class.
     Inherits from qibo unitary gates class

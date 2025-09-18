@@ -23,7 +23,6 @@ from qilisdk.digital.gates import (
     RX,
     RY,
     RZ,
-    SWAP,
     U3,
     Gate,
     M,
@@ -32,6 +31,7 @@ from qilisdk.digital.gates import (
 from qililab.digital.native_gates import Drag
 
 from .circuit_transpiler_pass import CircuitTranspilerPass
+from .numeric_helpers import _wrap_angle
 
 
 class DecomposeToNativePass(CircuitTranspilerPass):
@@ -40,14 +40,11 @@ class DecomposeToNativePass(CircuitTranspilerPass):
     to the native set {Drag, CZ, M} (+ optional virtual RZ).
 
     Mapping:
-      - U3(theta, phi, gamma) → Drag(theta, phase=-gamma+pi/2) ; RZ(phi+gamma)
-      - RX(theta)       → Drag(theta, phase=0)
-      - RY(theta)       → Drag(theta, phase=pi/2)
-      - CZ          → CZ
-      - M           → M
-      - SWAP(a,b)   → CNOT(a,b) CNOT(b,a) CNOT(a,b) with
-                      CNOT(x,y) = H(y) CZ(x,y) H(y) and
-                      H(q)      = U3(q, pi/2, 0, pi) → Drag+RZ
+      - U3(theta, phi, gamma)   → Drag(theta, phase=-gamma+pi/2) ; RZ(phi+gamma)
+      - RX(theta)               → Drag(theta, phase=0)
+      - RY(theta)               → Drag(theta, phase=pi/2)
+      - CZ                      → CZ
+      - M                       → M
 
     Options:
       - keep_virtual_rz: keep RZ as a virtual Z (default True).
@@ -77,17 +74,13 @@ class DecomposeToNativePass(CircuitTranspilerPass):
         # Pending virtual Z rotation per qubit (for simple RZ merging / scheduling)
         pending_rz: dict[int, float] = {}
 
-        def wrap_angle(a: float) -> float:
-            a = (a + math.pi) % (2.0 * math.pi) - math.pi
-            return math.pi if abs(a + math.pi) < 1e-15 else a
-
         def emit_rz(q: int) -> None:
             """Flush a pending RZ on q, if any (and if we keep RZ at all)."""
             if not self.keep_virtual_rz:
                 pending_rz.pop(q, None)
                 return
             if q in pending_rz:
-                phi = wrap_angle(pending_rz[q])
+                phi = _wrap_angle(pending_rz[q])
                 pending_rz.pop(q, None)
                 if abs(phi) > self.angle_tol:
                     out.add(RZ(q, phi=phi))
@@ -102,23 +95,11 @@ class DecomposeToNativePass(CircuitTranspilerPass):
             if not self.keep_virtual_rz:
                 return
             if self.merge_consecutive_rz:
-                pending_rz[q] = wrap_angle(pending_rz.get(q, 0.0) + phi)
+                pending_rz[q] = _wrap_angle(pending_rz.get(q, 0.0) + phi)
             else:
                 emit_rz(q)
                 if abs(phi) > self.angle_tol:
-                    out.add(RZ(q, phi=wrap_angle(phi)))
-
-        def emit_H_as_Drag_RZ(q: int) -> None:
-            """H(q) = U3(pi/2, 0, pi) → Drag(pi/2, phase=-pi+pi/2=-pi/2), RZ(pi)."""
-            touch(q)  # H does not commute with pending Z (we absorb by flushing)
-            out.add(Drag(q, theta=math.pi / 2.0, phase=-math.pi / 2.0))
-            add_rz(q, math.pi)
-
-        def emit_CNOT_via_CZ(control: int, target: int) -> None:
-            # CNOT = H(target) · CZ(control,target) · H(target)
-            emit_H_as_Drag_RZ(target)
-            out.add(CZ(control, target))
-            emit_H_as_Drag_RZ(target)
+                    out.add(RZ(q, phi=_wrap_angle(phi)))
 
         def lower_1q_as_Drag_RZ(g: Gate) -> None:
             q = g.qubits[0]
@@ -131,10 +112,11 @@ class DecomposeToNativePass(CircuitTranspilerPass):
             elif isinstance(g, RZ):
                 add_rz(q, g.phi)
             elif isinstance(g, U3):
-                # U3(theta, phi, gamma) → Drag(θ, phase=-gamma+pi/2) ; RZ(phi+gamma)
+                # U3(theta, phi, gamma) with U3 = RZ(phi) RY(theta) RZ(gamma)
                 touch(q)
-                out.add(Drag(q, theta=g.theta, phase=wrap_angle(-g.gamma + math.pi / 2.0)))
-                add_rz(q, wrap_angle(g.phi + g.gamma))
+                out.add(Drag(q, theta=g.theta, phase=_wrap_angle(g.phi + math.pi / 2)))
+                add_rz(q, _wrap_angle(g.phi + g.gamma))
+
             else:
                 raise NotImplementedError(f"Unexpected 1-qubit gate in native lowering: {type(g).__name__}")
 
@@ -164,21 +146,10 @@ class DecomposeToNativePass(CircuitTranspilerPass):
                 out.add(M(*g.qubits))
                 continue
 
-            # SWAP decomposition (SABRE may have inserted these)
-            if isinstance(g, SWAP):
-                a, b = g.target_qubits
-                # RZ doesn't commute with the H we will emit; flush on a,b
-                touch(a, b)
-                # SWAP = CNOT(a,b) CNOT(b,a) CNOT(a,b)
-                emit_CNOT_via_CZ(a, b)
-                emit_CNOT_via_CZ(b, a)
-                emit_CNOT_via_CZ(a, b)
-                continue
-
             raise NotImplementedError(f"Gate {type(g).__name__} is not supported at this lowering stage.")
 
         # Flush any remaining pending Z
-        for q, phi in list(pending_rz.items()):
+        for q in pending_rz:
             emit_rz(q)
 
         self.append_circuit_to_context(out)

@@ -15,9 +15,8 @@
 from __future__ import annotations
 
 import math
-from typing import List, Tuple
+from typing import List
 
-import numpy as np
 from qilisdk.digital import Circuit
 from qilisdk.digital.gates import (
     CNOT,
@@ -43,81 +42,18 @@ from qilisdk.digital.gates import (
 )
 
 from .circuit_transpiler_pass import CircuitTranspilerPass
+from .numeric_helpers import (
+    _mat_U3,
+    _unitary_sqrt_2x2,
+    _wrap_angle,
+    _zyz_from_unitary,
+)
 
-_EPS = 1e-10
-
-# -------------------- numeric helpers --------------------
-
-
-def _wrap_angle(a: float) -> float:
-    a = (a + math.pi) % (2.0 * math.pi) - math.pi
-    if abs(a + math.pi) < 1e-15:
-        return math.pi
-    return a
-
-
-def _is_close_mod_2pi(a: float, b: float, eps: float = 1e-9) -> bool:
-    return abs(_wrap_angle(a - b)) < eps
-
-
-def _mat_RZ(phi: float) -> np.ndarray:
-    return np.array([[np.exp(-0.5j * phi), 0.0], [0.0, np.exp(0.5j * phi)]], dtype=complex)
-
-
-def _mat_RY(theta: float) -> np.ndarray:
-    c, s = math.cos(theta / 2.0), math.sin(theta / 2.0)
-    return np.array([[c, -s], [s, c]], dtype=complex)
-
-
-def _mat_RX(theta: float) -> np.ndarray:
-    c, s = math.cos(theta / 2.0), -1j * math.sin(theta / 2.0)
-    return np.array([[c, s], [s, c]], dtype=complex)
-
-
-def _mat_U3(theta: float, phi: float, lam: float) -> np.ndarray:
-    # Convention: U3(θ, φ, λ) = RZ(φ) · RY(θ) · RZ(λ)
-    return _mat_RZ(phi) @ _mat_RY(theta) @ _mat_RZ(lam)
-
-
-def _zyz_from_unitary(U: np.ndarray) -> Tuple[float, float, float]:
-    if U.shape != (2, 2):
-        raise ValueError("Expected 2x2 unitary for ZYZ decomposition.")
-    det = np.linalg.det(U)
-    if abs(det) < _EPS:
-        raise ValueError("Matrix is singular.")
-    U = U * np.exp(-0.5j * np.angle(det))  # remove global phase
-
-    a00, a01 = U[0, 0], U[0, 1]
-    a10, a11 = U[1, 0], U[1, 1]
-
-    c = np.clip(abs(a00), 0.0, 1.0)
-    theta = 2.0 * math.acos(c)
-    s = math.sin(theta / 2.0)
-
-    if s < 1e-12:
-        phi = 0.0
-        lam = _wrap_angle(-2.0 * np.angle(a00))
-        return (0.0, phi, lam)
-
-    phi = _wrap_angle(np.angle(a10) - np.angle(a00))
-    lam = _wrap_angle(np.angle(a01) - np.angle(a11))
-    return (theta, phi, lam)
-
-
-def _unitary_sqrt_2x2(U: np.ndarray) -> np.ndarray:
-    """Principal square root of a 2x2 unitary via eigendecomp (robust for 1-qubit)."""
-    w, V = np.linalg.eig(U)
-    # project eigenvalues to unit circle to fight tiny drift
-    ph = np.angle(w)
-    sqrt_w = np.exp(0.5j * ph)
-    return V @ np.diag(sqrt_w) @ np.linalg.inv(V)
-
-
-# -------------------- basis building blocks --------------------
+# ======================= Small basis building blocks =======================
 
 
 def _H_as_U3(q: int) -> List[Gate]:
-    # H = U2(0, π) = U3(π/2, 0, π) up to global phase
+    # H = U2(0, π) = U3(π/2, 0, π) up to a global phase
     return [U3(q, theta=math.pi / 2.0, phi=0.0, gamma=math.pi)]
 
 
@@ -138,20 +74,12 @@ def _CRZ_using_CNOT(c: int, t: int, lam: float) -> List[Gate]:
 
 def _CRX_using_CRZ(c: int, t: int, theta: float) -> List[Gate]:
     # RX(θ) = RY(-π/2) · RZ(θ) · RY(π/2)
-    return [
-        RY(t, theta=-math.pi / 2.0),
-        *_CRZ_using_CNOT(c, t, theta),
-        RY(t, theta=math.pi / 2.0),
-    ]
+    return [RY(t, theta=-math.pi / 2.0), *_CRZ_using_CNOT(c, t, theta), RY(t, theta=math.pi / 2.0)]
 
 
 def _CRY_using_CRZ(c: int, t: int, theta: float) -> List[Gate]:
     # RY(θ) = RX(π/2) · RZ(θ) · RX(-π/2)
-    return [
-        RX(t, theta=math.pi / 2.0),
-        *_CRZ_using_CNOT(c, t, theta),
-        RX(t, theta=-math.pi / 2.0),
-    ]
+    return [RX(t, theta=math.pi / 2.0), *_CRZ_using_CNOT(c, t, theta), RX(t, theta=-math.pi / 2.0)]
 
 
 def _CU3_using_CNOT(c: int, t: int, theta: float, phi: float, lam: float) -> List[Gate]:
@@ -187,10 +115,11 @@ def _invert_basis_gate(g: Gate) -> List[Gate]:
         return [RY(g.qubits[0], theta=-math.pi)]
     if isinstance(g, Z):
         return [RZ(g.qubits[0], phi=-math.pi)]
+    # Should not happen after canonicalization.
     return [Adjoint(g)]  # type: ignore[type-var]
 
 
-# -------------------- NEW: multi-control support --------------------
+# ======================= Canonicalization (mapping-only) =======================
 
 
 def _as_basis_1q(g: Gate) -> Gate:
@@ -211,7 +140,6 @@ def _as_basis_1q(g: Gate) -> Gate:
     if isinstance(g, Z):
         return RZ(q, phi=math.pi)
     if isinstance(g, BasicGate) and g.nqubits == 1:
-        # generic 1q: derive U3 angles from its matrix
         th, ph, lam = _zyz_from_unitary(g.matrix)
         return U3(q, theta=th, phi=ph, gamma=lam)
     raise NotImplementedError(f"Unsupported 1-qubit gate type {type(g).__name__} in _as_basis_1q")
@@ -220,7 +148,7 @@ def _as_basis_1q(g: Gate) -> Gate:
 def _sqrt_1q_gate_as_basis(g: Gate) -> Gate:
     """Return V such that V^2 = g, as a basis gate (U3/RX/RY/RZ)."""
     q = g.qubits[0]
-    # Fast paths (avoid numerics)
+    # Fast paths
     if isinstance(g, RZ):
         return RZ(q, phi=g.phi / 2.0)
     if isinstance(g, RX):
@@ -236,7 +164,7 @@ def _sqrt_1q_gate_as_basis(g: Gate) -> Gate:
     if isinstance(g, U1):
         return RZ(q, phi=g.phi / 2.0)
 
-    # General 1q unitary (U2/U3/generic): use eigen-decomposition
+    # General 1q unitary
     if isinstance(g, U2):
         U = _mat_U3(math.pi / 2.0, g.phi, g.gamma)
     elif isinstance(g, U3):
@@ -244,7 +172,6 @@ def _sqrt_1q_gate_as_basis(g: Gate) -> Gate:
     elif isinstance(g, BasicGate) and g.nqubits == 1:
         U = g.matrix
     else:
-        # Map to basis first, then recurse
         return _sqrt_1q_gate_as_basis(_as_basis_1q(g))
 
     Vs = _unitary_sqrt_2x2(U)
@@ -262,83 +189,30 @@ def _adjoint_1q(g: Gate) -> Gate:
         return RZ(q, phi=-g.phi)
     if isinstance(g, U3):
         return U3(q, theta=-g.theta, phi=-g.gamma, gamma=-g.phi)
-    # Map and retry
     return _adjoint_1q(_as_basis_1q(g))
 
 
-def _single_controlled(c: int, target_gate: Gate) -> List[Gate]:
-    """Decompose a single-controlled 1-qubit gate with control c to basis."""
-    t = target_gate.qubits[0]
-    if isinstance(target_gate, RZ):
-        return _CRZ_using_CNOT(c, t, target_gate.phi)
-    if isinstance(target_gate, RX):
-        return _CRX_using_CRZ(c, t, target_gate.theta)
-    if isinstance(target_gate, RY):
-        return _CRY_using_CRZ(c, t, target_gate.theta)
-    if isinstance(target_gate, U3):
-        return _CU3_using_CNOT(c, t, target_gate.theta, target_gate.phi, target_gate.gamma)
-    # Map and retry
-    return _single_controlled(c, _as_basis_1q(target_gate))
-
-
-def _multi_controlled(controls: List[int], base_1q: Gate) -> List[Gate]:
+class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
     """
-    Ancilla-free recursive synthesis of C^k(base_1q) using
-    C^{k-1}(V), CNOT, C^{k-1}(V†), CNOT, C^{k-1}(V) with V^2 = base_1q.
-    Emits only CZ + {U3,RX,RY,RZ}.
+    Map an arbitrary circuit to the circuit basis {U3, RX, RY, RZ, CZ} (+ M).
+
+    - Eliminates CNOT / SWAP to CZ + 1Q.
+    - Controlled with any #controls (target 1-qubit) → ancilla-free recursive synthesis.
+    - Adjoint(g) → canonicalize(g) then reverse+invert.
+    - Exponential(1q) → ZYZ → U3.
+
+    NOTE: This pass does *not* perform any 1-qubit fusion/merging.
     """
-    # assert base_1q.nqubits == 1
-    if not controls:
-        # no control: just the base gate
-        return [base_1q]
-    if len(controls) == 1:
-        return _single_controlled(controls[0], base_1q)
-
-    # reduce one control
-    c_last = controls[-1]
-    rest = controls[:-1]
-
-    V = _sqrt_1q_gate_as_basis(base_1q)
-    Vd = _adjoint_1q(V)
-
-    t = base_1q.qubits[0]
-    seq: List[Gate] = []
-    seq += _multi_controlled(rest, V)
-    seq += _CNOT_as_CZ_plus_1q(c_last, t)
-    seq += _multi_controlled(rest, Vd)
-    seq += _CNOT_as_CZ_plus_1q(c_last, t)
-    seq += _multi_controlled(rest, V)
-    return seq
-
-
-# -------------------- The pass --------------------
-
-
-class CanonicalToCircuitBasisPass(CircuitTranspilerPass):
-    """
-    Canonicalize to the circuit basis {U3, RX, RY, RZ, CZ} (+ M).
-    """
-
-    def __init__(self, *, fuse_1q: bool = True) -> None:
-        self.fuse_1q = fuse_1q
 
     def run(self, circuit: Circuit) -> Circuit:
-        # 1) Rewrite to basis (including multi-control expansion)
         seq = self._rewrite_list(circuit.gates)
 
-        # 2) Optionally fuse adjacent 1Q gates per wire
-        if self.fuse_1q:
-            seq = self._fuse_1q_runs(seq)
-
-        new_circuit = Circuit(circuit.nqubits)
+        out = Circuit(circuit.nqubits)
         for g in seq:
-            new_circuit.add(g)
+            out.add(g)
 
-        self.append_circuit_to_context(new_circuit)
-
-        return new_circuit
-
-    # ---------- rewriting ----------
+        self.append_circuit_to_context(out)
+        return out
 
     def _rewrite_list(self, gates: List[Gate]) -> List[Gate]:
         out: List[Gate] = []
@@ -347,15 +221,15 @@ class CanonicalToCircuitBasisPass(CircuitTranspilerPass):
         return out
 
     def _rewrite_gate(self, g: Gate) -> List[Gate]:
-        # Measurements keep
+        # measurement passes through
         if isinstance(g, M):
             return [g]
 
-        # Already basis
+        # already basis
         if isinstance(g, (U3, RX, RY, RZ, CZ)):
             return [g]
 
-        # Simple 1Q
+        # simple 1q
         if isinstance(g, I):
             return []
         if isinstance(g, H):
@@ -367,13 +241,13 @@ class CanonicalToCircuitBasisPass(CircuitTranspilerPass):
         if isinstance(g, Z):
             return [RZ(g.qubits[0], phi=math.pi)]
 
-        # Param 1Q
+        # param 1q
         if isinstance(g, U1):
             return [RZ(g.qubits[0], phi=g.phi)]
         if isinstance(g, U2):
             return [U3(g.qubits[0], theta=math.pi / 2.0, phi=g.phi, gamma=g.gamma)]
 
-        # 2Q
+        # 2q
         if isinstance(g, CZ):
             return [g]
         if isinstance(g, CNOT):
@@ -383,17 +257,15 @@ class CanonicalToCircuitBasisPass(CircuitTranspilerPass):
             a, b = g.target_qubits
             return _CNOT_as_CZ_plus_1q(a, b) + _CNOT_as_CZ_plus_1q(b, a) + _CNOT_as_CZ_plus_1q(a, b)
 
-        # Controlled (arbitrary number of controls) over a 1-qubit target gate
+        # Controlled (k controls) over a 1-qubit target
         if isinstance(g, Controlled):
             ctrls = list(g.control_qubits)
-            base = g.basic_gate
+            base: BasicGate = g.basic_gate
             if base.nqubits != 1:
                 raise NotImplementedError("Controlled of multi-qubit gates not supported.")
             t = base.qubits[0]
             base1q = _as_basis_1q(base)
-            # Ensure the mapped base gate acts on the same target
             if base1q.qubits[0] != t:
-                # rebuild with same type on t
                 if isinstance(base1q, U3):
                     base1q = U3(t, theta=base1q.theta, phi=base1q.phi, gamma=base1q.gamma)
                 elif isinstance(base1q, RX):
@@ -421,66 +293,46 @@ class CanonicalToCircuitBasisPass(CircuitTranspilerPass):
             th, ph, lam = _zyz_from_unitary(U)
             return [U3(base.qubits[0], theta=th, phi=ph, gamma=lam)]
 
-        # Generic 1Q gate
+        # generic 1q
         if isinstance(g, BasicGate) and g.nqubits == 1:
             th, ph, lam = _zyz_from_unitary(g.matrix)
             return [U3(g.qubits[0], theta=th, phi=ph, gamma=lam)]
 
         raise NotImplementedError(f"No canonicalization rule for {type(g).__name__}")
 
-    # ---------- 1Q fusion ----------
+    # --- multi-control synthesis (uses helpers above) ---
 
-    def _fuse_1q_runs(self, seq: List[Gate]) -> List[Gate]:
-        out: List[Gate] = []
-        pending: dict[int, np.ndarray] = {}
 
-        def flush(q: int):
-            if q not in pending:
-                return
-            U = pending.pop(q)
-            th, ph, lam = _zyz_from_unitary(U)
-            th, ph, lam = _wrap_angle(th), _wrap_angle(ph), _wrap_angle(lam)
-            if abs(th) < 1e-9:
-                out.append(RZ(q, phi=_wrap_angle(ph + lam)))
-                return
-            if _is_close_mod_2pi(ph, 0.0) and _is_close_mod_2pi(lam, 0.0):
-                out.append(RY(q, theta=th))
-                return
-            if _is_close_mod_2pi(ph, -math.pi / 2.0) and _is_close_mod_2pi(lam, math.pi / 2.0):
-                out.append(RX(q, theta=th))
-                return
-            out.append(U3(q, theta=th, phi=ph, gamma=lam))
+def _single_controlled(c: int, target_gate: Gate) -> List[Gate]:
+    t = target_gate.qubits[0]
+    if isinstance(target_gate, RZ):
+        return _CRZ_using_CNOT(c, t, target_gate.phi)
+    if isinstance(target_gate, RX):
+        return _CRX_using_CRZ(c, t, target_gate.theta)
+    if isinstance(target_gate, RY):
+        return _CRY_using_CRZ(c, t, target_gate.theta)
+    if isinstance(target_gate, U3):
+        return _CU3_using_CNOT(c, t, target_gate.theta, target_gate.phi, target_gate.gamma)
+    return _single_controlled(c, _as_basis_1q(target_gate))
 
-        def apply(q: int, U: np.ndarray):
-            pending[q] = U @ pending[q] if q in pending else U
 
-        def flush_touches(qubits: Tuple[int, ...]):
-            for q in qubits:
-                flush(q)
+def _multi_controlled(controls: List[int], base_1q: Gate) -> List[Gate]:
+    if not controls:
+        return [base_1q]
+    if len(controls) == 1:
+        return _single_controlled(controls[0], base_1q)
 
-        for g in seq:
-            if isinstance(g, (U3, RX, RY, RZ)):
-                q = g.qubits[0]
-                if isinstance(g, U3):
-                    U = _mat_U3(g.theta, g.phi, g.gamma)
-                elif isinstance(g, RX):
-                    U = _mat_RX(g.theta)
-                elif isinstance(g, RY):
-                    U = _mat_RY(g.theta)
-                else:
-                    U = _mat_RZ(g.phi)
-                apply(q, U)
-            elif isinstance(g, CZ):
-                flush_touches((g.control_qubits[0], g.target_qubits[0]))
-                out.append(g)
-            elif isinstance(g, M):
-                flush_touches(g.qubits)
-                out.append(g)
-            else:
-                flush_touches(g.qubits)
-                out.append(g)
+    c_last = controls[-1]
+    rest = controls[:-1]
 
-        for q in list(pending.keys()):
-            flush(q)
+    V = _sqrt_1q_gate_as_basis(base_1q)
+    Vd = _adjoint_1q(V)
 
-        return out
+    t = base_1q.qubits[0]
+    seq: List[Gate] = []
+    seq += _multi_controlled(rest, V)
+    seq += _CNOT_as_CZ_plus_1q(c_last, t)
+    seq += _multi_controlled(rest, Vd)
+    seq += _CNOT_as_CZ_plus_1q(c_last, t)
+    seq += _multi_controlled(rest, V)
+    return seq

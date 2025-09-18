@@ -19,9 +19,10 @@ from rustworkx import PyGraph
 
 from .circuit_transpiler_passes import (
     CancelPairsOfHermitianGatesPass,
-    CanonicalToCircuitBasisPass,
+    CircuitToCanonicalBasisPass,
     CircuitTranspilerPass,
     DecomposeToNativePass,
+    OneQubitFusePass,
     SabreLayoutPass,
     SabreSwapPass,
     TranspilationContext,
@@ -40,11 +41,13 @@ class CircuitTranspiler:
     ) -> None:
         self._topology = topology
         self._pipeline = pipeline or [
-            CanonicalToCircuitBasisPass(),
-            CancelPairsOfHermitianGatesPass(),
+            CircuitToCanonicalBasisPass(),
+            OneQubitFusePass(),
+            # CancelPairsOfHermitianGatesPass(),
             SabreLayoutPass(self._topology),
             SabreSwapPass(self._topology),
-            CancelPairsOfHermitianGatesPass(),
+            CircuitToCanonicalBasisPass(),
+            OneQubitFusePass(),
             DecomposeToNativePass(),
         ]
         self._context = context or TranspilationContext()
