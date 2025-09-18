@@ -56,9 +56,10 @@ class CancelPairsOfHermitianGatesPass(CircuitTranspilerPass):
 
             for idx, gate in enumerate(gates):
                 qubits = gate.qubits
+                qubits_key = self._qubits_key(gate)
 
                 if self._is_hermitian(gate):
-                    key = (self._semantic_key(gate), qubits)
+                    key = (self._semantic_key(gate), qubits_key)
 
                     if key in stack:
                         # Found a commuting-adjacent identical Hermitian gate; cancel the pair.
@@ -99,6 +100,14 @@ class CancelPairsOfHermitianGatesPass(CircuitTranspilerPass):
         if isinstance(gate, Modified):
             return self._is_hermitian(gate.basic_gate)
         return False
+
+    def _qubits_key(self, gate: Gate) -> tuple[int, ...]:
+        qs = gate.qubits
+        # Treat symmetric 2Q Hermitian gates as unordered pairs
+        if len(qs) == 2 and (isinstance(gate, SWAP) or (isinstance(gate, Controlled) and (gate.is_modified_from(X) or gate.is_modified_from(Y) or gate.is_modified_from(Z)))):
+            a, b = qs
+            return (a, b) if a < b else (b, a)
+        return qs
 
     def _semantic_key(self, gate: Gate) -> object:
         """

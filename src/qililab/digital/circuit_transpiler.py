@@ -18,6 +18,7 @@ from qilisdk.digital import Circuit
 from rustworkx import PyGraph
 
 from .circuit_transpiler_passes import (
+    CancelPairsOfHermitianGatesPass,
     CanonicalBasisToNativeSetPass,
     CircuitToCanonicalBasisPass,
     CircuitTranspilerPass,
@@ -40,9 +41,9 @@ class CircuitTranspiler:
     ) -> None:
         self._topology = topology
         self._pipeline = pipeline or [
+            CancelPairsOfHermitianGatesPass(),
             CircuitToCanonicalBasisPass(),
             FuseSingleQubitGatesPass(),
-            # CancelPairsOfHermitianGatesPass(),
             SabreLayoutPass(self._topology),
             SabreSwapPass(self._topology),
             CircuitToCanonicalBasisPass(),
