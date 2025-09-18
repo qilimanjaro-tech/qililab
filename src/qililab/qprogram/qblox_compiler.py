@@ -43,7 +43,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
-from qililab.waveforms import Arbitrary, FlatTop, IQPair, Square, Waveform
+from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
 
 @dataclass
@@ -297,7 +297,7 @@ class QbloxCompiler:
         index_Q, _ = handle_waveform(waveform_Q, len(waveform_I.envelope()))
         return index_I, index_Q, length_I
 
-    def _append_to_weights_of_bus(self, bus: str, weights: IQPair):
+    def _append_to_weights_of_bus(self, bus: str, weights: IQWaveform):
         def handle_weight(waveform: Waveform):
             _hash = QbloxCompiler._hash_waveform(waveform)
 
@@ -316,8 +316,8 @@ class QbloxCompiler:
             self._buses[bus].weight_to_index[_hash] = index
             return index, length
 
-        index_I, length_I = handle_weight(weights.I)
-        index_Q, _ = handle_weight(weights.Q)
+        index_I, length_I = handle_weight(weights.get_I())
+        index_Q, _ = handle_weight(weights.get_Q())
         return index_I, index_Q, length_I
 
     def _handle_parallel(self, element: Parallel):

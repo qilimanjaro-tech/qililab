@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 
 from qm import generate_qua_script
 from ruamel.yaml import YAML
+from rustworkx import PyGraph
 
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
@@ -1532,7 +1533,13 @@ class Platform:
         if self.digital_compilation_settings is None:
             raise ValueError("Cannot compile Circuit without gates settings.")
 
-        transpiler = CircuitTranspiler()
+        physical_nqubits = max(max(pair) for pair in self.digital_compilation_settings.topology) + 1
+        topology = PyGraph()
+        topology.add_nodes_from(range(physical_nqubits))
+        for a, b in self.digital_compilation_settings.topology:
+            topology.add_edge(a, b, None)
+
+        transpiler = CircuitTranspiler(topology)
         circuit = transpiler.run(circuit)
 
         compiler = CircuitToQProgramCompiler()

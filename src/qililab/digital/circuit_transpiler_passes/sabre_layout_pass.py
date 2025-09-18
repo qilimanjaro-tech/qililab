@@ -154,7 +154,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
         if self.context is not None:
             self.context.initial_layout = list(self.last_layout or [])
 
-        new_circuit = self._retarget_circuit(circuit, best_layout, n_physical)
+        new_circuit = self._retarget_circuit(circuit, best_layout, n_physical)  # type: ignore[arg-type]
 
         self.append_circuit_to_context(new_circuit)
 
@@ -301,7 +301,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
 
             # Apply the chosen swap *to the mapping only* (layout-only SABRE).
             # assert best_edge is not None
-            a, b = best_edge
+            a, b = best_edge  # type: ignore[misc]
             la, lb = inv_layout[a], inv_layout[b]
             self._swap_mapping(layout, inv_layout, a, b, la, lb)
             # Increase decay on touched physical qubits
@@ -364,7 +364,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
             d = dist[pu][pv]
             if d >= 1_000_000_000:
                 # Disconnected: incur a large penalty to discourage this layout
-                d = 1e6
+                d = 1e6  # type: ignore[assignment]
             if decay is not None:
                 c += d * (1.0 + decay[pu] + decay[pv])
             else:
@@ -396,8 +396,8 @@ class SabreLayoutPass(CircuitTranspilerPass):
         for l, p in enumerate(layout):
             if p < 0 or p >= n_physical:
                 continue
-            inv[p] = l
-        return inv
+            inv[p] = l  # type: ignore[call-overload]
+        return inv  # type: ignore[return-value]
 
     @staticmethod
     def _swap_mapping(

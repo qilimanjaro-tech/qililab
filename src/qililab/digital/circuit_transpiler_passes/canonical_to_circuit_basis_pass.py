@@ -187,7 +187,7 @@ def _invert_basis_gate(g: Gate) -> List[Gate]:
         return [RY(g.qubits[0], theta=-math.pi)]
     if isinstance(g, Z):
         return [RZ(g.qubits[0], phi=-math.pi)]
-    return [Adjoint(g)]
+    return [Adjoint(g)]  # type: ignore[type-var]
 
 
 # -------------------- NEW: multi-control support --------------------

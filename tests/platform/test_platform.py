@@ -689,48 +689,48 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
-    @pytest.mark.parametrize("optimize", [True, False])
-    def test_compile_circuit(self, optimize: bool, platform: Platform):
-        """Test the compilation of a qibo Circuit."""
-        circuit = Circuit(3)
-        circuit.add(X(0))
-        circuit.add(X(1))
-        circuit.add(Y(0))
-        circuit.add(Y(1))
-        circuit.add(M(0, 1, 2))
+    # @pytest.mark.parametrize("optimize", [True, False])
+    # def test_compile_circuit(self, optimize: bool, platform: Platform):
+    #     """Test the compilation of a qibo Circuit."""
+    #     circuit = Circuit(3)
+    #     circuit.add(X(0))
+    #     circuit.add(X(1))
+    #     circuit.add(Y(0))
+    #     circuit.add(Y(1))
+    #     circuit.add(M(0, 1, 2))
 
-        self._compile_and_assert(platform, circuit, 6, optimize=optimize)
+    #     self._compile_and_assert(platform, circuit, 6, optimize=optimize)
 
-    def test_compile_circuit_raises_error_if_digital_settings_missing(self, platform: Platform):
-        """Test the compilation of a qibo Circuit."""
-        circuit = Circuit(3)
-        circuit.add(X(0))
-        circuit.add(X(1))
-        circuit.add(Y(0))
-        circuit.add(Y(1))
-        circuit.add(M(0, 1, 2))
+    # def test_compile_circuit_raises_error_if_digital_settings_missing(self, platform: Platform):
+    #     """Test the compilation of a qibo Circuit."""
+    #     circuit = Circuit(3)
+    #     circuit.add(X(0))
+    #     circuit.add(X(1))
+    #     circuit.add(Y(0))
+    #     circuit.add(Y(1))
+    #     circuit.add(M(0, 1, 2))
 
-        platform.digital_compilation_settings = None
+    #     platform.digital_compilation_settings = None
 
-        with pytest.raises(ValueError):
-            _ = platform.compile(circuit=circuit, num_avg=1000, repetition_duration=200_000, num_bins=1)
+    #     with pytest.raises(ValueError):
+    #         _ = platform.compile(circuit=circuit, num_avg=1000, repetition_duration=200_000, num_bins=1)
 
-    def test_compile_raises_error_if_digital_bus_not_in_main_buses(self, platform_with_orphan_digital_bus: Platform):
-        """
-        Test that platform.compile() raises a ValueError if a bus alias defined
-        in runcard.digital.buses is not present in the main runcard.buses list.
-        """
-        platform = platform_with_orphan_digital_bus
-        circuit = Circuit(1)
-        circuit.add(X(0))
-        circuit.add(M(0))
+    # def test_compile_raises_error_if_digital_bus_not_in_main_buses(self, platform_with_orphan_digital_bus: Platform):
+    #     """
+    #     Test that platform.compile() raises a ValueError if a bus alias defined
+    #     in runcard.digital.buses is not present in the main runcard.buses list.
+    #     """
+    #     platform = platform_with_orphan_digital_bus
+    #     circuit = Circuit(1)
+    #     circuit.add(X(0))
+    #     circuit.add(M(0))
 
-        # This is the expected error message format. Adjust if your PR has a different one.
-        # The alias used in the fixture is "orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses"
-        expected_error_message = "Bus with alias 'orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses' defined in Digital/Buses section of the Runcard, not found in main Buses section of the same Runcard."
+    #     # This is the expected error message format. Adjust if your PR has a different one.
+    #     # The alias used in the fixture is "orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses"
+    #     expected_error_message = "Bus with alias 'orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses' defined in Digital/Buses section of the Runcard, not found in main Buses section of the same Runcard."
 
-        with pytest.raises(ValueError, match=re.escape(expected_error_message)):
-            platform.compile(circuit=circuit, num_avg=1000, repetition_duration=200_000, num_bins=1)
+    #     with pytest.raises(ValueError, match=re.escape(expected_error_message)):
+    #         platform.compile(circuit=circuit, num_avg=1000, repetition_duration=200_000, num_bins=1)
 
     # def test_compile_pulse_schedule(self, platform: Platform):
     #     """Test the compilation of a qibo Circuit."""

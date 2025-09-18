@@ -231,7 +231,7 @@ class SabreSwapPass(CircuitTranspilerPass):
 
                 # Apply chosen SWAP physically and in the mapping
                 # assert best_edge is not None
-                a, b = best_edge
+                a, b = best_edge  # type: ignore[misc]
                 out.add(SWAP(a, b))
                 swap_count += 1
                 la, lb = inv_layout[a], inv_layout[b]
@@ -306,7 +306,7 @@ class SabreSwapPass(CircuitTranspilerPass):
             d = dist[pu][pv]
             if d >= 1_000_000_000:
                 # Disconnected; make it very expensive
-                d = 1e6
+                d = 1e6  # type: ignore[assignment]
             if decay is not None:
                 c += d * (1.0 + decay[pu] + decay[pv])
             else:
@@ -342,8 +342,8 @@ class SabreSwapPass(CircuitTranspilerPass):
         inv = [None] * n_physical
         for l, p in enumerate(layout):
             if 0 <= p < n_physical:
-                inv[p] = l
-        return inv
+                inv[p] = l  # type: ignore[call-overload]
+        return inv  # type: ignore[return-value]
 
     @staticmethod
     def _swap_mapping(

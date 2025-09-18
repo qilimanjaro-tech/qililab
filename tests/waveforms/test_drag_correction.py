@@ -5,27 +5,29 @@ from qililab.waveforms import Gaussian, Square
 from qililab.waveforms.gaussian_drag_correction import GaussianDragCorrection
 
 
-@pytest.fixture(name="gaussian")
-def fixture_gaussian():
-    return Gaussian(amplitude=1, duration=10, num_sigmas=2.5)
+@pytest.fixture(name="gaussian_drag_correction")
+def fixture_gaussian_drag_correction():
+    return GaussianDragCorrection(1.0, 100, 0.5, 2.5)
 
 
 class TestGaussianDragCorrection:
-    def test_init(self, gaussian):
+    def test_init(self, gaussian_drag_correction: GaussianDragCorrection):
         # test init method
-        drag_correction = GaussianDragCorrection(0.8, gaussian)
-        assert drag_correction.drag_coefficient == 0.8
-        assert isinstance(drag_correction.waveform, Gaussian)
+        assert gaussian_drag_correction.amplitude == 1.0
+        assert gaussian_drag_correction.duration == 100
+        assert gaussian_drag_correction.num_sigmas == 0.5
+        assert gaussian_drag_correction.drag_coefficient == 2.5
 
-    def test_envelope_gaussian(self, gaussian):
+    def test_envelope_gaussian(self, gaussian_drag_correction: GaussianDragCorrection):
         # test envelope method
+        sigma = gaussian_drag_correction.duration / gaussian_drag_correction.num_sigmas
+        mu = gaussian_drag_correction.duration / 2
+        x = np.arange(gaussian_drag_correction.duration)
 
-        drag_correction = GaussianDragCorrection(0.8, gaussian)
-        sigma = gaussian.duration / gaussian.num_sigmas
-        mu = gaussian.duration / 2
-        x = np.arange(gaussian.duration)
+        gaussian = Gaussian(amplitude=gaussian_drag_correction.amplitude, duration=gaussian_drag_correction.duration, num_sigmas=gaussian_drag_correction.num_sigmas)
+
         envelope = (-0.8 * (x - mu) / sigma**2) * gaussian.envelope()
-        assert np.allclose(drag_correction.envelope(), envelope)
+        assert np.allclose(gaussian_drag_correction.envelope(), envelope)
 
     def test_envelope_not_implemented_error(self):
         square = Square(amplitude=0.5, duration=100)
