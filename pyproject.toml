@@ -77,7 +77,7 @@ build-backend = "hatchling.build"
 prerelease = "allow"
 
 [tool.uv.sources]
-qilisdk = { git = "ssh://git@github.com/qilimanjaro-tech/qilisdk", branch = "main" }
+qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
 
 [tool.ruff]
 line-length = 120
