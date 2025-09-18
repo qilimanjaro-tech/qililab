@@ -62,7 +62,9 @@ class QbloxBinsAcquisitions(Acquisitions):
         counts_object = Counts(n_qubits=len(self.bins))
         for seq in self.bins:
             if any(bin_avg > 1 for bin_avg in seq.avg_cnt):
-                raise ValueError("Counts cannot be used when using a hardware average higher than 1.")
+                raise ValueError(
+                    "Counts cannot be used with a hardware average higher than 1. Try setting the num_avg to 1 and the num_bin as the desired value."
+                )
         for bin_idx in range(num_bins):
             # The threshold inside of a qblox bin is the name they use for already classified data as a value between
             # 0 and 1, not the value used in the comparator to perform such classification.
