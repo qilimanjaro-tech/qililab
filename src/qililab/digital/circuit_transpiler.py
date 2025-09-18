@@ -18,10 +18,10 @@ from qilisdk.digital import Circuit
 from rustworkx import PyGraph
 
 from .circuit_transpiler_passes import (
+    CanonicalBasisToNativeSetPass,
     CircuitToCanonicalBasisPass,
     CircuitTranspilerPass,
-    DecomposeToNativePass,
-    OneQubitFusePass,
+    FuseSingleQubitGatesPass,
     SabreLayoutPass,
     SabreSwapPass,
     TranspilationContext,
@@ -41,13 +41,13 @@ class CircuitTranspiler:
         self._topology = topology
         self._pipeline = pipeline or [
             CircuitToCanonicalBasisPass(),
-            OneQubitFusePass(),
+            FuseSingleQubitGatesPass(),
             # CancelPairsOfHermitianGatesPass(),
             SabreLayoutPass(self._topology),
             SabreSwapPass(self._topology),
             CircuitToCanonicalBasisPass(),
-            OneQubitFusePass(),
-            DecomposeToNativePass(),
+            FuseSingleQubitGatesPass(),
+            CanonicalBasisToNativeSetPass(),
         ]
         self._context = context or TranspilationContext()
 

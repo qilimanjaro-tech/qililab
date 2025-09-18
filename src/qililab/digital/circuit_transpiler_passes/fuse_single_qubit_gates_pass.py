@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     import numpy as np
 
 
-class OneQubitFusePass(CircuitTranspilerPass):
+class FuseSingleQubitGatesPass(CircuitTranspilerPass):
     """
     Fuse maximal adjacent runs of 1-qubit gates per wire into a single gate:
 

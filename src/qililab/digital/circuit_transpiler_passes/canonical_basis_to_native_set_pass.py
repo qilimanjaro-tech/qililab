@@ -34,9 +34,9 @@ from .circuit_transpiler_pass import CircuitTranspilerPass
 from .numeric_helpers import _wrap_angle
 
 
-class DecomposeToNativePass(CircuitTranspilerPass):
+class CanonicalBasisToNativeSetPass(CircuitTranspilerPass):
     """
-    Lower from the circuit basis {CZ, U3, RX, RY, RZ, M, SWAP}
+    Lower from the canonical basis {CZ, U3, RX, RY, RZ, M, SWAP}
     to the native set {Drag, CZ, M} (+ optional virtual RZ).
 
     Mapping:

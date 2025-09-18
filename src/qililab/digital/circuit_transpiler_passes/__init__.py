@@ -13,20 +13,20 @@
 # limitations under the License.
 
 from .cancel_pairs_of_hermitian_gates_pass import CancelPairsOfHermitianGatesPass
+from .canonical_basis_to_native_set_pass import CanonicalBasisToNativeSetPass
 from .circuit_to_canonical_basis_pass import CircuitToCanonicalBasisPass
 from .circuit_transpiler_pass import CircuitTranspilerPass
-from .decompose_to_native_pass import DecomposeToNativePass
-from .one_qubit_fuse_pass import OneQubitFusePass
+from .fuse_single_qubit_gates_pass import FuseSingleQubitGatesPass
 from .sabre_layout_pass import SabreLayoutPass
 from .sabre_swap_pass import SabreSwapPass
 from .transpilation_context import TranspilationContext
 
 __all__ = [
     "CancelPairsOfHermitianGatesPass",
+    "CanonicalBasisToNativeSetPass",
     "CircuitToCanonicalBasisPass",
     "CircuitTranspilerPass",
-    "DecomposeToNativePass",
-    "OneQubitFusePass",
+    "FuseSingleQubitGatesPass",
     "SabreLayoutPass",
     "SabreSwapPass",
     "TranspilationContext",
