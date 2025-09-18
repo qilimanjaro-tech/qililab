@@ -18,7 +18,6 @@ from qilisdk.digital import Circuit
 from rustworkx import PyGraph
 
 from .circuit_transpiler_passes import (
-    CancelPairsOfHermitianGatesPass,
     CircuitToCanonicalBasisPass,
     CircuitTranspilerPass,
     DecomposeToNativePass,
