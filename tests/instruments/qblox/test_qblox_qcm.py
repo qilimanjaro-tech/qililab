@@ -4,12 +4,11 @@ from unittest.mock import MagicMock
 import pytest
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
-from qililab.constants import DistortionState
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM
 from qililab.platform import Platform
 from qililab.data_management import build_platform
-from qililab.typings import Parameter
+from qililab.typings import DistortionState, Parameter
 from typing import cast
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm

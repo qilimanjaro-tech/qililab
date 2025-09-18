@@ -487,6 +487,19 @@ class ResultName(str, Enum):
     QUANTUM_MACHINES = "quantum_machines"
     QUANTUM_MACHINES_MEASUREMENT = "quantum_machines_measurement"
 
+class DistortionState(str, Enum):
+    """Distortion State
+
+    Args:
+        enum (str): Distortion State for qblox filters:
+        * enabled
+        * bypassed
+        * delay_comp
+    """
+
+    ENABLED = "enabled"
+    BYPASSED = "bypassed"
+    DELAY_COMP = "delay_comp"
 
 class ConnectionName(str, Enum):
     """Connection names.

@@ -14,18 +14,19 @@
 
 from dataclasses import asdict, dataclass
 
-from qililab.constants import QBLOXCONSTANTS, DistortionState
+from qililab.constants import QBLOXCONSTANTS
+from qililab.typings import DistortionState
 from qililab.utils.asdict_factory import dict_factory
 
 
 @dataclass
 class QbloxFilter:
     output_id: int | None = None
-    exponential_amplitude: int | float | list | None = None
-    exponential_time_constant: int | float | list | None = None
-    exponential_state: bool | list | None = None
+    exponential_amplitude: list | None = None
+    exponential_time_constant: list | None = None
+    exponential_state: list | None = None
     fir_coeff: list | None = None
-    fir_state: bool | None = None
+    fir_state: bool | DistortionState | str | None = None
 
     def __post_init__(self):
         if isinstance(self.exponential_state, (bool, str)):

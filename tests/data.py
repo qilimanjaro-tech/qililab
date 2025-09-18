@@ -2,10 +2,11 @@
 
 from typing import Any
 
-from qililab.constants import DistortionState, CONNECTION, INSTRUMENTCONTROLLER, PLATFORM, RUNCARD, AWGTypes
+from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, PLATFORM, RUNCARD, AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
     ConnectionName,
+    DistortionState,
     InstrumentControllerName,
     InstrumentName,
     IntegrationMode,
@@ -246,23 +247,23 @@ class Galadriel:
             {   "output_id": 0,
                 Parameter.EXPONENTIAL_AMPLITUDE.value: 0.7,
                 Parameter.EXPONENTIAL_TIME_CONSTANT.value: 200,
-                Parameter.EXPONENTIAL_STATE.value: [DistortionState.ENABLED],
+                Parameter.EXPONENTIAL_STATE.value: [DistortionState.ENABLED.value],
                 Parameter.FIR_COEFF.value: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],
-                Parameter.FIR_STATE.value: DistortionState.ENABLED,
+                Parameter.FIR_STATE.value: DistortionState.ENABLED.value,
             },
             {   "output_id": 1,
                 Parameter.EXPONENTIAL_AMPLITUDE.value: 1,
                 Parameter.EXPONENTIAL_TIME_CONSTANT.value: 20,
-                Parameter.EXPONENTIAL_STATE.value: [DistortionState.BYPASSED],
+                Parameter.EXPONENTIAL_STATE.value: [DistortionState.BYPASSED.value],
                 Parameter.FIR_COEFF.value: [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],
-                Parameter.FIR_STATE.value: DistortionState.ENABLED,
+                Parameter.FIR_STATE.value: DistortionState.ENABLED.value,
             },
             {   "output_id": 3,
                 Parameter.EXPONENTIAL_AMPLITUDE: 0.1,
                 Parameter.EXPONENTIAL_TIME_CONSTANT: 2000,
-                Parameter.EXPONENTIAL_STATE: [DistortionState.DELAY_COMP],
+                Parameter.EXPONENTIAL_STATE: [DistortionState.DELAY_COMP.value],
                 Parameter.FIR_COEFF: None,
-                Parameter.FIR_STATE: DistortionState.BYPASSED,
+                Parameter.FIR_STATE: DistortionState.BYPASSED.value,
             },
         ],
         AWGTypes.AWG_SEQUENCERS: [

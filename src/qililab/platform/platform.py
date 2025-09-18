@@ -67,7 +67,7 @@ from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
-from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
+from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
@@ -82,8 +82,6 @@ if TYPE_CHECKING:
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
     from qililab.settings.digital.gate_event_settings import GateEventSettings
-
-from qililab.constants import DistortionState
 
 
 class Platform:
@@ -572,7 +570,6 @@ class Platform:
             qblox_instrument = self.instruments.get_instrument(module_alias)
             for filter in qblox_instrument.filters:
                 if filter.output_id == output_id:
-                    # state = self.get_parameter(alias=module_alias, parameter=Parameter.FIR_STATE, output_id=output_id)
                     if filter.fir_state in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
                         qblox_active_filter = True
         return qblox_active_filter
@@ -584,10 +581,10 @@ class Platform:
             qblox_instrument = self.instruments.get_instrument(module_alias)
             for filter in qblox_instrument.filters:
                 if filter.output_id == output_id:
-                    for idx, state_exponential in enumerate(filter.exponential_state):  # fuck not clean use range
-                        # state = self.get_parameter(alias=module_alias, parameter=Parameter[f"EXPONENTIAL_STATE_{idx}"], output_id=output_id)
-                        if state_exponential in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and idx not in qblox_active_filter:
-                            qblox_active_filter.append(idx)
+                    if filter.exponential_state is not None:
+                        for idx, state_exponential in enumerate(filter.exponential_state):  # fuck not clean use range
+                            if state_exponential in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and idx not in qblox_active_filter:
+                                qblox_active_filter.append(idx)
         return qblox_active_filter
 
     def _get_qblox_alias_module(self):
@@ -676,7 +673,7 @@ class Platform:
                     pre_exisisting_filter = False
                     qblox_instrument = self.get_element(alias=alias)
                     for filter in qblox_instrument.filters:
-                        if filter.output_id == output_id and pre_exisisting_filter is False:
+                        if filter.output_id == output_id and pre_exisisting_filter is False and filter.exponential_state is not None:
                             if len(filter.exponential_state) > expo_idx:
                                 pre_exisisting_filter = True
                                 state_exponential = self.get_parameter(alias=alias, parameter=parameter, output_id=output_id)
