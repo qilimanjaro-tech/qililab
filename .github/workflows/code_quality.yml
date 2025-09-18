@@ -27,11 +27,14 @@ jobs:
           fetch-depth: 1
 
       - name: Authenticate for private GitHub repos
+        # Make sure gh doesn't pick up env tokens for this step
         env:
-          GH_TOKEN: ${{ secrets.QILISDK_READ_PAT }}
+          GH_TOKEN: ""
+          GITHUB_TOKEN: ""
         run: |
-          echo "$GH_TOKEN" | gh auth login --with-token
+          gh auth login --hostname github.com --with-token <<< "${{ secrets.QILISDK_READ_PAT }}"
           gh auth setup-git
+          gh auth status -h github.com
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
