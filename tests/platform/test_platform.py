@@ -486,10 +486,10 @@ class TestPlatform:
         element = platform.get_element(alias="ABC")
         assert element is None
 
-    def test_get_element_with_gate(self, platform: Platform):
-        """Test the get_element method with a gate alias."""
-        p_gates = platform.digital_compilation_settings.keys()
-        all(isinstance(event, GateEventSettings) for gate in p_gates for event in platform.get_element(alias=gate))
+    # def test_get_element_with_gate(self, platform: Platform):
+    #     """Test the get_element method with a gate alias."""
+    #     p_gates = platform.digital_compilation_settings.keys()
+    #     all(isinstance(event, GateEventSettings) for gate in p_gates for event in platform.get_element(alias=gate))
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""

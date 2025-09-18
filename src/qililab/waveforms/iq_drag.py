@@ -14,6 +14,8 @@
 
 """Waveform protocol class."""
 
+from qililab.qprogram.decorators import requires_domain
+from qililab.qprogram.variable import Domain
 from qililab.waveforms.gaussian import Gaussian
 from qililab.waveforms.gaussian_drag_correction import GaussianDragCorrection
 from qililab.waveforms.iq_waveform import IQWaveform
@@ -23,6 +25,10 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class IQDrag(IQWaveform):
+    @requires_domain("amplitude", Domain.Voltage)
+    @requires_domain("duration", Domain.Time)
+    @requires_domain("num_sigmas", Domain.Scalar)
+    @requires_domain("drag_coefficient", Domain.Scalar)
     def __init__(self, amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float):
         self.amplitude = amplitude
         self.duration = duration
