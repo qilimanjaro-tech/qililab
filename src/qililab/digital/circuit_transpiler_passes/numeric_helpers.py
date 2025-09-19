@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import math
 
 import numpy as np
@@ -19,6 +18,7 @@ import numpy as np
 # ======================= numeric helpers =======================
 
 _EPS = 1e-10
+_SIG_DECIMALS = 12
 
 
 def _wrap_angle(a: float) -> float:
@@ -26,6 +26,10 @@ def _wrap_angle(a: float) -> float:
     if abs(a + math.pi) < 1e-15:
         return math.pi
     return a
+
+
+def _round_f(x: float, d: int = _SIG_DECIMALS) -> float:
+    return 0.0 if abs(x) < 1e-16 else round(x, d)
 
 
 def _is_close_mod_2pi(a: float, b: float, eps: float = 1e-9) -> bool:
