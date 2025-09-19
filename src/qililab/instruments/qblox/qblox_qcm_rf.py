@@ -156,6 +156,7 @@ class QbloxQCMRF(QbloxQCM):
             parameter (Parameter): Parameter name.
             value (float | str | bool): Value to set.
             channel_id (int, optional): ID of the sequencer. Defaults to None.
+            output_id (int): module id. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:

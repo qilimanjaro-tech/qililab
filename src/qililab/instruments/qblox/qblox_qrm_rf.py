@@ -48,7 +48,7 @@ class QbloxQRMRF(QbloxQRM):
         out0_in0_lo_freq_cal_type_default: Optional[str] = "off"
         filters: Sequence[QbloxFilter] = field(
             init=False,
-            default_factory=list,  # QCM-RF module doesn't have filters
+            default_factory=list,  # QRM-RF module doesn't have filters
         )
 
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
@@ -90,6 +90,7 @@ class QbloxQRMRF(QbloxQRM):
             parameter (Parameter): Parameter name.
             value (float | str | bool): Value to set.
             channel_id (int, optional): ID of the sequencer. Defaults to None.
+            output_id (int): module id. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
             value = int(value)
@@ -121,6 +122,7 @@ class QbloxQRMRF(QbloxQRM):
             parameter (Parameter): Parameter name.
             value (float | str | bool): Value to set.
             channel_id (int, optional): ID of the sequencer. Defaults to None.
+            output_id (int): module id. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
             parameter = Parameter.OUT0_IN0_LO_FREQ

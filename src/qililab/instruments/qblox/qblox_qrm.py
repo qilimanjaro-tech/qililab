@@ -52,10 +52,6 @@ class QbloxQRM(QbloxModule):
         """Contains the settings of a specific QRM."""
 
         awg_sequencers: Sequence[QbloxADCSequencer]
-        # filters: Sequence[QbloxFilter] = field(
-        #     init=False,
-        #     default_factory=list,  # QCM-RF module doesn't have filters
-        # )
 
         def __post_init__(self):
             """build AWGQbloxADCSequencer"""

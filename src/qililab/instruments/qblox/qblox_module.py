@@ -49,7 +49,7 @@ class QbloxModule(Instrument):
         Args:
             awg_sequencers (Sequence[QbloxSequencer]): list of settings for each sequencer
             out_offsets (list[float]): list of offsets for each output of the qblox module
-            filters (list[QbloxFilter]): list of filter settings for each output of the qblox module
+            filters (Sequence[QbloxFilter]): list of filter settings for each output of the qblox module
         """
 
         awg_sequencers: Sequence[QbloxSequencer]
@@ -313,6 +313,7 @@ class QbloxModule(Instrument):
         Args:
             parameter (Parameter): Name of the parameter to get.
             channel_id (int | None): Channel identifier of the parameter to update.
+            output_id (int): module id
         """
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
@@ -347,7 +348,6 @@ class QbloxModule(Instrument):
             if output_id is None:
                 raise Exception(f"Cannot retrieve parameter {parameter.value} without specifying an output_id.")
             filter = self.get_filter(output_id=int(output_id))
-            output_id = int(output_id)
             exponential_idx = int(parameter.value[-1])
             exponential_state = cast("list[str]", filter.exponential_state)
             return exponential_state[exponential_idx]
@@ -358,8 +358,7 @@ class QbloxModule(Instrument):
         }:
             if output_id is None:
                 raise Exception(f"Cannot retrieve parameter {parameter.value} without specifying an output_id.")
-            output_id = int(output_id)
-            filter = self.get_filter(output_id=output_id)
+            filter = self.get_filter(output_id=int(output_id))
             if hasattr(filter, parameter.value):
                 return getattr(filter, parameter.value)
 
@@ -463,10 +462,10 @@ class QbloxModule(Instrument):
             getattr(self.device, f"out{output}_offset")(float(value))
 
     def _set_fir_filter_coeff(self, output_id: int, value: list):
-        """Set filters of the Qblox device.
+        """Set FIR filters coeff of the Qblox device for the given module
         Args:
-            output (int): output to updatecd ...
-            value (float | str | bool): value to update
+            output_id (int): module id
+            value (list): value to update
         """
         if value is not None:
             # update value in qililab
@@ -477,10 +476,10 @@ class QbloxModule(Instrument):
                 logger.warning("Distortion filter settings can cause transient effects.")
 
     def _set_fir_filter_state(self, output_id: int, value: DistortionState | bool | str):
-        """Set filters of the Qblox device.
+        """Set FIR filters state of the Qblox device for the given module
         Args:
-            output (int): output to update
-            value (float | str | bool): value to update
+            output_id (int): module id
+            value (DistortionState | bool | str): value to update
         """
         if value is not None:
             if value is True:
@@ -504,14 +503,11 @@ class QbloxModule(Instrument):
                 logger.warning("Distortion filter settings can cause transient effects.")
 
     def _set_exponential_filter_amplitude(self, output_id: int, exponential_idx: int, value: float):
-        """Set filters of the Qblox device.
-
+        """Set exponential filter amplitude of the Qblox device for the given module
         Args:
-            output (int): output to update
-            value (float | str | bool): value to update
-
-        Raises:
-            ValueError: when value type is not float or int
+            output_id (int): module id
+            exponential_idx (int): index of the exponential filter
+            value (float): value to update
         """
         if value is not None:
             filter_exp_amplitude = self.get_filter(output_id).exponential_amplitude
@@ -522,14 +518,11 @@ class QbloxModule(Instrument):
                 logger.warning("Distortion filter settings can cause transient effects.")
 
     def _set_exponential_filter_time_constant(self, output_id: int, exponential_idx: int, value: float):
-        """Set filters of the Qblox device.
-
+        """Set exponential filter time constant of the Qblox device for the given module
         Args:
-            output (int): output to update
-            value (float | str | bool): value to update
-
-        Raises:
-            ValueError: when value type is not float or int
+            output_id (int): module id
+            exponential_idx (int): index of the exponential filter
+            value (float): value to update
         """
         if value is not None:
             filter_exp_time_constant = self.get_filter(output_id).exponential_time_constant
@@ -540,6 +533,12 @@ class QbloxModule(Instrument):
                 logger.warning("Distortion filter settings can cause transient effects.")
 
     def _set_exponential_filter_state(self, exponential_idx: int, output_id: int, value: DistortionState | bool | str):
+        """Set exponential filter state of the Qblox device for the given module
+        Args:
+            exponential_idx (int): index of the exponential filter
+            output_id (int): module id
+            value (DistortionState | bool | str): value to update
+        """
         if value is not None:
             if value is True:
                 value = DistortionState.ENABLED.value
@@ -554,7 +553,7 @@ class QbloxModule(Instrument):
                 filter_exp_state = cast("list[str]", filter_exp_state)
                 filter_exp_state[exponential_idx] = value
 
-            except (IndexError, AssertionError):
+            except (IndexError, AssertionError):  # create the filter if needed
                 self.filters.extend([QbloxFilter(output_id=output_id, exponential_state=[value])])
 
             if self.is_device_active():

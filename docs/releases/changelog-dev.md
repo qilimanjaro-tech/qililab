@@ -4,6 +4,47 @@
 
 ### Improvements
 
+- Added support for real-time predistortion on Qblox hardware.
+  - The outputs of a QCM can now set an FIR filter and up to four exponential filters (provided as a list). These parameters can be configured via the runcard (example below) and via platform.set_parameter/get_parameter.
+  - The runcard has a new section under each QCM module: `filters: [...]` configured by output. The section is optional.
+  - The states of a QCM filter are "enabled", "bypassed" and "delay_comp". Users can provide a boolean where True is mapped to "enabled" and False is mapped to "bypassed". When enabling a filter that could cause delay with other module outputs Qililab coerces the state to "delay_comp". This state ensures pulse timing remains consistent with filtered paths, keeping all outputs synchronized.
+
+  - Parameters:
+    - Exponential Filters (given by exponential index)
+        - EXPONENTIAL_AMPLITUDE_0 ... EXPONENTIAL_AMPLITUDE_3
+        - EXPONENTIAL_TIME_CONSTANT_0 ... EXPONENTIAL_TIME_CONSTANT_3
+        - EXPONENTIAL_STATE_0 ... EXPONENTIAL_STATE_3
+    - FIR Filters:
+        - FIR_COEFF
+        - FIR_STATE
+
+  - Note: fir_coeff/FIR_COEFF must contain exactly 32 coefficients.
+
+  - Below is an example of the filter part of the runcard:
+    ```
+      filters:
+      - output_id: 0
+        exponential_amplitude: [0.8, -1]
+        exponential_time_constant: [6, 8]
+        exponential_state: [True, True, False]
+        fir_coeff: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
+        fir_state: True
+      - output_id: 1
+        exponential_amplitude: 0.31
+        exponential_time_constant: 9
+        exponential_state: False
+        fir_coeff: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
+        fir_state: False
+      ```
+
+    Below is an example of set/get_parameter, the output_id must be provided:
+    ```
+    platform.set_parameter(alias=bus_alias, parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, value=300, output_id=0)
+    platform.get_parameter(alias=bus_alias, parameter=Parameter.FIR_STATE, output_id=2)
+    ```
+[#981](https://github.com/qilimanjaro-tech/qililab/pull/981)
+
+
 - QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
 [#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
 

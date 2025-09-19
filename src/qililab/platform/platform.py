@@ -352,14 +352,19 @@ class Platform:
         """Database trigger to define if the experiment metadata will be saved in a database or not"""
 
         self.qblox_alias_module: list = self._get_qblox_alias_module()
+        """List of dict with key the alias of qblox module and value the module_id. Used for the qblox distortions"""
 
         self.qblox_active_filter_exponential: list = self._get_qblox_active_filter_exponential()
+        """List of exponential_idx with an active exponential filter. Active is considered as either "enabled" or "delay_comp". Used for the qblox distortions"""
 
         self.qblox_active_filter_fir: bool = self._get_qblox_active_filter_fir()
+        """Bool to determine if any FIR filter is active. Active is considered as either "enabled" or "delay_comp". Used for the qblox distortions"""
 
         self._update_qblox_filter_state_exponential()
+        """Updates the exponential state as needed. Used for the qblox distortions"""
 
         self._update_qblox_filter_state_fir()
+        """Updates the FIR state as needed. Used for the qblox distortions"""
 
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
@@ -564,6 +569,11 @@ class Platform:
         return data_oscilloscope
 
     def _get_qblox_active_filter_fir(self):
+        """ Determines if any FIR filter is active. Active is considered as either "enabled" or "delay_comp"
+
+            Returns:
+                qblox_active_filter(bool): true if any FIR filter is active, False otherwise. Defaults to False
+        """
         qblox_active_filter = False
         for pair in self.qblox_alias_module:
             module_alias, output_id = next(iter(pair.items()))
@@ -575,6 +585,11 @@ class Platform:
         return qblox_active_filter
 
     def _get_qblox_active_filter_exponential(self):
+        """ Determines which exponential index has an active exponential filter. Active is considered as either "enabled" or "delay_comp"
+
+            Returns:
+                qblox_active_filter(list): List index of exponential for which an exponential filter is active.
+        """
         qblox_active_filter = []
         for pair in self.qblox_alias_module:
             module_alias, output_id = next(iter(pair.items()))
@@ -582,12 +597,17 @@ class Platform:
             for filter in qblox_instrument.filters:
                 if filter.output_id == output_id:
                     if filter.exponential_state is not None:
-                        for idx, state_exponential in enumerate(filter.exponential_state):  # fuck not clean use range
+                        for idx, state_exponential in enumerate(filter.exponential_state):
                             if state_exponential in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and idx not in qblox_active_filter:
                                 qblox_active_filter.append(idx)
         return qblox_active_filter
 
     def _get_qblox_alias_module(self):
+        """Maps the qblox alias to the module_id defined in the bus mapping of the runcard
+
+            Returns:
+                qblox_alias_module(list): List of dict with key the alias of qblox module and value the module_id
+        """
         buses = list(self.buses)
         qblox_alias_module = []
         for bus in buses:
@@ -622,6 +642,7 @@ class Platform:
             value (float | str | bool): New value to set in the parameter.
             alias (str): Alias of the bus where the parameter is set.
             channel_id (int, optional): ID of the channel you want to use to set the parameter. Defaults to None.
+            output_id (int, optional): ID of the module we want to use to set the parameter, used for Qblox distortion filters. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
@@ -649,7 +670,8 @@ class Platform:
             else:
                 if exponential_idx in self.qblox_active_filter_exponential:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
                     element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
-                    logger.warning("Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
+                    if value in {DistortionState.BYPASSED, False}:
+                        logger.warning("Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
                     return
 
         if parameter == Parameter.FIR_STATE:
@@ -658,13 +680,17 @@ class Platform:
                 self._update_qblox_filter_state_fir()
 
             elif self.qblox_active_filter_fir:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
-                # self.qblox_active_filter_fir.append({alias: output_id})
                 element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
-                logger.warning("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
+                if value in {DistortionState.BYPASSED, False}:
+                    logger.warning("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
                 return
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
 
     def _update_qblox_filter_state_exponential(self):
+        """Updates the exponential state as needed.
+            If any exponential idx is active ("enabled" or "delay_comp"), the exponential state of all other outputs will be updated to "delay_comp".
+            This ensures that there are no delays between outputs that have a filter "enabled" or "delay_comp" and outputs with bypassed filters.
+        """
         if self.qblox_active_filter_exponential:
             for pair in self.qblox_alias_module:
                 alias, output_id = next(iter(pair.items()))
@@ -683,13 +709,17 @@ class Platform:
                         self.set_parameter(alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id)
 
     def _update_qblox_filter_state_fir(self):
+        """Updates the FIR state as needed.
+            If any FIR filter is active ("enabled" or "delay_comp"), the FIR state of all other outputs will be updated to "delay_comp".
+            This ensures that there are no delays between outputs that have a filter "enabled" or "delay_comp" and outputs with bypassed filters.
+        """
         if self.qblox_active_filter_fir:
             for pair in self.qblox_alias_module:
                 alias, output_id = next(iter(pair.items()))
-                qblox_instrument = self.get_element(alias=alias)
                 pre_exisisting_filter = False
+                qblox_instrument = self.get_element(alias=alias)
                 for filter in qblox_instrument.filters:
-                    if filter.output_id == output_id and pre_exisisting_filter is False:
+                    if filter.output_id == output_id and pre_exisisting_filter is False and filter.fir_state is not None:
                         pre_exisisting_filter = True
                         state_fir = self.get_parameter(alias=alias, parameter=Parameter.FIR_STATE, output_id=output_id)
                         if state_fir not in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:

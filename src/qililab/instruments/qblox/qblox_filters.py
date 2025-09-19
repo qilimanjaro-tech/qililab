@@ -21,6 +21,17 @@ from qililab.utils.asdict_factory import dict_factory
 
 @dataclass
 class QbloxFilter:
+    """Defines exponential and FIR filter settings for Qblox outputs.
+
+    Attributes:
+        output_id (int | None): Output channel identifier.
+        exponential_amplitude (list | None): Amplitude values for exponential filters (up to 4). Scalars or shorter lists are expanded to length 4.
+        exponential_time_constant (list | None): Time constants for exponential filters (up to 4). Scalars or shorter lists are expanded to length 4.
+        exponential_state (list | None): States for exponential filters. True is converted to DistortionState.ENABLED and False to DistortionState.BYPASSED. Scalars or shorter lists are expanded to length 4.
+        fir_coeff (list | None): FIR coefficients (must be exactly 32 if provided). Raises ValueError if length is not 32.
+        fir_state (bool | DistortionState | str | None): FIR filter state. True is converted to DistortionState.ENABLED and False to DistortionState.BYPASSED.
+    """
+
     output_id: int | None = None
     exponential_amplitude: list | None = None
     exponential_time_constant: list | None = None
@@ -57,7 +68,7 @@ class QbloxFilter:
         elif self.fir_state is False:
             self.fir_state = DistortionState.BYPASSED
 
-        if self.fir_coeff is not None and len(self.fir_coeff) != 32:
+        if self.fir_coeff is not None and len(self.fir_coeff) != QBLOXCONSTANTS.FILTER_FIR_COEFF_LENGTH:
             raise ValueError(f"The number of elements in the list must be exactly {QBLOXCONSTANTS.FILTER_FIR_COEFF_LENGTH}. Received: {len(self.fir_coeff)}")
 
     def to_dict(self):
