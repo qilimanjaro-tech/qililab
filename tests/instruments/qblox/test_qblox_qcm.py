@@ -8,7 +8,7 @@ from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM
 from qililab.platform import Platform
 from qililab.data_management import build_platform
-from qililab.typings import Parameter
+from qililab.typings import DistortionState, Parameter
 from typing import cast
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
@@ -70,7 +70,45 @@ def fixture_qrm(platform: Platform):
         "arm_sequencer",
         "start_sequencer",
         "reset",
-        "module_type"
+        "module_type",
+        "out0_exp0_amplitude",
+        "out1_exp0_amplitude",
+        "out2_exp0_amplitude",
+        "out3_exp0_amplitude",
+        "out0_exp1_amplitude",
+        "out1_exp1_amplitude",
+        "out2_exp1_amplitude",
+        "out3_exp1_amplitude",
+        "out0_exp2_amplitude",
+        "out1_exp2_amplitude",
+        "out2_exp2_amplitude",
+        "out3_exp2_amplitude",
+        "out0_exp0_time_constant",
+        "out1_exp0_time_constant",
+        "out2_exp0_time_constant",
+        "out3_exp0_time_constant",
+        "out0_exp2_time_constant",
+        "out0_exp1_time_constant",
+        "out0_fir_coeffs",
+        "out1_fir_coeffs",
+        "out2_fir_coeffs",
+        "out3_fir_coeffs",
+        "out0_fir_config",
+        "out1_fir_config",
+        "out2_fir_config",
+        "out3_fir_config",
+        "out0_exp0_config",
+        "out1_exp0_config",
+        "out2_exp0_config",
+        "out3_exp0_config",
+        "out0_exp1_config",
+        "out1_exp1_config",
+        "out2_exp1_config",
+        "out3_exp1_config",
+        "out0_exp2_config",
+        "out1_exp2_config",
+        "out2_exp2_config",
+        "out3_exp2_config",
     ]
 
     # Create a mock device using create_autospec to follow the interface of the expected device
@@ -95,6 +133,12 @@ class TestQbloxQCM:
         assert not qcm.is_adc()
         assert len(qcm.awg_sequencers) == 2  # As per the YAML config
         assert qcm.out_offsets == [0.0, 0.1, 0.2, 0.3]
+        filter = qcm.get_filter(0)
+        assert filter.exponential_amplitude[0] == 0.31
+        assert filter.exponential_time_constant[0] == 200
+        assert filter.exponential_state == ['enabled', "enabled", "bypassed", None]
+        assert filter.fir_coeff == [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+        assert filter.fir_state == "enabled"
         sequencer = qcm.get_sequencer(0)
         assert sequencer.identifier == 0
         assert sequencer.outputs == [3, 2]
@@ -146,7 +190,7 @@ class TestQbloxQCM:
             (Parameter.OFFSET_OUT0, 0.1),
             (Parameter.OFFSET_OUT1, 0.15),
             (Parameter.OFFSET_OUT2, 0.2),
-            (Parameter.OFFSET_OUT3, 0.25),
+            (Parameter.OFFSET_OUT3, 0.25)
         ]
     )
     def test_set_parameter(self, qcm: QbloxQCM, parameter, value):
@@ -177,6 +221,34 @@ class TestQbloxQCM:
         elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
             assert qcm.out_offsets[output] == value
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Test filters settings
+            (Parameter.EXPONENTIAL_AMPLITUDE_1, 0.7),
+            (Parameter.EXPONENTIAL_TIME_CONSTANT_2, 200),
+            (Parameter.EXPONENTIAL_STATE_0, "enabled"),
+            (Parameter.FIR_COEFF, [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]),
+            (Parameter.FIR_STATE, DistortionState.ENABLED),
+        ]
+    )
+    def test_set_parameter_filters(self, qcm: QbloxQCM, parameter, value):
+        """Test setting parameters for QCM filters using parameterized values."""
+        output_id = 0
+        qcm.set_parameter(parameter=parameter, value=value, output_id=output_id)
+        filter = qcm.get_filter(output_id)
+        # Check values based on the parameter
+        if parameter == Parameter.EXPONENTIAL_AMPLITUDE_1:
+            assert filter.exponential_amplitude[1] == value
+        elif parameter == Parameter.EXPONENTIAL_TIME_CONSTANT_2:
+            assert filter.exponential_time_constant[2] == value
+        elif parameter == Parameter.EXPONENTIAL_STATE_0:
+            assert filter.exponential_state[0] == value
+        elif parameter == Parameter.FIR_COEFF:
+            assert filter.fir_coeff == value
+        elif parameter == Parameter.FIR_STATE:
+            assert filter.fir_state == value
 
     def test_set_parameter_gain(self, qcm: QbloxQCM):
         """Test handling invalid channel IDs when setting parameters."""
@@ -231,13 +303,33 @@ class TestQbloxQCM:
         value = qcm.get_parameter(parameter, channel_id=0)
         assert value == expected_value
 
+    @pytest.mark.parametrize(
+        "parameter, expected_value",
+        [
+            # Test filters settings
+            (Parameter.EXPONENTIAL_AMPLITUDE_2, 0.1),
+            (Parameter.EXPONENTIAL_TIME_CONSTANT_2, 0.5),
+            (Parameter.EXPONENTIAL_STATE_2, DistortionState.BYPASSED),
+            (Parameter.FIR_COEFF, [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]),
+            (Parameter.FIR_STATE, DistortionState.ENABLED),
+        ]
+    )
+    def test_get_parameter_filters(self, qcm: QbloxQCM, parameter, expected_value):
+        """Test getting parameters for QCM filters using parameterized values."""
+        output_id = 0
+        value = qcm.get_parameter(parameter, output_id=output_id)
+        assert value == expected_value
+
     def test_get_parameter_raises_error(self, qcm: QbloxQCM):
-        """Test setting parameters for QCM sequencers using parameterized values."""
+        """Test setting parameters for QCM sequencers and filters using parameterized values."""
         with pytest.raises(ParameterNotFound):
             qcm.get_parameter(Parameter.BUS_FREQUENCY, channel_id=0)
 
         with pytest.raises(IndexError):
             qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=4)
+        
+        with pytest.raises(IndexError):
+            qcm.get_parameter(Parameter.EXPONENTIAL_STATE_2, output_id=2)
 
         with pytest.raises(Exception):
             qcm.get_parameter(Parameter.PHASE_IMBALANCE, channel_id=None)
@@ -322,9 +414,97 @@ class TestQbloxQCM:
 
         for sequencer in qcm.awg_sequencers:
             qcm.device.sequencers[sequencer.identifier].sync_en.assert_called_once_with(False)
+    
+    def test_set_filter_no_output_id(self, qcm: QbloxQCM):
+        "Tests that setting a filter parameter without specifying the output id raises an exception"
+        parameter = Parameter.EXPONENTIAL_AMPLITUDE_0
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            qcm.set_parameter(parameter, value=0.5)
+
+        parameter = Parameter.EXPONENTIAL_TIME_CONSTANT_0
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            qcm.set_parameter(parameter, value=15)
+
+        parameter = Parameter.EXPONENTIAL_STATE_0
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            qcm.set_parameter(parameter, value=True)
+
+        parameter = Parameter.FIR_STATE
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            qcm.set_parameter(parameter, value=True)
+
+        parameter = Parameter.FIR_COEFF
+        with pytest.raises(Exception, match=f"Cannot update parameter {parameter.value} without specifying an output_id."):
+            qcm.set_parameter(parameter, value=None)
+
+    def test_get_filter_no_output_id(self, qcm: QbloxQCM):
+        "Tests that getting a filter parameter without specifying the output id raises an exception"
+        parameter = Parameter.EXPONENTIAL_AMPLITUDE_0
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            qcm.get_parameter(parameter)
+
+        parameter = Parameter.EXPONENTIAL_TIME_CONSTANT_0
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            qcm.get_parameter(parameter)
+
+        parameter = Parameter.EXPONENTIAL_STATE_0
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            qcm.get_parameter(parameter)
+
+        parameter = Parameter.FIR_STATE
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            qcm.get_parameter(parameter)
+
+        parameter = Parameter.FIR_COEFF
+        with pytest.raises(Exception, match=f"Cannot retrieve parameter {parameter.value} without specifying an output_id."):
+            qcm.get_parameter(parameter)
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Test filters settings
+            (Parameter.EXPONENTIAL_STATE_0, True),
+            (Parameter.FIR_STATE, True),
+        ]
+    )
+    def test_state_converted_to_string_true(self, qcm: QbloxQCM, parameter, value):
+        """Test setting state parameters of filters as bool converts them to the string from DistortionState."""
+        output_id = 0
+        qcm.set_parameter(parameter=parameter, value=value, output_id=output_id)
+        filter = qcm.get_filter(output_id)
+        # Check values based on the parameter
+        if parameter == Parameter.EXPONENTIAL_STATE_0:
+            assert filter.exponential_state[0] == DistortionState.ENABLED
+        elif parameter == Parameter.FIR_STATE:
+            assert filter.fir_state == DistortionState.ENABLED
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            # Test filters settings
+            (Parameter.EXPONENTIAL_STATE_0, False),
+            (Parameter.FIR_STATE, False),
+        ]
+    )
+    def test_state_converted_to_string_false(self, qcm: QbloxQCM, parameter, value):
+        """Test setting state parameters of filters as bool converts them to the string from DistortionState."""
+        output_id = 0
+        qcm.set_parameter(parameter=parameter, value=value, output_id=output_id)
+        filter = qcm.get_filter(output_id)
+        # Check values based on the parameter
+        if parameter == Parameter.EXPONENTIAL_STATE_0:
+            assert filter.exponential_state[0] == DistortionState.BYPASSED
+        elif parameter == Parameter.FIR_STATE:
+            assert filter.fir_state == DistortionState.BYPASSED
 
 class TestQbloxSequencer:
     def test_to_dict(self, qcm: QbloxQCM):
         sequencer = qcm.get_sequencer(0)
         as_dict = sequencer.to_dict()
+        assert isinstance(as_dict, dict)
+
+class TestQbloxFilter:
+    def test_to_dict(self, qcm: QbloxQCM):
+        filter = qcm.get_filter(0)
+        as_dict = filter.to_dict()
         assert isinstance(as_dict, dict)

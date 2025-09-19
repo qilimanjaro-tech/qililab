@@ -20,7 +20,7 @@ import numpy as np
 
 from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.voltage_source import VoltageSource
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
 from qililab.waveforms import Waveform
 
@@ -60,7 +60,13 @@ class QDevilQDac2(VoltageSource):
         return self.settings.low_pass_filter
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ):
         """Set parameter to the corresponding value for an instrument's channel.
 
         Args:
@@ -178,7 +184,9 @@ class QDevilQDac2(VoltageSource):
         self.device.remove_traces()  # TODO: this method should be run at initial setup if instrument is in awg mode
         self._cache = {}
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
+    ):
         """Get parameter's value for an instrument's channel.
 
         Args:
