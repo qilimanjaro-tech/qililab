@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """QDevil QDAC-II Controller"""
+
 from dataclasses import dataclass
 from typing import Sequence
 

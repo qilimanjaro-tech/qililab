@@ -18,7 +18,7 @@ import numpy as np
 
 from qililab.qprogram.blocks import Block
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.waveforms import IQPair, Waveform
+from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
 
@@ -28,12 +28,12 @@ class Calibration:
 
     def __init__(self) -> None:
         """Initialize a Calibration instance."""
-        self.waveforms: dict[str, dict[str, Waveform | IQPair]] = {}
-        self.weights: dict[str, dict[str, IQPair]] = {}
+        self.waveforms: dict[str, dict[str, Waveform | IQWaveform]] = {}
+        self.weights: dict[str, dict[str, IQWaveform]] = {}
         self.blocks: dict[str, Block] = {}
         self.crosstalk_matrix: CrosstalkMatrix | None = None
 
-    def add_waveform(self, bus: str, name: str, waveform: Waveform | IQPair):
+    def add_waveform(self, bus: str, name: str, waveform: Waveform | IQWaveform):
         """Add a waveform or IQPair for the specified bus.
 
         Args:
@@ -45,7 +45,7 @@ class Calibration:
             self.waveforms[bus] = {}
         self.waveforms[bus][name] = waveform
 
-    def add_weights(self, bus: str, name: str, weights: IQPair):
+    def add_weights(self, bus: str, name: str, weights: IQWaveform):
         """Add a weight for the specified bus.
 
         Args:
