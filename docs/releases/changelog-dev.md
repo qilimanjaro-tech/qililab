@@ -192,3 +192,6 @@ The integration length is defined as the duration of the acquire, not the weight
 
 - Fixed an error inside set_parameter for OUT0_ATT and OUT1_ATT for the QRM-RF and QCM-RF. When the device was disconnected qililab tried to get the non existent device. not it executes as expected.
   [#973](https://github.com/qilimanjaro-tech/qililab/pull/973)
+
+- Fixed an error impeding two instances of QDAC2 to be executed through platform.connect when the runcard included 2 different `qdevil_qdac2` controllers inside `instrument_controllers`.
+  [#990](https://github.com/qilimanjaro-tech/qililab/pull/990)
