@@ -26,26 +26,26 @@ from .waveform import Waveform
 
 @yaml.register_class
 class FlatTop(Waveform):
-    """Flat top Gaussian rise waveform.
+    """Smoothed square pulse with error function on the edges rise waveform.
 
     Args:
         duration (int): Duration of the pulse (ns).
         amplitude (float): Maximum amplitude of the pulse.
-        gaussian (float, optional): Sigma number of the gaussian pulse shape. Defaults to 0.5.
-        buffer (float, optional): Buffer of the waveform. Defaults to 3.0.
+        smooth_duration (float, optional): duration of the smoothing component in ns.
+        buffer (float, optional): Buffer of the waveform. Defaults to 0.
     """
 
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)
-    def __init__(self, amplitude: float, duration: int, gaussian: float = 0.5, buffer: float = 3.0):
+    def __init__(self, amplitude: float, duration: int, smooth_duration: int, buffer: int = 0):
         super().__init__()
         self.amplitude = amplitude
         self.duration = duration
-        self.gaussian = gaussian
+        self.smooth_duration = smooth_duration
         self.buffer = buffer
 
     def envelope(self, resolution: int = 1) -> np.ndarray:
-        """Flat top Gaussian rise envelope.
+        """Smoothed square pulse with error function on the edges rise envelope.
 
         Args:
             resolution (float, optional): Resolution of the pulse. Defaults to 1.
@@ -53,12 +53,14 @@ class FlatTop(Waveform):
         Returns:
             np.ndarray: Height of the envelope for each time step.
         """
-        x = np.arange(0, self.duration, resolution)
+        x = np.arange(-self.duration / 2, self.duration / 2 + 1, resolution)
         A = self.amplitude
-        g = self.gaussian
+        sigma = self.smooth_duration
         buf = self.buffer
         dur = self.duration
-        return 0.5 * A * np.real((erf(g * x - buf) - erf(g * (x - (dur + -buf / g)))))
+        return (
+            0.5 * A * np.real((erf(4 * (x + (dur / 2 - buf)) / sigma - 2) - erf(4 * (x - (dur / 2 - buf)) / sigma + 2)))
+        )
 
     def get_duration(self) -> int:
         """Get the duration of the waveform.

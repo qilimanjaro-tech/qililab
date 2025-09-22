@@ -14,7 +14,6 @@
 from copy import deepcopy
 from typing import overload
 
-from qililab.config import logger
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.decorators import requires_domain
@@ -720,7 +719,13 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-    def draw(self, time_window=None, averages_displayed=False, acquisition_showing=True):
+    def draw(
+        self,
+        time_window: int | None = None,
+        averages_displayed: bool = False,
+        acquisition_showing: bool = True,
+        calibration: Calibration | None = None,
+    ):
         """Draw the QProgram using QBlox Compiler
 
         Args:
@@ -738,7 +743,11 @@ class QProgram(StructuredProgram):
 
         qblox_draw = QbloxDraw()
         compiler = QbloxCompiler()
-        sequencer = compiler.compile(self)
-        plotly_figure, _ = qblox_draw.draw(sequencer=sequencer, time_window=time_window, averages_displayed=averages_displayed, acquisition_showing=acquisition_showing)
-        logger.warning("The drawing feature is currently only supported for QBlox.")
+        sequencer = compiler.compile(qprogram=self, calibration=calibration)
+        plotly_figure, _ = qblox_draw.draw(
+            sequencer=sequencer,
+            time_window=time_window,
+            averages_displayed=averages_displayed,
+            acquisition_showing=acquisition_showing,
+        )
         return plotly_figure

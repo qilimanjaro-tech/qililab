@@ -7,28 +7,31 @@ from qililab.waveforms import FlatTop
 
 @pytest.fixture(name="flat_top")
 def fixture_flat_top():
-    return FlatTop(amplitude=1, duration=10, gaussian=0.2, buffer=1)
+    return FlatTop(amplitude=1, duration=30, smooth_duration=10, buffer=1)
 
 
 class TestFlatTop:
     """Unit tests checking the FlatTop waveform attributes and methods."""
+
     def test_init(self, flat_top):
         """Test __init__ method"""
         assert flat_top.amplitude == 1
-        assert flat_top.duration == 10
-        assert flat_top.gaussian == 0.2
+        assert flat_top.duration == 30
+        assert flat_top.smooth_duration == 10
         assert flat_top.buffer == 1
 
     def test_envelope(self, flat_top):
         """Test envelope method"""
 
         # calculate envelope
-        x = np.arange(0, flat_top.duration, 2)
+        x = np.arange(-flat_top.duration / 2, flat_top.duration / 2 + 1, 2)
         A = flat_top.amplitude
-        g = flat_top.gaussian
+        sigma = flat_top.smooth_duration
         buf = flat_top.buffer
         dur = flat_top.duration
-        envelope = 0.5 * A * np.real((erf(g * x - buf) - erf(g * (x - (dur + -buf / g)))))
+        envelope = (
+            0.5 * A * np.real((erf(4 * (x + (dur / 2 - buf)) / sigma - 2) - erf(4 * (x - (dur / 2 - buf)) / sigma + 2)))
+        )
 
         assert np.allclose(flat_top.envelope(resolution=2), envelope)
 
