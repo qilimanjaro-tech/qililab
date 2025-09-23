@@ -24,6 +24,8 @@ class Measure(Operation):
         bus: str,
         waveform: IQPair,
         weights: IQPair,
+        # acquisition_index: int | None= None,
+        # bin_index: int | None= None,
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
@@ -32,6 +34,8 @@ class Measure(Operation):
         self.bus: str = bus
         self.waveform: IQPair = waveform
         self.weights: IQPair = weights
+        # self.acquisition_index: int | None= None,
+        # self.bin_index: int | None= None,
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
