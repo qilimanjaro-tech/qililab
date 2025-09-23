@@ -1264,7 +1264,7 @@ class Platform:
 
             Args:
                 qprograms (list[QProgram]): A list of the :class:`.QProgram` to execute.
-                bus_mapping (Optional[Sequence[Optional[dict[str, str]]]] | Optional[dict[str, str]]): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
+                bus_mapping (Optional[list[dict[str, str]]]): A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
                     It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
                 calibration (Calibration, optional): :class:`.Calibration` instance containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
                 debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
