@@ -27,6 +27,8 @@ class Measure(Operation):
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
+        acquisition_index: int | None = None,
+        bin_index: int | None = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -35,6 +37,8 @@ class Measure(Operation):
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
+        self.acquisition_index: int | None = acquisition_index
+        self.bin_index: int | None = bin_index
 
     def get_waveforms(self) -> tuple[Waveform, Waveform]:
         """Get the waveforms.
@@ -57,6 +61,8 @@ class MeasureWithCalibratedWaveform(Operation):
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
+        acquisition_index: int | None = None,
+        bin_index: int | None = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -65,6 +71,8 @@ class MeasureWithCalibratedWaveform(Operation):
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
+        self.acquisition_index: int | None = acquisition_index
+        self.bin_index: int | None = bin_index
 
 
 @yaml.register_class
@@ -77,6 +85,8 @@ class MeasureWithCalibratedWeights(Operation):
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
+        acquisition_index: int | None = None,
+        bin_index: int | None = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -85,6 +95,8 @@ class MeasureWithCalibratedWeights(Operation):
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
+        self.acquisition_index: int | None = acquisition_index
+        self.bin_index: int | None = bin_index
 
 
 @yaml.register_class
@@ -97,6 +109,8 @@ class MeasureWithCalibratedWaveformWeights(Operation):
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
+        acquisition_index: int | None = None,
+        bin_index: int | None = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -105,3 +119,5 @@ class MeasureWithCalibratedWaveformWeights(Operation):
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
+        self.acquisition_index: int | None = acquisition_index
+        self.bin_index: int | None = bin_index

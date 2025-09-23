@@ -19,17 +19,21 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class Acquire(Operation):
-    def __init__(self, bus: str, weights: IQPair, save_adc: bool = False) -> None:
+    def __init__(self, bus: str, weights: IQPair, save_adc: bool = False, acquisition_index: int = None, bin_index: int = None) -> None:
         super().__init__()
         self.bus: str = bus
         self.weights: IQPair = weights
         self.save_adc: bool = save_adc
+        self.acquisition_index: int = acquisition_index
+        self.bin_index: int = bin_index
 
 
 @yaml.register_class
 class AcquireWithCalibratedWeights(Operation):
-    def __init__(self, bus: str, weights: str, save_adc: bool = False) -> None:
+    def __init__(self, bus: str, weights: str, save_adc: bool = False, acquisition_index: int = None, bin_index: int = None) -> None:
         super().__init__()
         self.bus: str = bus
         self.weights: str = weights
         self.save_adc: bool = save_adc
+        self.acquisition_index: int = acquisition_index
+        self.bin_index: int = bin_index

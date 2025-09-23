@@ -495,34 +495,43 @@ class QProgram(StructuredProgram):
             self.qprogram._buses.add(bus)
 
         @overload
-        def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):
+        def acquire(self, bus: str, weights: IQPair, save_adc: bool = False, acquisition_index: int = None, bin_index: int = None):
             """Acquire results based on the given weights.
 
             Args:
                 bus (str): Unique identifier of the bus.
                 weights (IQPair): Weights used during acquisition.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                acquisition_index (int, optional): index of the acquisition.
+                bin_index (int, optional): index of the bin.
             """
 
         @overload
-        def acquire(self, bus: str, weights: str, save_adc: bool = False):
+        def acquire(self, bus: str, weights: str, save_adc: bool = False, acquisition_index: int = None, bin_index: int = None):
             """Acquire results based on the given weights.
 
             Args:
                 bus (str): Unique identifier of the bus.
                 weights (str): Weights used during acquisition.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                acquisition_index (int, optional): index of the acquisition.
+                bin_index (int, optional): index of the bin.
             """
 
-        def acquire(self, bus: str, weights: IQPair | str, save_adc: bool = False):
+        def acquire(self, bus: str, weights: IQPair | str, save_adc: bool = False, acquisition_index: int = None, bin_index: int = None):
             """Acquire results based on the given weights.
 
             Args:
                 bus (str): Unique identifier of the bus.
                 weights (IQPair | str): Weights used during acquisition.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                acquisition_index (int, optional): index of the acquisition.
+                bin_index (int, optional): index of the bin.
             """
             operation = (
-                Acquire(bus=bus, weights=weights, save_adc=save_adc)
+                Acquire(bus=bus, weights=weights, save_adc=save_adc, acquisition_index=acquisition_index, bin_index=bin_index)
                 if isinstance(weights, IQPair)
-                else AcquireWithCalibratedWeights(bus=bus, weights=weights, save_adc=save_adc)
+                else AcquireWithCalibratedWeights(bus=bus, weights=weights, save_adc=save_adc, acquisition_index=acquisition_index, bin_index=bin_index)
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
@@ -561,6 +570,155 @@ class QProgram(StructuredProgram):
                 if isinstance(waveform, str)
                 else Play(bus=bus, waveform=waveform, wait_time=wait_time)
             )
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
+
+
+        @overload
+        def measure(
+            self,
+            bus: str,
+            waveform: IQPair,
+            weights: IQPair,
+            save_adc: bool = False,
+            acquisition_index: int = None,
+            bin_index: int = None,
+        ):
+            """Play a pulse and acquire results.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (IQPair): Waveform played during measurement.
+                weights (IQPair): Weights used during demodulation/integration.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                acquisition_index (int, optional): index of the acquisition.
+                bin_index (int, optional): index of the bin.
+            """
+
+        @overload
+        def measure(
+            self,
+            bus: str,
+            waveform: str,
+            weights: IQPair,
+            save_adc: bool = False,
+            acquisition_index: int = None,
+            bin_index: int = None,
+        ):
+            """Play a named pulse and acquire results.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (str): Waveform played during measurement.
+                weights (IQPair): Weights used during demodulation/integration.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                acquisition_index (int, optional): index of the acquisition.
+                bin_index (int, optional): index of the bin.
+            """
+
+        @overload
+        def measure(
+            self,
+            bus: str,
+            waveform: IQPair,
+            weights: str,
+            save_adc: bool = False,
+            acquisition_index: int = None,
+            bin_index: int = None,
+        ):
+            """Play a named pulse and acquire results.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (IQPair): Waveform played during measurement.
+                weights (str): Weights used during demodulation/integration.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                acquisition_index (int, optional): index of the acquisition.
+                bin_index (int, optional): index of the bin.
+            """
+
+        @overload
+        def measure(
+            self,
+            bus: str,
+            waveform: str,
+            weights: str,
+            save_adc: bool = False,
+            acquisition_index: int = None,
+            bin_index: int = None,
+        ):
+            """Play a named pulse and acquire results.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (str): Waveform played during measurement.
+                weights (str): Weights used during demodulation/integration.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                acquisition_index (int, optional): index of the acquisition.
+                bin_index (int, optional): index of the bin.
+            """
+
+        def measure(
+            self,
+            bus: str,
+            waveform: IQPair | str,
+            weights: IQPair | str,
+            save_adc: bool = False,
+            acquisition_index: int = None,
+            bin_index: int = None,
+        ):
+            """Play a pulse and acquire results.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                waveform (IQPair): Waveform played during measurement.
+                weights (IQPair): Weights used during demodulation/integration.
+                save_adc (bool, optional): If ADC data should be saved. Defaults to False.
+                acquisition_index (int, optional): index of the acquisition.
+                bin_index (int, optional): index of the bin.
+            """
+            operation: (
+                Measure
+                | MeasureWithCalibratedWaveform
+                | MeasureWithCalibratedWeights
+                | MeasureWithCalibratedWaveformWeights
+            )
+            if isinstance(waveform, IQPair) and isinstance(weights, IQPair):
+                operation = Measure(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    save_adc=save_adc,
+                    acquisition_index=acquisition_index,
+                    bin_index=bin_index,
+                )
+            elif isinstance(waveform, str) and isinstance(weights, IQPair):
+                operation = MeasureWithCalibratedWaveform(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    save_adc=save_adc,
+                    acquisition_index=acquisition_index,
+                    bin_index=bin_index,
+                )
+            elif isinstance(waveform, IQPair) and isinstance(weights, str):
+                operation = MeasureWithCalibratedWeights(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    save_adc=save_adc,
+                    acquisition_index=acquisition_index,
+                    bin_index=bin_index,
+                )
+            elif isinstance(waveform, str) and isinstance(weights, str):
+                operation = MeasureWithCalibratedWaveformWeights(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    save_adc=save_adc,
+                    acquisition_index=acquisition_index,
+                    bin_index=bin_index,
+                )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
