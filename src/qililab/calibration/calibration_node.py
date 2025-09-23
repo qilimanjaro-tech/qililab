@@ -60,51 +60,59 @@ class CalibrationNode:
     Args:
         nb_path (str): Full notebook path with the folder, nb_name, and ``.ipynb`` extension, written in unix format: `folder/subfolder/.../file.ipynb`.
         qubit_index (int | list[int], optional): Qubit on which this notebook will be executed. Defaults to None.
-        node_distinguishier (int | str, optional): Distinguisher for when the same notebook its used multiple times in the same qubit. Mandatory to use in such case, or
+        node_distinguisher (int | str, optional): Distinguisher for when the same notebook is used multiple times in the same qubit. Mandatory to use in such case, or
             the :class:`.CalibrationController` won't do the graph mapping properly, and the calibration will fail. Defaults to None.
         input_parameters (dict, optional): Kwargs for input parameters to pass and be interpreted by the notebook. Defaults to None.
         sweep_interval (np.ndarray, optional): Array describing the sweep values of the experiment. Defaults to None, which means the one specified in the notebook will be used.
 
-    Examples:
+    |
 
-        **Notebook execution:**
+    **Notebooks execution workflow:**
 
-        First the key functionality of this class is implemented in the ``run_node()`` method**. The workflow of ``run_node()`` is as follows:
+    First the key functionality of this class is implemented in the ``run_node()`` method**. The workflow of ``run_node()`` is as follows:
 
-        1. Prepare any input parameters needed for the notebook, including extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
+    1. Prepare any input parameters needed for the notebook, including extra parameters defined by the user and essential ones such as the targeted qubit or the sweep intervals.
 
-        2. Create a file with a temporary name. This file will be used to save the execution of the notebook and initially has the following format:
+    2. Create a file with a temporary name. This file will be used to save the execution of the notebook and initially has the following format:
+
+        ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+
+        The ``_dirty`` flag is added to identify executions that are not completed. Since the data we would find such file is ``dirty``, not completed.
+
+    3. Start the execution of the notebook. There are three possible outcomes:
+
+        3.1) The execution succeeds. If the execution succeeds, the execution file is renamed by updating the timestamp and removing the dirty flag:
+
+            ``NameOfTheNode_TimeExecutionEnded.ipynb``
+
+        3.2) The execution is interrupted. If the execution is interrupted, the ``_dirty`` flag remains in the filename, and the program exits:
 
             ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
 
-            The ``_dirty`` flag is added to identify executions that are not completed. Since the data we would find such file is ``dirty``, not completed.
+        3.2) An exception is thrown. This case is not controlled by the user like interruptions. Instead, exceptions are automatically thrown when
+        an error is detected. When an execution error is found, the execution file is renamed with the time the error occurred, adding the `_error` flag, and the program exits:
 
-        3. Start the execution of the notebook. There are three possible outcomes:
+            ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
 
-            3.1) The execution succeeds. If the execution succeeds, the execution file is renamed by updating the timestamp and removing the dirty flag:
+        A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation
+        <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).
 
-                ``NameOfTheNode_TimeExecutionEnded.ipynb``
+    At the end of this process, you obtain an executed and saved notebook for manual inspection, along with the optimal parameters to set in the runcard
+    and the achieved fidelities.
 
-            3.2) The execution is interrupted. If the execution is interrupted, the ``_dirty`` flag remains in the filename, and the program exits:
+    ----------
 
-                ``NameOfTheNode_TimeExecutionStarted_dirty.ipynb``
+    Examples:
 
-            3.2) An exception is thrown. This case is not controlled by the user like interruptions. Instead, exceptions are automatically thrown when
-            an error is detected. When an execution error is found, the execution file is renamed with the time the error occurred, adding the `_error` flag, and the program exits:
+        To calibrate two linked experiments (first and second), for 2 distinct qubits:
 
-                ``NameOfTheNode_TimeExecutionFoundError_error.ipynb``
+        .. code-block:: python
 
-            A more detailed explanation of the error is reported and also described inside the notebook (see `papermill documentation
-            <https://papermill.readthedocs.io/en/latest/>`_ for more detailed information).
+            # qubit_0: first -> second
+            #
+            # qubit_1: first -> second
 
-        At the end of this process, you obtain an executed and saved notebook for manual inspection, along with the optimal parameters to set in the runcard
-        and the achieved fidelities.
-
-        ----------
-
-        **Practical example:**
-
-        To create two linked nodes, and pass them to a :class:`.CalibrationController`, you need:
+        you first need to create the 1Q nodes (and import the needed packages), and build the :class:`.CalibrationController` graph with which to calibrate them:
 
         .. code-block:: python
 
@@ -116,7 +124,6 @@ class CalibrationNode:
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
             G = nx.DiGraph()
-            qubit = 0
 
             # CREATE NODES :
             for qubit in [0, 1]:
@@ -139,13 +146,15 @@ class CalibrationNode:
             # CREATE CALIBRATION CONTROLLER:
             controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
 
-            ### WORKFLOW TO DO:
-            controller.maintain(nodes["second_q1"])  # maintain second node for qubit 1
+            ### MAIN WORKFLOW TO DO:
+            controller.run_automatic_calibration()  # calibrate all the nodes in the graph, starting from the roots until the leaves.
 
+            ### OPTIONAL WORKFLOW TO DO:
+            controller.calibrate_all(nodes["second_q1"])  # calibrate all the needed dependencies until you can calibrate the second node for
+                                                          # qubit 1and then calibrate it. Calibrating first and second for qubit 1, in this order.
         .. note::
 
-            You can find the above code, but defining ``first`` and ``second`` as lists, in the :class:`CalibrationController` class documentation.
-
+            A more complex graph to calibrate is found in the :class:`CalibrationController` class documentation.
 
         |
 
@@ -155,81 +164,82 @@ class CalibrationNode:
 
         **1) An input parameters cell** (tagged as `parameters`). These parameters are the ones to be overwritten by the ``input_parameters``:
 
-            .. code-block:: python
+        .. code-block:: python
 
-                import numpy as np
+            import numpy as np
 
-                qubit = 0
+            qubit = 0
 
-                # Sweep interval:
-                sweep_interval = np.arange(start=0, stop=19, step=1)
+            # Sweep interval:
+            sweep_interval = np.arange(start=0, stop=19, step=1)
 
-                # Extra parameters for this concrete notebook:
-                param1 = 0
-                param2 = 0
-                ...
+            # Extra parameters for this concrete notebook:
+            param1 = 0
+            param2 = 0
+            ...
 
         |
 
         **2) An experiment/circuit** with its corresponding loops for the sweep given by ``sweep_interval``.
 
-            .. code-block:: python
+        .. code-block:: python
 
-                # Set the environment and paths:
-                ...
+            # Set the environment and paths:
+            ...
 
-                # Set the platform:
-                platform = ql.build_platform(path=platform_path)
-                platform.connect()
-                platform.initial_setup()
-                platform.turn_on_instruments()
+            # Set the platform:
+            platform = ql.build_platform(path=platform_path)
+            platform.connect()
+            platform.initial_setup()
+            platform.turn_on_instruments()
 
-                # Define circuit
-                circuit = ...
+            # Define circuit
+            circuit = ...
 
-                # Loop over the sweeps executing the platform:
-                results = []
-                for X in sweep_interval:
-                    platform.set_parameter(alias=alias, parameter=ql.Parameter.X, value=X)
-                    result = platform.execute(program=circuit, num_avg=hw_avg, repetition_duration=repetition_duration)
-                    results.append(result.array)
+            # Loop over the sweeps executing the platform:
+            results = []
+            for X in sweep_interval:
+                platform.set_parameter(alias=alias, parameter=ql.Parameter.X, value=X)
+                result = platform.execute(program=circuit, num_avg=hw_avg, repetition_duration=repetition_duration)
+                results.append(result.array)
 
-                results = np.hstack(results)
+            results = np.hstack(results)
 
         |
 
         **3) An analysis procedure**, that plots and fits the obtained data to the expected theoretical behaviour and finds the optimal desired parameters.
 
-            .. code-block:: python
+        .. code-block:: python
 
-                def fit(xdata, results): ...
+            def fit(xdata, results): ...
 
 
-                fitted_values, x_data, y_data, figure = fit(xdata=sweep_interval, results=results)
-                plt.show()
+            fitted_values, x_data, y_data, figure = fit(xdata=sweep_interval, results=results)
+            plt.show()
 
         |
 
         **4) An export data cell**, that calls ``export_nb_outputs()`` with the dictionary to retrieve from the notebook into the calibration workflow:
 
-            .. code-block:: python
+        .. code-block:: python
 
-                from qililab.automatic_calibration.calibration_node import export_nb_outputs
+            from qililab.calibration.calibration_node import export_nb_outputs
 
-                export_nb_outputs(
-                    {
-                        "platform_parameters": [
-                            (param_name0, fitted_values[0], bus_alias0, qubit),
-                            (param_name1, fitted_values[1], bus_alias1, qubit),
-                        ],
-                        "fidelities": [
-                            (qubit, "fidelity1", 0.9),
-                            (qubit, "fidelity2", 0.95),
-                        ],  # Fidelities in the output dictionary are optional.
-                    }
-                )
+            export_nb_outputs(
+                {
+                    "platform_parameters": [
+                        (param_name0, fitted_values[0], bus_alias0, qubit),
+                        (param_name1, fitted_values[1], bus_alias1, qubit),
+                    ],
+                    "fidelities": [
+                        (qubit, "fidelity1", 0.9),
+                        (qubit, "fidelity2", 0.95),
+                    ],  # Fidelities in the output dictionary are optional.
+                }
+            )
 
-        where the ``platform_parameters`` are a list of parameters to set on the platform.
+        where the ``platform_parameters`` are a list of parameters to set on the platform. And the ``fidelities`` are for showing results
+        in the calibration report, or for using the checkpoints in the calibration with the ``checkpoint`` and ``check_value`` arguments.
 
         .. note::
 
