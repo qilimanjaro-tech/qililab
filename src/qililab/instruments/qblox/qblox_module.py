@@ -15,7 +15,7 @@
 """Qblox module class"""
 
 from dataclasses import dataclass
-from typing import ClassVar, Sequence
+from typing import Sequence
 
 from qpysequence import Sequence as QpySequence
 
@@ -23,7 +23,6 @@ from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_sequencer import QbloxSequencer
-from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.typings import ChannelID, Parameter, ParameterValue
 from qililab.typings.instruments import QcmQrm
 
@@ -68,8 +67,6 @@ class QbloxModule(Instrument):
 
     settings: QbloxModuleSettings
     device: QcmQrm
-    # Cache containing the last compiled pulse schedule for each sequencer
-    cache: ClassVar[dict[int, PulseBusSchedule]] = {}
 
     def __init__(self, settings: dict):
         # The sequences dictionary contains all the compiled sequences for each sequencer. Sequences are saved and handled at the compiler

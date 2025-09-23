@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Class Keysight E5080B"""
+
 from qililab.instruments.keysight.driver_keysight_e5080b import Driver_KeySight_E5080B
 from qililab.typings.instruments.device import Device
 

@@ -8,8 +8,8 @@ import pyvisa_py
 import qblox_instruments
 import qcodes
 import qcodes_contrib_drivers
-import qibo
 import qpysequence
+import qilisdk
 from qm.version import __version__ as qm_version
 
 import qililab as ql
@@ -30,7 +30,7 @@ QCodes Contrib version:    {qcodes_contrib_drivers.__version__}
 Qblox Instrument version:  {qblox_instruments.__version__}
 Qpysequence version:       {qpysequence.__version__}
 Quantum Machines version:  {qm_version}
-Qibo version:              {qibo.__version__}
+QiliSDK version:           {qilisdk.__version__}
 """
 
     assert expected_string == capturedOutput.getvalue()
