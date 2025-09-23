@@ -20,17 +20,17 @@ from qilisdk.digital import (
 )
 from qilisdk.digital.exceptions import GateHasNoMatrixError
 from qilisdk.digital.gates import Adjoint, Controlled, M
-
-from qililab.digital.circuit_transpiler_passes.circuit_transpiler_pass import CircuitTranspilerPass
 from qililab.digital.circuit_transpiler_passes.cancel_identity_pairs_pass import CancelIdentityPairsPass, _first_nonzero_phase, _EPS, _try_matrix
 
-
-
 def assert_equal_gate(list1: list[Gate], list2: list[Gate]):
+    assert len(list1) == len(list2)
     for i, j in zip(list1, list2):
-        assert (i.matrix == j.matrix).all()
         assert i.qubits == j.qubits
         assert i.name == j.name
+        try:
+            assert (i.matrix == j.matrix).all()
+        except GateHasNoMatrixError:
+            pass
 
 class TestCancelIdentityPairsPass:
     def test_involutions_run(self):
@@ -52,6 +52,10 @@ class TestCancelIdentityPairsPass:
         u3_test._gates = [U3(1,theta=2,phi=3,gamma=4), U3(1,theta=-2,phi=-4,gamma=-3),
                           U3(1,theta=2,phi=3,gamma=4), U3(1,theta=-2,phi=4,gamma=-3)]
         assert_equal_gate(CancelIdentityPairsPass().run(u3_test)._gates,  [U3(1,theta=2,phi=3,gamma=4), U3(1,theta=-2,phi=4,gamma=-3)])
+
+        u2_test = Circuit(2)
+        u2_test._gates = [U2(0, phi=2, gamma=3), U3(0, theta=-np.pi/2 , phi=-3, gamma=-2), U2(0, phi=2, gamma=3), U3(0, theta=-np.pi/2 , phi=-2, gamma=-3), U2(1, phi=3, gamma=2)]
+        assert_equal_gate(CancelIdentityPairsPass().run(u2_test)._gates,  [U2(0, phi=2, gamma=3), U3(0, theta=-np.pi/2 , phi=-2, gamma=-3), U2(1, phi=3, gamma=2)])
 
         ad_co_test = Circuit(2)
         ad_co_test._gates = [Adjoint(Y(1)),Adjoint(Y(1)), Adjoint(Y(1)),Adjoint(Y(0)),Adjoint(Z(0)),
