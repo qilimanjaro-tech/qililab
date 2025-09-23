@@ -53,6 +53,13 @@ class TestCancelIdentityPairsPass:
                           U3(1,theta=2,phi=3,gamma=4), U3(1,theta=-2,phi=4,gamma=-3)]
         assert_equal_gate(CancelIdentityPairsPass().run(u3_test)._gates,  [U3(1,theta=2,phi=3,gamma=4), U3(1,theta=-2,phi=4,gamma=-3)])
 
+        ad_co_test = Circuit(2)
+        ad_co_test._gates = [Adjoint(Y(1)),Adjoint(Y(1)), Adjoint(Y(1)),Adjoint(Y(0)),Adjoint(Z(0)),
+                             Controlled(1,basic_gate=Y(0)),Controlled(1,basic_gate=Y(0)), 
+                             Controlled(1,basic_gate=Y(0)), Controlled(0,basic_gate=Y(1)), Controlled(0,basic_gate=Z(1))]
+        assert_equal_gate(CancelIdentityPairsPass().run(ad_co_test)._gates,  [Adjoint(Y(1)),Adjoint(Y(0)),Adjoint(Z(0)), 
+                                                                              Controlled(1,basic_gate=Y(0)), Controlled(0,basic_gate=Y(1)), Controlled(0,basic_gate=Z(1))])
+
 
     def test_first_nonzero_phase(self):
         c_number1 = np.array([0 - 0j,0 + _EPS*1j])
