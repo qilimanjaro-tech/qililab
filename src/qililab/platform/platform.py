@@ -689,9 +689,10 @@ class Platform:
             bus_list (list[str] | None, optional): Optional bus list for all the flux used in the experiment. Defaults to the Crosstalk buses.
         """
 
+        if not self.crosstalk:
+            raise ValueError("Crosstalk matrix has not been set")
+
         if not bus_list:
-            if not self.crosstalk:
-                raise ValueError("Neither crosstalk matrix nor bus_list has been set")
             bus_list = list(self.crosstalk.matrix.keys())
 
         if not self.flux_vector:
@@ -699,6 +700,8 @@ class Platform:
         for flux in bus_list:
             if flux not in self.flux_vector.flux_vector.keys():
                 self.flux_vector[flux] = 0
+            self.flux_vector.bias_vector[flux] = 0
+            self.flux_vector.set_crosstalk_from_bias(self.crosstalk)
 
         for flux_alias in bus_list:
             element = self.get_element(alias=flux_alias)
@@ -1671,7 +1674,7 @@ class Platform:
         averages_displayed: bool = False,
         acquisition_showing: bool = True,
         bus_mapping: dict[str, str] | None = None,
-        calibration: Calibration | None = None
+        calibration: Calibration | None = None,
     ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 
