@@ -195,3 +195,6 @@ The integration length is defined as the duration of the acquire, not the weight
 
 - Fixed `FluxVector.set_crosstalk_from_bias(...)` and `platform.set_bias_to_zero(...)` related to automatic crosstalk compensation. Now the bias is set to 0 correctly and the fluxes are set to the correct value based on the offset.
   [#983](https://github.com/qilimanjaro-tech/qililab/pull/983)
+
+- Fixed an error impeding two instances of QDAC2 to be executed through platform.connect when the runcard included 2 different `qdevil_qdac2` controllers inside `instrument_controllers`.
+  [#990](https://github.com/qilimanjaro-tech/qililab/pull/990)
