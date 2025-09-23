@@ -259,7 +259,90 @@ class TestSubmitJob:
         finally:
             f.close()
 
+    def test_run_function_chdir_failure_prints_and_executes(self, ip, capsys, tmp_path):
+        """
+        Patch AutoExecutor to capture the submitted function, then invoke it with a
+        non-existent workdir to cover the try/except path that prints a warning.
+        """
+        workdir = tmp_path / "does-not-exist"  # we do NOT create it
+
+        with patch("qililab.slurm.AutoExecutor") as executor:
+            executor_instance = MagicMock()
+            fake_job = MagicMock()
+            fake_job.job_id = "777000"
+            executor_instance.submit.return_value = fake_job
+            executor.return_value = executor_instance
+
+            ip.run_cell(raw_cell="a=1\nb=1")
+            ip.run_cell_magic(
+                magic_name="submit_job",
+                line=f"-o results -l {tmp_path} -n unit_test -e local -c {workdir}",
+                cell="results = a+b",
+            )
+
+            # Extract submitted function and args
+            (run_fn, code_str, ns, out_name, chdir_arg), _ = executor_instance.submit.call_args
+
+        # Call the submitted function ourselves to hit the chdir exception path
+        ret = run_fn(code_str, ns, out_name, str(workdir))
+        out = capsys.readouterr().out
+        assert "failed to chdir" in out.lower()
+        assert ret == 2
+
+
     def test_cleanup_missing_folder_no_crash(self, tmp_path):
         missing = tmp_path / "does_not_exist"
         # Should simply return without throwing
         ql.slurm._cleanup_submitit_folder(missing, max_groups_to_keep=3)
+
+
+    def test_cleanup_removes_noise_files_and_dirs(self, tmp_path, caplog):
+        caplog.set_level(logging.WARNING)
+        base = tmp_path / "logs"
+        base.mkdir()
+
+        # Noise: file and directory not starting with digits
+        (base / "abc.py").write_text("x")
+        (base / "miscdir").mkdir()
+        (base / "miscdir" / "note.txt").write_text("y")
+
+        # Valid job groups: 1001 and 1002
+        (base / "1001_log.out").write_text("l1")
+        (base / "1001_submission.pkl").write_text("p1")
+        (base / "1002_log.out").write_text("l2")
+        (base / "1002_submission.pkl").write_text("p2")
+
+        ql.slurm._cleanup_submitit_folder(base, max_groups_to_keep=2)
+
+        # Noise removed; valid files remain
+        assert not (base / "abc.py").exists()
+        assert not (base / "miscdir").exists()
+        assert (base / "1001_log.out").exists()
+        assert (base / "1002_log.out").exists()
+        # Warning message logged for noise removal
+        assert any("has been removed" in rec.message for rec in caplog.records)
+
+
+    def test_cleanup_exception_handling_in_remove(self, monkeypatch, tmp_path, caplog):
+        base = tmp_path / "logs"
+        base.mkdir()
+
+        # Create noise and valid groups
+        (base / "junkfile").write_text("x")
+        (base / "1001_a").write_text("x")
+        (base / "1002_a").write_text("x")
+
+        # Force deletion to fail
+        def boom(*args, **kwargs):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(ql.slurm.shutil, "rmtree", boom)
+        monkeypatch.setattr(Path, "unlink", lambda self, missing_ok=True: (_ for _ in ()).throw(RuntimeError("boom")))
+
+        # Should not raise, even though deletions fail
+        ql.slurm._cleanup_submitit_folder(base, max_groups_to_keep=1)
+
+        # Entries still exist because deletion failed
+        assert (base / "junkfile").exists()
+        # One of the job groups should still exist (since removal failed)
+        assert any((base / f).exists() for f in ("1001_a", "1002_a"))
