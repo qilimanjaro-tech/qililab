@@ -448,7 +448,7 @@ class TestPlatform:
 
     def test_set_bias_to_zero_without_crosstalk_raises_error(self, platform: Platform):
         """Test set_bias_to_zero function error without crosstalk."""
-        error_string = "Neither crosstalk matrix nor bus_list has been set"
+        error_string = "Crosstalk matrix has not been set"
         with pytest.raises(ValueError, match=error_string):
             platform.set_bias_to_zero()
 
