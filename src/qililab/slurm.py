@@ -33,7 +33,7 @@ from qililab.config import logger
 
 # Keep at job-group granularity rather than raw files (see cleanup below).
 # Historically this was "files"; we interpret it as "job groups" to be robust.
-max_groups_to_keep = 500
+max_job_groups_to_keep = 50
 
 # ---------------------------
 # Helpers
@@ -195,7 +195,7 @@ def _cleanup_submitit_folder(folder: Path, max_groups_to_keep: int) -> None:
 @argument(
     "-l", "--logs", default=".slurm_job_data",
     help=("Directory where submitit will store job artefacts and logs. "
-          f"We keep the last {max_groups_to_keep} job groups."),
+          f"We keep files of the last {max_job_groups_to_keep} job groups."),
 )
 @argument(
     "-e", "--execution-environment", "--execution_environment", dest="execution_environment",
@@ -302,6 +302,6 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
 
     # Cleanup old artefacts (interpret num_files_to_keep as “job groups” to keep)
     try:
-        _cleanup_submitit_folder(folder_path, max_groups_to_keep=max_groups_to_keep)
+        _cleanup_submitit_folder(folder_path, max_groups_to_keep=max_job_groups_to_keep)
     except Exception as e:  # noqa: BLE001
         logger.debug("Cleanup of %s failed: %s", str(folder_path), e)

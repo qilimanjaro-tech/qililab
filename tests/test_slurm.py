@@ -91,7 +91,7 @@ class TestSubmitJob:
         import re
         from pathlib import Path
 
-        ql.slurm.max_groups_to_keep = 3
+        ql.slurm.max_job_groups_to_keep = 3
         base = Path(slurm_job_data_test)
         base.mkdir(parents=True, exist_ok=True)
 
@@ -124,7 +124,7 @@ class TestSubmitJob:
             candidate_ids.add(int(m.group(1)))
 
         # Keep the largest N (by numeric order)
-        expected_top_n = sorted(candidate_ids)[-ql.slurm.max_groups_to_keep:]
+        expected_top_n = sorted(candidate_ids)[-ql.slurm.max_job_groups_to_keep:]
         expected = {str(x) for x in expected_top_n}
 
         # The cleanup should leave exactly those groups
