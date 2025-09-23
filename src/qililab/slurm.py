@@ -12,148 +12,296 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ast
-import os
-from types import ModuleType
+from __future__ import annotations
 
+import ast
+import logging
+import os
+import re
+import shutil
+from pathlib import Path
+from types import ModuleType
+from typing import Any, Iterable
+
+import cloudpickle
+from IPython import get_ipython
 from IPython.core.magic import needs_local_scope, register_cell_magic
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from submitit import AutoExecutor
 
 from qililab.config import logger
 
-num_files_to_keep = 500  # needs to be a multiple of 4 and 5
+# Keep at job-group granularity rather than raw files (see cleanup below).
+# Historically this was "files"; we interpret it as "job groups" to be robust.
+max_groups_to_keep = 500
+
+# ---------------------------
+# Helpers
+# ---------------------------
 
 
-def is_variable_used(code, variable):
-    """Check whether any values are assigned to the output variable inside the magic cell."""
-    tree = ast.parse(code)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == variable:
-                    return True
+def _assigned_to_name(target: ast.AST, name: str) -> bool:
+    """Return True if the assignment target contains a Name with given identifier."""
+    if isinstance(target, ast.Name):
+        return target.id == name
+    if isinstance(target, (ast.Tuple, ast.List)):
+        return any(_assigned_to_name(elt, name) for elt in target.elts)
+    # We ignore Attribute/Subscript etc. on purpose: `x.y = ...` shouldn't count as assigning `x`.
     return False
 
 
+def is_variable_assigned(code: str, variable: str) -> bool:
+    """Check whether a value is assigned to `variable` inside the magic cell."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return False
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            if any(_assigned_to_name(t, variable) for t in node.targets):
+                return True
+        elif isinstance(node, ast.AugAssign):
+            if _assigned_to_name(node.target, variable):
+                return True
+        elif isinstance(node, ast.AnnAssign):
+            if node.simple and isinstance(node.target, ast.Name) and node.target.id == variable:
+                return True
+        elif isinstance(node, ast.NamedExpr):  # walrus: x := ...
+            if isinstance(node.target, ast.Name) and node.target.id == variable:
+                return True
+    return False
+
+
+def _safe_expand_path(p: str) -> str:
+    """Expand ~ and env vars, but do not resolve to avoid breaking remote mounts."""
+    return os.path.expandvars(os.path.expanduser(p))
+
+
+def _iter_import_lines_from_history(in_cells: Iterable[str]) -> Iterable[str]:
+    """Extract simple one-line import statements from the notebook history."""
+    for cell_src in in_cells:
+        for line in cell_src.splitlines():
+            stripped = line.strip()
+            # conservative: only literal one-line imports; ignore magics and multiline constructs
+            if stripped.startswith(("import ", "from ")) and not stripped.startswith(("from __future__",)):
+                yield stripped
+
+
+def _is_picklable(obj: Any) -> bool:
+    try:
+        cloudpickle.dumps(obj)
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _collect_user_variables(local_ns: dict[str, Any], output_name: str) -> dict[str, Any]:
+    """Filter local_ns to a picklable dict suitable for shipping to a Submitit job."""
+    skip_keys = {"In", "Out", "exit", "quit", "open", "get_ipython"}
+    vars_for_job: dict[str, Any] = {}
+
+    for k, v in local_ns.items():
+        if k.startswith("_"):
+            continue
+        if k in skip_keys:
+            continue
+        if isinstance(v, ModuleType):
+            continue
+        if isinstance(v, logging.Logger):
+            continue
+        if not _is_picklable(v):
+            # It's fairly common to have unpicklables in a notebook namespace; just skip them.
+            continue
+        vars_for_job[k] = v
+
+    # Ensure the expected output name exists in the namespace
+    vars_for_job[output_name] = None
+    return vars_for_job
+
+
+def _cleanup_submitit_folder(folder: Path, max_groups_to_keep: int) -> None:
+    """
+    Submitit typically creates files/dirs prefixed by the numeric Slurm job id, e.g.:
+      1234567_submission.pkl, 1234567_log.out, 1234567_...
+    We group by the numeric prefix and keep only the newest groups.
+    """
+    try:
+        entries = list(folder.iterdir())
+    except FileNotFoundError:
+        return
+
+    # Group by numeric prefix; non-conforming files are removed as noise.
+    groups: dict[int, list[Path]] = {}
+    noise: list[Path] = []
+    id_re = re.compile(r"^(\d+)")
+    for p in entries:
+        name = p.name
+        m = id_re.match(name)
+        if not m:
+            noise.append(p)
+            continue
+        job_id = int(m.group(1))
+        groups.setdefault(job_id, []).append(p)
+
+    # Remove noise (non-submitit artefacts)
+    for p in noise:
+        try:
+            if p.is_dir():
+                shutil.rmtree(p, ignore_errors=True)
+            else:
+                p.unlink(missing_ok=True)
+            logger.warning("%s shouldn't be in %s. It has been removed!", p.name, str(folder))
+        except Exception as e:  # noqa: BLE001
+            logger.debug("Failed to remove stray entry %s: %s", p, e)
+
+    if not groups:
+        return
+
+    # Keep the most recent groups (by job_id), remove the rest.
+    job_ids_sorted = sorted(groups.keys())
+    to_remove_ids = job_ids_sorted[:-max(1, max_groups_to_keep)]
+    for jid in to_remove_ids:
+        for p in groups[jid]:
+            try:
+                if p.is_dir():
+                    shutil.rmtree(p, ignore_errors=True)
+                else:
+                    p.unlink(missing_ok=True)
+            except Exception as e:  # noqa: BLE001
+                logger.debug("Failed to remove %s for job %d: %s", p, jid, e)
+
+
+# ---------------------------
+# Magic
+# ---------------------------
+
 @magic_arguments()
 @argument(
-    "-o",
-    "--output",
-    help="Output of the SLURM job. This name should correspond to a variable defined in the cell that we want to"
-    " retrieve after execution. After queuing a cell, this variable will be converted to a `Job` class. To retrieve"
-    " the results of the job, you need to call `variable.result()`.",
+    "-o", "--output",
+    required=True,
+    help=("Name of the variable defined in the cell whose value you want to retrieve. "
+          "After queuing, this variable becomes a `Job`. Call `variable.result()` to get the result."),
 )
-@argument("-p", "--partition", help="Name of the partition where you want to execute the SLURM job.")
-@argument("-g", "--gres", default=None, help="GRES (chip) where you want to execute the SLURM job.")
-@argument("-n", "--name", default="submitit", help="Name of the slurm job.")
-@argument("-t", "--time", default=120, help="Time limit (in minutes) of the job.")
+@argument("-p", "--partition", help="Slurm partition to run on (optional).")
+@argument("-g", "--gres", default=None, help="Value for `--gres` (e.g. 'gpu:2' or 'gpu:a100:2').")
+@argument("-n", "--name", default="submitit", help="Slurm job name.")
+@argument("-t", "--time", type=int, default=120, help="Time limit in minutes.")
 @argument(
-    "-b",
-    "--begin",
-    default="now",
-    help="Submit the batch script to the Slurm controller immediately, like normal, "
-    "but tell the controller to defer the allocation of the job until the specified time. The time format can be"
-    " either `HH:MM:SS`, `now+1hour`, `now+60minutes`, `now+60` (seconds by default), `2010-01-20T12:34:00`.",
+    "-b", "--begin", default="now",
+    help=("Defer the allocation until the given time, e.g. 'HH:MM:SS', 'now+1hour', "
+          "'2010-01-20T12:34:00'.")
 )
 @argument(
-    "-l",
-    "--logs",
-    default=".slurm_job_data",
-    help=(f"Path where you want slurm to write the logs for the last {num_files_to_keep} jobs."),
+    "-l", "--logs", default=".slurm_job_data",
+    help=("Directory where submitit will store job artefacts and logs. "
+          f"We keep the last {max_groups_to_keep} job groups."),
 )
 @argument(
-    "-e",
-    "--execution_environment",
+    "-e", "--execution-environment", "--execution_environment", dest="execution_environment",
     default=None,
-    help="Select execution environment. Targets slurm by default but if '-e local' the job is run locally.",
+    help="Execution backend (e.g. 'slurm' or 'local'). Defaults to submitit's auto-detection.",
 )
 @argument(
-    "-lp",
-    "--low_priority",
+    "-lp", "--low-priority", "--low_priority", dest="low_priority",
+    action="store_true", default=False,
+    help=("Queue with lower priority (we set a positive Slurm NICE value so Lab jobs yield to others)."),
+)
+@argument(
+    "-c", "--chdir",
     default=None,
-    help="By default lab jobs have higher priority than QaaS jobs. However, if '--lp True' or '--lp true' they will be queued with same priority as QaaS jobs, hence other Lab jobs will be executed first.",
+    help=("Working directory for the job (`sbatch --chdir`). "
+          "Also applied inside the job so it works for the local backend."),
 )
 @needs_local_scope
 @register_cell_magic
 def submit_job(line: str, cell: str, local_ns: dict) -> None:
-    """Magic method that queues the content of a cell as a SLURM job.
-
-    WARNING: Variables that start with an underscore (`_`) won't be recognized in the queued job.
     """
-    # This method does NOT have a standard documentation because it corresponds to an Ipython magic method.
+    Queue the content of a cell as a Slurm job using submitit.
 
+    WARNING: Variables whose names start with '_' are not shipped to the job.
+    """
     args = parse_argstring(submit_job, line)
-    output = args.output
-    partition = args.partition
-    gres = args.gres
-    job_name = args.name
-    time_limit = int(args.time)
-    folder_path = args.logs
-    execution_env = args.execution_environment
-    begin_time = args.begin
-    low_priority = args.low_priority
 
-    nice_factor = 0
-    if low_priority in ["True", "true"]:
-        nice_factor = 1000000  # this ensures Lab jobs have 0 priority, same as QaaS jobs
+    output_name: str = args.output
+    partition: str | None = args.partition
+    gres: str | None = args.gres
+    job_name: str = args.name
+    time_limit: int = args.time
+    begin_time: str = args.begin
+    low_priority: bool = args.low_priority
+    chdir_opt: str | None = args.chdir
+    execution_env: str | None = args.execution_environment
 
-    # Take all the import lines and add them right before the code of the cell (to make sure all the needed libraries
-    # are imported inside the SLURM job)
-    notebook_code = "\n".join(local_ns["In"]).split("\n")
-    import_lines = [line for line in notebook_code if line.startswith(("import ", "from ")) and "slurm" not in line]
+    # Prepare logs folder
+    folder_path = Path(_safe_expand_path(args.logs))
+    folder_path.mkdir(parents=True, exist_ok=True)
+
+    # Gather import lines from history (conservative, one-liners only)
+    ip = get_ipython()
+    in_cells = ip.user_ns.get("In", []) if ip is not None else []
+    import_lines = list(_iter_import_lines_from_history(in_cells))
+
     executable_code = "\n".join([*import_lines, cell])
 
-    # Create the executor that will be used to queue the SLURM job
-    slurm_additional_parameters = {"begin": begin_time, "nice": nice_factor}
+    # Validate that the cell assigns to the requested output variable
+    if not is_variable_assigned(executable_code, output_name):
+        raise ValueError(f"Output variable '{output_name}' was not assigned to any value inside the cell.")
+
+    # Collect a safe subset of the local namespace to ship with the job
+    variables = _collect_user_variables(local_ns, output_name)
+
+    # Build executor
+    extra: dict[str, Any] = {}
+    if begin_time:
+        extra["begin"] = begin_time
+    if low_priority:
+        # NICE range is typically [-10000, 10000]; positive lowers priority.
+        extra["nice"] = 10000
     if gres:
-        slurm_additional_parameters |= {"gres": f"{gres}:1"}
-    executor = AutoExecutor(folder=folder_path, cluster=execution_env)
-    executor.update_parameters(
-        slurm_partition=partition,
-        name=job_name,
-        timeout_min=time_limit,
-        slurm_additional_parameters=slurm_additional_parameters,
-    )
+        extra["gres"] = f"{gres}:1"
+    if chdir_opt:
+        extra["chdir"] = _safe_expand_path(chdir_opt)
 
-    # Compile the code defined above
-    code = compile(executable_code, "<string>", "exec")
-    # Take all the variables defined by the user in the Jupyter Notebook and the output variable
-    variables = {
-        k: v
-        for k, v in local_ns.items()
-        if not (
-            isinstance(v, ModuleType) or k.startswith("_") or k in {"In", "Out", "exit", "quit", "open", "get_ipython"}
-        )
-    } | {output: None}
+    executor = AutoExecutor(folder=str(folder_path), cluster=execution_env)
 
-    # Define the function that will be queued as a SLURM job
-    def function(code, variables):
-        # Execute the code and return the output variable defined by the user
-        exec(code, variables)  # noqa: S102
-        return variables[output]
+    update_params: dict[str, Any] = {
+        "name": job_name,
+        "timeout_min": time_limit,
+    }
+    if partition:
+        update_params["slurm_partition"] = partition
+    if extra:
+        update_params["slurm_additional_parameters"] = extra
 
-    # Check if output variables are defined or used in the magic cell
-    if not is_variable_used(executable_code, output):
-        raise ValueError(f"Output variable '{output}' was not assigned to any value inside the cell!")
-    # Submit slurm job
-    job = executor.submit(function, code, variables)
+    executor.update_parameters(**update_params)
+
+    # Define the job function
+    def _run(code_str: str, ns: dict[str, Any], out_name: str, chdir_path: str | None = None):
+        # Apply chdir locally as well (helpful when -e local)
+        if chdir_path:
+            try:
+                import os as _os
+                _os.chdir(chdir_path)
+            except Exception as e:  # noqa: BLE001
+                # Don't fail the job just because chdir failed; user can inspect logs.
+                print(f"[submit_job] Warning: failed to chdir to {chdir_path!r}: {e}")  # noqa: T201
+
+        # Execute user code in the provided namespace and return the output
+        exec(compile(code_str, "<submit_job>", "exec"), ns)  # noqa: S102
+        return ns[out_name]
+
+    # Submit
+    job = executor.submit(_run, executable_code, variables, output_name, extra.get("chdir"))
     logger.info("Your slurm job '%s' with ID %s has been queued!", job_name, job.job_id)
-    # Overrides the output variable with the obtained job
-    local_ns[output] = job
 
-    # Delete info from past jobs
-    job_ids = []
-    file_paths = [os.path.join(folder_path, filename) for filename in os.listdir(folder_path)]
-    for file_path in file_paths:
-        try:
-            job_ids.append(int(file_path.split("/")[1].split("_")[0]))
+    # Expose the Job object under the requested output variable name
+    local_ns[output_name] = job
+    if ip is not None:
+        ip.user_ns[output_name] = job
 
-        # remove non-submitit files, not starting with an id
-        except ValueError:
-            logger.warning("%s shouldn't be in %s. It has been removed!", file_path.split("/")[1], folder_path)
-            os.remove(file_path)
-
-    for file_path in file_paths:
-        if len(file_paths) >= num_files_to_keep and str(min(job_ids)) in file_path:
-            os.remove(file_path)
+    # Cleanup old artefacts (interpret num_files_to_keep as “job groups” to keep)
+    try:
+        _cleanup_submitit_folder(folder_path, max_groups_to_keep=max_groups_to_keep)
+    except Exception as e:  # noqa: BLE001
+        logger.debug("Cleanup of %s failed: %s", str(folder_path), e)
