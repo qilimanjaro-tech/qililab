@@ -47,9 +47,9 @@ class QDevilQDac2Controller(SingleInstrumentController):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         if self.settings.connection.name == ConnectionName.TCP_IP:
-            self.device = QDevilQDac2Device(f"{self.name.value}", f"TCPIP::{self.address}::5025::SOCKET")
+            self.device = QDevilQDac2Device(f"{self.name.value}_{self.alias}", f"TCPIP::{self.address}::5025::SOCKET")
         else:
-            self.device = QDevilQDac2Device(f"{self.name.value}", f"ASRL/dev/{self.address}::INSTR")
+            self.device = QDevilQDac2Device(f"{self.name.value}_{self.alias}", f"ASRL/dev/{self.address}::INSTR")
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
