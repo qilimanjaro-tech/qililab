@@ -1,5 +1,6 @@
 import os
 import shutil
+import logging
 import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -10,6 +11,9 @@ from IPython.testing.globalipapp import start_ipython
 
 slurm_job_data_test = "slurm_job_data_test"
 
+class _Unpicklable:
+    def __reduce__(self):
+        raise RuntimeError("nope")
 
 @pytest.fixture(scope="session")
 def session_ip():
@@ -179,3 +183,83 @@ class TestSubmitJob:
         # submit(_run, code, variables, output_name, chdir)
         submit_args, _ = executor_instance.submit.call_args
         assert submit_args[4] == workdir
+
+    @pytest.mark.parametrize(
+        "code, expected",
+        [
+            ("results = 1", True),                      # Assign
+            ("results += 1", True),                     # AugAssign
+            ("results: int = 1", True),                 # AnnAssign
+            ("(results, other) = (1, 2)", True),        # Tuple destructuring
+            ("x = (results := 5)", True),               # NamedExpr (walrus)
+            ("x = 1\ny = 2", False),                    # Not assigned
+        ],
+    )
+    def test_is_variable_assigned_variants(self, code, expected):
+        assert ql.slurm.is_variable_assigned(code, "results") is expected
+
+
+    def test_is_variable_assigned_syntax_error_returns_false(self):
+        # Invalid Python -> SyntaxError branch covered
+        code = "def = 1"
+        assert ql.slurm.is_variable_assigned(code, "results") is False
+
+    def test_safe_expand_path_expands_tilde_and_env(self, monkeypatch):
+        monkeypatch.setenv("SLURM_TEST_ENVPATH", "foo")
+        raw = "~/${SLURM_TEST_ENVPATH}"
+        expanded = ql.slurm._safe_expand_path(raw)
+        assert os.path.expanduser("~") in expanded
+        assert expanded.endswith(os.sep + "foo")
+
+    def test_iter_import_lines_from_history_filters_future_and_keeps_simple_imports(self):
+        cells = [
+            "import os\nx = 1",
+            "from sys import path\nprint('ok')",
+            "from __future__ import annotations\nprint('ignored')",
+            "%%bash\necho hi",
+            "y = 3",
+        ]
+        lines = list(ql.slurm._iter_import_lines_from_history(cells))
+        # Should include the first import lines only (one-liners)
+        assert "import os" in lines
+        assert "from sys import path" in lines
+        # Should exclude __future__ and non-import cells
+        assert not any("__future__" in l for l in lines)
+        assert not any("%%bash" in l for l in lines)
+
+    def test_is_picklable_true_and_false(self, tmp_path):
+        assert ql.slurm._is_picklable({"a": 1}) is True
+        assert ql.slurm._is_picklable(_Unpicklable()) is False
+
+    def test_collect_user_variables_filters_unwanted(self, monkeypatch, tmp_path):
+        fpath = tmp_path / "f.txt"
+        fpath.write_text("x")
+        f = open(fpath, "r")  # unpicklable
+
+        try:
+            ns = {
+                "_private": 1,
+                "In": [],
+                "Out": {},
+                "exit": object(),
+                "quit": object(),
+                "open": open,
+                "get_ipython": lambda: None,
+                "mod": logging,                         # ModuleType
+                "log": logging.getLogger("t"),          # Logger
+                "ok": 42,                               # picklable
+                "unpick": f,                            # not picklable
+            }
+            collected = ql.slurm._collect_user_variables(ns, "results")
+            assert "ok" in collected
+            assert "results" in collected
+            # All others filtered
+            for k in ["_private", "In", "Out", "exit", "quit", "open", "get_ipython", "mod", "log"]:
+                assert k not in collected
+        finally:
+            f.close()
+
+    def test_cleanup_missing_folder_no_crash(self, tmp_path):
+        missing = tmp_path / "does_not_exist"
+        # Should simply return without throwing
+        ql.slurm._cleanup_submitit_folder(missing, max_groups_to_keep=3)
