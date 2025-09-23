@@ -1,6 +1,7 @@
 import os
 import shutil
 import logging
+import ast
 import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -346,3 +347,70 @@ class TestSubmitJob:
         assert (base / "junkfile").exists()
         # One of the job groups should still exist (since removal failed)
         assert any((base / f).exists() for f in ("1001_a", "1002_a"))
+
+    def test_cleanup_removes_old_directory_group_triggers_rmtree(self, tmp_path, monkeypatch):
+        base = tmp_path / "logs"
+        base.mkdir()
+
+        # Old group (to be removed): include a directory so p.is_dir() is True
+        old_dir = base / "1001_dir"
+        old_dir.mkdir()
+        (old_dir / "payload.txt").write_text("x")
+        # Add another file in same old group
+        (base / "1001_file").write_text("x")
+
+        # Newer group (to be kept)
+        (base / "1002_keep").write_text("y")
+
+        # Spy on shutil.rmtree to prove the directory branch executes
+        orig_rmtree = ql.slurm.shutil.rmtree
+        calls = {"count": 0}
+
+        def spy_rmtree(path, *, ignore_errors=True):
+            calls["count"] += 1
+            # perform real removal so filesystem reflects expected state
+            return orig_rmtree(path, ignore_errors=ignore_errors)
+
+        monkeypatch.setattr(ql.slurm.shutil, "rmtree", spy_rmtree)
+
+        # Keep only the newest group (1002) -> 1001 group must be removed
+        ql.slurm._cleanup_submitit_folder(base, max_groups_to_keep=1)
+
+        # rmtree branch was executed
+        assert calls["count"] >= 1
+        # Old group directory removed, newer file remains
+        assert not old_dir.exists()
+        assert (base / "1002_keep").exists()
+
+    def test_assigned_to_name_returns_false_for_attribute_and_subscript(self):
+        # Attribute target: x.y = 1  -> should not count as assigning 'x'
+        attr_target = ast.parse("x.y = 1", mode="exec").body[0].targets[0]
+        # Subscript target: x[0] = 1  -> should not count as assigning 'x'
+        sub_target = ast.parse("x[0] = 1", mode="exec").body[0].targets[0]
+
+        assert ql.slurm._assigned_to_name(attr_target, "x") is False
+        assert ql.slurm._assigned_to_name(sub_target, "x") is False
+
+    def test_submit_job_cleanup_exception_is_caught_and_logged(self, ip, monkeypatch, tmp_path, caplog):
+        # Capture debug records from the slurm module's logger
+        caplog.set_level(logging.DEBUG, logger=ql.slurm.logger.name)
+
+        # Force the internal cleanup call to raise so the outer try/except runs
+        def boom(*_args, **_kwargs):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(ql.slurm, "_cleanup_submitit_folder", boom)
+
+        # Submit a trivial local job; cleanup will raise but be caught and logged
+        ip.run_cell(raw_cell="a=1\nb=1")
+        ip.run_cell_magic(
+            magic_name="submit_job",
+            line=f"-o results -l {tmp_path} -n unit_test -e local",
+            cell="results=a+b",
+        )
+
+        # Job still works
+        assert ip.user_global_ns["results"].result() == 2
+
+        # The except body executed (debug log emitted)
+        assert any("Cleanup of" in rec.getMessage() for rec in caplog.records)

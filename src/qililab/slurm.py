@@ -300,7 +300,7 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
     if ip is not None:
         ip.user_ns[output_name] = job
 
-    # Cleanup old artefacts (interpret num_files_to_keep as “job groups” to keep)
+    # Cleanup old artefacts
     try:
         _cleanup_submitit_folder(folder_path, max_groups_to_keep=max_job_groups_to_keep)
     except Exception as e:  # noqa: BLE001
