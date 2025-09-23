@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.qprogram.qblox_compiler import AcquisitionData
-from qililab.result import Result
 from qililab.typings import Parameter
 from qililab.result.qprogram import MeasurementResult
 from qililab.platform import Bus
@@ -118,23 +117,6 @@ class TestBus:
     def test_bus_run(self, bus):
         bus.run()
         bus.instruments[0].run.assert_called_once()
-
-    def test_bus_acquire_result(self, bus):
-        result = MagicMock(spec=Result)
-        bus.instruments[1].acquire_result.return_value = result
-        assert bus.acquire_result() == result
-
-    def test_bus_acquire_result_raises_error(self, bus):
-        bus.instruments[1].acquire_result.return_value = None
-        with pytest.raises(AttributeError, match=f"The bus {bus.alias} cannot acquire results."):
-            bus.acquire_result()
-
-        bus.settings.instruments.append(bus.settings.instruments[1])
-        result = MagicMock(spec=Result)
-        bus.instruments[1].acquire_result.return_value = result
-        bus.instruments[2].acquire_result.return_value = result
-        with pytest.raises(ValueError, match="Acquisition from multiple instruments is not supported. Obtained a total of 2 results."):
-            bus.acquire_result()
 
     def test_bus_acquire_qprogram_results(self, bus):
         acquisitions = {"acq1": MagicMock(spec=AcquisitionData)}

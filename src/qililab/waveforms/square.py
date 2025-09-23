@@ -37,7 +37,8 @@ class Square(Waveform):
         .. code-block:: python
 
             import qililab as ql
-            square_envelope = ql.Square( amplitude=X, duration=50).envelope()
+
+            square_envelope = ql.Square(amplitude=X, duration=50).envelope()
 
         which for ``X`` being ``1.`` and ``0.75``, look respectively like:
 

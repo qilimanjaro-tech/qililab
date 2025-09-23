@@ -23,7 +23,7 @@ import pyvisa_py
 import qblox_instruments
 import qcodes
 import qcodes_contrib_drivers
-import qibo
+import qilisdk
 import qpysequence
 from qm.version import __version__ as qm_version
 
@@ -40,4 +40,4 @@ def about():
     print(f"Qblox Instrument version:  {qblox_instruments.__version__}")
     print(f"Qpysequence version:       {qpysequence.__version__}")
     print(f"Quantum Machines version:  {qm_version}")
-    print(f"Qibo version:              {qibo.__version__}")
+    print(f"QiliSDK version:           {qilisdk.__version__}")

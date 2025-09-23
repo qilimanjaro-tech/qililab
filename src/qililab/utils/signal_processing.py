@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Signal processing module."""
+
 import numpy as np
 import numpy.typing as npt
 

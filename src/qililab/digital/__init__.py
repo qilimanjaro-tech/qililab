@@ -28,8 +28,9 @@ Transpilation
 
 """
 
+from .circuit_to_qprogram_compiler import CircuitToQProgramCompiler
 from .circuit_transpiler import CircuitTranspiler, DigitalTranspilationConfig
 from .gate_decompositions import GateDecompositions
-from .native_gates import Drag, Wait
+from .native_gates import Drag
 
-__all__ = ["CircuitTranspiler", "DigitalTranspilationConfig", "Drag", "GateDecompositions", "Wait"]
+__all__ = ["CircuitToQProgramCompiler", "CircuitTranspiler", "DigitalTranspilationConfig", "Drag", "GateDecompositions"]
