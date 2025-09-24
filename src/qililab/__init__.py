@@ -28,7 +28,7 @@ from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
 from .execute_circuit import execute
-from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
+from .qprogram import Calibration, CrosstalkMatrix, Domain, QProgram, Experiment
 from .result import ExperimentResults, stream_results
 from .typings import Parameter
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
@@ -69,8 +69,6 @@ __all__ = [
     "Measurement",
     "Parameter",
     "QProgram",
-    "QbloxCompiler",
-    "QuantumMachinesCompiler",
     "Ramp",
     "Sample",
     "Square",

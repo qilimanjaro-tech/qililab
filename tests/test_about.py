@@ -10,7 +10,6 @@ import qcodes
 import qcodes_contrib_drivers
 import qibo
 import qpysequence
-from qm.version import __version__ as qm_version
 
 import qililab as ql
 
@@ -29,7 +28,6 @@ QCodes version:            {qcodes.__version__}
 QCodes Contrib version:    {qcodes_contrib_drivers.__version__}
 Qblox Instrument version:  {qblox_instruments.__version__}
 Qpysequence version:       {qpysequence.__version__}
-Quantum Machines version:  {qm_version}
 Qibo version:              {qibo.__version__}
 """
 

@@ -8,6 +8,7 @@ from qililab.settings import Settings
 from tests.data import SauronQuantumMachines
 from tests.test_utils import build_platform
 
+pytest.importorskip("qm", reason="requires the 'quantum-machines' optional dependency")
 
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:

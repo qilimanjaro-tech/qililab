@@ -1,4 +1,4 @@
-# Copyright 2023 Qilimanjaro Quantum Tech
+# Copyright 2025 Qilimanjaro Quantum Tech
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import sys
 
-"""__init__.py"""
+from qililab._optionals import ImportedFeature, OptionalFeature, Symbol, import_optional_dependencies
 
-from .quantum_machines_cluster import QuantumMachinesCluster
+__all__ = []
 
-__all__ = ["QuantumMachinesCluster"]
+OPTIONAL_FEATURES: list[OptionalFeature] = [
+    OptionalFeature(
+        name="quantum-machines",
+        dependencies=["qm-qua", "qualang-tools"],
+        symbols=[
+            Symbol(
+                path="qililab.instruments.quantum_machines.quantum_machines_cluster",
+                name="QuantumMachinesCluster",
+                kind="class"
+            ),
+        ],
+    ),
+]
+
+current_module = sys.modules[__name__]
+
+# Dynamically import (or stub) each feature's symbols and attach them
+for feature in OPTIONAL_FEATURES:
+    imported_feature: ImportedFeature = import_optional_dependencies(feature)
+    for symbol_name, symbol_obj in imported_feature.symbols.items():
+        setattr(current_module, symbol_name, symbol_obj)
+        __all__ += [symbol_name]
