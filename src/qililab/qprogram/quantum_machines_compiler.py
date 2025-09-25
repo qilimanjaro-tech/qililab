@@ -25,6 +25,7 @@ from qm.program import Program
 from qm.qua import _dsl as qua_dsl
 from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
+from qililab.platform.components.bus import Bus
 from qililab.qprogram.blocks import Average, Block, ForLoop, LinspaceLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
@@ -145,6 +146,7 @@ class QuantumMachinesCompiler:
             SetOffset: self._handle_set_offset,
             SetPhase: self._handle_set_phase,
             SetGain: self._handle_set_gain,
+            SetTrigger: self._handle_set_trigger,
             ResetPhase: self._handle_reset_phase,
             Wait: self._handle_wait,
             Sync: self._handle_sync,
@@ -165,7 +167,7 @@ class QuantumMachinesCompiler:
         thresholds: dict[str, float] | None = None,
         threshold_rotations: dict[str, float] | None = None,
         calibration: Calibration | None = None,
-        qdac_buses: list = [],
+        qdac_buses: list[Bus] | None = None,
     ) -> QuantumMachinesCompilationOutput:
         """Compile QProgram to QUA's Program.
 
@@ -181,16 +183,15 @@ class QuantumMachinesCompiler:
             self._qprogram_block_stack.append(block)
             for element in block.elements:
                 handler = self._handlers.get(type(element))
-                if not isinstance(element, SetTrigger):
-                    if not handler:
-                        raise NotImplementedError(
-                            f"{element.__class__} operation is currently not supported in Quantum Machines."
-                        )
-                    if isinstance(element, (InfiniteLoop, ForLoop, LinspaceLoop, Loop, Average, Parallel, Block)):
-                        with handler(element):
-                            traverse(element)
-                    else:
-                        handler(element)
+                if not handler:
+                    raise NotImplementedError(
+                        f"{element.__class__} operation is currently not supported in Quantum Machines."
+                    )
+                if isinstance(element, (InfiniteLoop, ForLoop, LinspaceLoop, Loop, Average, Parallel, Block)):
+                    with handler(element):
+                        traverse(element)
+                else:
+                    handler(element)
             self._qprogram_block_stack.pop()
 
         self._qprogram = qprogram
@@ -202,7 +203,7 @@ class QuantumMachinesCompiler:
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
-        self._qdac_buses = [bus.alias for bus in qdac_buses]
+        self._qdac_buses = [bus.alias for bus in qdac_buses] if qdac_buses else []
 
         self._qprogram_block_stack = deque()
         self._qprogram_to_qua_variables = {}
@@ -427,6 +428,12 @@ class QuantumMachinesCompiler:
             else element.phase / self.PHASE_COEFF
         )
         qua.frame_rotation_2pi(phase, element.bus)
+
+    def _handle_set_trigger(self, element: SetTrigger):
+        if element.bus in self._qdac_buses:
+            return
+
+        raise NotImplementedError("qprogram.set_trigger is not supported for Quantum Machines.")
 
     def _handle_reset_phase(self, element: ResetPhase):
         if element.bus in self._qdac_buses:

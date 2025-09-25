@@ -25,6 +25,7 @@ import qpysequence.program.instructions as QPyInstructions
 from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 
 from qililab.config import logger
+from qililab.platform.components.bus import Bus
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, LinspaceLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -178,7 +179,7 @@ class QbloxCompiler:
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
         ext_trigger: bool = False,
-        qdac_buses: list = [],
+        qdac_buses: list[Bus] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -232,7 +233,8 @@ class QbloxCompiler:
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
-        self._qdac_buses = [bus.alias for bus in qdac_buses]
+
+        self._qdac_buses = [bus.alias for bus in qdac_buses] if qdac_buses else []
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
