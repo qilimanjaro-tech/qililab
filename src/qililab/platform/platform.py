@@ -1227,7 +1227,6 @@ class Platform:
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
         return self.execute_compilation_output(output=output, debug=debug)
 
-    
     def _normalize_bus_mappings(
         self,
         bus_mappings: Sequence[dict[str, str]] | dict[str, str] | None,
@@ -1308,7 +1307,6 @@ class Platform:
         return self.execute_compilation_outputs_parallel(
             outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug
         )
-
 
     def execute_compilation_outputs_parallel(
         self,
