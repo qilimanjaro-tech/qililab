@@ -159,6 +159,7 @@ class QuantumMachinesCompiler:
         self._measurements: list[_MeasurementCompilationInfo]
         self._configuration: dict
         self._buses: dict[str, _BusCompilationInfo]
+        self._qm_buses: list[str]
 
     def compile(
         self,
@@ -167,7 +168,7 @@ class QuantumMachinesCompiler:
         thresholds: dict[str, float] | None = None,
         threshold_rotations: dict[str, float] | None = None,
         calibration: Calibration | None = None,
-        qdac_buses: list[Bus] | None = None,
+        qm_buses: list[Bus] | None = None,
     ) -> QuantumMachinesCompilationOutput:
         """Compile QProgram to QUA's Program.
 
@@ -203,7 +204,7 @@ class QuantumMachinesCompiler:
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
-        self._qdac_buses = [bus.alias for bus in qdac_buses] if qdac_buses else []
+        self._qm_buses = [bus.alias for bus in qm_buses] if qm_buses else []
 
         self._qprogram_block_stack = deque()
         self._qprogram_to_qua_variables = {}
@@ -293,7 +294,7 @@ class QuantumMachinesCompiler:
 
         buses = self._qprogram.buses
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
-        self._buses = {bus: _BusCompilationInfo() for bus in buses if bus not in self._qdac_buses}
+        self._buses = {bus: _BusCompilationInfo() for bus in buses if bus in self._qm_buses}
 
     def _handle_infinite_loop(self, _: InfiniteLoop):
         return qua.infinite_loop_()
@@ -383,7 +384,7 @@ class QuantumMachinesCompiler:
         return qua.for_(variable, 0, variable < element.shots, variable + 1)  # type: ignore[arg-type]
 
     def _handle_set_frequency(self, element: SetFrequency):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qm_buses:
             return
 
         frequency = (
@@ -394,7 +395,7 @@ class QuantumMachinesCompiler:
         qua.update_frequency(element=element.bus, new_frequency=frequency)
 
     def _handle_set_offset(self, element: SetOffset):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qm_buses:
             return
 
         if element.offset_path1 or isinstance(element.offset_path1, Variable):
@@ -419,7 +420,7 @@ class QuantumMachinesCompiler:
             qua.set_dc_offset(element=element.bus, element_input="single", offset=offset)
 
     def _handle_set_phase(self, element: SetPhase):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qm_buses:
             return
 
         phase = (
@@ -430,19 +431,19 @@ class QuantumMachinesCompiler:
         qua.frame_rotation_2pi(phase, element.bus)
 
     def _handle_set_trigger(self, element: SetTrigger):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qm_buses:
             return
 
         raise NotImplementedError("qprogram.set_trigger is not supported for Quantum Machines.")
 
     def _handle_reset_phase(self, element: ResetPhase):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qm_buses:
             return
 
         qua.reset_frame(element.bus)
 
     def _handle_set_gain(self, element: SetGain):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qm_buses:
             return
 
         gain = self._qprogram_to_qua_variables[element.gain] if isinstance(element.gain, Variable) else element.gain
@@ -452,7 +453,7 @@ class QuantumMachinesCompiler:
         self._buses[element.bus].current_gain = gain
 
     def _handle_play(self, element: Play):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qm_buses:
             return
 
         waveform_I, waveform_Q = element.get_waveforms()
@@ -478,7 +479,7 @@ class QuantumMachinesCompiler:
         yield
 
     def _handle_measure(self, element: Measure):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qm_buses:
             return
 
         waveform_I, waveform_Q = element.get_waveforms()
@@ -562,7 +563,7 @@ class QuantumMachinesCompiler:
         self._measurements.append(measurement_info)
 
     def _handle_wait(self, element: Wait):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qm_buses:
             return
 
         duration = (
@@ -581,8 +582,8 @@ class QuantumMachinesCompiler:
         )
 
     def _handle_sync(self, element: Sync):
-        if element.buses and any(bus in self._qdac_buses for bus in element.buses):
-            raise ValueError("QDACII buses not allowed inside sync function")
+        if element.buses and any(bus not in self._qm_buses for bus in element.buses):
+            raise ValueError("Non QM buses not allowed inside sync function")
 
         if element.buses:
             qua.align(*element.buses)

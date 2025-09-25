@@ -130,7 +130,7 @@ class BusCompilationInfo:
         # Delay. Defaults 0 delay and is updated if delays parameter is provided within the runcard.
         self.delay = 0
 
-        # Latched Paramter flag
+        # Latched Parameter flag
         self.upd_param_instruction_pending: bool = False
 
 
@@ -168,7 +168,7 @@ class QbloxCompiler:
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
         self._markers: dict[str, str] | None
-        self._qdac_buses: list[str]
+        self._qblox_buses: list[str]
 
     def compile(
         self,
@@ -179,7 +179,7 @@ class QbloxCompiler:
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
         ext_trigger: bool = False,
-        qdac_buses: list[Bus] | None = None,
+        qblox_buses: list[Bus] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -234,7 +234,7 @@ class QbloxCompiler:
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
 
-        self._qdac_buses = [bus.alias for bus in qdac_buses] if qdac_buses else []
+        self._qblox_buses = [bus.alias for bus in qblox_buses] if qblox_buses else []
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
@@ -281,7 +281,7 @@ class QbloxCompiler:
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
 
-        return {bus: BusCompilationInfo() for bus in self._qprogram.buses if bus not in self._qdac_buses}
+        return {bus: BusCompilationInfo() for bus in self._qprogram.buses if bus in self._qblox_buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         """Append waveforms to Sequence's Waveforms of the given bus.
@@ -410,7 +410,7 @@ class QbloxCompiler:
         raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
 
     def _handle_set_frequency(self, element: SetFrequency):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         convert = QbloxCompiler._convert_value(element)
@@ -430,7 +430,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_phase(self, element: SetPhase):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         convert = QbloxCompiler._convert_value(element)
@@ -443,14 +443,14 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_reset_phase(self, element: ResetPhase):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_gain(self, element: SetGain):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         convert = QbloxCompiler._convert_value(element)
@@ -469,7 +469,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         convert = QbloxCompiler._convert_value(element)
@@ -495,7 +495,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_markers(self, element: SetMarkers):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         marker_outputs = int(element.mask, 2)
@@ -505,7 +505,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_trigger(self, element: SetTrigger):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         mask = self._markers[element.bus] if self._markers is not None and element.bus in self._markers else "0000"
@@ -538,7 +538,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_wait(self, element: Wait, delay: bool = False):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         duration: QPyProgram.Register | int
@@ -596,7 +596,7 @@ class QbloxCompiler:
             )
 
     def _handle_wait_trigger(self, element: WaitTrigger):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         duration: QPyProgram.Register | int
@@ -671,8 +671,8 @@ class QbloxCompiler:
             self._buses[sync_bus].static_duration = 0
 
     def _handle_sync(self, element: Sync, delay: bool = False):
-        if element.buses and any(bus in self._qdac_buses for bus in element.buses):
-            raise ValueError("QDACII buses not allowed inside sync function")
+        if element.buses and any(bus not in self._qblox_buses for bus in element.buses):
+            raise ValueError("Non QBLOX buses not allowed inside sync function")
 
         # Get the buses involved in the sync operation.
         buses = set(element.buses or self._buses)
@@ -723,7 +723,7 @@ class QbloxCompiler:
         Args:
             element (Measure): measure operation
         """
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         time_of_flight = self._buses[element.bus].time_of_flight
@@ -733,7 +733,7 @@ class QbloxCompiler:
         self._handle_acquire(acquire)
 
     def _handle_acquire(self, element: Acquire):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         # TODO: unify with measure when time of flight is implemented
@@ -802,7 +802,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_play(self, element: Play):
-        if element.bus in self._qdac_buses:
+        if element.bus not in self._qblox_buses:
             return
 
         waveform_I, waveform_Q = element.get_waveforms()
