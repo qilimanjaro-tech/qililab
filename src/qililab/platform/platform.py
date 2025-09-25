@@ -1231,7 +1231,7 @@ class Platform:
         self,
         bus_mappings: Sequence[dict[str, str]] | dict[str, str] | None,
         n: int,
-    ) -> list[dict[str, str]]:
+    ) -> list[dict[str, str]] | None:
         """
         Return a list of length n with one mapping per qprogram.
         Accepts:
