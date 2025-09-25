@@ -109,6 +109,7 @@ platform.execute_experiment(experiment)
 ```
 
 [#938](https://github.com/qilimanjaro-tech/qililab/pull/938)
+[#997](https://github.com/qilimanjaro-tech/qililab/pull/997)
 
 - Minor modification at database `DatabaseManager`, as it now requires the config file to contain a `base_path_local`, `base_path_shared` and `data_write_folder`. following the structure:
 
