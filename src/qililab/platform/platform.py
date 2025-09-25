@@ -1229,7 +1229,7 @@ class Platform:
 
     def _normalize_bus_mappings(
         self,
-        bus_mappings: Sequence[dict[str, str]] | dict[str, str] | None,
+        bus_mappings: Sequence[dict[str, str] | None] | dict[str, str] | None,
         n: int,
     ) -> list[dict[str, str]] | None:
         """
