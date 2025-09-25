@@ -504,14 +504,25 @@ class QbloxCompiler:
             self._buses[bus].upd_param_instruction_pending = False
 
         else:  # no instructions pending
+            combined_duration_flag = False
             if duration > INST_MAX_WAIT:
                 for _ in range(duration // INST_MAX_WAIT):
                     self._buses[bus].qpy_block_stack[-1].append_component(
                         component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
                     )
-            self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
-            )
+            # TODO: get block.last_component from qpysequence
+            
+            if isinstance(self._buses[bus].qpy_block_stack[-1], QPyProgram.Block):
+                block_components = self._buses[bus].qpy_block_stack[-1].components
+                if block_components and isinstance(block_components[-1], QPyInstructions.Wait):
+                    combined_duration = block_components[-1].duration + (duration % INST_MAX_WAIT)
+                    if combined_duration < INST_MAX_WAIT: # combine the waits if possible
+                        block_components[-1]=QPyInstructions.Wait(wait_time=combined_duration)
+                        combined_duration_flag = True
+            if combined_duration_flag is False:
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
+                )
 
     def _handle_sync(self, element: Sync, delay: bool = False):
         # Get the buses involved in the sync operation.
