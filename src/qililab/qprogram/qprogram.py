@@ -293,9 +293,6 @@ class QProgram(StructuredProgram):
         self,
         bus: str,
         waveform: Waveform | IQPair,
-        dwell: int | None = None,
-        delay: int | None = None,
-        repetitions: int | None = None,
     ) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
@@ -309,9 +306,6 @@ class QProgram(StructuredProgram):
         self,
         bus: str,
         waveform: str,
-        dwell: int | None = None,
-        delay: int | None = None,
-        repetitions: int | None = None,
     ) -> None:
         """Play a named waveform on the bus.
 
@@ -324,9 +318,6 @@ class QProgram(StructuredProgram):
         self,
         bus: str,
         waveform: Waveform | IQPair | str,
-        dwell: int | None = None,
-        delay: int | None = None,
-        repetitions: int | None = None,
     ) -> None:
         """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
@@ -338,9 +329,9 @@ class QProgram(StructuredProgram):
             waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
         """
         operation = (
-            PlayWithCalibratedWaveform(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions)
+            PlayWithCalibratedWaveform(bus=bus, waveform=waveform)
             if isinstance(waveform, str)
-            else Play(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions)
+            else Play(bus=bus, waveform=waveform)
         )
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -525,17 +516,6 @@ class QProgram(StructuredProgram):
         self._active_block.append(operation)
         self._buses.add(bus)
 
-    def set_markers(self, bus: str, mask: str):
-        """Set the markers based on a 4-bit binary mask.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            mask (str): A 4-bit mask, where 0 means that the associated marker is open (no signal), and 1 means that the marker is closed (signal).
-        """
-        operation = SetMarkers(bus=bus, mask=mask)
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
     @yaml.register_class
     class _QbloxInterface:
         def __init__(self, qprogram: "QProgram"):
@@ -609,6 +589,17 @@ class QProgram(StructuredProgram):
                 if isinstance(waveform, str)
                 else Play(bus=bus, waveform=waveform, wait_time=wait_time)
             )
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
+
+        def set_markers(self, bus: str, mask: str):
+            """Set the markers based on a 4-bit binary mask.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                mask (str): A 4-bit mask, where 0 means that the associated marker is open (no signal), and 1 means that the marker is closed (signal).
+            """
+            operation = SetMarkers(bus=bus, mask=mask)
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
@@ -784,6 +775,9 @@ class QProgram(StructuredProgram):
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
+                dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
+                delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
+                repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
             """
 
         @overload
@@ -800,6 +794,9 @@ class QProgram(StructuredProgram):
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (str): An identifier of a named waveform.
+                dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
+                delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
+                repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
             """
 
         def play(
@@ -818,8 +815,11 @@ class QProgram(StructuredProgram):
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
-                wait_time (int): Overwrite the value of Q1ASM play instruction's wait_time parameter.
+                dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
+                delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
+                repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
             """
+
             operation = (
                 PlayWithCalibratedWaveform(
                     bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions
