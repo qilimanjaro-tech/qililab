@@ -1249,7 +1249,11 @@ class Platform:
         if len(bus_mappings) != n:
             raise ValueError(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")
 
-        return list(bus_mappings)
+        output: list[dict[str, str] | None] = []
+        for bus_mapping in bus_mappings:
+            output.append(None if bus_mapping is None else bus_mapping.copy())
+
+        return output
 
     def _mapped_buses(self, qp_buses: set[str], mapping: dict[str, str] | None) -> set[str]:
         """Apply mapping (if any) to a qprogram's logical buses to get physical buses."""
