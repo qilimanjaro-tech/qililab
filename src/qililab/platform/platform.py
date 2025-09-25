@@ -1291,7 +1291,7 @@ class Platform:
             return []
 
         # 1) Normalize mappings to one-per-qprogram
-        bm_list = self._normalize_bus_mappings(bus_mappings, len(qprograms))
+        bus_mapping_list = self._normalize_bus_mappings(bus_mappings, len(qprograms))
 
         # 2) Validate: no shared *physical* buses after applying each mapping
         all_physical: set[str] = set()
@@ -1304,8 +1304,8 @@ class Platform:
             all_physical |= phys
 
         outputs = [
-            self.compile_qprogram(qprogram=qp, bus_mapping=bm, calibration=calibration)
-            for qp, bm in zip(qprograms, bm_list)
+            self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
+            for qp, bus_mapping in zip(qprograms, bus_mapping_list)
         ]
 
         if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
