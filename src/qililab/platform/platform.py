@@ -24,7 +24,7 @@ import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Callable, cast, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
 import numpy as np
 from qibo.gates import M
@@ -1241,7 +1241,7 @@ class Platform:
         if len(bus_mappings) != n:
             raise ValueError(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")
         return list(bus_mappings)
-    
+
     def _mapped_buses(qp_buses: set[str], mapping: Optional[dict[str, str]]) -> set[str]:
         """Apply mapping (if any) to a qprogram's logical buses to get physical buses."""
         if not mapping:
