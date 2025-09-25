@@ -1229,9 +1229,9 @@ class Platform:
 
     def _normalize_bus_mappings(
         self,
-        bus_mappings: Sequence[dict[str, str] | None] | dict[str, str] | None,
+        bus_mappings: list[dict[str, str] | None] | dict[str, str] | None,
         n: int,
-    ) -> list[dict[str, str]] | None:
+    ) -> list[dict[str, str] | None] | None:
         """
         Return a list of length n with one mapping per qprogram.
         Accepts:
