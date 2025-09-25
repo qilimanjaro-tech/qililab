@@ -1240,7 +1240,7 @@ class Platform:
         - sequence of dict/None, len n  -> as-is
         """
         if bus_mappings is None:
-            return [None] * n
+            return bus_mappings
 
         if isinstance(bus_mappings, dict):
             return [bus_mappings.copy() for _ in range(n)]
