@@ -1228,6 +1228,7 @@ class Platform:
         return self.execute_compilation_output(output=output, debug=debug)
 
     def _normalize_bus_mappings(
+        self,
         bus_mappings: Optional[list[dict[str, str]]],
         n: int,
     ) -> list[Optional[dict[str, str]]]:
@@ -1242,7 +1243,7 @@ class Platform:
             raise ValueError(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")
         return list(bus_mappings)
 
-    def _mapped_buses(qp_buses: set[str], mapping: Optional[dict[str, str]]) -> set[str]:
+    def _mapped_buses(self, qp_buses: set[str], mapping: Optional[dict[str, str]]) -> set[str]:
         """Apply mapping (if any) to a qprogram's logical buses to get physical buses."""
         if not mapping:
             return set(qp_buses)
