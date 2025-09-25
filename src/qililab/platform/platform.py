@@ -1241,11 +1241,14 @@ class Platform:
         """
         if bus_mappings is None:
             return [None] * n
+
         if isinstance(bus_mappings, dict):
-            return [bus_mappings] * n
+            return [bus_mappings.copy() for _ in range(n)]
+
         # sequence case
         if len(bus_mappings) != n:
             raise ValueError(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")
+
         return list(bus_mappings)
 
     def _mapped_buses(self, qp_buses: set[str], mapping: dict[str, str] | None) -> set[str]:
