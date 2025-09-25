@@ -25,7 +25,7 @@ from qililab.instruments.decorators import check_device_initialized, log_set_par
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.typings import QbloxD5a as QbloxD5aDriver
 
 
@@ -60,7 +60,7 @@ class QbloxD5a(VoltageSource):
         return getattr(self.device, f"dac{dac_index}")
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Set Qblox instrument calibration settings."""
 
         if channel_id is None:
@@ -89,7 +89,7 @@ class QbloxD5a(VoltageSource):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Get instrument parameter.
 
         Args:
