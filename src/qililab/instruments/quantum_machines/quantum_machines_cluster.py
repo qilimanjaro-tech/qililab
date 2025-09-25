@@ -14,12 +14,13 @@
 
 """Quantum Machines Manager class."""
 
+import hashlib
 import os
 from dataclasses import dataclass
 from typing import Any, cast
 
 import numpy as np
-from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig
+from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig, generate_qua_script
 from qm.api.v2.job_api import JobApi
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
@@ -29,7 +30,13 @@ from qililab.instruments.decorators import check_device_initialized, log_set_par
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, QMMDriver
-from qililab.utils import hash_qua_program, merge_dictionaries
+from qililab.utils import merge_dictionaries
+
+
+def hash_qua_program(program: Program) -> str:
+    """Hash a QUA program"""
+    program_str = "\n".join(generate_qua_script(program).split("\n")[3:])
+    return hashlib.md5(program_str.encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
 @InstrumentFactory.register

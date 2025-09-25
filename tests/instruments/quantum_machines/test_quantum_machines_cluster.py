@@ -5,18 +5,21 @@ from unittest.mock import MagicMock, call, patch
 
 import numpy as np
 import pytest
-from qm import Program
-from qm.qua import play, program
 
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.settings import Settings
 from qililab.typings import Parameter
 
+pytest.importorskip("qm", reason="requires the 'quantum-machines' optional dependency")
+
+from qm import Program
+from qm.qua import play, program
+
 
 @pytest.fixture(name="qua_program")
 def fixture_qua_program():
-    """Dummy QUA Program"""
+
     with program() as dummy_qua_program:
         play("pulse1", "element1")
 

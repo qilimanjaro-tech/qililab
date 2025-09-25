@@ -29,9 +29,9 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
-from qm import generate_qua_script
 from ruamel.yaml import YAML
 
+from qililab._optionals import OptionalFeature, Symbol, import_optional_dependencies
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
@@ -73,6 +73,7 @@ from qililab.utils import hash_qpy_sequence
 if TYPE_CHECKING:
     from queue import Queue
 
+    from qm import generate_qua_script as _T_generate_qua_script  # noqa: F401
     from qpysequence import Sequence as QpySequence
 
     from qililab.digital import DigitalTranspilationConfig
@@ -82,6 +83,21 @@ if TYPE_CHECKING:
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
     from qililab.settings.digital.gate_event_settings import GateEventSettings
+
+_QM = OptionalFeature(
+    name="quantum-machines",
+    dependencies=[
+        "qm-qua",
+        "qualang-tools",
+    ],
+    symbols=[
+        Symbol(path="qm", name="generate_qua_script", kind="callable"),
+    ],
+)
+_qm = import_optional_dependencies(_QM).symbols
+
+# Re-export runtime names (real or stubs)
+generate_qua_script: "Callable[..., str]" = cast("Any", _qm["generate_qua_script"])
 
 
 class Platform:
