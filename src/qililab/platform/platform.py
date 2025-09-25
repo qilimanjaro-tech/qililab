@@ -1231,7 +1231,7 @@ class Platform:
         self,
         bus_mappings: list[dict[str, str] | None] | dict[str, str] | None,
         n: int,
-    ) -> list[dict[str, str] | None] | None:
+    ) -> list[dict[str, str] | None]:
         """
         Return a list of length n with one mapping per qprogram.
         Accepts:
@@ -1240,7 +1240,7 @@ class Platform:
         - sequence of dict/None, len n  -> as-is
         """
         if bus_mappings is None:
-            return bus_mappings
+            return [None] * n
 
         if isinstance(bus_mappings, dict):
             return [bus_mappings.copy() for _ in range(n)]
@@ -1304,10 +1304,10 @@ class Platform:
                     )
                 all_physical |= phys
 
-        outputs = [
-            self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
-            for qp, bus_mapping in zip(qprograms, bus_mapping_list)
-        ]
+            outputs = [
+                self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
+                for qp, bus_mapping in zip(qprograms, bus_mapping_list)
+            ]
 
         if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
             raise ValueError("Parallel execution is not supported in Quantum Machines.")
