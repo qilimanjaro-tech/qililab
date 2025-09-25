@@ -1225,20 +1225,16 @@ class Platform:
         return self.execute_compilation_output(output=output, debug=debug)
 
     def _normalize_bus_mappings(
-        bus_mappings: Optional[Sequence[Optional[dict[str, str]]]] | Optional[dict[str, str]],
+        bus_mappings: Optional[list[dict[str, str]]],
         n: int,
     ) -> list[Optional[dict[str, str]]]:
         """Return a list of length n with one mapping per qprogram.
         Accepts:
         - None                          -> [None] * n
-        - single dict                   -> [that dict] * n
         - sequence of dict/None, len n  -> as-is
         """
         if bus_mappings is None:
             return [None] * n
-        if isinstance(bus_mappings, dict):
-            return [bus_mappings] * n
-        # sequence case
         if len(bus_mappings) != n:
             raise ValueError(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")
         return list(bus_mappings)
@@ -1278,10 +1274,10 @@ class Platform:
         if not qprograms:
             return []
 
-        bm_list = self._normalize_bus_mappings(bus_mappings, len(qprograms))
+        bus_mapping_list = self._normalize_bus_mappings(bus_mappings, len(qprograms))
 
         all_physical: set[str] = set()
-        for qp, bm in zip(qprograms, bm_list):
+        for qp, bm in zip(qprograms, bus_mapping_list):
             phys = self._mapped_buses(qp.buses, bm)  # qp.buses is the set of logical buses
             if all_physical & phys:
                 raise ValueError(
@@ -1290,8 +1286,8 @@ class Platform:
             all_physical |= phys
 
         outputs = [
-            self.compile_qprogram(qprogram=qp, bus_mapping=bm, calibration=calibration)
-            for qp, bm in zip(qprograms, bm_list)
+            self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
+            for qp, bus_mapping in zip(qprograms, bus_mapping_list)
         ]
 
         if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
