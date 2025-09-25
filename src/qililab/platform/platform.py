@@ -24,7 +24,7 @@ import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 import numpy as np
 from qibo.gates import M
@@ -1265,8 +1265,8 @@ class Platform:
     def execute_qprograms_parallel(
         self,
         qprograms: list[QProgram],
-        bus_mappings: Sequence[dict[str, str]] | dict[str, str] | None = None,
-        calibration: Optional[Calibration] = None,
+        bus_mappings: list[dict[str, str]] | dict[str, str] | None = None,
+        calibration: Calibration | None = None,
         debug: bool = False,
     ) -> list[QProgramResults]:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
