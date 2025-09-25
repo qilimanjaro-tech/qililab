@@ -1295,13 +1295,14 @@ class Platform:
 
         # 2) Validate: no shared *physical* buses after applying each mapping
         all_physical: set[str] = set()
-        for qp, bm in zip(qprograms, bus_mapping_list):
-            phys = self._mapped_buses(qp.buses, bm)  # qp.buses is the set of logical buses
-            if all_physical & phys:
-                raise ValueError(
-                    f"QPrograms cannot be executed in parallel (bus collision on {all_physical & phys})."
-                )
-            all_physical |= phys
+        if bus_mapping_list:
+            for qp, bm in zip(qprograms, bus_mapping_list):
+                phys = self._mapped_buses(qp.buses, bm)  # qp.buses is the set of logical buses
+                if all_physical & phys:
+                    raise ValueError(
+                        f"QPrograms cannot be executed in parallel (bus collision on {all_physical & phys})."
+                    )
+                all_physical |= phys
 
         outputs = [
             self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
