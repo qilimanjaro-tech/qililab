@@ -40,7 +40,7 @@ class CalibrationController:
 
     **Graph Structure:**
 
-    In the graph, directions should be given by `nodes` pointing to their next `dependents` (natural time flow for calibration).
+    In the graph, directions should be given by :class:`CalibrationNode` pointing to their next `dependents` (natural time flow for calibration).
     This defines our `starts` and `ends` of the calibration:
 
     - `starts`: `Roots` (``in_degree=0``, no arrows pointing in, no `dependencies`) of the graph, where all arrows leave the node.
@@ -60,7 +60,7 @@ class CalibrationController:
         Find information about the automatic-calibration workflow, in the examples below.
 
     Args:
-        calibration_graph (nx.DiGraph): The calibration (directed acyclic) graph, where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``. Directions should be given
+        calibration_graph (nx.DiGraph): The calibration (directed acyclic) graph, where each node is a ``string`` corresponding to a :attr:`.CalibrationNode.node_id`. Directions should be given
             by `nodes` pointing to their next `dependents` (natural time flow for calibration), defining our `starts` and `ends` of the calibration as the `roots` (``in_degree=0``) and `leaves`
             (``out_degree=0``) of the graph.
         node_sequence (dict[str, CalibrationNode]): Mapping for the nodes of the graph, from strings into the actual initialized nodes.
@@ -70,32 +70,45 @@ class CalibrationController:
             making the calibration process faster, but less accurate,and a small value will make the calibration process slower, but more accurate and robust.
             A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (3h).
 
+    |
+
+    **Calibration Workflow:**
+
+    The calibration process is structured into three levels of methods:
+
+    1. **Highest Level Method**: The ``run_automatic_calibration()`` method finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``calibrate_all()`` on them.
+
+    2. **Mid-Level Method**: ``calibrate_all()``.
+        - ``calibrate_all(node)`` starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``, checking the last time executions at each step.
+
+    3. **Low-Level Method**: ``calibrate()`` is the method you would be calling during this process to interact with the ``nodes``.
+
+
+    ----------
+
+    **Dangerous Behaviors:**
+
+    Note that depending on your ``CalibrationController`` construction, you can have dangerous behaviors in the workflow. You need to watch out for:
+    - If you give too long ``drift_timeout``'s, since ``calibrate_all()`` will assume the node is 100% working.. To start the calibration from the start again, just reduce the ``drift_timeout``, or remove the executed files!
+
+    ----------
+
     Examples:
 
-        **Calibration Workflow:**
+        To calibrate four different qubits, each with two sequential 1Q experiments (nodes: first and second), and two 2Q gate experiments connecting qubits 0-1 and 2-3 (nodes: joint_first and joint_second):
 
-        The calibration process is structured into three levels of methods:
+        .. code-block:: python
 
-        1. **Highest Level Method**: The ``run_automatic_calibration()`` method finds all the end nodes of the graph (`leaves`, those without further `dependents`) and runs ``calibrate_all()`` on them.
+            # qubit_0: first -> second \\
+            #                           -> joint_first[0,1] -> joint_second[0,1]
+            # qubit_1: first -> second /
+            #
+            #
+            # qubit_2: first -> second \\
+            #                           -> joint_first[2,3] -> joint_second[2,3]
+            # qubit_3: first -> second /
 
-        2. **Mid-Level Method**: ``calibrate_all()``.
-            - ``calibrate_all(node)`` starts from the `roots` that ``node`` depends on, and moves forwards (`dependency -> dependant`) until ``node``, checking the last time executions at each step.
-
-        3. **Low-Level Method**: ``calibrate()`` is the method you would be calling during this process to interact with the ``nodes``.
-
-
-        ----------
-
-        **Dangerous Behaviors:**
-
-        Note that depending on your ``CalibrationController`` construction, you can have dangerous behaviors in the workflow. You need to watch out for:
-        - If you give too long ``drift_timeout``'s, since ``calibrate_all()`` will assume the node is 100% working.. To start the calibration from the start again, just reduce the ``drift_timeout``, or remove the executed files!
-
-        ----------
-
-        **Practical example:**
-
-        To create two linked nodes twice, for two different qubits, and pass them to a :class:`.CalibrationController` and run a ``calibrate_all()``, you need:
+        you first need to create the 1Q nodes (and import the needed packages):
 
         .. code-block:: python
 
@@ -107,37 +120,96 @@ class CalibrationController:
             # GRAPH CREATION AND NODE MAPPING (key = name in graph, value = node object):
             nodes = {}
             G = nx.DiGraph()
-            first, second = [], []
+            last_layer_1qb_nodes = []
 
             # CREATE NODES:
-            for qubit in [0, 1]:
-                first[qubit] = CalibrationNode(
+            for qubit in [0, 1, 2, 3]:
+                first = CalibrationNode(
                     nb_path="notebooks/first.ipynb",
                     qubit_index=qubit,
                 )
-                nodes[first[qubit].node_id] = first[qubit]
+                nodes[first.node_id] = first
 
-                second[qubit] = CalibrationNode(
+                second = CalibrationNode(
                     nb_path="notebooks/second.ipynb",
                     qubit_index=qubit,
                     sweep_interval=np.arange(start=0, stop=19, step=1),
                 )
-                nodes[second[qubit].node_id] = second[qubit]
+                nodes[second.node_id] = second
 
-                # GRAPH BUILDING (1 --> 2):
-                G.add_edge(first[qubit].node_id, second[qubit].node_id)
+                # STORE LAST NODE OF EACH QUBIT, TO CONNECT THEM LATER TO A 2Q NODE:
+                last_layer_1qb_nodes.append(second.node_id)
+
+                # GRAPH BUILDING (1st --> 2nd):
+                G.add_edge(first.node_id, second.node_id)
+
+        Then you can add the 2Q nodes, explicitly writing its dependence, which would calibrate sequentially each of the two separate
+        graphs (qubits 0 and 1 + joint[0,1] first, and qubits 2 and 3 + joint[2,3] later):
+
+        .. code-block:: python
+
+            # ADD 2Q NODES DEPENDING ON THE 1Q NODES:
+            for qubits in [[0, 1], [2, 3]]:
+                joint_first = CalibrationNode(
+                    nb_path="notebooks/joint_first.ipynb",
+                    qubit_index=qubits,
+                    sweep_interval=np.arange(start=0, stop=19, step=1),
+                )
+                nodes[joint_first.node_id] = joint_first
+
+                joint_second = CalibrationNode(
+                    nb_path="notebooks/joint_second.ipynb",
+                    qubit_index=qubits,
+                    sweep_interval=np.arange(start=0, stop=19, step=1),
+                )
+                nodes[joint_second.node_id] = joint_second
+
+                # GRAPH BUILDING (second 1Q Nodes -> first 2Q (joint) Nodes):
+                G.add_edge(last_layer_1qb_nodes[qubits[0]], joint_first.node_id)
+                G.add_edge(last_layer_1qb_nodes[qubits[1]], joint_first.node_id)
+
+                # GRAPH BUILDING (joint_1st --> joint_2nd):
+                G.add_edge(joint_first.node_id, joint_second.node_id)
+
+
+        Or in reality you can skip the explicit connection of the 1Q gates to the 2Q gates, and just pass them as a separate graph
+        posteriorly, calibrating all the 1Q gates first, and then all the 2Q gates:
+
+        .. code-block:: python
+
+            # ADD 2Q NODES DEPENDING ON THE 1Q NODES:
+            for qubits in [[0, 1], [2, 3]]:
+                joint_first = CalibrationNode(
+                    nb_path="notebooks/joint_first.ipynb",
+                    qubit_index=qubits,
+                    sweep_interval=np.arange(start=0, stop=19, step=1),
+                )
+                nodes[joint_first.node_id] = joint_first
+
+                joint_second = CalibrationNode(
+                    nb_path="notebooks/joint_second.ipynb",
+                    qubit_index=qubits,
+                    sweep_interval=np.arange(start=0, stop=19, step=1),
+                )
+                nodes[joint_second.node_id] = joint_second
+
+                # GRAPH BUILDING (joints_1st --> joints_2nd):
+                G.add_edge(joint_first.node_id, joint_second.node_id) # If you only have one, you can just add_node(...).
+
+        To finally create the ``CalibrationController`` and run the automatic calibration:
+
+        .. code-block:: python
 
             # CREATE CALIBRATION CONTROLLER:
-            controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard)
+            controller = CalibrationController(node_sequence=nodes, calibration_graph=G, runcard=path_runcard, drift_timeout=1)
 
-            ### WORKFLOW TO DO:
-            controller.calibrate_all(second[1]) # calibrate_all starting at second node for qubit 1
+            ### MAIN WORKFLOW TO DO:
+            controller.run_automatic_calibration() # calibrate all the nodes in the graph, starting from the root until the leaves.
 
         .. note::
 
             Find information about how these nodes and their notebooks need to be in the :class:`CalibrationNode` class documentation.
 
-            There you will also find the above code, but without defining ``first`` and ``second`` as lists.
     """
 
     def __init__(
@@ -151,7 +223,7 @@ class CalibrationController:
             raise ValueError("The calibration graph must be a Directed Acyclic Graph (DAG).")
 
         self.calibration_graph: nx.DiGraph = calibration_graph
-        """The calibration (directed acyclic) graph. Where each node is a ``string`` corresponding to a ``CalibrationNode.node_id``.
+        """The calibration (directed acyclic) graph. Where each node is a ``string`` corresponding to a :attr:`.CalibrationNode.node_id`.
 
         Directions should be given by `nodes` pointing to their next `dependents` (natural time flow for calibration),
         defining our `starts` and `ends` of the calibration, as:
@@ -188,27 +260,6 @@ class CalibrationController:
         A node will be skipped if the ``drift timeout`` is bigger than the time since its last calibration. Defaults to 7200 (2h).
         """
 
-    def calibrate_all(self, node: CalibrationNode):
-        """Calibrates all the nodes sequentially.
-
-        Args:
-            node (CalibrationNode): The node where we want to start the `calibration_all()` on. Normally you would want
-                this node to be the furthest node in the calibration graph.
-        """
-        logger.info("WORKFLOW: Calibrating all %s.\n", node.node_id)
-        for n in self._dependencies(node):
-            self.calibrate_all(n)
-
-        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
-        # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
-        if not node.been_calibrated:
-            if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
-                self.calibrate(node)
-                self._update_parameters(node)
-
-            node.been_calibrated = True
-        # After passing this block `node.been_calibrated` will always be True, so it will not be recalibrated again.
-
     def run_automatic_calibration(self) -> dict[str, dict]:
         """Runs the full automatic calibration procedure and retrieves the final set parameters and achieved fidelities dictionaries.
 
@@ -238,6 +289,27 @@ class CalibrationController:
             "#############################################\n"
         )
         return self.get_qubit_fidelities_and_parameters_df_tables()
+
+    def calibrate_all(self, node: CalibrationNode):
+        """Given a node to start from, calibrates all the dependency notebooks sequentially, so that the given node can be calibrated last.
+
+        Args:
+            node (CalibrationNode): The node where we want to start the `calibration_all()` on. Normally you would want
+                this node to be the furthest node in the calibration graph.
+        """
+        logger.info("WORKFLOW: Calibrating all %s.\n", node.node_id)
+        for n in self._dependencies(node):
+            self.calibrate_all(n)
+
+        # You can skip it from the `drift_timeout`, but also skip it due to `been_calibrated()`
+        # If you want to start the calibration from the start again, just decrease the `drift_timeout` or remove the executed files!
+        if not node.been_calibrated:
+            if node.previous_timestamp is None or self._is_timeout_expired(node.previous_timestamp, self.drift_timeout):
+                self.calibrate(node)
+                self._update_parameters(node)
+
+            node.been_calibrated = True
+        # After passing this block `node.been_calibrated` will always be True, so it will not be recalibrated again.
 
     def get_qubit_fidelities_and_parameters_df_tables(self) -> dict[str, pd.DataFrame]:
         """Generates the 1q, 2q, fidelities and parameters dataframes, with the last calibrations.

@@ -1,10 +1,11 @@
+import re
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 import qpysequence as QPy
 
-from qililab import Calibration, Domain, Gaussian, IQPair, QbloxCompiler, QProgram, Square
+from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, QbloxCompiler, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
 from tests.test_utils import is_q1asm_equal
 from qililab.config import logger
@@ -434,7 +435,7 @@ def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
 
 
 @pytest.fixture(name="play_square_waveforms_with_optimization")
-def fixture_lay_square_waveforms_with_optimization() -> QProgram:
+def fixture_play_square_waveforms_with_optimization() -> QProgram:
     qp = QProgram()
     qp.play(bus="drive", waveform=IQPair(I=Square(1.0, duration=25), Q=Square(0.5, duration=25)))
     qp.play(bus="drive", waveform=Square(1.0, duration=50))
@@ -444,6 +445,51 @@ def fixture_lay_square_waveforms_with_optimization() -> QProgram:
     qp.play(bus="drive", waveform=Square(1.0, duration=9790223))
     qp.play(bus="drive", waveform=IQPair(I=Square(1.0, duration=9790223), Q=Square(1.0, duration=9790223)))
     qp.play(bus="drive", waveform=Square(0.5, duration=1234567))
+    return qp
+
+
+@pytest.fixture(name="play_square_smooth_waveforms_with_optimization")
+def fixture_play_square_smooth_waveforms_with_optimization() -> QProgram:
+    qp = QProgram()
+    qp.play(
+        bus="drive",
+        waveform=IQPair(
+            I=FlatTop(1.0, duration=25, smooth_duration=10), Q=FlatTop(0.5, duration=25, smooth_duration=10)
+        ),
+    )
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=50, smooth_duration=10))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=500, smooth_duration=10))
+    qp.play(
+        bus="drive",
+        waveform=IQPair(
+            I=FlatTop(1.0, duration=25, smooth_duration=1, buffer=1),
+            Q=FlatTop(0.5, duration=25, smooth_duration=1, buffer=1),
+        ),
+    )
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=50, smooth_duration=1, buffer=1))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=104, smooth_duration=1, buffer=1))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=500, smooth_duration=1, buffer=1))
+    qp.play(
+        bus="drive",
+        waveform=IQPair(
+            I=FlatTop(1.0, duration=500, smooth_duration=10), Q=FlatTop(0.5, duration=500, smooth_duration=10)
+        ),
+    )
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=50_000, smooth_duration=10))
+    qp.play(bus="drive", waveform=FlatTop(1.0, duration=9790223, smooth_duration=10))
+    qp.play(
+        bus="drive",
+        waveform=IQPair(
+            I=FlatTop(1.0, duration=9790223, smooth_duration=10), Q=FlatTop(1.0, duration=9790223, smooth_duration=10)
+        ),
+    )
+    qp.play(bus="drive", waveform=FlatTop(0.5, duration=1234567, smooth_duration=10))
+    qp.play(
+        bus="drive",
+        waveform=IQPair(
+            I=FlatTop(1.0, duration=1234567, smooth_duration=10), Q=FlatTop(1.0, duration=1234567, smooth_duration=10)
+        ),
+    )
     return qp
 
 
@@ -1714,6 +1760,102 @@ set_freq         R5
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_play_square_smooth_waveforms_with_optimization(
+        self, play_square_smooth_waveforms_with_optimization: QProgram
+    ):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=play_square_smooth_waveforms_with_optimization)
+
+        assert len(sequences["drive"]._waveforms._waveforms) == 32
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 26
+                            play             2, 3, 51
+                            play             4, 5, 10
+                            move             4, R0
+            square_0:
+                            play             6, 7, 120
+                            loop             R0, @square_0
+                            play             8, 5, 10
+                            play             9, 10, 26
+                            play             11, 3, 51
+                            play             12, 13, 4
+                            move             1, R1
+            square_1:
+                            play             14, 15, 96
+                            loop             R1, @square_1
+                            play             16, 13, 4
+                            play             12, 13, 4
+                            move             4, R2
+            square_2:
+                            play             17, 18, 123
+                            loop             R2, @square_2
+                            play             16, 13, 4
+                            play             4, 19, 10
+                            move             4, R3
+            square_3:
+                            play             6, 20, 120
+                            loop             R3, @square_3
+                            play             8, 21, 10
+                            play             4, 5, 10
+                            move             490, R4
+            square_4:
+                            play             22, 23, 102
+                            loop             R4, @square_4
+                            play             8, 5, 10
+                            play             4, 5, 10
+                            move             49197, R5
+            square_5:
+                            play             24, 25, 199
+                            loop             R5, @square_5
+                            play             8, 5, 10
+                            play             4, 4, 10
+                            move             49197, R6
+            square_6:
+                            play             24, 24, 199
+                            loop             R6, @square_6
+                            play             8, 8, 10
+                            play             19, 5, 10
+                            move             12345, R7
+            square_7:
+                            play             26, 27, 100
+                            loop             R7, @square_7
+                            play             28, 29, 47
+                            play             21, 5, 10
+                            play             4, 4, 10
+                            move             12345, R8
+            square_8:
+                            play             30, 30, 100
+                            loop             R8, @square_8
+                            play             31, 31, 47
+                            play             8, 8, 10
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_play_square_smooth_raise_error_async_iq(self):
+        qp = QProgram()
+        qp.play(
+            bus="drive",
+            waveform=IQPair(
+                I=FlatTop(1.0, duration=250, smooth_duration=10, buffer=10),
+                Q=FlatTop(0.5, duration=250, smooth_duration=10),
+            ),
+        )
+
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match=re.escape("smooth_duration + buffer of both I and Q must be the same.")):
+            compiler.compile(qprogram=qp)
 
     def test_play_operation_with_variable_in_waveform(self, caplog, play_operation_with_variable_in_waveform: QProgram):
         compiler = QbloxCompiler()

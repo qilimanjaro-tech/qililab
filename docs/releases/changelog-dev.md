@@ -125,12 +125,18 @@ The data automatically selects between the local or shared domains depending on 
 
 [#951](https://github.com/qilimanjaro-tech/qililab/pull/951)
 
+- Modified smoothed square waveform class `FlatTop(amplitude, duration, smooth_duration, buffer = 0)` which works similar to the `Square` waveform with an additional smoothing on the edges. The only additional parameters are the smoothing duration and the buffer time. In `QbloxCompiler` if the duration exceeds a threshold of 100 ns the pulses are divide into two arbitrary pulses at the beginning and the end for the smooth parts and a loop of square pulses in the middle, with the exact same behavior as `Square` pulses.
+  [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
+
 - Modified `StreamArray` to work with live plot. Now the H5 file has the `swmr_mode` set as true allowing for live reading and `StreamArray`'s `__enter__` and `__setitem__` have `file.flush()` to update the H5 live. Moved `create_dataset` to `__enter__` instead of `__setitem__` to allow for live plot while acounting for VNA results with different data structure. Modified the `experiment_completed` to set as `True` after the execution, now in case of a crash the experiment will not be set as Completed.
   [#966](https://github.com/qilimanjaro-tech/qililab/pull/966)
   [#976](https://github.com/qilimanjaro-tech/qililab/pull/976)
 
 - Modified the `experiment_completed` to set as `True` after the execution, now in case of a crash the experiment will not be set as Completed.
   [#972](https://github.com/qilimanjaro-tech/qililab/pull/972)
+
+- Added new functions to DatabaseManager to support more efficient loading of data for live-plotting application. Such as get_platform and get_qprogram.
+  [#979](https://github.com/qilimanjaro-tech/qililab/pull/979)
 
 ### Breaking changes
 
@@ -142,6 +148,11 @@ The data automatically selects between the local or shared domains depending on 
 ### Documentation
 
 ### Bug fixes
+
+- Qblox Draw: Previously, when plotting from the platform, the integration length was incorrectly taken from the runcard parameter. However, since Qililab currently only implements acquire_weighted, the integration length should instead be determined by the duration of the weight.
+This has been corrected and now the behaviour of the acquire is the same when plotting from the platform or the qprogram.
+The integration length is defined as the duration of the acquire, not the weight, because Qililab ensures they are always equal. As a result, two acquires cannot overlap in Qililab. However, in QbloxDraw’s logic, interruptions remain possible, similar to Play.
+  [#982](https://github.com/qilimanjaro-tech/qililab/pull/982)
 
 - Removed the unsupported zorder kwarg from QbloxDraw plotting to prevent Plotly errors across environments.
   [#974](https://github.com/qilimanjaro-tech/qililab/pull/974)
@@ -176,5 +187,14 @@ The data automatically selects between the local or shared domains depending on 
   [#956](https://github.com/qilimanjaro-tech/qililab/pull/956)
   [#959](https://github.com/qilimanjaro-tech/qililab/pull/959)
 
+- Added an integer transformation for the play pulse duration at the `QbloxCompiler` `compile`. Before this fix, if a user introduced a pulse duration as a float and greater than 100 ns in `qp.play`, the program would crash with a weir and difficul to trace error report. Now this is fixed.
+  [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
+
 - Fixed an error inside set_parameter for OUT0_ATT and OUT1_ATT for the QRM-RF and QCM-RF. When the device was disconnected qililab tried to get the non existent device. not it executes as expected.
   [#973](https://github.com/qilimanjaro-tech/qililab/pull/973)
+
+- Fixed `FluxVector.set_crosstalk_from_bias(...)` and `platform.set_bias_to_zero(...)` related to automatic crosstalk compensation. Now the bias is set to 0 correctly and the fluxes are set to the correct value based on the offset.
+  [#983](https://github.com/qilimanjaro-tech/qililab/pull/983)
+
+- Fixed an error impeding two instances of QDAC2 to be executed through platform.connect when the runcard included 2 different `qdevil_qdac2` controllers inside `instrument_controllers`.
+  [#990](https://github.com/qilimanjaro-tech/qililab/pull/990)
