@@ -1265,7 +1265,7 @@ class Platform:
     def execute_qprograms_parallel(
         self,
         qprograms: list[QProgram],
-        bus_mappings: list[dict[str, str]] | dict[str, str] | None = None,
+        bus_mappings: list[dict[str, str] | None] | dict[str, str] | None = None,
         calibration: Calibration | None = None,
         debug: bool = False,
     ) -> list[QProgramResults]:
