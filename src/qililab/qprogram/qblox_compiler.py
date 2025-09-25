@@ -130,6 +130,8 @@ class BusCompilationInfo:
 
         self.acq_index_bin: dict = {}
 
+        self.acq_index_used: list = []
+
 
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
@@ -595,15 +597,18 @@ class QbloxCompiler:
         index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
 
         if num_bins == 1 or bin_index is not None:
-            acquisition_name = f"acquisition_{self._buses[element.bus].next_acquisition_index}"
-            self._buses[element.bus].qpy_sequence._acquisitions.add(
-            name=acquisition_name,
-            num_bins=num_bins,
-            index=self._buses[element.bus].next_acquisition_index,
-        )
-            self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
-            bus=element.bus, save_adc=element.save_adc, shape=shape
-        )
+            if acq_index not in self._buses[element.bus].acq_index_used:
+                self._buses[element.bus].acq_index_used.append(acq_index)
+                acquisition_name = f"acquisition_{self._buses[element.bus].next_acquisition_index}"
+                self._buses[element.bus].qpy_sequence._acquisitions.add(
+                name=acquisition_name,
+                num_bins=num_bins,
+                index=self._buses[element.bus].next_acquisition_index,
+            )
+                self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
+                bus=element.bus, save_adc=element.save_adc, shape=shape
+            )
+                self._buses[element.bus].next_acquisition_index += 1
             acq_index = acq_index if acq_index is not None else self._buses[element.bus].next_acquisition_index
             bin_index = bin_index if bin_index is not None else self._buses[element.bus].next_bin_index
 
@@ -616,7 +621,8 @@ class QbloxCompiler:
                     wait_time=integration_length,
                 )
             )
-            self._buses[element.bus].next_acquisition_index += 1
+            
+            
         else:
             block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
 
