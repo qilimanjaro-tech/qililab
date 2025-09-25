@@ -1,0 +1,117 @@
+name: qmqdac
+
+instruments:
+  - name: quantum_machines_cluster
+    alias: qmm
+    address: 192.168.0.1
+    cluster: cluster_0
+    run_octave_calibration: False
+    octaves: []
+
+    controllers:
+      - name: con1,
+        analog_outputs:
+        - port: 1
+          filter:
+          - feedforward: [0, 0, 0]
+            feedback: [0, 0, 0]
+            shareable: True
+        - port: 2
+        - port: 3
+        - port: 4
+        - port: 5
+        - port: 6
+        - port: 7
+        - port: 8
+        - port: 9
+        - port: 10
+        analog_inputs:
+        - port: 1
+        - port: 2
+        digital_outputs:
+        - port: 1
+        - port: 2
+        - port: 3
+        - port: 4
+        - port: 5
+
+    elements:
+    - identifier: drive
+      mix_inputs:
+        I:
+          controller: con1
+          port: 1
+        Q:
+          controller: con1
+          port: 2
+        lo_frequency: 6e9
+        mixer_correction: [1.0, 0.0, 0.0, 1.0]
+      intermediate_frequency: 6e6
+
+    - identifier: readout
+      mix_inputs:
+        I:
+          controller: con1
+          port: 3
+        Q:
+          controller: con1
+          port: 4
+        lo_frequency: 6e9
+        mixer_correction: [1.0, 0.0, 0.0, 1.0]
+      outputs:
+        out1:
+            controller: con1
+            port: 1
+        out2:
+            controller: con1
+            port: 2
+      time_of_flight: 40
+      smearing: 10
+      threshold_rotation: 0.5
+      threshold: 0.09
+      intermediate_frequency: 6e6
+
+
+
+  - name: qdevil_qdac2
+    alias: qdac
+    voltage: [0.0, 0.0]
+    span: [low, low]
+    ramping_enabled: [True, True]
+    ramp_rate: [0.01, 0.01]
+    low_pass_filter: [dc, dc]
+    dacs: [1, 2]
+
+
+instrument_controllers:
+  - name: quantum_machines_cluster_controller
+    alias: qmm_controller
+    connection:
+      name: tcp_ip
+      address: 192.168.0.111
+    modules:
+      - alias: qmm
+        slot_id: 0
+
+  - name: qdevil_qdac2
+    alias: qdac_controller_ip
+    connection:
+      name: tcp_ip
+      address: 192.168.1.15
+    modules:
+      - alias: qdac
+        slot_id: 0
+
+buses:
+  - alias: drive
+    instruments: [qmm]
+    channels: [drive]
+  - alias: resonator
+    instruments: [qmm]
+    channels: [readout]
+  - alias: qdac_bus_1
+    instruments: [qdac]
+    channels: [1]
+  - alias: qdac_bus_2
+    instruments: [qdac]
+    channels: [2]

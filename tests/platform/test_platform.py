@@ -19,8 +19,6 @@ from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
 from tests.data import (
     Galadriel,
-    QMQDacII,
-    QbloxQDacII,
     SauronQDevil,
     SauronQuantumMachines,
     SauronSpiRack,
@@ -61,12 +59,12 @@ def fixture_platform():
 
 @pytest.fixture(name="platform_qblox_qdac")
 def fixture_platform_qblox_qdac():
-    return build_platform(runcard=QbloxQDacII.runcard)
+    return build_platform(runcard="..\runcards\qblox_and_qdac.yml")
 
 
 @pytest.fixture(name="platform_qm_qdac")
 def fixture_platform_qm_qdac():
-    return build_platform(runcard=QMQDacII.runcard)
+    return build_platform(runcard="..\runcards\qm_and_qdac.yml")
 
 
 @pytest.fixture(name="platform_quantum_machines")
