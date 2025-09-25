@@ -24,7 +24,7 @@ import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Callable, Optional, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, cast
 
 import numpy as np
 from qibo.gates import M
@@ -1227,23 +1227,29 @@ class Platform:
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
         return self.execute_compilation_output(output=output, debug=debug)
 
+    
     def _normalize_bus_mappings(
         self,
-        bus_mappings: Optional[list[dict[str, str]]],
+        bus_mappings: Sequence[dict[str, str]] | dict[str, str] | None,
         n: int,
-    ) -> list[Optional[dict[str, str]]]:
-        """Return a list of length n with one mapping per qprogram.
+    ) -> list[dict[str, str]]:
+        """
+        Return a list of length n with one mapping per qprogram.
         Accepts:
         - None                          -> [None] * n
+        - single dict                   -> [that dict] * n
         - sequence of dict/None, len n  -> as-is
         """
         if bus_mappings is None:
             return [None] * n
+        if isinstance(bus_mappings, dict):
+            return [bus_mappings] * n
+        # sequence case
         if len(bus_mappings) != n:
             raise ValueError(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")
         return list(bus_mappings)
 
-    def _mapped_buses(self, qp_buses: set[str], mapping: Optional[dict[str, str]]) -> set[str]:
+    def _mapped_buses(self, qp_buses: set[str], mapping: dict[str, str] | None) -> set[str]:
         """Apply mapping (if any) to a qprogram's logical buses to get physical buses."""
         if not mapping:
             return set(qp_buses)
@@ -1253,7 +1259,7 @@ class Platform:
     def execute_qprograms_parallel(
         self,
         qprograms: list[QProgram],
-        bus_mappings: Optional[list[dict[str, str]]] = None,
+        bus_mappings: Sequence[dict[str, str]] | dict[str, str] | None = None,
         calibration: Optional[Calibration] = None,
         debug: bool = False,
     ) -> list[QProgramResults]:
@@ -1264,7 +1270,7 @@ class Platform:
 
             Args:
                 qprograms (list[QProgram]): A list of the :class:`.QProgram` to execute.
-                bus_mapping (Optional[list[dict[str, str]]]): A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
+                bus_mapping (Optional[Sequence[Optional[dict[str, str]]]] | Optional[list[dict[str, str]]]): A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
                     It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
                 calibration (Calibration, optional): :class:`.Calibration` instance containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
                 debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
@@ -1278,10 +1284,12 @@ class Platform:
         if not qprograms:
             return []
 
-        bus_mapping_list = self._normalize_bus_mappings(bus_mappings, len(qprograms))
+        # 1) Normalize mappings to one-per-qprogram
+        bm_list = self._normalize_bus_mappings(bus_mappings, len(qprograms))
 
+        # 2) Validate: no shared *physical* buses after applying each mapping
         all_physical: set[str] = set()
-        for qp, bm in zip(qprograms, bus_mapping_list):
+        for qp, bm in zip(qprograms, bm_list):
             phys = self._mapped_buses(qp.buses, bm)  # qp.buses is the set of logical buses
             if all_physical & phys:
                 raise ValueError(
@@ -1290,8 +1298,8 @@ class Platform:
             all_physical |= phys
 
         outputs = [
-            self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
-            for qp, bus_mapping in zip(qprograms, bus_mapping_list)
+            self.compile_qprogram(qprogram=qp, bus_mapping=bm, calibration=calibration)
+            for qp, bm in zip(qprograms, bm_list)
         ]
 
         if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
@@ -1300,6 +1308,7 @@ class Platform:
         return self.execute_compilation_outputs_parallel(
             outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug
         )
+
 
     def execute_compilation_outputs_parallel(
         self,
