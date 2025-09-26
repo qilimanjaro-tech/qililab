@@ -28,6 +28,7 @@ class Block(Element):
     def __init__(self) -> None:
         super().__init__()
         self.elements: list[Block | Operation] = []
+        self.acquire_count: int = 0
 
     def append(self, element: Block | Operation):
         self.elements.append(element)
