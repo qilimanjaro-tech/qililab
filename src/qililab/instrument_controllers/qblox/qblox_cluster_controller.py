@@ -30,6 +30,8 @@ from qililab.typings.enums import (
 )
 from qililab.typings.instruments.cluster import Cluster
 
+EXT_TRIGGER_ADDRESS: int = 15
+
 
 @InstrumentControllerFactory.register
 class QbloxClusterController(InstrumentController):
@@ -62,6 +64,8 @@ class QbloxClusterController(InstrumentController):
     def initial_setup(self):
         """Initial setup of the Qblox Cluster Controller."""
         self._set_reference_source()
+        if self.ext_trigger:
+            self._set_ext_trigger()
         super().initial_setup()
 
     @InstrumentController.CheckConnected
@@ -75,6 +79,14 @@ class QbloxClusterController(InstrumentController):
     def _set_reference_source(self):
         """Set the reference source ('internal' or 'external')."""
         self.device.reference_source(self.reference_clock.value)
+
+    @InstrumentController.CheckConnected
+    def _set_ext_trigger(self):
+        """set the external trigger parameters"""
+        self.device.ext_trigger_input_trigger_en(True)
+        # As only one ext trigger is available the last address is selected
+        self.device.ext_trigger_input_trigger_address(EXT_TRIGGER_ADDRESS)
+        self.device.ext_trigger_input_delay(0)
 
     @property
     def reference_clock(self):
