@@ -340,7 +340,7 @@ class TestQdacCompiler:
 
         assert isinstance(output, QdacCompilationOutput)
         qdac.upload_voltage_list.assert_called_with(
-            waveform=wf, channel_id=1, dwell_us=dwell * 1e-6, sync_delay_s=0, repetitions=3168
+            waveform=wf, channel_id=1, dwell_us=dwell * 1e-6, sync_delay_s=0, repetitions=288
         )
 
         # Infinite loop
