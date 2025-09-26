@@ -52,7 +52,7 @@ def _mat_RX(theta: float) -> np.ndarray:
 
 def _mat_U3(theta: float, phi: float, lam: float) -> np.ndarray:
     # Convention: U3(θ, φ, λ) = RZ(φ) · RY(θ) · RZ(λ)
-    return _mat_RZ(phi) @ _mat_RY(theta) @ _mat_RZ(lam)
+    return _mat_RZ(phi) @ _mat_RY(theta) @ _mat_RZ(lam) * np.exp(0.5j * (phi + lam), dtype=complex)
 
 
 def _zyz_from_unitary(U: np.ndarray) -> tuple[float, float, float]:
@@ -61,22 +61,21 @@ def _zyz_from_unitary(U: np.ndarray) -> tuple[float, float, float]:
     det = np.linalg.det(U)
     if abs(det) < _EPS:
         raise ValueError("Matrix is singular.")
-    U = U * np.exp(-0.5j * np.angle(det))  # remove global phase
+    # remove phase to a U3 rotation
+    phase = np.angle(U[0, 0])
+    U = U / np.exp(1j * phase, dtype=complex)
 
     a00, a01 = U[0, 0], U[0, 1]
     a10, a11 = U[1, 0], U[1, 1]
-
-    c = np.clip(abs(a00), 0.0, 1.0)
-    theta = 2.0 * math.acos(c)
+    theta = 2.0 * math.atan2(np.abs(a01), a00)
     s = math.sin(theta / 2.0)
 
     if s < 1e-12:
-        phi = 0.0
-        lam = _wrap_angle(-2.0 * np.angle(a00))
-        return (0.0, phi, lam)
+        lam = _wrap_angle(np.angle(a11))
+        return (0.0, 0.0, lam)
 
-    phi = _wrap_angle(np.angle(a10) - np.angle(a00))
-    lam = _wrap_angle(np.angle(a01) - np.angle(a11))
+    phi = _wrap_angle(np.angle(a10))
+    lam = _wrap_angle(np.angle(-a01))
     return (theta, phi, lam)
 
 
