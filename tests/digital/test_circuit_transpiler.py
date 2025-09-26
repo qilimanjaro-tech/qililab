@@ -1,3 +1,4 @@
+from calendar import c
 import re
 from dataclasses import asdict
 from unittest.mock import MagicMock, patch
@@ -676,7 +677,7 @@ class TestCircuitTranspiler:
         mock_schedule = PulseSchedule()
 
         # Mock the return values
-        mock_route.return_value = mock_circuit.queue, mock_circuit.nqubits, mock_layout
+        mock_route.return_value = mock_circuit, mock_layout
         mock_opt_circuit.return_value = mock_circuit_gates
         mock_to_native.return_value = mock_circuit_gates
         mock_add_phases.return_value = mock_circuit_gates
@@ -726,14 +727,14 @@ class TestCircuitTranspiler:
         mock_circuit = Circuit(5)
         mock_circuit.add(X(0))
         mock_layout = [0, 1, 2, 3, 4]
-        mock_route.return_value = (mock_circuit, mock_layout)
+        mock_route.return_value = mock_circuit, mock_layout
 
         # Execute the function
-        circuit_gates, nqubits, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        circuit, layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
 
         # Asserts:
         mock_route.assert_called_once_with(mock_circuit, routing_iterations)
-        assert (circuit_gates, nqubits, layout) == (mock_circuit.queue, mock_circuit.nqubits, mock_layout)
+        assert (circuit, layout) == (mock_circuit, mock_layout)
 
     def test_route_circuit_only_needs_remapping_integration(self, digital_settings):
         """Test route_circuit method"""
@@ -748,14 +749,14 @@ class TestCircuitTranspiler:
 
 
         # Execute the function
-        circuit_gates, nqubits, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
-        output_gates = [(gate.name, gate.qubits) for gate in circuit_gates]
+        circuit, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        output_gates = [(gate.name, gate.qubits) for gate in circuit.queue]
 
         # Asserts:
         expected_layout = [2, 1, 0, 3, 4]
         expected_gates = [('cx', (1, 2)), ('cx', (2, 1)), ('cx', (3, 2))]
 
-        assert (output_gates, nqubits, final_layout) == (expected_gates, mock_circuit.nqubits, expected_layout)
+        assert (output_gates, circuit.nqubits, final_layout) == (expected_gates, mock_circuit.nqubits, expected_layout)
 
     def test_route_circuit_swap_needed_integration(self, digital_settings):
         """Test route_circuit method"""
@@ -769,8 +770,8 @@ class TestCircuitTranspiler:
 
 
         # Execute the function
-        circuit_gates, nqubits, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
-        output_gates = [(gate.name, gate.qubits) for gate in circuit_gates]
+        circuit, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        output_gates = [(gate.name, gate.qubits) for gate in circuit.queue]
 
         # Asserts:
         expected_gates_and_layout = [
@@ -789,7 +790,7 @@ class TestCircuitTranspiler:
 
         ]
 
-        assert nqubits == 5 # The routing changes the size to fit that of the topology
+        assert circuit.nqubits == 5 # The routing changes the size to fit that of the topology
         # Test one of the possible routing has been achieved:
         assert (output_gates, final_layout) in expected_gates_and_layout
 
@@ -809,8 +810,8 @@ class TestCircuitTranspiler:
 
 
         # Execute the function
-        circuit_gates, _, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
-        output_gates = [[gate.name, gate.qubits] for gate in circuit_gates]
+        circuit, final_layout = transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        output_gates = [[gate.name, gate.qubits] for gate in circuit.queue]
 
         # Undo routing with SWAPS
         for idx, gate in enumerate(output_gates):
@@ -848,8 +849,7 @@ class TestCircuitTranspiler:
         mock_graph.return_value = graph_mocking
 
         # Execute the function
-        with pytest.raises(ValueError, match=re.escape("not enough values to unpack (expected 2, got 0)")):
-            transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
+        transpiler.route_circuit(mock_circuit, iterations=routing_iterations)
 
         # Asserts:
         mock_router.assert_called_once_with(graph_mocking, None, None)
@@ -859,3 +859,91 @@ class TestCircuitTranspiler:
         """
         tc = DigitalTranspilationConfig()
         assert tc._attributes_ordered == (False, None, None, 10, False)
+
+    def test__check_that_no_SWAP_gate_is_after_measurement_no_violation(self):
+        """Test _check_that_no_SWAP_gate_is_after_measurement passes when no gate is after measurement."""
+        transpiler = CircuitTranspiler(settings=MagicMock())
+        circuit = Circuit(2)
+        circuit.add(gates.SWAP(0, 1))
+        circuit.add(gates.M(0))
+        circuit.add(gates.M(1))
+        # No gate after measurement for either qubit
+        transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")  # Should not raise
+
+        circuit = Circuit(2)
+        circuit.add(gates.SWAP(0, 1))
+        circuit.add(gates.M(0,1)) # Same for both measures defined together
+        # No gate after measurement for either qubit
+        transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")  # Should not raise
+
+        circuit = Circuit(2)
+        circuit.add(gates.CNOT(0,1))
+        circuit.add(gates.M(0))
+        circuit.add(gates.CNOT(0,1))  # Gate after measurement on qubit 0
+        circuit.add(gates.M(1))
+        transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before") # Should not raise
+
+
+    def test__check_that_no_SWAP_gate_is_after_measurement_violation_single_qubit(self):
+        """Test _check_that_no_SWAP_gate_is_after_measurement raises when a gate is after measurement on one qubit."""
+        transpiler = CircuitTranspiler(settings=MagicMock())
+        circuit = Circuit(2)
+        circuit.add(gates.X(0))
+        circuit.add(gates.M(0))
+        circuit.add(gates.SWAP(0, 1))  # Gate after measurement on qubit 0
+        with pytest.raises(ValueError, match=re.escape("Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit. Review the circuit gates for qubit 0.")):
+            transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")
+
+        circuit = Circuit(2)
+        circuit.add(gates.CNOT(0,1))
+        circuit.add(gates.M(0))
+        circuit.add(gates.SWAP(0,1))  # Gate after measurement on qubit 0
+        circuit.add(gates.M(1))
+        with pytest.raises(ValueError, match=re.escape("Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit. Review the circuit gates for qubit 0.")):
+            transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")
+
+    def test__check_that_no_SWAP_gate_is_after_measurement_violation_multiple_qubits(self):
+        """Test _check_that_no_SWAP_gate_is_after_measurement raises when a gate is after measurement on multiple qubits."""
+        transpiler = CircuitTranspiler(settings=MagicMock())
+        circuit = Circuit(3)
+        circuit.add(gates.X(0))
+        circuit.add(gates.M(0))
+        circuit.add(gates.SWAP(0, 1))  # Violation on qubit 0
+        circuit.add(gates.M(1))
+        circuit.add(gates.X(1))
+        with pytest.raises(ValueError, match=re.escape("Automatic routing requires that no SWAP gate appears after a Measurement gate on any qubit. Review the circuit gates for qubit 0.")):
+            transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")
+
+    def test__check_that_no_SWAP_gate_is_after_measurement_measurement_last(self):
+        """Test _check_that_no_SWAP_gate_is_after_measurement passes when measurement is last gate for all qubits."""
+        transpiler = CircuitTranspiler(settings=MagicMock())
+        circuit = Circuit(2)
+        circuit.add(gates.SWAP(0, 1))
+        circuit.add(gates.M(0))
+        circuit.add(gates.X(1))
+        circuit.add(gates.M(1))
+        transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")  # Should not raise
+
+    def test__check_that_no_SWAP_gate_is_after_measurement_no_measurement(self):
+        """Test _check_that_no_SWAP_gate_is_after_measurement passes when there are no measurement gates."""
+        transpiler = CircuitTranspiler(settings=MagicMock())
+        circuit = Circuit(2)
+        circuit.add(gates.SWAP(0, 1))
+        circuit.add(gates.X(1))
+        transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "before")  # Should not raise
+
+    def test_check_error_raise_if_SWAP_added_during_routing(self, digital_settings):
+        """Test that an error is raised if a SWAP gate is added during routing."""
+        transpiler = CircuitTranspiler(settings=digital_settings)
+        circuit = Circuit(5)
+        circuit.add(gates.SWAP(0, 1))
+        circuit.add(gates.CNOT(1, 2))
+        circuit.add(gates.CNOT(3, 0))
+        circuit.add(gates.CNOT(1, 4))
+        circuit.add(gates.CNOT(3, 4))
+        circuit.add(gates.CNOT(1, 0))
+        circuit.add(M(0,1,2,3,4))
+        circuit.add(gates.SWAP(0, 1))
+
+        with pytest.raises(ValueError, match=re.escape("Routing error: A SWAP gate was added after a Measurement on qubit 0, which is not allowed in automatic routing. This likely occurred because 2-qubit gates were used after a Measurement. To route such circuits, use `CircuitRouter` manually and track the mapping of measurement results before execution.")):
+            transpiler._check_that_no_SWAP_gate_is_after_measurement(circuit, "after")

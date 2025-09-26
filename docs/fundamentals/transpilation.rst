@@ -29,6 +29,10 @@ The process involves the following steps (by default only: **3.**, **4**., and *
 
     To do Steps **2.** and **5.** set ``optimize=True`` in ``transpilation_config`` (default behavior skips it).
 
+.. note::
+
+    If the circuit has SWAP gates after a Measurement gate, the automatic routing will not work, better to use the :meth:`.CircuitRouter.route()` method manually, and track the mapping of measurement results before execution.
+
 **Examples:**
 
 For example, the most basic use, would be to automatically transpile during an execute, like:
@@ -95,20 +99,36 @@ And now, transpile manually, like in the following examples:
 .. code-block:: python
 
     # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
-    transpiled_circuit, final_layouts = transpiler.transpile_circuit(c)
+    transpiled_pulses, final_layouts = transpiler.transpile_circuit(c)
 
     # Or another case, not doing optimization for some reason, and with Non-Default placer:
-    transpiled_circuit, final_layout = transpiler.transpile_circuit(c, placer=Random, optimize=False)
+    transpilation_settings = DigitalTranspilationConfig(placer=Random, optimize=False)
+    transpiled_pulses, final_layout = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
     # Or also specifying the `router` with kwargs:
-    transpiled_circuit, final_layouts = transpiler.transpile_circuit(c, router=(Sabre, {"lookahead": 2}))
+    transpilation_settings = DigitalTranspilationConfig(router=(Sabre, {"lookahead": 2}))
+    transpiled_pulses, final_layouts = transpiler.transpile_circuit(c, transpilation_config=transpilation_settings)
 
 And even we could only do a single step of the transpilation manually, like in the following, where we will only route:
 
 .. code-block:: python
 
     # Default Transpilation (with ReverseTraversal, Sabre, platform's connectivity and optimize = True):
-    transpiled_circuit, qubits, final_layouts = transpiler.route_circuit(c)
+    routed_circuit, final_layouts = transpiler.route_circuit(c)
 
     # Or another case with Non-Default placer:
-    transpiled_circuit, qubits, final_layout = transpiler.route_circuit(c, placer=Random)
+    routed_circuit, final_layout = transpiler.route_circuit(c, placer=Random)
+
+And finally, if you want to route a ``Circuit``, but not instantiate any ``Platform``, a ``CircuitRouter`` can be used directly, like:
+
+.. code-block:: python
+
+    from qililab.digital import CircuitRouter
+
+    # Create circuit:
+    c = Circuit(5)
+    c.add(gates.CNOT(1, 0))
+
+    # Create a hardcoded Router with a connectivity graph:
+    router = CircuitRouter(connectivity=nx.Graph([(0,1), (0,4), (1,2), (2,4),(2,3)]))
+    routed_circuit, final_layout = router.route(c)
