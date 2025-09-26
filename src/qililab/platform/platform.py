@@ -1254,7 +1254,7 @@ class Platform:
             output.append(None if bus_mapping is None else bus_mapping.copy())
 
         return output
-    
+
     def _normalize_calibrations(
         self,
         calibrations: list[Calibration | None] | Calibration | None,
