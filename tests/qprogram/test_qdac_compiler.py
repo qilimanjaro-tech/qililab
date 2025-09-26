@@ -77,8 +77,8 @@ class TestQdacCompiler:
 
         # Setting external trigger at the beginning of the iteration
         qp = QProgram()
-        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
         qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="start")
 
         compiler = QdacCompiler()
@@ -94,8 +94,8 @@ class TestQdacCompiler:
 
         # Setting external trigger at the end of the iteration
         qp = QProgram()
-        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
         qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="end")
 
         compiler = QdacCompiler()
@@ -111,8 +111,8 @@ class TestQdacCompiler:
 
         # Setting internal trigger at the beginning of the iteration
         qp = QProgram()
-        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
         qp.set_trigger(bus="flux1", duration=10e-6, position="start")
 
         compiler = QdacCompiler()
@@ -128,8 +128,8 @@ class TestQdacCompiler:
 
         # Setting internal trigger at the end of the iteration
         qp = QProgram()
-        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
         qp.set_trigger(bus="flux1", duration=10e-6, position="end")
 
         compiler = QdacCompiler()
@@ -150,7 +150,7 @@ class TestQdacCompiler:
 
         # Setting external trigger at the beginning of the iteration
         qp = QProgram()
-        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
 
         compiler = QdacCompiler()
         compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], bus_mapping={"flux1": "flux1"})
@@ -187,7 +187,7 @@ class TestQdacCompiler:
         dwell = 2
         # default repetitions, without loops is 1
         qp = QProgram()
-        qp.play(bus="flux1", waveform=wf, dwell=dwell)
+        qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -199,7 +199,7 @@ class TestQdacCompiler:
 
         # 100 repetitions
         qp = QProgram()
-        qp.play(bus="flux1", waveform=wf, dwell=dwell, repetitions=100)
+        qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell, repetitions=100)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -211,7 +211,7 @@ class TestQdacCompiler:
 
         # Infinite repetitions (repetitions = -1)
         qp = QProgram()
-        qp.play(bus="flux1", waveform=wf, dwell=dwell, repetitions=-1)
+        qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell, repetitions=-1)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -231,8 +231,8 @@ class TestQdacCompiler:
 
         # Setting external trigger at the beginning of the iteration
         qp = QProgram()
-        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
         qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position=wrong_position)
 
         compiler = QdacCompiler()
@@ -245,7 +245,7 @@ class TestQdacCompiler:
 
         qp = QProgram()
         amplitude = qp.variable(label="amplitude", domain=Domain.Voltage)
-        qp.play(bus="flux1", waveform=Square(amplitude, 100), dwell=2)
+        qp.qdac.play(bus="flux1", waveform=Square(amplitude, 100), dwell=2)
 
         compiler = QdacCompiler()
         with caplog.at_level(logging.ERROR):
@@ -261,7 +261,7 @@ class TestQdacCompiler:
         # Average loop
         qp = QProgram()
         with qp.average(5):
-            qp.play(bus="flux1", waveform=wf, dwell=dwell)
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -275,7 +275,7 @@ class TestQdacCompiler:
         qp = QProgram()
         loop_variable = qp.variable("test", Domain.Time)
         with qp.for_loop(loop_variable, 0, 10, 1):
-            qp.play(bus="flux1", waveform=wf, dwell=dwell)
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -284,21 +284,7 @@ class TestQdacCompiler:
         qp = QProgram()
         loop_variable = qp.variable("test", Domain.Voltage)
         with qp.for_loop(loop_variable, 0, 0.1, 0.011):
-            qp.play(bus="flux1", waveform=wf, dwell=dwell)
-
-        compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
-
-        assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
-            waveform=wf, channel_id=1, dwell_us=dwell * 1e-6, sync_delay_s=0, repetitions=11
-        )
-
-        # Linspace loop
-        qp = QProgram()
-        loop_variable = qp.variable("test", Domain.Time)
-        with qp.linspace_loop(loop_variable, 0, 10, 10):
-            qp.play(bus="flux1", waveform=wf, dwell=dwell)
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -312,7 +298,7 @@ class TestQdacCompiler:
         qp = QProgram()
         loop_variable = qp.variable("test", Domain.Time)
         with qp.loop(loop_variable, np.array([1, 2, 3])):
-            qp.play(bus="flux1", waveform=wf, dwell=dwell)
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -327,7 +313,7 @@ class TestQdacCompiler:
         loop_variable = qp.variable("test", Domain.Time)
         loop_variable_2 = qp.variable("test2", Domain.Time)
         with qp.parallel([Loop(loop_variable, np.array([1, 2])), ForLoop(loop_variable_2, 0, 1, 1)]):
-            qp.play(bus="flux1", waveform=wf, dwell=dwell)
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -346,9 +332,8 @@ class TestQdacCompiler:
         loop_variable_3 = qp.variable("test3", Domain.Time)
         with qp.average(5):
             with qp.loop(loop_variable, np.array([1, 2, 3])):
-                with qp.linspace_loop(loop_variable_2, 0, 10, 10):
-                    with qp.for_loop(loop_variable_3, 0, 10, 1):
-                        qp.play(bus="flux1", waveform=wf, dwell=dwell)
+                with qp.for_loop(loop_variable_3, 0, 10, 1):
+                    qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -361,7 +346,7 @@ class TestQdacCompiler:
         # Infinite loop
         qp = QProgram()
         with qp.infinite_loop():
-            qp.play(bus="flux1", waveform=wf, dwell=dwell)
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -376,7 +361,7 @@ class TestQdacCompiler:
         loop_variable = qp.variable("test", Domain.Time)
         with qp.infinite_loop():
             with qp.for_loop(loop_variable, 0, 10, 1):
-                qp.play(bus="flux1", waveform=wf, dwell=dwell)
+                qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -394,7 +379,7 @@ class TestQdacCompiler:
         qp = QProgram()
         loop_variable = qp.variable("test", Domain.Time)
         with qp.for_loop(loop_variable, 0, 10, 0):
-            qp.play(bus="flux1", waveform=wf, dwell=dwell)
+            qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
         with pytest.raises(ValueError, match="Step value cannot be zero"):
@@ -408,8 +393,8 @@ class TestQdacCompiler:
 
         # Setting wait trigger at external
         qp = QProgram()
-        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
         qp.wait_trigger(bus="flux1", duration=10e-6, port=in_port)
 
         compiler = QdacCompiler()
@@ -425,8 +410,8 @@ class TestQdacCompiler:
 
         # Setting external trigger at the end of the iteration
         qp = QProgram()
-        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
         qp.set_trigger(bus="flux1", duration=10e-6, position="start")
         qp.wait_trigger(bus="flux1", duration=10e-6)
 
@@ -450,7 +435,7 @@ class TestQdacCompiler:
         # Setting external trigger at the beginning of the iteration
         qp = QProgram()
         with qp.block():
-            qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+            qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
 
         compiler = QdacCompiler()
         compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
@@ -464,8 +449,8 @@ class TestQdacCompiler:
 
         # Setting external trigger at the beginning of the iteration
         qp = QProgram()
-        qp.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
         qp.sync(buses=["flux1", "flux2"])
 
         compiler = QdacCompiler()
