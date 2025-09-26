@@ -1277,7 +1277,7 @@ class Platform:
         if len(calibrations) != n:
             raise ValueError(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")
 
-        output: list[dict[str, str] | None] = []
+        output: list[Calibration | None] = []
         for calibration in calibrations:
             output.append(None if calibration is None else calibration)
 
