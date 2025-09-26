@@ -1294,7 +1294,7 @@ class Platform:
         self,
         qprograms: list[QProgram],
         bus_mappings: list[dict[str, str] | None] | dict[str, str] | None = None,
-        calibrations: list[Calibration] | Calibration | None = None,
+        calibrations: list[Calibration | None] | Calibration | None = None,
         debug: bool = False,
     ) -> list[QProgramResults]:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
