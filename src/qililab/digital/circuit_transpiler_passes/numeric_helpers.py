@@ -32,7 +32,7 @@ def _round_f(x: float, d: int = _SIG_DECIMALS) -> float:
     return 0.0 if abs(x) < 1e-16 else round(x, d)
 
 
-def _is_close_mod_2pi(a: float, b: float, eps: float = 1e-9) -> bool:
+def _is_close_mod_2pi(a: float, b: float, eps: float = _EPS) -> bool:
     return abs(_wrap_angle(a - b)) < eps
 
 
