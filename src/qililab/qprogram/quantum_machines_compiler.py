@@ -17,7 +17,7 @@ import math
 from collections import deque
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import numpy as np
 from qm import qua
@@ -25,7 +25,6 @@ from qm.program import Program
 from qm.qua import _dsl as qua_dsl
 from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
-from qililab.platform.components.bus import Bus
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
@@ -45,7 +44,8 @@ from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
 from qililab.waveforms import IQPair, Square, Waveform
 
-# mypy: disable-error-code="operator"
+if TYPE_CHECKING:
+    from qililab.platform.components.bus import Bus
 
 
 @dataclass
@@ -167,7 +167,7 @@ class QuantumMachinesCompiler:
         thresholds: dict[str, float] | None = None,
         threshold_rotations: dict[str, float] | None = None,
         calibration: Calibration | None = None,
-        qm_buses: list[Bus] | None = None,
+        qm_buses: list["Bus"] | None = None,
     ) -> QuantumMachinesCompilationOutput:
         """Compile QProgram to QUA's Program.
 

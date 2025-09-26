@@ -16,7 +16,7 @@ import math
 from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 import qpysequence as QPy
@@ -25,7 +25,6 @@ import qpysequence.program.instructions as QPyInstructions
 from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 
 from qililab.config import logger
-from qililab.platform.components.bus import Bus
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -47,6 +46,9 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, Square, Waveform
+
+if TYPE_CHECKING:
+    from qililab.platform.components.bus import Bus
 
 EXT_TRIGGER_ADDRESS: int = 15
 
@@ -178,7 +180,7 @@ class QbloxCompiler:
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
         ext_trigger: bool = False,
-        qblox_buses: list[Bus] | None = None,
+        qblox_buses: list["Bus"] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
