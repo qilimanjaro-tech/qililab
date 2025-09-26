@@ -1254,6 +1254,34 @@ class Platform:
             output.append(None if bus_mapping is None else bus_mapping.copy())
 
         return output
+    
+    def _normalize_calibrations(
+        self,
+        calibrations: list[Calibration | None] | Calibration | None,
+        n: int,
+    ) -> list[Calibration | None]:
+        """
+        Return a list of length n with one mapping per qprogram.
+        Accepts:
+        - None                          -> [None] * n
+        - single Calibration instance   -> [that Calibration] * n
+        - sequence of Calibration/None, len n  -> as-is
+        """
+        if calibrations is None:
+            return [None] * n
+
+        if isinstance(calibrations, Calibration):
+            return [calibrations for _ in range(n)]
+
+        # sequence case
+        if len(calibrations) != n:
+            raise ValueError(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")
+
+        output: list[dict[str, str] | None] = []
+        for calibration in calibrations:
+            output.append(None if calibration is None else calibration)
+
+        return output
 
     def _mapped_buses(self, qp_buses: set[str], mapping: dict[str, str] | None) -> set[str]:
         """Apply mapping (if any) to a qprogram's logical buses to get physical buses."""
@@ -1266,7 +1294,7 @@ class Platform:
         self,
         qprograms: list[QProgram],
         bus_mappings: list[dict[str, str] | None] | dict[str, str] | None = None,
-        calibration: Calibration | None = None,
+        calibrations: list[Calibration] | Calibration | None = None,
         debug: bool = False,
     ) -> list[QProgramResults]:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
@@ -1278,7 +1306,7 @@ class Platform:
                 qprograms (list[QProgram]): A list of the :class:`.QProgram` to execute.
                 bus_mapping (Optional[Sequence[Optional[dict[str, str]]]] | Optional[list[dict[str, str]]]): A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
                     It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
-                calibration (Calibration, optional): :class:`.Calibration` instance containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
+                calibrations (list[Calibration], Calibration, optional): list of :class:`.Calibration` instances, or single instance, containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
                 debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
                     Defaults to False.
 
@@ -1290,10 +1318,11 @@ class Platform:
         if not qprograms:
             return []
 
-        # 1) Normalize mappings to one-per-qprogram
-        bus_mapping_list = self._normalize_bus_mappings(bus_mappings, len(qprograms))
+        # Normalize mappings and calibrations to one-per-qprogram
+        bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))
+        calibrations_list = self._normalize_calibrations(calibrations=calibrations, n=len(qprograms))
 
-        # 2) Validate: no shared *physical* buses after applying each mapping
+        # Validate: no shared *physical* buses after applying each mapping
         all_physical: set[str] = set()
         if bus_mapping_list:
             for qp, bus_mapping in zip(qprograms, bus_mapping_list):
@@ -1306,7 +1335,7 @@ class Platform:
 
             outputs = [
                 self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
-                for qp, bus_mapping in zip(qprograms, bus_mapping_list)
+                for qp, bus_mapping, calibration in zip(qprograms, bus_mapping_list, calibrations_list)
             ]
 
         if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):

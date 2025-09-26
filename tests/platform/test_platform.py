@@ -1374,13 +1374,39 @@ class TestMethods:
             
         bus_mappings = [{'readout':'readout_q0_bus'}, None, {'readout':'readout_q2_bus'}]
         mappings = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
-        assert isinstance(one_mapping, list)
-        assert len(one_mapping)==n
+        assert isinstance(mappings, list)
+        assert len(mappings)==n
         assert mappings==bus_mappings
         
         bus_mappings = [{'readout':'readout_q0_bus'}, {'readout':'readout_q2_bus'}]
         with pytest.raises(ValueError, match=re.escape(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")):
             platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+    
+    def test_normalize_calibrations(self, platform: Platform, calibration: Calibration, calibration_with_preparation_block: Calibration):
+        """Test the normalization of calibrations"""
+        n = 3
+        calibrations = None
+        
+        none_calibration = platform._normalize_calibrations(calibrations=calibrations, n=n)
+        assert isinstance(none_calibration, list)
+        assert len(none_calibration)==n
+        assert none_calibration==[None]*n
+        
+        one_calibration = platform._normalize_calibrations(calibrations=calibration, n=n)
+        assert isinstance(one_calibration, list)
+        assert len(one_calibration)==n
+        for calibration_instance in one_calibration:
+            assert calibration_instance==calibration
+            
+        calibrations = [calibration, None, calibration_with_preparation_block]
+        calibrations_normalized = platform._normalize_calibrations(calibrations=calibrations, n=n)
+        assert isinstance(calibrations_normalized, list)
+        assert len(calibrations_normalized)==n
+        assert calibrations_normalized==calibrations
+        
+        calibrations = [calibration, calibration_with_preparation_block]
+        with pytest.raises(ValueError, match=re.escape(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")):
+            platform._normalize_calibrations(calibrations=calibrations, n=n)
 
     def test_mapped_buses(self, platform: Platform):
         """Test the mappings of buses"""
