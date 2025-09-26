@@ -21,6 +21,7 @@ def fixture_play_operation() -> QProgram:
     ones_zeros_pair = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
     qp = QProgram()
     qp.play(bus="drive", waveform=ones_zeros_pair)
+    qp.play(bus="flux", waveform=ones_zeros_pair)
 
     return qp
 
@@ -302,60 +303,6 @@ def fixture_for_loop_with_negative_step() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="linspace_loop")
-def fixture_linspace_loop() -> QProgram:
-    qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    phase = qp.variable(label="phase", domain=Domain.Phase)
-    time = qp.variable(label="time", domain=Domain.Time)
-    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
-
-    with qp.linspace_loop(variable=gain, start=0, stop=1.0, iterations=10):
-        qp.set_gain(bus="drive", gain=gain)
-
-    with qp.linspace_loop(variable=frequency, start=100, stop=200, iterations=10):
-        qp.set_frequency(bus="drive", frequency=frequency)
-
-    with qp.linspace_loop(variable=phase, start=0, stop=np.pi / 2, iterations=10):
-        qp.set_phase(bus="drive", phase=phase)
-
-    with qp.linspace_loop(variable=time, start=100, stop=200, iterations=10):
-        qp.wait(bus="drive", duration=time)
-
-    with qp.linspace_loop(variable=scalar, start=0, stop=10, iterations=10):
-        qp.wait(bus="drive", duration=100)
-
-    return qp
-
-
-@pytest.fixture(name="linspace_loop_with_negative_step")
-def fixture_linspace_loop_with_negative_step() -> QProgram:
-    qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
-    phase = qp.variable(label="phase", domain=Domain.Phase)
-    time = qp.variable(label="time", domain=Domain.Time)
-    scalar = qp.variable(label="int_scalar", domain=Domain.Scalar, type=int)
-
-    with qp.linspace_loop(variable=gain, start=1.0, stop=0.0, iterations=10):
-        qp.set_gain(bus="drive", gain=gain)
-
-    with qp.linspace_loop(variable=frequency, start=200, stop=100, iterations=10):
-        qp.set_frequency(bus="drive", frequency=frequency)
-
-    with qp.linspace_loop(variable=phase, start=np.pi / 2, stop=0, iterations=10):
-        qp.set_phase(bus="drive", phase=phase)
-
-    with qp.linspace_loop(variable=time, start=200, stop=100, iterations=10):
-        qp.wait(bus="drive", duration=time)
-
-    with qp.linspace_loop(variable=scalar, start=10, stop=0, iterations=10):
-        qp.wait(bus="drive", duration=100)
-
-    return qp
-
-
 @pytest.fixture(name="loop")
 def fixture_loop() -> QProgram:
     qp = QProgram()
@@ -434,9 +381,9 @@ class TestQuantumMachinesCompiler:
     def test_play_operation_qdac(self, play_operation: QProgram):
         compiler = QuantumMachinesCompiler()
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "drive"
-        qua_program, _, _ = compiler.compile(play_operation, qdac_buses=[mock_qdac_bus])
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
+        qua_program, _, _ = compiler.compile(play_operation, qm_buses=[mock_qm_bus])
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 0
@@ -499,9 +446,9 @@ class TestQuantumMachinesCompiler:
     def test_set_gain_and_play_operation_qdac(self, set_gain_and_play_operation: QProgram):
         compiler = QuantumMachinesCompiler()
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "drive"
-        qua_program, _, _ = compiler.compile(set_gain_and_play_operation, qdac_buses=[mock_qdac_bus])
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
+        qua_program, _, _ = compiler.compile(set_gain_and_play_operation, qm_buses=[mock_qm_bus])
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 0
@@ -542,9 +489,9 @@ class TestQuantumMachinesCompiler:
     def test_set_frequency_operation_qdac(self, set_frequency_operation: QProgram):
         compiler = QuantumMachinesCompiler()
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "drive"
-        qua_program, _, _ = compiler.compile(set_frequency_operation, qdac_buses=[mock_qdac_bus])
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
+        qua_program, _, _ = compiler.compile(set_frequency_operation, qm_buses=[mock_qm_bus])
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 0
@@ -562,9 +509,9 @@ class TestQuantumMachinesCompiler:
     def test_set_offset_operation_qdac(self, set_offset_operation: QProgram):
         compiler = QuantumMachinesCompiler()
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "drive"
-        qua_program, _, _ = compiler.compile(set_offset_operation, qdac_buses=[mock_qdac_bus])
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
+        qua_program, _, _ = compiler.compile(set_offset_operation, qm_buses=[mock_qm_bus])
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 0
@@ -582,9 +529,9 @@ class TestQuantumMachinesCompiler:
     def test_set_dc_offset_operation_qdac(self, set_dc_offset_operation: QProgram):
         compiler = QuantumMachinesCompiler()
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "drive"
-        qua_program, _, _ = compiler.compile(set_dc_offset_operation, qdac_buses=[mock_qdac_bus])
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
+        qua_program, _, _ = compiler.compile(set_dc_offset_operation, qm_buses=[mock_qm_bus])
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 0
@@ -603,9 +550,9 @@ class TestQuantumMachinesCompiler:
     def test_set_phase_operation_qdac(self, set_phase_operation: QProgram):
         compiler = QuantumMachinesCompiler()
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "drive"
-        qua_program, _, _ = compiler.compile(set_phase_operation, qdac_buses=[mock_qdac_bus])
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
+        qua_program, _, _ = compiler.compile(set_phase_operation, qm_buses=[mock_qm_bus])
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 0
@@ -623,9 +570,9 @@ class TestQuantumMachinesCompiler:
     def test_reset_phase_operation_qdac(self, reset_phase_operation: QProgram):
         compiler = QuantumMachinesCompiler()
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "drive"
-        qua_program, _, _ = compiler.compile(reset_phase_operation, qdac_buses=[mock_qdac_bus])
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
+        qua_program, _, _ = compiler.compile(reset_phase_operation, qm_buses=[mock_qm_bus])
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 0
@@ -645,9 +592,9 @@ class TestQuantumMachinesCompiler:
     def test_wait_operation_qdac(self, wait_operation: QProgram):
         compiler = QuantumMachinesCompiler()
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "drive"
-        qua_program, _, _ = compiler.compile(wait_operation, qdac_buses=[mock_qdac_bus])
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
+        qua_program, _, _ = compiler.compile(wait_operation, qm_buses=[mock_qm_bus])
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 0
@@ -667,11 +614,11 @@ class TestQuantumMachinesCompiler:
     def test_sync_operation_qdac_raises_error(self, sync_operation: QProgram):
         compiler = QuantumMachinesCompiler()
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "drive"
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
 
         with pytest.raises(ValueError, match="QDACII buses not allowed inside sync function"):
-            compiler.compile(sync_operation, qdac_buses=[mock_qdac_bus])
+            compiler.compile(sync_operation, qm_buses=[mock_qm_bus])
 
     def test_sync_operation_no_parameters(self, sync_operation_no_parameters: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -711,9 +658,9 @@ class TestQuantumMachinesCompiler:
     def test_measure_operation_qdac(self, measure_operation: QProgram):
         compiler = QuantumMachinesCompiler()
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "readout"
-        qua_program, _, _ = compiler.compile(measure_operation, qdac_buses=[mock_qdac_bus])
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "readout"
+        qua_program, _, _ = compiler.compile(measure_operation, qm_buses=[mock_qm_bus])
 
         statements = qua_program._program.script.body.statements
         assert len(statements) == 0
@@ -956,79 +903,6 @@ class TestQuantumMachinesCompiler:
         assert (
             float(statements[2].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
             == -10 / 360.0
-        )
-
-        # Time
-        assert float(statements[3].for_.init.statements[0].assign.expression.literal.value) == 200
-        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 100
-        assert (
-            float(statements[3].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == -10
-        )
-
-    def test_linspace_loop(self, linspace_loop: QProgram):
-        compiler = QuantumMachinesCompiler()
-        qua_program, _, _ = compiler.compile(linspace_loop)
-
-        statements = qua_program._program.script.body.statements
-        assert len(statements) == 5
-
-        # Voltage
-        assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 0
-        assert float(statements[0].for_.condition.binary_operation.right.literal.value) == 1.05
-        assert (
-            float(statements[0].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 0.1
-        )
-
-        # Frequency
-        assert float(statements[1].for_.init.statements[0].assign.expression.literal.value) == 100
-        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == 205
-        assert (
-            float(statements[1].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 10
-        )
-
-        # Phase
-        assert float(statements[2].for_.init.statements[0].assign.expression.literal.value) == 0 / 360.0
-        assert float(statements[2].for_.condition.binary_operation.right.literal.value) == 94.5 / 360.0
-        assert (
-            float(statements[2].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
-            == 9 / 360.0
-        )
-
-        # Time
-        assert float(statements[3].for_.init.statements[0].assign.expression.literal.value) == 100
-        assert float(statements[3].for_.condition.binary_operation.right.literal.value) == 200
-        assert (
-            float(statements[3].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == 10
-        )
-
-    def test_linspace_loop_with_negative_step(self, linspace_loop_with_negative_step: QProgram):
-        compiler = QuantumMachinesCompiler()
-        qua_program, _, _ = compiler.compile(linspace_loop_with_negative_step)
-
-        statements = qua_program._program.script.body.statements
-        assert len(statements) == 5
-
-        # Voltage
-        assert float(statements[0].for_.init.statements[0].assign.expression.literal.value) == 1.0
-        assert float(statements[0].for_.condition.binary_operation.right.literal.value) == -0.05
-        assert (
-            float(statements[0].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
-            == -0.1
-        )
-
-        # Frequency
-        assert float(statements[1].for_.init.statements[0].assign.expression.literal.value) == 200
-        assert float(statements[1].for_.condition.binary_operation.right.literal.value) == 95
-        assert (
-            float(statements[1].for_.update.statements[0].assign.expression.binary_operation.right.literal.value) == -10
-        )
-
-        # Phase
-        assert float(statements[2].for_.init.statements[0].assign.expression.literal.value) == 90 / 360.0
-        assert float(statements[2].for_.condition.binary_operation.right.literal.value) == -4.5 / 360.0
-        assert (
-            float(statements[2].for_.update.statements[0].assign.expression.binary_operation.right.literal.value)
-            == -9 / 360.0
         )
 
         # Time

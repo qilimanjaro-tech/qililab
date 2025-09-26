@@ -293,7 +293,10 @@ class QuantumMachinesCompiler:
 
         buses = self._qprogram.buses
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
-        self._buses = {bus: _BusCompilationInfo() for bus in buses if bus in self._qm_buses}
+        if not self._qm_buses:
+            self._buses = {bus: _BusCompilationInfo() for bus in buses}
+        else:
+            self._buses = {bus: _BusCompilationInfo() for bus in buses if bus in self._qm_buses}
 
     def _handle_infinite_loop(self, _: InfiniteLoop):
         return qua.infinite_loop_()

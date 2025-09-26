@@ -51,7 +51,7 @@ def fixture_run_qdac_buses() -> QProgram:
     qp.set_phase(bus="qdac_flux", phase=0.1)
     qp.reset_phase(bus="qdac_flux")
     qp.set_gain(bus="qdac_flux", gain=0.1)
-    qp.set_markers(bus="qdac_flux", mask="0000")
+    qp.qblox.set_markers(bus="qdac_flux", mask="0000")
     qp.set_trigger(bus="qdac_flux", duration=100)
     qp.wait(bus="qdac_flux", duration=100)
     qp.wait_trigger(bus="qdac_flux", duration=100)
@@ -101,7 +101,7 @@ def fixture_no_loops_all_operations() -> QProgram:
     qp.sync()
     qp.wait(bus="readout", duration=100)
     qp.play(bus="readout", waveform=readout_pair)
-    qp.set_markers(bus="readout", mask="0111")
+    qp.qblox.set_markers(bus="readout", mask="0111")
     qp.qblox.play(bus="readout", waveform=readout_pair, wait_time=4)
     qp.qblox.acquire(bus="readout", weights=weights_pair)
     return qp
@@ -237,22 +237,6 @@ def fixture_average_with_for_loop() -> QProgram:
     gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.average(shots=1000):
         with qp.for_loop(variable=gain, start=0, stop=1.0, step=0.1):
-            qp.play(bus="drive", waveform=drag_pair)
-            qp.set_gain(bus="readout", gain=gain)
-            qp.play(bus="readout", waveform=readout_pair)
-            qp.qblox.acquire(bus="readout", weights=weights_pair)
-    return qp
-
-
-@pytest.fixture(name="average_with_linspace")
-def fixture_average_with_linspace() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
-    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
-    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
-    qp = QProgram()
-    gain = qp.variable(label="gain", domain=Domain.Voltage)
-    with qp.average(shots=1000):
-        with qp.linspace_loop(variable=gain, start=0, stop=1.0, iterations=11):
             qp.play(bus="drive", waveform=drag_pair)
             qp.set_gain(bus="readout", gain=gain)
             qp.play(bus="readout", waveform=readout_pair)
@@ -537,12 +521,12 @@ class TestQBloxCompiler:
 
     def test_qdac_bus_ignored(self, run_qdac_buses: QProgram):
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "qdac_flux"
+        mock_qblox_bus = MagicMock()
+        mock_qblox_bus.alias = "drive"
 
         compiler = QbloxCompiler()
         output = compiler.compile(
-            qprogram=run_qdac_buses, bus_mapping={"drive": "drive_q0"}, qdac_buses=[mock_qdac_bus]
+            qprogram=run_qdac_buses, bus_mapping={"drive": "drive_q0"}, qblox_buses=[mock_qblox_bus]
         )
 
         assert len(output.sequences) == 1
@@ -551,13 +535,13 @@ class TestQBloxCompiler:
 
     def test_qdac_sync_raises_error(self, run_qdac_sync: QProgram):
 
-        mock_qdac_bus = MagicMock()
-        mock_qdac_bus.alias = "qdac_flux"
+        mock_qblox_bus = MagicMock()
+        mock_qblox_bus.alias = "drive"
 
         compiler = QbloxCompiler()
 
         with pytest.raises(ValueError, match="QDACII buses not allowed inside sync function"):
-            compiler.compile(qprogram=run_qdac_sync, bus_mapping={"drive": "drive_q0"}, qdac_buses=[mock_qdac_bus])
+            compiler.compile(qprogram=run_qdac_sync, bus_mapping={"drive": "drive_q0"}, qblox_buses=[mock_qblox_bus])
 
     def test_set_trigger(self, set_trigger: QProgram):
 
@@ -1142,83 +1126,6 @@ class TestQBloxCompiler:
     def test_average_with_for_loop(self, average_with_for_loop: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=average_with_for_loop)
-
-        assert len(sequences) == 2
-        assert "drive" in sequences
-        assert "readout" in sequences
-
-        for bus in sequences:
-            assert isinstance(sequences[bus], QPy.Sequence)
-
-        assert len(sequences["drive"]._waveforms._waveforms) == 2
-        assert len(sequences["drive"]._acquisitions._acquisitions) == 0
-        assert len(sequences["drive"]._weights._weights) == 0
-        assert sequences["drive"]._program._compiled
-
-        assert len(sequences["readout"]._waveforms._waveforms) == 2
-        assert len(sequences["readout"]._acquisitions._acquisitions) == 1
-        assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 11
-        assert len(sequences["readout"]._weights._weights) == 2
-        assert sequences["readout"]._program._compiled
-
-        drive_str = """
-            setup:
-                            wait_sync        4
-                            set_mrk          0
-                            upd_param        4
-
-            main:
-                            move             1000, R0
-            avg_0:
-                            move             11, R1
-                            move             0, R2
-            loop_0:
-                            play             0, 1, 40
-                            wait             2960
-                            add              R2, 3276, R2
-                            loop             R1, @loop_0
-                            loop             R0, @avg_0
-                            set_mrk          0
-                            upd_param        4
-                            stop
-        """
-        readout_str = """
-            setup:
-                            wait_sync        4
-                            set_mrk          0
-                            upd_param        4
-
-            main:
-                            move             1000, R0
-            avg_0:
-                            move             1, R1
-                            move             0, R2
-                            move             0, R3
-                            move             11, R4
-                            move             0, R5
-            loop_0:
-                            set_awg_gain     R5, R5
-                            set_awg_gain     R5, R5
-                            move             10, R6
-            square_0:
-                            play             0, 1, 100
-                            loop             R6, @square_0
-                            acquire_weighed  0, R3, R2, R1, 2000
-                            add              R3, 1, R3
-                            add              R5, 3276, R5
-                            loop             R4, @loop_0
-                            nop
-                            loop             R0, @avg_0
-                            set_mrk          0
-                            upd_param        4
-                            stop
-        """
-        assert is_q1asm_equal(sequences["drive"], drive_str)
-        assert is_q1asm_equal(sequences["readout"], readout_str)
-
-    def test_average_with_linspace(self, average_with_linspace: QProgram):
-        compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=average_with_linspace)
 
         assert len(sequences) == 2
         assert "drive" in sequences

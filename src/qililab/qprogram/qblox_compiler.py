@@ -281,7 +281,8 @@ class QbloxCompiler:
         Returns:
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
-
+        if not self._qblox_buses:
+            return {bus: BusCompilationInfo() for bus in self._qprogram.buses}
         return {bus: BusCompilationInfo() for bus in self._qprogram.buses if bus in self._qblox_buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
