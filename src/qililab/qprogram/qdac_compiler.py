@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from qililab.config import logger
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, LinspaceLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
@@ -81,7 +81,6 @@ class QdacCompiler:
             Parallel: self._handle_parallel,
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
-            LinspaceLoop: self._handle_linspace_loop,
             Loop: self._handle_loop,
             SetOffset: self._handle_set_offset,
             Play: self._handle_play,
@@ -200,13 +199,6 @@ class QdacCompiler:
         iterations = QdacCompiler._convert_for_loop_values(element)
         for qdac_bus_alias in self._qdac_buses_alias:
             self._loop_repetitions[qdac_bus_alias] *= iterations + 1
-        for bus in self._buses:
-            self._buses[bus].loop_counter += 1
-        return True
-
-    def _handle_linspace_loop(self, element: LinspaceLoop):
-        for qdac_bus_alias in self._qdac_buses_alias:
-            self._loop_repetitions[qdac_bus_alias] *= element.iterations + 1
         for bus in self._buses:
             self._buses[bus].loop_counter += 1
         return True

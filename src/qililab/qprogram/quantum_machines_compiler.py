@@ -26,7 +26,7 @@ from qm.qua import _dsl as qua_dsl
 from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
 from qililab.platform.components.bus import Bus
-from qililab.qprogram.blocks import Average, Block, ForLoop, LinspaceLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -137,7 +137,6 @@ class QuantumMachinesCompiler:
             InfiniteLoop: self._handle_infinite_loop,
             Parallel: self._handle_parallel_loop,
             ForLoop: self._handle_for_loop,
-            LinspaceLoop: self._handle_linspace_loop,
             Loop: self._handle_loop,
             Average: self._handle_average,
             Measure: self._handle_measure,
@@ -188,7 +187,7 @@ class QuantumMachinesCompiler:
                     raise NotImplementedError(
                         f"{element.__class__} operation is currently not supported in Quantum Machines."
                     )
-                if isinstance(element, (InfiniteLoop, ForLoop, LinspaceLoop, Loop, Average, Parallel, Block)):
+                if isinstance(element, (InfiniteLoop, ForLoop, Loop, Average, Parallel, Block)):
                     with handler(element):
                         traverse(element)
                 else:
@@ -325,28 +324,6 @@ class QuantumMachinesCompiler:
     def _handle_for_loop(self, element: ForLoop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
         start, stop, step = element.start, element.stop, element.step
-
-        if isinstance(element.variable, FloatVariable):
-            stop += step / 2
-        if element.variable.domain is Domain.Phase:
-            start, stop, step = start / self.PHASE_COEFF, stop / self.PHASE_COEFF, step / self.PHASE_COEFF
-        if element.variable.domain is Domain.Frequency:
-            start, stop, step = (
-                int(start),
-                int(stop),
-                int(step),
-            )
-        if element.variable.domain is Domain.Time:
-            start = max(start, self.MINIMUM_TIME)
-
-        to_positive = stop >= start
-        if to_positive:
-            return qua.for_(qua_variable, start, qua_variable <= stop, qua_variable + step)  # type: ignore[arg-type]
-        return qua.for_(qua_variable, start, qua_variable >= stop, qua_variable + step)  # type: ignore[arg-type]
-
-    def _handle_linspace_loop(self, element: LinspaceLoop):
-        qua_variable = self._qprogram_to_qua_variables[element.variable]
-        start, stop, step = self._convert_linspace_loop_values(element)
 
         if isinstance(element.variable, FloatVariable):
             stop += step / 2
@@ -713,10 +690,3 @@ class QuantumMachinesCompiler:
 
         # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
         return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
-
-    @staticmethod
-    def _convert_linspace_loop_values(linspace_loop: LinspaceLoop):
-        qblox_start = linspace_loop.start
-        qblox_stop = linspace_loop.stop
-        qblox_step = (qblox_stop - qblox_start) / linspace_loop.iterations
-        return (qblox_start, qblox_stop, qblox_step)

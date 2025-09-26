@@ -26,7 +26,7 @@ from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 
 from qililab.config import logger
 from qililab.platform.components.bus import Bus
-from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, LinspaceLoop, Loop, Parallel
+from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
@@ -146,7 +146,6 @@ class QbloxCompiler:
             Parallel: self._handle_parallel,
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
-            LinspaceLoop: self._handle_linspace_loop,
             Loop: self._handle_loop,
             SetFrequency: self._handle_set_frequency,
             SetPhase: self._handle_set_phase,
@@ -215,7 +214,7 @@ class QbloxCompiler:
                 if isinstance(element, Block):
                     traverse(element)
                     if not self._qprogram.qblox.disable_autosync and isinstance(
-                        element, (ForLoop, LinspaceLoop, Parallel, Loop, Average)
+                        element, (ForLoop, Parallel, Loop, Average)
                     ):
                         self._handle_sync(element=Sync(buses=None), delay=True)
                     if appended:
@@ -384,21 +383,6 @@ class QbloxCompiler:
         for bus in self._buses:
             qpy_loop = QPyProgram.IterativeLoop(
                 name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=[(start, step)]
-            )
-            self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
-            self._buses[bus].qpy_block_stack.append(qpy_loop)
-            self._buses[bus].variable_to_register[element.variable] = qpy_loop.loop_registers[0]
-            self._buses[bus].loop_counter += 1
-        return True
-
-    def _handle_linspace_loop(self, element: LinspaceLoop):
-        operation = QbloxCompiler._get_reference_operation_of_loop(element)
-        start, step, iterations = QbloxCompiler._convert_linspace_loop_values(element, operation)
-        for bus in self._buses:
-            qpy_loop = QPyProgram.IterativeLoop(
-                name=f"loop_{self._buses[bus].loop_counter}",
-                iterations=iterations,
-                loops=[(start, step)],
             )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
@@ -938,7 +922,7 @@ class QbloxCompiler:
         pass
 
     @staticmethod
-    def _get_reference_operation_of_loop(loop: Loop | ForLoop | LinspaceLoop, starting_block: Block | None = None):
+    def _get_reference_operation_of_loop(loop: Loop | ForLoop, starting_block: Block | None = None):
         def collect_operations(block: Block):
             for element in block.elements:
                 if isinstance(element, Block):
@@ -979,14 +963,6 @@ class QbloxCompiler:
         qblox_stop = convert(for_loop.stop)
         qblox_step = (qblox_stop - qblox_start) // (iterations - 1)
         return (qblox_start, qblox_step, iterations)
-
-    @staticmethod
-    def _convert_linspace_loop_values(linspace_loop: LinspaceLoop, operation: Operation):
-        convert = QbloxCompiler._convert_value(operation)
-        qblox_start = convert(linspace_loop.start)
-        qblox_stop = convert(linspace_loop.stop)
-        qblox_step = (qblox_stop - qblox_start) // (linspace_loop.iterations - 1)
-        return (qblox_start, qblox_step, linspace_loop.iterations)
 
     @staticmethod
     def _convert_value(operation: Operation) -> Callable[[Any], int]:
