@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- `platform.execute_qprograms_parallel()` now takes a list of bus mappings to allow one bus mapping per qprogram.
+[#996](https://github.com/qilimanjaro-tech/qililab/pull/996)
+
 - QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
 [#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
 
