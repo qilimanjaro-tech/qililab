@@ -1382,6 +1382,20 @@ class TestMethods:
         with pytest.raises(ValueError, match=re.escape(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")):
             platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
 
+    def test_mapped_buses(self, platform: Platform):
+        """Test the mappings of buses"""
+        qp_buses = set({'readout', 'drive'})
+        mapping = None
+        
+        mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
+        assert mapped_buses==qp_buses
+
+        mapping = {'readout': 'readout_q0_bus', 'drive': 'drive_q0_bus'}
+        mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
+        assert len(mapped_buses)==len(mapping)
+        assert 'readout_q0_bus' in mapped_buses
+        assert 'drive_q0_bus' in mapped_buses
+        
     def test_parallelisation_execute_qblox(self, platform: Platform):
         """Test that the execute parallelisation returns the same result per qprogram as the regular excute method"""
 
@@ -1419,10 +1433,12 @@ class TestMethods:
             result_parallel = platform.execute_qprograms_parallel(qp_list, debug=True)
             non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1, debug=True)
             non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2, debug=True)
+            no_qprograms = platform.execute_qprograms_parallel(qprograms=None)
 
             # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
             assert result_parallel[0].results == non_parallel_results1.results
             assert result_parallel[1].results == non_parallel_results2.results
+            assert []==no_qprograms
 
     def test_calibrate_mixers(self, platform: Platform):
         """Test calibrating the Qblox mixers."""
