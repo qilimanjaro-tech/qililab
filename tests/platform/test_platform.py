@@ -1355,6 +1355,29 @@ class TestMethods:
             with pytest.raises(ValueError, match=error_string):
                 platform_quantum_machines.execute_qprograms_parallel(qp_list)
 
+    def test_normalize_bus_mappings(self, platform: Platform):
+        """Test the normalization of bus mappings"""
+        n = 3
+        bus_mappings = None
+        
+        none_mapping = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+        assert isinstance(none_mapping, list)
+        assert len(none_mapping)==n
+        assert none_mapping==[None]*n
+        
+        bus_mappings = {'readout':'readout_q0_bus'}
+        one_mapping = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+        assert isinstance(one_mapping, list)
+        assert len(one_mapping)==n
+        for mapping in one_mapping:
+            assert mapping==bus_mappings
+            
+        bus_mappings = [{'readout':'readout_q0_bus'}, None, {'readout':'readout_q2_bus'}]
+        mappings = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+        assert isinstance(one_mapping, list)
+        assert len(one_mapping)==n
+        assert mappings==bus_mappings
+
     def test_parallelisation_execute_qblox(self, platform: Platform):
         """Test that the execute parallelisation returns the same result per qprogram as the regular excute method"""
 
