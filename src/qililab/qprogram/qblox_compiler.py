@@ -282,6 +282,7 @@ class QbloxCompiler:
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
         if not self._qblox_buses:
+            self._qblox_buses = list(self._qprogram.buses)
             return {bus: BusCompilationInfo() for bus in self._qprogram.buses}
         return {bus: BusCompilationInfo() for bus in self._qprogram.buses if bus in self._qblox_buses}
 

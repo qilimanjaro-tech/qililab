@@ -294,6 +294,7 @@ class QuantumMachinesCompiler:
         buses = self._qprogram.buses
         self._configuration["elements"] = {bus: {"operations": {}} for bus in buses}
         if not self._qm_buses:
+            self._qm_buses = list(buses)
             self._buses = {bus: _BusCompilationInfo() for bus in buses}
         else:
             self._buses = {bus: _BusCompilationInfo() for bus in buses if bus in self._qm_buses}
