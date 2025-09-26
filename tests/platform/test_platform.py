@@ -1377,6 +1377,10 @@ class TestMethods:
         assert isinstance(one_mapping, list)
         assert len(one_mapping)==n
         assert mappings==bus_mappings
+        
+        bus_mappings = [{'readout':'readout_q0_bus'}, {'readout':'readout_q2_bus'}]
+        with pytest.raises(ValueError, match=re.escape(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")):
+            platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
 
     def test_parallelisation_execute_qblox(self, platform: Platform):
         """Test that the execute parallelisation returns the same result per qprogram as the regular excute method"""
