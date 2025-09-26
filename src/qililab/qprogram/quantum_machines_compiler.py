@@ -340,8 +340,8 @@ class QuantumMachinesCompiler:
 
         to_positive = stop >= start
         if to_positive:
-            return qua.for_(qua_variable, start, qua_variable <= stop, qua_variable + step)  # type: ignore[arg-type]
-        return qua.for_(qua_variable, start, qua_variable >= stop, qua_variable + step)  # type: ignore[arg-type]
+            return qua.for_(qua_variable, start, qua_variable <= stop, qua_variable + step)  # type: ignore
+        return qua.for_(qua_variable, start, qua_variable >= stop, qua_variable + step)  # type: ignore
 
     def _handle_loop(self, element: Loop):
         qua_variable = self._qprogram_to_qua_variables[element.variable]
@@ -358,7 +358,7 @@ class QuantumMachinesCompiler:
 
     def _handle_average(self, element: Average):
         variable = qua.declare(int)
-        return qua.for_(variable, 0, variable < element.shots, variable + 1)  # type: ignore[arg-type]
+        return qua.for_(variable, 0, variable < element.shots, variable + 1)  # type: ignore
 
     def _handle_set_frequency(self, element: SetFrequency):
         if element.bus not in self._qm_buses:
@@ -438,7 +438,7 @@ class QuantumMachinesCompiler:
         duration = waveform_I.get_duration()
 
         gain = (
-            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore[arg-type]
+            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore
             if self._buses[element.bus].current_gain is not None
             else None
         )
@@ -465,7 +465,7 @@ class QuantumMachinesCompiler:
         waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q)
 
         gain = (
-            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore[arg-type]
+            qua.amp(self._buses[element.bus].current_gain * self.VOLTAGE_COEFF)  # type: ignore
             if self._buses[element.bus].current_gain is not None
             else None
         )
@@ -551,9 +551,9 @@ class QuantumMachinesCompiler:
 
         qua.wait(
             (
-                duration / int(self.WAIT_COEFF)  # type: ignore[arg-type]
+                duration / int(self.WAIT_COEFF)  # type: ignore
                 if isinstance(element.duration, Variable)
-                else int(duration / self.WAIT_COEFF)  # type: ignore[arg-type]
+                else int(duration / self.WAIT_COEFF)  # type: ignore
             ),
             element.bus,
         )
