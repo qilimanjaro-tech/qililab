@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
+from qililab.data_management import build_platform as platform_build_platform
 from qililab.qprogram import QbloxCompilationOutput
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 from qpysequence import Sequence, Waveforms
@@ -24,7 +25,9 @@ from tests.data import (
     SauronSpiRack,
     SauronYokogawa,
 )
+
 from tests.test_utils import build_platform
+
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -47,7 +50,6 @@ from qililab.result.qprogram.quantum_machines_measurement_result import QuantumM
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
-from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
 
@@ -59,12 +61,12 @@ def fixture_platform():
 
 @pytest.fixture(name="platform_qblox_qdac")
 def fixture_platform_qblox_qdac():
-    return build_platform(runcard="..\runcards\qblox_and_qdac.yml")
+    return platform_build_platform(runcard="tests/runcards/qblox_and_qdac.yml")
 
 
 @pytest.fixture(name="platform_qm_qdac")
 def fixture_platform_qm_qdac():
-    return build_platform(runcard="..\runcards\qm_and_qdac.yml")
+    return platform_build_platform(runcard="tests/runcards/qm_and_qdac.yml")
 
 
 @pytest.fixture(name="platform_quantum_machines")

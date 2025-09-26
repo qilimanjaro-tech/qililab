@@ -106,7 +106,7 @@ buses:
   - alias: drive
     instruments: [qmm]
     channels: [drive]
-  - alias: resonator
+  - alias: readout
     instruments: [qmm]
     channels: [readout]
   - alias: qdac_bus_1
