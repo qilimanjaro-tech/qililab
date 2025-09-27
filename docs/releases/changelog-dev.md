@@ -5,6 +5,18 @@
 ### Improvements
 
 - `platform.execute_qprograms_parallel()` now takes a list of bus mappings to allow one bus mapping per qprogram.
+Parameters for the function have now the same syntax and behaviour:
+bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
+    A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
+    A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
+    None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
+    It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
+    Defaults to None.
+calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
+    A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
+    A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
+    None. In this case no `.Calibration` instance is used.
+    Defaults to None.
 [#996](https://github.com/qilimanjaro-tech/qililab/pull/996)
 
 - QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
