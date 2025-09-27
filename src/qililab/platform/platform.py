@@ -1249,11 +1249,7 @@ class Platform:
         if len(bus_mappings) != n:
             raise ValueError(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")
 
-        output: list[dict[str, str] | None] = []
-        for bus_mapping in bus_mappings:
-            output.append(None if bus_mapping is None else bus_mapping.copy())
-
-        return output
+        return bus_mappings
 
     def _normalize_calibrations(
         self,
@@ -1277,11 +1273,7 @@ class Platform:
         if len(calibrations) != n:
             raise ValueError(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")
 
-        output: list[Calibration | None] = []
-        for calibration in calibrations:
-            output.append(None if calibration is None else calibration)
-
-        return output
+        return calibrations
 
     def _mapped_buses(self, qp_buses: set[str], mapping: dict[str, str] | None) -> set[str]:
         """Apply mapping (if any) to a qprogram's logical buses to get physical buses."""
@@ -1304,7 +1296,10 @@ class Platform:
 
             Args:
                 qprograms (list[QProgram]): A list of the :class:`.QProgram` to execute.
-                bus_mapping (Optional[Sequence[Optional[dict[str, str]]]] | Optional[list[dict[str, str]]]): A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
+                bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
+                    A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
+                    A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
+                    None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
                     It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
                 calibrations (list[Calibration], Calibration, optional): list of :class:`.Calibration` instances, or single instance, containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
                 debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
