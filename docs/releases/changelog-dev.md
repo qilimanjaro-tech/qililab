@@ -4,6 +4,10 @@
 
 ### Improvements
 
+- `%% submit_job`: Added support for `sbatch --chdir` via a new `-c/--chdir` option that is propagated through `slurm_additional_parameters` and also enforced inside the job (`os.chdir(...)`) so it works with `-e local`. Made `--output` mandatory and hardened the output‑assignment check to recognize `Assign`, `AugAssign`, `AnnAssign`, walrus (`NamedExpr`), and tuple targets. Shipment of the notebook namespace is now safer: only picklable values (via `cloudpickle`) are sent, with common pitfalls (modules, loggers, private `_` names, IPython internals) excluded. `--low-priority` is a boolean flag mapping to a sane Slurm `nice=10000`. Paths are handled with `pathlib` plus `expanduser/expandvars`, the logs directory is created if missing, and imports are harvested conservatively from history (one‑line `import`/`from`, excluding `from __future__`). Parameter assembly only includes Slurm extras when provided, and the submitted function compiles the code string internally while accepting the output name and optional workdir. The job object is written to both `local_ns` and the global `user_ns` for IPython robustness. Log cleanup was rewritten to be cross‑platform and resilient: artifacts are grouped by numeric job‑ID prefix, non‑conforming entries are removed, and only the newest `num_files_to_keep` job groups are retained.
+  [#994](https://github.com/qilimanjaro-tech/qililab/pull/994)
+
+
 - QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
   [#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
 
