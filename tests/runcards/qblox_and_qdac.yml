@@ -1,0 +1,91 @@
+name: qbloxqdac
+
+instruments:
+  - name: QCM
+    alias: QCM
+    out_offsets: [0, 0, 0.7, 0.8]
+    awg_sequencers:
+      - identifier: 0
+        outputs: [0, 1]
+        intermediate_frequency: 100e6
+        gain_i: 1
+        gain_q: 1
+        gain_imbalance: 0
+        phase_imbalance: 0
+        offset_i: 0
+        offset_q: 0
+        hardware_modulation: True
+
+  - name: QRM
+    alias: QRM
+    out_offsets: [0.123, 1.23]
+    awg_sequencers:
+      - identifier: 0
+        outputs: [0, 1]
+        intermediate_frequency: 100e6
+        gain_i: 1
+        gain_q: 1
+        gain_imbalance: 0
+        phase_imbalance: 0
+        offset_i: 0
+        offset_q: 0
+        hardware_modulation: False
+        scope_acquire_trigger_mode: sequencer
+        scope_hardware_averaging: True
+        sampling_rate: 1.0e09
+        integration_length: 2123
+        integration_mode: ssb
+        sequence_timeout: 1
+        acquisition_timeout: 1
+        hardware_demodulation: True
+        scope_store_enabled: True
+        time_of_flight: 40
+        threshold: 0.5
+        threshold_rotation: 45.0
+
+  - name: qdevil_qdac2
+    alias: qdac
+    voltage: [0.0, 0.0]
+    span: ["low", "low"]
+    ramping_enabled: [True, True]
+    ramp_rate: [0.01, 0.01]
+    low_pass_filter: ["dc", "dc"]
+    dacs: [1, 2]
+
+
+instrument_controllers:
+  - name: qblox_cluster
+    alias: cluster_controller_0
+    reference_clock: internal
+    connection:
+      name: tcp_ip
+      address: 192.168.1.20
+    modules:
+      - alias: QRM
+        slot_id: 4
+      - alias: QCM
+        slot_id: 6
+    reset: False
+
+  - name: qdevil_qdac2
+    alias: qdac_controller_ip
+    connection:
+      name: tcp_ip
+      address: 192.168.1.15
+    modules:
+      - alias: qdac
+        slot_id: 0
+
+buses:
+  - alias: drive
+    instruments: [QCM]
+    channels: [0]
+  - alias: resonator
+    instruments: [QRM]
+    channels: [0]
+  - alias: qdac_bus_1
+    instruments: [qdac]
+    channels: [1]
+  - alias: qdac_bus_2
+    instruments: [qdac]
+    channels: [2]
