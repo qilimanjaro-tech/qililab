@@ -102,7 +102,7 @@ class Platform:
 
         More information about the runcard structure, in the :ref:`Runcards <runcards>` section of the documentation.
 
-    After initializing a :class:`Platform`, the typical first three steps (which are usually only required at the start) are:
+    After initializing a Platform, the typical first three steps (which are usually only required at the start) are:
 
     >>> platform.connect()  # Connects to all the instruments.
     >>> platform.initial_setup()  # Sets the parameters defined in the runcard.

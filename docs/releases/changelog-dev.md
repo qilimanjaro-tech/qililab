@@ -173,6 +173,9 @@ The data automatically selects between the local or shared domains depending on 
 
 ### Bug fixes
 
+- Exposed `Platform` in the global namespace.
+  [#1002](https://github.com/qilimanjaro-tech/qililab/pull/1002)
+
 - Fixed a bug in the reshaping of MeasurementResults within the ExperimentResults.
   [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
 
