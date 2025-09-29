@@ -79,4 +79,11 @@ class TestNumericHelpers:
                     or (_zyz_from_unitary(matrix1) == pytest.approx((-theta,_wrap_angle(phi + _PI),_wrap_angle(lam+_PI)),8)))
             assert (_zyz_from_unitary(matrix2) == pytest.approx((0.0,0.0,_wrap_angle(phi+lam)),8))
 
-    # def test_unitary_sqrt_2x2(self):
+    def test_unitary_sqrt_2x2(self):
+        for theta, phi, lam, gamma in zip((2*_PI*np.random.random(10)-_PI), 
+                                          (2*_PI*np.random.random(10)-_PI), 
+                                          (2*_PI*np.random.random(10)-_PI),
+                                          (2*_PI*np.random.random(10)-_PI)):
+            matrix = _mat_RZ(phi) @ _mat_RY(theta) @ _mat_RZ(lam) * np.exp(0.5j * (gamma), dtype=complex)
+            sqrt_matrix = _unitary_sqrt_2x2(matrix)
+            assert sqrt_matrix @ sqrt_matrix == pytest.approx(matrix, abs=1e-15)
