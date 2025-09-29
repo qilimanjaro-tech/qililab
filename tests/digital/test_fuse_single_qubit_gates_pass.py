@@ -8,18 +8,11 @@ from qilisdk.digital.gates import (
     U3,
     Gate,
     M,
+    Exponential
 )
 from qilisdk.digital.exceptions import GateHasNoMatrixError
 from qililab.digital.circuit_transpiler_passes.fuse_single_qubit_gates_pass import FuseSingleQubitGatesPass
-from qililab.digital.circuit_transpiler_passes.numeric_helpers import (
-    _is_close_mod_2pi,
-    _mat_RX,
-    _mat_RY,
-    _mat_RZ,
-    _mat_U3,
-    _wrap_angle,
-    _zyz_from_unitary,
-)
+
 import pytest
 import numpy as np
 
@@ -29,12 +22,19 @@ def assert_equal_gate(list1: list[Gate], list2: list[Gate]):
         assert i.qubits == j.qubits
         assert i.name == j.name
         try:
-            assert (i.matrix == j.matrix).all()
+            assert i.matrix == pytest.approx(j.matrix, abs=1e-10)
         except GateHasNoMatrixError:
             pass
 
 class TestFuseSingleQubitGatesPass:
     def test_run(self):
-        test_x = Circuit(1)
-        test_x._gates = [RX(0, theta=2)]
-        assert_equal_gate(FuseSingleQubitGatesPass().run(test_x)._gates, [RX(0,theta=2)])
+        test_1 = Circuit(2)
+        test_1._gates = [RX(0, theta=2),RZ(1,phi=1),CZ(1,0),RY(0,theta=2), U3(1,theta=2, phi=-np.pi/2, gamma=np.pi/2),
+                         M(1),RY(0,theta=2),RZ(1,phi=1)]
+        assert_equal_gate(FuseSingleQubitGatesPass().run(test_1)._gates,
+                           [RZ(1,phi=1), RX(0,theta=2), CZ(1,0), RX(1,theta=2), M(1), RY(0,theta=4-np.pi*2), RZ(1,phi=1)])
+        test_2 = Circuit(3)
+        test_2._gates = [U3(2,theta=1,phi=np.pi, gamma=-np.pi),RZ(1,phi=1), SWAP(0,1), RZ(0,phi=1), RY(2,theta=1), 
+                         Exponential(RY(0,theta=2)), RZ(0,phi=2)]
+        assert_equal_gate(FuseSingleQubitGatesPass().run(test_2)._gates,
+                           [RZ(1,phi=1), SWAP(0,1), RZ(0,phi=1), Exponential(RY(0,theta=2)), RZ(2,phi=0), RZ(0,phi=2)])
