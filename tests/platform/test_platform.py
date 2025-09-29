@@ -853,7 +853,7 @@ class TestMethods:
             MockExecutor.assert_called_once_with(
                 platform=platform,
                 experiment=mock_experiment,
-                live_plot=True,
+                live_plot=False,
                 slurm_execution=True,
                 port_number=None,
             )

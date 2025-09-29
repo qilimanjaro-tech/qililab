@@ -161,14 +161,20 @@ The data automatically selects between the local or shared domains depending on 
 
 ### Breaking changes
 
-- Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
+- Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, `import qililab.save_results` and `import qililab.load_results` still works the same way.
   [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
+
+- Set database saving and live plotting to `False` by default during experiment execution.
+  [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
 
 ### Deprecations / Removals
 
 ### Documentation
 
 ### Bug fixes
+
+- Fixed a bug in the reshaping of MeasurementResults within the ExperimentResults.
+  [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
 
 - Qblox Draw: Previously, when plotting from the platform, the integration length was incorrectly taken from the runcard parameter. However, since Qililab currently only implements acquire_weighted, the integration length should instead be determined by the duration of the weight.
 This has been corrected and now the behaviour of the acquire is the same when plotting from the platform or the qprogram.
