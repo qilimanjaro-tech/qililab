@@ -5,13 +5,13 @@ Platform
 
 The platform represents the laboratory setup used to control the quantum devices.
 
-The :class:`ql.Platform` object is the responsible for managing the initializations, connections, setups, and executions of the laboratory, which mainly consists of:
+The :class:`.Platform` object is the responsible for managing the initializations, connections, setups, and executions of the laboratory, which mainly consists of:
 
 - Buses
 
 - Instruments
 
-Below you can find a beginner's tutorial on how to use the :class:`ql.Platform` class to execute quantum experiments on your hardware.
+Below you can find a beginner's tutorial on how to use the :class:`.Platform` class to execute quantum experiments on your hardware.
 
 .. note::
 
