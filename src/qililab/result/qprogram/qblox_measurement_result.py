@@ -18,7 +18,7 @@ import numpy as np
 from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.typings.enums import ResultName
 from qililab.yaml import yaml
-
+from copy import deepcopy
 
 @yaml.register_class
 class QbloxMeasurementResult(MeasurementResult):
@@ -43,10 +43,12 @@ class QbloxMeasurementResult(MeasurementResult):
 
     name = ResultName.QBLOX_QPROGRAM_MEASUREMENT
 
-    def __init__(self, bus: str, raw_measurement_data: dict, shape: tuple | None = None):
+    def __init__(self, bus: str, raw_measurement_data: dict, intertwined: int, shape: tuple | None = None):
         super().__init__(bus=bus)
         self.raw_measurement_data = raw_measurement_data
         self.shape = shape
+        self.intertwined = intertwined
+
 
     @property
     def array(self) -> np.ndarray:
@@ -59,8 +61,17 @@ class QbloxMeasurementResult(MeasurementResult):
         path1 = self.raw_measurement_data["bins"]["integration"]["path1"]
 
         array = np.array([path0, path1])
+
+        # if self.intertwined > 1:
+        #     array = [array[i::self.intertwined] for i in range(self.intertwined)]
+        #     # array = [path1[i::self.intertwined] for i in range(self.intertwined)]
+
         if self.shape:
             array = array.reshape((2, *self.shape))
+        #     if isinstance(array, list):
+        #         array = [a.reshape((2, *self.shape)) for a in array]
+        #     else:
+                # array = array.reshape((2, *self.shape))
         return array
 
     @property
@@ -73,4 +84,38 @@ class QbloxMeasurementResult(MeasurementResult):
         array = np.array(self.raw_measurement_data["bins"]["threshold"])
         if self.shape:
             array = array.reshape((1, *self.shape))
+        if self.intertwined>1:
+            pass
         return array
+
+    @property
+    def unintertwined(self) -> list:
+        results_unintertwined_list = []
+        if self.intertwined > 1:
+            
+            for i in range(self.intertwined):
+                results_unintertwined: QbloxMeasurementResult = deepcopy(self)
+                results_unintertwined.intertwined = 1
+                # results_unintertwined.raw_measurement_data["scope"] = 
+                path0 = results_unintertwined.raw_measurement_data["bins"]["integration"]["path0"]
+                results_unintertwined.raw_measurement_data["bins"]["integration"]["path0"] = path0[i::self.intertwined]
+
+                path1 = results_unintertwined.raw_measurement_data["bins"]["integration"]["path1"]
+                results_unintertwined.raw_measurement_data["bins"]["integration"]["path1"] = path1[i::self.intertwined]
+
+                threshold = results_unintertwined.raw_measurement_data["bins"]["threshold"]
+                results_unintertwined.raw_measurement_data["bins"]["threshold"] = threshold[i::self.intertwined]
+
+                avg_cnt = results_unintertwined.raw_measurement_data["bins"]["avg_cnt"]
+                results_unintertwined.raw_measurement_data["bins"]["avg_cnt"] = avg_cnt[i::self.intertwined]
+
+                results_unintertwined_list.append(results_unintertwined)
+
+                # for result in range(self.intertwined):
+                #     results_unintertwined.append(QbloxMeasurementResult(bus = self.bus, raw_measurement_data=split_raw_data, intertwined=1, shape=split_shape))
+            
+        else:
+            results_unintertwined_list = [self]
+            
+        return results_unintertwined_list
+

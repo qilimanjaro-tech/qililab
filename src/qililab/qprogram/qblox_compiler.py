@@ -52,6 +52,7 @@ class AcquisitionData:
     bus: str
     save_adc: bool
     shape: tuple
+    intertwined: int
 
 
 Sequences = dict[str, QPy.Sequence]
@@ -196,8 +197,8 @@ class QbloxCompiler:
             delay_implemented = False
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.append(block)
+            first_acquire_of_block = True
             for element in block.elements:
-                first_acquire_of_block = True
                 if isinstance(element, Play) and not delay_implemented:
                     for bus in self._buses:
                         if self._buses[bus].delay > 0:
@@ -615,7 +616,7 @@ class QbloxCompiler:
             self._buses[element.bus].num_bins_per_acquire = math.prod(loop[1].iterations for loop in loops) # TODO: check this is correct
             self._buses[element.bus].num_bins_total = int(self._buses[element.bus].counter_acquire * self._buses[element.bus].num_bins_per_acquire)
             acquisition_name = f"Acquisition {self._buses[element.bus]._count_nested_level_acquire}"
-            self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(bus=self, save_adc=element.save_adc, shape=self._buses[element.bus].shape_acquire)
+            self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(bus=self, save_adc=element.save_adc, shape=self._buses[element.bus].shape_acquire, intertwined=self._buses[element.bus].counter_acquire)
             self._buses[element.bus].qpy_sequence._acquisitions.add(
                 name=acquisition_name,
                 num_bins=self._buses[element.bus].num_bins_total,
