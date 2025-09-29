@@ -16,7 +16,7 @@
 This module contains all the methods and the class used to define a platform, which is a representation
 of a laboratory.
 
-.. currentmodule:: qililab
+.. currentmodule:: qililab.platform
 
 Platform Class
 ~~~~~~~~~~~~~~~~
