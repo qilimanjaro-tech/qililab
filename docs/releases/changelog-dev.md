@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- Added `parameters` dictionary to the `Calibration` class, and removed legacy code.
+  [#1005](https://github.com/qilimanjaro-tech/qililab/pull/1005)
+
 - `platform.execute_qprograms_parallel()` now takes a list of bus mappings to allow one bus mapping per qprogram.
 Parameters for the function have now the same syntax and behaviour:
 bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
