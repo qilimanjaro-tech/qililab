@@ -614,9 +614,10 @@ class QbloxCompiler:
             self._buses[element.bus].shape_acquire = tuple(loop[1].iterations for loop in loops)
             self._buses[element.bus].num_bins_per_acquire = math.prod(loop[1].iterations for loop in loops) # TODO: check this is correct
             self._buses[element.bus].num_bins_total = int(self._buses[element.bus].counter_acquire * self._buses[element.bus].num_bins_per_acquire)
-            self._buses[element.bus].acquisitions = AcquisitionData(bus=self, save_adc=element.save_adc, shape=self._buses[element.bus].shape_acquire)
+            acquisition_name = f"Acquisition {self._buses[element.bus]._count_nested_level_acquire}"
+            self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(bus=self, save_adc=element.save_adc, shape=self._buses[element.bus].shape_acquire)
             self._buses[element.bus].qpy_sequence._acquisitions.add(
-                name=f"Acquisition {self._buses[element.bus]._count_nested_level_acquire}",
+                name=acquisition_name,
                 num_bins=self._buses[element.bus].num_bins_total,
                 index=self._buses[element.bus]._count_nested_level_acquire,
             )
