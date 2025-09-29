@@ -38,6 +38,7 @@ class TestCancelIdentityPairsPass:
         h_test._gates = [CZ(0, 1), SWAP(0, 1), H(0), X(0), X(0), I(1), H(0), SWAP(1,0), CNOT(0, 1), CNOT(1, 0),CZ(0, 1)]
         assert_equal_gate(CancelIdentityPairsPass().run(h_test)._gates, 
                             [CZ(0, 1), CNOT(0, 1), CNOT(1, 0), CZ(0, 1)])
+        assert_equal_gate(h_test._gates, [CZ(0, 1), SWAP(0, 1), H(0), X(0), X(0), I(1), H(0), SWAP(1,0), CNOT(0, 1), CNOT(1, 0),CZ(0, 1)])
 
         rx_test = Circuit(2)
         rx_test._gates = [RX(0,theta=np.pi/2), RX(0,theta=-np.pi/2), RX(0,theta=np.pi/2), RX(0,theta=np.pi/2), RX(1,theta=-np.pi/2)]
@@ -63,6 +64,10 @@ class TestCancelIdentityPairsPass:
                              Controlled(1,basic_gate=Y(0)), Controlled(0,basic_gate=Y(1)), Controlled(0,basic_gate=Z(1))]
         assert_equal_gate(CancelIdentityPairsPass().run(ad_co_test)._gates,  [Adjoint(Y(1)),Adjoint(Y(0)),Adjoint(Z(0)), 
                                                                               Controlled(1,basic_gate=Y(0)), Controlled(0,basic_gate=Y(1)), Controlled(0,basic_gate=Z(1))])
+        
+        empty_circuit_test = Circuit(3)
+        assert CancelIdentityPairsPass().run(empty_circuit_test)._gates == []
+
 
 
     def test_first_nonzero_phase(self):
