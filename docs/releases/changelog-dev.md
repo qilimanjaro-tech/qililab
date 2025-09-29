@@ -4,6 +4,22 @@
 
 ### Improvements
 
+- `platform.execute_qprograms_parallel()` now takes a list of bus mappings to allow one bus mapping per qprogram.
+Parameters for the function have now the same syntax and behaviour:
+bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
+    A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
+    A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
+    None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
+    It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
+    Defaults to None.
+calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
+    A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
+    A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
+    None. In this case no `.Calibration` instance is used.
+    Defaults to None.
+[#996](https://github.com/qilimanjaro-tech/qililab/pull/996)
+
+
 - `%% submit_job`: Added support for `sbatch --chdir` via a new `-c/--chdir` option that is propagated through `slurm_additional_parameters` and also enforced inside the job (`os.chdir(...)`) so it works with `-e local`. Made `--output` mandatory and hardened the output‑assignment check to recognize `Assign`, `AugAssign`, `AnnAssign`, walrus (`NamedExpr`), and tuple targets. Shipment of the notebook namespace is now safer: only picklable values (via `cloudpickle`) are sent, with common pitfalls (modules, loggers, private `_` names, IPython internals) excluded. `--low-priority` is a boolean flag mapping to a sane Slurm `nice=10000`. Paths are handled with `pathlib` plus `expanduser/expandvars`, the logs directory is created if missing, and imports are harvested conservatively from history (one‑line `import`/`from`, excluding `from __future__`). Parameter assembly only includes Slurm extras when provided, and the submitted function compiles the code string internally while accepting the output name and optional workdir. The job object is written to both `local_ns` and the global `user_ns` for IPython robustness. Log cleanup was rewritten to be cross‑platform and resilient: artifacts are grouped by numeric job‑ID prefix, non‑conforming entries are removed, and only the newest `num_files_to_keep` job groups are retained.
   [#994](https://github.com/qilimanjaro-tech/qililab/pull/994)
 
