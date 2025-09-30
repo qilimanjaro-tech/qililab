@@ -176,7 +176,7 @@ The data automatically selects between the local or shared domains depending on 
 
 ### Bug fixes
 
-- Fixed a bug in the QBlox Compiler handling of the wait, long waits that were a multiple of 65532 (the maximum wait) up to 65535 or a multiple of any of these were giving out an error. This has been solved by checking if the remainder would be below 4 and appending the wait being added as needed.
+- Fixed a bug in the QBlox Compiler handling of the wait, long waits that were a multiple of 65532 (the maximum wait) up to 65535 were giving out an error. This has been solved by checking if the remainder would be below 4. If the remainder is 0 it appends a wait of 65532 and if the remainder is between 1 and 3, the duration of the last wait is computed as : `(INST_MAX_WAIT + remainder) - INST_MIN_WAIT` (where `INST_MAX_WAIT` is 65532 and `INST_MIN_WAIT` is 4) and a wait of `INST_MIN_WAIT` is added.
   [#1006](https://github.com/qilimanjaro-tech/qililab/pull/1006)
 
 - Exposed `Platform` in the global namespace.
