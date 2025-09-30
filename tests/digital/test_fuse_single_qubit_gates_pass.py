@@ -44,3 +44,8 @@ class TestFuseSingleQubitGatesPass:
                          Exponential(RY(0,theta=2)), RZ(0,phi=2)]
         assert_equal_gate(FuseSingleQubitGatesPass().run(test_2)._gates,
                            [RZ(1,phi=1), SWAP(0,1), RZ(0,phi=1), Exponential(RY(0,theta=2)), RZ(2,phi=0), RZ(0,phi=2)])
+        # It makes sure all the inverse equivalences work
+        test_3 = Circuit(2) 
+        test_3._gates = [U3(0, theta=2, phi=np.pi, gamma=np.pi), U3(1, theta=2, phi=np.pi/2, gamma=-np.pi/2)]
+        assert_equal_gate(FuseSingleQubitGatesPass().run(test_3)._gates,
+                           [RY(0,theta=-2), RX(1,theta=-2)])
