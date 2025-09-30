@@ -502,14 +502,34 @@ class QbloxCompiler:
             self._buses[bus].upd_param_instruction_pending = False
 
         else:  # no instructions pending
+            remainder = duration % INST_MAX_WAIT
             if duration > INST_MAX_WAIT:
-                for _ in range(duration // INST_MAX_WAIT):
+                for iteration in range(duration // INST_MAX_WAIT):
+                    if iteration == (duration // INST_MAX_WAIT)-1 and 0 <= remainder < 4: # if last iteration and if the remainder would cause a problem
+                        if remainder == 0:
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                            )
+                        else:
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_time=(INST_MAX_WAIT + remainder) - 4))
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_time = 4))
+                            remainder = 0
+        
+                        break
+                        
                     self._buses[bus].qpy_block_stack[-1].append_component(
                         component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
                     )
-            self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
-            )
+            
+            if duration == INST_MAX_WAIT:
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                    )
+
+            elif remainder >= 4:
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
+                )
 
     def _handle_sync(self, element: Sync, delay: bool = False):
         # Get the buses involved in the sync operation.
