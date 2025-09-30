@@ -497,6 +497,7 @@ class QbloxCompiler:
 
     def _handle_add_waits(self, bus: str, duration: int):
         """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
+           If the previous instruction was a wait and the current one as well and the sum of both wait is below INST_MAX_WAIT they get combined into one in order to reduce the number of Q1ASM lines.
 
         Args:
             element (Wait): wait element
@@ -527,15 +528,14 @@ class QbloxCompiler:
                     self._buses[bus].qpy_block_stack[-1].append_component(
                         component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
                     )
-            # TODO: get block.last_component from qpysequence
             
-            if isinstance(self._buses[bus].qpy_block_stack[-1], QPyProgram.Block):
-                block_components = self._buses[bus].qpy_block_stack[-1].components
-                if block_components and isinstance(block_components[-1], QPyInstructions.Wait):
-                    combined_duration = block_components[-1].duration + (duration % INST_MAX_WAIT)
-                    if combined_duration < INST_MAX_WAIT: # combine the waits if possible
-                        block_components[-1]=QPyInstructions.Wait(wait_time=combined_duration)
-                        combined_duration_flag = True
+            # if isinstance(self._buses[bus].qpy_block_stack[-1], QPyProgram.Block):
+            block_components = self._buses[bus].qpy_block_stack[-1].components
+            if block_components and isinstance(block_components[-1], QPyInstructions.Wait): # Check if the previous element was a wait
+                combined_duration = block_components[-1].duration + (duration % INST_MAX_WAIT)
+                if combined_duration < INST_MAX_WAIT: # combine the waits if possible
+                    block_components[-1]=QPyInstructions.Wait(wait_time=combined_duration)
+                    combined_duration_flag = True
             if combined_duration_flag is False:
                 self._buses[bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
