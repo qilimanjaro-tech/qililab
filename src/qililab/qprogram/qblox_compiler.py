@@ -128,6 +128,8 @@ class BusCompilationInfo:
         # Latched Paramter flag
         self.upd_param_instruction_pending: bool = False
 
+        self.weight_to_register: dict[float, QPyProgram.Register] = {} # weights are likely to be the same hence if the value has already been given to a register, this register can be reused
+
 
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
@@ -478,6 +480,7 @@ class QbloxCompiler:
 
     def _handle_add_waits(self, bus: str, duration: int):
         """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
+        If the previous instruction was a wait and the current one as well and the sum of both wait is below INST_MAX_WAIT they get combined into one in order to reduce the number of Q1ASM lines.
 
         Args:
             element (Wait): wait element
@@ -526,7 +529,16 @@ class QbloxCompiler:
                         component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
                     )
 
-            elif remainder >= INST_MIN_WAIT:
+            #  Combine two waits together if possible
+            combined_duration_flag = False #  Flag to determine if the wait has already been added by combining two waits
+            block_components = self._buses[bus].qpy_block_stack[-1].components
+            if block_components and isinstance(block_components[-1], QPyInstructions.Wait): # Check if the previous element was a wait
+                combined_duration = block_components[-1].duration + (duration % INST_MAX_WAIT)
+                if combined_duration <= INST_MAX_WAIT:
+                    block_components[-1]=QPyInstructions.Wait(wait_time=combined_duration) # overwrite the previous wait to combine with the current
+                    combined_duration_flag = True
+
+            if remainder >= INST_MIN_WAIT and combined_duration_flag is False:
                 self._buses[bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
                 )
@@ -607,6 +619,10 @@ class QbloxCompiler:
         )
 
         index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
+        block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
+        block_index_for_add_instruction = loops[-1][0] if loops else -1
+        register_I = self._get_or_create_weight_register(element.bus, index_I, block_index_for_move_instruction)
+        register_Q = self._get_or_create_weight_register(element.bus, index_Q, block_index_for_move_instruction)
 
         if num_bins == 1:
             self._buses[element.bus].qpy_block_stack[-1].append_component(
@@ -620,19 +636,8 @@ class QbloxCompiler:
             )
         else:
             bin_register = QPyProgram.Register()
-            block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
-            block_index_for_add_instruction = loops[-1][0] if loops else -1
             self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
                 component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
-            )
-            register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=index_I, register=register_I),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
-            )
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=index_Q, register=register_Q),
                 bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
             self._buses[element.bus].qpy_block_stack[-1].append_component(
@@ -782,6 +787,19 @@ class QbloxCompiler:
         self._buses[element.bus].static_duration += duration
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
+
+    def _get_or_create_weight_register(self, bus, weight, block_index):
+        #FUCK Add dosctring
+        if weight in self._buses[bus].weight_to_register:
+            register = self._buses[bus].weight_to_register[weight]
+
+        else: # no weight with this value has been given before
+            self._buses[bus].weight_to_register[weight] = QPyProgram.Register()
+            register = self._buses[bus].weight_to_register[weight]
+            self._buses[bus].qpy_block_stack[block_index].append_component(
+                    component=QPyInstructions.Move(var=weight, register=register),
+                    bot_position=len(self._buses[bus].qpy_block_stack[block_index].components),)
+        return register
 
     def _handle_block(self, element: Block):
         pass
