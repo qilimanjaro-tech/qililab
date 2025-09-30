@@ -67,7 +67,7 @@ def _zyz_from_unitary(U: np.ndarray) -> tuple[float, float, float]:
 
     a00, a01 = U[0, 0], U[0, 1]
     a10, a11 = U[1, 0], U[1, 1]
-    theta = 2.0 * math.atan2(np.abs(a01), a00)
+    theta = 2.0 * math.atan2(np.abs(a01), np.abs(a00))
     s = math.sin(theta / 2.0)
 
     if s < 1e-12:
