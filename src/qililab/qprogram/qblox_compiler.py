@@ -131,6 +131,7 @@ class BusCompilationInfo:
         # Allows reusing a register if a weight has already been given with the same value
         self.weight_to_register: dict[float, QPyProgram.Register] = {}
 
+
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
 

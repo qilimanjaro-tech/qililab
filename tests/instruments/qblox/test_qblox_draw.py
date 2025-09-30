@@ -154,7 +154,6 @@ def fixture_play_interrupted_by_another_play():
     qp = QProgram()
     qp.qblox.play("drive",Square(1,10),7)
     qp.qblox.play("drive",Square(-1,10),1)
-    qp.wait("drive", 5)
     qp.wait("drive", 10)
     return qp
 
@@ -451,11 +450,12 @@ class TestQBloxDraw:
 
     def test_play_interrupted_by_another_play(self, qp_play_interrupted_by_another_play: QProgram):
         expected_data_draw_i = [ 0.70710678,  0.70710678,  0.70710678,  0.70710678,  0.70710678,
-          0.70710678,  0.70710678, -0.70710678, -0.70710678, -0.70710678,
-         -0.70710678, -0.70710678, -0.70710678, -0.70710678, -0.70710678,
-         -0.70710678, -0.70710678,  0.        ,  0.        ,  0.        ]
-        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-         0., 0., 0.]
+                  0.70710678,  0.70710678, -0.70710678, -0.70710678, -0.70710678,
+                 -0.70710678, -0.70710678, -0.70710678, -0.70710678, -0.70710678,
+                 -0.70710678, -0.70710678,  0.        ,  0.        ,  0.        ,
+                  0.        ]
+        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                 0., 0., 0.]
         compiler = QbloxCompiler()
         qblox_draw = QbloxDraw()
         results = compiler.compile(qp_play_interrupted_by_another_play)

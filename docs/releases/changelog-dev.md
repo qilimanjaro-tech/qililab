@@ -4,6 +4,76 @@
 
 ### Improvements
 
+- This PR is the beginning of a series of PR that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
+  1. When possible waits will be combined together. For example, before this PR the following Q1ASM could be generated:
+      ```
+      wait 10
+      wait 40
+      ```
+      It will now be generated as:
+      ```
+      wait 50
+      ```
+  2. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
+  For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
+      ```
+      setup:
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
+
+      main:
+                      move             0, R0          
+                      move             0, R1          
+                      move             0, R2          
+                      move             0, R3          
+                      move             0, R4          
+                      move             0, R5          
+                      move             101, R6        
+                      move             0, R7          
+      loop_0:
+                      play             0, 0, 4        
+                      acquire_weighed  0, R5, R4, R3, 100
+                      add              R5, 1, R5      
+                      play             0, 0, 4        
+                      acquire_weighed  1, R2, R1, R0, 100
+                      add              R2, 1, R2      
+                      add              R7, 1, R7      
+                      loop             R6, @loop_0    
+                      set_mrk          0              
+                      upd_param        4              
+                      stop
+      ```
+      
+      But they will now only use 1 (R1):
+
+      ```
+      setup:
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
+
+      main:
+                      move             0, R0          
+                      move             0, R1          
+                      move             0, R2          
+                      move             101, R3        
+                      move             0, R4          
+      loop_0:
+                      play             0, 0, 4        
+                      acquire_weighed  0, R2, R1, R1, 100
+                      add              R2, 1, R2      
+                      play             0, 0, 4        
+                      acquire_weighed  1, R0, R1, R1, 100
+                      add              R0, 1, R0      
+                      add              R4, 1, R4      
+                      loop             R3, @loop_0    
+                      set_mrk          0              
+                      upd_param        4              
+                      stop
+        ```
+  [#1009](https://github.com/qilimanjaro-tech/qililab/pull/1009)
+
 - Added `parameters` dictionary to the `Calibration` class, and removed legacy code.
   [#1005](https://github.com/qilimanjaro-tech/qililab/pull/1005)
 
