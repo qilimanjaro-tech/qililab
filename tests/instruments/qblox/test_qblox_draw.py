@@ -154,7 +154,7 @@ def fixture_play_interrupted_by_another_play():
     qp = QProgram()
     qp.qblox.play("drive",Square(1,10),7)
     qp.qblox.play("drive",Square(-1,10),1)
-    qp.wait("drive", 65550)
+    qp.wait("drive", 5)
     return qp
 
 @pytest.fixture(name="qp_not_sub")
@@ -449,13 +449,16 @@ class TestQBloxDraw:
         assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
 
     def test_play_interrupted_by_another_play(self, qp_play_interrupted_by_another_play: QProgram):
-        expected_data_draw_i_len = 65561
+        expected_data_draw_i = [ 0.70710678,  0.70710678,  0.70710678,  0.70710678,  0.70710678,
+                  0.70710678,  0.70710678, -0.70710678, -0.70710678, -0.70710678,
+                 -0.70710678, -0.70710678, -0.70710678, -0.70710678, -0.70710678,
+                 -0.70710678, -0.70710678]
         compiler = QbloxCompiler()
         qblox_draw = QbloxDraw()
         results = compiler.compile(qp_play_interrupted_by_another_play)
         pio.renderers.default = "json"
         _, data_draw = qblox_draw.draw(sequencer=results, runcard_data= None)
-        assert len(data_draw["drive"][0]) == expected_data_draw_i_len
+        np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
 
     def test_qp_not_sub(self, qp_not_sub: QProgram):
         expected_data_draw_i = [ 7.07106781e-01,  5.72061403e-01,  2.18508014e-01, -2.18508009e-01,
