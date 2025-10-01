@@ -793,14 +793,14 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = False
 
     def _get_or_create_weight_register(self, bus, weight, block_index):
-        """Create or Retrieve a register for the weight for the acquisition
-            If a weight with the same value has been used before it has been stored in self._buses[bus].weight_to_register and can thererfore be retrieved.
-            If it is the first weight of this program with this value, then a new register is created and store in weight_to_register
+        """Create or Retrieve a register for the weight of the acquisition
+            If it is the first weight of this program with this value, then a new register is created and stored in the dictionary weight_to_register.
+            If not, the register can be retrieved from the dictionary weight_to_register
 
         Args:
             bus (str): Name of the bus.
             weight (float): Value of the weight
-            block_index: Position in qpy_block_stack to move the Register
+            block_index (int): Position in qpy_block_stack to move the Register
 
         Returns:
             register (QPyProgram.Register()): register to use to store the weight of the acquisition

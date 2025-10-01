@@ -4,16 +4,18 @@
 
 ### Improvements
 
-- This PR is the beginning of a series of PR that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
-  1. When possible waits will be combined together. For example, before this PR the following Q1ASM could be generated:
+- This PR is the beginning of a series that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
+  1. When possible, waits will be combined together. For example, before this PR the following Q1ASM could be generated:
       ```
       wait 10
       wait 40
       ```
+
       It will now be generated as:
       ```
       wait 50
       ```
+
   2. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
   For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
       ```
@@ -72,6 +74,7 @@
                       upd_param        4              
                       stop
         ```
+        
   [#1009](https://github.com/qilimanjaro-tech/qililab/pull/1009)
 
 - Added `parameters` dictionary to the `Calibration` class, and removed legacy code.
