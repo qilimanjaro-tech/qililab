@@ -69,7 +69,7 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
 
             # Add RZ commutation to VirtualZ phase correction for posterior Drag gates
             if isinstance(gate, RZ):
-                shift[gate.target_qubits[0]] += gate.theta
+                shift[gate.target_qubits[0]] += gate.phi
 
             # Add CZ phase correction for posterior Drag gates
             elif isinstance(gate, CZ):
