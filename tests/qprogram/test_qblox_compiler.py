@@ -450,6 +450,17 @@ def update_latched_param() -> QProgram:
     qp.wait(bus="drive", duration=6)
     return qp
 
+@pytest.fixture(name="wait_comprised_between_65532_65535")
+def fixture_wait_comprised_between_65532_65535() -> QProgram:
+    qp = QProgram()
+    qp.wait("drive",duration=65532*2)
+    qp.play("drive", Square(1,20))
+    qp.wait(bus="drive", duration=65532)
+    qp.play("drive", Square(1,20))
+    qp.wait(bus="drive", duration=65534)
+
+    return qp
+
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -1723,6 +1734,33 @@ set_freq         R5
                             upd_param        6
                             set_mrk          0
                             upd_param        4
+                            stop
+        """
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_wait_comprised_between_65532_65535(self, wait_comprised_between_65532_65535: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=wait_comprised_between_65532_65535)
+
+        assert "drive" in sequences
+
+        drive_str = """
+            setup:
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            wait             65532          
+                            wait             65532          
+                            play             0, 1, 20       
+                            wait             65532          
+                            play             0, 1, 20       
+                            wait             65530          
+                            wait             4              
+                            set_mrk          0              
+                            upd_param        4              
                             stop
         """
 
