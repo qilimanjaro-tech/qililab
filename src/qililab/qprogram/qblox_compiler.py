@@ -791,7 +791,7 @@ class QbloxCompiler:
         self._buses[element.bus].static_duration += duration
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
- 
+
     def _get_or_create_weight_register(self, bus: str, weight_index: int, block_index: int) -> QPyProgram.Register:
         """Create or Retrieve a register for the weight index of the acquisition
             If it is the first weight index of this program with this value, then a new register is created and stored in the dictionary weight_index_to_register.
