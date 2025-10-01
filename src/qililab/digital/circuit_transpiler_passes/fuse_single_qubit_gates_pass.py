@@ -69,15 +69,21 @@ class FuseSingleQubitGatesPass(CircuitTranspilerPass):
             theta = _wrap_angle(theta)
             phi = _wrap_angle(phi)
             gamma = _wrap_angle(gamma)
-            if abs(theta) < 1e-9:
+            if _is_close_mod_2pi(theta, 0.0):
                 # pure Z: RZ(ph + lam)
                 seq_out.append(RZ(q, phi=_wrap_angle(phi + gamma)))
                 return
             if _is_close_mod_2pi(phi, 0.0) and _is_close_mod_2pi(gamma, 0.0):
                 seq_out.append(RY(q, theta=theta))
                 return
+            if _is_close_mod_2pi(phi, math.pi) and _is_close_mod_2pi(gamma, math.pi):
+                seq_out.append(RY(q, theta=-theta))
+                return
             if _is_close_mod_2pi(phi, -math.pi / 2.0) and _is_close_mod_2pi(gamma, math.pi / 2.0):
                 seq_out.append(RX(q, theta=theta))
+                return
+            if _is_close_mod_2pi(phi, math.pi / 2.0) and _is_close_mod_2pi(gamma, -math.pi / 2.0):
+                seq_out.append(RX(q, theta=-theta))
                 return
             seq_out.append(U3(q, theta=theta, phi=phi, gamma=gamma))
 
@@ -102,7 +108,7 @@ class FuseSingleQubitGatesPass(CircuitTranspilerPass):
                 apply(q, U)
 
             elif isinstance(g, CZ):
-                flush_touches((g.control_qubits[0], g.target_qubits[0]))
+                flush_touches((*g.control_qubits, *g.target_qubits))
                 seq_out.append(g)
 
             elif isinstance(g, SWAP):
