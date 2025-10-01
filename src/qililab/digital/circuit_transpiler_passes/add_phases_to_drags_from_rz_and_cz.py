@@ -25,6 +25,7 @@ from .circuit_transpiler_pass import CircuitTranspilerPass
 
 if TYPE_CHECKING:
     from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
+    from qililab.settings.digital.gate_event_settings import GateEventSettings
 
 
 class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
@@ -94,7 +95,7 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
         return out_circuit
 
     @staticmethod
-    def _extract_gate_corrections(gate_settings, control_qubit):
+    def _extract_gate_corrections(gate_settings: list[GateEventSettings], control_qubit: int) -> dict | None:
         """Given a CZ gate settings, extract the phase corrections needed for its control and target qubits."""
         return next(
             (
