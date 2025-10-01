@@ -14,30 +14,29 @@
 
 import ast
 import re
-from dataclasses import asdict, dataclass
+
+from pydantic import BaseModel
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings import ChannelID, Parameter, ParameterValue
-from qililab.utils.asdict_factory import dict_factory
 
 
-@dataclass
-class DigitalCompilationSettings:
+class DigitalCompilationSettings(BaseModel):
     """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
     topology: list[tuple[int, int]]
     gates: dict[str, list[GateEventSettings]]
 
-    def __post_init__(self):
-        """Build the Gates Settings based on the master settings."""
-        self.topology = [tuple(element) if isinstance(element, list) else element for element in self.topology]
-        self.gates = {gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()}
+    # def __post_init__(self):
+    #     """Build the Gates Settings based on the master settings."""
+    #     self.topology = [tuple(element) if isinstance(element, list) else element for element in self.topology]
+    #     self.gates = {gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()}
 
     def to_dict(self):
         """Serializes gate settings to dictionary and removes fields with None values"""
 
-        return asdict(self, dict_factory=dict_factory)
+        return self.model_dump()
 
     def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
         """Get gates settings from runcard for a given gate name and qubits.

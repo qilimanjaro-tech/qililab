@@ -25,6 +25,7 @@ import qpysequence.program.instructions as QPyInstructions
 from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 
 from qililab.config import logger
+from qililab.core.variables import Variable
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -42,7 +43,6 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.variable import Variable
 from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
 

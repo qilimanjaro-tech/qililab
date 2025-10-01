@@ -28,11 +28,11 @@ from uuid import UUID
 import numpy as np
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
+from qililab.core.variables import Variable
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
-from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
     ExperimentDataBaseMetadata,
     ExperimentMetadata,

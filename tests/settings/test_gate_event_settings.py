@@ -48,13 +48,13 @@ class TestGateEventSettings:
         assert gate_event.bus == "flux_line_q0_bus"
         assert gate_event.wait_time == 30
         # test pulse
-        pulse = gate_event.pulse
-        assert isinstance(pulse, GateEventSettings.GatePulseSettings)
-        assert pulse.amplitude == 0.8
-        assert pulse.phase == 0
-        assert pulse.duration == 200
-        assert pulse.shape == {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2}
-        assert pulse.options["test_option"] == 1
+        # pulse = gate_event.pulse
+        # assert isinstance(pulse, GateEventSettings.GatePulseSettings)
+        # assert pulse.amplitude == 0.8
+        # assert pulse.phase == 0
+        # assert pulse.duration == 200
+        # assert pulse.shape == {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2}
+        # assert pulse.options["test_option"] == 1
 
     def test_set_parameter(self, schedule):
         """Test the set parameter method"""

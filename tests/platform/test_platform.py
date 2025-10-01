@@ -27,7 +27,8 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
-from qililab.qprogram import Calibration, Domain, Experiment, QProgram
+from qililab.core.variables import Domain
+from qililab.qprogram import Calibration, Experiment, QProgram
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
 from qililab.result.qprogram.qprogram_results import QProgramResults

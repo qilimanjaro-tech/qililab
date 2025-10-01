@@ -33,6 +33,7 @@ from rustworkx import PyGraph
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
+from qililab.core.variables import Domain
 from qililab.digital import CircuitToQProgramCompiler, CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
@@ -47,7 +48,6 @@ from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
 from qililab.qprogram import (
     Calibration,
-    Domain,
     Experiment,
     QbloxCompilationOutput,
     QbloxCompiler,
@@ -73,7 +73,6 @@ if TYPE_CHECKING:
     from qililab.instruments.instrument import Instrument
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
-    from qililab.settings.digital.gate_event_settings import GateEventSettings
 
 
 class Platform:
@@ -585,7 +584,7 @@ class Platform:
 
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
-    def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
+    def _set_bias_from_element(self, element: Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
         """Sets the right parameter depending on the instrument defined inside the element.
         This is used in the crosstalk correction.
         The instruments included in this function are: QM, QBlox, SPI and QDevil.

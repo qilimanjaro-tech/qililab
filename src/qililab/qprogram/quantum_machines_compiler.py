@@ -25,6 +25,7 @@ from qm.program import Program
 from qm.qua import _dsl as qua_dsl
 from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
+from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
@@ -40,7 +41,6 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
 from qililab.waveforms import IQWaveform, Square, Waveform
 
 # mypy: disable-error-code="operator"

@@ -69,6 +69,7 @@ class PLATFORM:
     RESET_METHOD = "reset_method"
     PASSIVE_RESET_DURATION = "passive_reset_duration"
 
+
 class CURRENTSOURCE:
     """CurrentSource attribute names."""
 
