@@ -75,18 +75,11 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
             elif isinstance(gate, CZ):
                 control_qubit, target_qubit = int(*gate.control_qubits), int(*gate.target_qubits)  # Ensures 2 qubits
                 gate_settings = self._settings.get_gate(name="cz", qubits=(control_qubit, target_qubit))
-                corrections = next(
-                    (
-                        event.pulse.options
-                        for event in gate_settings
-                        if event.pulse.options is not None
-                        and f"q{control_qubit}_phase_correction" in event.pulse.options
-                    ),
-                    None,
-                )
-                if corrections is not None:
-                    shift[control_qubit] += corrections[f"q{control_qubit}_phase_correction"]
-                    shift[target_qubit] += corrections[f"q{target_qubit}_phase_correction"]
+                gate_corrections = self._extract_gate_corrections(gate_settings, control_qubit)
+
+                if gate_corrections is not None:
+                    shift[control_qubit] += gate_corrections[f"q{control_qubit}_phase_correction"]
+                    shift[target_qubit] += gate_corrections[f"q{target_qubit}_phase_correction"]
                 out_circuit.add(gate)
 
             else:
@@ -99,3 +92,15 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
                 out_circuit.add(gate)
 
         return out_circuit
+
+    @staticmethod
+    def _extract_gate_corrections(gate_settings, control_qubit):
+        """Given a CZ gate settings, extract the phase corrections needed for its control and target qubits."""
+        return next(
+            (
+                event.pulse.options
+                for event in gate_settings
+                if event.pulse.options is not None and f"q{control_qubit}_phase_correction" in event.pulse.options
+            ),
+            None,
+        )
