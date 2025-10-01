@@ -52,9 +52,9 @@ class QbloxFilter:
         if self.exponential_state is not None:
             for idx, state in enumerate(self.exponential_state):
                 if state is True:
-                    self.exponential_state[idx] = DistortionState.ENABLED
+                    self.exponential_state[idx] = DistortionState.ENABLED.value
                 elif state is False:
-                    self.exponential_state[idx] = DistortionState.BYPASSED
+                    self.exponential_state[idx] = DistortionState.BYPASSED.value
             self.exponential_state = self.exponential_state + [None] * (4 - len(self.exponential_state))
 
         if self.exponential_time_constant is not None:
@@ -64,9 +64,9 @@ class QbloxFilter:
             self.exponential_amplitude = self.exponential_amplitude + [None] * (4 - len(self.exponential_amplitude))
 
         if self.fir_state is True:
-            self.fir_state = DistortionState.ENABLED
+            self.fir_state = DistortionState.ENABLED.value
         elif self.fir_state is False:
-            self.fir_state = DistortionState.BYPASSED
+            self.fir_state = DistortionState.BYPASSED.value
 
         if self.fir_coeff is not None and len(self.fir_coeff) != QBLOXCONSTANTS.FILTER_FIR_COEFF_LENGTH:
             raise ValueError(f"The number of elements in the list must be exactly {QBLOXCONSTANTS.FILTER_FIR_COEFF_LENGTH}. Received: {len(self.fir_coeff)}")
