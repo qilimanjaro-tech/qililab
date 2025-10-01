@@ -75,7 +75,7 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
             # Add CZ phase correction for posterior Drag gates
             elif isinstance(gate, CZ):
                 control_qubit, target_qubit = gate.control_qubits[0], gate.target_qubits[0]  # Assumes 2 qubits
-                gate_settings = self._settings.get_gate(name="cz", qubits=(control_qubit, target_qubit))
+                gate_settings = self._settings.get_gate(name="CZ", qubits=(control_qubit, target_qubit))
                 gate_corrections = self._extract_gate_corrections(gate_settings, control_qubit)
 
                 if gate_corrections is not None:
