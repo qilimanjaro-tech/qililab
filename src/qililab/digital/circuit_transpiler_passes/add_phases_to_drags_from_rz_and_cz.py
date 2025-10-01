@@ -61,7 +61,7 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
 
         out_circuit = Circuit(nqubits)
         supported_gates = (RZ, Drag, CZ, M)
-        shift = dict.fromkeys(range(nqubits), 0)
+        shift = dict.fromkeys(range(nqubits), 0.0)
 
         for gate in circuit_gates:
             if not isinstance(gate, supported_gates):
@@ -73,7 +73,7 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
 
             # Add CZ phase correction for posterior Drag gates
             elif isinstance(gate, CZ):
-                control_qubit, target_qubit = int(*gate.control_qubits), int(*gate.target_qubits)  # Ensures 2 qubits
+                control_qubit, target_qubit = gate.control_qubits[0], gate.target_qubits[0]  # Assumes 2 qubits
                 gate_settings = self._settings.get_gate(name="cz", qubits=(control_qubit, target_qubit))
                 gate_corrections = self._extract_gate_corrections(gate_settings, control_qubit)
 
@@ -85,7 +85,7 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
             else:
                 # If gate is drag pulse, shift parameters by the accumulated phase corrections
                 if isinstance(gate, Drag):
-                    qubit: int = int(*gate.qubits)  # Ensures single qubit
+                    qubit: int = gate.qubits[0]  # Assumes single qubit
                     gate = Drag(qubit, theta=gate.theta, phase=gate.phase - shift[qubit])
 
                 # Any gate different from RZ or CZ is added to the output circuit
