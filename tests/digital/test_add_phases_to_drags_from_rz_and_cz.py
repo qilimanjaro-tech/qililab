@@ -268,26 +268,26 @@ class TestAddPhasesToDragsFromRZsAndCZs:
 
             # gate list to optimize
             test_gates = [
-                Drag(0, 1, 1),
+                Drag(0, theta=1, phase=1),
                 CZ(0, 1),
                 RZ(1, 1),
                 M(0),
                 RZ(0, 2),
-                Drag(0, 3, 3),
+                Drag(0, theta=3, phase=0),
                 CZ(0, 2),
                 CZ(1, 0),
-                Drag(1, 2, 3),
+                Drag(1, theta=2, phase=-2),
                 RZ(1, 0),
             ]
             # resulting gate list from optimization
             result_gates = [
-                Drag(0, 1, 1),
+                Drag(0, theta=1, phase=1),
                 CZ(0, 1),
                 M(0),
-                Drag(0, 3, 0),
+                Drag(0, theta=3, phase=0),
                 CZ(0, 2),
                 CZ(1, 0),
-                Drag(1, 2, -2),
+                Drag(1, theta=2, phase=-2),
             ]
 
             # create circuit to test function with
