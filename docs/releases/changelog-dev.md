@@ -16,7 +16,7 @@
       wait 50
       ```
 
-  2. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
+  2. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_index_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
   For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
       ```
       setup:
@@ -47,7 +47,7 @@
                       stop
       ```
       
-      But they will now only use 1 (R1):
+      But they will now only use 1 register (R1):
 
       ```
       setup:

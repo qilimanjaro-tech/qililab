@@ -129,7 +129,7 @@ class BusCompilationInfo:
         self.upd_param_instruction_pending: bool = False
 
         # Allows reusing a register if a weight has already been given with the same value
-        self.weight_to_register: dict[float, QPyProgram.Register] = {}
+        self.weight_index_to_register: dict[int, QPyProgram.Register] = {}
 
 
 class QbloxCompiler:
@@ -791,28 +791,28 @@ class QbloxCompiler:
         self._buses[element.bus].static_duration += duration
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
-
-    def _get_or_create_weight_register(self, bus, weight, block_index):
-        """Create or Retrieve a register for the weight of the acquisition
-            If it is the first weight of this program with this value, then a new register is created and stored in the dictionary weight_to_register.
-            If not, the register can be retrieved from the dictionary weight_to_register
+ 
+    def _get_or_create_weight_register(self, bus: str, weight_index: int, block_index: int) -> QPyProgram.Register:
+        """Create or Retrieve a register for the weight index of the acquisition
+            If it is the first weight index of this program with this value, then a new register is created and stored in the dictionary weight_index_to_register.
+            If not, the register can be retrieved from the dictionary weight_index_to_register
 
         Args:
             bus (str): Name of the bus.
-            weight (float): Value of the weight
+            weight_index (int): Weight index
             block_index (int): Position in qpy_block_stack to move the Register
 
         Returns:
-            register (QPyProgram.Register()): register to use to store the weight of the acquisition
+            register (QPyProgram.Register): register to use to store the weight_index of the acquisition
         """
-        if weight in self._buses[bus].weight_to_register:
-            register = self._buses[bus].weight_to_register[weight]
+        if weight_index in self._buses[bus].weight_index_to_register:
+            register = self._buses[bus].weight_index_to_register[weight_index]
 
-        else:  # no weight with this value has been given before
-            self._buses[bus].weight_to_register[weight] = QPyProgram.Register()
-            register = self._buses[bus].weight_to_register[weight]
+        else:  # no weight index with this value has been given before
+            self._buses[bus].weight_index_to_register[weight_index] = QPyProgram.Register()
+            register = self._buses[bus].weight_index_to_register[weight_index]
             self._buses[bus].qpy_block_stack[block_index].append_component(
-                    component=QPyInstructions.Move(var=weight, register=register),
+                    component=QPyInstructions.Move(var=weight_index, register=register),
                     bot_position=len(self._buses[bus].qpy_block_stack[block_index].components))
         return register
 
