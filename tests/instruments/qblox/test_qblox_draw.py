@@ -5,7 +5,8 @@ import pytest
 import plotly.io as pio
 from tests.data import Galadriel, SauronQuantumMachines
 
-from qililab import Domain, QbloxCompiler, QProgram, Square, IQPair
+from qililab import Domain, QProgram, Square, IQPair
+from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.data_management import build_platform
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.platform import Platform
@@ -437,6 +438,7 @@ class TestQBloxDraw:
         )
         assert len(figure.data) == 1
 
+    @pytest.mark.qm
     def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
