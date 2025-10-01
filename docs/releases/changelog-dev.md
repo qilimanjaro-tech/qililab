@@ -4,6 +4,29 @@
 
 ### Improvements
 
+- Added `parameters` dictionary to the `Calibration` class, and removed legacy code.
+  [#1005](https://github.com/qilimanjaro-tech/qililab/pull/1005)
+
+- `platform.execute_qprograms_parallel()` now takes a list of bus mappings to allow one bus mapping per qprogram.
+Parameters for the function have now the same syntax and behaviour:
+bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
+    A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
+    A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
+    None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
+    It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
+    Defaults to None.
+calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
+    A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
+    A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
+    None. In this case no `.Calibration` instance is used.
+    Defaults to None.
+[#996](https://github.com/qilimanjaro-tech/qililab/pull/996)
+
+
+- `%% submit_job`: Added support for `sbatch --chdir` via a new `-c/--chdir` option that is propagated through `slurm_additional_parameters` and also enforced inside the job (`os.chdir(...)`) so it works with `-e local`. Made `--output` mandatory and hardened the output‑assignment check to recognize `Assign`, `AugAssign`, `AnnAssign`, walrus (`NamedExpr`), and tuple targets. Shipment of the notebook namespace is now safer: only picklable values (via `cloudpickle`) are sent, with common pitfalls (modules, loggers, private `_` names, IPython internals) excluded. `--low-priority` is a boolean flag mapping to a sane Slurm `nice=10000`. Paths are handled with `pathlib` plus `expanduser/expandvars`, the logs directory is created if missing, and imports are harvested conservatively from history (one‑line `import`/`from`, excluding `from __future__`). Parameter assembly only includes Slurm extras when provided, and the submitted function compiles the code string internally while accepting the output name and optional workdir. The job object is written to both `local_ns` and the global `user_ns` for IPython robustness. Log cleanup was rewritten to be cross‑platform and resilient: artifacts are grouped by numeric job‑ID prefix, non‑conforming entries are removed, and only the newest `num_files_to_keep` job groups are retained.
+  [#994](https://github.com/qilimanjaro-tech/qililab/pull/994)
+
+
 - QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
 [#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
 
@@ -106,6 +129,7 @@ platform.execute_experiment(experiment)
 ```
 
 [#938](https://github.com/qilimanjaro-tech/qililab/pull/938)
+[#997](https://github.com/qilimanjaro-tech/qililab/pull/997)
 
 - Minor modification at database `DatabaseManager`, as it now requires the config file to contain a `base_path_local`, `base_path_shared` and `data_write_folder`. following the structure:
 
@@ -140,14 +164,26 @@ The data automatically selects between the local or shared domains depending on 
 
 ### Breaking changes
 
-- Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
+- Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, `import qililab.save_results` and `import qililab.load_results` still works the same way.
   [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
+
+- Set database saving and live plotting to `False` by default during experiment execution.
+  [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
 
 ### Deprecations / Removals
 
 ### Documentation
 
 ### Bug fixes
+
+- Fixed a bug in the QBlox Compiler handling of the wait, long waits that were a multiple of 65532 (the maximum wait) up to 65535 were giving out an error. This has been solved by checking if the remainder would be below 4. If the remainder is 0 it appends a wait of 65532 and if the remainder is between 1 and 3, the duration of the last wait is computed as : `(INST_MAX_WAIT + remainder) - INST_MIN_WAIT` (where `INST_MAX_WAIT` is 65532 and `INST_MIN_WAIT` is 4) and a wait of `INST_MIN_WAIT` is added.
+  [#1006](https://github.com/qilimanjaro-tech/qililab/pull/1006)
+
+- Exposed `Platform` in the global namespace.
+  [#1002](https://github.com/qilimanjaro-tech/qililab/pull/1002)
+
+- Fixed a bug in the reshaping of MeasurementResults within the ExperimentResults.
+  [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
 
 - Qblox Draw: Previously, when plotting from the platform, the integration length was incorrectly taken from the runcard parameter. However, since Qililab currently only implements acquire_weighted, the integration length should instead be determined by the duration of the weight.
 This has been corrected and now the behaviour of the acquire is the same when plotting from the platform or the qprogram.

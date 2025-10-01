@@ -8,7 +8,7 @@ from qililab.qprogram.blocks import Block
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.waveforms import IQPair, Square
-from qililab.yaml import yaml
+from qililab.utils.serialization import serialize_to, deserialize_from
 
 
 class TestCalibration:
@@ -22,10 +22,12 @@ class TestCalibration:
         assert isinstance(calibration.waveforms, dict)
         assert isinstance(calibration.weights, dict)
         assert isinstance(calibration.blocks, dict)
+        assert isinstance(calibration.parameters, dict)
         assert calibration.crosstalk_matrix is None
         assert len(calibration.waveforms) == 0
         assert len(calibration.weights) == 0
         assert len(calibration.blocks) == 0
+        assert len(calibration.parameters) == 0
 
     def test_add_waveform_method(self):
         """Test add_waveform method"""
@@ -211,8 +213,8 @@ class TestCalibration:
         calibration.add_block(name="flux_block", block=qp.body)
         calibration.crosstalk_matrix = crosstalk_matrix
 
-        calibration.save_to(file="calibration.yml")
-        loaded_calibration = Calibration.load_from(file="calibration.yml")
+        serialize_to(calibration, "calibration.yml")
+        loaded_calibration = deserialize_from("calibration.yml", Calibration)
 
         assert isinstance(loaded_calibration, Calibration)
 
@@ -249,74 +251,5 @@ class TestCalibration:
         assert calibration.crosstalk_matrix["flux_0"]["flux_1"] == crosstalk_matrix["flux_0"]["flux_1"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_0"] == crosstalk_matrix["flux_1"]["flux_0"]
         assert calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
-
-        os.remove(path="calibration.yml")
-
-        # Test that loading a different yaml produces an error
-        square = Square(1.0, 100)
-
-        with open(file="calibration.yml", mode="w", encoding="utf-8") as stream:
-            yaml.dump(data=square, stream=stream)
-
-        with pytest.raises(TypeError):
-            _ = Calibration.load_from(file="calibration.yml")
-
-        os.remove(path="calibration.yml")
-
-    def test_load_crosstalk_from_array(self):
-        """Test dump and load methods"""
-        matrix = [[1.47046905, 0.12276261], [-0.55322207, 1.58247856]]
-        flux_offsets = [0.0, 0.1]
-        bus_list = ["flux_0", "flux_1"]
-        calibration = Calibration()
-        calibration.crosstalk_matrix = CrosstalkMatrix()
-        calibration.crosstalk_matrix.matrix = matrix
-        calibration.crosstalk_matrix.flux_offsets = flux_offsets
-        calibration.crosstalk_matrix.bus_list = bus_list
-
-        calibration.save_to(file="calibration.yml")
-        loaded_calibration = Calibration.load_from(file="calibration.yml")
-
-        crosstalk_dict = CrosstalkMatrix.from_array(
-            buses=["flux_0", "flux_1"], matrix_array=np.array([[1.47046905, 0.12276261], [-0.55322207, 1.58247856]])
-        )
-        crosstalk_dict.set_offset({"flux_0": 0.0, "flux_1": 0.1})
-
-        assert loaded_calibration.crosstalk_matrix.matrix.matrix == crosstalk_dict.matrix
-        assert loaded_calibration.crosstalk_matrix.flux_offsets == crosstalk_dict.flux_offsets
-        assert loaded_calibration.crosstalk_matrix.bus_list == bus_list
-
-        os.remove(path="calibration.yml")
-
-        # Test that having an empty bus_list causes an error
-        error_string = "Bus list is empty or has the wrong dimensions"
-
-        matrix = [[1.47046905, 0.12276261], [-0.55322207, 1.58247856]]
-        flux_offsets = {"flux_0": 0.0, "flux_1": 0.1}
-        bus_list = []
-        calibration = Calibration()
-        calibration.crosstalk_matrix = CrosstalkMatrix()
-        calibration.crosstalk_matrix.matrix = matrix
-        calibration.crosstalk_matrix.flux_offsets = flux_offsets
-        calibration.crosstalk_matrix.bus_list = bus_list
-
-        calibration.save_to(file="calibration.yml")
-        with pytest.raises(ValueError, match=error_string):
-            _ = Calibration.load_from(file="calibration.yml")
-
-        os.remove(path="calibration.yml")
-
-        matrix = crosstalk_dict.matrix
-        flux_offsets = [0.0, 0.1]
-        bus_list = []
-        calibration = Calibration()
-        calibration.crosstalk_matrix = CrosstalkMatrix()
-        calibration.crosstalk_matrix.matrix = matrix
-        calibration.crosstalk_matrix.flux_offsets = flux_offsets
-        calibration.crosstalk_matrix.bus_list = bus_list
-
-        calibration.save_to(file="calibration.yml")
-        with pytest.raises(ValueError, match=error_string):
-            _ = Calibration.load_from(file="calibration.yml")
 
         os.remove(path="calibration.yml")

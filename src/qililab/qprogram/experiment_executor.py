@@ -75,7 +75,7 @@ class ExperimentExecutor:
         platform (Platform): The platform on which the experiment is to be executed.
         experiment (Experiment): The experiment object defining the sequence of operations and loops.
         base_data_path (str): The base directory path where the experiment results will be stored.
-        live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+        live_plot (bool): Flag that abilitates live plotting. Defaults to False.
         slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
         port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
 
@@ -113,7 +113,7 @@ class ExperimentExecutor:
         self,
         platform: "Platform",
         experiment: Experiment,
-        live_plot: bool = True,
+        live_plot: bool = False,
         slurm_execution: bool = True,
         port_number: int | None = None,
     ):
@@ -467,7 +467,7 @@ class ExperimentExecutor:
             # Determine the index based on current loop indices and store the results in the ExperimentResultsWriter
             for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
                 indices = (qprogram_index, measurement_index, *tuple(index for _, index in self.loop_indices.items()))
-                self._results_writer[indices] = measurement_result.array.T  # type: ignore
+                self._results_writer[indices] = np.moveaxis(measurement_result.array, 0, -1)
 
         if isinstance(block, (Loop, ForLoop, Parallel)):
             # Handle loops
