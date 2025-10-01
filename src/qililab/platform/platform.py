@@ -469,7 +469,7 @@ class Platform:
             channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
+        if alias == "platform" or regex_match is not None:
             if self.digital_compilation_settings is None:
                 raise ValueError("Trying to get parameter of gates settings, but no gates settings exist in platform.")
             return self.digital_compilation_settings.get_parameter(

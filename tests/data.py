@@ -20,8 +20,6 @@ class Galadriel:
     name = "galadriel"
 
     digital_compilation_settings: dict[str, Any] = {
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BEFORE_READOUT: 0,
         "topology": [[0, 2], [1, 2], [2, 3], [2, 4]],
         "gates": {
             "M(0)": [
@@ -194,36 +192,6 @@ class Galadriel:
                     },
                 }
             ],
-        },
-        "buses": {
-            "drive_line_q0_bus": {
-                "line": "drive",
-                "qubits": [0],
-                "distortions": [
-                    {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
-                ],
-            },
-            "drive_line_q1_bus": {"line": "drive", "qubits": [1]},
-            "drive_line_q2_bus": {"line": "drive", "qubits": [1]},
-            "feedline_input_output_bus": {
-                "line": "readout",
-                "qubits": [0],
-                "delay": 0,
-                "distortions": [],
-            },
-            "feedline_input_output_bus_1": {
-                "line": "readout",
-                "qubits": [1],
-                "delay": 0,
-                "distortions": [],
-            },
-            "feedline_input_output_bus_2": {
-                "line": "readout",
-                "qubits": [2],
-                "delay": 0,
-                "distortions": [],
-            },
-            "flux_line_q0_bus": {"line": "flux", "qubits": [0]},
         },
     }
 
@@ -591,6 +559,7 @@ class Galadriel:
             RUNCARD.ALIAS: "drive_line_q0_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             RUNCARD.CHANNELS: [0, None],
+            "delay": 0,
             "distortions": [
                 {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
             ],

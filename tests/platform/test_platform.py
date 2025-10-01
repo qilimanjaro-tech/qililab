@@ -1256,12 +1256,6 @@ class TestMethods:
         with pytest.raises(KeyError, match="Gate Drag for qubits 3 not found in settings"):
             platform.get_parameter(parameter=Parameter.AMPLITUDE, alias="Drag(3)")
 
-    @pytest.mark.parametrize("parameter", [Parameter.DELAY_BEFORE_READOUT])
-    def test_get_parameter_of_platform(self, parameter, platform: Platform):
-        """Test the ``get_parameter`` method with platform parameters."""
-        value = platform.get_parameter(parameter=parameter, alias="platform")
-        assert value == 0
-
     @pytest.mark.parametrize("parameter", [Parameter.FLUX])
     def test_get_flux_parameter(self, parameter, platform: Platform):
         """Test the ``get_parameter`` method with platform flux parameters. The default as 0 is created"""

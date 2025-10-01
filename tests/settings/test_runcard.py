@@ -50,7 +50,6 @@ class TestDigitalCompilationSettings:
 
     def test_attributes(self, digital: DigitalCompilationSettings):
         """Test that the Runcard.GatesSettings dataclass contains the right attributes."""
-        assert isinstance(digital.delay_before_readout, int)
         assert isinstance(digital.gates, dict)
         assert all(
             (isinstance(key, str), isinstance(event, GateEventSettings))
@@ -101,14 +100,6 @@ class TestDigitalCompilationSettings:
         """Test the ``gate_names`` method of the Runcard.GatesSettings class."""
         expected_names = list(digital.gates.keys())
         assert digital.gate_names == expected_names
-
-    def test_set_platform_parameters(self, digital: DigitalCompilationSettings):
-        """Test that with ``set_parameter`` we can change all settings of the platform."""
-        digital.set_parameter(alias=None, parameter=Parameter.DELAY_BEFORE_READOUT, value=1234)
-        assert digital.delay_before_readout == 1234
-
-        digital.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.DELAY, value=123)
-        assert digital.buses["drive_line_q0_bus"].delay == 123
 
     def test_set_parameter_fails(self, digital: DigitalCompilationSettings):
         with pytest.raises(ValueError):
