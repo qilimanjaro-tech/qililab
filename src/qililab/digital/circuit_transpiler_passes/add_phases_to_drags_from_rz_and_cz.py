@@ -1,0 +1,101 @@
+# Copyright 2023 Qilimanjaro Quantum Tech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from qilisdk.digital import Circuit
+from qilisdk.digital.gates import CZ, RZ, M
+
+from qililab.digital.native_gates import Drag
+
+from .circuit_transpiler_pass import CircuitTranspilerPass
+
+if TYPE_CHECKING:
+    from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
+
+
+class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
+    """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
+
+        - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
+        - The RZs added phases on the Drags, come from commuting all the RZs all the way to the end of the circuit, so they can be deleted as "virtual Z gates".
+
+    This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
+    from each RZ is carried on as phase in all drag pulses left of the RZ operator.
+
+    Virtual Z gates are also applied to correct phase errors from CZ gates.
+
+    The final RZ operator left to be applied as the last operator in the circuit can afterwards be removed since the last
+    operation is going to be a measurement, which is performed on the Z basis and is therefore invariant under rotations
+    around the Z axis.
+
+    This last step can also be seen from the fact that an RZ operator applied on a single qubit, with no operations carried
+    on afterwards induces a phase rotation. Since phase is an imaginary unitary component, its absolute value will be 1
+    independent on any (unitary) operations carried on it.
+
+    Mind that moving an operator to the left is equivalent to applying this operator last so
+    it is actually moved to the _right_ of ``Circuit.queue`` (last element of list).
+
+    For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
+    """
+
+    def __init__(self, settings: DigitalCompilationSettings) -> None:
+        self._settings = settings
+
+    def run(self, circuit: Circuit) -> Circuit:
+        nqubits = circuit.nqubits
+        circuit_gates = circuit.gates
+
+        out_circuit = Circuit(nqubits)
+        supported_gates = (RZ, Drag, CZ, M)
+        shift = dict.fromkeys(range(nqubits), 0)
+
+        for gate in circuit_gates:
+            if not isinstance(gate, supported_gates):
+                raise NotImplementedError(f"{gate.name} not part of native supported gates {supported_gates}")
+
+            # Add RZ commutation to VirtualZ phase correction for posterior Drag gates
+            if isinstance(gate, RZ):
+                shift[gate.target_qubits[0]] += gate.theta
+
+            # Add CZ phase correction for posterior Drag gates
+            elif isinstance(gate, CZ):
+                control_qubit, target_qubit = int(*gate.control_qubits), int(*gate.target_qubits)  # Ensures 2 qubits
+                gate_settings = self._settings.get_gate(name="cz", qubits=(control_qubit, target_qubit))
+                corrections = next(
+                    (
+                        event.pulse.options
+                        for event in gate_settings
+                        if event.pulse.options is not None
+                        and f"q{control_qubit}_phase_correction" in event.pulse.options
+                    ),
+                    None,
+                )
+                if corrections is not None:
+                    shift[control_qubit] += corrections[f"q{control_qubit}_phase_correction"]
+                    shift[target_qubit] += corrections[f"q{target_qubit}_phase_correction"]
+                out_circuit.add(gate)
+
+            else:
+                # If gate is drag pulse, shift parameters by the accumulated phase corrections
+                if isinstance(gate, Drag):
+                    qubit: int = int(*gate.qubits)  # Ensures single qubit
+                    gate = Drag(qubit, theta=gate.theta, phase=gate.phase - shift[qubit])
+
+                # Any gate different from RZ or CZ is added to the output circuit
+                out_circuit.add(gate)
+
+        return out_circuit
