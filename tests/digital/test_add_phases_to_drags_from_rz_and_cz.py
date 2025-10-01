@@ -297,7 +297,7 @@ class TestAddPhasesToDragsFromRZsAndCZs:
 
             # check that lists are the same
             optimized_gates = transpile_step.run(circuit)
-            for gate_r, gate_opt in zip(result_gates, optimized_gates):
+            for gate_r, gate_opt in zip(result_gates, optimized_gates.gates):
                 assert gate_r.name == gate_opt.name
                 assert gate_r.parameters == gate_opt.parameters
                 assert gate_r.qubits == gate_opt.qubits
