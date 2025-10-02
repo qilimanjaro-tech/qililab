@@ -25,10 +25,6 @@ from qililab.waveforms.waveform import Waveform
 if TYPE_CHECKING:
     from qililab.typings.enums import Parameter
 
-# _yaml_safe = YAML(typ="safe")     # parse basic mappings/scalars
-# _yaml_flow = YAML(typ="safe")     # dump in flow style for compact one-liners
-# _yaml_flow.default_flow_style = True
-
 
 def _wf_to_mapping(wf: Waveform | IQWaveform) -> dict[str, Any]:
     """
