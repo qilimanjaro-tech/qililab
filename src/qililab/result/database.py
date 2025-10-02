@@ -437,7 +437,7 @@ class DatabaseManager:
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
-                    (Measurement.debug_file is not None).label("has_debug"),  # type: ignore
+                    (Measurement.debug_file != "null").label("has_debug"),
                 )
 
             if light_read:
@@ -514,7 +514,7 @@ class DatabaseManager:
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
-                    (Measurement.debug_file is not None).label("has_debug"),  # type: ignore
+                    (Measurement.debug_file != "null").label("has_debug"),
                 )
 
             if pandas_output:
