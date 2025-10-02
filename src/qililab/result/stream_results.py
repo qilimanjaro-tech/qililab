@@ -173,7 +173,7 @@ class StreamArray:
         return item in self.results
 
     def _get_debug(self):
-        bus_aliases = {bus for bus in self.qprogram.buses}
+        bus_aliases = set(self.qprogram.buses)
         buses = {bus_alias: self.platform.buses.get(alias=bus_alias) for bus_alias in bus_aliases}
         instruments = {
             instrument
@@ -198,6 +198,8 @@ class StreamArray:
                 lines.append("")
 
             return "\n".join(lines)
+        debug_exception = "Non Qblox machine."
+        return debug_exception
 
 
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
