@@ -61,16 +61,13 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
         circuit_gates = circuit.gates
 
         out_circuit = Circuit(nqubits)
-        supported_gates = (RZ, Drag, CZ, M)
         shift = dict.fromkeys(range(nqubits), 0.0)
 
         for gate in circuit_gates:
-            if not isinstance(gate, supported_gates):
-                raise NotImplementedError(f"{gate.name} not part of native supported gates {supported_gates}")
-
             # Add RZ commutation to VirtualZ phase correction for posterior Drag gates
             if isinstance(gate, RZ):
                 shift[gate.target_qubits[0]] += gate.phi
+                out_gate = None  # RZs are removed after commuted
 
             # Add CZ phase correction for posterior Drag gates
             elif isinstance(gate, CZ):
@@ -81,16 +78,21 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
                 if gate_corrections is not None:
                     shift[control_qubit] += gate_corrections[f"q{control_qubit}_phase_correction"]
                     shift[target_qubit] += gate_corrections[f"q{target_qubit}_phase_correction"]
-                out_circuit.add(gate)
+                out_gate = CZ(control_qubit, target_qubit)  # CZs do not change
 
-            else:
-                # If gate is drag pulse, shift parameters by the accumulated phase corrections
-                if isinstance(gate, Drag):
-                    qubit: int = gate.qubits[0]  # Assumes single qubit
-                    gate = Drag(qubit, theta=gate.theta, phase=gate.phase - shift[qubit])
+            elif isinstance(gate, Drag):
+                qubit: int = gate.qubits[0]  # Assumes single qubit
+                out_gate = Drag(qubit, theta=gate.theta, phase=(gate.phase - shift[qubit]))
 
-                # Any gate different from RZ or CZ is added to the output circuit
-                out_circuit.add(gate)
+            elif isinstance(gate, M):
+                out_gate = M(*gate.qubits)  # Measurement gates, do not change
+
+            else:  # If gate is not supported, raise an error
+                raise ValueError(f"{gate.name} not part of native supported gates {(RZ, Drag, CZ, M)}")
+
+            # Add the processed gate to the output circuit
+            if out_gate is not None:
+                out_circuit.add(out_gate)
 
         return out_circuit
 
