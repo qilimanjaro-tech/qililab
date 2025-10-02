@@ -70,7 +70,7 @@ class Galadriel:
                     },
                 }
             ],
-            "Drag(0)": [
+            "Rmw(0)": [
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
@@ -84,7 +84,7 @@ class Galadriel:
                     },
                 }
             ],
-            "Drag(1)": [
+            "Rmw(1)": [
                 {
                     "bus": "drive_line_q1_bus",
                     "wait_time": 0,

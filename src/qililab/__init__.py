@@ -48,7 +48,7 @@ from .waveforms import (
 )
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
-from .digital import Drag
+from .digital import Rmw
 from .analog import AnnealingProgram  # same as circuit transpiler, top modules should be imported at top
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
 
@@ -61,7 +61,7 @@ __all__ = [
     "CrosstalkMatrix",
     "DatabaseManager",
     "Domain",
-    "Drag",
+    "Rmw",
     "Experiment",
     "ExperimentResults",
     "FlatTop",

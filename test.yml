@@ -1,0 +1,538 @@
+name: galadriel
+instruments:
+- name: QCM
+  alias: QCM
+  awg_sequencers:
+  - identifier: 0
+    outputs:
+    - 0
+    - 1
+    intermediate_frequency: 100000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: true
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+  - identifier: 1
+    outputs:
+    - 0
+    intermediate_frequency: 100000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+  - identifier: 2
+    outputs:
+    - 1
+    intermediate_frequency: 100000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+  - identifier: 3
+    outputs:
+    - 2
+    intermediate_frequency: 100000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+  - identifier: 4
+    outputs:
+    - 3
+    intermediate_frequency: 100000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+  out_offsets:
+  - 0
+  - 0
+  - 0.7
+  - 0.8
+- name: QRM
+  alias: QRM_0
+  awg_sequencers:
+  - identifier: 0
+    outputs:
+    - 0
+    - 1
+    intermediate_frequency: 100000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+    scope_acquire_trigger_mode: sequencer
+    scope_hardware_averaging: true
+    sampling_rate: 7247300000.0
+    hardware_demodulation: true
+    integration_length: 2123
+    integration_mode: ssb
+    sequence_timeout: 1
+    acquisition_timeout: 1
+    scope_store_enabled: true
+    threshold: 0.5
+    threshold_rotation: 45.0
+    time_of_flight: 40
+  - identifier: 1
+    outputs:
+    - 0
+    - 1
+    intermediate_frequency: 200000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+    scope_acquire_trigger_mode: sequencer
+    scope_hardware_averaging: true
+    sampling_rate: 1000000000.0
+    hardware_demodulation: true
+    integration_length: 2000
+    integration_mode: ssb
+    sequence_timeout: 1
+    acquisition_timeout: 1
+    scope_store_enabled: false
+    threshold: 0.5
+    threshold_rotation: 45.0
+    time_of_flight: 40
+  out_offsets:
+  - 0.123
+  - 1.23
+- name: QRM
+  alias: QRM_1
+  awg_sequencers:
+  - identifier: 0
+    outputs:
+    - 0
+    intermediate_frequency: 100000000
+    gain_imbalance: 0
+    phase_imbalance: 0
+    hardware_modulation: false
+    gain_i: 1
+    gain_q: 1
+    offset_i: 0
+    offset_q: 0
+    scope_acquire_trigger_mode: sequencer
+    scope_hardware_averaging: true
+    sampling_rate: 1000000000.0
+    hardware_demodulation: true
+    integration_length: 2123
+    integration_mode: ssb
+    sequence_timeout: 1
+    acquisition_timeout: 1
+    scope_store_enabled: true
+    threshold: 0.5
+    threshold_rotation: 45.0
+    time_of_flight: 40
+  out_offsets:
+  - 0.123
+  - 1.23
+- name: QCM-RF
+  alias: QCM-RF
+  awg_sequencers:
+  - identifier: 0
+    outputs:
+    - 0
+    intermediate_frequency: 20000000
+    gain_imbalance: 1
+    phase_imbalance: 0
+    hardware_modulation: true
+    gain_i: 0.001
+    gain_q: 0.02
+    offset_i: 0
+    offset_q: 0
+  - identifier: 1
+    outputs:
+    - 1
+    intermediate_frequency: 20000000
+    gain_imbalance: 1
+    phase_imbalance: 0
+    hardware_modulation: true
+    gain_i: 0.001
+    gain_q: 0.02
+    offset_i: 0
+    offset_q: 0
+  out0_lo_freq: 3700000000.0
+  out0_lo_en: true
+  out0_att: 10
+  out0_offset_path0: 0.2
+  out0_offset_path1: 0.07
+  out1_lo_freq: 3900000000.0
+  out1_lo_en: true
+  out1_att: 6
+  out1_offset_path0: 0.1
+  out1_offset_path1: 0.6
+  out0_lo_freq_cal_type_default: off
+  out1_lo_freq_cal_type_default: off
+- name: QRM-RF
+  alias: QRM-RF
+  awg_sequencers:
+  - identifier: 0
+    outputs:
+    - 0
+    intermediate_frequency: 20000000
+    gain_imbalance: 1
+    phase_imbalance: 0
+    hardware_modulation: true
+    gain_i: 0.001
+    gain_q: 0.02
+    offset_i: 0
+    offset_q: 0
+    scope_acquire_trigger_mode: sequencer
+    scope_hardware_averaging: true
+    sampling_rate: 1000000000
+    hardware_demodulation: true
+    integration_length: 8000
+    integration_mode: ssb
+    sequence_timeout: 1
+    acquisition_timeout: 1
+    scope_store_enabled: true
+    threshold: 0.5
+    threshold_rotation: 45.0
+    time_of_flight: 40
+  out0_in0_lo_freq: 3000000000.0
+  out0_in0_lo_en: true
+  out0_att: 34
+  in0_att: 28
+  out0_offset_path0: 0.123
+  out0_offset_path1: 1.234
+  out0_in0_lo_freq_cal_type_default: off
+- name: rohde_schwarz
+  alias: rs_0
+  power: 15
+  frequency: 7247300000.0
+  rf_on: true
+  alc: true
+  iq_modulation: false
+  iq_wideband: true
+  operation_mode: normal
+- name: rohde_schwarz
+  alias: rs_1
+  power: 15
+  frequency: 3351000000.0
+  rf_on: true
+  alc: true
+  iq_modulation: false
+  iq_wideband: true
+  operation_mode: normal
+- name: mini_circuits
+  alias: attenuator
+  attenuation: 30
+- name: keithley_2600
+  alias: keithley_2600
+  max_current: 0.1
+  max_voltage: 20.0
+instrument_controllers:
+- name: rohde_schwarz
+  alias: rohde_schwarz_controller_0
+  connection:
+    name: tcp_ip
+    address: 192.168.0.10
+  modules:
+  - alias: rs_0
+    slot_id: 0
+  reset: true
+  reference_clock: EXT
+- name: rohde_schwarz
+  alias: rohde_schwarz_controller_1
+  connection:
+    name: tcp_ip
+    address: 192.168.0.7
+  modules:
+  - alias: rs_1
+    slot_id: 0
+  reset: true
+  reference_clock: EXT
+- name: mini_circuits
+  alias: attenuator_controller_0
+  connection:
+    name: tcp_ip
+    address: 192.168.0.222
+  modules:
+  - alias: attenuator
+    slot_id: 0
+  reset: true
+- name: keithley_2600
+  alias: keithley_2600_controller_0
+  connection:
+    name: tcp_ip
+    address: 192.168.0.112
+  modules:
+  - alias: keithley_2600
+    slot_id: 0
+  reset: true
+buses:
+- alias: drive_line_q0_bus
+  instruments:
+  - QCM
+  - rs_0
+  channels:
+  - 0
+  - 
+- alias: drive_line_q1_bus
+  instruments:
+  - QCM-RF
+  channels:
+  - 0
+- alias: drive_line_q2_bus
+  instruments:
+  - QCM-RF
+  channels:
+  - 1
+- alias: feedline_input_output_bus
+  instruments:
+  - QRM_0
+  - rs_1
+  channels:
+  - 0
+  - 
+- alias: feedline_input_output_bus_1
+  instruments:
+  - QRM-RF
+  channels:
+  - 0
+- alias: feedline_input_output_bus_2
+  instruments:
+  - QRM_1
+  channels:
+  - 0
+- alias: flux_line_q0_bus
+  instruments:
+  - QCM
+  - rs_0
+  channels:
+  - 1
+  - 
+- alias: flux_line_q1_bus
+  instruments:
+  - QCM
+  - rs_0
+  channels:
+  - 2
+  - 
+- alias: flux_line_q2_bus
+  instruments:
+  - QCM
+  - rs_0
+  channels:
+  - 3
+  - 
+- alias: flux_line_q3_bus
+  instruments:
+  - QCM
+  - rs_0
+  channels:
+  - 4
+  - 
+- alias: flux_line_too_many_instr
+  instruments:
+  - QCM
+  - QCM
+  channels:
+  - 1
+  - 4
+digital:
+  topology:
+  - - 0
+    - 2
+  - - 1
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  gates:
+    M(0):
+    - bus: feedline_input_output_bus
+      waveform:
+        type: Square
+        amplitude: 1.0
+        duration: 2000
+      weights:
+      phase: 0.0
+      wait_time: 0
+      options:
+    M(1):
+    - bus: feedline_input_output_bus_1
+      waveform:
+        type: Square
+        amplitude: 1.0
+        duration: 2000
+      weights:
+      phase: 0.0
+      wait_time: 0
+      options:
+    M(2):
+    - bus: feedline_input_output_bus_2
+      waveform:
+        type: Square
+        amplitude: 1.0
+        duration: 2000
+      weights:
+      phase: 0.0
+      wait_time: 0
+      options:
+    I(0):
+    - bus: drive_line_q0_bus
+      waveform:
+        type: Square
+        amplitude: 1.0
+        duration: 2000
+      weights:
+      phase: 0.0
+      wait_time: 0
+      options:
+    Rmw(0):
+    - bus: drive_line_q0_bus
+      waveform:
+        type: IQDrag
+        amplitude: 1.0
+        drag_coefficient: 0
+        duration: 50
+        num_sigmas: 4
+      weights:
+      phase: 0.0
+      wait_time: 0
+      options:
+    Rmw(1):
+    - bus: drive_line_q1_bus
+      waveform:
+        type: IQDrag
+        amplitude: 1.0
+        drag_coefficient: 0
+        duration: 50
+        num_sigmas: 4
+      weights:
+      phase: 0.0
+      wait_time: 0
+      options:
+    X(0):
+    - bus: drive_line_q0_bus
+      waveform:
+        type: IQDrag
+        amplitude: 1.0
+        drag_coefficient: 0
+        duration: 50
+        num_sigmas: 4
+      weights:
+      phase: 0.0
+      wait_time: 0
+      options:
+    X(1):
+    - bus: drive_line_q1_bus
+      waveform:
+        type: IQDrag
+        amplitude: 1.0
+        drag_coefficient: 0
+        duration: 50
+        num_sigmas: 4
+      weights:
+      phase: 0.0
+      wait_time: 0
+      options:
+    Y(0):
+    - bus: drive_line_q0_bus
+      waveform:
+        type: IQDrag
+        amplitude: 1.0
+        drag_coefficient: 0
+        duration: 50
+        num_sigmas: 4
+      weights:
+      phase: 1.6707963267948966
+      wait_time: 0
+      options:
+    Y(1):
+    - bus: drive_line_q1_bus
+      waveform:
+        type: IQDrag
+        amplitude: 1.0
+        drag_coefficient: 0
+        duration: 20
+        num_sigmas: 4
+      weights:
+      phase: 1.5707963267948966
+      wait_time: 0
+      options:
+    RY(0):
+    - bus: drive_line_q0_bus
+      waveform:
+        type: IQDrag
+        amplitude: 1.0
+        drag_coefficient: 0
+        duration: 20
+        num_sigmas: 4
+      weights:
+      phase: 1.5707963267948966
+      wait_time: 0
+      options:
+    RX(0):
+    - bus: drive_line_q0_bus
+      waveform:
+        type: IQDrag
+        amplitude: 1.0
+        drag_coefficient: 0
+        duration: 20
+        num_sigmas: 4
+      weights:
+      phase: 1.5707963267948966
+      wait_time: 0
+      options:
+    CZ(0,1):
+    - bus: flux_line_q1_bus
+      waveform:
+        type: Square
+        amplitude: 1.0
+        duration: 20
+      weights:
+      phase: 1.5707963267948966
+      wait_time: 0
+      options:
+        q0_phase_correction: 0.1
+        q1_phase_correction: 0.2
+    CZ(0, 2):
+    - bus: flux_line_q0_bus
+      waveform:
+        type: Square
+        amplitude: 1.0
+        duration: 20
+      weights:
+      phase: 1.5707963267948966
+      wait_time: 0
+      options:
+        q0_phase_correction: 0.1
+        q1_phase_correction: 0.2
+analog:
+  flux_control_topology:
+  - flux: phix_q0
+    bus: flux_line_q0_bus
+  - flux: phiz_q0
+    bus: flux_line_q0_bus
+  - flux: phix_q1
+    bus: drive_line_q0_bus
+  - flux: phiz_q1
+    bus: drive_line_q0_bus
+  - flux: phix_c0_1
+    bus: flux_line_q0_bus
+  - flux: phiz_c0_1
+    bus: flux_line_q0_bus

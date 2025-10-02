@@ -60,13 +60,13 @@ class QProgram(StructuredProgram):
             qp = QProgram()
 
             # Pulse used for changing the state of qubit
-            control_wf = IQWaveform.DRAG(amplitude=1.0, duration=40, num_sigmas=4.0, drag_correction=-2.5)
+            control_wf = IQDRAG(amplitude=1.0, duration=40, num_sigmas=4.0, drag_correction=-2.5)
 
             # Pulse used for exciting the resonator for readout
-            readout_wf = IQWaveform(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
+            readout_wf = IQPair(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
 
             # Weights used during integration
-            weights = IQWaveform(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
+            weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
 
             # Declare a variable
             gain = qp.variable(label="gain", domain=Domain.Voltage)

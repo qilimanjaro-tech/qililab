@@ -19,7 +19,7 @@ from collections.abc import Callable
 import numpy as np
 from qilisdk.digital import CNOT, CZ, RX, RY, RZ, SWAP, U1, U2, U3, Gate, H, I, M, S, T, X, Y, Z
 
-from .native_gates import Drag
+from .native_gates import Rmw
 
 
 class GateDecompositions:
@@ -101,7 +101,7 @@ def native_gates():
     Returns:
         tuple[Gate]: Hardware native gates
     """
-    return (Drag, CZ)
+    return (Rmw, CZ)
 
 
 # Mind that the order of the gates is "the inverse" of the operators
@@ -110,19 +110,19 @@ def native_gates():
 qili_dec = GateDecompositions()
 qili_dec.add(I, [RZ(0, phi=0)])
 # qili_dec.add(Align, lambda gate: [Wait(0, gate.parameters[0])])
-qili_dec.add(H, [Drag(0, theta=np.pi / 2, phase=-np.pi / 2), RZ(0, phi=np.pi)])
-qili_dec.add(X, [Drag(0, theta=np.pi, phase=0)])
+qili_dec.add(H, [Rmw(0, theta=np.pi / 2, phase=-np.pi / 2), RZ(0, phi=np.pi)])
+qili_dec.add(X, [Rmw(0, theta=np.pi, phase=0)])
 qili_dec.add(
     Y,
     [
-        Drag(0, theta=np.pi, phase=0),
+        Rmw(0, theta=np.pi, phase=0),
         RZ(0, phi=np.pi),
     ],
 )
 qili_dec.add(Z, [RZ(0, phi=np.pi)])
 
-qili_dec.add(RX, lambda gate: [Drag(0, theta=gate.get_parameters()["theta"], phase=0)])
-qili_dec.add(RY, lambda gate: [Drag(0, theta=gate.get_parameters()["theta"], phase=np.pi / 2)])
+qili_dec.add(RX, lambda gate: [Rmw(0, theta=gate.get_parameters()["theta"], phase=0)])
+qili_dec.add(RY, lambda gate: [Rmw(0, theta=gate.get_parameters()["theta"], phase=np.pi / 2)])
 qili_dec.add(RZ, lambda gate: [RZ(0, phi=gate.get_parameters()["phi"] / 2)])
 qili_dec.add(U1, lambda gate: [RZ(0, phi=gate.get_parameters()["phi"])])
 qili_dec.add(
@@ -131,7 +131,7 @@ qili_dec.add(
 qili_dec.add(
     U3,
     lambda gate: [
-        Drag(
+        Rmw(
             0, theta=gate.get_parameters()["theta"], phase=-gate.get_parameters()["gamma"] + np.pi / 2
         ),  # qibo's U3 is different from standard U3
         RZ(0, phi=gate.get_parameters()["phi"] + gate.get_parameters()["gamma"]),

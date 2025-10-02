@@ -40,7 +40,7 @@ def get_sample_qprogram_string():
 
     r_wf_I = Square(amplitude=r_amp, duration=r_duration)
     r_wf_Q = Square(amplitude=0.0, duration=r_duration)
-    d_wf = IQPair.DRAG(amplitude=1.0, duration=d_duration, num_sigmas=4, drag_coefficient=0.1)
+    d_wf = IQDrag(amplitude=1.0, duration=d_duration, num_sigmas=4, drag_coefficient=0.1)
 
     weights_shape = Square(amplitude=1, duration=r_duration)
 

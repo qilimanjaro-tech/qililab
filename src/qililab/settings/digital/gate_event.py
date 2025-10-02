@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 
-from qililab.utils.serialization import deserialize, serialize
+from qililab.utils.serialization import DeserializationError, deserialize, serialize
 from qililab.waveforms.iq_waveform import IQWaveform
 from qililab.waveforms.waveform import Waveform
 
@@ -81,6 +81,7 @@ class GateEvent(BaseModel):
 
     bus: str
     waveform: Waveform | IQWaveform
+    weights: IQWaveform | None = None
     phase: float = 0.0
     wait_time: int = 0
     options: dict | None = None
@@ -98,11 +99,33 @@ class GateEvent(BaseModel):
             return v
         # Accept the original tagged YAML string
         if isinstance(v, str):
-            return deserialize(v, IQWaveform)
+            try:
+                return deserialize(v, Waveform)
+            except DeserializationError:
+                return deserialize(v, IQWaveform)
         # Accept dicts (our JSON-friendly external shape)
         if isinstance(v, dict):
             return _mapping_to_wf(v)
         raise TypeError("waveform must be a Waveform/IQWaveform, tagged YAML string, or mapping")
+
+    @field_serializer("weights")  # default is "always" → used by model_dump & model_dump_json
+    def _serialize_weights(self, weights: IQWaveform, _info):
+        # Return a dict, not a string → nested object in model_dump()
+        return _wf_to_mapping(weights) if weights is not None else None
+
+    @field_validator("weights", mode="before")
+    @classmethod
+    def _load_weights(cls, v):
+        # Accept already-constructed objects
+        if isinstance(v, IQWaveform):
+            return v
+        # Accept the original tagged YAML string
+        if isinstance(v, str):
+            return deserialize(v, IQWaveform)
+        # Accept dicts
+        if isinstance(v, dict):
+            return _mapping_to_wf(v)
+        raise TypeError("weights must be a IQWaveform, tagged YAML string, or mapping")
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool):
         """Change a given parameter from settings. Will look up into subclasses.
