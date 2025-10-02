@@ -13,7 +13,7 @@
 # limitations under the License.
 # mypy: disable-error-code="attr-defined"
 from datetime import datetime
-from typing import TypedDict
+from typing import Any, TypedDict
 
 import h5py
 import numpy as np
@@ -262,7 +262,7 @@ class ExperimentResultsWriter(ExperimentResults):
         if self._db_metadata:
             self.measurement = self.measurement.end_experiment(self._db_manager.Session)
 
-    def __setitem__(self, key: tuple, value: float):
+    def __setitem__(self, key: tuple, value: Any):
         """Sets an item in the results dataset.
 
         Args:

@@ -440,6 +440,24 @@ class DatabaseManager:
                      (Measurement.debug_file != None).label("has_debug"),
                 )
 
+            if light_read:
+                query = query.with_entities(  # Note that some columns are missing that currently are not being used
+                    Measurement.measurement_id,
+                    Measurement.experiment_name,
+                    Measurement.optional_identifier,
+                    Measurement.start_time,
+                    Measurement.end_time,
+                    Measurement.run_length,
+                    Measurement.experiment_completed,
+                    Measurement.cooldown,
+                    Measurement.sample_name,
+                    Measurement.result_path,
+                    Measurement.created_by,
+                    Measurement.debug_file,
+                    (Measurement.qprogram.isnot(None)).label("has_qprogram"),
+                    (Measurement.platform.isnot(None)).label("has_platform"),
+                )
+
             if pandas_output:
                 return read_sql(query.statement, con=con)
             return query.all()
@@ -493,10 +511,10 @@ class DatabaseManager:
                     Measurement.sample_name,
                     Measurement.result_path,
                     Measurement.created_by,
-                     (Measurement.qprogram != "null").label("has_qprogram"),
+                    (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
-                     (Measurement.debug_file != None).label("has_debug"),
+                    (Measurement.debug_file != None).label("has_debug"),
                 )
 
             if pandas_output:

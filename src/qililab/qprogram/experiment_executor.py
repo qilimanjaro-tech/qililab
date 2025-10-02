@@ -75,7 +75,7 @@ class ExperimentExecutor:
         platform (Platform): The platform on which the experiment is to be executed.
         experiment (Experiment): The experiment object defining the sequence of operations and loops.
         base_data_path (str): The base directory path where the experiment results will be stored.
-        live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+        live_plot (bool): Flag that abilitates live plotting. Defaults to False.
         slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
         port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
 
@@ -113,7 +113,7 @@ class ExperimentExecutor:
         self,
         platform: "Platform",
         experiment: Experiment,
-        live_plot: bool = True,
+        live_plot: bool = False,
         slurm_execution: bool = True,
         port_number: int | None = None,
     ):
@@ -381,9 +381,8 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element, value=current_value_of_variable[
-                                    element.value.uuid
-                                ]: self.platform.set_parameter(
+                                lambda operation=element,
+                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     value=value,
@@ -423,7 +422,9 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: store_results(
+                            lambda operation=element,
+                            call_parameters=call_parameters,
+                            qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram(
                                         **{
@@ -466,7 +467,7 @@ class ExperimentExecutor:
             # Determine the index based on current loop indices and store the results in the ExperimentResultsWriter
             for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
                 indices = (qprogram_index, measurement_index, *tuple(index for _, index in self.loop_indices.items()))
-                self._results_writer[indices] = measurement_result.array.T  # type: ignore
+                self._results_writer[indices] = np.moveaxis(measurement_result.array, 0, -1)
 
         if isinstance(block, (Loop, ForLoop, Parallel)):
             # Handle loops
