@@ -45,19 +45,21 @@ def assert_equal_gate(list1: list[Gate], list2: list[Gate], abs=1e-15):
 
 test_cases = [M(0), I(0), X(2), Y(0), Z(2), H(2), S(0), T(1), RX(1, theta=1), RY(2, theta=1), RZ(0, phi=2),
                 U1(0, phi=2), U2(1, phi=2, gamma=3), U3(2, theta=1, phi=2, gamma=3),
-                CZ(0,2), CNOT(2,1), SWAP(0,1)]
+                CZ(0,2), CNOT(2,1), SWAP(0,1), Exponential(H(0))]
 result_cases = [[M(0)], [], [RX(2, theta=np.pi)], [RY(0, theta=np.pi)], [RZ(2, phi=np.pi)], [U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi)], [RZ(0, phi=np.pi/2)], [RZ(1, phi=np.pi/4)],
                 [RX(1, theta=1)],[RY(2, theta=1)], [RZ(0, phi=2)], [RZ(0, phi=2)], [U3(1, theta=np.pi/2, phi=2, gamma=3)], [U3(2, theta=1, phi=2, gamma=3)], [CZ(0,2)],
                 [U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(2, 1), U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi)], 
                 [U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0,1), U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi), 
                  U3(0, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(1,0), U3(0, theta=np.pi/2, phi=0.0, gamma=np.pi), 
-                 U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0,1), U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi)]]
+                 U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0,1), U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi)],
+                 [U3(0, theta=0.6733999625569341, phi=0.0, gamma=np.pi)]]
 adjointed_cases = [[], [], [RX(2, theta=-np.pi)], [RY(0, theta=-np.pi)], [RZ(2, phi=-np.pi)], [U3(2, theta=-np.pi/2, phi=-np.pi, gamma=0.0)], [RZ(0, phi=-np.pi/2)], [RZ(1, phi=-np.pi/4)],
                     [RX(1, theta=-1)],[RY(2, theta=-1)], [RZ(0, phi=-2)], [RZ(0, phi=-2)], [U3(1, theta=-np.pi/2, phi=-3, gamma=-2)], [U3(2, theta=-1, phi=-3, gamma=-2)], [CZ(0,2)],
                     [U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0), CZ(2, 1), U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0)], 
                     [U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0), CZ(0,1), U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0), 
                     U3(0, theta=-np.pi/2, phi=-np.pi, gamma=0.0), CZ(1,0), U3(0, theta=-np.pi/2, phi=-np.pi, gamma=0.0), 
-                    U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0), CZ(0,1), U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0)]]
+                    U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0), CZ(0,1), U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0)],
+                    [U3(0, theta=-0.6733999625569341, phi=-np.pi, gamma=0.0)]]
 class TestCircuitToCanonicalBasisPass:
     """Tests for the methods contained in circuit_to_canonical_basis_pass.py"""
     def test_gate_decompositions(self):
@@ -151,11 +153,20 @@ class TestCircuitToCanonicalBasisPass:
             g = U3(U3gates[i].qubits[0], theta=th, phi=ph, gamma=lam)
             assert_equal_gate([CircuitToCanonicalBasisPass()._sqrt_1q_gate_as_basis(U3gates[i])], [g])
 
-    def test_errors(self):
+    def test_errors_and_exceptions(self):
         c=Circuit(3)
         mock_Gate = Mock(Gate)
+
         mock_BasicGate_no_matrix = Mock(BasicGate)
         type(mock_BasicGate_no_matrix).matrix = PropertyMock(side_effect=GateHasNoMatrixError)
+
+        mock_Exponential_2q = Mock(Exponential)
+        type(mock_Exponential_2q).nqubits = PropertyMock(side_effect=[2])
+
+        mock_BasicGate_with_matrix = Mock(BasicGate)
+        type(mock_BasicGate_with_matrix).matrix = PropertyMock(side_effect=[np.array([[1+0j,1+0j],[1+0j,-1+0j]],dtype=complex)/np.sqrt(2)])
+        type(mock_BasicGate_with_matrix).qubits = PropertyMock(side_effect=[[0]])
+
         try:
             c._gates = [Controlled(2,basic_gate=SWAP(0,1))]
             CircuitToCanonicalBasisPass().run(c)
@@ -174,4 +185,13 @@ class TestCircuitToCanonicalBasisPass:
             pytest.fail("Unsupported gates should raise an error")
         except NotImplementedError:
             assert True
+        try:
+            c._gates = [mock_Exponential_2q]
+            CircuitToCanonicalBasisPass().run(c)
+            pytest.fail("Exponential should raise an error if the gate has more than one qubit")
+        except NotImplementedError:
+            assert True
+        
+        c._gates = [mock_BasicGate_with_matrix]
+        assert_equal_gate(CircuitToCanonicalBasisPass().run(c)._gates,[U3(0, theta=np.pi / 2, phi=0.0, gamma=np.pi)])
             

@@ -246,7 +246,6 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
 
     def _CZ_canonical(self, g: CZ, adjointed: bool = False):
         return [g]
-#           ????
 
     def _CNOT_canonical(self, g: CNOT, adjointed: bool = False):
         t = g.target_qubits[0]
