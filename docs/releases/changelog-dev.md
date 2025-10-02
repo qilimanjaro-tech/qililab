@@ -42,6 +42,7 @@
     platform.set_parameter(alias=bus_alias, parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, value=300, output_id=0)
     platform.get_parameter(alias=bus_alias, parameter=Parameter.FIR_STATE, output_id=2)
     ```
+  - When setting/getting any parameter from the platform and giving the bus_alias, if an output_id or channel_id not associated with the bus is given, an exception is raised; and if an output_id instead of a channel_id (and vice versa) has been given an Exception is raised.
 [#981](https://github.com/qilimanjaro-tech/qililab/pull/981)
 
 
