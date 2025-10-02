@@ -264,7 +264,7 @@ def fixture_digital_compilation_settings() -> DigitalCompilationSettings:
 
 class TestAddPhasesToDragsFromRZsAndCZs:
     def test_run(self, digital_settings):
-            """Test that add_phases_from_RZs_and_CZs_to_drags behaves as expected"""
+            """Test that AddPhasesToDragsFromRZAndCZPass behaves as expected"""
             transpile_step = AddPhasesToDragsFromRZAndCZPass(digital_settings)
 
             # gate list to optimize
