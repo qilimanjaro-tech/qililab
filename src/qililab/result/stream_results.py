@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING, Any
 import h5py
 import numpy as np
 
+from qililab.instruments.qblox.qblox_module import QbloxModule
+from qililab.instruments.quantum_machines.quantum_machines_cluster import QuantumMachinesCluster
 from qililab.qprogram.qprogram import Calibration, QProgram
 from qililab.result.database import DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
@@ -171,23 +173,31 @@ class StreamArray:
         return item in self.results
 
     def _get_debug(self):
-        compiled = self.platform.compile_qprogram(self.qprogram, self.calibration)
+        bus_aliases = {bus for bus in self.qprogram.buses}
+        buses = {bus_alias: self.platform.buses.get(alias=bus_alias) for bus_alias in bus_aliases}
+        instruments = {
+            instrument
+            for _, bus in buses.items()
+            for instrument in bus.instruments
+            if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
+        }
+        if all(isinstance(instrument, QbloxModule) for instrument in instruments):
+            compiled = self.platform.compile_qprogram(self.qprogram, self.calibration)
 
-        sequences = compiled.sequences
-        buses = {bus_alias: self.platform.buses.get(alias=bus_alias) for bus_alias in sequences}
-        for bus_alias, bus in buses.items():
-            if bus.distortions:
-                for distortion in bus.distortions:
-                    for waveform in sequences[bus_alias]._waveforms._waveforms:
-                        sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
+            sequences = compiled.sequences
+            for bus_alias, bus in buses.items():
+                if bus.distortions:
+                    for distortion in bus.distortions:
+                        for waveform in sequences[bus_alias]._waveforms._waveforms:
+                            sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
 
-        lines = []
-        for bus_alias, seq in sequences.items():
-            lines.append(f"Bus {bus_alias}:")
-            lines.append(str(seq._program))
-            lines.append("")
+            lines = []
+            for bus_alias, seq in sequences.items():
+                lines.append(f"Bus {bus_alias}:")
+                lines.append(str(seq._program))
+                lines.append("")
 
-        return "\n".join(lines)
+            return "\n".join(lines)
 
 
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
