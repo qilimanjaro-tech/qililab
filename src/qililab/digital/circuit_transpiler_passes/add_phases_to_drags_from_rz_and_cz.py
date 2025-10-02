@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
-    """This method adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
+    """This pass adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
 
         - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
         - The RZs added phases on the Drags, come from commuting all the RZs all the way to the end of the circuit, so they can be deleted as "virtual Z gates".
