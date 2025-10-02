@@ -33,7 +33,7 @@ class DigitalCompilationSettings(BaseModel):
 
         return self.model_dump()
 
-    def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
+    def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]) -> list[GateEvent]:
         """Get gates settings from runcard for a given gate name and qubits.
 
         Args:
