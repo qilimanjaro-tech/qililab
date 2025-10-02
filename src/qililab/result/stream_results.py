@@ -82,7 +82,8 @@ class StreamArray:
             platform=self.platform.to_dict() if self.platform else None,
             qprogram=serialize(self.qprogram) if self.qprogram else None,
             calibration=serialize(self.calibration) if self.calibration else None,
-            debug_file=self.platform.generate_debug_str_qblox(self.qprogram) if self.platform and self.qprogram else None,)
+            debug_file=self._get_debug() if self.platform and self.qprogram else None,
+        )
         self.path = self.measurement.result_path
 
         # Save loops
@@ -168,6 +169,25 @@ class StreamArray:
             bool: True if an item is contained in results.
         """
         return item in self.results
+
+    def _get_debug(self):
+        compiled = self.platform.compile_qprogram(self.qprogram, self.calibration)
+
+        sequences = compiled.sequences
+        buses = {bus_alias: self.platform.buses.get(alias=bus_alias) for bus_alias in sequences}
+        for bus_alias, bus in buses.items():
+            if bus.distortions:
+                for distortion in bus.distortions:
+                    for waveform in sequences[bus_alias]._waveforms._waveforms:
+                        sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
+
+        lines = []
+        for bus_alias, seq in sequences.items():
+            lines.append(f"Bus {bus_alias}:")
+            lines.append(str(seq._program))
+            lines.append("")
+
+        return "\n".join(lines)
 
 
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):

@@ -1897,27 +1897,3 @@ class Platform:
             for index in range(shape[0]):
                 stream_array[index,] = results[index, ...]  # type: ignore
         return stream_array.path
-
-    def generate_debug_str_qblox(
-        self, qp: QProgram, calibration: Calibration | None = None
-    ) -> str:  # NOTE only written for QBLOX here
-        if calibration:
-            compiled = self.compile_qprogram(qp, calibration=calibration)
-        else:
-            compiled = self.compile_qprogram(qp)
-
-        sequences, _ = compiled.sequences, compiled.acquisitions
-        buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
-        for bus_alias, bus in buses.items():
-            if bus.distortions:
-                for distortion in bus.distortions:
-                    for waveform in sequences[bus_alias]._waveforms._waveforms:
-                        sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
-
-        lines = []
-        for bus_alias, seq in sequences.items():
-            lines.append(f"Bus {bus_alias}:")
-            lines.append(str(seq._program))
-            lines.append("")
-
-        return "\n".join(lines)
