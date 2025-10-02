@@ -419,7 +419,6 @@ class DatabaseManager:
                 query = query.order_by(Measurement.measurement_id.desc()).limit(order_limit)
             else:
                 query = query.order_by(Measurement.measurement_id.desc())
-            import sqlalchemy as sa
 
             Measurement.platform.isnot
             if light_read:
@@ -438,7 +437,7 @@ class DatabaseManager:
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
-                    (Measurement.debug_file != None).label("has_debug"),
+                    (Measurement.debug_file is not None).label("has_debug"),
                 )
 
             if light_read:
@@ -515,7 +514,7 @@ class DatabaseManager:
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
-                    (Measurement.debug_file != None).label("has_debug"),
+                    (Measurement.debug_file is not None).label("has_debug"),
                 )
 
             if pandas_output:
