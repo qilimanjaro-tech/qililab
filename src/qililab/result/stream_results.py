@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 import h5py
 import numpy as np
 
-from qililab.qprogram.qprogram import QProgram, Calibration
+from qililab.qprogram.qprogram import Calibration, QProgram
 from qililab.result.database import DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
 

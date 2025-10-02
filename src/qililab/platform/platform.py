@@ -1290,31 +1290,31 @@ class Platform:
         debug: bool = False,
     ) -> list[QProgramResults]:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
-            It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
+        It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
 
-            **The execution can be done for (buses associated to) Qblox only. And it can only be done for qprograms that do not share buses.**
+        **The execution can be done for (buses associated to) Qblox only. And it can only be done for qprograms that do not share buses.**
 
-            Args:
-                qprograms (list[QProgram]): A list of the :class:`.QProgram` to execute.
-                bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
-                    A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
-                    A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
-                    None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
-                    It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
-                    Defaults to None.
-                calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
-                    A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
-                    A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
-                    None. In this case no `.Calibration` instance is used.
-                    Defaults to None.
-                debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
-                    Defaults to False.
+        Args:
+            qprograms (list[QProgram]): A list of the :class:`.QProgram` to execute.
+            bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
+                A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
+                A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
+                None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
+                It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
+                Defaults to None.
+            calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
+                A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
+                A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
+                None. In this case no `.Calibration` instance is used.
+                Defaults to None.
+            debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
+                Defaults to False.
 
-            Returns:
-                QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.
-                Each element of the list corresponds to a sequencer.
-                The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
-            """
+        Returns:
+            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.
+            Each element of the list corresponds to a sequencer.
+            The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+        """
         if not qprograms:
             return []
 
@@ -1898,13 +1898,14 @@ class Platform:
                 stream_array[index,] = results[index, ...]  # type: ignore
         return stream_array.path
 
-
-    def generate_debug_str_qblox(self, qp: QProgram, calibration: Calibration | None = None) -> str: #NOTE only written for QBLOX here
+    def generate_debug_str_qblox(
+        self, qp: QProgram, calibration: Calibration | None = None
+    ) -> str:  # NOTE only written for QBLOX here
         if calibration:
             compiled = self.compile_qprogram(qp, calibration=calibration)
         else:
             compiled = self.compile_qprogram(qp)
-        
+
         sequences, _ = compiled.sequences, compiled.acquisitions
         buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
         for bus_alias, bus in buses.items():
@@ -1912,11 +1913,11 @@ class Platform:
                 for distortion in bus.distortions:
                     for waveform in sequences[bus_alias]._waveforms._waveforms:
                         sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
-        
+
         lines = []
         for bus_alias, seq in sequences.items():
             lines.append(f"Bus {bus_alias}:")
             lines.append(str(seq._program))
-            lines.append("")  
+            lines.append("")
 
         return "\n".join(lines)
