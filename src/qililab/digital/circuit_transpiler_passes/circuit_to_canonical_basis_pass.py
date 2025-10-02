@@ -15,8 +15,7 @@
 from __future__ import annotations
 
 import math
-import typing
-from typing import List, Dict
+from typing import List
 
 from qilisdk.digital import Circuit
 from qilisdk.digital.exceptions import GateHasNoMatrixError
@@ -108,7 +107,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         self.append_circuit_to_context(out)
         return out
 
-    def _rewrite_list (self, gates: List[Gate], adjointed: bool = False):
+    def _rewrite_list(self, gates: List[Gate], adjointed: bool = False):
         out: List[Gate] = []
         for g in gates:
             out += self._rewrite_gate(g, adjointed=adjointed)
@@ -119,15 +118,14 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         g_class = gate.__class__
         if g_class in self.canonical:
             return self.canonical[g_class](gate, adjointed)
-        elif isinstance(gate, BasicGate):
+        if isinstance(gate, BasicGate):
             try:
                 return self._BasicGate_canonical(gate, adjointed)
             except GateHasNoMatrixError:
                 raise NotImplementedError(f"{g_class}, isn't supported in the current build")
-        else:
-            raise NotImplementedError(f"{g_class}, isn't supported in the current build")
+        raise NotImplementedError(f"{g_class}, isn't supported in the current build")
 
-    def _Controled_handeling(self, g:Controlled | Gate, adjointed:bool = False, controls: List[int] = None):
+    def _Controled_handeling(self, g: Controlled | Gate, adjointed: bool = False, controls: List[int] = []):
         if isinstance(g, Controlled):
             controls = g.control_qubits
             basic_gate = g.basic_gate
@@ -161,8 +159,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         g_class = target_gate.__class__
         if g_class in self.controlled_canonical:
             return self.controlled_canonical[g_class](target_gate, control_qubit, adjointed)
-        else:
-            return self._single_controlled(self._rewrite_gate(target_gate)[0], control_qubit)
+        return self._single_controlled(self._rewrite_gate(target_gate)[0], control_qubit)
 
     def _sqrt_1q_gate_as_basis(self, g: Gate) -> Gate:
         """Return V such that V^2 = g, as a basis gate (U3/RX/RY/RZ)."""
@@ -297,11 +294,11 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         target_qubit = g.qubits[0]
         sequence = [
                     RZ(target_qubit, phi=phi),
-                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi), # An H
+                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi),  # n H
                     CZ(control_qubit, target_qubit),
                     RX(target_qubit, theta=-phi),
                     CZ(control_qubit, target_qubit),
-                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi), # An H
+                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi),  # An H
                     ]
         return sequence if not adjointed else self._rewrite_list(sequence, adjointed=adjointed)
 
@@ -312,13 +309,13 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         target_qubit = g.qubits[0]
         sequence = [
                     RZ(target_qubit, phi=(lam - phi) / 2),
-                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi), # An H
+                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi),  # An H
                     CZ(control_qubit, target_qubit),
-                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi), # An H
-                    U3(target_qubit, theta=-theta / 2, phi=0.0, gamma=-(lam + phi)/2),
-                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi), # An H
+                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi),  # An H
+                    U3(target_qubit, theta=-theta / 2, phi=0.0, gamma=-(lam + phi) / 2),
+                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi),  # An H
                     CZ(control_qubit, target_qubit),
-                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi), # An H
+                    U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi),  # An H
                     U3(target_qubit, theta=theta / 2, phi=phi, gamma=0.0)
                     ]
         return sequence if not adjointed else self._rewrite_list(sequence, adjointed=adjointed)
