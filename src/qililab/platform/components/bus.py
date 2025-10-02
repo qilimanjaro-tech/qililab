@@ -155,7 +155,7 @@ class Bus:
 
     def _get_outputid_from_channelid(self) -> int:
         "Returns the output_id associated with the sequencer linked to the bus in use"
-        for sequencer in self.settings.instruments[0].awg_sequencers: # type: ignore[attr-defined]
+        for sequencer in self.settings.instruments[0].awg_sequencers:  # type: ignore[attr-defined]
             if sequencer.identifier == self.channels[0]:
                 return sequencer.outputs[0]
         raise Exception(f"No output_id was found to be associated with the bus with alias {self.alias}")
