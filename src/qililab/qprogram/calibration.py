@@ -11,15 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from pathlib import Path
-
-import numpy as np
+from typing import TYPE_CHECKING, Any
 
 from qililab.qprogram.blocks import Block
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
+
+if TYPE_CHECKING:
+    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 
 
 @yaml.register_class
@@ -32,6 +31,7 @@ class Calibration:
         self.weights: dict[str, dict[str, IQPair]] = {}
         self.blocks: dict[str, Block] = {}
         self.crosstalk_matrix: CrosstalkMatrix | None = None
+        self.parameters: dict[str, Any] = {}
 
     def add_waveform(self, bus: str, name: str, waveform: Waveform | IQPair):
         """Add a waveform or IQPair for the specified bus.
@@ -154,55 +154,3 @@ class Calibration:
         if name not in self.blocks:
             raise KeyError(f"The block {name} do not exist.")
         return self.blocks[name]
-
-    def save_to(self, file: str):
-        """Dump the current calibration data to a YAML file.
-
-        Args:
-            file (str): The file path where the calibration data will be saved. If the file extension
-                        is not provided, it defaults to '.yml'.
-
-        Returns:
-            str: The path of the saved file.
-        """
-        yaml.dump(self, Path(file))
-
-        return file
-
-    @classmethod
-    def load_from(cls, file: str):
-        """Load calibration data from a YAML file.
-
-        Args:
-            file (str): The file path from which to load the calibration data.
-
-        Raises:
-            TypeError: If the loaded data is not an instance of the Calibration class.
-
-        Returns:
-            Calibration: An instance of the Calibration class with data loaded from the file.
-        """
-        data = yaml.load(Path(file))
-        if not isinstance(data, cls):
-            raise TypeError("The loaded data is not an instance of the Calibration class.")
-
-        if isinstance(data.crosstalk_matrix, CrosstalkMatrix):
-            if isinstance(data.crosstalk_matrix.matrix, list):
-                if not data.crosstalk_matrix.bus_list or len(data.crosstalk_matrix.bus_list) != len(
-                    data.crosstalk_matrix.matrix
-                ):
-                    raise ValueError("Bus list is empty or has the wrong dimensions")
-                data.crosstalk_matrix.matrix = CrosstalkMatrix.from_array(
-                    buses=data.crosstalk_matrix.bus_list, matrix_array=np.array(data.crosstalk_matrix.matrix)
-                )
-
-            if isinstance(data.crosstalk_matrix.flux_offsets, list):
-                if not data.crosstalk_matrix.bus_list or len(data.crosstalk_matrix.bus_list) != len(
-                    data.crosstalk_matrix.flux_offsets
-                ):
-                    raise ValueError("Bus list is empty or has the wrong dimensions")
-                offset_list = data.crosstalk_matrix.flux_offsets.copy()
-                data.crosstalk_matrix.flux_offsets = {}
-                for bus, value in zip(data.crosstalk_matrix.bus_list, offset_list):
-                    data.crosstalk_matrix.flux_offsets[bus] = value
-        return data
