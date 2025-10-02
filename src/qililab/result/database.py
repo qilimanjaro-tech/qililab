@@ -136,7 +136,7 @@ class Measurement(base):  # type: ignore
     created_by = Column("created_by", String, server_default=text("current_user"))
     # TODO: add error_report = Column("error_report", String, nullable=True)
 
-    def end_experiment(self, Session, exc_type=None):
+    def end_experiment(self, Session, traceback=None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 
@@ -146,15 +146,13 @@ class Measurement(base):  # type: ignore
             persistent_instance.end_time = datetime.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
-                if exc_type is None:
+                if traceback is None:
                     persistent_instance.experiment_completed = True
-                else:
-                    persistent_instance.experiment_completed = False
+                # TODO: add else: persistent_instance.error_report = traceback
                 session.commit()
                 return persistent_instance
             except Exception as e:
                 session.rollback()
-                # TODO: add persistent_instance.error_report = e.__str__()
                 raise e
 
     def read_experiment(self):

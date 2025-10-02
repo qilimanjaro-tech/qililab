@@ -129,13 +129,13 @@ class StreamArray:
             self._file.flush()
         self.results[key] = value
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_value, traceback):
         """Exits the context manager."""
         if self._file is not None:
             self._file.__exit__()
             self._file = None
 
-        self.measurement = self.measurement.end_experiment(self.db_manager.Session, exc_type)
+        self.measurement = self.measurement.end_experiment(self.db_manager.Session, traceback)
 
     def __getitem__(self, index: int):
         """Gets item by index.
