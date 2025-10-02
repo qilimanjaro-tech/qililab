@@ -19,6 +19,7 @@ from .enums import (
     AcquisitionName,
     ConnectionName,
     DistortionState,
+    FILTER_PARAMETERS,
     GateName,
     Instrument,
     InstrumentControllerName,

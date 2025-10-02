@@ -473,6 +473,16 @@ class Parameter(str, Enum):
         return cls(value)
 
 
+FILTER_PARAMETERS = [
+    p for p in Parameter
+    if (
+        p.name.startswith("EXPONENTIAL_AMPLITUDE")
+        or p.name.startswith("EXPONENTIAL_TIME_CONSTANT")
+        or p.name.startswith("EXPONENTIAL_STATE")
+        or p.name.startswith("FIR_")
+    )]
+
+
 class ResultName(str, Enum):
     """Result names.
 

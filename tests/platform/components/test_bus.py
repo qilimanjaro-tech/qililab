@@ -83,6 +83,12 @@ class TestBus:
         bus.set_parameter(parameter, value)
         bus.instruments[0].set_parameter.assert_called_once()
 
+    def test_get_outputid_from_channelid_raises_error(self, bus):
+        bus.settings.instruments = []
+        bus.settings.channels = [1]
+        with pytest.raises(Exception):
+            bus._get_outputid_from_channelid()
+
     def test_bus_set_parameter_raises_error(self, bus):
         bus.settings.instruments = []
         bus.settings.channels = []

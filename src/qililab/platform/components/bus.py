@@ -27,7 +27,7 @@ from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result import Result
 from qililab.result.qprogram import MeasurementResult
 from qililab.settings import Settings
-from qililab.typings import ChannelID, OutputID, Parameter, ParameterValue
+from qililab.typings import FILTER_PARAMETERS, ChannelID, OutputID, Parameter, ParameterValue
 
 
 class Bus:
@@ -153,6 +153,13 @@ class Bus:
         """Return true if bus has ADC capabilities."""
         return any(instrument.is_adc() for instrument in self.instruments)
 
+    def _get_outputid_from_channelid(self) -> int:
+        "Returns the output_id associated with the sequencer linked to the bus in use"
+        for sequencer in self.settings.instruments[0].awg_sequencers:
+            if sequencer.identifier == self.channels[0]:
+                return sequencer.outputs[0]
+        raise Exception(f"No output_id was found to be asscociated with the bus with alias {self.alias}")
+
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Set a parameter to the bus.
 
@@ -162,14 +169,26 @@ class Bus:
             channel_id (int, optional): instrument channel to update, if multiple. Defaults to None.
             output_id (int): module id. Defaults to None.
         """
+        if parameter in FILTER_PARAMETERS:
+            bus_output_id = self._get_outputid_from_channelid()
+            if channel_id is not None:
+                raise Exception("Filter parameters are controlled using output_id and not channel_id")
+            if output_id is not None and output_id == bus_output_id:
+                self.instruments[0].set_parameter(parameter=parameter, value=value, output_id=output_id)
+                return
+            if output_id is not None and output_id != bus_output_id:
+                raise Exception(f"OutputID {output_id} is not linked to bus with alias {self.alias}")
+            self.instruments[0].set_parameter(parameter=parameter, value=value, output_id=bus_output_id)
+            return
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
+                if output_id is not None:
+                    raise Exception("Only QBlox Filter parameters are controlled using output_id and not channel_id")
                 if channel_id is not None and channel_id == instrument_channel:
                     instrument.set_parameter(parameter, value, channel_id)
                     return
-                if output_id is not None:
-                    instrument.set_parameter(parameter=parameter, value=value, output_id=output_id)
-                    return
+                if channel_id is not None and channel_id not in self.channels:
+                    raise Exception(f"ChannelID {channel_id} is not linked to bus with alias {self.alias}")
                 instrument.set_parameter(parameter, value, instrument_channel)
                 return
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")

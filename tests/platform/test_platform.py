@@ -593,28 +593,28 @@ class TestPlatform:
 
     def test_setting_filter_bypassed_give_warning(self, caplog, platform: Platform):
         #  Check that setting a filter as bypassed will actually put/leave it as delay_comp if needed
-        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=1)
+        platform.set_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=1)
         with caplog.at_level(logging.WARNING):
-            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1)
+            platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1)
             assert ("Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
                 in caplog.text)
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
+        assert platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
 
-        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value="bypassed", output_id=0)
+        platform.set_parameter(alias="QCM", parameter=Parameter.FIR_STATE, value="bypassed", output_id=0)
         with caplog.at_level(logging.WARNING):
-            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0)
+            platform.get_parameter(alias="QCM", parameter=Parameter.FIR_STATE, output_id=0)
             assert ("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
                 in caplog.text)
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QCM", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
 
     def test_filter_parameter_with_wrong_output_id_raises_exception(self, platform: Platform):
         """Test that setting a filter parameter with an output_id>max_output of the instrument raises an Exception."""
         output_id = 10
         with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
-            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=output_id)
+            platform.set_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=output_id)
 
         with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
-            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value="bypassed", output_id=output_id)
+            platform.set_parameter(alias="QCM", parameter=Parameter.FIR_STATE, value="bypassed", output_id=output_id)
 
     def test_print_platform(self, platform: Platform):
         """Test print platform."""
@@ -1759,3 +1759,23 @@ class TestMethods:
         error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
+
+    def test_setting_filter_bus_error_raised(self, platform: Platform):
+        #  Check that setting a filter through a bus incorrectly raises the adequate error
+        output_id = 1
+        bus_alias = "drive_line_q0_bus"
+        with pytest.raises(Exception, match=f"OutputID {output_id} is not linked to bus with alias {bus_alias}"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=output_id)
+
+        with pytest.raises(Exception, match="Filter parameters are controlled using output_id and not channel_id"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", channel_id=output_id)
+
+
+    def test_setting_non_filter_parameter_error_raised(self, platform: Platform):
+        sequencer = 3
+        bus_alias = "drive_line_q0_bus"
+        with pytest.raises(Exception, match="Only QBlox Filter parameters are controlled using output_id and not channel_id"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=100e6, output_id=sequencer)
+
+        with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=100e6, channel_id=sequencer)
