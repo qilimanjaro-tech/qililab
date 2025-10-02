@@ -15,7 +15,8 @@
 from __future__ import annotations
 
 import math
-from typing import List
+import typing
+from typing import List, Dict
 
 from qilisdk.digital import Circuit
 from qilisdk.digital.exceptions import GateHasNoMatrixError
@@ -96,12 +97,6 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
             RZ: self._CRZ_canonical,
             U3: self._CU3_canonical,
         }
-        self.controlled_canonical = {
-            RX: self._CRX_canonical,
-            RY: self._CRY_canonical,
-            RZ: self._CRZ_canonical,
-            U3: self._CU3_canonical,
-        }
 
     def run(self, circuit: Circuit) -> Circuit:
         seq = self._rewrite_list(circuit.gates)
@@ -124,7 +119,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         g_class = gate.__class__
         if g_class in self.canonical:
             return self.canonical[g_class](gate, adjointed)
-        elif isinstance(gate, Gate):
+        elif isinstance(gate, BasicGate):
             try:
                 return self._BasicGate_canonical(gate, adjointed)
             except GateHasNoMatrixError:

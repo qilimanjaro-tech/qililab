@@ -28,7 +28,7 @@ from qilisdk.digital.exceptions import GateHasNoMatrixError
 from qililab.digital.circuit_transpiler_passes.circuit_to_canonical_basis_pass import CircuitToCanonicalBasisPass
 
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, PropertyMock
 import numpy as np
 
 
@@ -36,7 +36,6 @@ import numpy as np
 def assert_equal_gate(list1: list[Gate], list2: list[Gate], abs=1e-15):
     assert len(list1) == len(list2)
     for i, j in zip(list1, list2):
-        print(i)
         assert i.name == j.name
         assert i.qubits == j.qubits
         try:
@@ -151,3 +150,28 @@ class TestCircuitToCanonicalBasisPass:
             th, ph, lam = _zyz_from_unitary(Vs)
             g = U3(U3gates[i].qubits[0], theta=th, phi=ph, gamma=lam)
             assert_equal_gate([CircuitToCanonicalBasisPass()._sqrt_1q_gate_as_basis(U3gates[i])], [g])
+
+    def test_errors(self):
+        c=Circuit(3)
+        mock_Gate = Mock(Gate)
+        mock_BasicGate_no_matrix = Mock(BasicGate)
+        type(mock_BasicGate_no_matrix).matrix = PropertyMock(side_effect=GateHasNoMatrixError)
+        try:
+            c._gates = [Controlled(2,basic_gate=SWAP(0,1))]
+            CircuitToCanonicalBasisPass().run(c)
+            pytest.fail("Trying to pass a controled SWAP should rise an error if it isn't supported")
+        except NotImplementedError:
+            assert True
+        try:
+            c._gates = [mock_Gate]
+            CircuitToCanonicalBasisPass().run(c)
+            pytest.fail("Unsupported gates should raise an error")
+        except NotImplementedError:
+            assert True
+        try:
+            c._gates = [mock_BasicGate_no_matrix]
+            CircuitToCanonicalBasisPass().run(c)
+            pytest.fail("Unsupported gates should raise an error")
+        except NotImplementedError:
+            assert True
+            
