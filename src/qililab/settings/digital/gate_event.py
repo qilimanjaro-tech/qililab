@@ -14,16 +14,16 @@
 
 from __future__ import annotations
 
-from io import StringIO
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
-from ruamel.yaml import YAML
 
-from qililab.typings.enums import Parameter
 from qililab.utils.serialization import deserialize, serialize
 from qililab.waveforms.iq_waveform import IQWaveform
 from qililab.waveforms.waveform import Waveform
+
+if TYPE_CHECKING:
+    from qililab.typings.enums import Parameter
 
 # _yaml_safe = YAML(typ="safe")     # parse basic mappings/scalars
 # _yaml_flow = YAML(typ="safe")     # dump in flow style for compact one-liners
@@ -80,6 +80,7 @@ class GateEvent(BaseModel):
         pulse (GatePulseSettings): settings of the bus to be launched
         wait_time (int): time to wait w.r.t gate start time (taken as 0) before launching the pulse
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     bus: str
@@ -105,9 +106,7 @@ class GateEvent(BaseModel):
         # Accept dicts (our JSON-friendly external shape)
         if isinstance(v, dict):
             return _mapping_to_wf(v)
-        raise TypeError(
-            "waveform must be a Waveform/IQWaveform, tagged YAML string, or mapping"
-        )
+        raise TypeError("waveform must be a Waveform/IQWaveform, tagged YAML string, or mapping")
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool):
         """Change a given parameter from settings. Will look up into subclasses.

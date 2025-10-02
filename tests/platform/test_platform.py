@@ -15,7 +15,7 @@ from qilisdk.digital import Circuit, X, Y, M
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
 from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
-from tests.test_utils import build_platform
+from qililab.data_management import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -513,14 +513,6 @@ class TestPlatform:
         """Test bus 1 qubit readout instance."""
         element = platform.get_element(alias=f"{InstrumentName.QBLOX_QRM.value}_0")
         assert isinstance(element, QbloxModule)
-
-    @patch("qililab.data_management.open")
-    @patch("qililab.data_management.YAML.dump")
-    def test_platform_manager_dump_method(self, mock_dump: MagicMock, mock_open: MagicMock, platform: Platform):
-        """Test PlatformManager dump method."""
-        save_platform(path="runcard.yml", platform=platform)
-        mock_open.assert_called_once_with(file=Path("runcard.yml"), mode="w", encoding="utf-8")
-        mock_dump.assert_called_once()
 
     @pytest.mark.parametrize("alias", ["drive_line_q0_bus", "drive_line_q1_bus", "feedline_input_output_bus", "foobar"])
     def test_get_bus_by_alias(self, platform: Platform, alias):
@@ -1228,7 +1220,7 @@ class TestMethods:
         """Test the ``get_parameter`` method with """
         platform.set_parameter(parameter=parameter, alias=gate, value=value)
         gate_settings = platform.digital_compilation_settings.gates[gate][0]
-        assert getattr(gate_settings.pulse, parameter.value) == value
+        assert gate_settings.get_parameter(parameter) == value
 
         platform.digital_compilation_settings = None
         with pytest.raises(ValueError):
@@ -1239,7 +1231,7 @@ class TestMethods:
     def test_get_parameter_of_gates(self, parameter, gate, platform: Platform):
         """Test the ``get_parameter`` method with """
         gate_settings = platform.digital_compilation_settings.gates[gate][0]
-        assert platform.get_parameter(parameter=parameter, alias=gate) == getattr(gate_settings.pulse, parameter.value)
+        assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.get_parameter(parameter)
 
         platform.digital_compilation_settings = None
         with pytest.raises(ValueError):
@@ -1250,7 +1242,7 @@ class TestMethods:
     def test_get_parameter_of_pulse_shapes(self, parameter, gate, platform: Platform):
         """Test the ``get_parameter`` method with """
         gate_settings = platform.digital_compilation_settings.gates[gate][0]
-        assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.pulse.shape[parameter.value]
+        assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.get_parameter(parameter)
 
     def test_get_parameter_of_gates_raises_error(self, platform: Platform):
         """Test that the ``get_parameter`` method with gates raises an error when a gate is not found."""

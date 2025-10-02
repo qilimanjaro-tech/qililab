@@ -116,13 +116,13 @@ class TestDigitalCompilationSettings:
         qubits = ast.literal_eval(qubits_str)
 
         digital.set_parameter(alias=alias, parameter=Parameter.DURATION, value=1234)
-        assert digital.get_gate(name=name, qubits=qubits)[0].pulse.duration == 1234
+        assert digital.get_gate(name=name, qubits=qubits)[0].waveform.duration == 1234
 
         digital.set_parameter(alias=alias, parameter=Parameter.PHASE, value=1234)
-        assert digital.get_gate(name=name, qubits=qubits)[0].pulse.phase == 1234
+        assert digital.get_gate(name=name, qubits=qubits)[0].phase == 1234
 
         digital.set_parameter(alias=alias, parameter=Parameter.AMPLITUDE, value=1234)
-        assert digital.get_gate(name=name, qubits=qubits)[0].pulse.amplitude == 1234
+        assert digital.get_gate(name=name, qubits=qubits)[0].waveform.amplitude == 1234
 
     @pytest.mark.parametrize("alias", ["X(0,)", "X()", "X", ""])
     def test_set_gate_parameters_raises_error_when_alias_has_incorrect_format(self, alias: str, digital):
