@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union
 
 from qilisdk.digital import Circuit
 from qilisdk.digital.gates import CZ, RZ, M
@@ -64,30 +64,33 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
         shift = dict.fromkeys(range(nqubits), 0.0)
 
         for gate in circuit_gates:
-            # Add RZ commutation to VirtualZ phase correction for posterior Drag gates
+            out_gate: Optional[Union[M, Drag, CZ]] = None
+
+            # Accumulate phase shifts from commutating RZ to the end, to discard them as VirtualZ.
             if isinstance(gate, RZ):
                 shift[gate.target_qubits[0]] += gate.phi
-                out_gate = None  # RZs are removed after commuted
 
-            # Add CZ phase correction for posterior Drag gates
+            # Accumulate phase shifts from the phase corrections of the CZs, and leave CZs unchanged.
             elif isinstance(gate, CZ):
                 control_qubit, target_qubit = gate.control_qubits[0], gate.target_qubits[0]  # Assumes 2 qubits
                 gate_settings = self._settings.get_gate(name="CZ", qubits=(control_qubit, target_qubit))
                 gate_corrections = self._extract_gate_corrections(gate_settings, control_qubit)
-
                 if gate_corrections is not None:
                     shift[control_qubit] += gate_corrections[f"q{control_qubit}_phase_correction"]
                     shift[target_qubit] += gate_corrections[f"q{target_qubit}_phase_correction"]
-                out_gate = CZ(control_qubit, target_qubit)  # CZs do not change
+                out_gate = CZ(control_qubit, target_qubit)
 
+            # Correct Drag phase with accumulated phase shifts.
             elif isinstance(gate, Drag):
                 qubit: int = gate.qubits[0]  # Assumes single qubit
                 out_gate = Drag(qubit, theta=gate.theta, phase=(gate.phase - shift[qubit]))
 
+            # Measurement gates, do not change
             elif isinstance(gate, M):
-                out_gate = M(*gate.qubits)  # Measurement gates, do not change
+                out_gate = M(*gate.qubits)
 
-            else:  # If gate is not supported, raise an error
+            # If gate is not supported, raise an error
+            else:
                 raise ValueError(f"{gate.name} not part of native supported gates {(RZ, Drag, CZ, M)}")
 
             # Add the processed gate to the output circuit
