@@ -14,25 +14,18 @@ from qilisdk.digital.gates import (
     Gate,
     M,
     Exponential,
+    Controlled,
     Adjoint,
     H,
-    BasicGate
+    BasicGate,
+    I,
+    S,
+    T,
+    CNOT,
 )
-from qililab.digital.circuit_transpiler_passes.numeric_helpers import _wrap_angle
+from qililab.digital.circuit_transpiler_passes.numeric_helpers import _zyz_from_unitary, _unitary_sqrt_2x2
 from qilisdk.digital.exceptions import GateHasNoMatrixError
-from qililab.digital.circuit_transpiler_passes.circuit_to_canonical_basis_pass import (
-    CircuitToCanonicalBasisPass, 
-    _H_as_U3,
-    _CNOT_as_CZ_plus_1q,
-    _CRZ_using_CNOT,
-    _CRX_using_CRZ,
-    _CRY_using_CRZ,
-    _CU3_using_CNOT,
-    _invert_basis_gate,
-    _as_basis_1q,
-    _sqrt_1q_gate_as_basis,
-    _adjoint_1q,
-)
+from qililab.digital.circuit_transpiler_passes.circuit_to_canonical_basis_pass import CircuitToCanonicalBasisPass
 
 import pytest
 from unittest.mock import Mock
@@ -43,69 +36,118 @@ import numpy as np
 def assert_equal_gate(list1: list[Gate], list2: list[Gate], abs=1e-15):
     assert len(list1) == len(list2)
     for i, j in zip(list1, list2):
-        assert i.qubits == j.qubits
+        print(i)
         assert i.name == j.name
+        assert i.qubits == j.qubits
         try:
             assert i.matrix == pytest.approx(j.matrix, abs=abs)
         except GateHasNoMatrixError:
             pass
 
+test_cases = [M(0), I(0), X(2), Y(0), Z(2), H(2), S(0), T(1), RX(1, theta=1), RY(2, theta=1), RZ(0, phi=2),
+                U1(0, phi=2), U2(1, phi=2, gamma=3), U3(2, theta=1, phi=2, gamma=3),
+                CZ(0,2), CNOT(2,1), SWAP(0,1)]
+result_cases = [[M(0)], [], [RX(2, theta=np.pi)], [RY(0, theta=np.pi)], [RZ(2, phi=np.pi)], [U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi)], [RZ(0, phi=np.pi/2)], [RZ(1, phi=np.pi/4)],
+                [RX(1, theta=1)],[RY(2, theta=1)], [RZ(0, phi=2)], [RZ(0, phi=2)], [U3(1, theta=np.pi/2, phi=2, gamma=3)], [U3(2, theta=1, phi=2, gamma=3)], [CZ(0,2)],
+                [U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(2, 1), U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi)], 
+                [U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0,1), U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                 U3(0, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(1,0), U3(0, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                 U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0,1), U3(1, theta=np.pi/2, phi=0.0, gamma=np.pi)]]
+adjointed_cases = [[], [], [RX(2, theta=-np.pi)], [RY(0, theta=-np.pi)], [RZ(2, phi=-np.pi)], [U3(2, theta=-np.pi/2, phi=-np.pi, gamma=0.0)], [RZ(0, phi=-np.pi/2)], [RZ(1, phi=-np.pi/4)],
+                    [RX(1, theta=-1)],[RY(2, theta=-1)], [RZ(0, phi=-2)], [RZ(0, phi=-2)], [U3(1, theta=-np.pi/2, phi=-3, gamma=-2)], [U3(2, theta=-1, phi=-3, gamma=-2)], [CZ(0,2)],
+                    [U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0), CZ(2, 1), U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0)], 
+                    [U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0), CZ(0,1), U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0), 
+                    U3(0, theta=-np.pi/2, phi=-np.pi, gamma=0.0), CZ(1,0), U3(0, theta=-np.pi/2, phi=-np.pi, gamma=0.0), 
+                    U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0), CZ(0,1), U3(1, theta=-np.pi/2, phi=-np.pi, gamma=0.0)]]
 class TestCircuitToCanonicalBasisPass:
     """Tests for the methods contained in circuit_to_canonical_basis_pass.py"""
     def test_gate_decompositions(self):
-        try:
-            _CNOT_as_CZ_plus_1q(0, 0)
-            pytest.fail("Creating a controled gate were target and control qubit are the same shouldn't be possible")
-        except ValueError:
-            assert_equal_gate(_H_as_U3(2), [U3(2, theta=np.pi/2.0, phi=0.0, gamma=np.pi)])
-
-            assert_equal_gate(_CNOT_as_CZ_plus_1q(1, 2), [*_H_as_U3(2), CZ(1, 2), *_H_as_U3(2)])
-
-            for theta, phi, lam in zip((2*np.pi*np.random.random(20)-np.pi), 
-                                       (2*np.pi*np.random.random(20)-np.pi), 
-                                       (2*np.pi*np.random.random(20)-np.pi)):     
-                assert_equal_gate(_CRZ_using_CNOT(1, 2, lam=lam), [RZ(2, phi=lam /2),
-                                                                *_CNOT_as_CZ_plus_1q(1, 2),
-                                                                RZ(2, phi=-lam/2),
-                                                                *_CNOT_as_CZ_plus_1q(1, 2),])
-
-                assert_equal_gate(_CU3_using_CNOT(1, 2, theta=theta, phi=phi, lam=lam), 
-                                    [RZ(1, phi=_wrap_angle((lam + phi) / 2.0)),
-                                    U3(2, theta=theta / 2.0, phi=phi, gamma=0.0),
-                                    *_CNOT_as_CZ_plus_1q(1, 2),
-                                    U3(2, theta=-theta / 2.0, phi=0.0, gamma=_wrap_angle(-(lam + phi) / 2.0)),
-                                    *_CNOT_as_CZ_plus_1q(1, 2),
-                                    RZ(2, phi=_wrap_angle((lam - phi) / 2.0))])
-                
-                assert_equal_gate(_CRX_using_CRZ(1, 2, theta=theta), [RY(2, theta=-np.pi / 2.0), *_CRZ_using_CNOT(1, 2, theta), RY(2, theta=np.pi / 2.0)])
-                assert_equal_gate(_CRY_using_CRZ(1, 2, theta=theta), [RX(2, theta=np.pi / 2.0), *_CRZ_using_CNOT(1, 2, theta), RX(2, theta=-np.pi / 2.0)])
-
-    def test_invert_basis_gate(self):
-        test_set = [U3(0,theta=1,phi=2,gamma=3), X(0), RX(0,theta=2), Y(0), RY(0,theta=2), Z(0), RZ(0,phi=2), CZ(0,1), H(0), M(0), Exponential(X(0))]
-        result_set = [U3(0,theta=-1,phi=-3,gamma=-2), RX(0,theta=-np.pi), RX(0,theta=-2), RY(0,theta=-np.pi), RY(0,theta=-2), RZ(0,phi=-np.pi),
-                       RZ(0,phi=-2), CZ(0,1), U3(0, theta=-np.pi/2.0, phi=-np.pi, gamma=0.0), M(0), Adjoint(Exponential(X(0)))]
         result = []
-        for gate in test_set:
-            result += _invert_basis_gate(gate)
-        assert_equal_gate(result, result_set)
-    
-    def test_as_basis_1q(self):
-        basic_gate = Mock(BasicGate)
-        basic_gate.nqubits = 1
-        basic_gate.qubits = [0]
-        basic_gate.matrix = np.array([[np.cos(0.5), -np.sin(0.5) * np.exp(1j*3)],
-                                    [np.sin(0.5) * np.exp(1j*2), np.cos(0.5) * np.exp(1j*(2+3))]], dtype=complex)
-        test_set = [U3(0,theta=1,phi=2,gamma=3), U1(0,phi=2), U2(0,phi=2,gamma=3), X(0), Y(0), 
-                    Z(0), H(0), basic_gate]
-        result_set = [U3(0,theta=1,phi=2,gamma=3), RZ(0,phi=2), U3(0,theta=np.pi/2,phi=2,gamma=3), RX(0, theta=np.pi), RY(0,theta=np.pi), 
-                      RZ(0,phi=np.pi), U3(0, theta=np.pi/2.0, phi=0.0, gamma=np.pi), U3(0, theta=1, phi=2, gamma=3)]
-        result = []
-        for gate in test_set:
-            result.append(_as_basis_1q(gate))
-        assert_equal_gate(result, result_set)
+        for i in range(len(test_cases)):
+            result += result_cases[i]
+        c = Circuit(3)
+        c._gates = test_cases
+        assert_equal_gate(CircuitToCanonicalBasisPass().run(c)._gates, result)
 
-        try:
-            _as_basis_1q(Exponential(X(0)))
-            pytest.fail("Not supported, should raise an error")
-        except NotImplementedError:
-            pass
+    def test_adjointed_gate_decompositions(self):
+        result = []
+        gates = []
+        for i in range(1,len(test_cases)):
+            result += adjointed_cases[i]
+            gates += [Adjoint(test_cases[i])]
+        c = Circuit(3)
+        c._gates = gates
+        assert_equal_gate(CircuitToCanonicalBasisPass().run(c)._gates, result)
+
+    def test_controled_gate_decomposition(self):
+        controled_gates = [Controlled(0, basic_gate=RX(2, theta=1)), Controlled(0, basic_gate=RY(2, theta=1)), 
+                            Controlled(0, basic_gate=RZ(2, phi=1)), Controlled(0, basic_gate=U3(2, theta=1, phi=2, gamma=3)),
+                            Controlled(0, basic_gate=S(2))]
+        single_controled_results = [RX(2, theta=0.5), CZ(0, 2), RX(2, theta=-0.5), CZ(0, 2),
+                                    RY(2, theta=0.5), CZ(0, 2), RY(2, theta=-0.5), CZ(0, 2),
+                                    RZ(2, phi=0.5), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
+                                        RX(2, theta=-0.5), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                    RZ(2, phi=0.5), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
+                                        U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), U3(2, theta=-0.5, phi=0.0, gamma=-2.5), 
+                                        U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                        U3(2, theta=0.5, phi=2, gamma=0.0),
+                                    RZ(2, phi=np.pi/4), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
+                                        RX(2, theta=-np.pi/4), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi)
+                                     ]
+        c = Circuit(3)
+        c._gates = controled_gates
+        assert_equal_gate(CircuitToCanonicalBasisPass().run(c)._gates, single_controled_results)
+
+        multicontroled_gates = [Controlled(0,1, basic_gate=RX(2, theta=1)), Controlled(0,1, basic_gate=U1(2, phi=1))]
+        multicontroled_results = [RX(2, theta=0.25), CZ(0, 2), RX(2, theta=-0.25), CZ(0, 2),
+                                    U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                    RX(2, theta=-0.25), CZ(0, 2), RX(2, theta=0.25), CZ(0, 2),
+                                    U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                    RX(2, theta=0.25), CZ(0, 2), RX(2, theta=-0.25), CZ(0, 2),
+                                  RZ(2, phi=0.25), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
+                                        RX(2, theta=-0.25), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                    U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                    RZ(2, phi=-0.25), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(0, 2), 
+                                        RX(2, theta=0.25), CZ(0, 2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0),
+                                    U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                    RZ(2, phi=0.25), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
+                                        RX(2, theta=-0.25), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi)
+                                    ]
+        c = Circuit(3)
+        c._gates = multicontroled_gates
+        assert_equal_gate(CircuitToCanonicalBasisPass().run(c)._gates, multicontroled_results)
+
+    def test_adjointed_and_controled(self):
+        ad_cn_gates = [Adjoint(Controlled(0,1,basic_gate=(S(2)))), Controlled(0,1,basic_gate=Adjoint(Y(2)))]
+        ad_cn_res_S = reversed([RZ(2, phi=-np.pi/8), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
+                                    RX(2, theta=np.pi/8), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                RZ(2, phi=np.pi/8), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(0, 2), 
+                                    RX(2, theta=-np.pi/8), CZ(0, 2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0),
+                                U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                RZ(2, phi=-np.pi/8), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
+                                    RX(2, theta=np.pi/8), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi)])
+        ad_cn_res_Y = [RY(2, theta=-np.pi/4), CZ(0, 2), RY(2, theta=np.pi/4), CZ(0, 2),
+                       U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                       RY(2, theta=np.pi/4), CZ(0, 2), RY(2, theta=-np.pi/4), CZ(0, 2),
+                       U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                       RY(2, theta=-np.pi/4), CZ(0, 2), RY(2, theta=np.pi/4), CZ(0, 2),]
+        ad_cn_results = [*ad_cn_res_S, *ad_cn_res_Y]
+        c = Circuit(3)
+        c._gates = ad_cn_gates
+        assert_equal_gate(CircuitToCanonicalBasisPass().run(c)._gates, ad_cn_results)
+
+    def test_sqrt_1q_gate_as_basis(self):
+        gates = [X(2), Y(0), Z(2), S(0), T(1), RX(1, theta=1), RY(2, theta=1), RZ(0, phi=2), U1(0, phi=2)]
+        result_gates = [RX(2, theta=np.pi/2), RY(0, theta=np.pi/2), RZ(2, phi=np.pi/2), RZ(0, phi=np.pi/4), RZ(1, phi=np.pi/8),
+                RX(1, theta=0.5),RY(2, theta=0.5), RZ(0, phi=1), RZ(0, phi=1)]
+        for i in range(len(gates)):
+            assert_equal_gate([CircuitToCanonicalBasisPass()._sqrt_1q_gate_as_basis(gates[i])], [result_gates[i]])
+        
+        U3gates = [H(0), U2(1, phi=2, gamma=3), U3(2, theta=1, phi=2, gamma=3)]
+        result_U3_gates = [U3(0, theta=np.pi / 2, phi=0.0, gamma=np.pi), U3(0, theta=np.pi/2, phi=2, gamma=3), U3(0, theta=1, phi=2, gamma=3)]
+        for i in range(len(U3gates)):
+            Vs = _unitary_sqrt_2x2(result_U3_gates[i].matrix)
+            th, ph, lam = _zyz_from_unitary(Vs)
+            g = U3(U3gates[i].qubits[0], theta=th, phi=ph, gamma=lam)
+            assert_equal_gate([CircuitToCanonicalBasisPass()._sqrt_1q_gate_as_basis(U3gates[i])], [g])
