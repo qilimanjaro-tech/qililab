@@ -84,9 +84,9 @@ class TestBus:
         bus.instruments[0].set_parameter.assert_called_once()
 
     def test_get_outputid_from_channelid_raises_error(self, bus):
-        bus.settings.instruments = []
+        bus.settings.instruments.append(bus.settings.instruments[1])
         bus.settings.channels = [1]
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match=f"No output_id was found to be associated with the bus with alias {bus.alias}"):
             bus._get_outputid_from_channelid()
 
     def test_bus_set_parameter_raises_error(self, bus):

@@ -158,7 +158,7 @@ class Bus:
         for sequencer in self.settings.instruments[0].awg_sequencers:
             if sequencer.identifier == self.channels[0]:
                 return sequencer.outputs[0]
-        raise Exception(f"No output_id was found to be asscociated with the bus with alias {self.alias}")
+        raise Exception(f"No output_id was found to be associated with the bus with alias {self.alias}")
 
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Set a parameter to the bus.
@@ -204,12 +204,25 @@ class Bus:
         """
         if parameter == Parameter.DELAY:
             return self.settings.delay
+
+        if parameter in FILTER_PARAMETERS:
+            bus_output_id = self._get_outputid_from_channelid()
+            if channel_id is not None:
+                raise Exception("Filter parameters are controlled using output_id and not channel_id")
+            if output_id is not None and output_id == bus_output_id:
+                return self.instruments[0].get_parameter(parameter=parameter, output_id=output_id)
+            if output_id is not None and output_id != bus_output_id:
+                raise Exception(f"OutputID {output_id} is not linked to bus with alias {self.alias}")
+            return self.instruments[0].get_parameter(parameter=parameter, output_id=bus_output_id)
+
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             with contextlib.suppress(ParameterNotFound):
+                if output_id is not None:
+                    raise Exception("Only QBlox Filter parameters are controlled using output_id and not channel_id")
                 if channel_id is not None and channel_id == instrument_channel:
                     return instrument.get_parameter(parameter, channel_id)
-                if output_id is not None:
-                    return instrument.get_parameter(parameter=parameter, output_id=output_id)
+                if channel_id is not None and channel_id not in self.channels:
+                    raise Exception(f"ChannelID {channel_id} is not linked to bus with alias {self.alias}")
                 return instrument.get_parameter(parameter, instrument_channel)
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 

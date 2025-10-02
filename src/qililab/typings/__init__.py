@@ -15,11 +15,11 @@
 """__init__.py"""
 
 from .enums import (
+    FILTER_PARAMETERS,
     AcquireTriggerMode,
     AcquisitionName,
     ConnectionName,
     DistortionState,
-    FILTER_PARAMETERS,
     GateName,
     Instrument,
     InstrumentControllerName,
@@ -48,6 +48,7 @@ from .instruments import (
 from .type_aliases import ChannelID, OutputID, ParameterValue
 
 __all__ = [
+    "FILTER_PARAMETERS",
     "AcquireTriggerMode",
     "AcquisitionName",
     "ChannelID",
