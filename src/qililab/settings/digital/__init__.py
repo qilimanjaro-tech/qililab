@@ -12,5 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .digital_compilation_settings import DigitalCompilationSettings as DigitalCompilationSettings
-from .gate_event_settings import GateEventSettings as GateEventSettings
+from .digital_compilation_settings import DigitalCompilationSettings
+from .gate_event import GateEvent
+
+__all__ = ["DigitalCompilationSettings", "GateEvent"]

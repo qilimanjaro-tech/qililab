@@ -11,7 +11,7 @@ import pytest
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings import Runcard, DigitalCompilationSettings, AnalogCompilationSettings
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
-from qililab.settings.digital.gate_event_settings import GateEventSettings
+from qililab.settings.digital.gate_event import GateEvent
 from qililab.typings import Parameter
 from tests.data import Galadriel
 
@@ -52,7 +52,7 @@ class TestDigitalCompilationSettings:
         """Test that the Runcard.GatesSettings dataclass contains the right attributes."""
         assert isinstance(digital.gates, dict)
         assert all(
-            (isinstance(key, str), isinstance(event, GateEventSettings))
+            (isinstance(key, str), isinstance(event, GateEvent))
             for key, settings in digital.gates.items()
             for event in settings
         )
@@ -71,19 +71,19 @@ class TestDigitalCompilationSettings:
             for alias in digital.gates.keys()
         ]
         assert all(
-            isinstance(gate_event, GateEventSettings)
+            isinstance(gate_event, GateEvent)
             for gate_name, gate_qubits in gates_qubits
             for gate_event in digital.get_gate(name=gate_name, qubits=ast.literal_eval(gate_qubits))
         )
 
         # check that CZs commute
         # CZ(0,1) doesn't have spaces in the tuple string
-        assert isinstance(digital.get_gate(name="CZ", qubits=(1, 0))[0], GateEventSettings)
-        assert isinstance(digital.get_gate(name="CZ", qubits=(0, 1))[0], GateEventSettings)
+        assert isinstance(digital.get_gate(name="CZ", qubits=(1, 0))[0], GateEvent)
+        assert isinstance(digital.get_gate(name="CZ", qubits=(0, 1))[0], GateEvent)
 
         # CZ(0, 2) has spaces in the tuple string
-        assert isinstance(digital.get_gate(name="CZ", qubits=(2, 0))[0], GateEventSettings)
-        assert isinstance(digital.get_gate(name="CZ", qubits=(0, 2))[0], GateEventSettings)
+        assert isinstance(digital.get_gate(name="CZ", qubits=(2, 0))[0], GateEvent)
+        assert isinstance(digital.get_gate(name="CZ", qubits=(0, 2))[0], GateEvent)
 
     def test_get_gate_raises_error(self, digital):
         """Test that the ``get_gate`` method raises an error when the name is not found."""

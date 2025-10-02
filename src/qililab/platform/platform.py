@@ -745,7 +745,7 @@ class Platform:
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
         digital_dict = {
             RUNCARD.DIGITAL: (
-                self.digital_compilation_settings.to_dict() if self.digital_compilation_settings is not None else None
+                self.digital_compilation_settings.model_dump() if self.digital_compilation_settings is not None else None
             )
         }
         analog_dict = {

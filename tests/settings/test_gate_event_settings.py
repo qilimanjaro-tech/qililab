@@ -1,7 +1,7 @@
 import pytest
 
 from qililab import Parameter
-from qililab.settings.digital.gate_event_settings import GateEventSettings
+from qililab.settings.digital.gate_event import GateEvent
 
 
 @pytest.fixture(name="schedule")
@@ -44,7 +44,7 @@ def fixture_schedule() -> list[dict]:
 class TestGateEventSettings:
     def test_init(self, schedule):
         """ "Test init method"""
-        gate_event = GateEventSettings(**schedule[1])
+        gate_event = GateEvent(**schedule[1])
         assert gate_event.bus == "flux_line_q0_bus"
         assert gate_event.wait_time == 30
         # test pulse
@@ -58,7 +58,7 @@ class TestGateEventSettings:
 
     def test_set_parameter(self, schedule):
         """Test the set parameter method"""
-        gate_event = GateEventSettings(**schedule[1])
+        gate_event = GateEvent(**schedule[1])
         gate_event.set_parameter(parameter=Parameter.WAIT_TIME, value=10)
         assert gate_event.wait_time == 10
         gate_event.set_parameter(parameter=Parameter.AMPLITUDE, value=10)
