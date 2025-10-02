@@ -28,7 +28,6 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 
 from qm import generate_qua_script
 from ruamel.yaml import YAML
-from rustworkx import PyGraph
 
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
@@ -1498,9 +1497,7 @@ class Platform:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(
-                routing=True, optimize=False, router=Sabre, placer=ReverseTraversal
-            )
+            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
             # Execute with automatic transpilation:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
@@ -1560,13 +1557,7 @@ class Platform:
         if self.digital_compilation_settings is None:
             raise ValueError("Cannot compile Circuit without gates settings.")
 
-        physical_nqubits = max(max(pair) for pair in self.digital_compilation_settings.topology) + 1
-        topology = PyGraph()
-        topology.add_nodes_from(range(physical_nqubits))
-        for a, b in self.digital_compilation_settings.topology:
-            topology.add_edge(a, b, None)
-
-        transpiler = CircuitTranspiler(topology)
+        transpiler = CircuitTranspiler(self.digital_compilation_settings)
         circuit = transpiler.run(circuit)
 
         compiler = CircuitToQProgramCompiler()

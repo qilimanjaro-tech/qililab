@@ -22,6 +22,7 @@ _SIG_DECIMALS = 12
 
 
 def _wrap_angle(a: float) -> float:
+    """Wrap angle to (-π, π]."""
     a = (a + math.pi) % (2.0 * math.pi) - math.pi
     if abs(a + math.pi) < 1e-15:
         return math.pi
