@@ -62,3 +62,4 @@ class MeasurementResult(ABC):
         Returns:
             np.ndarray: Thresholded data for the result.
         """
+

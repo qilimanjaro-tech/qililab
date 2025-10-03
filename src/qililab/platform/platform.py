@@ -1502,7 +1502,9 @@ class Platform:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
         """
         # Compile pulse schedule
-        qprogram = self.compile(circuit, nshots)
+        qprogram, logical_to_physical_mapping = self.compile(circuit, nshots)
+
+        physical_to_logical_mapping = {v: k for k, v in logical_to_physical_mapping.items()}
 
         results = self.execute_qprogram(qprogram)
 
@@ -1512,7 +1514,7 @@ class Platform:
         self,
         circuit: Circuit,
         nshots: int,
-    ) -> QProgram:
+    ) -> tuple[QProgram, dict[int, int]]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
