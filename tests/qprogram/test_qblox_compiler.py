@@ -459,12 +459,15 @@ def fixture_wait_comprised_between_65532_65535() -> QProgram:
     qp.wait(bus="drive", duration=65534)
     return qp
 
-# @pytest.fixture(name="error_acquisition_index")
-# def fixture_error_acquisition_index() -> QProgram:
-#     qp = QProgram()
-#     for loo
-
-#     return qp
+@pytest.fixture(name="error_acquisition_index")
+def fixture_error_acquisition_index() -> QProgram:
+    qp = QProgram()
+    weights_shape = Square(amplitude=1, duration=20)
+    bins = qp.variable("bins", Domain.Scalar, int)
+    for _ in range (40):
+        with qp.for_loop(bins, 0, 100, 1):
+            qp.qblox.acquire("readout", IQPair(I=weights_shape, Q=weights_shape))
+    return qp
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -1766,5 +1769,8 @@ set_freq         R5
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-    def test_32_acquisiton_raise_error(self):
-
+    def test_32_acquisiton_raise_error(self, error_acquisition_index: QProgram):
+        "Check that having acquisitions in 31+ nested level raises a Value error"
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match="Acquisition index 32 exceeds maximum of 31."):
+            _ = compiler.compile(error_acquisition_index)

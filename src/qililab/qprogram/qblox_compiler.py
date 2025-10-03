@@ -45,9 +45,9 @@ from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, Square, Waveform
 
+# TODO: move to qpysequence.constants
+MAX_ACQUISITION_INDEX = 31  # 32 is the max number of acquisitions that can be stored
 
-#TODO: move to qpysequence.constants
-MAX_ACQUISITION_INDEX = 31 #  32 is the max number of acquisitions that can be stored
 
 @dataclass
 class AcquisitionData:
@@ -641,7 +641,7 @@ class QbloxCompiler:
         block_index_for_add_instruction = loops[-1][0] if loops else -1
         block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
 
-        if self._buses[element.bus].count_nested_level_acquire  >= MAX_ACQUISITION_INDEX :
+        if self._buses[element.bus].count_nested_level_acquire > MAX_ACQUISITION_INDEX:
             raise ValueError(f"Acquisition index {self._buses[element.bus].count_nested_level_acquire} exceeds maximum of {MAX_ACQUISITION_INDEX}.")
 
         # if it is the first acquire at this nested level, set everything up
@@ -697,7 +697,7 @@ class QbloxCompiler:
                 )
             )
             self._buses[element.bus].single_bin_counter += 1
-        
+
         self._buses[element.bus].static_duration += integration_length
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].prev_nested_level_acquire = self._buses[element.bus].count_nested_level_acquire
