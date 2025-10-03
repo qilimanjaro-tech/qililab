@@ -191,6 +191,8 @@ class TestCircuitToCanonicalBasisPass:
             pytest.fail("Exponential should raise an error if the gate has more than one qubit")
         except NotImplementedError:
             assert True
+
+        assert CircuitToCanonicalBasisPass()._Controled_handeling(mock_Gate, controls=()) == [mock_Gate]
         
         c._gates = [mock_BasicGate_with_matrix]
         assert_equal_gate(CircuitToCanonicalBasisPass().run(c)._gates,[U3(0, theta=np.pi / 2, phi=0.0, gamma=np.pi)])

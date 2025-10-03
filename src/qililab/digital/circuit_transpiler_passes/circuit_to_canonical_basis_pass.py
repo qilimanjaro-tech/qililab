@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import math
-from typing import List
+from typing import List, Tuple
 
 from qilisdk.digital import Circuit
 from qilisdk.digital.exceptions import GateHasNoMatrixError
@@ -125,7 +125,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
                 raise NotImplementedError(f"{g_class}, isn't supported in the current build")
         raise NotImplementedError(f"{g_class}, isn't supported in the current build")
 
-    def _Controled_handeling(self, g: Controlled | Gate, adjointed: bool = False, controls: List[int] = []):
+    def _Controled_handeling(self, g: Controlled | Gate, adjointed: bool = False, controls: Tuple[int] = ())  -> List[Gate]:
         if isinstance(g, Controlled):
             controls = g.control_qubits
             basic_gate = g.basic_gate
@@ -147,12 +147,13 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         Vd = self._rewrite_gate(V, adjointed=True)[0]
 
         t = g.target_qubits[0]
-        seq: List[Gate] = []
-        seq += self._Controled_handeling(V, controls=rest, adjointed=adjointed)
-        seq += self._CNOT_canonical(CNOT(c_last, t), adjointed=adjointed)
-        seq += self._Controled_handeling(Vd, controls=rest, adjointed=adjointed)
-        seq += self._CNOT_canonical(CNOT(c_last, t), adjointed=adjointed)
-        seq += self._Controled_handeling(V, controls=rest, adjointed=adjointed)
+        seq: List[Gate] = [
+            *self._Controled_handeling(V, controls=rest, adjointed=adjointed),
+            *self._CNOT_canonical(CNOT(c_last, t), adjointed=adjointed),
+            *self._Controled_handeling(Vd, controls=rest, adjointed=adjointed),
+            *self._CNOT_canonical(CNOT(c_last, t), adjointed=adjointed),
+            *self._Controled_handeling(V, controls=rest, adjointed=adjointed),
+        ]
         return seq
 
     def _single_controlled(self, target_gate: Gate, control_qubit: int, adjointed: bool = False) -> List[Gate]:
