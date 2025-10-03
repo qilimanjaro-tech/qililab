@@ -17,7 +17,10 @@ from copy import deepcopy
 from qilisdk.digital import Circuit
 from rustworkx import PyGraph
 
+from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
+
 from .circuit_transpiler_passes import (
+    AddPhasesToDragsFromRZAndCZPass,
     CancelIdentityPairsPass,
     CanonicalBasisToNativeSetPass,
     CircuitToCanonicalBasisPass,
@@ -35,11 +38,14 @@ class DigitalTranspilationConfig: ...
 class CircuitTranspiler:
     def __init__(
         self,
-        topology: PyGraph,
+        settings: DigitalCompilationSettings,
         pipeline: list[CircuitTranspilerPass] | None = None,
         context: TranspilationContext | None = None,
     ) -> None:
-        self._topology = topology
+        self._settings = settings
+        self._topology = self._build_topology_graph(settings)
+
+        # Main pipeline
         self._pipeline = pipeline or [
             CancelIdentityPairsPass(),
             CircuitToCanonicalBasisPass(),
@@ -49,11 +55,20 @@ class CircuitTranspiler:
             CircuitToCanonicalBasisPass(),
             FuseSingleQubitGatesPass(),
             CanonicalBasisToNativeSetPass(),
+            AddPhasesToDragsFromRZAndCZPass(self._settings),
         ]
         self._context = context or TranspilationContext()
 
         for p in self._pipeline:
             p.attach_context(self._context)
+
+    def _build_topology_graph(self, settings: DigitalCompilationSettings) -> PyGraph:
+        physical_nqubits = max(max(pair) for pair in settings.topology) + 1
+        topology = PyGraph()
+        topology.add_nodes_from(range(physical_nqubits))
+        for a, b in settings.topology:
+            topology.add_edge(a, b, None)
+        return topology
 
     @property
     def context(self) -> TranspilationContext:
