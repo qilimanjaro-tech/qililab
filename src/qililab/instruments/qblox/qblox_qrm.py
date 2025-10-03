@@ -191,7 +191,6 @@ class QbloxQRM(QbloxModule):
                 raw_measurement_data = self.device.get_acquisitions(sequencer=sequencer.identifier)[acquisition][
                     "acquisition"
                 ]
-
                 measurement_result = QbloxMeasurementResult(
                     bus=acquisitions[acquisition].bus,
                     raw_measurement_data=raw_measurement_data,

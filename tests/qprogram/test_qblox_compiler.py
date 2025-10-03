@@ -457,9 +457,14 @@ def fixture_wait_comprised_between_65532_65535() -> QProgram:
     qp.wait(bus="drive", duration=65532)
     qp.play("drive", Square(1,20))
     qp.wait(bus="drive", duration=65534)
-
     return qp
 
+# @pytest.fixture(name="error_acquisition_index")
+# def fixture_error_acquisition_index() -> QProgram:
+#     qp = QProgram()
+#     for loo
+
+#     return qp
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -1760,3 +1765,6 @@ set_freq         R5
         """
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_32_acquisiton_raise_error(self):
+
