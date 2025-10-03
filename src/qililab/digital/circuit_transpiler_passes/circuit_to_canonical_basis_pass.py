@@ -127,7 +127,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
 
     def _Controled_handeling(self, g: Controlled | Gate, adjointed: bool = False, controls: tuple[int, ...] = ())  -> List[Gate]:
         if isinstance(g, Controlled):
-            controls: tuple[int, ...] = g.control_qubits
+            controls = g.control_qubits
             basic_gate = g.basic_gate
 
         elif isinstance(g, Gate):
