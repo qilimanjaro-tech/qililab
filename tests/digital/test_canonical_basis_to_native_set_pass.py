@@ -66,3 +66,4 @@ class TestCanonicalBasisToNativeSetPass:
 
         empty = Circuit(1)
         assert CanonicalBasisToNativeSetPass().run(empty)._gates == []
+        
