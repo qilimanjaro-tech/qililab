@@ -832,12 +832,12 @@ class QbloxCompiler:
         pass
 
     def _get_or_create_weight_register(self, bus, weight, block_index):
-        if weight in self._buses[bus].weight_to_register:
-            register = self._buses[bus].weight_to_register[weight]
+        if weight in self._buses[bus].weight_index_to_register:
+            register = self._buses[bus].weight_index_to_register[weight]
 
         else: # no weight with this value has been given before
-            self._buses[bus].weight_to_register[weight] = QPyProgram.Register()
-            register = self._buses[bus].weight_to_register[weight]
+            self._buses[bus].weight_index_to_register[weight] = QPyProgram.Register()
+            register = self._buses[bus].weight_index_to_register[weight]
             self._buses[bus].qpy_block_stack[block_index].append_component(
                     component=QPyInstructions.Move(var=weight, register=register),
                     bot_position=len(self._buses[bus].qpy_block_stack[block_index].components),)
