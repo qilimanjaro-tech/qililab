@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Updated `qibo` to version 0.2.20, and to fit the requirements `numpy` has been updated to 2.2.6 and `pandas` to 2.2.3.
+  [#970](https://github.com/qilimanjaro-tech/qililab/pull/970)
+
 ### Improvements
 
 - Update qblox-instruments to 0.16.0 and qblox firmware to 0.11

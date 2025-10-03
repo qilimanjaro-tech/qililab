@@ -13,6 +13,8 @@ import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
+from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
+from qililab.result.qblox_results.scope_data import ScopeData
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
 from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
@@ -1222,6 +1224,9 @@ class TestMethods:
         assert len(result.qblox_raw_results) == 2  # type: ignore[attr-defined]
         assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[0]  # type: ignore[attr-defined]
         assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[1]  # type: ignore[attr-defined]
+
+        # test integration
+        assert qblox_raw_results.acquisitions_scope(integrate=True, integration_range=(0, 8)) == ([1.0], [0.0])
 
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
