@@ -207,6 +207,9 @@ platform.execute_experiment(experiment)
 [#938](https://github.com/qilimanjaro-tech/qililab/pull/938)
 [#997](https://github.com/qilimanjaro-tech/qililab/pull/997)
 
+- Make CircuitRouter directly importable from `qililab.digital` and improve documentation on it
+  [961](qililab.digital)
+
 - Minor modification at database `DatabaseManager`, as it now requires the config file to contain a `base_path_local`, `base_path_shared` and `data_write_folder`. following the structure:
 
 ```
@@ -300,6 +303,9 @@ The integration length is defined as the duration of the acquire, not the weight
 - Quick fix for set_parameter of scope_store_enabled. Now it executes the correct Qblox functions to record the scope.
   [#956](https://github.com/qilimanjaro-tech/qililab/pull/956)
   [#959](https://github.com/qilimanjaro-tech/qililab/pull/959)
+
+- Raise an Error, for a concrete case, that might have given wrong results previously with the routing=True (If the user passed SWAP gates, or if during routing SWAPs appeared, after the Measurements)
+  [#961](https://github.com/qilimanjaro-tech/qililab/pull/961)
 
 - Added an integer transformation for the play pulse duration at the `QbloxCompiler` `compile`. Before this fix, if a user introduced a pulse duration as a float and greater than 100 ns in `qp.play`, the program would crash with a weir and difficul to trace error report. Now this is fixed.
   [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
