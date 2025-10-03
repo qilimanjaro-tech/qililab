@@ -44,12 +44,12 @@ class QbloxMeasurementResult(MeasurementResult):
         bus : str
             Identifier for the acquisition bus.
         intertwined: int
-            Count of nested level in the qprogram
+            Count of nested level in the qprogram. Defaults to 1.
     """
 
     name = ResultName.QBLOX_QPROGRAM_MEASUREMENT
 
-    def __init__(self, bus: str, raw_measurement_data: dict, intertwined: int, shape: tuple | None = None):
+    def __init__(self, bus: str, raw_measurement_data: dict, intertwined: int| None = 1, shape: tuple | None = None):
         super().__init__(bus=bus)
         self.raw_measurement_data = raw_measurement_data
         self.shape = shape

@@ -130,9 +130,9 @@ class BusCompilationInfo:
         self.upd_param_instruction_pending: bool = False
 
         # Counters used for acquisition
-        self.num_bins_per_acquire: int = None
-        self.num_bins_total: int = None
-        self.shape_acquire: tuple = None
+        self.num_bins_per_acquire: int = 0
+        self.num_bins_total: int = 0
+        self.shape_acquire: tuple = ()
         self.bin_register: QPyProgram.Register = None
 
         # Allows reusing a register if a weight has already been given with the same value
@@ -652,7 +652,7 @@ class QbloxCompiler:
             # total nb of bins is number of acquire x numbers of bins by acquire (for each nested levl)
             self._buses[element.bus].num_bins_total = int(self._buses[element.bus].counter_acquire * self._buses[element.bus].num_bins_per_acquire)
             acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
-            self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(bus=self, save_adc=element.save_adc, shape=self._buses[element.bus].shape_acquire, intertwined=self._buses[element.bus].counter_acquire)
+            self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(bus=element.bus, save_adc=element.save_adc, shape=self._buses[element.bus].shape_acquire, intertwined=self._buses[element.bus].counter_acquire)
             self._buses[element.bus].qpy_sequence._acquisitions.add(
                 name=acquisition_name,
                 num_bins=self._buses[element.bus].num_bins_total,
