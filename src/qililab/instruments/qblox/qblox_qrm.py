@@ -195,7 +195,7 @@ class QbloxQRM(QbloxModule):
                     bus=acquisitions[acquisition].bus,
                     raw_measurement_data=raw_measurement_data,
                     shape=acquisition_data.shape,
-                    intertwined= acquisition_data.intertwined
+                    intertwined=acquisition_data.intertwined
                 )
 
                 measurement_result_unintertwined = measurement_result.unintertwined

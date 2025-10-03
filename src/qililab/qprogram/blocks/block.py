@@ -14,8 +14,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from collections import defaultdict
+from typing import TYPE_CHECKING
+
 from qililab.qprogram.element import Element
 from qililab.yaml import yaml
 
