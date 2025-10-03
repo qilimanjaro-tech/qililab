@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import math
-from typing import List, Tuple
+from typing import List
 
 from qilisdk.digital import Circuit
 from qilisdk.digital.exceptions import GateHasNoMatrixError
@@ -125,9 +125,9 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
                 raise NotImplementedError(f"{g_class}, isn't supported in the current build")
         raise NotImplementedError(f"{g_class}, isn't supported in the current build")
 
-    def _Controled_handeling(self, g: Controlled | Gate, adjointed: bool = False, controls: Tuple[int] = ())  -> List[Gate]:
+    def _Controled_handeling(self, g: Controlled | Gate, adjointed: bool = False, controls: tuple[int, ...] = ())  -> List[Gate]:
         if isinstance(g, Controlled):
-            controls = g.control_qubits
+            controls: tuple[int, ...] = g.control_qubits
             basic_gate = g.basic_gate
 
         elif isinstance(g, Gate):
