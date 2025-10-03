@@ -1440,7 +1440,6 @@ class Platform:
         self,
         circuit: Circuit,
         nshots: int = 1000,
-        transpilation_config: DigitalTranspilationConfig | None = None,
     ) -> QProgramResults:
         """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
 
@@ -1503,7 +1502,7 @@ class Platform:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
         """
         # Compile pulse schedule
-        qprogram = self.compile(circuit, nshots, transpilation_config)
+        qprogram = self.compile(circuit, nshots)
 
         results = self.execute_qprogram(qprogram)
 
@@ -1513,7 +1512,6 @@ class Platform:
         self,
         circuit: Circuit,
         nshots: int,
-        transpilation_config: DigitalTranspilationConfig | None = None,
     ) -> QProgram:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
@@ -1553,17 +1551,18 @@ class Platform:
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
         """
-        # We have a circular import because Platform uses CircuitToPulses and vice versa
         if self.digital_compilation_settings is None:
-            raise ValueError("Cannot compile Circuit without gates settings.")
+            raise ValueError("Cannot compile Circuit without defining DigitalCompilationSettings.")
 
         transpiler = CircuitTranspiler(self.digital_compilation_settings)
-        circuit = transpiler.run(circuit)
+        transpiled_circuit = transpiler.run(circuit)
 
-        compiler = CircuitToQProgramCompiler()
-        qprogram = compiler.compile(circuit)
+        compiler = CircuitToQProgramCompiler(self.digital_compilation_settings)
+        qprogram = compiler.compile(transpiled_circuit, nshots)
 
-        return qprogram
+        logical_to_physical = {q: transpiler.context.final_layout[transpiler.context.initial_layout[q]] for q in range(circuit.nqubits)}
+
+        return qprogram, logical_to_physical
 
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
         bus = self.get_element(alias=alias)

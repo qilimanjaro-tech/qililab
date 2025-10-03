@@ -32,6 +32,19 @@ class Galadriel:
                         "amplitude": 1.0,
                         "duration": 2000,
                     },
+                    "weights": {
+                        "type": "IQPair",
+                        "I": {
+                            "type": "Square",
+                            "amplitude": 1.0,
+                            "duration": 2000,                            
+                        },
+                        "Q": {
+                            "type": "Square",
+                            "amplitude": 0.0,
+                            "duration": 2000,                            
+                        }
+                    }
                 }
             ],
             "M(1)": [
@@ -44,6 +57,19 @@ class Galadriel:
                         "amplitude": 1.0,
                         "duration": 2000,
                     },
+                    "weights": {
+                        "type": "IQPair",
+                        "I": {
+                            "type": "Square",
+                            "amplitude": 1.0,
+                            "duration": 2000,                            
+                        },
+                        "Q": {
+                            "type": "Square",
+                            "amplitude": 0.0,
+                            "duration": 2000,                            
+                        }
+                    }
                 }
             ],
             "M(2)": [
@@ -56,6 +82,19 @@ class Galadriel:
                         "amplitude": 1.0,
                         "duration": 2000,
                     },
+                    "weights": {
+                        "type": "IQPair",
+                        "I": {
+                            "type": "Square",
+                            "amplitude": 1.0,
+                            "duration": 2000,                            
+                        },
+                        "Q": {
+                            "type": "Square",
+                            "amplitude": 0.0,
+                            "duration": 2000,                            
+                        }
+                    }
                 }
             ],
             "I(0)": [
