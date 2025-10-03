@@ -195,7 +195,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
 
     def _Adjoint_handeling(self, g: Adjoint, adjointed: bool = False):
         ad_gates = self._rewrite_gate(g.basic_gate, adjointed=not adjointed)
-        return ad_gates if adjointed else ad_gates[::-1]
+        return ad_gates[::-1]
 
     def _BasicGate_canonical(self, g: BasicGate, adjointed: bool = False):
         th, phi, gm = _zyz_from_unitary(g.matrix)
