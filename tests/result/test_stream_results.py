@@ -8,9 +8,11 @@ import pytest
 from tests.data import Galadriel, SauronQuantumMachines
 
 from qililab.data_management import build_platform
+from qililab.qprogram import QProgram
 from qililab.result import stream_results
 from qililab.result.stream_results import RawStreamArray, StreamArray
 from qililab.typings.enums import Parameter
+from qililab.waveforms import Square
 
 AMP_VALUES = np.arange(0, 1, 2)
 
@@ -48,12 +50,17 @@ def fixture_stream_array_qm():
     mock_database = MagicMock()
     db_manager = mock_database
 
+    qprogram = QProgram()
+    qprogram.play("readout_q0", Square(1.0, 100))
+    qprogram.wait("readout_q0", 100)
+
     return StreamArray(
         shape=shape,
         loops=loops,
         platform=platform,
         experiment_name=experiment_name,
         db_manager=db_manager,
+        qprogram=qprogram,
     )
 
 
