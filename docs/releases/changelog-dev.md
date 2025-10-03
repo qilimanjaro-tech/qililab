@@ -4,8 +4,51 @@
 
 ### Improvements
 
+- Added support for real-time predistortion on Qblox hardware.
+  - The outputs of a QCM can now set an FIR filter and up to four exponential filters (provided as a list). These parameters can be configured via the runcard (example below) and via platform.set_parameter/get_parameter.
+  - The runcard has a new section under each QCM module: `filters: [...]` configured by output. The section is optional.
+  - The states of a QCM filter are "enabled", "bypassed" and "delay_comp". Users can provide a boolean where True is mapped to "enabled" and False is mapped to "bypassed". When enabling a filter that could cause delay with other module outputs Qililab coerces the state to "delay_comp". This state ensures pulse timing remains consistent with filtered paths, keeping all outputs synchronized.
+
+  - Parameters:
+    - Exponential Filters (given by exponential index)
+        - EXPONENTIAL_AMPLITUDE_0 ... EXPONENTIAL_AMPLITUDE_3
+        - EXPONENTIAL_TIME_CONSTANT_0 ... EXPONENTIAL_TIME_CONSTANT_3
+        - EXPONENTIAL_STATE_0 ... EXPONENTIAL_STATE_3
+    - FIR Filters:
+        - FIR_COEFF
+        - FIR_STATE
+
+  - Note: fir_coeff/FIR_COEFF must contain exactly 32 coefficients.
+
+  - Below is an example of the filter part of the runcard:
+    ```
+      filters:
+      - output_id: 0
+        exponential_amplitude: [0.8, -1]
+        exponential_time_constant: [6, 8]
+        exponential_state: [True, True, False]
+        fir_coeff: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
+        fir_state: True
+      - output_id: 1
+        exponential_amplitude: 0.31
+        exponential_time_constant: 9
+        exponential_state: False
+        fir_coeff: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
+        fir_state: False
+      ```
+
+    Below is an example of set/get_parameter, the output_id must be provided:
+    ```
+    platform.set_parameter(alias=bus_alias, parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, value=300, output_id=0)
+    platform.get_parameter(alias=bus_alias, parameter=Parameter.FIR_STATE, output_id=2)
+    ```
+  - When setting/getting any parameter from the platform and giving the bus_alias, if an output_id or channel_id not associated with the bus is given, an exception is raised; and if an output_id instead of a channel_id (and vice versa) has been given an Exception is raised.
+[#981](https://github.com/qilimanjaro-tech/qililab/pull/981)
+
+
 - Update qblox-instruments to 0.16.0 and qblox firmware to 0.11
 [#1015](https://github.com/qilimanjaro-tech/qililab/pull/1015)
+
 
 - This PR is the beginning of a series that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
   1. When possible, waits will be combined together. For example, before this PR the following Q1ASM could be generated:
@@ -79,7 +122,7 @@
         ```
         
   [#1009](https://github.com/qilimanjaro-tech/qililab/pull/1009)
-
+ 
 - Added `parameters` dictionary to the `Calibration` class, and removed legacy code.
   [#1005](https://github.com/qilimanjaro-tech/qililab/pull/1005)
 
@@ -101,6 +144,7 @@ calibrations (list[Calibration], Calibration, optional). Contains information of
 
 - `%% submit_job`: Added support for `sbatch --chdir` via a new `-c/--chdir` option that is propagated through `slurm_additional_parameters` and also enforced inside the job (`os.chdir(...)`) so it works with `-e local`. Made `--output` mandatory and hardened the output‑assignment check to recognize `Assign`, `AugAssign`, `AnnAssign`, walrus (`NamedExpr`), and tuple targets. Shipment of the notebook namespace is now safer: only picklable values (via `cloudpickle`) are sent, with common pitfalls (modules, loggers, private `_` names, IPython internals) excluded. `--low-priority` is a boolean flag mapping to a sane Slurm `nice=10000`. Paths are handled with `pathlib` plus `expanduser/expandvars`, the logs directory is created if missing, and imports are harvested conservatively from history (one‑line `import`/`from`, excluding `from __future__`). Parameter assembly only includes Slurm extras when provided, and the submitted function compiles the code string internally while accepting the output name and optional workdir. The job object is written to both `local_ns` and the global `user_ns` for IPython robustness. Log cleanup was rewritten to be cross‑platform and resilient: artifacts are grouped by numeric job‑ID prefix, non‑conforming entries are removed, and only the newest `num_files_to_keep` job groups are retained.
   [#994](https://github.com/qilimanjaro-tech/qililab/pull/994)
+
 
 
 - QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
