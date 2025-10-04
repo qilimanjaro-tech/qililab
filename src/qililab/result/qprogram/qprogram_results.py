@@ -15,9 +15,7 @@
 """QProgramResults class."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Mapping
-
-import numpy as np
+from typing import TYPE_CHECKING
 
 from qililab.yaml import yaml
 
@@ -55,85 +53,3 @@ class QProgramResults:
 
         # Append to global insertion order
         self._timeline.append(result)
-
-    def to_counts(
-        self,
-        logical_to_physical_qubits: Mapping[int, int],
-        *,
-        bus_fmt: str = "readout_q{idx}_bus",
-        order: str = "q0-left",             # "q0-right" (Qiskit-like) or "q0-left"
-        on_missing: str = "skip",           # "error", "zeros", or "skip"
-    ) -> dict[str, int]:
-        """
-        Build a Counts dict (bitstring -> count) for the logical qubits.
-
-        Args:
-            logical_to_physical_qubits: dict mapping logical qubit index -> physical qubit index.
-            bus_fmt: Format to locate each bus (default "readout_q{idx}_bus").
-            order: Bitstring display order.
-                "q0-right" => q0 is the least significant / rightmost bit.
-                "q0-left" => q0 is the leftmost bit.
-            on_missing:
-                - "error": raise if a mapped physical qubit has no measurement.
-                - "zeros": treat missing qubit as all-zeros (length inferred from other qubits).
-                - "skip": drop missing qubits from the bitstrings.
-
-        Returns:
-            dict[str, int]: Counts mapping bitstring -> occurrences across shots.
-
-        Raises:
-            KeyError: missing measurement when on_missing="error".
-            ValueError: inconsistent shot counts across qubits, or no data.
-        """
-        # Establish a stable logical-qubit order (0, 1, 2, ...)
-        logicals: list[int] = sorted(logical_to_physical_qubits.keys())
-
-        # Collect per-logical thresholds, ensuring same NSHOTS
-        thresholds: dict[int, np.ndarray] = {}
-        nshots: int | None = None
-        missing_lqs: list[int] = []
-
-        for lq in logicals:
-            pq = logical_to_physical_qubits[lq]
-            bus = bus_fmt.format(idx=pq)
-
-            if bus not in self.results or not self.results[bus]:
-                if on_missing == "error":
-                    raise KeyError(f"No measurement found for physical qubit {pq} (bus='{bus}').")
-                missing_lqs.append(lq)
-                continue
-
-            arr = np.asarray(self.results[bus][0].threshold).ravel().astype(np.uint8)
-            if nshots is None:
-                nshots = int(arr.size)
-            elif arr.size != nshots:
-                raise ValueError(
-                    f"Inconsistent number of shots: logical {lq} (physical {pq}) has {arr.size}, "
-                    f"expected {nshots}."
-                )
-            thresholds[lq] = arr
-
-        if nshots is None:
-            raise ValueError("No measurement data found for any of the requested qubits.")
-
-        # Handle missing qubits per policy
-        if on_missing == "zeros":
-            for lq in missing_lqs:
-                thresholds[lq] = np.zeros(nshots, dtype=np.uint8)
-        elif on_missing == "skip":
-            logicals = [lq for lq in logicals if lq in thresholds]
-            if not logicals:
-                raise ValueError("All requested qubits were missing and were skipped; nothing to count.")
-
-        # Build [NSHOTS, NLOG] matrix with columns ordered by logical qubit index
-        shot_matrix = np.stack([thresholds[lq] for lq in logicals], axis=1)  # shape = (NSHOTS, NLOG)
-
-        if order == "q0-right":
-            weights = (1 << np.arange(shot_matrix.shape[1], dtype=np.uint64))
-        else:
-            weights = (1 << np.arange(shot_matrix.shape[1] - 1, -1, -1, dtype=np.uint64))
-
-        codes = (shot_matrix.astype(np.uint64) * weights).sum(axis=1)
-        unique_codes, counts = np.unique(codes, return_counts=True)
-        w = shot_matrix.shape[1]
-        return {format(code, f"0{w}b"): int(cnt) for code, cnt in zip(unique_codes.tolist(), counts.tolist())}

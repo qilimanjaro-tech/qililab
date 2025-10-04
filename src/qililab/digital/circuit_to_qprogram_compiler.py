@@ -77,6 +77,7 @@ class CircuitToQProgramCompiler:
                                     waveform=gate_event.waveform,
                                     weights=gate_event.weights
                                 )
+                            qp.wait(bus=gate_event.bus, duration=self._settings.relaxation_duration)
 
         return qp
 

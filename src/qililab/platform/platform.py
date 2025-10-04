@@ -33,7 +33,7 @@ from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.core.variables import Domain
-from qililab.digital import CircuitToQProgramCompiler, CircuitTranspiler
+from qililab.digital import CircuitToQProgramCompiler, CircuitTranspiler, qprogram_results_to_samples
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
@@ -67,7 +67,6 @@ if TYPE_CHECKING:
     import numpy as np
     from qilisdk.digital import Circuit
 
-    from qililab.digital import DigitalTranspilationConfig
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result.database import DatabaseManager
@@ -1340,7 +1339,7 @@ class Platform:
     def execute_compilation_outputs_parallel(
         self,
         outputs: list[QbloxCompilationOutput],
-        debug: bool = False,
+        debug: bool = False
     ):
         """Execute compiled qprograms in parallel.
         It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
@@ -1436,81 +1435,21 @@ class Platform:
 
         return results
 
-    def execute(
+    def execute_circuit(
         self,
         circuit: Circuit,
-        nshots: int = 1000,
-    ) -> QProgramResults:
-        """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
-
-        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
-        settings of the platform and the passed transpile onfiguration. Then the pulse schedules will be compiled into the assembly programs and executed.
-
-        To compile to assembly programs, the ``platform.compile()`` method is called; check its documentation for more information.
-
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
-
-        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
-
-        .. note ::
-
-            Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
-
-            To do Step **1.** set routing=True in transpilation_config (default behavior skips it).
-
-            To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
-
-        Args:
-            program (``PulseSchedule`` | ``Circuit``): Circuit or pulse schedule to execute.
-            num_avg (int): Number of hardware averages used.
-            repetition_duration (int): Minimum duration of a single execution. Defaults to 200_000.
-            num_bins (int, optional): Number of bins used. Defaults to 1.
-            queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
-                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
-                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
-
-        Returns:
-            Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
-                platform configuration may contain the following:
-
-                - Scope acquisition is enabled: An array with dimension `(2, N)` which contain the scope data for
-                    path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
-
-                - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
-
-        |
-
-        Example Usage:
-
-        .. code-block:: python
-
-            from qibo import gates, Circuit
-            from qibo.transpiler import ReverseTraversal, Sabre
-            from qililab import build_platform
-            from qililab.digital import DigitalTranspilationConfig
-
-            # Create circuit:
-            c = Circuit(5)
-            c.add(gates.CNOT(1, 0))
-
-            # Create platform:
-            platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
-
-            # Execute with automatic transpilation:
-            result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
-        """
+        nshots: int = 1000
+    ) -> dict[str, int]:
         # Compile pulse schedule
-        qprogram, logical_to_physical_mapping = self.compile(circuit, nshots)
-
-        physical_to_logical_mapping = {v: k for k, v in logical_to_physical_mapping.items()}
+        qprogram, logical_to_physical_mapping = self.compile_circuit(circuit, nshots)
 
         results = self.execute_qprogram(qprogram)
 
-        return results
+        samples = qprogram_results_to_samples(results, logical_to_physical_mapping)
 
-    def compile(
+        return samples
+
+    def compile_circuit(
         self,
         circuit: Circuit,
         nshots: int,
