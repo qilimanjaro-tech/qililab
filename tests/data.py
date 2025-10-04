@@ -20,19 +20,17 @@ class Galadriel:
     name = "galadriel"
 
     digital_compilation_settings: dict[str, Any] = {
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BEFORE_READOUT: 0,
         "topology": [[0, 2], [1, 2], [2, 3], [2, 4]],
         "gates": {
             "M(0)": [
                 {
                     "bus": "feedline_input_output_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 2000,
-                        "shape": {"name": "rectangular"},
                     },
                 }
             ],
@@ -40,11 +38,11 @@ class Galadriel:
                 {
                     "bus": "feedline_input_output_bus_1",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 2000,
-                        "shape": {"name": "rectangular"},
                     },
                 }
             ],
@@ -52,11 +50,11 @@ class Galadriel:
                 {
                     "bus": "feedline_input_output_bus_2",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 2000,
-                        "shape": {"name": "rectangular"},
                     },
                 }
             ],
@@ -64,11 +62,11 @@ class Galadriel:
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 0,
-                        "duration": 100,
-                        "shape": {"name": "rectangular"},
+                        "duration": 2000,
                     },
                 }
             ],
@@ -76,11 +74,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 50,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -88,11 +88,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q1_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 50,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -100,11 +102,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 50,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -112,11 +116,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q1_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 50,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -124,11 +130,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
-                        "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "duration": 50,
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -136,11 +144,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q1_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 1.5707963267948966,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
                         "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -148,11 +158,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 1.5707963267948966,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
                         "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -160,11 +172,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 1.5707963267948966,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
                         "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -172,12 +186,15 @@ class Galadriel:
                 {
                     "bus": "flux_line_q1_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 1.5707963267948966,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
                         "duration": 20,
-                        "shape": {"name": "rectangular"},
-                        "options": {"q0_phase_correction": 0.1, "q1_phase_correction": 0.2},
+                    },
+                    "options": {
+                        "q0_phase_correction": 0.1,
+                        "q1_phase_correction": 0.2
                     },
                 }
             ],
@@ -185,45 +202,18 @@ class Galadriel:
                 {
                     "bus": "flux_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 1.5707963267948966,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
                         "duration": 20,
-                        "shape": {"name": "rectangular"},
-                        "options": {"q0_phase_correction": 0.1, "q2_phase_correction": 0.2},
+                    },
+                    "options": {
+                        "q0_phase_correction": 0.1,
+                        "q1_phase_correction": 0.2
                     },
                 }
             ],
-        },
-        "buses": {
-            "drive_line_q0_bus": {
-                "line": "drive",
-                "qubits": [0],
-                "distortions": [
-                    {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
-                ],
-            },
-            "drive_line_q1_bus": {"line": "drive", "qubits": [1]},
-            "drive_line_q2_bus": {"line": "drive", "qubits": [1]},
-            "feedline_input_output_bus": {
-                "line": "readout",
-                "qubits": [0],
-                "delay": 0,
-                "distortions": [],
-            },
-            "feedline_input_output_bus_1": {
-                "line": "readout",
-                "qubits": [1],
-                "delay": 0,
-                "distortions": [],
-            },
-            "feedline_input_output_bus_2": {
-                "line": "readout",
-                "qubits": [2],
-                "delay": 0,
-                "distortions": [],
-            },
-            "flux_line_q0_bus": {"line": "flux", "qubits": [0]},
         },
     }
 
@@ -591,6 +581,7 @@ class Galadriel:
             RUNCARD.ALIAS: "drive_line_q0_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             RUNCARD.CHANNELS: [0, None],
+            "delay": 0,
             "distortions": [
                 {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
             ],
