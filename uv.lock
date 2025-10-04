@@ -3190,7 +3190,7 @@ requires-dist = [
     { name = "qblox-instruments", specifier = "==0.14.2" },
     { name = "qcodes", specifier = ">=0.51.0" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
-    { name = "qilisdk", git = "ssh://git@github.com/qilimanjaro-tech/qilisdk?branch=main" },
+    { name = "qilisdk", git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main" },
     { name = "qm-qua", specifier = "==1.2.1" },
     { name = "qpysequence", specifier = ">=0.10.7" },
     { name = "qualang-tools", specifier = ">=0.19.3" },
@@ -3228,7 +3228,7 @@ docs = [
 [[package]]
 name = "qilisdk"
 version = "0.1.5"
-source = { git = "ssh://git@github.com/qilimanjaro-tech/qilisdk?branch=main#dd4eab1ef6aac780bc052e59419c14b381510328" }
+source = { git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main#f35be818edab7c5bce2debab38bd3b784bb150ec" }
 dependencies = [
     { name = "dill" },
     { name = "loguru" },

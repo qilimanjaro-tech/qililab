@@ -50,12 +50,10 @@ from .experiment import Experiment
 from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
 from .qprogram import QProgram
 from .quantum_machines_compiler import QuantumMachinesCompilationOutput, QuantumMachinesCompiler
-from .variable import Domain
 
 __all__ = [
     "Calibration",
     "CrosstalkMatrix",
-    "Domain",
     "Experiment",
     "FluxVector",
     "QProgram",

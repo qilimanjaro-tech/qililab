@@ -25,6 +25,7 @@ import qpysequence.program.instructions as QPyInstructions
 from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 
 from qililab.config import logger
+from qililab.core.variables import Variable
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -42,7 +43,6 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.variable import Variable
 from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
 
@@ -505,14 +505,20 @@ class QbloxCompiler:
             remainder = duration % INST_MAX_WAIT
             if duration > INST_MAX_WAIT:
                 for iteration in range(duration // INST_MAX_WAIT):
-                    if iteration == (duration // INST_MAX_WAIT) - 1 and 0 <= remainder < INST_MIN_WAIT:  # handle the remainder at the last iteration if below 4
+                    if (
+                        iteration == (duration // INST_MAX_WAIT) - 1 and 0 <= remainder < INST_MIN_WAIT
+                    ):  # handle the remainder at the last iteration if below 4
                         if remainder == 0:
                             self._buses[bus].qpy_block_stack[-1].append_component(
                                 component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
                             )
                         else:
-                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_time=(INST_MAX_WAIT + remainder) - INST_MIN_WAIT))
-                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_time=INST_MIN_WAIT))
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Wait(wait_time=(INST_MAX_WAIT + remainder) - INST_MIN_WAIT)
+                            )
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Wait(wait_time=INST_MIN_WAIT)
+                            )
                             remainder = 0
 
                         break
@@ -523,8 +529,8 @@ class QbloxCompiler:
 
             if duration == INST_MAX_WAIT:
                 self._buses[bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
-                    )
+                    component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                )
 
             elif remainder >= INST_MIN_WAIT:
                 self._buses[bus].qpy_block_stack[-1].append_component(

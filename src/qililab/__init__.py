@@ -27,7 +27,8 @@ import contextlib
 from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
-from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
+from .core.variables import Domain
+from .qprogram import Calibration, CrosstalkMatrix, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
 from .platform import Platform
 from .result import ExperimentResults, stream_results
 from .typings import Parameter

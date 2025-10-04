@@ -7,7 +7,7 @@ from qililab import Domain
 from qililab.exceptions import VariableAllocated
 from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import FloatVariable, IntVariable
+from qililab.core.variables import FloatVariable, IntVariable
 
 
 class TestStructuredProgram:

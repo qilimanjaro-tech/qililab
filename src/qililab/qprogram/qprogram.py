@@ -14,9 +14,9 @@
 from copy import deepcopy
 from typing import overload
 
+from qililab.core.variables import Domain, requires_domain
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
@@ -36,7 +36,6 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import Domain
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
