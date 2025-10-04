@@ -27,6 +27,7 @@ class DigitalCompilationSettings(BaseModel):
 
     topology: list[tuple[int, int]]
     gates: dict[str, list[GateEvent]]
+    relaxation_duration: int = 200_000
 
     def to_dict(self):
         """Serializes gate settings to dictionary and removes fields with None values"""

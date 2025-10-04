@@ -32,6 +32,19 @@ class Galadriel:
                         "amplitude": 1.0,
                         "duration": 2000,
                     },
+                    "weights": {
+                        "type": "IQPair",
+                        "I": {
+                            "type": "Square",
+                            "amplitude": 1.0,
+                            "duration": 2000,                            
+                        },
+                        "Q": {
+                            "type": "Square",
+                            "amplitude": 0.0,
+                            "duration": 2000,                            
+                        }
+                    }
                 }
             ],
             "M(1)": [
@@ -44,6 +57,19 @@ class Galadriel:
                         "amplitude": 1.0,
                         "duration": 2000,
                     },
+                    "weights": {
+                        "type": "IQPair",
+                        "I": {
+                            "type": "Square",
+                            "amplitude": 1.0,
+                            "duration": 2000,                            
+                        },
+                        "Q": {
+                            "type": "Square",
+                            "amplitude": 0.0,
+                            "duration": 2000,                            
+                        }
+                    }
                 }
             ],
             "M(2)": [
@@ -56,6 +82,19 @@ class Galadriel:
                         "amplitude": 1.0,
                         "duration": 2000,
                     },
+                    "weights": {
+                        "type": "IQPair",
+                        "I": {
+                            "type": "Square",
+                            "amplitude": 1.0,
+                            "duration": 2000,                            
+                        },
+                        "Q": {
+                            "type": "Square",
+                            "amplitude": 0.0,
+                            "duration": 2000,                            
+                        }
+                    }
                 }
             ],
             "I(0)": [
@@ -70,7 +109,7 @@ class Galadriel:
                     },
                 }
             ],
-            "Drag(0)": [
+            "Rmw(0)": [
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
@@ -84,7 +123,7 @@ class Galadriel:
                     },
                 }
             ],
-            "Drag(1)": [
+            "Rmw(1)": [
                 {
                     "bus": "drive_line_q1_bus",
                     "wait_time": 0,

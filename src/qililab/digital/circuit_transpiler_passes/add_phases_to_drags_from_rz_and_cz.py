@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Optional, Union
 from qilisdk.digital import Circuit
 from qilisdk.digital.gates import CZ, RZ, M
 
-from qililab.digital.native_gates import Drag
+from qililab.digital.native_gates import Rmw
 
 from .circuit_transpiler_pass import CircuitTranspilerPass
 
@@ -64,7 +64,7 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
         shift = dict.fromkeys(range(nqubits), 0.0)
 
         for gate in circuit_gates:
-            out_gate: Optional[Union[M, Drag, CZ]] = None
+            out_gate: Optional[Union[M, Rmw, CZ]] = None
 
             # Accumulate phase shifts from commutating RZ to the end, to discard them as VirtualZ.
             if isinstance(gate, RZ):
@@ -81,9 +81,9 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
                 out_gate = CZ(control_qubit, target_qubit)
 
             # Correct Drag phase with accumulated phase shifts.
-            elif isinstance(gate, Drag):
+            elif isinstance(gate, Rmw):
                 qubit: int = gate.qubits[0]  # Assumes single qubit
-                out_gate = Drag(qubit, theta=gate.theta, phase=(gate.phase - shift[qubit]))
+                out_gate = Rmw(qubit, theta=gate.theta, phase=(gate.phase - shift[qubit]))
 
             # Measurement gates, do not change
             elif isinstance(gate, M):
@@ -91,7 +91,7 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
 
             # If gate is not supported, raise an error
             else:
-                raise ValueError(f"{gate.name} not part of native supported gates {(RZ, Drag, CZ, M)}")
+                raise ValueError(f"{gate.name} not part of native supported gates {(RZ, Rmw, CZ, M)}")
 
             # Add the processed gate to the output circuit
             if out_gate is not None:

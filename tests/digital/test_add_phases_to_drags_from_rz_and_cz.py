@@ -5,7 +5,7 @@ from qilisdk.digital import Circuit
 from qilisdk.digital.gates import CZ, RZ, M, Gate
 
 from qililab.digital.circuit_transpiler_passes.add_phases_to_drags_from_rz_and_cz import AddPhasesToDragsFromRZAndCZPass
-from qililab.digital.native_gates import Drag
+from qililab.digital.native_gates import Rmw
 from qililab.settings.digital import DigitalCompilationSettings
 
 
@@ -15,7 +15,7 @@ def fixture_digital_compilation_settings() -> DigitalCompilationSettings:
     digital_settings_dict = {
         "topology": [(0, 2), (1, 2), (2, 3), (2, 4)],
         "gates": {
-            "Drag(0)": [
+            "Rmw(0)": [
                 {
                     "bus": "drive_q0",
                     "waveform": {
@@ -28,7 +28,7 @@ def fixture_digital_compilation_settings() -> DigitalCompilationSettings:
                     "phase": 0,
                 }
             ],
-            "Drag(1)": [
+            "Rmw(1)": [
                 {
                     "bus": "drive_q1",
                     "waveform": {
@@ -110,26 +110,26 @@ class TestAddPhasesToDragsFromRZsAndCZs:
 
             # gate list to optimize
             test_gates: list[Gate] = [
-                Drag(0, theta=1, phase=1),
+                Rmw(0, theta=1, phase=1),
                 CZ(0, 1),
                 RZ(1, phi=0.6),
                 M(0),
                 RZ(0, phi=0.3),
-                Drag(0, theta=3, phase=0),
+                Rmw(0, theta=3, phase=0),
                 CZ(0, 2),
                 CZ(1, 0),
-                Drag(1, theta=2, phase=-2),
+                Rmw(1, theta=2, phase=-2),
                 RZ(1, phi=0),
             ]
             # resulting gate list from optimization
             expected_gates: list[Gate] = [
-                Drag(0, theta=1, phase=1),
+                Rmw(0, theta=1, phase=1),
                 CZ(0, 1),
                 M(0),
-                Drag(0, theta=3, phase=(0-0.1-0.3)),
+                Rmw(0, theta=3, phase=(0-0.1-0.3)),
                 CZ(0, 2),
                 CZ(1, 0),
-                Drag(1, theta=2, phase=(-2-0.2-0.6-0.2)),
+                Rmw(1, theta=2, phase=(-2-0.2-0.6-0.2)),
             ]
 
             # create circuit to test function with
@@ -141,7 +141,7 @@ class TestAddPhasesToDragsFromRZsAndCZs:
             transpiled_circuit = transpile_step.run(circuit)
             for gate_exp, gate_trans in zip(expected_gates, transpiled_circuit.gates):
                 assert gate_exp.name == gate_trans.name
-                if isinstance(gate_exp, Drag):
+                if isinstance(gate_exp, Rmw):
                     assert np.isclose(gate_exp.parameters["theta"].value, gate_trans.parameters["theta"].value)
                     assert np.isclose(gate_exp.parameters["phase"].value, gate_trans.parameters["phase"].value)
                 assert gate_exp.qubits == gate_trans.qubits
