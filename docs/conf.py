@@ -16,9 +16,7 @@ project = "Qililab"
 copyright = "2023, Qilimanjaro"
 author = "Qilimanjaro"
 
-import qililab  # noqa: E402, ICN001
-
-release = qililab.__version__
+release = os.getenv("QILILAB_VERSION", "dev")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -34,7 +32,7 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*"]
-autodoc_mock_imports = ["qibo", "qm_qua"]
+autodoc_mock_imports = ["qibo", "qm_qua", "qililab"]
 source_suffix = [".rst", ".md"]
 pygments_style = "default"
 language = "en"
