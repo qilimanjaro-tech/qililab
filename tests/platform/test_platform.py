@@ -6,7 +6,7 @@ import re
 import warnings
 from pathlib import Path
 from queue import Queue
-from types import MethodType
+from types import MethodType, SimpleNamespace
 from unittest.mock import MagicMock, create_autospec, patch
 
 import numpy as np
@@ -310,6 +310,88 @@ class TestPlatform:
     def test_platform_name(self, platform: Platform):
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
+
+    def test_compile_circuit_invokes_transpiler_and_compiler(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """Platform.compile_circuit wires transpilation and compilation stages together."""
+        circuit = Circuit(2)
+        circuit.add(X(0))
+
+        transpiled_circuit = object()
+        compiled_qprogram = QProgram()
+
+        transpiler_instance = MagicMock()
+        transpiler_instance.run.return_value = transpiled_circuit
+        transpiler_instance.context = SimpleNamespace(
+            initial_layout={0: 0, 1: 1},
+            final_layout={0: 1, 1: 0},
+        )
+
+        compiler_instance = MagicMock()
+        compiler_instance.compile.return_value = compiled_qprogram
+
+        transpiler_cls = MagicMock(return_value=transpiler_instance)
+        compiler_cls = MagicMock(return_value=compiler_instance)
+
+        monkeypatch.setattr("qililab.platform.platform.CircuitTranspiler", transpiler_cls)
+        monkeypatch.setattr("qililab.platform.platform.CircuitToQProgramCompiler", compiler_cls)
+
+        qubit_mapping = {0: 1}
+        nshots = 256
+
+        result = platform.compile_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
+
+        transpiler_cls.assert_called_once_with(platform.digital_compilation_settings, qubit_mapping=qubit_mapping)
+        transpiler_instance.run.assert_called_once_with(circuit)
+        compiler_cls.assert_called_once_with(platform.digital_compilation_settings)
+        compiler_instance.compile.assert_called_once_with(transpiled_circuit, nshots)
+
+        assert result[0] is compiled_qprogram
+        assert result[1] == {0: 1, 1: 0}
+
+    def test_compile_circuit_without_digital_settings_raises(
+        self, platform: Platform
+    ):
+        """Raises ValueError when digital compilation settings are missing."""
+        platform.digital_compilation_settings = None
+
+        circuit = Circuit(1)
+
+        with pytest.raises(
+            ValueError, match="Cannot compile Circuit without defining DigitalCompilationSettings."
+        ):
+            platform.compile_circuit(circuit, nshots=128)
+
+    def test_execute_circuit_uses_compilation_and_execution_pipeline(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """execute_circuit compiles, executes, and formats samples via helpers."""
+        circuit = Circuit(1)
+        circuit.add(M(0))
+
+        compiled_qprogram = QProgram()
+        logical_mapping = {0: 0}
+        samples = {"0": 42}
+
+        compile_mock = MagicMock(return_value=(compiled_qprogram, logical_mapping))
+        execute_mock = MagicMock(return_value="results")
+        samples_mock = MagicMock(return_value=samples)
+
+        monkeypatch.setattr(platform, "compile_circuit", compile_mock)
+        monkeypatch.setattr(platform, "execute_qprogram", execute_mock)
+        monkeypatch.setattr("qililab.platform.platform.qprogram_results_to_samples", samples_mock)
+
+        qubit_mapping = {0: 0}
+        nshots = 32
+
+        result = platform.execute_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
+
+        compile_mock.assert_called_once_with(circuit, nshots, qubit_mapping=qubit_mapping)
+        execute_mock.assert_called_once_with(compiled_qprogram)
+        samples_mock.assert_called_once_with("results", logical_mapping)
+
+        assert result == samples
 
     def test_initial_setup_no_instrument_connection(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""
