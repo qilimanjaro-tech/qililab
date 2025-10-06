@@ -7,6 +7,9 @@
 
 ### Improvements
 
+- Update qblox-instruments to 0.16.0 and qblox firmware to 0.11
+[#1015](https://github.com/qilimanjaro-tech/qililab/pull/1015)
+
 - This PR is the beginning of a series that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
   1. When possible, waits will be combined together. For example, before this PR the following Q1ASM could be generated:
       ```
