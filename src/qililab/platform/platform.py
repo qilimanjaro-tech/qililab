@@ -37,18 +37,18 @@ from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
-from qililab.instrument_controllers import InstrumentController, InstrumentControllers
-from qililab.instrument_controllers.utils import InstrumentControllerFactory
-from qililab.instruments.instrument import Instrument
-from qililab.instruments.instruments import Instruments
-from qililab.instruments.qblox import QbloxModule
-from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.extra.quantum_machines import (
     QuantumMachinesCluster,
     QuantumMachinesCompilationOutput,
     QuantumMachinesCompiler,
     QuantumMachinesMeasurementResult,
 )
+from qililab.instrument_controllers import InstrumentController, InstrumentControllers
+from qililab.instrument_controllers.utils import InstrumentControllerFactory
+from qililab.instruments.instrument import Instrument
+from qililab.instruments.instruments import Instruments
+from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
