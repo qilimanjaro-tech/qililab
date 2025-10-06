@@ -7,6 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
 import sys
+import pathlib
+import toml
+
 
 from sphinxawesome_theme.postprocess import Icons
 
@@ -16,9 +19,12 @@ project = "Qililab"
 copyright = "2023, Qilimanjaro"
 author = "Qilimanjaro"
 
-import qililab  # noqa: E402, ICN001
 
-release = qililab.__version__
+pyproject_path = pathlib.Path(__file__).parents[1] / "pyproject.toml"
+with open(pyproject_path, "r") as f:
+    pyproject = toml.load(f)
+
+release = pyproject["project"]["version"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
