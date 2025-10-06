@@ -195,11 +195,10 @@ class QbloxQRM(QbloxModule):
                     bus=acquisitions[acquisition].bus,
                     raw_measurement_data=raw_measurement_data,
                     shape=acquisition_data.shape,
-                    intertwined=acquisition_data.intertwined
                 )
+                results.append(measurement_result)
 
-                measurement_result_unintertwined = measurement_result.unintertwined
-                results.extend(measurement_result_unintertwined)
+                # always deleting acquisitions without checking save_adc flag
                 self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
         return results
 

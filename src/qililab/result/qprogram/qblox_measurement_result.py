@@ -53,7 +53,6 @@ class QbloxMeasurementResult(MeasurementResult):
         super().__init__(bus=bus)
         self.raw_measurement_data = raw_measurement_data
         self.shape = shape
-        self.intertwined = intertwined
 
     @property
     def array(self) -> np.ndarray:
@@ -82,49 +81,3 @@ class QbloxMeasurementResult(MeasurementResult):
         if self.shape:
             array = array.reshape((1, *self.shape))
         return array
-
-    @property
-    def unintertwined(self) -> list[QbloxMeasurementResult]:
-        """ Return a list of results where intertwined acquisitions are separated.
-
-        In Qililab, when multiple acquisitions or measurements are performed at the same nested level, their results are intertwined: the bins are looped over
-        while the acquisition index remains constant.
-        If `intertwined` is greater than 1, this function creates deep copies of the results retrieved from QBlox and separates each acquisition into its own
-        QbloxMeasurementResult object. If `intertwined` is 1 the result is returned inside a single-element list.
-
-        Returns:
-            list[QbloxMeasurementResult]: unintertwined results where each element corresponds to one acquisition.
-        """
-        results_unintertwined_list = []
-        if self.intertwined > 1:
-
-            for result in range(self.intertwined):
-                results_unintertwined: QbloxMeasurementResult = deepcopy(self)
-                results_unintertwined.intertwined = 1
-
-                # scope
-                path0_scope = results_unintertwined.raw_measurement_data["scope"]["path0"]["data"]
-                results_unintertwined.raw_measurement_data["scope"]["path0"]["data"] = path0_scope[result::self.intertwined]
-
-                path1_scope = results_unintertwined.raw_measurement_data["scope"]["path1"]["data"]
-                results_unintertwined.raw_measurement_data["scope"]["path1"]["data"] = path1_scope[result::self.intertwined]
-
-                # bins
-                path0_bin = results_unintertwined.raw_measurement_data["bins"]["integration"]["path0"]
-                results_unintertwined.raw_measurement_data["bins"]["integration"]["path0"] = path0_bin[result::self.intertwined]
-
-                path1_bin = results_unintertwined.raw_measurement_data["bins"]["integration"]["path1"]
-                results_unintertwined.raw_measurement_data["bins"]["integration"]["path1"] = path1_bin[result::self.intertwined]
-
-                threshold = results_unintertwined.raw_measurement_data["bins"]["threshold"]
-                results_unintertwined.raw_measurement_data["bins"]["threshold"] = threshold[result::self.intertwined]
-
-                avg_cnt = results_unintertwined.raw_measurement_data["bins"]["avg_cnt"]
-                results_unintertwined.raw_measurement_data["bins"]["avg_cnt"] = avg_cnt[result::self.intertwined]
-
-                results_unintertwined_list.append(results_unintertwined)
-
-        else:
-            results_unintertwined_list = [self]
-
-        return results_unintertwined_list

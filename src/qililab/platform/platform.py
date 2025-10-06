@@ -1140,8 +1140,17 @@ class Platform:
                         bus_results = bus.acquire_qprogram_results(
                             acquisitions=acquisitions[bus_alias], channel_id=int(channel)
                         )
+
+                        # TODO: replicate for the parallel excute as well
                         for bus_result in bus_results:
-                            results.append_result(bus=bus_alias, result=bus_result)
+                            print(bus_result)
+                            for _, acquisition_data in acquisitions[bus_alias].items():
+                                intertwined = acquisition_data.intertwined
+                                print(intertwined)
+                                unintertwined_result = self._unintertwined_qblox_results(bus_result, intertwined)
+                                for res in unintertwined_result:
+                                    print(res)
+                                    results.append_result(bus=bus_alias, result=res)
 
         # Reset instrument settings
         for bus_alias in sequences:
@@ -1150,6 +1159,52 @@ class Platform:
                     instrument.desync_sequencer(sequencer_id=int(channel))
 
         return results
+    
+    def _unintertwined_qblox_results(self, bus_result, intertwined):
+        """ Return a list of results where intertwined acquisitions are separated.
+
+        In Qililab, when multiple acquisitions or measurements are performed at the same nested level, their results are intertwined: the bins are looped over
+        while the acquisition index remains constant.
+        If `intertwined` is greater than 1, this function creates deep copies of the results retrieved from QBlox and separates each acquisition into its own
+        QbloxMeasurementResult object. If `intertwined` is 1 the result is returned inside a single-element list.
+
+        Returns:
+            list[QbloxMeasurementResult]: unintertwined results where each element corresponds to one acquisition.
+        """
+        results_unintertwined_list = []
+        if intertwined > 1:
+            for result in range(intertwined):
+                # TODO: remove the deepcopy
+                results_unintertwined=deepcopy(bus_result)
+                results_unintertwined.intertwined = 1
+
+                # scope
+                path0_scope = results_unintertwined.raw_measurement_data["scope"]["path0"]["data"]
+                results_unintertwined.raw_measurement_data["scope"]["path0"]["data"] = path0_scope[result::intertwined]
+
+                path1_scope = results_unintertwined.raw_measurement_data["scope"]["path1"]["data"]
+                results_unintertwined.raw_measurement_data["scope"]["path1"]["data"] = path1_scope[result::intertwined]
+
+                # bins
+                path0_bin = results_unintertwined.raw_measurement_data["bins"]["integration"]["path0"]
+                results_unintertwined.raw_measurement_data["bins"]["integration"]["path0"] = path0_bin[result::intertwined]
+
+                path1_bin = results_unintertwined.raw_measurement_data["bins"]["integration"]["path1"]
+                results_unintertwined.raw_measurement_data["bins"]["integration"]["path1"] = path1_bin[result::intertwined]
+
+                threshold = results_unintertwined.raw_measurement_data["bins"]["threshold"]
+                results_unintertwined.raw_measurement_data["bins"]["threshold"] = threshold[result::intertwined]
+
+                avg_cnt = results_unintertwined.raw_measurement_data["bins"]["avg_cnt"]
+                results_unintertwined.raw_measurement_data["bins"]["avg_cnt"] = avg_cnt[result::intertwined]
+
+                results_unintertwined_list.append(results_unintertwined)
+
+        else:
+            results_unintertwined_list = [bus_result]
+
+        return results_unintertwined_list
+
 
     def _execute_quantum_machines_compilation_output(
         self,
