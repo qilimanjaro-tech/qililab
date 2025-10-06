@@ -30,7 +30,13 @@ Transpilation
 
 from .circuit_to_qprogram_compiler import CircuitToQProgramCompiler
 from .circuit_transpiler import CircuitTranspiler, DigitalTranspilationConfig
-from .gate_decompositions import GateDecompositions
-from .native_gates import Drag
+from .native_gates import Rmw
+from .utils import qprogram_results_to_samples
 
-__all__ = ["CircuitToQProgramCompiler", "CircuitTranspiler", "DigitalTranspilationConfig", "Drag", "GateDecompositions"]
+__all__ = [
+    "CircuitToQProgramCompiler",
+    "CircuitTranspiler",
+    "DigitalTranspilationConfig",
+    "Rmw",
+    "qprogram_results_to_samples",
+]

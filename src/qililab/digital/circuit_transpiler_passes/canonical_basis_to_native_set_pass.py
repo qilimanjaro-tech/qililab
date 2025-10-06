@@ -28,7 +28,7 @@ from qilisdk.digital.gates import (
     M,
 )
 
-from qililab.digital.native_gates import Drag
+from qililab.digital.native_gates import Rmw
 
 from .circuit_transpiler_pass import CircuitTranspilerPass
 from .numeric_helpers import _wrap_angle
@@ -36,13 +36,13 @@ from .numeric_helpers import _wrap_angle
 
 class CanonicalBasisToNativeSetPass(CircuitTranspilerPass):
     """
-    Lower from the canonical basis {CZ, U3, RX, RY, RZ, M, SWAP}
-    to the native set {Drag, CZ, M} (+ optional virtual RZ).
+    Lower from the canonical basis {CZ, U3, RX, RY, RZ, M}
+    to the native set {Rmw, CZ, M} (+ optional virtual RZ).
 
     Mapping:
-      - U3(theta, phi, gamma)   → Drag(theta, phase=-gamma+pi/2) ; RZ(phi+gamma)
-      - RX(theta)               → Drag(theta, phase=0)
-      - RY(theta)               → Drag(theta, phase=pi/2)
+      - U3(theta, phi, gamma)   → Rmw(theta, phase=phi+pi/2) ; RZ(phi+gamma)
+      - RX(theta)               → Rmw(theta, phase=0)
+      - RY(theta)               → Rmw(theta, phase=pi/2)
       - CZ                      → CZ
       - M                       → M
 
@@ -105,18 +105,17 @@ class CanonicalBasisToNativeSetPass(CircuitTranspilerPass):
             q = g.qubits[0]
             if isinstance(g, RX):
                 touch(q)
-                out.add(Drag(q, theta=g.theta, phase=0.0))
+                out.add(Rmw(q, theta=g.theta, phase=0.0))
             elif isinstance(g, RY):
                 touch(q)
-                out.add(Drag(q, theta=g.theta, phase=math.pi / 2.0))
+                out.add(Rmw(q, theta=g.theta, phase=math.pi / 2.0))
             elif isinstance(g, RZ):
                 add_rz(q, g.phi)
             elif isinstance(g, U3):
                 # U3(theta, phi, gamma) with U3 = RZ(phi) RY(theta) RZ(gamma)
                 touch(q)
-                out.add(Drag(q, theta=g.theta, phase=_wrap_angle(g.phi + math.pi / 2)))
+                out.add(Rmw(q, theta=g.theta, phase=_wrap_angle(g.phi + math.pi / 2)))
                 add_rz(q, _wrap_angle(g.phi + g.gamma))
-
             else:
                 raise NotImplementedError(f"Unexpected 1-qubit gate in native lowering: {type(g).__name__}")
 
@@ -130,6 +129,7 @@ class CanonicalBasisToNativeSetPass(CircuitTranspilerPass):
             if isinstance(g, CZ):
                 # Z-rotations commute with CZ; we *could* leave them pending.
                 # For determinism, we simply emit CZ now without flushing.
+                touch(g.control_qubits[0], g.target_qubits[0])
                 out.add(CZ(g.control_qubits[0], g.target_qubits[0]))
                 continue
 
@@ -149,7 +149,7 @@ class CanonicalBasisToNativeSetPass(CircuitTranspilerPass):
             raise NotImplementedError(f"Gate {type(g).__name__} is not supported at this lowering stage.")
 
         # Flush any remaining pending Z
-        for q in pending_rz:
+        for q in range(out.nqubits):
             emit_rz(q)
 
         self.append_circuit_to_context(out)

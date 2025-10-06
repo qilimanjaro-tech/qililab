@@ -17,6 +17,7 @@ from .cancel_identity_pairs_pass import CancelIdentityPairsPass
 from .canonical_basis_to_native_set_pass import CanonicalBasisToNativeSetPass
 from .circuit_to_canonical_basis_pass import CircuitToCanonicalBasisPass
 from .circuit_transpiler_pass import CircuitTranspilerPass
+from .custom_layout_pass import CustomLayoutPass
 from .fuse_single_qubit_gates_pass import FuseSingleQubitGatesPass
 from .sabre_layout_pass import SabreLayoutPass
 from .sabre_swap_pass import SabreSwapPass
@@ -28,6 +29,7 @@ __all__ = [
     "CanonicalBasisToNativeSetPass",
     "CircuitToCanonicalBasisPass",
     "CircuitTranspilerPass",
+    "CustomLayoutPass",
     "FuseSingleQubitGatesPass",
     "SabreLayoutPass",
     "SabreSwapPass",

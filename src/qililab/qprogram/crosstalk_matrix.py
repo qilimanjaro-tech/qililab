@@ -245,7 +245,6 @@ class FluxVector:
             self.bias_vector = self.flux_vector.copy()
 
         for bus_1 in self.crosstalk.matrix.keys():
-
             self.flux_vector[bus_1] = (
                 sum(
                     (self.bias_vector[bus_2] * self.crosstalk.matrix[bus_1][bus_2])

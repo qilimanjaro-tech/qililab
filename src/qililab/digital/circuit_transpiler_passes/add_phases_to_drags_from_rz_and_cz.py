@@ -19,13 +19,13 @@ from typing import TYPE_CHECKING, Optional, Union
 from qilisdk.digital import Circuit
 from qilisdk.digital.gates import CZ, RZ, M
 
-from qililab.digital.native_gates import Drag
+from qililab.digital.native_gates import Rmw
 
 from .circuit_transpiler_pass import CircuitTranspilerPass
 
 if TYPE_CHECKING:
     from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
-    from qililab.settings.digital.gate_event_settings import GateEventSettings
+    from qililab.settings.digital.gate_event import GateEvent
 
 
 class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
@@ -64,7 +64,7 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
         shift = dict.fromkeys(range(nqubits), 0.0)
 
         for gate in circuit_gates:
-            out_gate: Optional[Union[M, Drag, CZ]] = None
+            out_gate: Optional[Union[M, Rmw, CZ]] = None
 
             # Accumulate phase shifts from commutating RZ to the end, to discard them as VirtualZ.
             if isinstance(gate, RZ):
@@ -81,9 +81,10 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
                 out_gate = CZ(control_qubit, target_qubit)
 
             # Correct Drag phase with accumulated phase shifts.
-            elif isinstance(gate, Drag):
+            elif isinstance(gate, Rmw):
                 qubit: int = gate.qubits[0]  # Assumes single qubit
-                out_gate = Drag(qubit, theta=gate.theta, phase=(gate.phase - shift[qubit]))
+                out_gate = Rmw(qubit, theta=gate.theta, phase=(gate.phase - shift[qubit]))
+                shift[qubit] = 0.0
 
             # Measurement gates, do not change
             elif isinstance(gate, M):
@@ -91,22 +92,24 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
 
             # If gate is not supported, raise an error
             else:
-                raise ValueError(f"{gate.name} not part of native supported gates {(RZ, Drag, CZ, M)}")
+                raise ValueError(f"{gate.name} not part of native supported gates {(RZ, Rmw, CZ, M)}")
 
             # Add the processed gate to the output circuit
             if out_gate is not None:
                 out_circuit.add(out_gate)
 
+        self.append_circuit_to_context(out_circuit)
+
         return out_circuit
 
     @staticmethod
-    def _extract_gate_corrections(gate_settings: list[GateEventSettings], control_qubit: int) -> dict | None:
+    def _extract_gate_corrections(gate_settings: list[GateEvent], control_qubit: int) -> dict | None:
         """Given a CZ gate settings, extract the phase corrections needed for its control and target qubits."""
         return next(
             (
-                event.pulse.options
+                event.options
                 for event in gate_settings
-                if event.pulse.options is not None and f"q{control_qubit}_phase_correction" in event.pulse.options
+                if event.options is not None and f"q{control_qubit}_phase_correction" in event.options
             ),
             None,
         )

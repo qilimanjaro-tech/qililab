@@ -11,18 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
-from qililab.core.variables import Variable
-from qililab.qprogram.blocks.block import Block
-from qililab.yaml import yaml
-
-
-@yaml.register_class
-class ForLoop(Block):
-    def __init__(self, variable: Variable, start: int | float, stop: int | float, step: int | float) -> None:
-        super().__init__()
-        self.variable: Variable = variable
-        self.start: int | float = start
-        self.stop: int | float = stop
-        self.step: int | float = step

@@ -27,9 +27,10 @@ import contextlib
 from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
-from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
+from .core.variables import Domain
+from .qprogram import Calibration, CrosstalkMatrix, QbloxCompiler, QProgram, QuantumMachinesCompiler, Experiment
 from .platform import Platform
-from .result import ExperimentResults, stream_results
+from .result import ExperimentResults, load_by_id, stream_results
 from .typings import Parameter
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
 from .waveforms import (
@@ -47,7 +48,7 @@ from .waveforms import (
 )
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
-from .digital import Drag
+from .digital import Rmw
 from .analog import AnnealingProgram  # same as circuit transpiler, top modules should be imported at top
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
 
@@ -60,7 +61,6 @@ __all__ = [
     "CrosstalkMatrix",
     "DatabaseManager",
     "Domain",
-    "Drag",
     "Experiment",
     "ExperimentResults",
     "FlatTop",
@@ -75,6 +75,7 @@ __all__ = [
     "QbloxCompiler",
     "QuantumMachinesCompiler",
     "Ramp",
+    "Rmw",
     "Sample",
     "Square",
     "SuddenNetZero",
@@ -85,6 +86,7 @@ __all__ = [
     "deserialize",
     "deserialize_from",
     "get_db_manager",
+    "load_by_id",
     "load_results",
     "logger",
     "save_platform",

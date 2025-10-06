@@ -32,7 +32,8 @@ from ruamel.yaml import YAML
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
-from qililab.digital import CircuitToQProgramCompiler, CircuitTranspiler
+from qililab.core.variables import Domain
+from qililab.digital import CircuitToQProgramCompiler, CircuitTranspiler, qprogram_results_to_samples
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
@@ -46,7 +47,6 @@ from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
 from qililab.qprogram import (
     Calibration,
-    Domain,
     Experiment,
     QbloxCompilationOutput,
     QbloxCompiler,
@@ -67,12 +67,10 @@ if TYPE_CHECKING:
     import numpy as np
     from qilisdk.digital import Circuit
 
-    from qililab.digital import DigitalTranspilationConfig
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
-    from qililab.settings.digital.gate_event_settings import GateEventSettings
 
 
 class Platform:
@@ -468,7 +466,7 @@ class Platform:
             channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
+        if alias == "platform" or regex_match is not None:
             if self.digital_compilation_settings is None:
                 raise ValueError("Trying to get parameter of gates settings, but no gates settings exist in platform.")
             return self.digital_compilation_settings.get_parameter(
@@ -584,7 +582,7 @@ class Platform:
 
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
-    def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
+    def _set_bias_from_element(self, element: Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
         """Sets the right parameter depending on the instrument defined inside the element.
         This is used in the crosstalk correction.
         The instruments included in this function are: QM, QBlox, SPI and QDevil.
@@ -745,7 +743,9 @@ class Platform:
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
         digital_dict = {
             RUNCARD.DIGITAL: (
-                self.digital_compilation_settings.to_dict() if self.digital_compilation_settings is not None else None
+                self.digital_compilation_settings.model_dump()
+                if self.digital_compilation_settings is not None
+                else None
             )
         }
         analog_dict = {
@@ -1336,11 +1336,7 @@ class Platform:
             outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug
         )
 
-    def execute_compilation_outputs_parallel(
-        self,
-        outputs: list[QbloxCompilationOutput],
-        debug: bool = False,
-    ):
+    def execute_compilation_outputs_parallel(self, outputs: list[QbloxCompilationOutput], debug: bool = False):
         """Execute compiled qprograms in parallel.
         It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
 
@@ -1435,85 +1431,21 @@ class Platform:
 
         return results
 
-    def execute(
-        self,
-        circuit: Circuit,
-        nshots: int = 1000,
-        transpilation_config: DigitalTranspilationConfig | None = None,
-    ) -> QProgramResults:
-        """Compiles and executes a circuit or a pulse schedule, using the platform instruments.
-
-        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
-        settings of the platform and the passed transpile onfiguration. Then the pulse schedules will be compiled into the assembly programs and executed.
-
-        To compile to assembly programs, the ``platform.compile()`` method is called; check its documentation for more information.
-
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
-
-        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
-
-        .. note ::
-
-            Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
-
-            To do Step **1.** set routing=True in transpilation_config (default behavior skips it).
-
-            To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
-
-        Args:
-            program (``PulseSchedule`` | ``Circuit``): Circuit or pulse schedule to execute.
-            num_avg (int): Number of hardware averages used.
-            repetition_duration (int): Minimum duration of a single execution. Defaults to 200_000.
-            num_bins (int, optional): Number of bins used. Defaults to 1.
-            queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
-            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
-                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
-                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
-
-        Returns:
-            Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
-                platform configuration may contain the following:
-
-                - Scope acquisition is enabled: An array with dimension `(2, N)` which contain the scope data for
-                    path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
-
-                - Scope acquisition disabled: An array with dimension `(#sequencers, 2, #bins)`.
-
-        |
-
-        Example Usage:
-
-        .. code-block:: python
-
-            from qibo import gates, Circuit
-            from qibo.transpiler import ReverseTraversal, Sabre
-            from qililab import build_platform
-            from qililab.digital import DigitalTranspilationConfig
-
-            # Create circuit:
-            c = Circuit(5)
-            c.add(gates.CNOT(1, 0))
-
-            # Create platform:
-            platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
-
-            # Execute with automatic transpilation:
-            result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
-        """
+    def execute_circuit(
+        self, circuit: Circuit, nshots: int = 1000, *, qubit_mapping: dict[int, int] | None = None
+    ) -> dict[str, int]:
         # Compile pulse schedule
-        qprogram = self.compile(circuit, nshots, transpilation_config)
+        qprogram, logical_to_physical_mapping = self.compile_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
 
         results = self.execute_qprogram(qprogram)
 
-        return results
+        samples = qprogram_results_to_samples(results, logical_to_physical_mapping)
 
-    def compile(
-        self,
-        circuit: Circuit,
-        nshots: int,
-        transpilation_config: DigitalTranspilationConfig | None = None,
-    ) -> QProgram:
+        return samples
+
+    def compile_circuit(
+        self, circuit: Circuit, nshots: int, *, qubit_mapping: dict[int, int] | None = None
+    ) -> tuple[QProgram, dict[int, int]]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
         If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
@@ -1552,17 +1484,20 @@ class Platform:
         Raises:
             ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
         """
-        # We have a circular import because Platform uses CircuitToPulses and vice versa
         if self.digital_compilation_settings is None:
-            raise ValueError("Cannot compile Circuit without gates settings.")
+            raise ValueError("Cannot compile Circuit without defining DigitalCompilationSettings.")
 
-        transpiler = CircuitTranspiler(self.digital_compilation_settings)
-        circuit = transpiler.run(circuit)
+        transpiler = CircuitTranspiler(self.digital_compilation_settings, qubit_mapping=qubit_mapping)
+        transpiled_circuit = transpiler.run(circuit)
 
-        compiler = CircuitToQProgramCompiler()
-        qprogram = compiler.compile(circuit)
+        compiler = CircuitToQProgramCompiler(self.digital_compilation_settings)
+        qprogram = compiler.compile(transpiled_circuit, nshots)
 
-        return qprogram
+        logical_to_physical = {
+            q: transpiler.context.final_layout[transpiler.context.initial_layout[q]] for q in range(circuit.nqubits)
+        }
+
+        return qprogram, logical_to_physical
 
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
         bus = self.get_element(alias=alias)

@@ -14,9 +14,9 @@
 from copy import deepcopy
 from typing import overload
 
+from qililab.core.variables import Domain, requires_domain
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
@@ -36,7 +36,6 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import Domain
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
@@ -61,13 +60,13 @@ class QProgram(StructuredProgram):
             qp = QProgram()
 
             # Pulse used for changing the state of qubit
-            control_wf = IQWaveform.DRAG(amplitude=1.0, duration=40, num_sigmas=4.0, drag_correction=-2.5)
+            control_wf = IQDRAG(amplitude=1.0, duration=40, num_sigmas=4.0, drag_correction=-2.5)
 
             # Pulse used for exciting the resonator for readout
-            readout_wf = IQWaveform(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
+            readout_wf = IQPair(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
 
             # Weights used during integration
-            weights = IQWaveform(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
+            weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
 
             # Declare a variable
             gain = qp.variable(label="gain", domain=Domain.Voltage)
