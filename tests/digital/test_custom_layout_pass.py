@@ -90,6 +90,16 @@ def test_custom_layout_mapping_requires_all_logical_qubits():
         layout_pass.run(circuit)
 
 
+def test_custom_layout_mapping_rejects_extra_logical_keys():
+    topology = _make_topology(2)
+    circuit = Circuit(2)
+
+    layout_pass = CustomLayoutPass(topology, {0: 0, 1: 1, 2: 2})
+
+    with pytest.raises(ValueError, match=r"extraneous logical keys \[2\]"):
+        layout_pass.run(circuit)
+
+
 def test_custom_layout_mapping_must_be_injective():
     topology = _make_topology(2)
     circuit = Circuit(2)
@@ -121,4 +131,37 @@ def test_custom_layout_raises_when_no_route_possible():
     layout_pass = CustomLayoutPass(topology, {0: 0, 1: 2})
 
     with pytest.raises(ValueError, match=r"no path between physical qubits 0 and 2"):
+        layout_pass.run(circuit)
+
+
+def test_custom_layout_requires_pygraph_topology():
+    with pytest.raises(TypeError, match="requires a rustworkx.PyGraph"):
+        CustomLayoutPass("not a graph", {0: 0})
+
+
+def test_custom_layout_rejects_empty_topology():
+    topology = PyGraph()
+    layout_pass = CustomLayoutPass(topology, {0: 0})
+    circuit = Circuit(1)
+
+    with pytest.raises(ValueError, match="Coupling graph has no nodes"):
+        layout_pass.run(circuit)
+
+
+def test_custom_layout_raises_for_multi_qubit_gate():
+    topology = _make_topology(3)
+    topology.add_edge(0, 1, None)
+    topology.add_edge(1, 2, None)
+
+    class FakeGate:
+        def __init__(self, qubits):
+            self.qubits = qubits
+            self.nqubits = len(qubits)
+
+    circuit = Circuit(3)
+    circuit._gates = [FakeGate((0, 1, 2))]
+
+    layout_pass = CustomLayoutPass(topology, {0: 0, 1: 1, 2: 2})
+
+    with pytest.raises(NotImplementedError, match="FakeGate"):
         layout_pass.run(circuit)
