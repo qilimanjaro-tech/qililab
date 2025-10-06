@@ -86,6 +86,7 @@ if TYPE_CHECKING:
     from qililab.settings import Runcard
     from qililab.settings.digital.gate_event_settings import GateEventSettings
 
+
 class Platform:
     """Platform object representing the laboratory setup used to control quantum devices.
 
