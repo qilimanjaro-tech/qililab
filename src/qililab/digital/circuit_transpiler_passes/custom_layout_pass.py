@@ -113,9 +113,7 @@ class CustomLayoutPass(CircuitTranspilerPass):
 
         out_of_range = sorted(set(values) - valid_phys)
         if out_of_range:
-            raise ValueError(
-                f"Mapping refers to physical qubits not present in the coupling graph: {out_of_range}"
-            )
+            raise ValueError(f"Mapping refers to physical qubits not present in the coupling graph: {out_of_range}")
 
         # Build the layout list[int] where layout[logical] = physical and keep a copy for diagnostics
         layout = [self._user_mapping[q] for q in range(n_logical)]

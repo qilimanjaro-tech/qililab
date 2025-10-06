@@ -24,8 +24,8 @@ def qprogram_results_to_samples(
     logical_to_physical_qubits: Mapping[int, int],
     *,
     bus_fmt: str = "readout_q{idx}_bus",
-    order: str = "q0-left",             # "q0-right" (Qiskit-like) or "q0-left"
-    on_missing: str = "skip",           # "error", "zeros", or "skip"
+    order: str = "q0-left",  # "q0-right" (Qiskit-like) or "q0-left"
+    on_missing: str = "skip",  # "error", "zeros", or "skip"
 ) -> dict[str, int]:
     """
     Build a Samples dict (bitstring -> count) for the logical qubits.
@@ -71,8 +71,7 @@ def qprogram_results_to_samples(
             nshots = int(arr.size)
         elif arr.size != nshots:
             raise ValueError(
-                f"Inconsistent number of shots: logical {lq} (physical {pq}) has {arr.size}, "
-                f"expected {nshots}."
+                f"Inconsistent number of shots: logical {lq} (physical {pq}) has {arr.size}, expected {nshots}."
             )
         thresholds[lq] = arr
 
@@ -92,9 +91,9 @@ def qprogram_results_to_samples(
     shot_matrix = np.stack([thresholds[lq] for lq in logicals], axis=1)  # shape = (NSHOTS, NLOG)
 
     if order == "q0-right":
-        weights = (1 << np.arange(shot_matrix.shape[1], dtype=np.uint64))
+        weights = 1 << np.arange(shot_matrix.shape[1], dtype=np.uint64)
     else:
-        weights = (1 << np.arange(shot_matrix.shape[1] - 1, -1, -1, dtype=np.uint64))
+        weights = 1 << np.arange(shot_matrix.shape[1] - 1, -1, -1, dtype=np.uint64)
 
     codes = (shot_matrix.astype(np.uint64) * weights).sum(axis=1)
     unique_codes, counts = np.unique(codes, return_counts=True)

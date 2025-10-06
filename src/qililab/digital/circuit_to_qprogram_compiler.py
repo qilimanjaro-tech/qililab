@@ -42,25 +42,44 @@ class CircuitToQProgramCompiler:
             for gate in circuit.gates:
                 if isinstance(gate, Rmw):
                     gate_events = self._settings.get_gate(name=gate.name, qubits=gate.target_qubits[0])
-                    related_qubits = {*gate.qubits, *(extract_qubit_index(gate_event.bus) for gate_event in gate_events)}
-                    buses_to_sync = [f"{kind}_q{q}_bus" for q in related_qubits for kind in ("drive", "flux", "readout")]
+                    related_qubits = {
+                        *gate.qubits,
+                        *(extract_qubit_index(gate_event.bus) for gate_event in gate_events),
+                    }
+                    buses_to_sync = [
+                        f"{kind}_q{q}_bus" for q in related_qubits for kind in ("drive", "flux", "readout")
+                    ]
                     qp.sync(buses_to_sync)
                     for gate_event in gate_events:
                         if isinstance(gate_event.waveform, IQDrag):
-                            rmw = CircuitToQProgramCompiler.rmw_from_calibrated_pi_drag(gate_event.waveform, gate.theta, gate.phase)
+                            rmw = CircuitToQProgramCompiler.rmw_from_calibrated_pi_drag(
+                                gate_event.waveform, gate.theta, gate.phase
+                            )
                             qp.play(bus=gate_event.bus, waveform=rmw)
                 elif isinstance(gate, CZ):
-                    gate_events = self._settings.get_gate(name=gate.name, qubits=(gate.control_qubits[0], gate.target_qubits[0]))
-                    related_qubits = {*gate.qubits, *(extract_qubit_index(gate_event.bus) for gate_event in gate_events)}
-                    buses_to_sync = [f"{kind}_q{q}_bus" for q in related_qubits for kind in ("drive", "flux", "readout")]
+                    gate_events = self._settings.get_gate(
+                        name=gate.name, qubits=(gate.control_qubits[0], gate.target_qubits[0])
+                    )
+                    related_qubits = {
+                        *gate.qubits,
+                        *(extract_qubit_index(gate_event.bus) for gate_event in gate_events),
+                    }
+                    buses_to_sync = [
+                        f"{kind}_q{q}_bus" for q in related_qubits for kind in ("drive", "flux", "readout")
+                    ]
                     qp.sync(buses_to_sync)
                     for gate_event in gate_events:
                         qp.play(bus=gate_event.bus, waveform=gate_event.waveform)
                 elif isinstance(gate, M):
                     for qubit in gate.qubits:
                         gate_events = self._settings.get_gate(name=gate.name, qubits=qubit)
-                        related_qubits = {*gate.qubits, *(extract_qubit_index(gate_event.bus) for gate_event in gate_events)}
-                        buses_to_sync = [f"{kind}_q{q}_bus" for q in related_qubits for kind in ("drive", "flux", "readout")]
+                        related_qubits = {
+                            *gate.qubits,
+                            *(extract_qubit_index(gate_event.bus) for gate_event in gate_events),
+                        }
+                        buses_to_sync = [
+                            f"{kind}_q{q}_bus" for q in related_qubits for kind in ("drive", "flux", "readout")
+                        ]
                         qp.sync(buses_to_sync)
                         for gate_event in gate_events:
                             if gate_event.weights is None:
@@ -68,15 +87,14 @@ class CircuitToQProgramCompiler:
                             if isinstance(gate_event.waveform, Waveform):
                                 qp.measure(
                                     bus=gate_event.bus,
-                                    waveform=IQPair(I=gate_event.waveform, Q=Square(amplitude=0.0, duration=gate_event.waveform.get_duration())),
-                                    weights=gate_event.weights
+                                    waveform=IQPair(
+                                        I=gate_event.waveform,
+                                        Q=Square(amplitude=0.0, duration=gate_event.waveform.get_duration()),
+                                    ),
+                                    weights=gate_event.weights,
                                 )
                             else:
-                                qp.measure(
-                                    bus=gate_event.bus,
-                                    waveform=gate_event.waveform,
-                                    weights=gate_event.weights
-                                )
+                                qp.measure(bus=gate_event.bus, waveform=gate_event.waveform, weights=gate_event.weights)
                             qp.wait(bus=gate_event.bus, duration=self._settings.relaxation_duration)
 
         return qp

@@ -84,8 +84,7 @@ def _from_external(obj: Any) -> Any:
 
         # Recurse into params first so nested waveforms become real objects,
         # which ensures serialize(params) re-creates nested !Tags.
-        params = {k: _from_external(v) for k, v in obj.items()
-                  if k not in {"kind", "type", "__type__"}}
+        params = {k: _from_external(v) for k, v in obj.items() if k not in {"kind", "type", "__type__"}}
 
         param_txt = serialize(params).strip()
         # Accept either flow or block style for params

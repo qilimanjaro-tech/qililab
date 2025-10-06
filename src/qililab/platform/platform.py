@@ -1336,11 +1336,7 @@ class Platform:
             outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug
         )
 
-    def execute_compilation_outputs_parallel(
-        self,
-        outputs: list[QbloxCompilationOutput],
-        debug: bool = False
-    ):
+    def execute_compilation_outputs_parallel(self, outputs: list[QbloxCompilationOutput], debug: bool = False):
         """Execute compiled qprograms in parallel.
         It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
 
@@ -1436,11 +1432,7 @@ class Platform:
         return results
 
     def execute_circuit(
-        self,
-        circuit: Circuit,
-        nshots: int = 1000,
-        *,
-        qubit_mapping: dict[int, int] | None = None
+        self, circuit: Circuit, nshots: int = 1000, *, qubit_mapping: dict[int, int] | None = None
     ) -> dict[str, int]:
         # Compile pulse schedule
         qprogram, logical_to_physical_mapping = self.compile_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
@@ -1452,11 +1444,7 @@ class Platform:
         return samples
 
     def compile_circuit(
-        self,
-        circuit: Circuit,
-        nshots: int,
-        *,
-        qubit_mapping: dict[int, int] | None = None
+        self, circuit: Circuit, nshots: int, *, qubit_mapping: dict[int, int] | None = None
     ) -> tuple[QProgram, dict[int, int]]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
@@ -1505,7 +1493,9 @@ class Platform:
         compiler = CircuitToQProgramCompiler(self.digital_compilation_settings)
         qprogram = compiler.compile(transpiled_circuit, nshots)
 
-        logical_to_physical = {q: transpiler.context.final_layout[transpiler.context.initial_layout[q]] for q in range(circuit.nqubits)}
+        logical_to_physical = {
+            q: transpiler.context.final_layout[transpiler.context.initial_layout[q]] for q in range(circuit.nqubits)
+        }
 
         return qprogram, logical_to_physical
 

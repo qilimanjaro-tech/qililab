@@ -41,19 +41,23 @@ class CircuitTranspiler:
         settings: DigitalCompilationSettings,
         pipeline: list[CircuitTranspilerPass] | None = None,
         context: TranspilationContext | None = None,
-        qubit_mapping: dict[int, int] | None = None
+        qubit_mapping: dict[int, int] | None = None,
     ) -> None:
         self._settings = settings
         self._topology = self._build_topology_graph(settings)
 
-        routing_passes: list[CircuitTranspilerPass] = [SabreLayoutPass(self._topology), SabreSwapPass(self._topology)] if qubit_mapping is None else [CustomLayoutPass(self._topology, qubit_mapping)]
+        layout_routing_passes: list[CircuitTranspilerPass] = (
+            [SabreLayoutPass(self._topology), SabreSwapPass(self._topology)]
+            if qubit_mapping is None
+            else [CustomLayoutPass(self._topology, qubit_mapping)]
+        )
 
         # Main pipeline
         self._pipeline = pipeline or [
             CancelIdentityPairsPass(),
             CircuitToCanonicalBasisPass(),
             FuseSingleQubitGatesPass(),
-            *routing_passes,
+            *layout_routing_passes,
             CircuitToCanonicalBasisPass(),
             FuseSingleQubitGatesPass(),
             CanonicalBasisToNativeSetPass(),
