@@ -22,12 +22,12 @@ from qililab.waveforms.waveform import Waveform
 class IQWaveform(ABC):
     @abstractmethod
     def get_I(self) -> Waveform:
-        pass
+        ...
 
     @abstractmethod
     def get_Q(self) -> Waveform:
-        pass
+        ...
 
     @abstractmethod
     def get_duration(self) -> int:
-        pass
+        ...
