@@ -18,7 +18,7 @@ build:
     pre_install:
       - pip install --upgrade pip
     install:
-      - pip install .[docs]
+      - pip install .
     post_install:
       - pip list
 
