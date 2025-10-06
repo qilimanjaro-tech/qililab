@@ -559,8 +559,7 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            wait             40
-                            wait             100
+                            wait             140
                             move             10, R0
             square_0:
                             play             0, 1, 100
@@ -704,8 +703,7 @@ class TestQBloxCompiler:
             avg_0:
                             play             0, 1, 40
                             wait             65532
-                            wait             34468
-                            wait             2000
+                            wait             36468
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -809,8 +807,7 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            wait             40
-                            wait             100
+                            wait             140
                             move             10, R1
             square_0:
                             play             0, 1, 100
@@ -1065,20 +1062,19 @@ class TestQBloxCompiler:
             avg_0:
                             move             0, R1
                             move             0, R2
-                            move             0, R3
-                            move             11, R4
-                            move             0, R5
+                            move             11, R3
+                            move             0, R4
             loop_0:
-                            set_awg_gain     R5, R5
-                            set_awg_gain     R5, R5
-                            move             10, R6
+                            set_awg_gain     R4, R4
+                            set_awg_gain     R4, R4
+                            move             10, R5
             square_0:
                             play             0, 1, 100
-                            loop             R6, @square_0
-                            acquire_weighed  0, R3, R2, R1, 1000
-                            add              R3, 1, R3
-                            add              R5, 3276, R5
-                            loop             R4, @loop_0
+                            loop             R5, @square_0
+                            acquire_weighed  0, R2, R1, R1, 1000
+                            add              R2, 1, R2
+                            add              R4, 3276, R4
+                            loop             R3, @loop_0
                             nop
                             loop             R0, @avg_0
                             set_mrk          0
