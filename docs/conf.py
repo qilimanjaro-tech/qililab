@@ -6,11 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
-import sys
 import pathlib
+import sys
+
 import toml
-
-
 from sphinxawesome_theme.postprocess import Icons
 
 sys.path.insert(0, os.path.abspath(".."))
