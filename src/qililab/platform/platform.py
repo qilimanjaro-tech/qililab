@@ -1161,7 +1161,7 @@ class Platform:
 
         In Qililab, when multiple acquisitions or measurements are performed at the same nested level, their results are intertwined: the bins are looped over
         while the acquisition index remains constant.
-        If `intertwined` is greater than 1, this function separates each acquisition into its own
+        If `intertwined` is greater than 1, this function separates each acquisition into its own QbloxMeasurementResult object.
         QbloxMeasurementResult object. If `intertwined` is 1 the result is returned inside a single-element list.
 
         Returns:
