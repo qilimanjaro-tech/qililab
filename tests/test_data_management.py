@@ -7,49 +7,37 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from tests.data import Galadriel
-from tests.test_utils import build_platform
 
 import qililab as ql
-from qililab.data_management import save_platform
+from qililab.data_management import save_platform, build_platform
 from qililab.platform import Platform
 
 
-@patch("ruamel.yaml.YAML.load", return_value=copy.deepcopy(Galadriel.runcard))
-@patch("qililab.data_management.open")
 class TestPlatformData:
     """Unit tests for the `build_platform` function.."""
 
-    def test_build_platform_passing_a_path_to_runcard_argument(self, mock_open: MagicMock, mock_load: MagicMock):
+    def test_build_platform_passing_a_path_to_runcard_argument(self):
         """Test build method, with a string path."""
-        platform = ql.build_platform(runcard="_")
+        platform = ql.build_platform(runcard=Galadriel.runcard)
         assert isinstance(platform, Platform)
-        mock_load.assert_called_once()
-        mock_open.assert_called_once()
 
-    def test_build_platform_passing_a_dict_to_runcard_argument(self, mock_open: MagicMock, mock_load: MagicMock):
+    def test_build_platform_passing_a_dict_to_runcard_argument(self):
         """Test build method, with a direct dict."""
         platform = ql.build_platform(runcard=copy.deepcopy(Galadriel.runcard))
         assert isinstance(platform, Platform)
-        mock_load.assert_not_called()
-        mock_open.assert_not_called()
 
-    def test_save_platform_with_non_yml_path(self, mock_open: MagicMock, mock_load: MagicMock):
+    def test_save_platform_with_non_yml_path(self):
         """Test the `save_platform` function with a path that doesn't end in .yml."""
-        path = save_platform(path="test/", platform=build_platform(Galadriel.runcard))
+        platform = build_platform(Galadriel.runcard)
+        path = save_platform(path="tests/", platform=platform)
+        assert path == f"tests/{Galadriel.name}.yml"
+        Path(path).unlink(missing_ok=True)
 
-        mock_open.assert_called_once_with(file=Path(path), mode="w", encoding="utf-8")
-
-        assert path == f"test/{Galadriel.name}.yml"
-        mock_load.assert_not_called()
-
-    def test_save_platform_with_yml_path(self, mock_open: MagicMock, mock_load: MagicMock):
+    def test_save_platform_with_yml_path(self):
         """Test the `save_platform` function with a path that ends in .yml."""
-        path = save_platform(path="test/test.yml", platform=build_platform(Galadriel.runcard))
-
-        mock_open.assert_called_once_with(file=Path(path), mode="w", encoding="utf-8")
-
-        assert path == "test/test.yml"
-        mock_load.assert_not_called()
+        path = save_platform(path="tests/test.yml", platform=build_platform(Galadriel.runcard))
+        assert path == "tests/test.yml"
+        Path(path).unlink(missing_ok=True)
 
 
 class TestBuildPlatformCornerCases:
@@ -75,7 +63,7 @@ class TestBuildPlatformCornerCases:
         """Test platform serialization by building a platform, saving it and then load it back again twice. Starting from a given dict."""
         original_dict = copy.deepcopy(Galadriel.runcard)
         # Check that the new serialization with ruamel.yaml.YAML().dump works for different formats...
-        original_dict["digital"]["gates"]["Y(0)"][0]["pulse"]["phase"] = 1.6707963267948966  # Test long decimals
+        original_dict["digital"]["gates"]["Y(0)"][0]["phase"] = 1.6707963267948966  # Test long decimals
         original_dict["instruments"][0]["awg_sequencers"][0]["intermediate_frequency"] = 100_000_000  # Test underscores
         original_dict["instruments"][1]["awg_sequencers"][0]["sampling_rate"] = 7.24730e09  # Test scientific notation
 

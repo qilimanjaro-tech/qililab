@@ -32,6 +32,7 @@ from ruamel.yaml import YAML
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
+from qililab.core.variables import Domain
 from qililab.digital import CircuitToQProgramCompiler, CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
@@ -46,7 +47,6 @@ from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
 from qililab.qprogram import (
     Calibration,
-    Domain,
     Experiment,
     QbloxCompilationOutput,
     QbloxCompiler,
@@ -72,7 +72,6 @@ if TYPE_CHECKING:
     from qililab.instruments.instrument import Instrument
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
-    from qililab.settings.digital.gate_event_settings import GateEventSettings
 
 
 class Platform:
@@ -468,7 +467,7 @@ class Platform:
             channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
+        if alias == "platform" or regex_match is not None:
             if self.digital_compilation_settings is None:
                 raise ValueError("Trying to get parameter of gates settings, but no gates settings exist in platform.")
             return self.digital_compilation_settings.get_parameter(
@@ -584,7 +583,7 @@ class Platform:
 
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
-    def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
+    def _set_bias_from_element(self, element: Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
         """Sets the right parameter depending on the instrument defined inside the element.
         This is used in the crosstalk correction.
         The instruments included in this function are: QM, QBlox, SPI and QDevil.
@@ -745,7 +744,9 @@ class Platform:
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict()}
         digital_dict = {
             RUNCARD.DIGITAL: (
-                self.digital_compilation_settings.to_dict() if self.digital_compilation_settings is not None else None
+                self.digital_compilation_settings.model_dump()
+                if self.digital_compilation_settings is not None
+                else None
             )
         }
         analog_dict = {

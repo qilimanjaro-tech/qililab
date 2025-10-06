@@ -16,8 +16,7 @@
 
 import numpy as np
 
-from qililab.qprogram.decorators import requires_domain
-from qililab.qprogram.variable import Domain
+from qililab.core.variables import Domain, requires_domain
 from qililab.yaml import yaml
 
 from .gaussian import Gaussian
