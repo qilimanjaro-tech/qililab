@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from collections import deque
 from typing import Mapping
 
 from qilisdk.digital import CZ, RX, RY, RZ, SWAP, U3, Circuit, Gate, M
@@ -42,8 +43,12 @@ class CustomLayoutPass(CircuitTranspilerPass):
     - Validates that `mapping` covers *every* logical qubit in the input circuit,
       is injective (no repeated physical indices), and only references physical
       qubits that exist in `topology`.
-    - Sets `context.initial_layout` to the final list[int] mapping (same field
+    - Stores the user-requested layout in `context.initial_layout` (same field
       set by `SabreLayoutPass`).
+    - Inserts SWAPs (with corresponding un-swaps) along shortest paths of the
+      coupling graph when a user-requested 2Q interaction would otherwise
+      violate connectivity, keeping logical qubits on their requested physical
+      nodes for subsequent operations.
     - Returns a *new* `Circuit` whose `nqubits` equals the chip size
       (len of topology's qubits) and whose gates are retargeted to the mapped
       physical qubits.
@@ -51,8 +56,11 @@ class CustomLayoutPass(CircuitTranspilerPass):
 
     Notes
     -----
-    * This pass performs **layout only**; it does not check connectivity or
-      insert SWAPs. Use a routing pass afterwards if needed.
+    * SWAPs are emitted eagerly using shortest paths whenever a 2Q gate is not
+      locally executable on the chosen mapping, and are undone immediately so the
+      mapping remains stable for subsequent operations.
+    * ``last_layout`` matches the user-provided mapping; the same list is stored
+      in ``context.initial_layout`` for diagnostics.
     """
 
     def __init__(self, topology: PyGraph, qubit_mapping: Mapping[int, int]) -> None:
@@ -109,36 +117,80 @@ class CustomLayoutPass(CircuitTranspilerPass):
                 f"Mapping refers to physical qubits not present in the coupling graph: {out_of_range}"
             )
 
-        # Build the layout list[int] where layout[logical] = physical
+        # Build the layout list[int] where layout[logical] = physical and keep a copy for diagnostics
         layout = [self._user_mapping[q] for q in range(n_logical)]
-        self.last_layout = layout
+        initial_layout = layout[:]
 
-        # Expose initial layout in the shared context (same behavior as Sabre)
+        # Track which logical qubit currently occupies each physical node
+        inv_layout: list[int | None] = [None] * n_physical
+        for logical, phys in enumerate(layout):
+            inv_layout[phys] = logical
+
+        # Retarget gates, inserting SWAPs along shortest paths whenever a 2Q interaction
+        # would otherwise violate the coupling constraints. SWAPs are added in pairs so
+        # that the logical-to-physical mapping is restored after each routed 2Q gate.
+        new_circuit = Circuit(n_physical)
+
+        for gate in circuit.gates:
+            qubits = gate.qubits
+
+            if len(qubits) <= 1 or isinstance(gate, M):
+                mapped = tuple(layout[q] for q in qubits)
+                new_circuit.add(self._retarget_gate(gate, mapped))
+                continue
+
+            if len(qubits) != 2:
+                raise NotImplementedError(
+                    f"CustomLayoutPass currently supports routing for 1Q/2Q gates only; "
+                    f"received {type(gate).__name__} acting on {len(qubits)} qubits."
+                )
+
+            u, v = qubits
+
+            if self.topology.has_edge(layout[u], layout[v]):
+                mapped = (layout[u], layout[v])
+                new_circuit.add(self._retarget_gate(gate, mapped))
+                continue
+
+            path = self._shortest_path(layout[u], layout[v])
+            if path is None or len(path) < 2:
+                raise ValueError(
+                    "User mapping cannot be routed on the provided topology; no path between "
+                    f"physical qubits {layout[u]} and {layout[v]}."
+                )
+
+            applied_swaps: list[tuple[int, int]] = []
+            # Move the second qubit along the path until it neighbors the first one.
+            for i in range(len(path) - 1, 1, -1):
+                a, b = path[i - 1], path[i]
+                new_circuit.add(SWAP(a, b))
+                self._apply_swap_to_layout(layout, inv_layout, a, b)
+                applied_swaps.append((a, b))
+
+            mapped = (layout[u], layout[v])
+            if not self.topology.has_edge(*mapped):
+                raise RuntimeError(
+                    "Failed to route gate after inserting swaps; resulting qubits are still non-adjacent."
+                )
+            new_circuit.add(self._retarget_gate(gate, mapped))
+
+            # Restore the original mapping so later 1Q gates remain on the requested qubits.
+            for a, b in reversed(applied_swaps):
+                new_circuit.add(SWAP(a, b))
+                self._apply_swap_to_layout(layout, inv_layout, a, b)
+
+        # Record diagnostics: final layout after routing and expose the user-requested layout in context.
+        self.last_layout = layout[:]
+
         if self.context is not None:
-            self.context.initial_layout = layout
+            self.context.initial_layout = initial_layout
+            self.context.final_layout = list(range(self.topology.num_nodes()))
 
-        # Retarget to the chosen layout and **resize to chip size**.
-        new_circuit = self._retarget_circuit_to_device_size(circuit, layout, n_physical)
-
-        # Keep the transformed circuit in the pass context history, like other passes
         self.append_circuit_to_context(new_circuit)
 
         return new_circuit
 
     # --------- retargeting helpers (mirrors SabreLayoutPass) ---------
-
-    def _retarget_circuit_to_device_size(
-        self, circuit: Circuit, layout: list[int], n_physical: int
-    ) -> Circuit:
-        """
-        Create a new Circuit with size equal to the device (`n_physical`)
-        and all gates remapped according to `layout`.
-        """
-        new_circ = Circuit(n_physical)
-        for g in circuit.gates:
-            mapped_qubits = tuple(layout[q] for q in g.qubits)
-            new_circ.add(self._retarget_gate(g, mapped_qubits))
-        return new_circ
 
     def _retarget_gate(self, g: Gate, new_qubits: tuple[int, ...]) -> Gate:
         # 1-qubit basics
@@ -164,3 +216,50 @@ class CustomLayoutPass(CircuitTranspilerPass):
         raise NotImplementedError(
             f"Retargeting not implemented for gate type {type(g).__name__} with arity {g.nqubits}"
         )
+
+    def _apply_swap_to_layout(
+        self,
+        layout: list[int],
+        inv_layout: list[int | None],
+        phys_a: int,
+        phys_b: int,
+    ) -> None:
+        """Update layout/inverse-layout mappings after inserting a SWAP(phys_a, phys_b)."""
+
+        logical_a = inv_layout[phys_a]
+        logical_b = inv_layout[phys_b]
+
+        inv_layout[phys_a], inv_layout[phys_b] = logical_b, logical_a
+
+        if logical_a is not None:
+            layout[logical_a] = phys_b
+        if logical_b is not None:
+            layout[logical_b] = phys_a
+
+    def _shortest_path(self, start: int, goal: int) -> list[int] | None:
+        """Return a shortest path between `start` and `goal` physical qubits."""
+
+        if start == goal:
+            return [start]
+
+        visited = {start}
+        parents: dict[int, int] = {}
+        queue: deque[int] = deque([start])
+
+        while queue:
+            node = queue.popleft()
+            for nb in self.topology.neighbors(node):
+                nb = int(nb)
+                if nb in visited:
+                    continue
+                parents[nb] = node
+                if nb == goal:
+                    path = [goal]
+                    while path[-1] != start:
+                        path.append(parents[path[-1]])
+                    path.reverse()
+                    return path
+                visited.add(nb)
+                queue.append(nb)
+
+        return None

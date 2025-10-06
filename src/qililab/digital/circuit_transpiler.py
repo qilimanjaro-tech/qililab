@@ -46,13 +46,14 @@ class CircuitTranspiler:
         self._settings = settings
         self._topology = self._build_topology_graph(settings)
 
+        routing_passes: list[CircuitTranspilerPass] = [SabreLayoutPass(self._topology), SabreSwapPass(self._topology)] if qubit_mapping is None else [CustomLayoutPass(self._topology, qubit_mapping)]
+
         # Main pipeline
         self._pipeline = pipeline or [
             CancelIdentityPairsPass(),
             CircuitToCanonicalBasisPass(),
             FuseSingleQubitGatesPass(),
-            SabreLayoutPass(self._topology) if qubit_mapping is None else CustomLayoutPass(self._topology, qubit_mapping),
-            SabreSwapPass(self._topology),
+            *routing_passes,
             CircuitToCanonicalBasisPass(),
             FuseSingleQubitGatesPass(),
             CanonicalBasisToNativeSetPass(),

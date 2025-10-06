@@ -1438,10 +1438,12 @@ class Platform:
     def execute_circuit(
         self,
         circuit: Circuit,
-        nshots: int = 1000
+        nshots: int = 1000,
+        *,
+        qubit_mapping: dict[int, int] | None = None
     ) -> dict[str, int]:
         # Compile pulse schedule
-        qprogram, logical_to_physical_mapping = self.compile_circuit(circuit, nshots)
+        qprogram, logical_to_physical_mapping = self.compile_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
 
         results = self.execute_qprogram(qprogram)
 
@@ -1453,6 +1455,7 @@ class Platform:
         self,
         circuit: Circuit,
         nshots: int,
+        *,
         qubit_mapping: dict[int, int] | None = None
     ) -> tuple[QProgram, dict[int, int]]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
