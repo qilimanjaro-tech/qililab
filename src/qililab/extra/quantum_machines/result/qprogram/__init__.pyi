@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Quantum Machines qprogram result integration."""
-
 from .quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 
 __all__ = ["QuantumMachinesMeasurementResult"]

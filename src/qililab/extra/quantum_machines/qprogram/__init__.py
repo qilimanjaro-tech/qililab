@@ -14,11 +14,23 @@
 
 """Quantum Machines qprogram integration."""
 
+from __future__ import annotations
+
 import sys
+from typing import TYPE_CHECKING
 
 from qililab._optionals import ImportedFeature, OptionalFeature, Symbol, import_optional_dependencies
 
-__all__: list[str] = []
+if TYPE_CHECKING:  # pragma: no cover - typing helper
+    from .quantum_machines_compiler import (
+        QuantumMachinesCompilationOutput,
+        QuantumMachinesCompiler,
+    )
+
+__all__ = ["QuantumMachinesCompilationOutput", "QuantumMachinesCompiler"]
+
+QuantumMachinesCompiler = None  # type: ignore[assignment]
+QuantumMachinesCompilationOutput = None  # type: ignore[assignment]
 
 _OPTIONAL_FEATURES: list[OptionalFeature] = [
     OptionalFeature(
@@ -45,4 +57,3 @@ for feature in _OPTIONAL_FEATURES:
     imported_feature: ImportedFeature = import_optional_dependencies(feature)
     for symbol_name, symbol_obj in imported_feature.symbols.items():
         setattr(_current_module, symbol_name, symbol_obj)
-        __all__.append(symbol_name)

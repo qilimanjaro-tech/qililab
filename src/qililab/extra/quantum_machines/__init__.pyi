@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Quantum Machines qprogram result integration."""
+from .instrument_controllers import QuantumMachinesClusterController
+from .instruments import QuantumMachinesCluster
+from .qprogram import QuantumMachinesCompilationOutput, QuantumMachinesCompiler
+from .result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 
-from .quantum_machines_measurement_result import QuantumMachinesMeasurementResult
-
-__all__ = ["QuantumMachinesMeasurementResult"]
+__all__ = [
+    "QuantumMachinesCluster",
+    "QuantumMachinesClusterController",
+    "QuantumMachinesCompilationOutput",
+    "QuantumMachinesCompiler",
+    "QuantumMachinesMeasurementResult",
+]

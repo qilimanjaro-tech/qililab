@@ -14,10 +14,22 @@
 
 """Quantum Machines optional integration for Qililab."""
 
-from .instrument_controllers import QuantumMachinesClusterController
-from .instruments import QuantumMachinesCluster
-from .qprogram import QuantumMachinesCompilationOutput, QuantumMachinesCompiler
-from .result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - typing helpers
+    from .instrument_controllers import QuantumMachinesClusterController
+    from .instruments import QuantumMachinesCluster
+    from .qprogram import QuantumMachinesCompilationOutput, QuantumMachinesCompiler
+    from .result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+else:
+    from .instrument_controllers import QuantumMachinesClusterController  # type: ignore F401
+    from .instruments import QuantumMachinesCluster  # type: ignore F401
+    from .qprogram import QuantumMachinesCompilationOutput, QuantumMachinesCompiler  # type: ignore F401
+    from .result.qprogram.quantum_machines_measurement_result import (
+        QuantumMachinesMeasurementResult,  # type: ignore F401
+    )
 
 __all__ = [
     "QuantumMachinesCluster",

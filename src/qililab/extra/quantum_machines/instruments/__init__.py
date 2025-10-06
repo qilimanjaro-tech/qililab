@@ -14,11 +14,20 @@
 
 """Quantum Machines instrument integration."""
 
+from __future__ import annotations
+
 import sys
+from typing import TYPE_CHECKING
 
 from qililab._optionals import ImportedFeature, OptionalFeature, Symbol, import_optional_dependencies
 
-__all__: list[str] = []
+if TYPE_CHECKING:  # pragma: no cover - used for static typing only
+    from .quantum_machines_cluster import QuantumMachinesCluster
+
+__all__ = ["QuantumMachinesCluster"]
+
+# Provide a stub during runtime before optional imports run so attribute always exists.
+QuantumMachinesCluster = None  # type: ignore[assignment]
 
 _OPTIONAL_FEATURES: list[OptionalFeature] = [
     OptionalFeature(
@@ -40,4 +49,3 @@ for feature in _OPTIONAL_FEATURES:
     imported_feature: ImportedFeature = import_optional_dependencies(feature)
     for symbol_name, symbol_obj in imported_feature.symbols.items():
         setattr(_current_module, symbol_name, symbol_obj)
-        __all__.append(symbol_name)
