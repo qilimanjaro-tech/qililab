@@ -1453,6 +1453,7 @@ class Platform:
         self,
         circuit: Circuit,
         nshots: int,
+        qubit_mapping: dict[int, int] | None = None
     ) -> tuple[QProgram, dict[int, int]]:
         """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
 
@@ -1495,7 +1496,7 @@ class Platform:
         if self.digital_compilation_settings is None:
             raise ValueError("Cannot compile Circuit without defining DigitalCompilationSettings.")
 
-        transpiler = CircuitTranspiler(self.digital_compilation_settings)
+        transpiler = CircuitTranspiler(self.digital_compilation_settings, qubit_mapping=qubit_mapping)
         transpiled_circuit = transpiler.run(circuit)
 
         compiler = CircuitToQProgramCompiler(self.digital_compilation_settings)

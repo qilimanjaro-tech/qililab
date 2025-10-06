@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from copy import deepcopy
 
 from qilisdk.digital import Circuit
@@ -25,6 +24,7 @@ from .circuit_transpiler_passes import (
     CanonicalBasisToNativeSetPass,
     CircuitToCanonicalBasisPass,
     CircuitTranspilerPass,
+    CustomLayoutPass,
     FuseSingleQubitGatesPass,
     SabreLayoutPass,
     SabreSwapPass,
@@ -41,6 +41,7 @@ class CircuitTranspiler:
         settings: DigitalCompilationSettings,
         pipeline: list[CircuitTranspilerPass] | None = None,
         context: TranspilationContext | None = None,
+        qubit_mapping: dict[int, int] | None = None
     ) -> None:
         self._settings = settings
         self._topology = self._build_topology_graph(settings)
@@ -50,7 +51,7 @@ class CircuitTranspiler:
             CancelIdentityPairsPass(),
             CircuitToCanonicalBasisPass(),
             FuseSingleQubitGatesPass(),
-            SabreLayoutPass(self._topology),
+            SabreLayoutPass(self._topology) if qubit_mapping is None else CustomLayoutPass(self._topology, qubit_mapping),
             SabreSwapPass(self._topology),
             CircuitToCanonicalBasisPass(),
             FuseSingleQubitGatesPass(),
