@@ -24,10 +24,9 @@ release = os.getenv("QILILAB_VERSION", "dev")
 extensions = [
     "sphinx_design",
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.napoleon",  # converts Google docstrings into rst
     "sphinx_mdinclude",  # allows the mdinclude directive to add Markdown files
-    # "sphinx_automodapi.automodapi",
+    "sphinx.ext.napoleon",  # converts Google docstrings into rst
+    "sphinx_automodapi.automodapi",
     # "sphinxawesome_theme.docsearch",  # TODO: Uncomment this when access to DocSearch!
 ]
 
