@@ -131,7 +131,7 @@ class CircuitToQProgramCompiler:
         Q0 = pi_drag.get_Q().envelope()
 
         c, s = np.cos(phase), np.sin(phase)
-        scale = theta / np.pi  # drag is a π-pulse; scale linearly to θ
+        scale = theta_mod / np.pi  # drag is a π-pulse; scale linearly to θ
 
         # Phase rotation in the IQ plane followed by θ scaling
         I_env = scale * (I0 * c - Q0 * s)

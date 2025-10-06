@@ -50,9 +50,14 @@ def test_rmw_from_calibrated_pi_drag_rotates_and_scales():
 
     I0 = drag.get_I().envelope()
     Q0 = drag.get_Q().envelope()
-    expected_phase = CircuitToQProgramCompiler.wrap_to_pi(phase + np.pi)
+    theta_mod = CircuitToQProgramCompiler.wrap_to_pi(theta)
+    adjusted_phase = phase
+    if theta_mod < 0:
+        theta_mod = -theta_mod
+        adjusted_phase += np.pi
+    expected_phase = CircuitToQProgramCompiler.wrap_to_pi(adjusted_phase)
     c, s = np.cos(expected_phase), np.sin(expected_phase)
-    scale = theta / np.pi
+    scale = theta_mod / np.pi
     expected_I = scale * (I0 * c - Q0 * s)
     expected_Q = scale * (I0 * s + Q0 * c)
 
