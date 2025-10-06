@@ -6,10 +6,8 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
-import pathlib
 import sys
 
-import toml
 from sphinxawesome_theme.postprocess import Icons
 
 sys.path.insert(0, os.path.abspath(".."))
@@ -18,12 +16,9 @@ project = "Qililab"
 copyright = "2023, Qilimanjaro"
 author = "Qilimanjaro"
 
+import qililab  # noqa: E402, ICN001
 
-pyproject_path = pathlib.Path(__file__).parents[1] / "pyproject.toml"
-with open(pyproject_path, "r") as f:
-    pyproject = toml.load(f)
-
-release = pyproject["project"]["version"]
+release = qililab.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -39,7 +34,7 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*"]
-autodoc_mock_imports = ["qm_qua"]
+autodoc_mock_imports = ["qibo", "qm_qua"]
 source_suffix = [".rst", ".md"]
 pygments_style = "default"
 language = "en"

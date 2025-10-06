@@ -4,4 +4,3 @@ sphinxawesome-theme==5.2.0
 sphinx-design==0.6.1
 sphinx_mdinclude==0.6.2
 sphinx_automodapi==0.18.0
-toml>=0.10
