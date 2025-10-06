@@ -1,3 +1,6 @@
+import math
+from typing import Any
+
 import numpy as np
 import pytest
 from qilisdk.digital import (
@@ -15,73 +18,186 @@ from qilisdk.digital import (
     H,
     I,
     X,
-    Y,
-    Z,
 )
 from qilisdk.digital.exceptions import GateHasNoMatrixError
 from qilisdk.digital.gates import Adjoint, Controlled, M
-from qililab.digital.circuit_transpiler_passes.cancel_identity_pairs_pass import CancelIdentityPairsPass, _first_nonzero_phase, _EPS, _try_matrix
 
-def assert_equal_gate(list1: list[Gate], list2: list[Gate]):
-    assert len(list1) == len(list2)
-    for i, j in zip(list1, list2):
-        assert i.qubits == j.qubits
-        assert i.name == j.name
-        try:
-            assert (i.matrix == j.matrix).all()
-        except GateHasNoMatrixError:
-            pass
+from qililab.digital.circuit_transpiler_passes.cancel_identity_pairs_pass import (
+    CancelIdentityPairsPass,
+    _dephased_signature,
+    _first_nonzero_phase,
+    _try_matrix,
+)
+
+
+def describe_gates(circuit: Circuit) -> list[tuple[str, tuple[int, ...], tuple[float, ...]]]:
+    """Return a succinct description of the circuit gates for assertions."""
+
+    snapshot: list[tuple[str, tuple[int, ...], tuple[float, ...]]] = []
+    for gate in circuit.gates:
+        snapshot.append((type(gate).__name__, gate.qubits, tuple(gate.get_parameter_values())))
+    return snapshot
+
+
+class PhaseGate(Gate):
+    """Simple one-qubit gate used to exercise the matrix fallback."""
+
+    def __init__(self, qubit: int, phase: float) -> None:
+        self._target = (qubit,)
+        self._phase = phase
+
+    @property
+    def name(self) -> str:  # pragma: no cover - required by abstract base but unused
+        return "PhaseGate"
+
+    @property
+    def matrix(self) -> np.ndarray:
+        return np.array([[1.0, 0.0], [0.0, np.exp(1j * self._phase)]], dtype=complex)
+
+    @property
+    def target_qubits(self) -> tuple[int, ...]:
+        return self._target
+
+    def get_parameters(self) -> dict[str, float]:
+        return {"phase": self._phase}
+
+
+class NoMatrixGate(Gate):
+    """Gate without a matrix to trigger the barrier path."""
+
+    def __init__(self, qubit: int) -> None:
+        self._target = (qubit,)
+
+    @property
+    def name(self) -> str:  # pragma: no cover - required by abstract base but unused
+        return "NoMatrixGate"
+
+    @property
+    def matrix(self) -> np.ndarray:
+        raise GateHasNoMatrixError
+
+    @property
+    def target_qubits(self) -> tuple[int, ...]:
+        return self._target
+
 
 class TestCancelIdentityPairsPass:
-    def test_involutions_run(self):
-        h_test = Circuit(2)
-        h_test._gates = [CZ(0, 1), SWAP(0, 1), H(0), X(0), X(0), I(1), H(0), SWAP(1,0), CNOT(0, 1), CNOT(1, 0),CZ(0, 1)]
-        assert_equal_gate(CancelIdentityPairsPass().run(h_test)._gates, 
-                            [CZ(0, 1), CNOT(0, 1), CNOT(1, 0), CZ(0, 1)])
-        assert_equal_gate(h_test._gates, [CZ(0, 1), SWAP(0, 1), H(0), X(0), X(0), I(1), H(0), SWAP(1,0), CNOT(0, 1), CNOT(1, 0),CZ(0, 1)])
+    def test_involutions_and_identity_are_removed(self) -> None:
+        circuit = Circuit(2)
+        circuit.add(H(0))
+        circuit.add(H(0))
+        circuit.add(CZ(1, 0))
+        circuit.add(CZ(0, 1))
+        circuit.add(SWAP(0, 1))
+        circuit.add(SWAP(1, 0))
+        circuit.add(X(0))
+        circuit.add(X(0))
+        circuit.add(I(1))
 
-        rx_test = Circuit(2)
-        rx_test._gates = [RX(0,theta=np.pi/2), RX(0,theta=-np.pi/2), RX(0,theta=np.pi/2), RX(0,theta=np.pi/2), RX(1,theta=-np.pi/2)]
-        assert_equal_gate(CancelIdentityPairsPass().run(rx_test)._gates,  [RX(0,theta=np.pi/2), RX(0,theta=np.pi/2), RX(1,theta=-np.pi/2)])
+        result = CancelIdentityPairsPass().run(circuit)
 
-        rot_test = Circuit(2)
-        rot_test._gates = [RY(0,theta=np.pi/2), RY(0,theta=-np.pi/2), RZ(1,phi=0), RZ(1,phi=0),
-                           U1(1,phi=np.pi/2), U1(1,phi=-np.pi/2)]
-        assert_equal_gate(CancelIdentityPairsPass().run(rot_test)._gates,  [])
+        assert describe_gates(result) == []
+        # Original circuit remains untouched
+        assert len(circuit.gates) == 9
 
-        u3_test = Circuit(2)
-        u3_test._gates = [U3(1,theta=2,phi=3,gamma=4), U3(1,theta=-2,phi=-4,gamma=-3),
-                          U3(1,theta=2,phi=3,gamma=4), U3(1,theta=-2,phi=4,gamma=-3)]
-        assert_equal_gate(CancelIdentityPairsPass().run(u3_test)._gates,  [U3(1,theta=2,phi=3,gamma=4), U3(1,theta=-2,phi=4,gamma=-3)])
+    def test_parameterized_rotations_cancel_with_wrapped_angles(self) -> None:
+        circuit = Circuit(1)
+        circuit.add(RX(0, theta=math.pi / 2))
+        circuit.add(RX(0, theta=3 * math.pi / 2))  # wraps to -pi/2
+        circuit.add(RY(0, theta=math.pi / 4))
+        circuit.add(RY(0, theta=-math.pi / 4))
+        circuit.add(RZ(0, phi=0.0))
+        circuit.add(RZ(0, phi=0.0))
+        circuit.add(U1(0, phi=0.3))
+        circuit.add(U1(0, phi=-0.3))
 
-        u2_test = Circuit(2)
-        u2_test._gates = [U2(0, phi=2, gamma=3), U3(0, theta=-np.pi/2 , phi=-3, gamma=-2), U2(0, phi=2, gamma=3), U3(0, theta=-np.pi/2 , phi=-2, gamma=-3), U2(1, phi=3, gamma=2)]
-        assert_equal_gate(CancelIdentityPairsPass().run(u2_test)._gates,  [U2(0, phi=2, gamma=3), U3(0, theta=-np.pi/2 , phi=-2, gamma=-3), U2(1, phi=3, gamma=2)])
+        result = CancelIdentityPairsPass().run(circuit)
 
-        ad_co_test = Circuit(2)
-        ad_co_test._gates = [Adjoint(Y(1)),Adjoint(Y(1)), Adjoint(Y(1)),Adjoint(Y(0)),Adjoint(Z(0)),
-                             Controlled(1,basic_gate=Y(0)),Controlled(1,basic_gate=Y(0)), 
-                             Controlled(1,basic_gate=Y(0)), Controlled(0,basic_gate=Y(1)), Controlled(0,basic_gate=Z(1))]
-        assert_equal_gate(CancelIdentityPairsPass().run(ad_co_test)._gates,  [Adjoint(Y(1)),Adjoint(Y(0)),Adjoint(Z(0)), 
-                                                                              Controlled(1,basic_gate=Y(0)), Controlled(0,basic_gate=Y(1)), Controlled(0,basic_gate=Z(1))])
-        
-        empty_circuit_test = Circuit(3)
-        assert CancelIdentityPairsPass().run(empty_circuit_test)._gates == []
+        assert describe_gates(result) == []
 
+    def test_u_gate_cancellations(self) -> None:
+        circuit = Circuit(1)
+        circuit.add(U2(0, phi=0.5, gamma=1.2))
+        circuit.add(U3(0, theta=-math.pi / 2, phi=-1.2, gamma=-0.5))  # inverse of U2 above
+        circuit.add(U3(0, theta=0.9, phi=0.1, gamma=0.7))
+        circuit.add(U3(0, theta=-0.9, phi=-0.7, gamma=-0.1))
+        circuit.add(U3(0, theta=0.9, phi=0.1, gamma=0.7))
 
+        result = CancelIdentityPairsPass().run(circuit)
 
-    def test_first_nonzero_phase(self):
-        c_number1 = np.array([0 - 0j,0 + _EPS*1j])
-        c_number2 = np.array([-1+1j])
-        assert _first_nonzero_phase(c_number1) == 0.0
-        assert _first_nonzero_phase(c_number2) == np.pi*3/4
-    
-    def test_try_matrix (self):
-        gate1 = CZ(2,3)
-        gate2 = M(2)
-        assert (_try_matrix(gate1) == np.array([[[ 1.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
-                                                [ 0.+0.j,  1.+0.j,  0.+0.j,  0.+0.j],
-                                                [ 0.+0.j,  0.+0.j,  1.+0.j,  0.+0.j],
-                                                [ 0.+0.j,  0.+0.j,  0.+0.j, -1.+0.j]]])).all()
-        assert _try_matrix(gate2) == None
+        # Only the unmatched trailing U3 should remain
+        assert describe_gates(result) == [("U3", (0,), (0.9, 0.1, 0.7))]
 
+    def test_adjoint_and_controlled_pairs_cancel(self) -> None:
+        circuit = Circuit(2)
+        circuit.add(Adjoint(RX(0, theta=0.6)))
+        circuit.add(RX(0, theta=0.6))
+        circuit.add(Controlled(1, basic_gate=RY(0, theta=0.2)))
+        circuit.add(Controlled(1, basic_gate=RY(0, theta=-0.2)))
+
+        result = CancelIdentityPairsPass().run(circuit)
+
+        assert describe_gates(result) == []
+
+    def test_matrix_fallback_cancels_custom_unitaries(self) -> None:
+        circuit = Circuit(2)
+        circuit.add(PhaseGate(0, phase=0.4))
+        circuit.add(PhaseGate(1, phase=0.1))
+        circuit.add(PhaseGate(0, phase=-0.4))
+
+        result = CancelIdentityPairsPass().run(circuit)
+
+        assert describe_gates(result) == [("PhaseGate", (1,), (0.1,))]
+
+    def test_measurements_and_unknown_gates_block_cancellation(self) -> None:
+        circuit = Circuit(1)
+        circuit.add(X(0))
+        circuit.add(M(0))
+        circuit.add(X(0))  # blocked by measurement
+        circuit.add(X(0))
+        circuit.add(NoMatrixGate(0))  # clears pending candidate
+        circuit.add(X(0))
+
+        result = CancelIdentityPairsPass().run(circuit)
+
+        # Measurement prevents the first pair from cancelling, but the last two X cancel
+        assert describe_gates(result) == [
+            ("X", (0,), tuple()),
+            ("M", (0,), tuple()),
+            ("NoMatrixGate", (0,), tuple()),
+            ("X", (0,), tuple()),
+        ]
+
+    def test_first_nonzero_phase_and_dephased_signature(self) -> None:
+        matrix = np.diag([1.0, np.exp(1j * 0.3)])
+        phased_matrix = np.exp(1j * 0.7) * matrix
+
+        assert math.isclose(_first_nonzero_phase(phased_matrix), 0.7, rel_tol=1e-9)
+        assert _dephased_signature(matrix) == _dephased_signature(phased_matrix)
+        assert _dephased_signature(np.array([])) == ()
+
+    def test_try_matrix_handles_missing_matrix(self) -> None:
+        assert isinstance(_try_matrix(CZ(0, 1)), np.ndarray)
+        assert _try_matrix(M(0)) is None
+
+    def test_qubits_key_and_blocking(self) -> None:
+        pass_obj = CancelIdentityPairsPass()
+        assert pass_obj._qubits_key(CZ(3, 1)) == (1, 3)
+        assert pass_obj._qubits_key(SWAP(5, 2)) == (2, 5)
+        assert pass_obj._qubits_key(CNOT(2, 0)) == (2, 0)
+
+        stack: dict[tuple[Any, tuple[int, ...]], int] = {
+            (("INV", "X"), (0,)): 1,
+            (("INV", "X"), (1,)): 2,
+        }
+
+        pass_obj._block_overlapping(stack, ())  # clears everything
+        assert stack == {}
+
+        stack = {
+            (("INV", "X"), (0,)): 1,
+            (("INV", "X"), (1,)): 2,
+        }
+
+        pass_obj._block_overlapping(stack, (1,))
+        assert stack == {(("INV", "X"), (0,)): 1}
