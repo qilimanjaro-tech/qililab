@@ -12,41 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the QProgram class and all the needed information to build a QProgram.
-
-.. currentmodule:: qililab
-
-QProgram Class
-~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~QProgram
-
-Compilers
-~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~QbloxCompiler
-
-.. note::
-
-    The Quantum Machines compiler is exposed from
-    ``qililab.extra.quantum_machines``.
-
-Other QProgram related Classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~Calibration
-    ~Domain
-
-"""
+"""Tools for building and manipulating :class:`~qililab.qprogram.qprogram.QProgram` instances."""
 
 from .calibration import Calibration
 from .crosstalk_matrix import CrosstalkMatrix, FluxVector
