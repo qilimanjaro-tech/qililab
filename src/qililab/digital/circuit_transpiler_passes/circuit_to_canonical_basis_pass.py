@@ -48,6 +48,7 @@ from .circuit_transpiler_pass import CircuitTranspilerPass
 from .numeric_helpers import (
     _mat_U3,
     _unitary_sqrt_2x2,
+    _wrap_angle,
     _zyz_from_unitary,
 )
 
@@ -95,7 +96,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
             RY: self._CRY_canonical,
             RZ: self._CRZ_canonical,
             U3: self._CU3_canonical,
-        }
+            }
 
     def run(self, circuit: Circuit) -> Circuit:
         seq = self._rewrite_list(circuit.gates)
@@ -146,7 +147,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         V = self._sqrt_1q_gate_as_basis(basic_gate)
         Vd = self._rewrite_gate(V, adjointed=True)[0]
 
-        t = g.target_qubits[0]
+        t = basic_gate.qubits[0]
         seq: List[Gate] = [
             *self._Controled_handeling(V, controls=rest, adjointed=adjointed),
             *self._CNOT_canonical(CNOT(c_last, t), adjointed=adjointed),
@@ -272,7 +273,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
             else [U3(base.qubits[0], theta=-th, phi=-lam, gamma=-ph)]
 
     def _CRX_canonical(self, g: RX, control_qubit: int, adjointed: bool = False):
-        theta = g.theta / 2
+        theta = _wrap_angle(g.theta / 2)
         target_qubit = g.qubits[0]
         sequence = [RX(target_qubit, theta=theta),
                     CZ(control_qubit, target_qubit),
@@ -281,7 +282,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         return sequence if not adjointed else self._rewrite_list(sequence, adjointed=adjointed)
 
     def _CRY_canonical(self, g: RY, control_qubit: int, adjointed: bool = False):
-        theta = g.theta / 2
+        theta = _wrap_angle(g.theta / 2)
         target_qubit = g.qubits[0]
         sequence = [RY(target_qubit, theta=theta),
                     CZ(control_qubit, target_qubit),
@@ -290,7 +291,7 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         return sequence if not adjointed else self._rewrite_list(sequence, adjointed=adjointed)
 
     def _CRZ_canonical(self, g: RZ, control_qubit: int, adjointed: bool = False):
-        phi = g.phi / 2
+        phi = _wrap_angle(g.phi / 2)
         target_qubit = g.qubits[0]
         sequence = [
                     RZ(target_qubit, phi=phi),
@@ -303,16 +304,16 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
         return sequence if not adjointed else self._rewrite_list(sequence, adjointed=adjointed)
 
     def _CU3_canonical(self, g: U3, control_qubit: int, adjointed: bool = False):
-        theta = g.theta
-        phi = g.phi
-        lam = g.gamma
+        theta = _wrap_angle(g.theta)
+        phi = _wrap_angle(g.phi)
+        lam = _wrap_angle(g.gamma)
         target_qubit = g.qubits[0]
         sequence = [
                     RZ(target_qubit, phi=(lam - phi) / 2),
                     U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi),  # An H
                     CZ(control_qubit, target_qubit),
                     U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi),  # An H
-                    U3(target_qubit, theta=-theta / 2, phi=0.0, gamma=-(lam + phi) / 2),
+                    U3(target_qubit, theta=-theta / 2, phi=0.0, gamma=_wrap_angle(-(lam + phi) / 2)),
                     U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi),  # An H
                     CZ(control_qubit, target_qubit),
                     U3(target_qubit, theta=math.pi / 2, phi=0.0, gamma=math.pi),  # An H
