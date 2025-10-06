@@ -1140,17 +1140,12 @@ class Platform:
                         bus_results = bus.acquire_qprogram_results(
                             acquisitions=acquisitions[bus_alias], channel_id=int(channel)
                         )
-
-                        # TODO: replicate for the parallel excute as well
                         for bus_result in bus_results:
-                            print(bus_result)
                             for _, acquisition_data in acquisitions[bus_alias].items():
                                 intertwined = acquisition_data.intertwined
-                                print(intertwined)
-                                unintertwined_result = self._unintertwined_qblox_results(bus_result, intertwined)
-                                for res in unintertwined_result:
-                                    print(res)
-                                    results.append_result(bus=bus_alias, result=res)
+                                unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                for unintertwined_result in unintertwined_results:
+                                    results.append_result(bus=bus_alias, result=unintertwined_result)
 
         # Reset instrument settings
         for bus_alias in sequences:
@@ -1159,13 +1154,13 @@ class Platform:
                     instrument.desync_sequencer(sequencer_id=int(channel))
 
         return results
-    
+
     def _unintertwined_qblox_results(self, bus_result, intertwined):
         """ Return a list of results where intertwined acquisitions are separated.
 
         In Qililab, when multiple acquisitions or measurements are performed at the same nested level, their results are intertwined: the bins are looped over
         while the acquisition index remains constant.
-        If `intertwined` is greater than 1, this function creates deep copies of the results retrieved from QBlox and separates each acquisition into its own
+        If `intertwined` is greater than 1, this function separates each acquisition into its own
         QbloxMeasurementResult object. If `intertwined` is 1 the result is returned inside a single-element list.
 
         Returns:
@@ -1175,7 +1170,7 @@ class Platform:
         if intertwined > 1:
             for result in range(intertwined):
                 # TODO: remove the deepcopy
-                results_unintertwined=deepcopy(bus_result)
+                results_unintertwined = deepcopy(bus_result)
                 results_unintertwined.intertwined = 1
 
                 # scope
@@ -1204,7 +1199,6 @@ class Platform:
             results_unintertwined_list = [bus_result]
 
         return results_unintertwined_list
-
 
     def _execute_quantum_machines_compilation_output(
         self,
@@ -1485,7 +1479,11 @@ class Platform:
                                 acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias], channel_id=int(channel)
                             )
                             for bus_result in bus_results:
-                                results[qprogram_idx].append_result(bus=bus_alias, result=bus_result)
+                                for _, acquisition_data in aquisitions_per_qprogram[qprogram_idx][bus_alias].items():
+                                    intertwined = acquisition_data.intertwined
+                                    unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                    for unintertwined_result in unintertwined_results:
+                                        results[qprogram_idx].append_result(bus=bus_alias, result=unintertwined_result)
 
         # Reset instrument settings
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
