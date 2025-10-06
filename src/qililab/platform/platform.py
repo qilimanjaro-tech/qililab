@@ -64,6 +64,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
@@ -1169,30 +1170,15 @@ class Platform:
         results_unintertwined_list = []
         if intertwined > 1:
             for result in range(intertwined):
-                # TODO: remove the deepcopy
-                results_unintertwined = deepcopy(bus_result)
-                results_unintertwined.intertwined = 1
-
-                # scope
-                path0_scope = results_unintertwined.raw_measurement_data["scope"]["path0"]["data"]
-                results_unintertwined.raw_measurement_data["scope"]["path0"]["data"] = path0_scope[result::intertwined]
-
-                path1_scope = results_unintertwined.raw_measurement_data["scope"]["path1"]["data"]
-                results_unintertwined.raw_measurement_data["scope"]["path1"]["data"] = path1_scope[result::intertwined]
-
-                # bins
-                path0_bin = results_unintertwined.raw_measurement_data["bins"]["integration"]["path0"]
-                results_unintertwined.raw_measurement_data["bins"]["integration"]["path0"] = path0_bin[result::intertwined]
-
-                path1_bin = results_unintertwined.raw_measurement_data["bins"]["integration"]["path1"]
-                results_unintertwined.raw_measurement_data["bins"]["integration"]["path1"] = path1_bin[result::intertwined]
-
-                threshold = results_unintertwined.raw_measurement_data["bins"]["threshold"]
-                results_unintertwined.raw_measurement_data["bins"]["threshold"] = threshold[result::intertwined]
-
-                avg_cnt = results_unintertwined.raw_measurement_data["bins"]["avg_cnt"]
-                results_unintertwined.raw_measurement_data["bins"]["avg_cnt"] = avg_cnt[result::intertwined]
-
+                bus = bus_result.bus
+                new_raw_measurement_data = {"scope": {"path0": {"data": bus_result.raw_measurement_data["scope"]["path0"]["data"][result::intertwined]},
+                                                      "path1": {"data": bus_result.raw_measurement_data["scope"]["path1"]["data"][result::intertwined]}},
+                                            "bins": {"integration": {"path0": bus_result.raw_measurement_data["bins"]["integration"]["path0"][result::intertwined],
+                                                                    "path1": bus_result.raw_measurement_data["bins"]["integration"]["path1"][result::intertwined]},
+                                            "threshold": bus_result.raw_measurement_data["bins"]["threshold"][result::intertwined],
+                                            "avg_cnt": bus_result.raw_measurement_data["bins"]["avg_cnt"][result::intertwined]}
+                                            }
+                results_unintertwined = QbloxMeasurementResult(bus=bus, raw_measurement_data=new_raw_measurement_data, shape=bus_result.shape)
                 results_unintertwined_list.append(results_unintertwined)
 
         else:
