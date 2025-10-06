@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from qilisdk.digital import Circuit
-from qilisdk.digital.gates import CZ, RZ, M, Gate
+from qilisdk.digital.gates import CZ, RZ, M, Gate, X
 
 from qililab.digital.circuit_transpiler_passes.add_phases_to_drags_from_rz_and_cz import AddPhasesToDragsFromRZAndCZPass
 from qililab.digital.native_gates import Rmw
@@ -145,3 +145,14 @@ class TestAddPhasesToDragsFromRZsAndCZs:
                     assert np.isclose(gate_exp.parameters["theta"].value, gate_trans.parameters["theta"].value)
                     assert np.isclose(gate_exp.parameters["phase"].value, gate_trans.parameters["phase"].value)
                 assert gate_exp.qubits == gate_trans.qubits
+
+    def test_unsupported_gate_raises(self, digital_settings: DigitalCompilationSettings):
+        transpile_step = AddPhasesToDragsFromRZAndCZPass(digital_settings)
+
+        circuit = Circuit(1)
+        circuit.add(X(0))
+
+        with pytest.raises(
+            ValueError, match="X not part of native supported gates"
+        ):
+            transpile_step.run(circuit)
