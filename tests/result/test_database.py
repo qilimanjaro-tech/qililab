@@ -2,14 +2,13 @@
 
 # pylint: disable=protected-access
 import datetime
-import warnings
 from unittest.mock import MagicMock, patch
 
 import matplotlib as mpl
 import numpy as np
 import pytest
 
-from qililab.result.database import DatabaseManager, Measurement, _load_config, get_db_manager, get_engine
+from qililab.result.database import DatabaseManager, Measurement, _load_config, get_db_manager, get_engine, load_by_id
 
 mpl.use("Agg")  # Use non-interactive backend for testing
 
@@ -82,7 +81,7 @@ class TestMeasurement:
         with pytest.raises(Exception, match="Measurement error"):
             result = measurement.end_experiment(lambda: mock_session_context)
 
-        mock_session.rollback.assert_called_once
+        mock_session.rollback.assert_called_once()
 
     @patch("qililab.result.database.ExperimentResults")
     def test_read_experiment(self, mock_experiment_results, measurement):
@@ -212,8 +211,8 @@ class Testdatabase:
 
         db_manager.add_cooldown(**cooldown_data)
 
-        assert db_manager._mock_session.add.called
-        assert db_manager._mock_session.commit.called
+        db_manager._mock_session.add.assert_called
+        db_manager._mock_session.commit.assert_called
 
     def test_add_cooldown_raises_exception(self, db_manager: DatabaseManager):
         cooldown_data = {
@@ -314,9 +313,9 @@ class Testdatabase:
 
         # Assertions
         mock_session.query.assert_called_with(Measurement)
-        assert query_mock.filter.called
-        assert query_mock.order_by.called
-        assert query_mock.all.called
+        query_mock.filter.assert_called
+        query_mock.order_by.assert_called
+        query_mock.all.assert_called
         assert result == ["result1", "result2"]
 
         # Mock connection to Pandas
@@ -329,8 +328,8 @@ class Testdatabase:
         result_pandas = db_manager.tail(order_limit=None, pandas_output=True, light_read=True)
 
         # Assertions
-        assert query_mock.order_by.called  # same mock
-        assert query_mock.with_entities.called
+        query_mock.order_by.assert_called  # same mock
+        query_mock.with_entities.assert_called
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
 
@@ -352,9 +351,9 @@ class Testdatabase:
 
         # Assertions
         mock_session.query.assert_called_with(Measurement)
-        assert query_mock.filter.called
-        assert query_mock.order_by.called
-        assert query_mock.all.called
+        query_mock.filter.assert_called
+        query_mock.order_by.assert_called
+        query_mock.all.assert_called
         assert result == ["result1", "result2"]
 
         # Mock connection to Pandas
@@ -575,3 +574,15 @@ def test_get_engine(mock_create_engine):
 
     get_engine(user, passwd, host, port, database)
     mock_create_engine.assert_called_once_with(expected_url)
+
+
+@patch("qililab.result.database.get_db_manager")
+def test_independent_load_by_id(mock_get_db_manager):
+    mock_db = MagicMock()
+    mock_get_db_manager.return_value = mock_db
+
+    test_id = 1
+    load_by_id(test_id)
+
+    mock_get_db_manager.assert_called_once()
+    mock_db.load_by_id.assert_called_once_with(test_id)
