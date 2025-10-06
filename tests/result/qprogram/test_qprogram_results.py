@@ -19,7 +19,7 @@ def fixture_qblox_qprogram_results():
     """
     results = QProgramResults()
     results.append_result(
-        bus="readout", result=QbloxMeasurementResult(bus="readout", raw_measurement_data={"abc": 123}, intertwined=1)
+        bus="readout", result=QbloxMeasurementResult(bus="readout", raw_measurement_data={"abc": 123})
     )
     return results
 
@@ -78,12 +78,12 @@ class TestsQProgramResult:
         assert len(qblox_qprogram_results.results["readout"]) == 1
 
         qblox_qprogram_results.append_result(
-            "readout", result=QbloxMeasurementResult(bus="readout", raw_measurement_data={"def": 456}, intertwined=1)
+            "readout", result=QbloxMeasurementResult(bus="readout", raw_measurement_data={"def": 456})
         )
         assert len(qblox_qprogram_results.results["readout"]) == 2
 
         qblox_qprogram_results.append_result(
-            "another_readout", result=QbloxMeasurementResult(bus="another_readout", raw_measurement_data={"def": 456}, intertwined=1)
+            "another_readout", result=QbloxMeasurementResult(bus="another_readout", raw_measurement_data={"def": 456})
         )
         assert "another_readout" in qblox_qprogram_results.results
         assert len(qblox_qprogram_results.results["another_readout"]) == 1
