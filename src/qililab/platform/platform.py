@@ -31,7 +31,6 @@ from qibo.gates import M
 from qibo.models import Circuit
 from ruamel.yaml import YAML
 
-from qililab._optionals import OptionalFeature, Symbol, import_optional_dependencies
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
@@ -42,6 +41,7 @@ from qililab.extra.quantum_machines import (
     QuantumMachinesCompilationOutput,
     QuantumMachinesCompiler,
     QuantumMachinesMeasurementResult,
+    generate_qua_script,
 )
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
@@ -85,22 +85,6 @@ if TYPE_CHECKING:
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
     from qililab.settings.digital.gate_event_settings import GateEventSettings
-
-_QM = OptionalFeature(
-    name="quantum-machines",
-    dependencies=[
-        "qm-qua",
-        "qualang-tools",
-    ],
-    symbols=[
-        Symbol(path="qm", name="generate_qua_script", kind="callable"),
-    ],
-)
-_qm = import_optional_dependencies(_QM).symbols
-
-# Re-export runtime names (real or stubs)
-generate_qua_script: "Callable[..., str]" = cast("Any", _qm["generate_qua_script"])
-
 
 class Platform:
     """Platform object representing the laboratory setup used to control quantum devices.

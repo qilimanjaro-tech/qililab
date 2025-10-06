@@ -16,6 +16,7 @@ from .instrument_controllers import QuantumMachinesClusterController
 from .instruments import QuantumMachinesCluster
 from .qprogram import QuantumMachinesCompilationOutput, QuantumMachinesCompiler
 from .result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+from .runtime import generate_qua_script
 
 __all__ = [
     "QuantumMachinesCluster",
@@ -23,4 +24,5 @@ __all__ = [
     "QuantumMachinesCompilationOutput",
     "QuantumMachinesCompiler",
     "QuantumMachinesMeasurementResult",
+    "generate_qua_script",
 ]
