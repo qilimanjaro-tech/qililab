@@ -8,7 +8,7 @@
 
   Previously, each acquisition was assigned a unique acquisition index, which meant that a single qprogram could only contain up to 32 acquisitions per bus (due to QBlox’s limit of 32 indices).
   Now, acquisitions at the same nested level reuse the same acquisition index while incrementing the bin index. This removes the 32-acquisition limit in most cases. A `ValueError` is raised only if more than 32 acquisitions occur at different nested levels.
-  Since the results retrieved from QBlox are now intertwined, a new method `unintertwined` has been introduced in `qblox_measurement_result`. This method returns deep copies of the results, each corresponding to one acquisition with its associated values.
+  Since the results retrieved from QBlox are now intertwined, a new function `_unintertwined_qblox_results` has been introduced in `platform`. This function called by `_execute_qblox_compilation_output method` and `execute_compilation_outputs_parallel` separates each acquisition into its own QbloxMeasurementResult object.
 [#998](https://github.com/qilimanjaro-tech/qililab/pull/998)
 
 - Update qblox-instruments to 0.16.0 and qblox firmware to 0.11
