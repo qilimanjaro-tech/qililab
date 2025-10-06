@@ -102,7 +102,7 @@ class Platform:
 
         More information about the runcard structure, in the :ref:`Runcards <runcards>` section of the documentation.
 
-    After initializing a :class:`Platform`, the typical first three steps (which are usually only required at the start) are:
+    After initializing a Platform, the typical first three steps (which are usually only required at the start) are:
 
     >>> platform.connect()  # Connects to all the instruments.
     >>> platform.initial_setup()  # Sets the parameters defined in the runcard.
@@ -348,7 +348,7 @@ class Platform:
         self.db_manager: DatabaseManager | None = None
         """Database manager for experiment class and db stream array"""
 
-        self.save_experiment_results_in_database: bool = True
+        self.save_experiment_results_in_database: bool = False
         """Database trigger to define if the experiment metadata will be saved in a database or not"""
 
     def connect(self):
@@ -945,7 +945,7 @@ class Platform:
     def execute_experiment(
         self,
         experiment: Experiment,
-        live_plot: bool = True,
+        live_plot: bool = False,
         slurm_execution: bool = True,
         port_number: int | None = None,
     ) -> str:
@@ -955,7 +955,7 @@ class Platform:
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
-            live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+            live_plot (bool): Flag that abilitates live plotting. Defaults to False.
             slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell.
                                     Defaults to True.
             port_number (int | None): Optional parameter for when slurm_execution is True.
