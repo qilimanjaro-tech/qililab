@@ -32,28 +32,7 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*"]
-autodoc_mock_imports = [
-    "qililab",
-    "qibo",
-    "qm_qua",
-    "qblox_instruments",
-    "qcodes",
-    "qcodes_contrib_drivers",
-    "pyvisa_py",
-    "qpysequence",
-    "h5py",
-    "pandas",
-    "networkx",
-    "sqlalchemy",
-    "dill",
-    "dash",
-    "submitit",
-    "psycopg2_binary",
-    "ruamel.yaml",
-    "xarray",
-    "tqdm",
-    "papermill",
-]
+autodoc_mock_imports = ["qibo", "qm_qua", "qililab"]
 source_suffix = [".rst", ".md"]
 pygments_style = "default"
 language = "en"
