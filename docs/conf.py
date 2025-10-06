@@ -7,8 +7,37 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
 import sys
+import types
 
 from sphinxawesome_theme.postprocess import Icons
+
+MOCK_MODULES = [
+    "qililab",
+    "qibo",
+    "qm_qua",
+    "qblox_instruments",
+    "qcodes",
+    "qcodes_contrib_drivers",
+    "pyvisa",
+    "h5py",
+    "pandas",
+    "networkx",
+    "dash",
+    "dill",
+    "xarray",
+    "sqlalchemy",
+    "submitit",
+    "tqdm",
+    "rich",
+    "ruamel",
+    "ruamel.yaml",
+    "psycopg2",
+    "qpysequence",
+]
+
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = types.ModuleType(mod_name)
+
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -32,7 +61,6 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*"]
-autodoc_mock_imports = ["qibo", "qm_qua", "qililab"]
 source_suffix = [".rst", ".md"]
 pygments_style = "default"
 language = "en"
