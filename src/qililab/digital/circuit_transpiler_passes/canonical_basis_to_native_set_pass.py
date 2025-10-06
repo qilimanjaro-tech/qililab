@@ -28,7 +28,7 @@ from qilisdk.digital.gates import (
     M,
 )
 
-from qililab.digital.native_gates import Drag
+from qililab.digital.native_gates import Rmw
 
 from .circuit_transpiler_pass import CircuitTranspilerPass
 from .numeric_helpers import _wrap_angle
@@ -37,12 +37,12 @@ from .numeric_helpers import _wrap_angle
 class CanonicalBasisToNativeSetPass(CircuitTranspilerPass):
     """
     Lower from the canonical basis {CZ, U3, RX, RY, RZ, M}
-    to the native set {Drag, CZ, M} (+ optional virtual RZ).
+    to the native set {Rmw, CZ, M} (+ optional virtual RZ).
 
     Mapping:
-      - U3(theta, phi, gamma)   → Drag(theta, phase=phi+pi/2) ; RZ(phi+gamma)
-      - RX(theta)               → Drag(theta, phase=0)
-      - RY(theta)               → Drag(theta, phase=pi/2)
+      - U3(theta, phi, gamma)   → Rmw(theta, phase=phi+pi/2) ; RZ(phi+gamma)
+      - RX(theta)               → Rmw(theta, phase=0)
+      - RY(theta)               → Rmw(theta, phase=pi/2)
       - CZ                      → CZ
       - M                       → M
 
@@ -105,16 +105,16 @@ class CanonicalBasisToNativeSetPass(CircuitTranspilerPass):
             q = g.qubits[0]
             if isinstance(g, RX):
                 touch(q)
-                out.add(Drag(q, theta=g.theta, phase=0.0))
+                out.add(Rmw(q, theta=g.theta, phase=0.0))
             elif isinstance(g, RY):
                 touch(q)
-                out.add(Drag(q, theta=g.theta, phase=math.pi / 2.0))
+                out.add(Rmw(q, theta=g.theta, phase=math.pi / 2.0))
             elif isinstance(g, RZ):
                 add_rz(q, g.phi)
             elif isinstance(g, U3):
                 # U3(theta, phi, gamma) with U3 = RZ(phi) RY(theta) RZ(gamma)
                 touch(q)
-                out.add(Drag(q, theta=g.theta, phase=_wrap_angle(g.phi + math.pi / 2)))
+                out.add(Rmw(q, theta=g.theta, phase=_wrap_angle(g.phi + math.pi / 2)))
                 add_rz(q, _wrap_angle(g.phi + g.gamma))
             else:
                 raise NotImplementedError(f"Unexpected 1-qubit gate in native lowering: {type(g).__name__}")

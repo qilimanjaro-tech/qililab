@@ -134,6 +134,8 @@ class SabreLayoutPass(CircuitTranspilerPass):
             layout = layout[:n_logical]
             self.last_layout = layout
             self.last_score = 0.0
+            if self.context is not None:
+                self.context.initial_layout = self.last_layout
             return self._retarget_circuit(circuit, layout, n_physical)
 
         # Multi-trial SABRE simulation; keep the best layout according to final cost.
@@ -152,7 +154,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
         self.last_score = best_score
 
         if self.context is not None:
-            self.context.initial_layout = list(self.last_layout or [])
+            self.context.initial_layout = self.last_layout or []
 
         new_circuit = self._retarget_circuit(circuit, best_layout, n_physical)  # type: ignore[arg-type]
 

@@ -23,7 +23,7 @@ from qilisdk.yaml import yaml
 
 
 @yaml.register_class
-class Drag(BasicGate):
+class Rmw(BasicGate):
     r"""Native drag pulse dummy class.
     Inherits from qibo unitary gates class
 
@@ -66,7 +66,7 @@ class Drag(BasicGate):
 
     @property
     def name(self) -> str:
-        return "Drag"
+        return "Rmw"
 
     @property
     def theta(self) -> float:

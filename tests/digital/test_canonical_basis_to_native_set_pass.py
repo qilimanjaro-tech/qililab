@@ -15,7 +15,7 @@ from qilisdk.digital.gates import (
 )
 
 from qilisdk.digital.exceptions import GateHasNoMatrixError
-from qililab.digital.native_gates import Drag
+from qililab.digital.native_gates import Rmw
 
 from qililab.digital.circuit_transpiler_passes.canonical_basis_to_native_set_pass import CanonicalBasisToNativeSetPass
 from qililab.digital.circuit_transpiler_passes.numeric_helpers import _wrap_angle
@@ -36,19 +36,19 @@ class TestCanonicalBasisToNativeSetPass:
         inp = Circuit(3)
         inp._gates = [RZ(0, phi=0.5),RX(0, theta=1), RZ(1, phi=0.5), RZ(0, phi=0.5), RY(1, theta=1), 
                       U3(0, theta=0.5, phi=1, gamma=1.5), RZ(2, phi=0.5), RZ(1, phi=0.5), RZ(1, phi=0.5), RZ(0, phi=0.5), CZ(1,2), M(0)]
-        out_regular = [RZ(0, phi=0.5), Drag(0, theta=1, phase=0), RZ(1, phi=0.5), Drag(1, theta=1, phase=math.pi/2), RZ(0, phi=0.5), Drag(0, theta=0.5, phase=math.pi/2 + 1), 
+        out_regular = [RZ(0, phi=0.5), Rmw(0, theta=1, phase=0), RZ(1, phi=0.5), Rmw(1, theta=1, phase=math.pi/2), RZ(0, phi=0.5), Rmw(0, theta=0.5, phase=math.pi/2 + 1), 
                        RZ(1, phi=1), RZ(2, phi=0.5), CZ(1,2), M(0)]
         assert_equal_gate(CanonicalBasisToNativeSetPass().run(inp)._gates, out_regular)
 
-        out_keep_virtual_rz = [Drag(0, theta=1, phase=0), Drag(1, theta=1, phase=math.pi/2), Drag(0, theta=0.5, phase=math.pi/2 + 1), CZ(1,2), M(0)]
+        out_keep_virtual_rz = [Rmw(0, theta=1, phase=0), Rmw(1, theta=1, phase=math.pi/2), Rmw(0, theta=0.5, phase=math.pi/2 + 1), CZ(1,2), M(0)]
         assert_equal_gate(CanonicalBasisToNativeSetPass(keep_virtual_rz=False).run(inp)._gates, out_keep_virtual_rz)
 
-        out_merge_consecutive_rz = [RZ(0, phi=0.5), Drag(0, theta=1, phase=0), RZ(1, phi=0.5), RZ(0, phi=0.5), Drag(1, theta=1, phase=math.pi/2),
-                                      Drag(0, theta=0.5, phase=math.pi/2 + 1), RZ(0, phi=2.5), RZ(2, phi=0.5), RZ(1, phi=0.5), RZ(1, phi=0.5), RZ(0, phi=0.5), CZ(1,2), M(0)]
+        out_merge_consecutive_rz = [RZ(0, phi=0.5), Rmw(0, theta=1, phase=0), RZ(1, phi=0.5), RZ(0, phi=0.5), Rmw(1, theta=1, phase=math.pi/2),
+                                      Rmw(0, theta=0.5, phase=math.pi/2 + 1), RZ(0, phi=2.5), RZ(2, phi=0.5), RZ(1, phi=0.5), RZ(1, phi=0.5), RZ(0, phi=0.5), CZ(1,2), M(0)]
         assert_equal_gate(CanonicalBasisToNativeSetPass(merge_consecutive_rz=False).run(inp)._gates, out_merge_consecutive_rz)
 
-        out_drop_rz_before_measure = [RZ(0, phi=0.5), Drag(0, theta=1, phase=0), RZ(1, phi=0.5), Drag(1, theta=1, phase=math.pi/2), RZ(0, phi=0.5), 
-                                      Drag(0, theta=0.5, phase=math.pi/2 + 1), RZ(1, phi=1), RZ(2, phi=0.5), CZ(1,2), RZ(0, phi=3), M(0)]
+        out_drop_rz_before_measure = [RZ(0, phi=0.5), Rmw(0, theta=1, phase=0), RZ(1, phi=0.5), Rmw(1, theta=1, phase=math.pi/2), RZ(0, phi=0.5), 
+                                      Rmw(0, theta=0.5, phase=math.pi/2 + 1), RZ(1, phi=1), RZ(2, phi=0.5), CZ(1,2), RZ(0, phi=3), M(0)]
         assert_equal_gate(CanonicalBasisToNativeSetPass(drop_rz_before_measure=False).run(inp)._gates, out_drop_rz_before_measure)
 
     def test_edges(self):
