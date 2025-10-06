@@ -84,6 +84,7 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
             elif isinstance(gate, Rmw):
                 qubit: int = gate.qubits[0]  # Assumes single qubit
                 out_gate = Rmw(qubit, theta=gate.theta, phase=(gate.phase - shift[qubit]))
+                shift[qubit] = 0.0
 
             # Measurement gates, do not change
             elif isinstance(gate, M):
