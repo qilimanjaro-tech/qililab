@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, call, patch
 import numpy as np
 import pytest
 
+from qililab.extra.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.instrument import ParameterNotFound
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.settings import Settings
 from qililab.typings import Parameter
 
@@ -479,7 +479,7 @@ class MockSingleHandle:
 class TestQuantumMachinesCluster:
     """This class contains the unit tests for the ``QuantumMachinesCluster`` class."""
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
     @patch("qililab.instruments.Instrument.initial_setup")
     @pytest.mark.parametrize(
         "qmm_name",
@@ -515,8 +515,8 @@ class TestQuantumMachinesCluster:
         assert qmm.is_awg()
         assert qmm.is_adc()
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     @pytest.mark.parametrize(
         "qmm_name",
         ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000", "qmm_int_identifiers"],
@@ -538,8 +538,8 @@ class TestQuantumMachinesCluster:
         # Assert that the settings are still in synch:
         assert qmm._config == qmm.settings.to_qua_config()
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     @pytest.mark.parametrize(
         "qmm_name",
         ["qmm", "qmm_with_octave", "qmm_with_octave_custom_connectivity", "qmm_with_opx1000", "qmm_int_identifiers"],
@@ -558,8 +558,8 @@ class TestQuantumMachinesCluster:
         assert isinstance(qmm._qm, MagicMock)
         qmm._qm.close.assert_called_once()
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_append_configuration(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict):
         """Test update_configuration method"""
         qmm.initial_setup()
@@ -580,8 +580,8 @@ class TestQuantumMachinesCluster:
                         if value:
                             assert value == qmm._config[k][element][key]
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_append_configuration_after_turn_on(
         self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
     ):
@@ -603,8 +603,8 @@ class TestQuantumMachinesCluster:
                         if value:
                             assert value == qmm._config[k][element][key]
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_append_configuration_without_initial_setup_raises_error(
         self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
     ):
@@ -615,8 +615,8 @@ class TestQuantumMachinesCluster:
         ):
             qmm.append_configuration(configuration=compilation_config)
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_get_controller_type_from_bus_singleInput(
         self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
     ):
@@ -626,8 +626,8 @@ class TestQuantumMachinesCluster:
         controller = qmm.get_controller_type_from_bus("flux_q0")
         assert controller == "opx1"
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_get_controller_type_from_bus_without_controller_raises_error(
         self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
     ):
@@ -643,8 +643,8 @@ class TestQuantumMachinesCluster:
         ):
             qmm.get_controller_type_from_bus("bus")
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_get_controller_from_element_wrong_key_raises_error(
         self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, compilation_config: dict
     ):
@@ -660,8 +660,8 @@ class TestQuantumMachinesCluster:
         ):
             qmm.get_controller_from_element(element=element, key="O")
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_compile(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, qua_program: Program):
         qmm.initial_setup()
         qmm.turn_on()
@@ -692,8 +692,8 @@ class TestQuantumMachinesCluster:
         # Assert that the settings are in synch:
         assert qmm._config_created is False and "_config" not in dir(qmm)
 
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_run_compiled_program(self, mock_qmm, mock_qm, qmm: QuantumMachinesCluster, qua_program: Program):
         qmm.initial_setup()
         qmm.turn_on()
@@ -754,8 +754,8 @@ class TestQuantumMachinesCluster:
             ("readout_q0_rf", Parameter.OFFSET_OUT2, 0.001),
         ],
     )
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_set_parameter_method_with_octave(
         self,
         mock_qmm,
@@ -808,8 +808,8 @@ class TestQuantumMachinesCluster:
             ("readout_q0", Parameter.OFFSET_OUT2, 0.001),
         ],
     )
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_set_parameter_method(
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
     ):
@@ -847,8 +847,8 @@ class TestQuantumMachinesCluster:
             ("drive_q0", Parameter.IF, 17e6),
         ],
     )
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_set_parameter_without_connection_changes_settings(
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
     ):
@@ -879,8 +879,8 @@ class TestQuantumMachinesCluster:
             ("readout_q0_rf", Parameter.OFFSET_OUT2, 0.001),
         ],
     )
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_set_parameter_with_opx1000(
         self,
         mock_qmm,
@@ -919,8 +919,8 @@ class TestQuantumMachinesCluster:
             ("drive_q0", Parameter.GAIN, 0.001),
         ],
     )
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_set_parameter_method_raises_error_when_parameter_is_for_octave_and_there_is_no_octave(
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
     ):
@@ -941,8 +941,8 @@ class TestQuantumMachinesCluster:
     @pytest.mark.parametrize(
         "parameter, value", [(Parameter.LO_FREQUENCY, 6e9), (Parameter.MAX_CURRENT, 0.5), (Parameter.OUT0_ATT, 0.01)]
     )
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_set_parameter_method_raises_exception_when_bus_not_found(
         self, mock_qmm, mock_qm, parameter: Parameter, value: float | str | bool, qmm: QuantumMachinesCluster
     ):
@@ -958,8 +958,8 @@ class TestQuantumMachinesCluster:
         assert qmm._config == qmm.settings.to_qua_config()
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.OUT0_ATT, 0.0005)])
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_set_parameter_method_raises_exception_when_parameter_not_found(
         self, mock_qmm, mock_qm, parameter: Parameter, value, qmm: QuantumMachinesCluster
     ):
@@ -991,8 +991,8 @@ class TestQuantumMachinesCluster:
             ("readout_q0", Parameter.OFFSET_OUT2, "qmm"),
         ],
     )
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_get_parameter_method(
         self,
         mock_qmm,
@@ -1069,8 +1069,8 @@ class TestQuantumMachinesCluster:
             ("readout_q0_rf", Parameter.OFFSET_OUT2, "qmm_with_opx1000"),
         ],
     )
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_get_parameter_method_opx1000(
         self,
         mock_qmm,
@@ -1101,8 +1101,8 @@ class TestQuantumMachinesCluster:
         assert qmm._config_created is False and "_config" not in dir(qmm)
 
     @pytest.mark.parametrize("parameter", [(Parameter.MAX_CURRENT), (Parameter.OUT0_ATT)])
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_get_parameter_method_raises_exception_when_parameter_not_found(
         self, mock_qmm, mock_qm, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
@@ -1113,8 +1113,8 @@ class TestQuantumMachinesCluster:
             qmm.get_parameter(parameter, "drive_q0")
 
     @pytest.mark.parametrize("bus, parameter", [("drive_q0", Parameter.LO_FREQUENCY)])
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_get_parameter_after_initial_setup(
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):
@@ -1135,8 +1135,8 @@ class TestQuantumMachinesCluster:
         assert qmm._config == qmm.settings.to_qua_config()
 
     @pytest.mark.parametrize("bus, parameter", [("drive_q0", Parameter.LO_FREQUENCY)])
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachinesManager")
-    @patch("qililab.instruments.quantum_machines.quantum_machines_cluster.QuantumMachine")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachinesManager")
+    @patch("qililab.extra.quantum_machines.instruments.quantum_machines_cluster.QuantumMachine")
     def test_get_parameter_doesnt_create_a_config(
         self, mock_qmm, mock_qm, bus: str, parameter: Parameter, qmm: QuantumMachinesCluster
     ):

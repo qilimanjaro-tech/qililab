@@ -1,8 +1,10 @@
 """This file tests the the ``qmm_controller`` class"""
 import pytest
 
-from qililab.instrument_controllers.quantum_machines import QuantumMachinesClusterController
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
+from qililab.extra.quantum_machines import (
+    QuantumMachinesCluster,
+    QuantumMachinesClusterController,
+)
 from qililab.platform import Platform
 from qililab.settings import Settings
 from tests.data import SauronQuantumMachines

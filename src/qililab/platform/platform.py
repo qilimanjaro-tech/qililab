@@ -43,7 +43,12 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
+from qililab.extra.quantum_machines import (
+    QuantumMachinesCluster,
+    QuantumMachinesCompilationOutput,
+    QuantumMachinesCompiler,
+    QuantumMachinesMeasurementResult,
+)
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
@@ -57,15 +62,12 @@ from qililab.qprogram import (
     QbloxCompilationOutput,
     QbloxCompiler,
     QProgram,
-    QuantumMachinesCompilationOutput,
-    QuantumMachinesCompiler,
 )
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence

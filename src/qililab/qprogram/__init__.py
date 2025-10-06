@@ -31,7 +31,11 @@ Compilers
     :toctree: api
 
     ~QbloxCompiler
-    ~QuantumMachinesCompiler
+
+.. note::
+
+    The Quantum Machines compiler is exposed from
+    ``qililab.extra.quantum_machines``.
 
 Other QProgram related Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,10 +47,6 @@ Other QProgram related Classes
     ~Domain
 
 """
-
-import sys
-
-from qililab._optionals import ImportedFeature, OptionalFeature, Symbol, import_optional_dependencies
 
 from .calibration import Calibration
 from .crosstalk_matrix import CrosstalkMatrix, FluxVector
@@ -65,25 +65,3 @@ __all__ = [
     "QbloxCompilationOutput",
     "QbloxCompiler",
 ]
-
-__all__ = []
-
-OPTIONAL_FEATURES: list[OptionalFeature] = [
-    OptionalFeature(
-        name="quantum-machines",
-        dependencies=["qm-qua", "qualang-tools"],
-        symbols=[
-            Symbol(path="qililab.qprogram.quantum_machines_compiler", name="QuantumMachinesCompiler", kind="class"),
-            Symbol(path="qililab.qprogram.quantum_machines_compiler", name="QuantumMachinesCompilationOutput", kind="class"),
-        ],
-    )
-]
-
-current_module = sys.modules[__name__]
-
-# Dynamically import (or stub) each feature's symbols and attach them
-for feature in OPTIONAL_FEATURES:
-    imported_feature: ImportedFeature = import_optional_dependencies(feature)
-    for symbol_name, symbol_obj in imported_feature.symbols.items():
-        setattr(current_module, symbol_name, symbol_obj)
-        __all__ += [symbol_name]

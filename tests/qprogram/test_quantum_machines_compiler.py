@@ -4,7 +4,7 @@ import pytest
 pytest.importorskip("qm", reason="requires the 'quantum-machines' optional dependency")
 
 from qililab import Arbitrary, Calibration, Domain, IQPair, QProgram, Square
-from qililab.qprogram.quantum_machines_compiler import QuantumMachinesCompiler
+from qililab.extra.quantum_machines import QuantumMachinesCompiler
 from qililab.qprogram.blocks import ForLoop, Loop
 
 @pytest.fixture(name="calibration")
