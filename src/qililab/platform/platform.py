@@ -29,7 +29,6 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
-from qm import generate_qua_script
 from ruamel.yaml import YAML
 
 from qililab.analog import AnnealingProgram
@@ -37,13 +36,19 @@ from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
+from qililab.extra.quantum_machines import (
+    QuantumMachinesCluster,
+    QuantumMachinesCompilationOutput,
+    QuantumMachinesCompiler,
+    QuantumMachinesMeasurementResult,
+    generate_qua_script,
+)
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
@@ -57,15 +62,12 @@ from qililab.qprogram import (
     QbloxCompilationOutput,
     QbloxCompiler,
     QProgram,
-    QuantumMachinesCompilationOutput,
-    QuantumMachinesCompiler,
 )
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
@@ -73,6 +75,7 @@ from qililab.utils import hash_qpy_sequence
 if TYPE_CHECKING:
     from queue import Queue
 
+    from qm import generate_qua_script as _T_generate_qua_script  # noqa: F401
     from qpysequence import Sequence as QpySequence
 
     from qililab.digital import DigitalTranspilationConfig
@@ -174,7 +177,15 @@ class Platform:
             The obtained values correspond to the integral of the I/Q signals received by the digitizer.
             And they have shape `(#sequencers, 2, #bins)`, in this case you only have 1 sequencer and 1 bin.
 
-        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries, with:
+        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries.
+        To do so the call to execute circuit must be slightly different, as the number of averages must be 1:
+
+        .. code-block:: python
+
+            # Executing the platform with the same amount of loops but using bins:
+            result = platform.execute(program=circuit, num_avg=1, num_bins=1000, repetition_duration=6000)
+
+        Then:
 
         >>> result.counts
         {'0': 501, '1': 499}
@@ -1508,9 +1519,7 @@ class Platform:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(
-                routing=True, optimize=False, router=Sabre, placer=ReverseTraversal
-            )
+            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
             # Execute with automatic transpilation:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)

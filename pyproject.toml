@@ -35,7 +35,6 @@ dependencies = [
     "qcodes>=0.51.0",
     "qcodes-contrib-drivers>=0.23.0",
     "qibo==0.2.20",
-    "qm-qua==1.2.1",
     "qpysequence>=0.10.7",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
@@ -44,6 +43,12 @@ dependencies = [
     "tqdm>=4.67.1",
     "urllib3>=2.3.0",
     "xarray>=2024.3.0",
+]
+
+[project.optional-dependencies]
+quantum-machines = [
+    "qm-qua==1.2.1",
+    "qualang-tools>=0.19.3",
 ]
 
 [dependency-groups]
@@ -234,4 +239,7 @@ mdformat = true
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning"
+]
+markers = [
+    "qm: tests that require Quantum Machines",
 ]

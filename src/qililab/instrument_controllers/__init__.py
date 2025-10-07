@@ -21,7 +21,6 @@ from .keysight import E5080BController
 from .mini_circuits import MiniCircuitsController
 from .qblox import QbloxClusterController, QbloxSPIRackController
 from .qdevil import QDevilQDac2Controller
-from .quantum_machines import QuantumMachinesClusterController
 from .rohde_schwarz import SGS100AController
 from .single_instrument_controller import SingleInstrumentController
 from .utils import InstrumentControllerFactory
@@ -38,7 +37,6 @@ __all__ = [
     "QDevilQDac2Controller",
     "QbloxClusterController",
     "QbloxSPIRackController",
-    "QuantumMachinesClusterController",
     "SGS100AController",
     "SingleInstrumentController",
 ]
