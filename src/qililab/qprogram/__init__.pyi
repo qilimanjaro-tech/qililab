@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import TYPE_CHECKING
 
-"""Tools for building and manipulating :class:`~qililab.qprogram.qprogram.QProgram` instances."""
-
-from .calibration import Calibration
-from .crosstalk_matrix import CrosstalkMatrix, FluxVector
-from .experiment import Experiment
-from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
-from .qprogram import QProgram
-from .variable import Domain
+if TYPE_CHECKING:
+    from .calibration import Calibration
+    from .crosstalk_matrix import CrosstalkMatrix, FluxVector
+    from .experiment import Experiment
+    from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
+    from .qprogram import QProgram
+    from .variable import Domain
 
 __all__ = [
     "Calibration",
