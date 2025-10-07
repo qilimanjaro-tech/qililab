@@ -10,10 +10,11 @@ from qililab.platform.platform import Platform
 from qililab.qprogram.blocks import ForLoop, Loop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
+from qililab.extra.quantum_machines import QuantumMachinesMeasurementResult
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import Domain, QProgram
 from qililab.result.experiment_results import ExperimentResults
-from qililab.result.qprogram import QProgramResults, QuantumMachinesMeasurementResult
+from qililab.result.qprogram import QProgramResults
 from qililab.typings.enums import Parameter
 from qililab.waveforms import IQPair, Square
 
