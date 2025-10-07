@@ -104,7 +104,7 @@ calibrations (list[Calibration], Calibration, optional). Contains information of
 
 
 - QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
-[#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
+  [#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
 
 - Previously, `platform.draw(qprogram)` and `qprogram.draw()` returned the plotly object and the raw data being plotted. Now they return only the plotly object. This change ensures:
 
@@ -238,6 +238,9 @@ The data automatically selects between the local or shared domains depending on 
 - Added new functions to DatabaseManager to support more efficient loading of data for live-plotting application. Such as get_platform and get_qprogram.
   [#979](https://github.com/qilimanjaro-tech/qililab/pull/979)
 
+- Added `ql.load_by_id(id)` in qililab, This function allows to retrieve the data path of a measurement with the given id without creating a `DatabaseManager` instance. This function is intended to be used inside notebooks using slurm as `DatabaseManager` cannot be submitted.
+  [#986](https://github.com/qilimanjaro-tech/qililab/pull/986)
+
 ### Breaking changes
 
 - Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, `import qililab.save_results` and `import qililab.load_results` still works the same way.
@@ -264,8 +267,8 @@ The data automatically selects between the local or shared domains depending on 
   [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
 
 - Qblox Draw: Previously, when plotting from the platform, the integration length was incorrectly taken from the runcard parameter. However, since Qililab currently only implements acquire_weighted, the integration length should instead be determined by the duration of the weight.
-This has been corrected and now the behaviour of the acquire is the same when plotting from the platform or the qprogram.
-The integration length is defined as the duration of the acquire, not the weight, because Qililab ensures they are always equal. As a result, two acquires cannot overlap in Qililab. However, in QbloxDraw’s logic, interruptions remain possible, similar to Play.
+  This has been corrected and now the behaviour of the acquire is the same when plotting from the platform or the qprogram.
+  The integration length is defined as the duration of the acquire, not the weight, because Qililab ensures they are always equal. As a result, two acquires cannot overlap in Qililab. However, in QbloxDraw’s logic, interruptions remain possible, similar to Play.
   [#982](https://github.com/qilimanjaro-tech/qililab/pull/982)
 
 - Removed the unsupported zorder kwarg from QbloxDraw plotting to prevent Plotly errors across environments.
@@ -309,6 +312,9 @@ The integration length is defined as the duration of the acquire, not the weight
 
 - Fixed `FluxVector.set_crosstalk_from_bias(...)` and `platform.set_bias_to_zero(...)` related to automatic crosstalk compensation. Now the bias is set to 0 correctly and the fluxes are set to the correct value based on the offset.
   [#983](https://github.com/qilimanjaro-tech/qililab/pull/983)
+  
+- Fixed documentation for results `counts`, now it warns the user that instead of `num_avg` they must use `num_bins`.
+  [#989](https://github.com/qilimanjaro-tech/qililab/pull/989)
 
 - Fixed an error impeding two instances of QDAC2 to be executed through platform.connect when the runcard included 2 different `qdevil_qdac2` controllers inside `instrument_controllers`.
   [#990](https://github.com/qilimanjaro-tech/qililab/pull/990)
