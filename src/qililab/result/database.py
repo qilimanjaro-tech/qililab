@@ -754,3 +754,12 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
     """
     url = f"postgresql://{user}:{passwd}@{host}:{port}/{database}"
     return create_engine(url)
+
+
+def load_by_id(id: int) -> str:
+    """Function to get the database ID without loading the Database Manager"""
+
+    db = get_db_manager()
+    result_path = db.load_by_id(id)
+
+    return result_path
