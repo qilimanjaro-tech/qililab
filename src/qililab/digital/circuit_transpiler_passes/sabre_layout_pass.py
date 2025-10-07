@@ -54,7 +54,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
     ----------
     coupling : PyGraph
         Undirected coupling graph whose node indices represent *physical* qubits.
-        Nodes should be 0..(n_physical-1). Edges indicate allowed 2Q interactions.
+        Node labels need not form a contiguous range. Edges indicate allowed 2Q interactions.
     num_trials : int
         Number of random initializations to try (keeps the best).
     seed : int | None
@@ -114,37 +114,46 @@ class SabreLayoutPass(CircuitTranspilerPass):
         rng = random.Random(self.seed)  # noqa: S311
 
         n_logical = circuit.nqubits
-        phys_nodes = list(self.topology.node_indices())
+        phys_nodes = sorted(int(x) for x in self.topology.node_indices())
         if not phys_nodes:
             raise ValueError("Coupling graph has no nodes.")
-        n_physical = max(int(x) for x in phys_nodes) + 1
-        if n_logical > n_physical:
-            raise ValueError(f"Coupling graph has {n_physical} nodes but circuit needs {n_logical} qubits.")
+        num_phys_nodes = len(phys_nodes)
+        if n_logical > num_phys_nodes:
+            raise ValueError(f"Coupling graph has {num_phys_nodes} nodes but circuit needs {n_logical} qubits.")
+        phys_index = {node: idx for idx, node in enumerate(phys_nodes)}
+        max_phys_label_plus_one = max(phys_nodes) + 1
 
         # Precompute all-pairs shortest-path distances on the coupling graph.
         # We use an internal BFS on the rustworkx graph to avoid relying on version-specific APIs.
-        dist = self._all_pairs_shortest_path_unweighted(self.topology, n_physical)
+        dist = self._all_pairs_shortest_path_unweighted(self.topology, phys_nodes, phys_index)
 
         # Build the list of 2Q gates and per-qubit indices for the SABRE simulation.
         twoq_indices, twoq_qubits, per_qubit = self._twoq_structure(circuit)
 
         # edge case: circuits with no 2Q gates -> trivial identity layout
         if not twoq_indices:
-            layout = list(range(n_logical if n_physical >= n_logical else n_physical))
-            layout = layout[:n_logical]
+            layout = phys_nodes[:n_logical]
             self.last_layout = layout
             self.last_score = 0.0
             if self.context is not None:
                 self.context.initial_layout = self.last_layout
-            return self._retarget_circuit(circuit, layout, n_physical)
+            return self._retarget_circuit(circuit, layout, max_phys_label_plus_one)
 
         # Multi-trial SABRE simulation; keep the best layout according to final cost.
         best_layout: list[int] | None = None
         best_score: float = math.inf
 
         for _ in range(self.num_trials):
-            init_layout = self._random_initial_layout(rng, n_logical, n_physical)
-            layout, score = self._sabre_simulate_layout(init_layout, dist, twoq_qubits, per_qubit, rng)
+            init_layout = self._random_initial_layout(rng, n_logical, phys_nodes)
+            layout, score = self._sabre_simulate_layout(
+                init_layout,
+                dist,
+                twoq_qubits,
+                per_qubit,
+                rng,
+                phys_nodes,
+                phys_index,
+            )
             if score < best_score:
                 best_layout = layout
                 best_score = score
@@ -156,7 +165,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
         if self.context is not None:
             self.context.initial_layout = self.last_layout or []
 
-        new_circuit = self._retarget_circuit(circuit, best_layout, n_physical)  # type: ignore[arg-type]
+        new_circuit = self._retarget_circuit(circuit, best_layout, max_phys_label_plus_one)  # type: ignore[arg-type]
 
         self.append_circuit_to_context(new_circuit)
 
@@ -172,19 +181,21 @@ class SabreLayoutPass(CircuitTranspilerPass):
         twoq_qubits: list[tuple[int, int]],
         per_qubit: list[list[int]],
         rng: random.Random,
+        phys_nodes: list[int],
+        phys_index: dict[int, int],
     ) -> tuple[list[int], float]:
         """
         Run a SABRE-style simulation on 2Q gates to choose a good final layout.
         This is a *layout-only* variant: we simulate SWAPs on the mapping but do not insert them.
         """
         n_logical = len(layout)
-        n_physical = len(dist)
-        # inverse layout: physical -> logical
-        inv_layout = self._invert_layout(layout, n_physical)
+        n_physical = len(phys_nodes)
+        # inverse layout: physical -> logical (dense indices)
+        inv_layout = self._invert_layout(layout, phys_index)
 
         scheduled = [False] * len(twoq_qubits)
         pos = [0] * n_logical  # per-qubit pointer to the next 2Q gate index in per_qubit[q]
-        decay = [0.0] * n_physical  # physical-qubit penalty
+        decay = [0.0] * n_physical  # physical-qubit penalty stored with dense indexing
 
         # Sum of executed front distances (diagnostic score)
         score_accum = 0.0
@@ -222,7 +233,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
                         continue
                     u, v = twoq_qubits[g_idx]
                     pu, pv = layout[u], layout[v]
-                    if dist[pu][pv] == 1:
+                    if dist[phys_index[pu]][phys_index[pv]] == 1:
                         # "Execute" this 2Q gate in the simulation.
                         scheduled[g_idx] = True
                         remaining -= 1
@@ -258,7 +269,7 @@ class SabreLayoutPass(CircuitTranspilerPass):
             if not candidate_edges:
                 # Graph might be disconnected or trivial; fall back to a random valid swap over touched qubits.
                 # This won't crash; it just gives the algorithm a way to keep moving.
-                phys_list = sorted(touched_phys) if touched_phys else list(range(n_physical))
+                phys_list = sorted(touched_phys) if touched_phys else phys_nodes[:]
                 if len(phys_list) >= 2:
                     a, b = rng.sample(phys_list, 2)
                     candidate_edges.add((min(a, b), max(a, b)))
@@ -267,8 +278,8 @@ class SabreLayoutPass(CircuitTranspilerPass):
                     break
 
             # Decay relaxation
-            for i in range(n_physical):
-                decay[i] *= self.decay_lambda
+            for idx in range(n_physical):
+                decay[idx] *= self.decay_lambda
 
             # Evaluate heuristic for each candidate swap
             best_edge: tuple[int, int] | None = None
@@ -279,19 +290,20 @@ class SabreLayoutPass(CircuitTranspilerPass):
 
             for a, b in candidate_edges:
                 # Virtually swap logical assignments at physical nodes a and b
-                la, lb = inv_layout[a], inv_layout[b]
+                la = inv_layout[phys_index[a]]
+                lb = inv_layout[phys_index[b]]
                 # Logical qubit may be "unassigned" if device > logical; ensure we handle that.
                 # If la or lb is None, this swap doesn't affect distances; we still allow it.
                 # Simulate new layout distances
                 # (temporarily mutate layout/inv_layout, compute cost, then revert).
-                self._swap_mapping(layout, inv_layout, a, b, la, lb)
+                self._swap_mapping(layout, inv_layout, phys_index, a, b, la, lb)
 
-                cost_front = self._cost_front(F, layout, twoq_qubits, dist, decay)
-                cost_ext = self._cost_front(E, layout, twoq_qubits, dist, None)  # no decay on E
+                cost_front = self._cost_front(F, layout, twoq_qubits, dist, decay, phys_index)
+                cost_ext = self._cost_front(E, layout, twoq_qubits, dist, None, phys_index)  # no decay on E
                 cost = cost_front + self.beta * cost_ext
 
                 # Revert the swap
-                self._swap_mapping(layout, inv_layout, a, b, lb, la)
+                self._swap_mapping(layout, inv_layout, phys_index, a, b, lb, la)
 
                 if cost < best_cost - 1e-12:
                     best_cost = cost
@@ -304,14 +316,15 @@ class SabreLayoutPass(CircuitTranspilerPass):
             # Apply the chosen swap *to the mapping only* (layout-only SABRE).
             # assert best_edge is not None
             a, b = best_edge  # type: ignore[misc]
-            la, lb = inv_layout[a], inv_layout[b]
-            self._swap_mapping(layout, inv_layout, a, b, la, lb)
+            la = inv_layout[phys_index[a]]
+            lb = inv_layout[phys_index[b]]
+            self._swap_mapping(layout, inv_layout, phys_index, a, b, la, lb)
             # Increase decay on touched physical qubits
-            decay[a] += self.decay_delta
-            decay[b] += self.decay_delta
+            decay[phys_index[a]] += self.decay_delta
+            decay[phys_index[b]] += self.decay_delta
 
         # Final diagnostic cost: re-evaluate sum of distances for the entire 2Q list under final layout
-        total_cost = self._cost_front(set(range(len(twoq_qubits))), layout, twoq_qubits, dist, None)
+        total_cost = self._cost_front(set(range(len(twoq_qubits))), layout, twoq_qubits, dist, None, phys_index)
         # Combine both measures mildly
         score = 0.5 * total_cost + 0.5 * score_accum
         return layout, float(score)
@@ -358,17 +371,20 @@ class SabreLayoutPass(CircuitTranspilerPass):
         twoq_qubits: list[tuple[int, int]],
         dist: list[list[int]],
         decay: list[float] | None,
+        phys_index: dict[int, int],
     ) -> float:
         c = 0.0
         for g_idx in idxs:
             u, v = twoq_qubits[g_idx]
             pu, pv = layout[u], layout[v]
-            d = dist[pu][pv]
+            iu = phys_index[pu]
+            iv = phys_index[pv]
+            d = dist[iu][iv]
             if d >= 1_000_000_000:
                 # Disconnected: incur a large penalty to discourage this layout
                 d = 1e6  # type: ignore[assignment]
             if decay is not None:
-                c += d * (1.0 + decay[pu] + decay[pv])
+                c += d * (1.0 + decay[iu] + decay[iv])
             else:
                 c += d
         return c
@@ -377,13 +393,12 @@ class SabreLayoutPass(CircuitTranspilerPass):
         self,
         rng: random.Random,
         n_logical: int,
-        n_physical: int,
+        phys_nodes: list[int],
     ) -> list[int]:
         """
         Pick a random injective mapping logical->physical using *existing* graph nodes.
         Returns a list L of length n_logical where L[q_logical] = p_physical.
         """
-        phys_nodes = list(self.topology.node_indices())
         if len(phys_nodes) < n_logical:
             raise ValueError(f"Coupling graph has only {len(phys_nodes)} nodes; need ≥ {n_logical}.")
         nodes = phys_nodes[:]  # copy so we can shuffle deterministically
@@ -393,18 +408,19 @@ class SabreLayoutPass(CircuitTranspilerPass):
     # --------- helpers: mapping & structure ---------
 
     @staticmethod
-    def _invert_layout(layout: list[int], n_physical: int) -> list[int | None]:
-        inv = [None] * n_physical
+    def _invert_layout(layout: list[int], phys_index: dict[int, int]) -> list[int | None]:
+        inv = [None] * len(phys_index)
         for l, p in enumerate(layout):
-            if p < 0 or p >= n_physical:
-                continue
-            inv[p] = l  # type: ignore[call-overload]
+            idx = phys_index.get(p)
+            if idx is not None:
+                inv[idx] = l  # type: ignore[call-overload]
         return inv  # type: ignore[return-value]
 
     @staticmethod
     def _swap_mapping(
         layout: list[int],
         inv_layout: list[int | None],
+        phys_index: dict[int, int],
         a: int,
         b: int,
         la: int | None,
@@ -412,7 +428,9 @@ class SabreLayoutPass(CircuitTranspilerPass):
     ) -> None:
         """Swap the logical qubits assigned to physical nodes a and b."""
         # Update inverse first
-        inv_layout[a], inv_layout[b] = lb, la
+        ia = phys_index[a]
+        ib = phys_index[b]
+        inv_layout[ia], inv_layout[ib] = lb, la
         # Then forward mapping (only if logicals exist)
         if la is not None:
             layout[la] = b
@@ -441,33 +459,44 @@ class SabreLayoutPass(CircuitTranspilerPass):
         return twoq_indices, twoq_qubits, per_qubit
 
     @staticmethod
-    def _all_pairs_shortest_path_unweighted(graph: PyGraph, n_physical: int) -> list[list[int]]:
+    def _all_pairs_shortest_path_unweighted(
+        graph: PyGraph,
+        phys_nodes: list[int],
+        phys_index: dict[int, int],
+    ) -> list[list[int]]:
         from collections import deque
 
         INF = 1_000_000_000
-        dist = [[INF] * n_physical for _ in range(n_physical)]
-        phys_nodes = list(graph.node_indices())
+        dist = [[INF] * len(phys_nodes) for _ in phys_nodes]
         for s in phys_nodes:
             s = int(s)
-            dist[s][s] = 0
+            s_idx = phys_index[s]
+            dist[s_idx][s_idx] = 0
             q = deque([s])
             seen = {s}
             while q:
                 u = q.popleft()
-                du = dist[s][u]
+                u = int(u)
+                u_idx = phys_index[u]
+                du = dist[s_idx][u_idx]
                 for v in graph.neighbors(u):
                     v = int(v)
                     if v not in seen:
                         seen.add(v)
-                        dist[s][v] = du + 1
+                        v_idx = phys_index[v]
+                        dist[s_idx][v_idx] = du + 1
                         q.append(v)
         return dist
 
     # --------- retargeting to the chosen layout ---------
 
-    def _retarget_circuit(self, circuit: Circuit, layout: list[int], n_physical: int) -> Circuit:
+    def _retarget_circuit(self, circuit: Circuit, layout: list[int], max_phys_label_plus_one: int) -> Circuit:
         # The output circuit must have enough qubits to accommodate the maximum physical index.
-        out_n = max(circuit.nqubits, (max(layout) + 1) if layout else circuit.nqubits, n_physical)
+        out_n = max(
+            circuit.nqubits,
+            (max(layout) + 1) if layout else circuit.nqubits,
+            max_phys_label_plus_one,
+        )
         new_circ = Circuit(out_n)
         for g in circuit.gates:
             mapped = tuple(layout[q] for q in g.qubits)

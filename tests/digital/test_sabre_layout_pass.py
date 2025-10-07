@@ -91,3 +91,26 @@ def test_sabre_layout_retarges_all_gate_types_and_updates_diagnostics():
     assert layout_pass.last_score is not None
     assert context.initial_layout == layout_pass.last_layout
     assert any(key.startswith("SabreLayoutPass") for key in context.circuits)
+
+
+def test_sabre_layout_handles_sparse_physical_indices():
+    topology = PyGraph()
+    topology.add_nodes_from(range(5))
+    for node in (3, 1):
+        topology.remove_node(node)
+    topology.add_edge(0, 2, None)
+    topology.add_edge(2, 4, None)
+    assert sorted(topology.node_indices()) == [0, 2, 4]
+
+    layout_pass = SabreLayoutPass(topology, num_trials=1, seed=5)
+
+    circuit = Circuit(2)
+    circuit.add(CZ(0, 1))
+
+    out = layout_pass.run(circuit)
+
+    assert out.nqubits >= 5
+    assert layout_pass.last_layout is not None
+    assert set(layout_pass.last_layout).issubset({0, 2, 4})
+    assert len(set(layout_pass.last_layout)) == circuit.nqubits
+    assert all(q in {0, 2, 4} for gate in out.gates for q in gate.qubits)

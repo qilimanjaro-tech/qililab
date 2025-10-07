@@ -69,11 +69,23 @@ class CircuitTranspiler:
             p.attach_context(self._context)
 
     def _build_topology_graph(self, settings: DigitalCompilationSettings) -> PyGraph:
-        physical_nqubits = max(max(pair) for pair in settings.topology) + 1
         topology = PyGraph()
-        topology.add_nodes_from(range(physical_nqubits))
+        if not settings.topology:
+            return topology
+
+        # Collect the physical qubit labels that actually appear in the coupling map.
+        active_nodes = {int(qubit) for pair in settings.topology for qubit in pair}
+        max_label = max(active_nodes)
+
+        # Add a dense block of nodes so that node indices match physical labels.
+        topology.add_nodes_from(range(max_label + 1))
         for a, b in settings.topology:
-            topology.add_edge(a, b, None)
+            topology.add_edge(int(a), int(b), None)
+
+        # Remove any indices that are not populated in the topology. This keeps
+        # rustworkx node indices aligned with the real physical labels.
+        for missing in sorted({node for node in range(max_label + 1) if node not in active_nodes}, reverse=True):
+            topology.remove_node(missing)
         return topology
 
     @property

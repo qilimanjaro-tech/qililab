@@ -125,3 +125,72 @@ def test_sabre_swap_raises_when_swap_budget_exceeded():
 
     with pytest.raises(RuntimeError, match="Exceeded swap budget"):
         swap_pass.run(circuit)
+
+
+def test_sabre_swap_handles_sparse_physical_indices_with_default_layout():
+    topology = PyGraph()
+    topology.add_nodes_from(range(5))
+    for node in (3, 1):
+        topology.remove_node(node)
+    topology.add_edge(0, 2, None)
+    topology.add_edge(2, 4, None)
+    assert sorted(topology.node_indices()) == [0, 2, 4]
+
+    swap_pass = SabreSwapPass(topology, seed=3)
+
+    circuit = Circuit(2)
+    circuit.add(CZ(0, 1))
+
+    out = swap_pass.run(circuit)
+
+    assert out.nqubits >= 5
+    assert all(q in {0, 2, 4} for gate in out.gates for q in gate.qubits)
+    assert swap_pass.last_final_layout is not None
+    assert set(swap_pass.last_final_layout).issubset({0, 2, 4})
+
+
+def test_sabre_swap_handles_sparse_physical_indices_with_custom_layout():
+    topology = PyGraph()
+    topology.add_nodes_from(range(5))
+    for node in (3, 1):
+        topology.remove_node(node)
+    topology.add_edge(0, 2, None)
+    topology.add_edge(2, 4, None)
+    assert sorted(topology.node_indices()) == [0, 2, 4]
+
+    swap_pass = SabreSwapPass(topology, initial_layout=[0, 4], seed=5)
+
+    circuit = Circuit(2)
+    circuit.add(CZ(0, 1))
+
+    out = swap_pass.run(circuit)
+
+    assert out.nqubits >= 5
+    assert any(type(g).__name__ == "SWAP" for g in out.gates)
+    assert all(q in {0, 2, 4} for gate in out.gates for q in gate.qubits)
+    assert swap_pass.last_final_layout is not None
+    assert set(swap_pass.last_final_layout).issubset({0, 2, 4})
+    assert swap_pass.last_swap_count and swap_pass.last_swap_count > 0
+
+
+def test_sabre_swap_accepts_padding_qubits_after_layout():
+    topology = PyGraph()
+    topology.add_nodes_from(range(5))
+    topology.remove_node(3)
+    topology.add_edge(0, 1, None)
+    topology.add_edge(1, 2, None)
+    topology.add_edge(2, 4, None)
+    assert sorted(topology.node_indices()) == [0, 1, 2, 4]
+
+    swap_pass = SabreSwapPass(topology, seed=7)
+
+    circuit = Circuit(5)
+    circuit.add(CZ(0, 4))
+
+    out = swap_pass.run(circuit)
+
+    assert out.nqubits >= 5
+    assert swap_pass.last_final_layout is not None
+    assert len(swap_pass.last_final_layout) == circuit.nqubits
+    assert set(q for gate in out.gates for q in gate.qubits).issubset({0, 1, 2, 4})
+    assert 3 not in swap_pass.last_final_layout
