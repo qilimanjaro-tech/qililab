@@ -1,9 +1,11 @@
 import numpy as np
 import pytest
 
-from qililab import Arbitrary, Calibration, Domain, IQPair, QProgram, QuantumMachinesCompiler, Square
-from qililab.qprogram.blocks import ForLoop, Loop
+pytest.importorskip("qm", reason="requires the 'quantum-machines' optional dependency")
 
+from qililab import Arbitrary, Calibration, Domain, IQPair, QProgram, Square
+from qililab.extra.quantum_machines import QuantumMachinesCompiler
+from qililab.qprogram.blocks import ForLoop, Loop
 
 @pytest.fixture(name="calibration")
 def fixture_calibration() -> Calibration:

@@ -88,6 +88,7 @@ Qililab Documentation
    code/result
    code/digital
    code/waveforms
+   extras/quantum_machines
 
 .. toctree::
    :caption: Release Notes
