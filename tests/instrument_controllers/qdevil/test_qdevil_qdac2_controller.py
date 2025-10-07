@@ -50,7 +50,7 @@ class TestQDevilQDac2Controller:
 
         controller_instance._initialize_device()
 
-        name = f"{controller_instance.name.value}"
+        name = f"{controller_instance.name.value}_{controller_instance.alias}"
         address = (
             f"TCPIP::{controller_instance.address}::5025::SOCKET"
             if controller_instance.connection.name == ConnectionName.TCP_IP

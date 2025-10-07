@@ -2991,7 +2991,7 @@ wheels = [
 
 [[package]]
 name = "qblox-instruments"
-version = "0.14.2"
+version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastjsonschema" },
@@ -3000,7 +3000,7 @@ dependencies = [
     { name = "qcodes" },
     { name = "spirack" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9e/3b/b6371da7190c080530e731979f755d58310f6649e73dd0472b1810193aaa/qblox_instruments-0.14.2.tar.gz", hash = "sha256:92a3a6c5530cbaf912a525147314c7de4fe23897d5824ad798fd02e7f179c03f", size = 1349262 }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/48/7974ef40f055866a48091477d691b8f85ea5312a60a8f3ced5af6a1edede/qblox_instruments-0.16.0.tar.gz", hash = "sha256:8a9785d916af27a35c0c51a6a870de5ed879cadb56fff1ee47f4a79a2cf0ad62", size = 2289124 }
 
 [[package]]
 name = "qcodes"
@@ -3096,9 +3096,7 @@ dependencies = [
     { name = "qcodes" },
     { name = "qcodes-contrib-drivers" },
     { name = "qibo" },
-    { name = "qm-qua" },
     { name = "qpysequence" },
-    { name = "qualang-tools" },
     { name = "rich" },
     { name = "ruamel-yaml" },
     { name = "sqlalchemy" },
@@ -3106,6 +3104,12 @@ dependencies = [
     { name = "tqdm" },
     { name = "urllib3" },
     { name = "xarray" },
+]
+
+[package.optional-dependencies]
+quantum-machines = [
+    { name = "qm-qua" },
+    { name = "qualang-tools" },
 ]
 
 [package.dev-dependencies]
@@ -3140,13 +3144,13 @@ requires-dist = [
     { name = "papermill", specifier = ">=2.6.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pyvisa-py", specifier = ">=0.7.2" },
-    { name = "qblox-instruments", specifier = "==0.14.2" },
+    { name = "qblox-instruments", specifier = "==0.16.0" },
     { name = "qcodes", specifier = ">=0.51.0" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qibo", specifier = "==0.2.15" },
-    { name = "qm-qua", specifier = "==1.2.1" },
+    { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.1" },
     { name = "qpysequence", specifier = ">=0.10.7" },
-    { name = "qualang-tools", specifier = ">=0.19.3" },
+    { name = "qualang-tools", marker = "extra == 'quantum-machines'", specifier = ">=0.19.3" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
     { name = "sqlalchemy", specifier = ">=2.0.40" },
@@ -3155,6 +3159,7 @@ requires-dist = [
     { name = "urllib3", specifier = ">=2.3.0" },
     { name = "xarray", specifier = ">=2024.3.0" },
 ]
+provides-extras = ["quantum-machines"]
 
 [package.metadata.requires-dev]
 dev = [

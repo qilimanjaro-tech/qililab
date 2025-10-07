@@ -22,11 +22,14 @@ from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
+from qililab.extra.quantum_machines import (
+    QuantumMachinesCluster,
+    QuantumMachinesMeasurementResult,
+)
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
@@ -34,7 +37,6 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
@@ -426,7 +428,7 @@ class TestPlatform:
 
     def test_set_bias_to_zero_without_crosstalk_raises_error(self, platform: Platform):
         """Test set_bias_to_zero function error without crosstalk."""
-        error_string = "Neither crosstalk matrix nor bus_list has been set"
+        error_string = "Crosstalk matrix has not been set"
         with pytest.raises(ValueError, match=error_string):
             platform.set_bias_to_zero()
 
@@ -453,6 +455,7 @@ class TestPlatform:
             ("flux_q0", Parameter.FLUX, 0.5),
         ],
     )
+    @pytest.mark.qm
     def test_set_parameter_no_instrument_connection_QM(self, bus: str, parameter: Parameter, value: float | str | bool):
         """Test platform raises and error if no instrument connection."""
         # Overwrite platform to use Quantum Machines:
@@ -853,7 +856,7 @@ class TestMethods:
             MockExecutor.assert_called_once_with(
                 platform=platform,
                 experiment=mock_experiment,
-                live_plot=True,
+                live_plot=False,
                 slurm_execution=True,
                 port_number=None,
             )
@@ -957,7 +960,8 @@ class TestMethods:
         ):
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
-
+    
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1010,6 +1014,7 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines_raises_error(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
 
@@ -1335,6 +1340,7 @@ class TestMethods:
             with pytest.raises(ValueError, match=error_string):
                 platform.execute_qprograms_parallel(qp_list, debug=True)
 
+    @pytest.mark.qm
     def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
         error_string = "Parallel execution is not supported in Quantum Machines."
         qp1 = QProgram()
@@ -1355,6 +1361,73 @@ class TestMethods:
             with pytest.raises(ValueError, match=error_string):
                 platform_quantum_machines.execute_qprograms_parallel(qp_list)
 
+    def test_normalize_bus_mappings(self, platform: Platform):
+        """Test the normalization of bus mappings"""
+        n = 3
+        bus_mappings = None
+        
+        none_mapping = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+        assert isinstance(none_mapping, list)
+        assert len(none_mapping)==n
+        assert none_mapping==[None]*n
+        
+        bus_mappings = {'readout':'readout_q0_bus'}
+        one_mapping = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+        assert isinstance(one_mapping, list)
+        assert len(one_mapping)==n
+        for mapping in one_mapping:
+            assert mapping==bus_mappings
+            
+        bus_mappings = [{'readout':'readout_q0_bus'}, None, {'readout':'readout_q2_bus'}]
+        mappings = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+        assert isinstance(mappings, list)
+        assert len(mappings)==n
+        assert mappings==bus_mappings
+        
+        bus_mappings = [{'readout':'readout_q0_bus'}, {'readout':'readout_q2_bus'}]
+        with pytest.raises(ValueError, match=re.escape(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")):
+            platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+    
+    def test_normalize_calibrations(self, platform: Platform, calibration: Calibration, calibration_with_preparation_block: Calibration):
+        """Test the normalization of calibrations"""
+        n = 3
+        calibrations = None
+        
+        none_calibration = platform._normalize_calibrations(calibrations=calibrations, n=n)
+        assert isinstance(none_calibration, list)
+        assert len(none_calibration)==n
+        assert none_calibration==[None]*n
+        
+        one_calibration = platform._normalize_calibrations(calibrations=calibration, n=n)
+        assert isinstance(one_calibration, list)
+        assert len(one_calibration)==n
+        for calibration_instance in one_calibration:
+            assert calibration_instance==calibration
+            
+        calibrations = [calibration, None, calibration_with_preparation_block]
+        calibrations_normalized = platform._normalize_calibrations(calibrations=calibrations, n=n)
+        assert isinstance(calibrations_normalized, list)
+        assert len(calibrations_normalized)==n
+        assert calibrations_normalized==calibrations
+        
+        calibrations = [calibration, calibration_with_preparation_block]
+        with pytest.raises(ValueError, match=re.escape(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")):
+            platform._normalize_calibrations(calibrations=calibrations, n=n)
+
+    def test_mapped_buses(self, platform: Platform):
+        """Test the mappings of buses"""
+        qp_buses = set({'readout', 'drive'})
+        mapping = None
+        
+        mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
+        assert mapped_buses==qp_buses
+
+        mapping = {'readout': 'readout_q0_bus', 'drive': 'drive_q0_bus'}
+        mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
+        assert len(mapped_buses)==len(mapping)
+        assert 'readout_q0_bus' in mapped_buses
+        assert 'drive_q0_bus' in mapped_buses
+        
     def test_parallelisation_execute_qblox(self, platform: Platform):
         """Test that the execute parallelisation returns the same result per qprogram as the regular excute method"""
 
@@ -1392,10 +1465,12 @@ class TestMethods:
             result_parallel = platform.execute_qprograms_parallel(qp_list, debug=True)
             non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1, debug=True)
             non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2, debug=True)
+            no_qprograms = platform.execute_qprograms_parallel(qprograms=None)
 
             # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
             assert result_parallel[0].results == non_parallel_results1.results
             assert result_parallel[1].results == non_parallel_results2.results
+            assert []==no_qprograms
 
     def test_calibrate_mixers(self, platform: Platform):
         """Test calibrating the Qblox mixers."""
