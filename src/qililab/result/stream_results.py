@@ -174,12 +174,7 @@ class StreamArray:
     def _get_debug(self):
         bus_aliases = set(self.qprogram.buses)
         buses = {bus_alias: self.platform.buses.get(alias=bus_alias) for bus_alias in bus_aliases}
-        instruments = {
-            instrument
-            for _, bus in buses.items()
-            for instrument in bus.instruments
-            if isinstance(instrument, (QbloxModule))
-        }
+        instruments = {instrument for _, bus in buses.items() for instrument in bus.instruments}
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             compiled = self.platform.compile_qprogram(self.qprogram, self.calibration)
 
