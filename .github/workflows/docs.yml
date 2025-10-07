@@ -37,6 +37,9 @@ jobs:
           **/uv.lock
         enable-cache: true
 
+    - name: Install the project
+      run: uv sync --group docs --all-extras 
+
     - name: Build docs
       run: |
         uv run sphinx-build -W -b html docs docs/_build --keep-going

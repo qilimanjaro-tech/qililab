@@ -539,13 +539,19 @@ class QbloxCompiler:
                 )
 
             #  Combine two waits together if possible
-            combined_duration_flag = False  # Flag to determine if the wait has already been added by combining two waits
+            combined_duration_flag = (
+                False  # Flag to determine if the wait has already been added by combining two waits
+            )
             if long_wait is False:
                 block_components = self._buses[bus].qpy_block_stack[-1].components
-                if block_components and isinstance(block_components[-1], QPyInstructions.Wait):  # Check if the previous element was a wait
+                if block_components and isinstance(
+                    block_components[-1], QPyInstructions.Wait
+                ):  # Check if the previous element was a wait
                     combined_duration = block_components[-1].duration + remainder
                     if combined_duration <= INST_MAX_WAIT:
-                        block_components[-1] = QPyInstructions.Wait(wait_time=combined_duration)  # overwrite the previous wait to combine with the current
+                        block_components[-1] = QPyInstructions.Wait(
+                            wait_time=combined_duration
+                        )  # overwrite the previous wait to combine with the current
                         combined_duration_flag = True
 
             if remainder >= INST_MIN_WAIT and combined_duration_flag is False:
@@ -818,8 +824,9 @@ class QbloxCompiler:
             self._buses[bus].weight_index_to_register[weight_index] = QPyProgram.Register()
             register = self._buses[bus].weight_index_to_register[weight_index]
             self._buses[bus].qpy_block_stack[block_index].append_component(
-                    component=QPyInstructions.Move(var=weight_index, register=register),
-                    bot_position=len(self._buses[bus].qpy_block_stack[block_index].components))
+                component=QPyInstructions.Move(var=weight_index, register=register),
+                bot_position=len(self._buses[bus].qpy_block_stack[block_index].components),
+            )
         return register
 
     def _handle_block(self, element: Block):
