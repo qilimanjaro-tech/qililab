@@ -177,7 +177,15 @@ class Platform:
             The obtained values correspond to the integral of the I/Q signals received by the digitizer.
             And they have shape `(#sequencers, 2, #bins)`, in this case you only have 1 sequencer and 1 bin.
 
-        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries, with:
+        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries.
+        To do so the call to execute circuit must be slightly different, as the number of averages must be 1:
+
+        .. code-block:: python
+
+            # Executing the platform with the same amount of loops but using bins:
+            result = platform.execute(program=circuit, num_avg=1, num_bins=1000, repetition_duration=6000)
+
+        Then:
 
         >>> result.counts
         {'0': 501, '1': 499}
@@ -1511,9 +1519,7 @@ class Platform:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(
-                routing=True, optimize=False, router=Sabre, placer=ReverseTraversal
-            )
+            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
             # Execute with automatic transpilation:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
