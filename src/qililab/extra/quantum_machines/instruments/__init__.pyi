@@ -11,14 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Utiliy class for hashing common classes."""
 
-import hashlib
+from .quantum_machines_cluster import QuantumMachinesCluster
 
-from qpysequence import Sequence
-
-
-def hash_qpy_sequence(sequence: Sequence):
-    """Hash a QPy Sequence"""
-    sequence_str = repr(sequence)
-    return hashlib.md5(sequence_str.encode("utf-8"), usedforsecurity=False).hexdigest()
+__all__ = ["QuantumMachinesCluster"]

@@ -12,44 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the QProgram class and all the needed information to build a QProgram.
-
-.. currentmodule:: qililab
-
-QProgram Class
-~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~QProgram
-
-Compilers
-~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~QbloxCompiler
-    ~QuantumMachinesCompiler
-
-Other QProgram related Classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~Calibration
-    ~Domain
-
-"""
+"""Tools for building and manipulating :class:`~qililab.qprogram.qprogram.QProgram` instances."""
 
 from .calibration import Calibration
 from .crosstalk_matrix import CrosstalkMatrix, FluxVector
 from .experiment import Experiment
 from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
 from .qprogram import QProgram
-from .quantum_machines_compiler import QuantumMachinesCompilationOutput, QuantumMachinesCompiler
 
 __all__ = [
     "Calibration",
@@ -59,6 +28,4 @@ __all__ = [
     "QProgram",
     "QbloxCompilationOutput",
     "QbloxCompiler",
-    "QuantumMachinesCompilationOutput",
-    "QuantumMachinesCompiler",
 ]

@@ -3144,7 +3144,6 @@ dependencies = [
     { name = "qilisdk" },
     { name = "qm-qua" },
     { name = "qpysequence" },
-    { name = "qualang-tools" },
     { name = "rich" },
     { name = "ruamel-yaml" },
     { name = "rustworkx" },
@@ -3153,6 +3152,12 @@ dependencies = [
     { name = "tqdm" },
     { name = "urllib3" },
     { name = "xarray" },
+]
+
+[package.optional-dependencies]
+quantum-machines = [
+    { name = "qm-qua" },
+    { name = "qualang-tools" },
 ]
 
 [package.dev-dependencies]
@@ -3193,7 +3198,7 @@ requires-dist = [
     { name = "qilisdk", git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main" },
     { name = "qm-qua", specifier = "==1.2.1" },
     { name = "qpysequence", specifier = ">=0.10.7" },
-    { name = "qualang-tools", specifier = ">=0.19.3" },
+    { name = "qualang-tools", marker = "extra == 'quantum-machines'", specifier = ">=0.19.3" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
     { name = "rustworkx", specifier = ">=0.17.1" },
@@ -3203,6 +3208,7 @@ requires-dist = [
     { name = "urllib3", specifier = ">=2.3.0" },
     { name = "xarray", specifier = ">=2024.3.0" },
 ]
+provides-extras = ["quantum-machines"]
 
 [package.metadata.requires-dev]
 dev = [
