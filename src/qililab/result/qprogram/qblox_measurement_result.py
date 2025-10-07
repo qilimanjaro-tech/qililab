@@ -13,8 +13,6 @@
 # limitations under the License.
 
 """QbloxResult class."""
-from __future__ import annotations
-
 import numpy as np
 
 from qililab.result.qprogram.measurement_result import MeasurementResult
@@ -61,7 +59,6 @@ class QbloxMeasurementResult(MeasurementResult):
         path1 = self.raw_measurement_data["bins"]["integration"]["path1"]
 
         array = np.array([path0, path1])
-
         if self.shape:
             array = array.reshape((2, *self.shape))
         return array

@@ -107,7 +107,6 @@ class BusCompilationInfo:
         self.qprogram_block_stack: deque[Block] = deque()
 
         # Counters to help with naming and indexing
-
         self.loop_counter = 0
         self.average_counter = 0
         self.waveform_optimization_counter = 0
@@ -150,6 +149,7 @@ class BusCompilationInfo:
         # Flag to know if an acquire is the first in a block
         self.first_acquire_of_block: bool = False
 
+        # Used in instances where there are no loop on the bin
         self.single_bin_counter: int = 0
 
 
@@ -833,9 +833,6 @@ class QbloxCompiler:
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
 
-    def _handle_block(self, element: Block):
-        pass
-
     def _get_or_create_weight_register(self, bus: str, weight_index: int, block_index: int) -> QPyProgram.Register:
         """Create or Retrieve a register for the weight index of the acquisition
             If it is the first weight index of this program with this value, then a new register is created and stored in the dictionary weight_index_to_register.
@@ -857,6 +854,9 @@ class QbloxCompiler:
                     component=QPyInstructions.Move(var=weight_index, register=register),
                     bot_position=len(self._buses[bus].qpy_block_stack[block_index].components))
         return register
+
+    def _handle_block(self, element: Block):
+        pass
 
     @staticmethod
     def _get_reference_operation_of_loop(loop: Loop | ForLoop, starting_block: Block | None = None):

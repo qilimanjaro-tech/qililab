@@ -1156,7 +1156,7 @@ class Platform:
 
         return results
 
-    def _unintertwined_qblox_results(self, bus_result, intertwined):
+    def _unintertwined_qblox_results(self, bus_result: list[QbloxMeasurementResult], intertwined: int) -> list[QbloxMeasurementResult]:
         """ Return a list of results where intertwined acquisitions are separated.
 
         In Qililab, when multiple acquisitions or measurements are performed at the same nested level, their results are intertwined: the bins are looped over
