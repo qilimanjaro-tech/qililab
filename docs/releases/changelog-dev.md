@@ -4,6 +4,34 @@
 
 ### Improvements
 
+- This update introduces a new mechanism that allows the library to optionally import either full concrete  implementations or lightweight stubs, depending on the user’s environment and installed dependencies. As part of this improvement, all Quantum Machines–related components have been reorganized under the `extra/quantum-machines` module hierarchy for better modularity and maintainability. Additionally, the Quantum Machines integration has been moved to the `[project.optional-dependencies]` section of the configuration, enabling users to install it only when needed.
+
+  For example, to install the base library without any optional dependencies, run:
+
+  ```bash
+  pip install qililab
+  ```
+
+  or
+
+  ```bash
+  uv sync
+  ```
+
+  If you plan to use the Quantum Machines integration, you can include it during installation using the optional dependency group:
+
+  ```bash
+  pip install qililab[quantum-machines]
+  ```
+
+  or
+
+  ```bash
+  uv sync --extra quantum-machines
+  ```
+
+  [#995](https://github.com/qilimanjaro-tech/qililab/pull/995)
+
 - Update qblox-instruments to 0.16.0 and qblox firmware to 0.11
 [#1015](https://github.com/qilimanjaro-tech/qililab/pull/1015)
 

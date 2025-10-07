@@ -12,22 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tools for building and manipulating :class:`~qililab.qprogram.qprogram.QProgram` instances."""
+"""Quantum Machines qprogram result integration."""
 
-from .calibration import Calibration
-from .crosstalk_matrix import CrosstalkMatrix, FluxVector
-from .experiment import Experiment
-from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
-from .qprogram import QProgram
-from .variable import Domain
+from .quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 
-__all__ = [
-    "Calibration",
-    "CrosstalkMatrix",
-    "Domain",
-    "Experiment",
-    "FluxVector",
-    "QProgram",
-    "QbloxCompilationOutput",
-    "QbloxCompiler",
-]
+__all__ = ["QuantumMachinesMeasurementResult"]
