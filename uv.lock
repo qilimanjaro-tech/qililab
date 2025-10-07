@@ -3530,6 +3530,7 @@ requires-dist = [
     { name = "qibo", specifier = "==0.2.20" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.1" },
     { name = "qpysequence", specifier = ">=0.10.7" },
+    { name = "qualang-tools", marker = "extra == 'quantum-machines'", specifier = ">=0.19.3" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
     { name = "sqlalchemy", specifier = ">=2.0.40" },
@@ -3615,6 +3616,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ea/7c/b4b69037fb00f8896155d8b980ee064e19a37a1d9fe37688e0cfa664a2a9/qpysequence-0.10.7.tar.gz", hash = "sha256:ee6a38211d848294b34377c0b876f1be6a13efec25aa6953adbb6eb840ec7a3a", size = 74522 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ae/1f/e98d61716b7f905b95d1d57777d8304308125b6ca7456c62dda0402e2c39/qpysequence-0.10.7-py3-none-any.whl", hash = "sha256:57dad26e8d3f65aa3c99e01e7988eb1055322c5749744fae900f81d69023d621", size = 79341 },
+]
+
+[[package]]
+name = "qualang-tools"
+version = "0.19.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "grpclib" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "qm-qua" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/42/b5/830b4ecb2d8b7966809c74dc8edc61a1546a52d872fbea60a5df26db3d2a/qualang_tools-0.19.3.tar.gz", hash = "sha256:8ce19e55fa8877a74c8cbfed539bc30e0ac84b4c5f40c6dc4643fa8acdb37419", size = 4249494 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2d/71/d9891e639ade8e7fd9d0763429f004ada42d0b339ce14ddfe3df41315ca2/qualang_tools-0.19.3-py3-none-any.whl", hash = "sha256:23d472111d609457565e44119bfee23e3cea3a1b8c6915a99139e92dfaf0d077", size = 4294024 },
 ]
 
 [[package]]
