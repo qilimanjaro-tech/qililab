@@ -22,7 +22,6 @@ from qililab.result.database import DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
-    from qililab.extra.quantum_machines.instruments.quantum_machines_cluster import QuantumMachinesCluster
     from qililab.platform import Platform
 
 
@@ -179,7 +178,7 @@ class StreamArray:
             instrument
             for _, bus in buses.items()
             for instrument in bus.instruments
-            if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
+            if isinstance(instrument, (QbloxModule))
         }
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             compiled = self.platform.compile_qprogram(self.qprogram, self.calibration)
