@@ -181,7 +181,7 @@ class StreamArray:
             if isinstance(instrument, QbloxModule)
         }
         if instruments and all(isinstance(instrument, QbloxModule) for instrument in instruments):
-            compiled = self.platform.compile_qprogram(self.qprogram, self.calibration)
+            compiled = self.platform.compile_qprogram(self.qprogram, self.calibration)[0]
 
             sequences = compiled.sequences
             for bus_alias, bus in buses.items():
