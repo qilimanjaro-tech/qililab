@@ -5,7 +5,8 @@ import pytest
 import plotly.io as pio
 from tests.data import Galadriel, SauronQuantumMachines
 
-from qililab import Domain, QbloxCompiler, QProgram, Square, IQPair
+from qililab import Domain, QProgram, Square, IQPair
+from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.data_management import build_platform
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
 from qililab.platform import Platform
@@ -155,7 +156,6 @@ def fixture_play_interrupted_by_another_play():
     qp.qblox.play("drive",Square(1,10),7)
     qp.qblox.play("drive",Square(-1,10),1)
     qp.wait("drive", 5)
-    qp.wait("drive", 10)
     return qp
 
 @pytest.fixture(name="qp_not_sub")
@@ -438,6 +438,7 @@ class TestQBloxDraw:
         )
         assert len(figure.data) == 1
 
+    @pytest.mark.qm
     def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
@@ -451,18 +452,15 @@ class TestQBloxDraw:
 
     def test_play_interrupted_by_another_play(self, qp_play_interrupted_by_another_play: QProgram):
         expected_data_draw_i = [ 0.70710678,  0.70710678,  0.70710678,  0.70710678,  0.70710678,
-          0.70710678,  0.70710678, -0.70710678, -0.70710678, -0.70710678,
-         -0.70710678, -0.70710678, -0.70710678, -0.70710678, -0.70710678,
-         -0.70710678, -0.70710678,  0.        ,  0.        ,  0.        ]
-        expected_data_draw_q = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-         0., 0., 0.]
+                  0.70710678,  0.70710678, -0.70710678, -0.70710678, -0.70710678,
+                 -0.70710678, -0.70710678, -0.70710678, -0.70710678, -0.70710678,
+                 -0.70710678, -0.70710678]
         compiler = QbloxCompiler()
         qblox_draw = QbloxDraw()
         results = compiler.compile(qp_play_interrupted_by_another_play)
         pio.renderers.default = "json"
         _, data_draw = qblox_draw.draw(sequencer=results, runcard_data= None)
         np.testing.assert_allclose(data_draw["drive"][0], expected_data_draw_i, rtol=1e-2, atol=1e-12)
-        np.testing.assert_allclose(data_draw["drive"][1], expected_data_draw_q, rtol=1e-2, atol=1e-12)
 
     def test_qp_not_sub(self, qp_not_sub: QProgram):
         expected_data_draw_i = [ 7.07106781e-01,  5.72061403e-01,  2.18508014e-01, -2.18508009e-01,

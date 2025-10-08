@@ -4,6 +4,113 @@
 
 ### Improvements
 
+- This update introduces a new mechanism that allows the library to optionally import either full concrete  implementations or lightweight stubs, depending on the user’s environment and installed dependencies. As part of this improvement, all Quantum Machines–related components have been reorganized under the `extra/quantum-machines` module hierarchy for better modularity and maintainability. Additionally, the Quantum Machines integration has been moved to the `[project.optional-dependencies]` section of the configuration, enabling users to install it only when needed.
+
+  For example, to install the base library without any optional dependencies, run:
+
+  ```bash
+  pip install qililab
+  ```
+
+  or
+
+  ```bash
+  uv sync
+  ```
+
+  If you plan to use the Quantum Machines integration, you can include it during installation using the optional dependency group:
+
+  ```bash
+  pip install qililab[quantum-machines]
+  ```
+
+  or
+
+  ```bash
+  uv sync --extra quantum-machines
+  ```
+
+  [#995](https://github.com/qilimanjaro-tech/qililab/pull/995)
+
+- Update qblox-instruments to 0.16.0 and qblox firmware to 0.11
+[#1015](https://github.com/qilimanjaro-tech/qililab/pull/1015)
+
+- This PR is the beginning of a series that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
+  1. When possible, waits will be combined together. For example, before this PR the following Q1ASM could be generated:
+      ```
+      wait 10
+      wait 40
+      ```
+
+      It will now be generated as:
+      ```
+      wait 50
+      ```
+
+  2. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_index_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
+  For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
+      ```
+      setup:
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
+
+      main:
+                      move             0, R0          
+                      move             0, R1          
+                      move             0, R2          
+                      move             0, R3          
+                      move             0, R4          
+                      move             0, R5          
+                      move             101, R6        
+                      move             0, R7          
+      loop_0:
+                      play             0, 0, 4        
+                      acquire_weighed  0, R5, R4, R3, 100
+                      add              R5, 1, R5      
+                      play             0, 0, 4        
+                      acquire_weighed  1, R2, R1, R0, 100
+                      add              R2, 1, R2      
+                      add              R7, 1, R7      
+                      loop             R6, @loop_0    
+                      set_mrk          0              
+                      upd_param        4              
+                      stop
+      ```
+      
+      But they will now only use 1 register (R1):
+
+      ```
+      setup:
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
+
+      main:
+                      move             0, R0          
+                      move             0, R1          
+                      move             0, R2          
+                      move             101, R3        
+                      move             0, R4          
+      loop_0:
+                      play             0, 0, 4        
+                      acquire_weighed  0, R2, R1, R1, 100
+                      add              R2, 1, R2      
+                      play             0, 0, 4        
+                      acquire_weighed  1, R0, R1, R1, 100
+                      add              R0, 1, R0      
+                      add              R4, 1, R4      
+                      loop             R3, @loop_0    
+                      set_mrk          0              
+                      upd_param        4              
+                      stop
+        ```
+        
+  [#1009](https://github.com/qilimanjaro-tech/qililab/pull/1009)
+
+- Added `parameters` dictionary to the `Calibration` class, and removed legacy code.
+  [#1005](https://github.com/qilimanjaro-tech/qililab/pull/1005)
+
 - `platform.execute_qprograms_parallel()` now takes a list of bus mappings to allow one bus mapping per qprogram.
 Parameters for the function have now the same syntax and behaviour:
 bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
@@ -184,16 +291,33 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 - Added new functions to DatabaseManager to support more efficient loading of data for live-plotting application. Such as get_platform and get_qprogram.
   [#979](https://github.com/qilimanjaro-tech/qililab/pull/979)
 
+- Added `ql.load_by_id(id)` in qililab, This function allows to retrieve the data path of a measurement with the given id without creating a `DatabaseManager` instance. This function is intended to be used inside notebooks using slurm as `DatabaseManager` cannot be submitted.
+  [#986](https://github.com/qilimanjaro-tech/qililab/pull/986)
+
 ### Breaking changes
 
-- Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, import `qililab.save_results` and import `qililab.load_results` still works the same way.
+- Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, `import qililab.save_results` and `import qililab.load_results` still works the same way.
   [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
+
+- Set database saving and live plotting to `False` by default during experiment execution.
+  [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
 
 ### Deprecations / Removals
 
 ### Documentation
 
 ### Bug fixes
+
+- Qblox Draw- When dealing with real time and classical time, the real duration was put instead of the wait duration. Note: do not include this comment in the next release changelog as the bug was not in the previous release.
+
+- Fixed a bug in the QBlox Compiler handling of the wait, long waits that were a multiple of 65532 (the maximum wait) up to 65535 were giving out an error. This has been solved by checking if the remainder would be below 4. If the remainder is 0 it appends a wait of 65532 and if the remainder is between 1 and 3, the duration of the last wait is computed as : `(INST_MAX_WAIT + remainder) - INST_MIN_WAIT` (where `INST_MAX_WAIT` is 65532 and `INST_MIN_WAIT` is 4) and a wait of `INST_MIN_WAIT` is added.
+  [#1006](https://github.com/qilimanjaro-tech/qililab/pull/1006)
+
+- Exposed `Platform` in the global namespace.
+  [#1002](https://github.com/qilimanjaro-tech/qililab/pull/1002)
+
+- Fixed a bug in the reshaping of MeasurementResults within the ExperimentResults.
+  [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
 
 - Qblox Draw: Previously, when plotting from the platform, the integration length was incorrectly taken from the runcard parameter. However, since Qililab currently only implements acquire_weighted, the integration length should instead be determined by the duration of the weight.
   This has been corrected and now the behaviour of the acquire is the same when plotting from the platform or the qprogram.
@@ -241,6 +365,9 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 
 - Fixed `FluxVector.set_crosstalk_from_bias(...)` and `platform.set_bias_to_zero(...)` related to automatic crosstalk compensation. Now the bias is set to 0 correctly and the fluxes are set to the correct value based on the offset.
   [#983](https://github.com/qilimanjaro-tech/qililab/pull/983)
+  
+- Fixed documentation for results `counts`, now it warns the user that instead of `num_avg` they must use `num_bins`.
+  [#989](https://github.com/qilimanjaro-tech/qililab/pull/989)
 
 - Fixed an error impeding two instances of QDAC2 to be executed through platform.connect when the runcard included 2 different `qdevil_qdac2` controllers inside `instrument_controllers`.
   [#990](https://github.com/qilimanjaro-tech/qililab/pull/990)

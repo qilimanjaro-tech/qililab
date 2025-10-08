@@ -5,7 +5,8 @@ import numpy as np
 import pytest
 import qpysequence as QPy
 
-from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, QbloxCompiler, QProgram, Square
+from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, QProgram, Square
+from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.qprogram.blocks import ForLoop
 from tests.test_utils import is_q1asm_equal
 from qililab.config import logger
@@ -507,6 +508,17 @@ def update_latched_param() -> QProgram:
     qp.wait(bus="drive", duration=6)
     return qp
 
+@pytest.fixture(name="wait_comprised_between_65532_65535")
+def fixture_wait_comprised_between_65532_65535() -> QProgram:
+    qp = QProgram()
+    qp.wait("drive",duration=65532*2)
+    qp.play("drive", Square(1,20))
+    qp.wait(bus="drive", duration=65532)
+    qp.play("drive", Square(1,20))
+    qp.wait(bus="drive", duration=65534)
+
+    return qp
+
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -785,8 +797,7 @@ class TestQBloxCompiler:
                             upd_param        4
 
             main:
-                            wait             40
-                            wait             100
+                            wait             140
                             move             10, R0
             square_0:
                             play             0, 1, 100
@@ -930,8 +941,7 @@ class TestQBloxCompiler:
             avg_0:
                             play             0, 1, 40
                             wait             65532
-                            wait             34468
-                            wait             2000
+                            wait             36468
                             loop             R0, @avg_0
                             set_mrk          0
                             upd_param        4
@@ -1035,8 +1045,7 @@ class TestQBloxCompiler:
             main:
                             move             1000, R0
             avg_0:
-                            wait             40
-                            wait             100
+                            wait             140
                             move             10, R1
             square_0:
                             play             0, 1, 100
@@ -1291,20 +1300,19 @@ class TestQBloxCompiler:
             avg_0:
                             move             0, R1
                             move             0, R2
-                            move             0, R3
-                            move             11, R4
-                            move             0, R5
+                            move             11, R3
+                            move             0, R4
             loop_0:
-                            set_awg_gain     R5, R5
-                            set_awg_gain     R5, R5
-                            move             10, R6
+                            set_awg_gain     R4, R4
+                            set_awg_gain     R4, R4
+                            move             10, R5
             square_0:
                             play             0, 1, 100
-                            loop             R6, @square_0
-                            acquire_weighed  0, R3, R2, R1, 1000
-                            add              R3, 1, R3
-                            add              R5, 3276, R5
-                            loop             R4, @loop_0
+                            loop             R5, @square_0
+                            acquire_weighed  0, R2, R1, R1, 1000
+                            add              R2, 1, R2
+                            add              R4, 3276, R4
+                            loop             R3, @loop_0
                             nop
                             loop             R0, @avg_0
                             set_mrk          0
@@ -1959,6 +1967,33 @@ set_freq         R5
                             upd_param        6
                             set_mrk          0
                             upd_param        4
+                            stop
+        """
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_wait_comprised_between_65532_65535(self, wait_comprised_between_65532_65535: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=wait_comprised_between_65532_65535)
+
+        assert "drive" in sequences
+
+        drive_str = """
+            setup:
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            wait             65532          
+                            wait             65532          
+                            play             0, 1, 20       
+                            wait             65532          
+                            play             0, 1, 20       
+                            wait             65530          
+                            wait             4              
+                            set_mrk          0              
+                            upd_param        4              
                             stop
         """
 
