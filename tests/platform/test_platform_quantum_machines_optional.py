@@ -145,7 +145,7 @@ def test_compile_qprogram_uses_quantum_machines(monkeypatch, _restore_quantum_ma
 
     result = platform.compile_qprogram(qprogram)
 
-    assert result == "compiler-output"
+    assert result[0] == "compiler-output"
     assert _restore_quantum_machines.captured_kwargs["thresholds"]["qm_bus"] == pytest.approx(0.5)
     assert _restore_quantum_machines.captured_kwargs["threshold_rotations"]["qm_bus"] == pytest.approx(0.25)
 
@@ -169,7 +169,7 @@ def test_execute_compilation_output_quantum_machines(_restore_quantum_machines):
         measurements=[measurement],
     )
 
-    results = platform.execute_compilation_output(output)
+    results = platform.execute_compilation_output(output, None)
 
     cluster = bus.instruments[0]
     assert cluster.compiled == "qua-program"
