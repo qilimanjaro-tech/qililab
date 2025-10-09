@@ -29,7 +29,6 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
-from qm import generate_qua_script
 from ruamel.yaml import YAML
 
 from qililab.analog import AnnealingProgram
@@ -37,13 +36,19 @@ from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
+from qililab.extra.quantum_machines import (
+    QuantumMachinesCluster,
+    QuantumMachinesCompilationOutput,
+    QuantumMachinesCompiler,
+    QuantumMachinesMeasurementResult,
+    generate_qua_script,
+)
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
@@ -57,15 +62,12 @@ from qililab.qprogram import (
     QbloxCompilationOutput,
     QbloxCompiler,
     QProgram,
-    QuantumMachinesCompilationOutput,
-    QuantumMachinesCompiler,
 )
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
@@ -73,6 +75,7 @@ from qililab.utils import hash_qpy_sequence
 if TYPE_CHECKING:
     from queue import Queue
 
+    from qm import generate_qua_script as _T_generate_qua_script  # noqa: F401
     from qpysequence import Sequence as QpySequence
 
     from qililab.digital import DigitalTranspilationConfig
@@ -174,7 +177,15 @@ class Platform:
             The obtained values correspond to the integral of the I/Q signals received by the digitizer.
             And they have shape `(#sequencers, 2, #bins)`, in this case you only have 1 sequencer and 1 bin.
 
-        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries, with:
+        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries.
+        To do so the call to execute circuit must be slightly different, as the number of averages must be 1:
+
+        .. code-block:: python
+
+            # Executing the platform with the same amount of loops but using bins:
+            result = platform.execute(program=circuit, num_avg=1, num_bins=1000, repetition_duration=6000)
+
+        Then:
 
         >>> result.counts
         {'0': 501, '1': 499}
@@ -1290,31 +1301,31 @@ class Platform:
         debug: bool = False,
     ) -> list[QProgramResults]:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
-            It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
+        It loads each qprogram into a different sequencer and uses the multiplexing capabilities of QBlox to run all sequencers at the same time.
 
-            **The execution can be done for (buses associated to) Qblox only. And it can only be done for qprograms that do not share buses.**
+        **The execution can be done for (buses associated to) Qblox only. And it can only be done for qprograms that do not share buses.**
 
-            Args:
-                qprograms (list[QProgram]): A list of the :class:`.QProgram` to execute.
-                bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
-                    A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
-                    A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
-                    None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
-                    It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
-                    Defaults to None.
-                calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
-                    A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
-                    A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
-                    None. In this case no `.Calibration` instance is used.
-                    Defaults to None.
-                debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
-                    Defaults to False.
+        Args:
+            qprograms (list[QProgram]): A list of the :class:`.QProgram` to execute.
+            bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
+                A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
+                A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
+                None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
+                It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
+                Defaults to None.
+            calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
+                A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
+                A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
+                None. In this case no `.Calibration` instance is used.
+                Defaults to None.
+            debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
+                Defaults to False.
 
-            Returns:
-                QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.
-                Each element of the list corresponds to a sequencer.
-                The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
-            """
+        Returns:
+            QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.
+            Each element of the list corresponds to a sequencer.
+            The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
+        """
         if not qprograms:
             return []
 

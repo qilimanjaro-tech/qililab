@@ -4,23 +4,54 @@
 
 ### Improvements
 
+- This update introduces a new mechanism that allows the library to optionally import either full concrete  implementations or lightweight stubs, depending on the user’s environment and installed dependencies. As part of this improvement, all Quantum Machines–related components have been reorganized under the `extra/quantum-machines` module hierarchy for better modularity and maintainability. Additionally, the Quantum Machines integration has been moved to the `[project.optional-dependencies]` section of the configuration, enabling users to install it only when needed.
+
+  For example, to install the base library without any optional dependencies, run:
+
+  ```bash
+  pip install qililab
+  ```
+
+  or
+
+  ```bash
+  uv sync
+  ```
+
+  If you plan to use the Quantum Machines integration, you can include it during installation using the optional dependency group:
+
+  ```bash
+  pip install qililab[quantum-machines]
+  ```
+
+  or
+
+  ```bash
+  uv sync --extra quantum-machines
+  ```
+
+  [#995](https://github.com/qilimanjaro-tech/qililab/pull/995)
+
 - Update qblox-instruments to 0.16.0 and qblox firmware to 0.11
 [#1015](https://github.com/qilimanjaro-tech/qililab/pull/1015)
 
 - This PR is the beginning of a series that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
   1. When possible, waits will be combined together. For example, before this PR the following Q1ASM could be generated:
+
       ```
       wait 10
       wait 40
       ```
 
       It will now be generated as:
+
       ```
       wait 50
       ```
 
   2. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_index_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
   For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
+
       ```
       setup:
                     wait_sync        4              
@@ -49,7 +80,7 @@
                       upd_param        4              
                       stop
       ```
-      
+
       But they will now only use 1 register (R1):
 
       ```
@@ -77,7 +108,7 @@
                       upd_param        4              
                       stop
         ```
-        
+
   [#1009](https://github.com/qilimanjaro-tech/qililab/pull/1009)
 
 - Added `parameters` dictionary to the `Calibration` class, and removed legacy code.
@@ -98,13 +129,11 @@ calibrations (list[Calibration], Calibration, optional). Contains information of
     Defaults to None.
 [#996](https://github.com/qilimanjaro-tech/qililab/pull/996)
 
-
 - `%% submit_job`: Added support for `sbatch --chdir` via a new `-c/--chdir` option that is propagated through `slurm_additional_parameters` and also enforced inside the job (`os.chdir(...)`) so it works with `-e local`. Made `--output` mandatory and hardened the output‑assignment check to recognize `Assign`, `AugAssign`, `AnnAssign`, walrus (`NamedExpr`), and tuple targets. Shipment of the notebook namespace is now safer: only picklable values (via `cloudpickle`) are sent, with common pitfalls (modules, loggers, private `_` names, IPython internals) excluded. `--low-priority` is a boolean flag mapping to a sane Slurm `nice=10000`. Paths are handled with `pathlib` plus `expanduser/expandvars`, the logs directory is created if missing, and imports are harvested conservatively from history (one‑line `import`/`from`, excluding `from __future__`). Parameter assembly only includes Slurm extras when provided, and the submitted function compiles the code string internally while accepting the output name and optional workdir. The job object is written to both `local_ns` and the global `user_ns` for IPython robustness. Log cleanup was rewritten to be cross‑platform and resilient: artifacts are grouped by numeric job‑ID prefix, non‑conforming entries are removed, and only the newest `num_files_to_keep` job groups are retained.
   [#994](https://github.com/qilimanjaro-tech/qililab/pull/994)
 
-
 - QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
-[#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
+  [#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
 
 - Previously, `platform.draw(qprogram)` and `qprogram.draw()` returned the plotly object and the raw data being plotted. Now they return only the plotly object. This change ensures:
 
@@ -147,8 +176,9 @@ plotly_figure, data_draw = platform.draw(qprogram)
 - An additional argument has been added, to Qblox Draw, time_window. It allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the exact number of ns inputted. For example, if the time_window is 100 ns but there is a play operation of 150 ns, the plots will display the data until 150 ns.
   [#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
 
-- Added measurements databases into the results saving structure all the architecture for them is located inside `results/database.py`. Added functionality for stream array using databases through `platform.database_saving` and through the class `StreaArray`, legacy `stream_array()` function still works as usual for retrocompatibility.
+- Added measurements databases into the results saving structure all the architecture for them is located inside `results/database.py`. Added functionality for stream array using databases through `platform.database_saving` and through the class `StreamArray`, legacy `stream_array()` function still works as usual for retrocompatibility.
   [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
+  [#1014](https://github.com/qilimanjaro-tech/qililab/pull/1014)
 
 - Added SQLAlchemy and xarray (usefull tool for measurements) to the dependencies as they are required for databases.
   [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
@@ -238,6 +268,9 @@ The data automatically selects between the local or shared domains depending on 
 - Added new functions to DatabaseManager to support more efficient loading of data for live-plotting application. Such as get_platform and get_qprogram.
   [#979](https://github.com/qilimanjaro-tech/qililab/pull/979)
 
+- Added `ql.load_by_id(id)` in qililab, This function allows to retrieve the data path of a measurement with the given id without creating a `DatabaseManager` instance. This function is intended to be used inside notebooks using slurm as `DatabaseManager` cannot be submitted.
+  [#986](https://github.com/qilimanjaro-tech/qililab/pull/986)
+
 ### Breaking changes
 
 - Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, `import qililab.save_results` and `import qililab.load_results` still works the same way.
@@ -264,8 +297,8 @@ The data automatically selects between the local or shared domains depending on 
   [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
 
 - Qblox Draw: Previously, when plotting from the platform, the integration length was incorrectly taken from the runcard parameter. However, since Qililab currently only implements acquire_weighted, the integration length should instead be determined by the duration of the weight.
-This has been corrected and now the behaviour of the acquire is the same when plotting from the platform or the qprogram.
-The integration length is defined as the duration of the acquire, not the weight, because Qililab ensures they are always equal. As a result, two acquires cannot overlap in Qililab. However, in QbloxDraw’s logic, interruptions remain possible, similar to Play.
+  This has been corrected and now the behaviour of the acquire is the same when plotting from the platform or the qprogram.
+  The integration length is defined as the duration of the acquire, not the weight, because Qililab ensures they are always equal. As a result, two acquires cannot overlap in Qililab. However, in QbloxDraw’s logic, interruptions remain possible, similar to Play.
   [#982](https://github.com/qilimanjaro-tech/qililab/pull/982)
 
 - Removed the unsupported zorder kwarg from QbloxDraw plotting to prevent Plotly errors across environments.
@@ -309,6 +342,9 @@ The integration length is defined as the duration of the acquire, not the weight
 
 - Fixed `FluxVector.set_crosstalk_from_bias(...)` and `platform.set_bias_to_zero(...)` related to automatic crosstalk compensation. Now the bias is set to 0 correctly and the fluxes are set to the correct value based on the offset.
   [#983](https://github.com/qilimanjaro-tech/qililab/pull/983)
+  
+- Fixed documentation for results `counts`, now it warns the user that instead of `num_avg` they must use `num_bins`.
+  [#989](https://github.com/qilimanjaro-tech/qililab/pull/989)
 
 - Fixed an error impeding two instances of QDAC2 to be executed through platform.connect when the runcard included 2 different `qdevil_qdac2` controllers inside `instrument_controllers`.
   [#990](https://github.com/qilimanjaro-tech/qililab/pull/990)
