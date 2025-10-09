@@ -135,7 +135,7 @@ class BusCompilationInfo:
 
         # Latched Paramter flag
         self.upd_param_instruction_pending: bool = False
- 
+
         # Allows reusing a register if a weight has already been given with the same value
         self.weight_index_to_register: dict[int, QPyProgram.Register] = {}
 
