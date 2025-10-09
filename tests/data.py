@@ -598,6 +598,7 @@ class Galadriel:
     ]
 
     instrument_controllers: list[dict] = [
+        qblox_qblox_cluster_controller,
         rohde_schwarz_controller_0,
         rohde_schwarz_controller_1,
         attenuator_controller_0,
