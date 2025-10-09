@@ -585,7 +585,7 @@ class QuantumMachinesCluster(Instrument):
         return (con_name, con_port, con_fem)
 
     @log_set_parameter
-def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None) -> None:
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None) -> None:
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 
         And if connection to instruments is established, then to the instruments as well.
