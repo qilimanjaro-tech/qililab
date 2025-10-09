@@ -29,7 +29,6 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
-from qm import generate_qua_script
 from ruamel.yaml import YAML
 
 from qililab.analog import AnnealingProgram
@@ -37,13 +36,19 @@ from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
+from qililab.extra.quantum_machines import (
+    QuantumMachinesCluster,
+    QuantumMachinesCompilationOutput,
+    QuantumMachinesCompiler,
+    QuantumMachinesMeasurementResult,
+    generate_qua_script,
+)
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
@@ -57,15 +62,12 @@ from qililab.qprogram import (
     QbloxCompilationOutput,
     QbloxCompiler,
     QProgram,
-    QuantumMachinesCompilationOutput,
-    QuantumMachinesCompiler,
 )
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
@@ -73,6 +75,7 @@ from qililab.utils import hash_qpy_sequence
 if TYPE_CHECKING:
     from queue import Queue
 
+    from qm import generate_qua_script as _T_generate_qua_script  # noqa: F401
     from qpysequence import Sequence as QpySequence
 
     from qililab.digital import DigitalTranspilationConfig
@@ -102,7 +105,7 @@ class Platform:
 
         More information about the runcard structure, in the :ref:`Runcards <runcards>` section of the documentation.
 
-    After initializing a :class:`Platform`, the typical first three steps (which are usually only required at the start) are:
+    After initializing a Platform, the typical first three steps (which are usually only required at the start) are:
 
     >>> platform.connect()  # Connects to all the instruments.
     >>> platform.initial_setup()  # Sets the parameters defined in the runcard.
@@ -174,7 +177,15 @@ class Platform:
             The obtained values correspond to the integral of the I/Q signals received by the digitizer.
             And they have shape `(#sequencers, 2, #bins)`, in this case you only have 1 sequencer and 1 bin.
 
-        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries, with:
+        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries.
+        To do so the call to execute circuit must be slightly different, as the number of averages must be 1:
+
+        .. code-block:: python
+
+            # Executing the platform with the same amount of loops but using bins:
+            result = platform.execute(program=circuit, num_avg=1, num_bins=1000, repetition_duration=6000)
+
+        Then:
 
         >>> result.counts
         {'0': 501, '1': 499}
@@ -348,7 +359,7 @@ class Platform:
         self.db_manager: DatabaseManager | None = None
         """Database manager for experiment class and db stream array"""
 
-        self.save_experiment_results_in_database: bool = True
+        self.save_experiment_results_in_database: bool = False
         """Database trigger to define if the experiment metadata will be saved in a database or not"""
 
     def connect(self):
@@ -689,9 +700,10 @@ class Platform:
             bus_list (list[str] | None, optional): Optional bus list for all the flux used in the experiment. Defaults to the Crosstalk buses.
         """
 
+        if not self.crosstalk:
+            raise ValueError("Crosstalk matrix has not been set")
+
         if not bus_list:
-            if not self.crosstalk:
-                raise ValueError("Neither crosstalk matrix nor bus_list has been set")
             bus_list = list(self.crosstalk.matrix.keys())
 
         if not self.flux_vector:
@@ -699,6 +711,8 @@ class Platform:
         for flux in bus_list:
             if flux not in self.flux_vector.flux_vector.keys():
                 self.flux_vector[flux] = 0
+            self.flux_vector.bias_vector[flux] = 0
+            self.flux_vector.set_crosstalk_from_bias(self.crosstalk)
 
         for flux_alias in bus_list:
             element = self.get_element(alias=flux_alias)
@@ -942,7 +956,7 @@ class Platform:
     def execute_experiment(
         self,
         experiment: Experiment,
-        live_plot: bool = True,
+        live_plot: bool = False,
         slurm_execution: bool = True,
         port_number: int | None = None,
     ) -> str:
@@ -952,7 +966,7 @@ class Platform:
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
-            live_plot (bool): Flag that abilitates live plotting. Defaults to True.
+            live_plot (bool): Flag that abilitates live plotting. Defaults to False.
             slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell.
                                     Defaults to True.
             port_number (int | None): Optional parameter for when slurm_execution is True.
@@ -1224,11 +1238,66 @@ class Platform:
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
         return self.execute_compilation_output(output=output, debug=debug)
 
+    def _normalize_bus_mappings(
+        self,
+        bus_mappings: list[dict[str, str] | None] | dict[str, str] | None,
+        n: int,
+    ) -> list[dict[str, str] | None]:
+        """
+        Return a list of length n with one mapping per qprogram.
+        Accepts:
+        - None                          -> [None] * n
+        - single dict                   -> [that dict] * n
+        - sequence of dict/None, len n  -> as-is
+        """
+        if bus_mappings is None:
+            return [None] * n
+
+        if isinstance(bus_mappings, dict):
+            return [bus_mappings.copy() for _ in range(n)]
+
+        # sequence case
+        if len(bus_mappings) != n:
+            raise ValueError(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")
+
+        return bus_mappings
+
+    def _normalize_calibrations(
+        self,
+        calibrations: list[Calibration | None] | Calibration | None,
+        n: int,
+    ) -> list[Calibration | None]:
+        """
+        Return a list of length n with one mapping per qprogram.
+        Accepts:
+        - None                          -> [None] * n
+        - single Calibration instance   -> [that Calibration] * n
+        - sequence of Calibration/None, len n  -> as-is
+        """
+        if calibrations is None:
+            return [None] * n
+
+        if isinstance(calibrations, Calibration):
+            return [calibrations for _ in range(n)]
+
+        # sequence case
+        if len(calibrations) != n:
+            raise ValueError(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")
+
+        return calibrations
+
+    def _mapped_buses(self, qp_buses: set[str], mapping: dict[str, str] | None) -> set[str]:
+        """Apply mapping (if any) to a qprogram's logical buses to get physical buses."""
+        if not mapping:
+            return set(qp_buses)
+
+        return {mapping.get(b, b) for b in qp_buses}
+
     def execute_qprograms_parallel(
         self,
         qprograms: list[QProgram],
-        bus_mapping: dict[str, str] | None = None,
-        calibration: Calibration | None = None,
+        bus_mappings: list[dict[str, str] | None] | dict[str, str] | None = None,
+        calibrations: list[Calibration | None] | Calibration | None = None,
         debug: bool = False,
     ) -> list[QProgramResults]:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
@@ -1237,10 +1306,18 @@ class Platform:
         **The execution can be done for (buses associated to) Qblox only. And it can only be done for qprograms that do not share buses.**
 
         Args:
-            qprograms (QProgram): A list of the :class:`.QProgram` to execute.
-            bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
-                It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
-            calibration (Calibration, optional): :class:`.Calibration` instance containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
+            qprograms (list[QProgram]): A list of the :class:`.QProgram` to execute.
+            bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
+                A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
+                A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
+                None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
+                It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
+                Defaults to None.
+            calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
+                A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
+                A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
+                None. In this case no `.Calibration` instance is used.
+                Defaults to None.
             debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
                 Defaults to False.
 
@@ -1249,17 +1326,32 @@ class Platform:
             Each element of the list corresponds to a sequencer.
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
-        buses_per_qprogram = [qprogram.buses for qprogram in qprograms]
-        total_buses = sum(len(s) for s in buses_per_qprogram)
-        unique_buses = len(set.union(*buses_per_qprogram))
-        if total_buses != unique_buses:
-            raise ValueError("QPrograms cannot be executed in parallel.")
-        outputs = [
-            self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
-            for qprogram in qprograms
-        ]
+        if not qprograms:
+            return []
+
+        # Normalize mappings and calibrations to one-per-qprogram
+        bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))
+        calibrations_list = self._normalize_calibrations(calibrations=calibrations, n=len(qprograms))
+
+        # Validate: no shared *physical* buses after applying each mapping
+        all_physical: set[str] = set()
+        if bus_mapping_list:
+            for qp, bus_mapping in zip(qprograms, bus_mapping_list):
+                phys = self._mapped_buses(qp.buses, bus_mapping)  # qp.buses is the set of logical buses
+                if all_physical & phys:
+                    raise ValueError(
+                        f"QPrograms cannot be executed in parallel (bus collision on {all_physical & phys})."
+                    )
+                all_physical |= phys
+
+            outputs = [
+                self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
+                for qp, bus_mapping, calibration in zip(qprograms, bus_mapping_list, calibrations_list)
+            ]
+
         if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
             raise ValueError("Parallel execution is not supported in Quantum Machines.")
+
         return self.execute_compilation_outputs_parallel(
             outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug
         )
@@ -1427,9 +1519,7 @@ class Platform:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(
-                routing=True, optimize=False, router=Sabre, placer=ReverseTraversal
-            )
+            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
             # Execute with automatic transpilation:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
@@ -1638,7 +1728,7 @@ class Platform:
         averages_displayed: bool = False,
         acquisition_showing: bool = True,
         bus_mapping: dict[str, str] | None = None,
-        calibration: Calibration | None = None
+        calibration: Calibration | None = None,
     ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 

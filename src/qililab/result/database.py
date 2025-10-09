@@ -136,7 +136,7 @@ class Measurement(base):  # type: ignore
     created_by = Column("created_by", String, server_default=text("current_user"))
     # TODO: add error_report = Column("error_report", String, nullable=True)
 
-    def end_experiment(self, Session):
+    def end_experiment(self, Session, traceback=None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 
@@ -146,12 +146,13 @@ class Measurement(base):  # type: ignore
             persistent_instance.end_time = datetime.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
+                if traceback is None:
+                    persistent_instance.experiment_completed = True
+                # TODO: add else: persistent_instance.error_report = traceback
                 session.commit()
-                persistent_instance.experiment_completed = True
                 return persistent_instance
             except Exception as e:
                 session.rollback()
-                # TODO: add persistent_instance.error_report = e.__str__()
                 raise e
 
     def read_experiment(self):
@@ -371,16 +372,16 @@ class DatabaseManager:
 
     def load_by_id(self, id):
         """Load measurement by its measurement_id."""
+        with self.Session() as session:
+            measurement_by_id = session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
 
-        measurement_by_id = self.Session().query(Measurement).where(Measurement.measurement_id == id).one_or_none()
+            path = measurement_by_id.result_path
+            if not os.path.isfile(path):
 
-        path = measurement_by_id.result_path
-        if not os.path.isfile(path):
+                new_path = path.replace(self.base_path_local, self.base_path_share)
+                measurement_by_id.result_path = new_path
 
-            new_path = path.replace(self.base_path_local, self.base_path_share)
-            measurement_by_id.result_path = new_path
-
-        return measurement_by_id
+            return measurement_by_id
 
     def tail(
         self,
@@ -388,6 +389,8 @@ class DatabaseManager:
         current_sample: bool = True,
         order_limit: int | None = 5,
         pandas_output: bool = False,
+        light_read: bool = False,
+        since_id: int | None = None,
     ):
         """Add an index at the end of the database.
 
@@ -396,12 +399,16 @@ class DatabaseManager:
             current_sample (bool, optional): Conditional to define if the sample is currently on use. Defaults to True.
             order_limit (int | None, optional): Limit of the order by query. Defaults to 5.
             pandas_output (bool, optional): If True, read database table into a DataFrame. Defaults to False.
+            light_read (bool, optional): If True, load only a subset of the columns. Replace heavy columns Platform and Qprogram by True or False. Defaults to False.
+            since_id (int | None, optional): If provided, only load measurements with measurement_id greater than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
             query = self.Session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
+            if since_id:
+                query = query.filter(Measurement.measurement_id > since_id)
 
             if exp_name is not None:
                 query = query.filter(Measurement.experiment_name == exp_name)
@@ -410,6 +417,44 @@ class DatabaseManager:
                 query = query.order_by(Measurement.measurement_id.desc()).limit(order_limit)
             else:
                 query = query.order_by(Measurement.measurement_id.desc())
+
+            Measurement.platform.isnot
+            if light_read:
+                query = query.with_entities(  # Note that some columns are missing that currently are not being used
+                    Measurement.measurement_id,
+                    Measurement.experiment_name,
+                    Measurement.optional_identifier,
+                    Measurement.start_time,
+                    Measurement.end_time,
+                    Measurement.run_length,
+                    Measurement.experiment_completed,
+                    Measurement.cooldown,
+                    Measurement.sample_name,
+                    Measurement.result_path,
+                    Measurement.created_by,
+                    (Measurement.qprogram != "null").label("has_qprogram"),
+                    (Measurement.platform != "null").label("has_platform"),
+                    (Measurement.calibration != "null").label("has_calibration"),
+                    (Measurement.debug_file != "null").label("has_debug"),
+                )
+
+            if light_read:
+                query = query.with_entities(  # Note that some columns are missing that currently are not being used
+                    Measurement.measurement_id,
+                    Measurement.experiment_name,
+                    Measurement.optional_identifier,
+                    Measurement.start_time,
+                    Measurement.end_time,
+                    Measurement.run_length,
+                    Measurement.experiment_completed,
+                    Measurement.cooldown,
+                    Measurement.sample_name,
+                    Measurement.result_path,
+                    Measurement.created_by,
+                    Measurement.debug_file,
+                    (Measurement.qprogram.isnot(None)).label("has_qprogram"),
+                    (Measurement.platform.isnot(None)).label("has_platform"),
+                )
 
             if pandas_output:
                 return read_sql(query.statement, con=con)
@@ -421,6 +466,8 @@ class DatabaseManager:
         current_sample: bool = True,
         order_limit: int | None = 5,
         pandas_output: bool = False,
+        light_read: bool = False,
+        before_id: int | None = None,
     ):
         """Add an index at the beginning of the database.
 
@@ -429,12 +476,17 @@ class DatabaseManager:
             current_sample (bool, optional): Conditional to define if the sample is currently on use. Defaults to True.
             order_limit (int | None, optional): Limit of the order by query. Defaults to 5.
             pandas_output (bool, optional): If True, read database table into a DataFrame. Defaults to False.
+            light_read (bool, optional): If True, load only a subset of the columns. Replace heavy columns Platform and Qprogram by True or False. Defaults to False.
+            before_id (int | None, optional): If provided, only load measurements with measurement_id lower than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
             query = self.Session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
+
+            if before_id:
+                query = query.filter(Measurement.measurement_id < before_id)
 
             if exp_name is not None:
                 query = query.filter(Measurement.experiment_name == exp_name)
@@ -444,9 +496,56 @@ class DatabaseManager:
             else:
                 query = query.order_by(Measurement.measurement_id)
 
+            if light_read:
+                query = query.with_entities(  # Note that some columns are missing that currently are not being used
+                    Measurement.measurement_id,
+                    Measurement.experiment_name,
+                    Measurement.optional_identifier,
+                    Measurement.start_time,
+                    Measurement.end_time,
+                    Measurement.run_length,
+                    Measurement.experiment_completed,
+                    Measurement.cooldown,
+                    Measurement.sample_name,
+                    Measurement.result_path,
+                    Measurement.created_by,
+                    (Measurement.qprogram != "null").label("has_qprogram"),
+                    (Measurement.platform != "null").label("has_platform"),
+                    (Measurement.calibration != "null").label("has_calibration"),
+                    (Measurement.debug_file != "null").label("has_debug"),
+                )
+
             if pandas_output:
                 return read_sql(query.statement, con=con)
             return query.all()
+
+    def get_qprogram(self, measurement_id: int):
+        """Get QProgram of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+        """
+        with self.Session() as session:
+            return session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
+
+    def get_calibration(self, measurement_id: int):
+        """Get Calibration of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+        """
+        with self.Session() as session:
+            return session.query(Measurement.calibration).filter(Measurement.measurement_id == measurement_id).scalar()
+
+    def get_platform(self, measurement_id: int):
+        """Get Platform of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+        """
+        with self.Session() as session:
+            return session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
+
+    def get_debug(self, measurement_id: int):
+        """Get Debug of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+        """
+        with self.Session() as session:
+            return session.query(Measurement.debug_file).filter(Measurement.measurement_id == measurement_id).scalar()
 
     def add_measurement(
         self,
@@ -461,6 +560,7 @@ class DatabaseManager:
         experiment: "Experiment" = None,  # type: ignore
         qprogram: "QProgram" = None,  # type: ignore
         calibration: "Calibration" = None,  # type: ignore
+        debug_file: str | None = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
     ):
@@ -522,6 +622,7 @@ class DatabaseManager:
             experiment=experiment,
             qprogram=qprogram,
             calibration=calibration,
+            debug_file=debug_file,
             parameters=parameters,
             data_shape=data_shape,
         )
@@ -653,3 +754,12 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
     """
     url = f"postgresql://{user}:{passwd}@{host}:{port}/{database}"
     return create_engine(url)
+
+
+def load_by_id(id: int) -> str:
+    """Function to get the database ID without loading the Database Manager"""
+
+    db = get_db_manager()
+    result_path = db.load_by_id(id)
+
+    return result_path

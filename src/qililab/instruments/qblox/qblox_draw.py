@@ -54,7 +54,7 @@ class QbloxDraw:
             param["classical_time_counter"] += int(wait_duration)
             real_wait = wait_duration - param["real_time_counter"]
             if real_wait <= 0:
-                param["real_time_counter"] = param["real_time_counter"] - real_wait  # update the real time counter
+                param["real_time_counter"] = param["real_time_counter"] - wait_duration  # update the real time counter
             else:
                 data_draw = self._handle_wait_draw(data_draw, param, real_wait)
                 param["real_time_counter"] = max(0, param["real_time_counter"] - wait_duration)
@@ -80,8 +80,7 @@ class QbloxDraw:
             elif wf_length < classical_duration_play:
                 real_play_wait = classical_duration_play - wf_length
                 data_draw = self._handle_wait_draw(data_draw, param, real_play_wait)
-                # The counter is not being reset to 0 here because this allows overlaying a future acquire if needed
-                param["real_time_counter"] = param["real_time_counter"] - classical_duration_play
+                param["real_time_counter"] = 0
 
         elif action_type == "acquire_weighed":
             param["acquire_idx"] += 1

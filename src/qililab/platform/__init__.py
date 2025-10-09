@@ -16,10 +16,10 @@
 This module contains all the methods and the class used to define a platform, which is a representation
 of a laboratory.
 
+.. currentmodule:: qililab
+
 Platform Class
 ~~~~~~~~~~~~~~~~
-
-.. currentmodule:: qililab.platform
 
 .. autosummary::
     :toctree: api

@@ -2,14 +2,13 @@
 
 # pylint: disable=protected-access
 import datetime
-import warnings
 from unittest.mock import MagicMock, patch
 
 import matplotlib as mpl
 import numpy as np
 import pytest
 
-from qililab.result.database import DatabaseManager, Measurement, _load_config, get_db_manager, get_engine
+from qililab.result.database import DatabaseManager, Measurement, _load_config, get_db_manager, get_engine, load_by_id
 
 mpl.use("Agg")  # Use non-interactive backend for testing
 
@@ -66,7 +65,7 @@ class TestMeasurement:
         assert result.end_time == fixed_now
         assert result.experiment_completed is True
         assert result.run_length == fixed_now - measurement.start_time
-        assert mock_session.commit.called_once()
+        mock_session.commit.assert_called_once()
 
     @patch("qililab.result.database.datetime")
     def test_end_experiment_raises_exception(self, mock_datetime, measurement):
@@ -82,7 +81,7 @@ class TestMeasurement:
         with pytest.raises(Exception, match="Measurement error"):
             result = measurement.end_experiment(lambda: mock_session_context)
 
-        assert mock_session.rollback.called_once
+        mock_session.rollback.assert_called_once()
 
     @patch("qililab.result.database.ExperimentResults")
     def test_read_experiment(self, mock_experiment_results, measurement):
@@ -94,7 +93,7 @@ class TestMeasurement:
 
         assert data == "data"
         assert dims == "dims"
-        assert mock_experiment_results.called_once_with(measurement.result_path)
+        mock_experiment_results.assert_called_once_with(measurement.result_path)
 
     @patch("qililab.result.database.ExperimentResults")
     @patch("qililab.result.database.DataArray")
@@ -112,26 +111,26 @@ class TestMeasurement:
 
         measurement.read_experiment_xarray()
 
-        assert data_mock.take.any_call(indices=0, axis=1)
-        assert data_mock.take.any_call(indices=1, axis=1)
-        assert mock_data_array.called_once()
+        data_mock.take.assert_any_call(indices=0, axis=1)
+        data_mock.take.assert_any_call(indices=1, axis=1)
+        mock_data_array.assert_called_once()
 
     @patch("qililab.result.database.load_results")
     def test_load_old_h5(self, mock_load_results, measurement):
         measurement.load_old_h5()
-        assert mock_load_results.called_once_with(measurement.result_path)
+        mock_load_results.assert_called_once_with(measurement.result_path)
 
     @patch("qililab.result.database.read_hdf")
     def test_load_df(self, mock_read_hdf, measurement):
         measurement.load_df()
-        assert mock_read_hdf.called_once_with(measurement.result_path)
+        mock_read_hdf.assert_called_once_with(measurement.result_path)
 
     @patch("qililab.result.database.read_hdf")
     def test_load_xarray(self, mock_read_hdf, measurement):
         mock_df = MagicMock()
         mock_read_hdf.return_value = mock_df
         measurement.load_xarray()
-        assert mock_df.to_xarray.called_once()
+        mock_df.to_xarray.assert_called_once()
 
     @patch("qililab.result.database.read_hdf")
     def test_read_numpy(self, mock_read_hdf, measurement):
@@ -151,7 +150,7 @@ class TestMeasurement:
 
         assert isinstance(arr, np.ndarray)
         assert "x" in labels and "y" in labels
-        assert mock_read_hdf.called_once()
+        mock_read_hdf.assert_called_once()
 
 
 class Testdatabase:
@@ -212,8 +211,8 @@ class Testdatabase:
 
         db_manager.add_cooldown(**cooldown_data)
 
-        assert db_manager._mock_session.add.called
-        assert db_manager._mock_session.commit.called
+        db_manager._mock_session.add.assert_called
+        db_manager._mock_session.commit.assert_called
 
     def test_add_cooldown_raises_exception(self, db_manager: DatabaseManager):
         cooldown_data = {
@@ -231,7 +230,7 @@ class Testdatabase:
         with pytest.raises(Exception, match="DB error"):
             db_manager.add_cooldown(**cooldown_data)
 
-        assert mock_session.rollback.called_once
+        mock_session.rollback.assert_called_once
 
     def test_add_sample(self, db_manager: DatabaseManager):
         sample_data = {
@@ -247,8 +246,8 @@ class Testdatabase:
 
         db_manager.add_sample(**sample_data)
 
-        assert db_manager._mock_session.add.called
-        assert db_manager._mock_session.commit.called
+        db_manager._mock_session.add.assert_called
+        db_manager._mock_session.commit.assert_called
 
     def test_add_sample_raises_exception(self, db_manager: DatabaseManager):
         sample_data = {
@@ -271,11 +270,20 @@ class Testdatabase:
         with pytest.raises(Exception, match="DB error"):
             db_manager.add_sample(**sample_data)
 
-        assert mock_session.rollback.called_once
+        mock_session.rollback.assert_called_once
 
     def test_load_by_id(self, db_manager: DatabaseManager):
-        db_manager.load_by_id(123)
-        assert db_manager.Session().query.called
+        mock_measurement = MagicMock(spec=Measurement)
+        mock_measurement.result_path = "/local_test/results/file.h5"
+        mock_measurement.measurement_id = 123
+
+        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+
+        with patch("os.path.isfile", return_value=False):
+            result = db_manager.load_by_id(123)
+
+        db_manager._mock_session.query.assert_called
+        assert result.result_path == "/shared_test/results/file.h5"
 
     def test_load_by_id_path_not_found(self, db_manager: DatabaseManager):
         # Setup a mock measurement
@@ -301,13 +309,13 @@ class Testdatabase:
         mock_session.query.return_value = query_mock
 
         # Call the method
-        result = db_manager.tail(exp_name="test")
+        result = db_manager.tail(exp_name="test", since_id=1)
 
         # Assertions
         mock_session.query.assert_called_with(Measurement)
-        assert query_mock.filter.called
-        assert query_mock.order_by.called
-        assert query_mock.all.called
+        query_mock.filter.assert_called
+        query_mock.order_by.assert_called
+        query_mock.all.assert_called
         assert result == ["result1", "result2"]
 
         # Mock connection to Pandas
@@ -317,10 +325,11 @@ class Testdatabase:
         mock_read_sql.return_value = df_mock
 
         # Pandas output path
-        result_pandas = db_manager.tail(order_limit=None, pandas_output=True)
+        result_pandas = db_manager.tail(order_limit=None, pandas_output=True, light_read=True)
 
         # Assertions
-        assert query_mock.order_by.called  # same mock
+        query_mock.order_by.assert_called  # same mock
+        query_mock.with_entities.assert_called
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
 
@@ -338,13 +347,13 @@ class Testdatabase:
         mock_session.query.return_value = query_mock
 
         # Call the method
-        result = db_manager.head(exp_name="test")
+        result = db_manager.head(exp_name="test", before_id=10)
 
         # Assertions
         mock_session.query.assert_called_with(Measurement)
-        assert query_mock.filter.called
-        assert query_mock.order_by.called
-        assert query_mock.all.called
+        query_mock.filter.assert_called
+        query_mock.order_by.assert_called
+        query_mock.all.assert_called
         assert result == ["result1", "result2"]
 
         # Mock connection to Pandas
@@ -354,12 +363,54 @@ class Testdatabase:
         mock_read_sql.return_value = df_mock
 
         # Pandas output path
-        result_pandas = db_manager.head(order_limit=None, pandas_output=True)
+        result_pandas = db_manager.head(order_limit=None, pandas_output=True, light_read=True)
 
         # Assertions
         assert query_mock.order_by.called  # same mock
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
+
+    def test_get_qprogram(self, db_manager: DatabaseManager):
+        """Test get qprogram function from the database manager"""
+        mock_session = db_manager.Session()
+        mock_session.__enter__.return_value = mock_session
+
+        with patch("os.path.isfile", return_value=False):
+            qprogram = db_manager.get_qprogram(123)
+
+        assert qprogram == mock_session.query(Measurement.qprogram).filter(Measurement.measurement_id == 123).scalar()
+
+    def test_get_platform(self, db_manager: DatabaseManager):
+        """Test get platform function from the database manager"""
+        mock_session = db_manager.Session()
+        mock_session.__enter__.return_value = mock_session
+
+        with patch("os.path.isfile", return_value=False):
+            platform = db_manager.get_platform(123)
+
+        assert platform == mock_session.query(Measurement.platform).filter(Measurement.measurement_id == 123).scalar()
+
+    def test_get_calibration(self, db_manager: DatabaseManager):
+        """Test get qprogram function from the database manager"""
+        mock_session = db_manager.Session()
+        mock_session.__enter__.return_value = mock_session
+
+        with patch("os.path.isfile", return_value=False):
+            qprogram = db_manager.get_calibration(123)
+
+        assert (
+            qprogram == mock_session.query(Measurement.calibration).filter(Measurement.measurement_id == 123).scalar()
+        )
+
+    def test_get_debug(self, db_manager: DatabaseManager):
+        """Test get qprogram function from the database manager"""
+        mock_session = db_manager.Session()
+        mock_session.__enter__.return_value = mock_session
+
+        with patch("os.path.isfile", return_value=False):
+            qprogram = db_manager.get_debug(123)
+
+        assert qprogram == mock_session.query(Measurement.debug_file).filter(Measurement.measurement_id == 123).scalar()
 
     @patch("qililab.result.database.os.makedirs")
     @patch("qililab.result.database.datetime")
@@ -378,9 +429,9 @@ class Testdatabase:
         # Assert
         expected_path = "/shared_test/mesaurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
         assert measurement.result_path == expected_path
-        assert db_manager._mock_session.add.called_once
-        assert db_manager._mock_session.commit.called_once
-        assert mock_makedirs.called_once_with("/shared_test/mesaurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5")
+        db_manager._mock_session.add.assert_called_once
+        db_manager._mock_session.commit.assert_called_once
+        mock_makedirs.assert_called_once_with("/shared_test/mesaurement_folder/sampleA/cdX/2023-01-01/12_00_00")
 
     def test_add_measurement_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set
@@ -408,7 +459,7 @@ class Testdatabase:
         with pytest.raises(Exception, match="DB error"):
             _ = db_manager.add_measurement("exp1", experiment_completed=True)
 
-        assert mock_session.rollback.called_once
+        mock_session.rollback.assert_called_once
 
     @patch("qililab.result.database.h5py.File")
     @patch("qililab.result.database.os.makedirs")
@@ -440,11 +491,11 @@ class Testdatabase:
         db_manager.add_results("exp1", results, loops)
 
         # Assertions
-        group_mock.create_dataset.called_once_with(name="x", data=loops["x"])
-        file_mock.create_dataset.called_once_with("results", data=results)
-        db_manager._mock_session.add.called_once()
-        db_manager._mock_session.commit.called_once()
-        mock_makedirs.called_once()  # make sure directory was attempted to be created
+        group_mock.create_dataset.assert_called_once_with(name="x", data=loops["x"])
+        file_mock.create_dataset.assert_called_once_with("results", data=results)
+        db_manager._mock_session.add.assert_called_once()
+        db_manager._mock_session.commit.assert_called_once()
+        mock_makedirs.assert_called_once()  # make sure directory was attempted to be created
 
     def test_add_results_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set
@@ -493,7 +544,7 @@ class Testdatabase:
         with pytest.raises(Exception, match="DB error"):
             db_manager.add_results("exp1", results, loops)
 
-        assert mock_session.rollback.called_once
+        mock_session.rollback.assert_called_once
 
 
 @patch("qililab.result.database.ConfigParser")
@@ -545,3 +596,15 @@ def test_get_engine(mock_create_engine):
 
     get_engine(user, passwd, host, port, database)
     mock_create_engine.assert_called_once_with(expected_url)
+
+
+@patch("qililab.result.database.get_db_manager")
+def test_independent_load_by_id(mock_get_db_manager):
+    mock_db = MagicMock()
+    mock_get_db_manager.return_value = mock_db
+
+    test_id = 1
+    load_by_id(test_id)
+
+    mock_get_db_manager.assert_called_once()
+    mock_db.load_by_id.assert_called_once_with(test_id)
