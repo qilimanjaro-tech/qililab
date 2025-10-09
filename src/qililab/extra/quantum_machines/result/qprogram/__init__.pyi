@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Quantum Machines Instrument Controllers."""
+from .quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 
-from .quantum_machines_cluster_controller import QuantumMachinesClusterController
-
-__all__ = ["QuantumMachinesClusterController"]
+__all__ = ["QuantumMachinesMeasurementResult"]

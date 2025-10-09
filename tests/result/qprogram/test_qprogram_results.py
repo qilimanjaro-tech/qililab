@@ -4,9 +4,9 @@ import os
 import numpy as np
 import pytest
 
+from qililab.extra.quantum_machines import QuantumMachinesMeasurementResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 
 
