@@ -687,6 +687,10 @@ class QbloxCompiler:
                 component=QPyInstructions.Add(origin=self._buses[element.bus].bin_register, var=1, destination=self._buses[element.bus].bin_register)
             )
         else:  # if only 1 bin, the use of register can be avoided
+
+            if self._buses[element.bus].prev_nested_level_acquire != self._buses[element.bus].count_nested_level_acquire: # reset the bin index if new depth level
+                self._buses[element.bus].single_bin_counter = 0
+
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.AcquireWeighed(
                     acq_index=self._buses[element.bus].count_nested_level_acquire,

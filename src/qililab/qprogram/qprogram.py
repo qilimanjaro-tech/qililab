@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from copy import deepcopy
+from collections import defaultdict
 from typing import overload
 
 from qililab.qprogram.blocks.block import Block
@@ -180,6 +181,14 @@ class QProgram(StructuredProgram):
         """
 
         def traverse(block: Block):
+            if hasattr(block,"acquire_count"):
+                        unmapped_dictionary = getattr(block, "acquire_count")
+                        mapped_dictionary = {bus_mapping[key] if key in bus_mapping else key: value
+                            for key, value in unmapped_dictionary.items()}
+                        setattr(
+                            block,
+                            "acquire_count",
+                            defaultdict(int, mapped_dictionary),)
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
