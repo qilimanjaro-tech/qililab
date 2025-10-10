@@ -72,7 +72,7 @@ class SabreSwapPass(CircuitTranspilerPass):
 
     def __init__(
         self,
-        coupling: PyGraph,
+        topology: PyGraph,
         *,
         initial_layout: list[int] | None = None,
         seed: int | None = None,
@@ -105,9 +105,9 @@ class SabreSwapPass(CircuitTranspilerPass):
             max_attempts (int): Maximum number of independent SABRE attempts (with varied seeds)
                 to run before propagating a swap-budget failure.
         """
-        if not isinstance(coupling, PyGraph):
+        if not isinstance(topology, PyGraph):
             raise TypeError("SabreSwapPass requires a rustworkx.PyGraph (undirected).")
-        self.coupling = coupling
+        self.topology = topology
         self.initial_layout = initial_layout
         self.seed = seed
         self.lookahead_size = int(lookahead_size)
@@ -153,7 +153,10 @@ class SabreSwapPass(CircuitTranspilerPass):
             self.last_final_layout = final_layout
 
             if self.context is not None:
-                self.context.final_layout = list(self.last_final_layout or [])
+                if layout_hint:
+                    self.context.final_layout = {logical_qubit: self.last_final_layout[logical_qubit] for logical_qubit in sorted(layout_hint)}
+                else:
+                    self.context.final_layout = {logical_qubit: self.last_final_layout[logical_qubit] for logical_qubit in range(len(final_layout))}
                 self.context.metrics["swap_count"] = self.last_swap_count
 
             self.append_circuit_to_context(out)
@@ -172,9 +175,9 @@ class SabreSwapPass(CircuitTranspilerPass):
         rng = random.Random(seed)  # noqa: S311
 
         n_logical = circuit.nqubits
-        phys_nodes = sorted(int(x) for x in self.coupling.node_indices())
+        phys_nodes = sorted(int(x) for x in self.topology.node_indices())
         if not phys_nodes:
-            raise ValueError("Coupling graph has no nodes.")
+            raise ValueError("Topology graph has no nodes.")
         num_phys_nodes = len(phys_nodes)
         phys_index = {node: idx for idx, node in enumerate(phys_nodes)}
         max_phys_label_plus_one = max(phys_nodes) + 1
@@ -195,7 +198,7 @@ class SabreSwapPass(CircuitTranspilerPass):
             return out, 0, layout[:]
 
         inv_layout = self._invert_layout(layout, phys_index)
-        dist = self._apsp_unweighted(self.coupling, phys_nodes, phys_index)
+        dist = self._apsp_unweighted(self.topology, phys_nodes, phys_index)
 
         # Preprocess 2Q structure for SABRE scoring
         twoq_ops_idx, twoq_pairs, per_qubit = self._twoq_structure(circuit)
@@ -275,11 +278,11 @@ class SabreSwapPass(CircuitTranspilerPass):
                     pa, pb = layout[a], layout[b]
                     touched.add(pa)
                     touched.add(pb)
-                    for nb in self.coupling.neighbors(pa):
+                    for nb in self.topology.neighbors(pa):
                         x, y = int(pa), int(nb)
                         if x != y:
                             candidates.add((min(x, y), max(x, y)))
-                    for nb in self.coupling.neighbors(pb):
+                    for nb in self.topology.neighbors(pb):
                         x, y = int(pb), int(nb)
                         if x != y:
                             candidates.add((min(x, y), max(x, y)))
@@ -361,7 +364,7 @@ class SabreSwapPass(CircuitTranspilerPass):
             qs = gate.qubits
             if len(qs) != 2:
                 continue
-            if not self.coupling.has_edge(layout[qs[0]], layout[qs[1]]):
+            if not self.topology.has_edge(layout[qs[0]], layout[qs[1]]):
                 return False
         return True
 

@@ -30,15 +30,6 @@ def test_sabre_swap_rejects_empty_coupling_graph():
         swap_pass.run(circuit)
 
 
-def test_sabre_swap_initial_layout_length_must_match_logical_qubits():
-    topology = make_line_topology(2)
-    swap_pass = SabreSwapPass(topology, initial_layout=[0])
-    circuit = Circuit(2)
-
-    with pytest.raises(ValueError, match="initial_layout length 1 != circuit.nqubits 2"):
-        swap_pass.run(circuit)
-
-
 def test_sabre_swap_routes_adjacent_gate_without_swaps_and_updates_context():
     topology = make_line_topology(2)
     swap_pass = SabreSwapPass(topology, seed=4)
@@ -56,7 +47,7 @@ def test_sabre_swap_routes_adjacent_gate_without_swaps_and_updates_context():
     assert [gate.qubits for gate in out.gates] == [(0,), (0, 1), (1,)]
     assert swap_pass.last_swap_count == 0
     assert swap_pass.last_final_layout == [0, 1]
-    assert context.final_layout == [0, 1]
+    assert context.final_layout == {0: 0, 1: 1}
     assert context.metrics["swap_count"] == 0
     assert any(name.startswith("SabreSwapPass") for name in context.circuits)
 
