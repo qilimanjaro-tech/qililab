@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Updated `qibo` to version 0.2.20, and to fit the requirements `numpy` has been updated to 2.2.6 and `pandas` to 2.2.3.
+  [#970](https://github.com/qilimanjaro-tech/qililab/pull/970)
+
 ### Improvements
 
 - This update introduces a new mechanism that allows the library to optionally import either full concrete  implementations or lightweight stubs, depending on the user’s environment and installed dependencies. As part of this improvement, all Quantum Machines–related components have been reorganized under the `extra/quantum-machines` module hierarchy for better modularity and maintainability. Additionally, the Quantum Machines integration has been moved to the `[project.optional-dependencies]` section of the configuration, enabling users to install it only when needed.
