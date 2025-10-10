@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections import defaultdict
 from copy import deepcopy
 from typing import overload
 
@@ -180,6 +181,14 @@ class QProgram(StructuredProgram):
         """
 
         def traverse(block: Block):
+            if hasattr(block, "acquire_count"):
+                        unmapped_dictionary = getattr(block, "acquire_count")
+                        mapped_dictionary = {bus_mapping[key] if key in bus_mapping else key: value
+                            for key, value in unmapped_dictionary.items()}
+                        setattr(
+                            block,
+                            "acquire_count",
+                            defaultdict(int, mapped_dictionary),)
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
@@ -403,6 +412,7 @@ class QProgram(StructuredProgram):
             )
         self._active_block.append(operation)
         self._buses.add(bus)
+        self._active_block.acquire_count[bus] += 1
 
     def sync(self, buses: list[str] | None = None):
         """Synchronize operations between buses, so the operations following will start at the same time.
@@ -525,6 +535,7 @@ class QProgram(StructuredProgram):
                 else AcquireWithCalibratedWeights(bus=bus, weights=weights, save_adc=save_adc)
             )
             self.qprogram._active_block.append(operation)
+            self.qprogram._active_block.acquire_count[bus] += 1
             self.qprogram._buses.add(bus)
 
         @overload
