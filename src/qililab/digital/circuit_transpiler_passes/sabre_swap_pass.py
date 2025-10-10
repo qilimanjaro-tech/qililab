@@ -124,17 +124,25 @@ class SabreSwapPass(CircuitTranspilerPass):
     # ----------------------- public API -----------------------
 
     def run(self, circuit: Circuit) -> Circuit:
-        if self.initial_layout is None and self.context and self.context.initial_layout:
-            self.initial_layout = self.context.initial_layout
-
         attempts = max(1, self.max_attempts)
         last_exc: RuntimeError | None = None
         base_seed = self.seed
+        # Obtain layout hint without mutating instance attributes so repeated runs
+        # do not accidentally persist stale mappings.
+        layout_hint: list[int] | None = None
+        if self.initial_layout is not None:
+            layout_hint = list(self.initial_layout)
+        elif self.context is not None and self.context.initial_layout:
+            layout_hint = list(self.context.initial_layout)
 
         for attempt in range(attempts):
             attempt_seed = None if base_seed is None else base_seed + attempt
             try:
-                out, swap_count, final_layout = self._run_once(circuit, attempt_seed)
+                out, swap_count, final_layout = self._run_once(
+                    circuit,
+                    attempt_seed,
+                    layout_hint,
+                )
             except RuntimeError as exc:
                 if "Exceeded swap budget" not in str(exc):
                     raise
@@ -159,6 +167,7 @@ class SabreSwapPass(CircuitTranspilerPass):
         self,
         circuit: Circuit,
         seed: int | None,
+        layout_hint: list[int] | None,
     ) -> tuple[Circuit, int, list[int]]:
         rng = random.Random(seed)  # noqa: S311
 
@@ -171,7 +180,7 @@ class SabreSwapPass(CircuitTranspilerPass):
         max_phys_label_plus_one = max(phys_nodes) + 1
 
         active_qubits = {int(q) for g in circuit.gates for q in g.qubits}
-        layout = self._init_layout(n_logical, phys_nodes, active_qubits)
+        layout = self._init_layout(n_logical, phys_nodes, active_qubits, layout_hint)
         inv_layout = self._invert_layout(layout, phys_index)
         dist = self._apsp_unweighted(self.coupling, phys_nodes, phys_index)
 
@@ -475,12 +484,24 @@ class SabreSwapPass(CircuitTranspilerPass):
                         q.append(v)
         return dist
 
-    def _init_layout(self, n_logical: int, phys_nodes: list[int], active_qubits: set[int]) -> list[int]:
-        if self.initial_layout is not None:
-            if len(self.initial_layout) != n_logical:
-                raise ValueError(f"initial_layout length {len(self.initial_layout)} != circuit.nqubits {n_logical}")
+    def _init_layout(
+        self,
+        n_logical: int,
+        phys_nodes: list[int],
+        active_qubits: set[int],
+        layout_hint: list[int] | None,
+    ) -> list[int]:
+        if layout_hint is not None:
+            layout = list(layout_hint)
+            if len(layout) > n_logical:
+                layout = layout[:n_logical]
+            if len(layout) < n_logical:
+                used = set(layout)
+                remaining = [node for node in phys_nodes if node not in used]
+                placeholder = phys_nodes[0] if phys_nodes else 0
+                while len(layout) < n_logical:
+                    layout.append(remaining.pop(0) if remaining else placeholder)
             available = set(phys_nodes)
-            layout = list(self.initial_layout)
             active_targets = [layout[q] for q in active_qubits]
             missing = sorted({node for node in active_targets if node not in available})
             if missing:
