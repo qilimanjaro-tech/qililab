@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from copy import deepcopy
 from collections import defaultdict
+from copy import deepcopy
 from typing import overload
 
 from qililab.qprogram.blocks.block import Block
@@ -181,7 +181,7 @@ class QProgram(StructuredProgram):
         """
 
         def traverse(block: Block):
-            if hasattr(block,"acquire_count"):
+            if hasattr(block, "acquire_count"):
                         unmapped_dictionary = getattr(block, "acquire_count")
                         mapped_dictionary = {bus_mapping[key] if key in bus_mapping else key: value
                             for key, value in unmapped_dictionary.items()}

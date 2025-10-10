@@ -470,6 +470,48 @@ def fixture_error_acquisition_index() -> QProgram:
             qp.qblox.acquire("readout", IQPair(I=weights_shape, Q=weights_shape))
     return qp
 
+@pytest.fixture(name="single_bin_different_depth_qp")
+def fixture_single_bin_different_depth_qp() -> QProgram:
+    qp = QProgram()
+
+    weights_shape = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
+    square_wf = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
+
+    with qp.average(100):
+        qp.measure(bus=f"readout",
+            waveform=square_wf,
+            weights=weights_shape)
+        qp.measure(bus=f"readout",
+            waveform=square_wf,
+            weights=weights_shape)
+
+    qp.measure(bus=f"readout",
+                waveform=square_wf,
+                weights=weights_shape)
+    qp.measure(bus=f"readout",
+                waveform=square_wf,
+                weights=weights_shape)
+    return qp
+
+@pytest.fixture(name="bus_mappping_acquire")
+def fixture_bus_mappping_acquire() -> QProgram:
+    qp = QProgram()
+    square_wf = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
+    with qp.average(10):
+        qp.play("drive", square_wf)
+        qp.measure(bus=f"readout",
+                    waveform=square_wf,
+                    weights=square_wf,)
+        qp.measure(bus=f"readout",
+                waveform=square_wf,
+                weights=square_wf,)
+        qp.wait("readout",100)
+    qp.measure(bus=f"readout",
+                waveform=square_wf,
+                weights=square_wf,)
+    return qp
+
+
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
@@ -1775,3 +1817,61 @@ set_freq         R5
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="Acquisition index 32 exceeds maximum of 31."):
             _ = compiler.compile(error_acquisition_index)
+
+
+    def test_acquire_single_bin_different_nested_level(self, single_bin_different_depth_qp: QProgram):
+        "Check that having single binned acquisitions at different nested level resets the bin index counter to 0"
+        compiler = QbloxCompiler()
+        sequences,_ = compiler.compile(single_bin_different_depth_qp)
+        readout_str = """ 
+        setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+        main:
+                move             100, R0        
+        avg_0:
+                play             0, 1, 4        
+                acquire_weighed  0, 0, 0, 1, 10 
+                play             0, 1, 4        
+                acquire_weighed  0, 1, 0, 1, 10 
+                loop             R0, @avg_0     
+                play             0, 1, 4        
+                acquire_weighed  1, 0, 0, 1, 10 
+                play             0, 1, 4        
+                acquire_weighed  1, 1, 0, 1, 10 
+                set_mrk          0              
+                upd_param        4              
+                stop
+        """
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    
+    def test_bus_mapping_and_acquire(self, bus_mappping_acquire):
+        """Test bus mapping and ascquisition together"""
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(bus_mappping_acquire)
+        acquisition_dict = sequences.sequences["readout"]._acquisitions.to_dict()
+        readout_str = """setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+        main:
+                move             10, R0         
+        avg_0:
+                play             0, 1, 4        
+                acquire_weighed  0, 0, 0, 1, 10 
+                play             0, 1, 4        
+                acquire_weighed  0, 1, 0, 1, 10 
+                wait             100            
+                loop             R0, @avg_0     
+                play             0, 1, 4        
+                acquire_weighed  1, 0, 0, 1, 10 
+                set_mrk          0              
+                upd_param        4              
+                stop"""
+        
+        assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
+        assert acquisition_dict == {'Acquisition 0': {'num_bins': 2, 'index': 0}, 'Acquisition 1': {'num_bins': 1, 'index': 1}}

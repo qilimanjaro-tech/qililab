@@ -649,7 +649,7 @@ class QbloxCompiler:
             self._buses[element.bus].shape_acquire = tuple(loop[1].iterations for loop in loops)
             self._buses[element.bus].num_bins_per_acquire = math.prod(loop[1].iterations for loop in loops)
 
-            # total nb of bins is number of acquire x numbers of bins by acquire (for each nested levl)
+            # total nb of bins is number of acquire x numbers of bins by acquire (for each nested level)
             self._buses[element.bus].num_bins_total = int(self._buses[element.bus].counter_acquire * self._buses[element.bus].num_bins_per_acquire)
             acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
             self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(bus=element.bus, save_adc=element.save_adc, shape=self._buses[element.bus].shape_acquire, intertwined=self._buses[element.bus].counter_acquire)
@@ -688,7 +688,7 @@ class QbloxCompiler:
             )
         else:  # if only 1 bin, the use of register can be avoided
 
-            if self._buses[element.bus].prev_nested_level_acquire != self._buses[element.bus].count_nested_level_acquire: # reset the bin index if new depth level
+            if self._buses[element.bus].prev_nested_level_acquire != self._buses[element.bus].count_nested_level_acquire:  # reset the bin index if new depth level
                 self._buses[element.bus].single_bin_counter = 0
 
             self._buses[element.bus].qpy_block_stack[-1].append_component(

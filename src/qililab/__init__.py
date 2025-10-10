@@ -28,7 +28,7 @@ from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
 from .execute_circuit import execute
-from .qprogram import Calibration, CrosstalkMatrix, Domain, QProgram, Experiment
+from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, Experiment
 from .platform import Platform
 from .result import ExperimentResults, load_by_id, stream_results
 from .typings import Parameter
@@ -67,6 +67,7 @@ __all__ = [
     "FlatTop",
     "Gaussian",
     "IQPair",
+    "QbloxCompiler",
     "Measurement",
     "Parameter",
     "Platform",
