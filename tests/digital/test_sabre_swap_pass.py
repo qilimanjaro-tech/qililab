@@ -20,13 +20,13 @@ def test_sabre_swap_requires_pygraph():
         SabreSwapPass("not-a-graph")  # type: ignore[arg-type]
 
 
-def test_sabre_swap_rejects_empty_coupling_graph():
+def test_sabre_swap_rejects_empty_topology_graph():
     topology = PyGraph()
     swap_pass = SabreSwapPass(topology)
     circuit = Circuit(1)
     circuit.add(RX(0, theta=0.3))
 
-    with pytest.raises(ValueError, match="Coupling graph has no nodes"):
+    with pytest.raises(ValueError, match="Topology graph has no nodes"):
         swap_pass.run(circuit)
 
 
