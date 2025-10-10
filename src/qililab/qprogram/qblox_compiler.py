@@ -391,15 +391,37 @@ class QbloxCompiler:
             if isinstance(element.frequency, Variable)
             else convert(element.frequency)
         )
-        self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetFreq(frequency=frequency)
+        if frequency<0:
+            freq_register = QPyProgram.Register()
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.Move(var=abs(frequency), register=freq_register )
         )
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.Nop()
+        )
+            
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.Not(freq_register,freq_register)
+        )
+            
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.Nop()
+        )
+            
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetFreq(frequency=freq_register)
+        )
+            
+        else:
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.SetFreq(frequency=frequency)
+            )
 
         # set the frequency a second time - because of a qblox bug where the first frequency in a hardware loop is false (same is done for the gain).
-        self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetFreq(frequency=frequency)
-        )
-        self._buses[element.bus].upd_param_instruction_pending = True
+        # self._buses[element.bus].qpy_block_stack[-1].append_component(
+        #     component=QPyInstructions.SetFreq(frequency=frequency)
+        # )
+        # self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_phase(self, element: SetPhase):
         convert = QbloxCompiler._convert_value(element)
