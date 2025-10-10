@@ -154,9 +154,14 @@ class SabreSwapPass(CircuitTranspilerPass):
 
             if self.context is not None:
                 if layout_hint:
-                    self.context.final_layout = {logical_qubit: self.last_final_layout[logical_qubit] for logical_qubit in sorted(layout_hint)}
+                    self.context.final_layout = {
+                        logical_qubit: self.last_final_layout[logical_qubit] for logical_qubit in sorted(layout_hint)
+                    }
                 else:
-                    self.context.final_layout = {logical_qubit: self.last_final_layout[logical_qubit] for logical_qubit in range(len(final_layout))}
+                    self.context.final_layout = {
+                        logical_qubit: self.last_final_layout[logical_qubit]
+                        for logical_qubit in range(len(final_layout))
+                    }
                 self.context.metrics["swap_count"] = self.last_swap_count
 
             self.append_circuit_to_context(out)
