@@ -1504,10 +1504,6 @@ class Platform:
         compiler = CircuitToQProgramCompiler(self.digital_compilation_settings)
         qprogram = compiler.compile(transpiled_circuit, nshots)
 
-        # logical_to_physical = transpiler.context.logical_to_physical_mapping or {
-        #     q: transpiler.context.final_layout[transpiler.context.initial_layout[q]] for q in range(circuit.nqubits)
-        # }
-
         return qprogram, transpiler.context.final_layout
 
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
