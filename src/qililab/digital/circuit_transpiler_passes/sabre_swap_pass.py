@@ -70,8 +70,6 @@ class SabreSwapPass(CircuitTranspilerPass):
       Multi-qubit (>2) non-SWAP gates should be decomposed before routing.
     """
 
-    hermitian_gates: ClassVar[set[type[Gate]]] = set()  # not used here
-
     def __init__(
         self,
         coupling: PyGraph,
@@ -79,11 +77,34 @@ class SabreSwapPass(CircuitTranspilerPass):
         initial_layout: list[int] | None = None,
         seed: int | None = None,
         lookahead_size: int = 10,
-        beta: float = 0.5,
+        beta: float = 0.8,
         decay_delta: float = 0.001,
         decay_lambda: float = 0.99,
-        max_swaps_factor: float = 8.0,
+        max_swaps_factor: float = 64.0,
+        max_attempts: int = 10,
     ) -> None:
+        """Configure SABRE swap routing behavior.
+
+        Args:
+            coupling (PyGraph): Undirected coupling graph describing allowed physical qubit
+                connections that two-qubit gates must follow.
+            initial_layout (list[int] | None): Optional logical-to-physical assignment used to
+                seed the routing; defaults to an identity-style mapping if omitted.
+            seed (int | None): Base seed for the stochastic swap scoring and for retries when
+                the heuristic restarts.
+            lookahead_size (int): Number of future two-qubit gates considered in SABRE's
+                extended set when scoring candidate swaps.
+            beta (float): Weight balancing the extended-set cost versus the immediate front-set
+                cost in the SABRE objective.
+            decay_delta (float): Increment applied to decay penalties after each physical swap to
+                discourage immediate reuse of the same qubits.
+            decay_lambda (float): Multiplicative decay factor applied per iteration so older swap
+                penalties gradually fade.
+            max_swaps_factor (float): Multiplier that converts the current distance between gate
+                qubits into the per-gate swap budget before treating the attempt as failed.
+            max_attempts (int): Maximum number of independent SABRE attempts (with varied seeds)
+                to run before propagating a swap-budget failure.
+        """
         if not isinstance(coupling, PyGraph):
             raise TypeError("SabreSwapPass requires a rustworkx.PyGraph (undirected).")
         self.coupling = coupling
@@ -94,6 +115,7 @@ class SabreSwapPass(CircuitTranspilerPass):
         self.decay_delta = float(decay_delta)
         self.decay_lambda = float(decay_lambda)
         self.max_swaps_factor = float(max_swaps_factor)
+        self.max_attempts = int(max_attempts)
 
         # Diagnostics
         self.last_swap_count: int | None = None
@@ -102,7 +124,43 @@ class SabreSwapPass(CircuitTranspilerPass):
     # ----------------------- public API -----------------------
 
     def run(self, circuit: Circuit) -> Circuit:
-        rng = random.Random(self.seed)  # noqa: S311
+        if self.initial_layout is None and self.context and self.context.initial_layout:
+            self.initial_layout = self.context.initial_layout
+
+        attempts = max(1, self.max_attempts)
+        last_exc: RuntimeError | None = None
+        base_seed = self.seed
+
+        for attempt in range(attempts):
+            attempt_seed = None if base_seed is None else base_seed + attempt
+            try:
+                out, swap_count, final_layout = self._run_once(circuit, attempt_seed)
+            except RuntimeError as exc:
+                if "Exceeded swap budget" not in str(exc):
+                    raise
+                last_exc = exc
+                continue
+
+            self.last_swap_count = swap_count
+            self.last_final_layout = final_layout
+
+            if self.context is not None:
+                self.context.final_layout = list(self.last_final_layout or [])
+                self.context.metrics["swap_count"] = self.last_swap_count
+
+            self.append_circuit_to_context(out)
+            return out
+
+        if last_exc is not None:
+            raise last_exc
+        raise RuntimeError(f"SABRE routing failed after {attempts} attempts.")
+
+    def _run_once(
+        self,
+        circuit: Circuit,
+        seed: int | None,
+    ) -> tuple[Circuit, int, list[int]]:
+        rng = random.Random(seed)  # noqa: S311
 
         n_logical = circuit.nqubits
         phys_nodes = sorted(int(x) for x in self.coupling.node_indices())
@@ -218,6 +276,9 @@ class SabreSwapPass(CircuitTranspilerPass):
                     decay[idx] *= self.decay_lambda
 
                 # Evaluate SABRE cost for each candidate swap (virtually)
+                current_distance = dist[phys_index[layout[u]]][phys_index[layout[v]]]
+                improving_edge: tuple[int, int] | None = None
+                improving_cost: float = math.inf
                 best_edge: tuple[int, int] | None = None
                 best_cost: float = math.inf
 
@@ -226,11 +287,20 @@ class SabreSwapPass(CircuitTranspilerPass):
                     lb = inv_layout[phys_index[b]]
                     # Virtually swap mapping
                     self._swap_mapping(layout, inv_layout, phys_index, a, b, la, lb)
+                    # Distance after the hypothetical swap
+                    new_distance = dist[phys_index[layout[u]]][phys_index[layout[v]]]
                     cost_front = self._cost_set(F, layout, twoq_pairs, dist, decay, phys_index)
                     cost_ext = self._cost_set(E, layout, twoq_pairs, dist, None, phys_index)
                     cost = cost_front + self.beta * cost_ext
                     # Revert
                     self._swap_mapping(layout, inv_layout, phys_index, a, b, lb, la)
+
+                    if new_distance < current_distance:
+                        if cost < improving_cost - 1e-12:
+                            improving_cost = cost
+                            improving_edge = (a, b)
+                        elif abs(cost - improving_cost) <= 1e-12 and rng.random() < 0.5:
+                            improving_edge = (a, b)
 
                     if cost < best_cost - 1e-12:
                         best_cost = cost
@@ -240,7 +310,10 @@ class SabreSwapPass(CircuitTranspilerPass):
 
                 # Apply chosen SWAP physically and in the mapping
                 # assert best_edge is not None
-                a, b = best_edge  # type: ignore[misc]
+                chosen_edge = improving_edge if improving_edge is not None else best_edge
+                if chosen_edge is None:
+                    raise RuntimeError("SABRE heuristic could not select a swap candidate.")
+                a, b = chosen_edge
                 out.add(SWAP(a, b))
                 swap_count += 1
                 la = inv_layout[phys_index[a]]
@@ -257,16 +330,7 @@ class SabreSwapPass(CircuitTranspilerPass):
             advance_front_for(u)
             advance_front_for(v)
 
-        self.last_swap_count = swap_count
-        self.last_final_layout = layout[:]  # mapping at the end of routing
-
-        if self.context is not None:
-            self.context.final_layout = list(self.last_final_layout or [])
-            self.context.metrics["swap_count"] = self.last_swap_count
-
-        self.append_circuit_to_context(out)
-
-        return out
+        return out, swap_count, layout[:]
 
     # ----------------------- SABRE helpers -----------------------
 
