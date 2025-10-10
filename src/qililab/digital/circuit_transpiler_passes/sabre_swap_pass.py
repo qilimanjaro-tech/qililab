@@ -181,6 +181,19 @@ class SabreSwapPass(CircuitTranspilerPass):
 
         active_qubits = {int(q) for g in circuit.gates for q in g.qubits}
         layout = self._init_layout(n_logical, phys_nodes, active_qubits, layout_hint)
+
+        if self._is_layout_routable(circuit, layout):
+            out_n = max(
+                max_phys_label_plus_one,
+                max(layout) + 1 if layout else max_phys_label_plus_one,
+                circuit.nqubits,
+            )
+            out = Circuit(out_n)
+            for gate in circuit.gates:
+                mapped = tuple(layout[q] for q in gate.qubits)
+                out.add(self._retarget_gate(gate, mapped))
+            return out, 0, layout[:]
+
         inv_layout = self._invert_layout(layout, phys_index)
         dist = self._apsp_unweighted(self.coupling, phys_nodes, phys_index)
 
@@ -343,6 +356,15 @@ class SabreSwapPass(CircuitTranspilerPass):
 
     # ----------------------- SABRE helpers -----------------------
 
+    def _is_layout_routable(self, circuit: Circuit, layout: list[int]) -> bool:
+        for gate in circuit.gates:
+            qs = gate.qubits
+            if len(qs) != 2:
+                continue
+            if not self.coupling.has_edge(layout[qs[0]], layout[qs[1]]):
+                return False
+        return True
+
     @staticmethod
     def _front_set(per_qubit: list[list[int]], pos: list[int], scheduled: list[bool]) -> set[int]:
         F: set[int] = set()
@@ -492,15 +514,25 @@ class SabreSwapPass(CircuitTranspilerPass):
         layout_hint: list[int] | None,
     ) -> list[int]:
         if layout_hint is not None:
-            layout = list(layout_hint)
-            if len(layout) > n_logical:
-                layout = layout[:n_logical]
-            if len(layout) < n_logical:
-                used = set(layout)
-                remaining = [node for node in phys_nodes if node not in used]
-                placeholder = phys_nodes[0] if phys_nodes else 0
-                while len(layout) < n_logical:
-                    layout.append(remaining.pop(0) if remaining else placeholder)
+            hint = list(layout_hint)
+            active_list = sorted(active_qubits)
+            if len(hint) == n_logical:
+                layout = hint[:n_logical]
+            elif active_list and len(hint) == len(active_list):
+                layout = [None] * n_logical
+                for idx, logical in enumerate(active_list):
+                    layout[logical] = hint[idx]
+            else:
+                # Fallback: treat as prefix mapping and pad/trim
+                layout = hint[:n_logical]
+                if len(layout) < n_logical:
+                    layout.extend([None] * (n_logical - len(layout)))
+            used = {x for x in layout if x is not None}
+            remaining = [node for node in phys_nodes if node not in used]
+            placeholder = phys_nodes[0] if phys_nodes else 0
+            for logical in range(n_logical):
+                if layout[logical] is None:
+                    layout[logical] = remaining.pop(0) if remaining else placeholder
             available = set(phys_nodes)
             active_targets = [layout[q] for q in active_qubits]
             missing = sorted({node for node in active_targets if node not in available})
