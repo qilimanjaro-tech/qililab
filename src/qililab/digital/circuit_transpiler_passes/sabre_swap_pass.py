@@ -17,7 +17,7 @@ from __future__ import annotations
 import math
 import random
 from collections import deque
-from typing import ClassVar, Iterable
+from typing import Iterable
 
 from qilisdk.digital import (
     CZ,
