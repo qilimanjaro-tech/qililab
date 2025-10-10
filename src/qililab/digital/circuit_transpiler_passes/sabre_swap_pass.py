@@ -527,14 +527,14 @@ class SabreSwapPass(CircuitTranspilerPass):
             if len(hint) == n_logical:
                 layout = hint[:n_logical]
             elif active_list and len(hint) == len(active_list):
-                layout = [None] * n_logical
+                layout = [None] * n_logical  # type: ignore[list-item]
                 for idx, logical in enumerate(active_list):
                     layout[logical] = hint[idx]
             else:
                 # Fallback: treat as prefix mapping and pad/trim
                 layout = hint[:n_logical]
                 if len(layout) < n_logical:
-                    layout.extend([None] * (n_logical - len(layout)))
+                    layout.extend([None] * (n_logical - len(layout)))  # type: ignore[list-item]
             used = {x for x in layout if x is not None}
             remaining = [node for node in phys_nodes if node not in used]
             placeholder = phys_nodes[0] if phys_nodes else 0
