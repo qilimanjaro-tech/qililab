@@ -19,7 +19,7 @@ from rustworkx import PyGraph
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
 from .circuit_transpiler_passes import (
-    AddPhasesToDragsFromRZAndCZPass,
+    AddPhasesToRmwFromRZAndCZPass,
     CancelIdentityPairsPass,
     CanonicalBasisToNativeSetPass,
     CircuitToCanonicalBasisPass,
@@ -61,7 +61,7 @@ class CircuitTranspiler:
             CircuitToCanonicalBasisPass(),
             FuseSingleQubitGatesPass(),
             CanonicalBasisToNativeSetPass(),
-            AddPhasesToDragsFromRZAndCZPass(self._settings),
+            AddPhasesToRmwFromRZAndCZPass(self._settings),
         ]
         self._context = context or TranspilationContext()
 
