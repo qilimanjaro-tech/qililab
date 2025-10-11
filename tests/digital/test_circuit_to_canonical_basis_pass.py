@@ -220,6 +220,84 @@ def test_rewrite_gate_covers_various_cases():
     assert _count_gate_names(seqs[14])["CZ"] == 3
 
 
+def test_rewrite_gate_returns_cz_directly():
+    real_cz_cls = CircuitToCanonicalBasisPass._rewrite_gate.__globals__["CZ"]
+
+    class ProxyCZMeta(type):
+        count = 0
+        real_cls = real_cz_cls
+
+        def __instancecheck__(cls, instance):
+            cls.count += 1
+            return cls.count >= 2 and isinstance(instance, cls.real_cls)
+
+    class ProxyCZ(metaclass=ProxyCZMeta):
+        pass
+
+    pass_instance = CircuitToCanonicalBasisPass()
+    gate = real_cz_cls(0, 1)
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setitem(CircuitToCanonicalBasisPass._rewrite_gate.__globals__, "CZ", ProxyCZ)
+    try:
+        rewritten = pass_instance._rewrite_gate(gate)
+    finally:
+        monkeypatch.undo()
+
+    assert len(rewritten) == 1
+    assert isinstance(rewritten[0], real_cz_cls)
+
+
+def test_rewrite_gate_default_cz_branch():
+    pass_instance = CircuitToCanonicalBasisPass()
+    gate = CZ(0, 1)
+    rewritten = pass_instance._rewrite_gate(gate)
+    assert len(rewritten) == 1
+    assert isinstance(rewritten[0], CZ)
+
+
+@pytest.mark.parametrize(
+    ("factory", "expected_cls"),
+    [
+        (lambda q: U3(q, theta=0.1, phi=0.2, gamma=0.3), U3),
+        (lambda q: RX(q, theta=0.5), RX),
+        (lambda q: RY(q, theta=-0.4), RY),
+        (lambda q: RZ(q, phi=0.7), RZ),
+    ],
+)
+def test_controlled_gate_qubit_alignment(monkeypatch, factory, expected_cls):
+    pass_instance = CircuitToCanonicalBasisPass()
+    base_gate = DummyBasicGate((3,), np.eye(2))
+    controlled = Controlled(0, basic_gate=base_gate)
+
+    original_as_basis = CircuitToCanonicalBasisPass._rewrite_gate.__globals__["_as_basis_1q"]
+    captured = {}
+
+    def fake_as_basis(g):
+        if g is base_gate:
+            return factory(99)  # wrong qubit on purpose
+        return original_as_basis(g)
+
+    monkeypatch.setattr(
+        "qililab.digital.circuit_transpiler_passes.circuit_to_canonical_basis_pass._as_basis_1q",
+        fake_as_basis,
+    )
+
+    def fake_multi(ctrls, base_1q):
+        captured["base"] = base_1q
+        return ["sentinel"]
+
+    monkeypatch.setattr(
+        "qililab.digital.circuit_transpiler_passes.circuit_to_canonical_basis_pass._multi_controlled",
+        fake_multi,
+    )
+
+    seq = pass_instance._rewrite_gate(controlled)
+    assert seq == ["sentinel"]
+    assert isinstance(captured["base"], expected_cls)
+    assert captured["base"].qubits[0] == base_gate.qubits[0]
+
+
 def test_rewrite_gate_handles_controlled_and_adjoint(monkeypatch):
     pass_instance = CircuitToCanonicalBasisPass()
 
