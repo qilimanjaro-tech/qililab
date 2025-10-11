@@ -83,12 +83,14 @@ def import_optional_dependencies(feature: OptionalFeature) -> ImportedFeature:
             missing.append(dist)
 
     if missing:
+
         def make_func_stub(symbol_name: str) -> Callable:
             def _stub(*args: Any, **kwargs: Any) -> None:
                 raise OptionalDependencyError(
                     f"Using {symbol_name} requires installing the '{feature.name}' optional feature: "
                     f"`pip install <your-distribution>[{feature.name}]`"
                 )
+
             _stub.__name__ = symbol_name
             return _stub
 
@@ -99,12 +101,17 @@ def import_optional_dependencies(feature: OptionalFeature) -> ImportedFeature:
                     f"Using {symbol_name} requires installing the '{feature.name}' optional feature: "
                     f"`pip install <your-distribution>[{feature.name}]`"
                 )
-            cls = type(symbol_name, (), {
-                "__init__": _boom,
-                "__getattr__": lambda self, _name: _boom(),
-                "__call__": _boom,
-                "__doc__": f"Stub for missing optional dependency '{feature.name}'."
-            })
+
+            cls = type(
+                symbol_name,
+                (),
+                {
+                    "__init__": _boom,
+                    "__getattr__": lambda self, _name: _boom(),
+                    "__call__": _boom,
+                    "__doc__": f"Stub for missing optional dependency '{feature.name}'.",
+                },
+            )
             return cls
 
         stubs: dict[str, Any] = {}

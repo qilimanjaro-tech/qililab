@@ -34,7 +34,6 @@ dependencies = [
     "qblox-instruments==0.16.0",
     "qcodes>=0.51.0",
     "qcodes-contrib-drivers>=0.23.0",
-    "qibo==0.2.15",
     "qpysequence>=0.10.7",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
@@ -43,6 +42,8 @@ dependencies = [
     "tqdm>=4.67.1",
     "urllib3>=2.3.0",
     "xarray>=2024.3.0",
+    "qilisdk",
+    "rustworkx>=0.17.1",
 ]
 
 [project.optional-dependencies]
@@ -78,6 +79,9 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 prerelease = "allow"
+
+[tool.uv.sources]
+qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
 
 [tool.ruff]
 line-length = 120

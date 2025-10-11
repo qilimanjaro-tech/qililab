@@ -18,17 +18,27 @@ jobs:
       with:
         fetch-depth: 1
 
+    # Temporary Authentication for fetching QiliSDK from private repo
+    - name: Authenticate for private GitHub repos
+      env:
+        GH_TOKEN: ""
+        GITHUB_TOKEN: ""
+      run: |
+        gh auth login --hostname github.com --with-token <<< "${{ secrets.QILISDK_READ_PAT }}"
+        gh auth setup-git
+        gh auth status -h github.com
+
     - name: Install uv
       uses: astral-sh/setup-uv@v6
       with:
-        enable-cache: true
+        python-version: "3.10"
         cache-dependency-glob: |
           **/pyproject.toml
           **/uv.lock
-        python-version: "3.10"
+        enable-cache: true
 
     - name: Install the project
-      run: uv sync --all-extras --group docs
+      run: uv sync --group docs --all-extras 
 
     - name: Build docs
       run: |
