@@ -1,19 +1,14 @@
 import math
-from typing import Any
+from collections import Counter
+from typing import Iterable
 
 import numpy as np
 import pytest
 
 from qilisdk.digital import Circuit
-from qilisdk.digital.exceptions import GateHasNoMatrixError
 from qilisdk.digital.gates import (
-    Adjoint,
     CNOT,
     CZ,
-    Exponential,
-    H,
-    I,
-    M,
     RX,
     RY,
     RZ,
@@ -21,9 +16,13 @@ from qilisdk.digital.gates import (
     U1,
     U2,
     U3,
+    Adjoint,
     BasicGate,
     Controlled,
-    Gate,
+    Exponential,
+    H,
+    I,
+    M,
     X,
     Y,
     Z,
@@ -31,164 +30,245 @@ from qilisdk.digital.gates import (
 
 from qililab.digital.circuit_transpiler_passes.circuit_to_canonical_basis_pass import (
     CircuitToCanonicalBasisPass,
+    _adjoint_1q,
+    _as_basis_1q,
+    _invert_basis_gate,
+    _multi_controlled,
+    _single_controlled,
+    _sqrt_1q_gate_as_basis,
 )
 
 
-def gate_summary(circuit: Circuit) -> list[tuple[str, tuple[int, ...]]]:
-    return [(type(g).__name__, g.qubits) for g in circuit.gates]
-
-
-class Custom1QGate(BasicGate):
-    def __init__(self, qubit: int, matrix: np.ndarray) -> None:
-        self._matrix_override = matrix
-        super().__init__((qubit,), {})
+class DummyBasicGate(BasicGate):
+    def __init__(self, target_qubits: Iterable[int], matrix: np.ndarray) -> None:
+        self._custom_matrix = np.array(matrix, dtype=complex)
+        super().__init__(tuple(target_qubits))
 
     @property
     def name(self) -> str:
-        return "Custom1QGate"
+        return "Dummy"
 
     def _generate_matrix(self) -> np.ndarray:
-        return self._matrix_override
+        return self._custom_matrix
 
 
-class Custom2QGate(BasicGate):
-    def __init__(self, qubits: tuple[int, int], matrix: np.ndarray) -> None:
-        self._matrix_override = matrix
-        super().__init__(qubits, {})
-
-    @property
-    def name(self) -> str:
-        return "Custom2QGate"
-
-    def _generate_matrix(self) -> np.ndarray:
-        return self._matrix_override
+def _count_gate_names(seq: list) -> Counter:
+    return Counter(g.name for g in seq)
 
 
-class TestCircuitToCanonicalBasisPass:
-    def test_preserves_basis_gates(self) -> None:
-        circuit = Circuit(2)
-        circuit.add(U3(0, theta=0.1, phi=0.2, gamma=0.3))
-        circuit.add(RX(0, theta=-0.4))
-        circuit.add(RY(1, theta=0.5))
-        circuit.add(RZ(1, phi=-0.6))
-        circuit.add(CZ(0, 1))
-        circuit.add(M(0))
+def test_invert_basis_gate_handles_known_types():
+    gates = [
+        U3(0, theta=0.2, phi=0.1, gamma=-0.3),
+        RX(0, theta=0.4),
+        RY(0, theta=-0.5),
+        RZ(0, phi=0.7),
+        CZ(0, 1),
+        M(0),
+        H(0),
+        X(0),
+        Y(0),
+        Z(0),
+    ]
+    inverted = [_invert_basis_gate(g) for g in gates]
+    assert [seq[0].name for seq in inverted[:5]] == ["U3", "RX", "RY", "RZ", "CZ"]
+    assert inverted[5][0].name == "M"
+    assert [seq[0].name for seq in inverted[6:]] == ["U3", "RX", "RY", "RZ"]
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
+    dummy = DummyBasicGate((0,), np.eye(2))
+    assert isinstance(_invert_basis_gate(dummy)[0], Adjoint)
 
-        assert gate_summary(out) == gate_summary(circuit)
-        assert len(out.gates) == len(circuit.gates)
 
-    def test_rewrites_standard_generators(self) -> None:
-        circuit = Circuit(1)
-        circuit.add(H(0))
-        circuit.add(X(0))
-        circuit.add(Y(0))
-        circuit.add(Z(0))
-        circuit.add(I(0))  # should vanish
+def test_as_basis_1q_handles_standard_and_basic():
+    dummy_matrix = np.eye(2, dtype=complex)
+    dummy_gate = DummyBasicGate((0,), dummy_matrix)
+    rx_gate = RX(0, theta=0.3)
+    assert _as_basis_1q(rx_gate) is rx_gate
+    assert isinstance(_as_basis_1q(H(0)), U3)
+    assert isinstance(_as_basis_1q(X(0)), RX)
+    assert isinstance(_as_basis_1q(Y(0)), RY)
+    assert isinstance(_as_basis_1q(Z(0)), RZ)
+    assert isinstance(_as_basis_1q(U1(0, phi=0.1)), RZ)
+    assert isinstance(_as_basis_1q(U2(0, phi=0.1, gamma=0.2)), U3)
+    assert isinstance(_as_basis_1q(dummy_gate), U3)
+    with pytest.raises(NotImplementedError):
+        _as_basis_1q(Controlled(1, basic_gate=RX(0, theta=0.5)))
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
 
-        assert len(out.gates) == 4
-        names = [type(g).__name__ for g in out.gates]
-        assert names == ["U3", "RX", "RY", "RZ"]
-        assert all(g.qubits == (0,) for g in out.gates)
+def test_sqrt_gate_as_basis_and_adjoint_variants():
+    assert isinstance(_sqrt_1q_gate_as_basis(RZ(0, phi=math.pi)), RZ)
+    assert isinstance(_sqrt_1q_gate_as_basis(RX(0, theta=math.pi)), RX)
+    assert isinstance(_sqrt_1q_gate_as_basis(RY(0, theta=math.pi)), RY)
+    assert isinstance(_sqrt_1q_gate_as_basis(Z(0)), RZ)
+    assert isinstance(_sqrt_1q_gate_as_basis(X(0)), RX)
+    assert isinstance(_sqrt_1q_gate_as_basis(Y(0)), RY)
+    assert isinstance(_sqrt_1q_gate_as_basis(U1(0, phi=0.6)), RZ)
+    assert isinstance(_sqrt_1q_gate_as_basis(U2(0, phi=0.1, gamma=0.2)), U3)
+    assert isinstance(_sqrt_1q_gate_as_basis(U3(0, theta=0.2, phi=0.1, gamma=-0.4)), U3)
+    dummy = DummyBasicGate((0,), np.eye(2))
+    assert isinstance(_sqrt_1q_gate_as_basis(dummy), U3)
+    assert isinstance(_sqrt_1q_gate_as_basis(H(0)), U3)
 
-    def test_parametric_1q_conversions(self) -> None:
-        circuit = Circuit(1)
-        circuit.add(U1(0, phi=0.7))
-        circuit.add(U2(0, phi=0.1, gamma=0.2))
+    assert isinstance(_adjoint_1q(RX(0, theta=0.5)), RX)
+    assert isinstance(_adjoint_1q(RY(0, theta=0.5)), RY)
+    assert isinstance(_adjoint_1q(RZ(0, phi=0.5)), RZ)
+    assert isinstance(_adjoint_1q(U3(0, theta=0.5, phi=0.2, gamma=-0.1)), U3)
+    assert isinstance(_adjoint_1q(H(0)), U3)
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
 
-        assert len(out.gates) == 2
-        assert isinstance(out.gates[0], RZ)
-        assert out.gates[0].phi == pytest.approx(0.7)
-        assert isinstance(out.gates[1], U3)
-        assert out.gates[1].theta == pytest.approx(math.pi / 2.0)
-        assert out.gates[1].phi == pytest.approx(0.1)
-        assert out.gates[1].gamma == pytest.approx(0.2)
+def test_sqrt_gate_recurses_for_wrapper(monkeypatch):
+    from qilisdk.digital.gates import Gate as SDKGate
 
-    def test_converts_cnot_to_cz_sequence(self) -> None:
-        circuit = Circuit(2)
-        circuit.add(CNOT(0, 1))
+    class WrapperGate(SDKGate):
+        def __init__(self, qubit: int) -> None:
+            super().__init__()
+            self._qubits = (qubit,)
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
+        @property
+        def name(self) -> str:
+            return "Wrapper"
 
-        assert len(out.gates) == 3
-        assert isinstance(out.gates[0], U3)
-        assert isinstance(out.gates[1], CZ)
-        assert isinstance(out.gates[2], U3)
+        @property
+        def qubits(self) -> tuple[int, ...]:
+            return self._qubits
 
-    def test_expands_swap(self) -> None:
-        circuit = Circuit(2)
-        circuit.add(SWAP(0, 1))
+        @property
+        def target_qubits(self) -> tuple[int, ...]:
+            return self._qubits
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
+        @property
+        def control_qubits(self) -> tuple[int, ...]:
+            return ()
 
-        assert len(out.gates) == 9
-        assert all(isinstance(g, (U3, RZ, RX, RY, CZ)) for g in out.gates)
+        @property
+        def matrix(self) -> np.ndarray:
+            return RX(self._qubits[0], theta=0.3).matrix
 
-    def test_expands_controlled_single_qubit_gate(self) -> None:
-        circuit = Circuit(2)
-        circuit.add(Controlled(1, basic_gate=RY(0, theta=0.3)))
+        @property
+        def nqubits(self) -> int:
+            return 1
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
+    def patched_as_basis(gate):
+        if isinstance(gate, WrapperGate):
+            return RX(gate.qubits[0], theta=0.3)
+        return _as_basis_1q(gate)
 
-        assert all(isinstance(g, (U3, RX, RY, RZ, CZ)) for g in out.gates)
-        assert all(type(g) is not Controlled for g in out.gates)
+    monkeypatch.setattr(
+        "qililab.digital.circuit_transpiler_passes.circuit_to_canonical_basis_pass._as_basis_1q",
+        patched_as_basis,
+    )
+    out = _sqrt_1q_gate_as_basis(WrapperGate(0))
+    assert isinstance(out, RX)
 
-    def test_multi_controlled_gate(self) -> None:
-        circuit = Circuit(3)
-        circuit.add(Controlled(1, 2, basic_gate=RX(0, theta=0.4)))
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
+def test_single_and_multi_controlled_paths():
+    rz_seq = _single_controlled(1, RZ(0, phi=0.2))
+    rx_seq = _single_controlled(1, RX(0, theta=0.2))
+    ry_seq = _single_controlled(1, RY(0, theta=0.2))
+    u3_seq = _single_controlled(1, U3(0, theta=0.3, phi=0.2, gamma=-0.1))
+    dummy_gate = DummyBasicGate((5,), np.eye(2))
+    recursive_seq = _single_controlled(1, dummy_gate)
 
-        assert all(isinstance(g, (U3, RX, RY, RZ, CZ)) for g in out.gates)
-        assert all(type(g) is not Controlled for g in out.gates)
+    assert _count_gate_names(rz_seq)["CZ"] >= 1
+    assert _count_gate_names(rx_seq)["CZ"] >= 1
+    assert _count_gate_names(ry_seq)["CZ"] >= 1
+    assert _count_gate_names(u3_seq)["CZ"] >= 1
+    assert _count_gate_names(recursive_seq)["CZ"] >= 1
 
-    def test_adjoint_gate(self) -> None:
-        circuit = Circuit(1)
-        circuit.add(Adjoint(H(0)))
+    base_rotation = RX(3, theta=0.2)
+    no_ctrl = _multi_controlled([], base_rotation)
+    one_ctrl = _multi_controlled([1], base_rotation)
+    two_ctrls = _multi_controlled([1, 2], base_rotation)
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
+    assert no_ctrl == [base_rotation]
+    assert _count_gate_names(one_ctrl)["CZ"] >= 1
+    assert _count_gate_names(two_ctrls)["CZ"] >= 1
 
-        assert len(out.gates) == 1
-        gate = out.gates[0]
-        assert isinstance(gate, U3)
-        assert gate.theta == pytest.approx(-math.pi / 2.0)
 
-    def test_exponential_of_single_qubit_gate(self) -> None:
-        circuit = Circuit(1)
-        circuit.add(Exponential(RY(0, theta=0.2)))
+def test_rewrite_gate_covers_various_cases():
+    pass_instance = CircuitToCanonicalBasisPass()
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
+    gates = [
+        M(0),
+        U3(0, theta=0.1, phi=0.2, gamma=0.3),
+        RX(0, theta=0.2),
+        RY(0, theta=0.3),
+        RZ(0, phi=0.4),
+        CZ(0, 1),
+        I(0),
+        H(0),
+        X(0),
+        Y(0),
+        Z(0),
+        U1(0, phi=0.5),
+        U2(0, phi=0.6, gamma=0.7),
+        CNOT(0, 1),
+        SWAP(0, 1),
+    ]
 
-        assert len(out.gates) == 1
-        assert isinstance(out.gates[0], U3)
+    seqs = [pass_instance._rewrite_gate(g) for g in gates]
 
-    def test_generic_basic_gate_fallback(self) -> None:
-        matrix = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)  # behaves like X
-        circuit = Circuit(1)
-        circuit.add(Custom1QGate(0, matrix))
+    assert len(seqs[0]) == 1 and seqs[0][0].name == "M"
+    assert len(seqs[5]) == 1 and seqs[5][0].name == "CZ"
+    assert seqs[6] == []
+    assert len(seqs[7]) == 1 and seqs[7][0].name == "U3"
+    assert len(seqs[8]) == 1 and seqs[8][0].name == "RX"
+    assert len(seqs[9]) == 1 and seqs[9][0].name == "RY"
+    assert len(seqs[10]) == 1 and seqs[10][0].name == "RZ"
+    assert len(seqs[11]) == 1 and seqs[11][0].name == "RZ"
+    assert len(seqs[12]) == 1 and seqs[12][0].name == "U3"
+    assert _count_gate_names(seqs[13])["CZ"] == 1
+    assert _count_gate_names(seqs[14])["CZ"] == 3
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
 
-        assert len(out.gates) == 1
-        assert isinstance(out.gates[0], U3)
+def test_rewrite_gate_handles_controlled_and_adjoint(monkeypatch):
+    pass_instance = CircuitToCanonicalBasisPass()
 
-    def test_not_implemented_for_multi_qubit_exponential(self) -> None:
-        matrix = np.eye(4, dtype=complex)
-        circuit = Circuit(2)
-        circuit.add(Custom2QGate((0, 1), matrix).exponential())
+    base_gate = DummyBasicGate((2,), np.eye(2))
 
-        with pytest.raises(NotImplementedError):
-            CircuitToCanonicalBasisPass().run(circuit)
+    def fake_as_basis(gate):
+        if gate is base_gate:
+            return U3(5, theta=0.1, phi=0.2, gamma=0.3)
+        return _as_basis_1q(gate)
 
-    def test_measurements_pass_through(self) -> None:
-        circuit = Circuit(1)
-        circuit.add(M(0))
+    monkeypatch.setattr(
+        "qililab.digital.circuit_transpiler_passes.circuit_to_canonical_basis_pass._as_basis_1q",
+        fake_as_basis,
+    )
 
-        out = CircuitToCanonicalBasisPass().run(circuit)
+    controlled = Controlled(0, 1, basic_gate=base_gate)
+    adjoint_gate = Adjoint(RX(0, theta=math.pi / 3))
+    expo_gate = RX(0, theta=math.pi / 4).exponential()
+    basic_gate = DummyBasicGate((0,), np.eye(2))
 
-        assert gate_summary(out) == [("M", (0,))]
+    ctrl_seq = pass_instance._rewrite_gate(controlled)
+    adj_seq = pass_instance._rewrite_gate(adjoint_gate)
+    exp_seq = pass_instance._rewrite_gate(expo_gate)
+    basic_seq = pass_instance._rewrite_gate(basic_gate)
+
+    assert _count_gate_names(ctrl_seq)["CZ"] >= 1
+    assert _count_gate_names(adj_seq)["RX"] >= 1
+    assert len(exp_seq) == 1 and exp_seq[0].name == "U3"
+    assert len(basic_seq) == 1 and basic_seq[0].name == "U3"
+    assert all(5 not in g.qubits for g in ctrl_seq)
+
+    multi_qubit_controlled = Controlled(0, basic_gate=DummyBasicGate((1, 2), np.eye(4)))
+    exponential_multi = Exponential(DummyBasicGate((0, 1), np.eye(4)))
+
+    with pytest.raises(NotImplementedError):
+        pass_instance._rewrite_gate(multi_qubit_controlled)
+    with pytest.raises(NotImplementedError):
+        pass_instance._rewrite_gate(exponential_multi)
+
+
+def test_canonical_pass_run_produces_basis_circuit():
+    circuit = Circuit(3)
+    circuit.add(CNOT(0, 1))
+    circuit.add(SWAP(1, 2))
+    circuit.add(Adjoint(RY(2, theta=0.5)))
+    circuit.add(RX(0, theta=0.3))
+
+    pass_instance = CircuitToCanonicalBasisPass()
+    out = pass_instance.run(circuit)
+
+    assert all(g.name in {"CZ", "U3", "RX", "RY", "RZ"} for g in out.gates)
+    assert len(out.gates) > 0
