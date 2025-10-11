@@ -352,6 +352,33 @@ class TestPlatform:
         assert result[0] is compiled_qprogram
         assert result[1] == {0: 1, 1: 0}
 
+    def test_compile_circuit_with_default_mapping(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """If no mapping is provided, the transpiler is invoked with qubit_mapping=None and may return None layout."""
+        circuit = Circuit(1)
+
+        transpiler_instance = MagicMock()
+        transpiler_instance.run.return_value = circuit
+        transpiler_instance.context = SimpleNamespace(final_layout=None)
+
+        compiler_instance = MagicMock()
+        compiler_instance.compile.return_value = QProgram()
+
+        transpiler_cls = MagicMock(return_value=transpiler_instance)
+        compiler_cls = MagicMock(return_value=compiler_instance)
+
+        monkeypatch.setattr("qililab.platform.platform.CircuitTranspiler", transpiler_cls)
+        monkeypatch.setattr("qililab.platform.platform.CircuitToQProgramCompiler", compiler_cls)
+
+        qprogram, layout = platform.compile_circuit(circuit, nshots=5)
+
+        transpiler_cls.assert_called_once_with(platform.digital_compilation_settings, qubit_mapping=None)
+        transpiler_instance.run.assert_called_once_with(circuit)
+        compiler_instance.compile.assert_called_once_with(circuit, 5)
+        assert isinstance(qprogram, QProgram)
+        assert layout is None
+
     def test_compile_circuit_without_digital_settings_raises(
         self, platform: Platform
     ):
@@ -394,6 +421,27 @@ class TestPlatform:
         samples_mock.assert_called_once_with("results", logical_mapping)
 
         assert result == samples
+
+    def test_execute_circuit_handles_none_mapping(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """execute_circuit forwards a None logical-to-physical mapping without modification."""
+        circuit = Circuit(1)
+
+        compile_mock = MagicMock(return_value=(QProgram(), None))
+        execute_mock = MagicMock(return_value="results")
+        samples_mock = MagicMock(return_value={"0": 1})
+
+        monkeypatch.setattr(platform, "compile_circuit", compile_mock)
+        monkeypatch.setattr(platform, "execute_qprogram", execute_mock)
+        monkeypatch.setattr("qililab.platform.platform.qprogram_results_to_samples", samples_mock)
+
+        result = platform.execute_circuit(circuit, nshots=20)
+
+        compile_mock.assert_called_once_with(circuit, 20, qubit_mapping=None)
+        execute_mock.assert_called_once_with(compile_mock.return_value[0])
+        samples_mock.assert_called_once_with("results", None)
+        assert result == {"0": 1}
 
     def test_initial_setup_no_instrument_connection(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""
