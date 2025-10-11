@@ -1163,6 +1163,10 @@ class TestMethods:
                 if flux_bus.flux == flux
             )
 
+    def test_get_element_gate(self, platform: Platform):
+        gate_events = platform.get_element("Rmw(0)_amplitude")
+        assert all(isinstance(gate_event, GateEvent) for gate_event in gate_events)
+
     def test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
         """Test that if parallelisation is attempted on qprograms using at least one bus in common, an error will be raised"""
         error_string = "QPrograms cannot be executed in parallel."
