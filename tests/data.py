@@ -496,6 +496,24 @@ class Galadriel:
         ],
     }
 
+    qblox_qblox_cluster_controller: dict[str, Any] = {
+        "name": "qblox_cluster",
+        "alias": "qblox_qblox_cluster_controller",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.2"
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": InstrumentName.QBLOX_QCM.value,
+                "slot_id": 15,
+            }
+        ],
+        INSTRUMENTCONTROLLER.RESET: True,
+        "reference_clock": "internal",
+
+    }
+
     rohde_schwarz_controller_0: dict[str, Any] = {
         "name": "rohde_schwarz",
         "alias": "rohde_schwarz_controller_0",
@@ -604,6 +622,7 @@ class Galadriel:
     ]
 
     instrument_controllers: list[dict] = [
+        qblox_qblox_cluster_controller,
         rohde_schwarz_controller_0,
         rohde_schwarz_controller_1,
         attenuator_controller_0,
