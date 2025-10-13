@@ -58,6 +58,8 @@ class StreamArray:
         qprogram: QProgram | None = None,
         calibration: Calibration | None = None,
         optional_identifier: str | None = None,
+        autocalibration: bool = False,
+        qubit_idx: int | None = None,
     ):
         self.results: np.ndarray
         self.shape = [shape] if isinstance(shape, int) else shape
@@ -68,6 +70,9 @@ class StreamArray:
         self.platform = platform
         self.qprogram = qprogram
         self.calibration = calibration
+        self.autocalibration = autocalibration
+        self.qubit_idx = qubit_idx
+
         self._first_value = True
 
     def __enter__(self):
@@ -76,15 +81,29 @@ class StreamArray:
         Returns:
             StreamArray: StreamArray class created
         """
-        self.measurement = self.db_manager.add_measurement(
-            experiment_name=self.experiment_name,
-            experiment_completed=False,
-            optional_identifier=self.optional_identifier,
-            platform=self.platform.to_dict() if self.platform else None,
-            qprogram=serialize(self.qprogram) if self.qprogram else None,
-            calibration=serialize(self.calibration) if self.calibration else None,
-            debug_file=self._get_debug() if self.platform and self.qprogram else None,
-        )
+        if self.autocalibration:
+            if not self.calibration:
+                raise ValueError("For autocalibration a Calibration file is mandatory.")
+            self.measurement = self.db_manager.add_autocal_measurement(
+                experiment_name=self.experiment_name,
+                qubit_idx=self.qubit_idx,
+                platform=self.platform.to_dict() if self.platform else None,
+                qprogram=serialize(self.qprogram) if self.qprogram else None,
+                calibration=serialize(self.calibration),
+                debug_file=self._get_debug() if self.platform and self.qprogram else None,
+                parameters=self.loops,
+                data_shape=self.shape,
+            )
+        else:
+            self.measurement = self.db_manager.add_measurement(
+                experiment_name=self.experiment_name,
+                experiment_completed=False,
+                optional_identifier=self.optional_identifier,
+                platform=self.platform.to_dict() if self.platform else None,
+                qprogram=serialize(self.qprogram) if self.qprogram else None,
+                calibration=serialize(self.calibration) if self.calibration else None,
+                debug_file=self._get_debug() if self.platform and self.qprogram else None,
+            )
         self.path = self.measurement.result_path
 
         # Save loops

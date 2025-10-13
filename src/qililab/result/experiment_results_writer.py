@@ -18,7 +18,7 @@ from typing import Any, TypedDict
 import h5py
 import numpy as np
 
-from qililab.result.database import DatabaseManager
+from qililab.result.database import DatabaseManager, QaaS_Experiment
 from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
 from qililab.utils.serialization import serialize
@@ -95,10 +95,10 @@ class ExperimentDataBaseMetadata(TypedDict, total=False):
         qprograms (dict[str, QProgramMetadata]): Quantum programs included in the experiment.
     """
 
+    job_id: int
     experiment_name: str
     cooldown: str | None
     sample_name: str | None
-    optional_identifier: str | None
 
 
 class ExperimentResultsWriter(ExperimentResults):
@@ -233,15 +233,19 @@ class ExperimentResultsWriter(ExperimentResults):
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
         if self._db_metadata:
-            self.measurement = self._db_manager.add_measurement(
+            with self._db_manager.Session() as session:
+                experiment_id = session.query(QaaS_Experiment).order_by(QaaS_Experiment.experiment_id.desc()).first()
+            self.results_path = (
+                f"{self.results_path}experiment_{experiment_id}"
+                if self.results_path[-1] == "/"
+                else f"{self.results_path}/experiment_{experiment_id}"
+            )
+            self.measurement = self._db_manager.add_experiment(
+                job_id=self._db_metadata["job_id"],
                 experiment_name=self._db_metadata["experiment_name"],
-                experiment_completed=False,
+                result_path=self.results_path,
                 cooldown=self._db_metadata["cooldown"],
                 sample_name=self._db_metadata["sample_name"],
-                optional_identifier=self._db_metadata["optional_identifier"],
-                platform=self._metadata["platform"],
-                experiment=self._metadata["experiment"],
-                qprogram=serialize(self._metadata["qprograms"]),
             )
             self.results_path = self.measurement.result_path
             self._file = h5py.File(str(self.results_path), mode="w", libver="latest")

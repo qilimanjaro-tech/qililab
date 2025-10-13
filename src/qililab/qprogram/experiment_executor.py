@@ -161,9 +161,9 @@ class ExperimentExecutor:
         self._results_writer: ExperimentResultsWriter
 
         # In case the results are saved in a database, load the correct sample and cooldown.
-        if platform.save_experiment_results_in_database:
-            self.sample = self.platform.db_manager.current_sample
-            self.cooldown = self.platform.db_manager.current_cd
+        self.job_id: int
+        self.sample: str | None = None
+        self.cooldown: str | None = None
 
     def _prepare_metadata(self, executed_at: datetime):
         """Prepares the loop values and result shape before execution."""
@@ -263,10 +263,10 @@ class ExperimentExecutor:
         )
         if self.platform.save_experiment_results_in_database:
             self._db_metadata = ExperimentDataBaseMetadata(
+                job_id=self.job_id,
                 experiment_name=self.experiment.label,
                 cooldown=self.cooldown,
                 sample_name=self.sample,
-                optional_identifier=self.experiment.description,
             )
         traverse_experiment(self.experiment.body)
         self._all_variables = dict(self._all_variables)
@@ -381,8 +381,9 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element,
-                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
+                                lambda operation=element, value=current_value_of_variable[
+                                    element.value.uuid
+                                ]: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     value=value,
@@ -422,9 +423,7 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element,
-                            call_parameters=call_parameters,
-                            qprogram_index=qprogram_index: store_results(
+                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram(
                                         **{
