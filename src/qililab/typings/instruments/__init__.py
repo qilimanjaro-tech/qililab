@@ -24,6 +24,7 @@ from .qcm_qrm import QcmQrm
 from .qdevil_qdac2 import QDevilQDac2
 from .qmm_driver import QMMDriver
 from .rohde_schwarz import RohdeSchwarzSGS100A
+from .rswu_sp16tr import RSWUSP16TR
 from .yokogawa_gs200 import YokogawaGS200
 
 __all__ = [
@@ -37,5 +38,6 @@ __all__ = [
     "QbloxS4g",
     "QcmQrm",
     "RohdeSchwarzSGS100A",
+    "RSWUSP16TR",
     "YokogawaGS200",
 ]

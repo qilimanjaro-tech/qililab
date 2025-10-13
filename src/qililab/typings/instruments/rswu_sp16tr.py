@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Class Keysight E5080B"""
-from qililab.instruments.keysight.driver_keysight_e5080b import Driver_KeySight_E5080B
+"""Class Becker RSWU-SP16TR"""
+from qililab.instruments.becker.driver_rswu_sp16tr import Driver_RSWU_SP16TR
 from qililab.typings.instruments.device import Device
 
 
-class KeysightE5080B(Driver_KeySight_E5080B, Device):
-    """Typing class of the QCoDeS driver for the Keysight e5080b VNA."""
+class RSWUSP16TR(Driver_RSWU_SP16TR, Device):
+    """Typing class of the QCoDeS driver for the Becker RSWU-SP16TR."""

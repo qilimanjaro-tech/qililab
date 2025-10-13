@@ -288,7 +288,7 @@ class E5080B(Instrument):
 
     @log_set_parameter
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
-        """Get instrument parameter.
+        """Set instrument parameter.
 
         Args:
             parameter (Parameter): Name of the parameter to get.
@@ -435,6 +435,10 @@ class E5080B(Instrument):
 
         Args:
             parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): channel id of the parameter to get.
+        
+        Returns:
+            ParameterValue.
         """
 
         if parameter == Parameter.FREQUENCY_START:
