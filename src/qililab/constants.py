@@ -263,6 +263,7 @@ class QBLOXCONSTANTS:
     """Qblox Constants"""
 
     SCOPE_LENGTH = 16380
+    FILTER_FIR_COEFF_LENGTH = 32
 
 
 class AWGTypes:
@@ -270,6 +271,7 @@ class AWGTypes:
 
     AWG_SEQUENCERS = "awg_sequencers"
     OUT_OFFSETS = "out_offsets"
+    FILTERS = "filters"
 
 
 class AWGSequencerTypes:
