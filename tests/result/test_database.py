@@ -8,7 +8,14 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 
-from qililab.result.database import DatabaseManager, Measurement, _load_config, get_db_manager, get_engine, load_by_id
+from qililab.result.database.database_manager import (
+    DatabaseManager,
+    Measurement,
+    _load_config,
+    get_db_manager,
+    get_engine,
+    load_by_id,
+)
 
 mpl.use("Agg")  # Use non-interactive backend for testing
 
