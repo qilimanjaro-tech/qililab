@@ -36,6 +36,7 @@ import numpy as np
 def assert_equal_gate(list1: list[Gate], list2: list[Gate], abs=1e-15):
     assert len(list1) == len(list2)
     for i, j in zip(list1, list2):
+        print(i,j)
         assert i.name == j.name
         assert i.qubits == j.qubits
         try:
@@ -84,35 +85,40 @@ class TestCircuitToCanonicalBasisPass:
         controled_gates = [Controlled(0, basic_gate=RX(2, theta=1)), Controlled(0, basic_gate=RY(2, theta=1)), 
                             Controlled(0, basic_gate=RZ(2, phi=1)), Controlled(0, basic_gate=U3(2, theta=1, phi=2, gamma=3)),
                             Controlled(0, basic_gate=S(2))]
-        single_controled_results = [RX(2, theta=0.5), CZ(0, 2), RX(2, theta=-0.5), CZ(0, 2),
-                                    RY(2, theta=0.5), CZ(0, 2), RY(2, theta=-0.5), CZ(0, 2),
-                                    RZ(2, phi=0.5), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
-                                        RX(2, theta=-0.5), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                                    RZ(2, phi=0.5), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
-                                        U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), U3(2, theta=-0.5, phi=0.0, gamma=-2.5), 
-                                        U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                                        U3(2, theta=0.5, phi=2, gamma=0.0),
-                                    RZ(2, phi=np.pi/4), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
-                                        RX(2, theta=-np.pi/4), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi)
+        single_controled_results = [RX(2, theta=-np.pi/2), RZ(2, phi=0.5), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        RZ(2, phi=-0.5), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), RX(2, theta=np.pi/2),
+                                    RY(2, theta=np.pi/2), RZ(2, phi=0.5), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        RZ(2, phi=-0.5), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), RY(2, theta=-np.pi/2),
+                                    RZ(2, phi=0.5), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        RZ(2, phi=-0.5), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi),
+                                    RZ(2, phi=2.5), U3(2, theta=0.5, phi=2, gamma=0), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        U3(2, theta=-0.5, phi=0.0, gamma=-2.5), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi),
+                                        RZ(2, phi=0.5),
+                                    RZ(2, phi=np.pi/4), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        RZ(2, phi=-np.pi/4), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi),
                                      ]
         c = Circuit(3)
         c._gates = controled_gates
         assert_equal_gate(CircuitToCanonicalBasisPass().run(c)._gates, single_controled_results)
 
         multicontroled_gates = [Controlled(0,1, basic_gate=RX(2, theta=1)), Controlled(0,1, basic_gate=U1(2, phi=1))]
-        multicontroled_results = [RX(2, theta=0.25), CZ(0, 2), RX(2, theta=-0.25), CZ(0, 2),
+        multicontroled_results = [RX(2, theta=-np.pi/2), RZ(2, phi=0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        RZ(2, phi=-0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), RX(2, theta=np.pi/2),
                                     U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                                    RX(2, theta=-0.25), CZ(0, 2), RX(2, theta=0.25), CZ(0, 2),
+                                    RX(2, theta=-np.pi/2), RZ(2, phi=-0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        RZ(2, phi=0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), RX(2, theta=np.pi/2),
                                     U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                                    RX(2, theta=0.25), CZ(0, 2), RX(2, theta=-0.25), CZ(0, 2),
-                                  RZ(2, phi=0.25), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
-                                        RX(2, theta=-0.25), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
+                                    RX(2, theta=-np.pi/2), RZ(2, phi=0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        RZ(2, phi=-0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), RX(2, theta=np.pi/2),
+
+                                  RZ(2, phi=0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        RZ(2, phi=-0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi),
                                     U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                                    RZ(2, phi=-0.25), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(0, 2), 
-                                        RX(2, theta=0.25), CZ(0, 2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0),
+                                    RZ(2, phi=-0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        RZ(2, phi=0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi),
                                     U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                                    RZ(2, phi=0.25), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
-                                        RX(2, theta=-0.25), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi)
+                                    RZ(2, phi=0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                                        RZ(2, phi=-0.25), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi),
                                     ]
         c = Circuit(3)
         c._gates = multicontroled_gates
@@ -120,19 +126,22 @@ class TestCircuitToCanonicalBasisPass:
 
     def test_adjointed_and_controled(self):
         ad_cn_gates = [Adjoint(Controlled(0,1,basic_gate=(S(2)))), Controlled(0,1,basic_gate=Adjoint(Y(2)))]
-        ad_cn_res_S = reversed([RZ(2, phi=-np.pi/8), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
-                                    RX(2, theta=np.pi/8), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                                U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                                RZ(2, phi=np.pi/8), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(0, 2), 
-                                    RX(2, theta=-np.pi/8), CZ(0, 2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0),
-                                U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                                RZ(2, phi=-np.pi/8), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(0, 2), 
-                                    RX(2, theta=np.pi/8), CZ(0, 2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi)])
-        ad_cn_res_Y = [RY(2, theta=-np.pi/4), CZ(0, 2), RY(2, theta=np.pi/4), CZ(0, 2),
-                       U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                       RY(2, theta=np.pi/4), CZ(0, 2), RY(2, theta=-np.pi/4), CZ(0, 2),
-                       U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi / 2, phi=0.0, gamma=np.pi),
-                       RY(2, theta=-np.pi/4), CZ(0, 2), RY(2, theta=np.pi/4), CZ(0, 2),]
+        ad_cn_res_S = [U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(0, 2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), RZ(2, phi=np.pi/8), 
+                            U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(0, 2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), RZ(2, phi=-np.pi/8),
+                        U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(1,2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), 
+                        U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(0, 2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), RZ(2, phi=-np.pi/8), 
+                            U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(0, 2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), RZ(2, phi=np.pi/8),
+                        U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(1,2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0),
+                        U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(0, 2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), RZ(2, phi=np.pi/8), 
+                            U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), CZ(0, 2), U3(2, theta=-np.pi / 2, phi=-np.pi, gamma=0.0), RZ(2, phi=-np.pi/8),]
+        ad_cn_res_Y = [RY(2, theta=np.pi/2), RZ(2, phi=-np.pi/4), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                            RZ(2, phi=np.pi/4), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), RY(2, theta=-np.pi/2),
+                        U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi),
+                        RY(2, theta=np.pi/2), RZ(2, phi=np.pi/4), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                            RZ(2, phi=-np.pi/4), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), RY(2, theta=-np.pi/2),
+                        U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(1,2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi),
+                        RY(2, theta=np.pi/2), RZ(2, phi=-np.pi/4), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), 
+                            RZ(2, phi=np.pi/4), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), CZ(0, 2), U3(2, theta=np.pi/2, phi=0.0, gamma=np.pi), RY(2, theta=-np.pi/2),]
         ad_cn_results = [*ad_cn_res_S, *ad_cn_res_Y]
         c = Circuit(3)
         c._gates = ad_cn_gates
