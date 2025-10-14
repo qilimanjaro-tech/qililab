@@ -17,7 +17,7 @@ from __future__ import annotations
 import math
 import random
 from collections import deque
-from typing import ClassVar, Iterable
+from typing import Iterable
 
 from qilisdk.digital import (
     CZ,
@@ -42,10 +42,10 @@ class SabreSwapPass(CircuitTranspilerPass):
     Inputs
     ------
     coupling : rustworkx.PyGraph
-        Undirected device graph. Node indices are physical qubits.
+        Undirected device graph. Node indices are physical qubits (labels need not be contiguous).
     initial_layout : list[int] | None
         Logical -> physical mapping to start from (e.g., from SabreLayoutPass.last_layout).
-        If None, uses identity mapping [0, 1, 2, ...].
+        If None, uses the lowest-indexed physical qubits provided by the coupling graph.
 
     Heuristic (SABRE-style)
     -----------------------
@@ -70,23 +70,44 @@ class SabreSwapPass(CircuitTranspilerPass):
       Multi-qubit (>2) non-SWAP gates should be decomposed before routing.
     """
 
-    hermitian_gates: ClassVar[set[type[Gate]]] = set()  # not used here
-
     def __init__(
         self,
-        coupling: PyGraph,
+        topology: PyGraph,
         *,
         initial_layout: list[int] | None = None,
         seed: int | None = None,
         lookahead_size: int = 10,
-        beta: float = 0.5,
+        beta: float = 0.8,
         decay_delta: float = 0.001,
         decay_lambda: float = 0.99,
-        max_swaps_factor: float = 8.0,
+        max_swaps_factor: float = 64.0,
+        max_attempts: int = 10,
     ) -> None:
-        if not isinstance(coupling, PyGraph):
+        """Configure SABRE swap routing behavior.
+
+        Args:
+            coupling (PyGraph): Undirected coupling graph describing allowed physical qubit
+                connections that two-qubit gates must follow.
+            initial_layout (list[int] | None): Optional logical-to-physical assignment used to
+                seed the routing; defaults to an identity-style mapping if omitted.
+            seed (int | None): Base seed for the stochastic swap scoring and for retries when
+                the heuristic restarts.
+            lookahead_size (int): Number of future two-qubit gates considered in SABRE's
+                extended set when scoring candidate swaps.
+            beta (float): Weight balancing the extended-set cost versus the immediate front-set
+                cost in the SABRE objective.
+            decay_delta (float): Increment applied to decay penalties after each physical swap to
+                discourage immediate reuse of the same qubits.
+            decay_lambda (float): Multiplicative decay factor applied per iteration so older swap
+                penalties gradually fade.
+            max_swaps_factor (float): Multiplier that converts the current distance between gate
+                qubits into the per-gate swap budget before treating the attempt as failed.
+            max_attempts (int): Maximum number of independent SABRE attempts (with varied seeds)
+                to run before propagating a swap-budget failure.
+        """
+        if not isinstance(topology, PyGraph):
             raise TypeError("SabreSwapPass requires a rustworkx.PyGraph (undirected).")
-        self.coupling = coupling
+        self.topology = topology
         self.initial_layout = initial_layout
         self.seed = seed
         self.lookahead_size = int(lookahead_size)
@@ -94,6 +115,7 @@ class SabreSwapPass(CircuitTranspilerPass):
         self.decay_delta = float(decay_delta)
         self.decay_lambda = float(decay_lambda)
         self.max_swaps_factor = float(max_swaps_factor)
+        self.max_attempts = int(max_attempts)
 
         # Diagnostics
         self.last_swap_count: int | None = None
@@ -102,17 +124,86 @@ class SabreSwapPass(CircuitTranspilerPass):
     # ----------------------- public API -----------------------
 
     def run(self, circuit: Circuit) -> Circuit:
-        rng = random.Random(self.seed)  # noqa: S311
+        attempts = max(1, self.max_attempts)
+        last_exc: RuntimeError | None = None
+        base_seed = self.seed
+        # Obtain layout hint without mutating instance attributes so repeated runs
+        # do not accidentally persist stale mappings.
+        layout_hint: list[int] | None = None
+        if self.initial_layout is not None:
+            layout_hint = list(self.initial_layout)
+        elif self.context is not None and self.context.initial_layout:
+            layout_hint = list(self.context.initial_layout)
+
+        for attempt in range(attempts):
+            attempt_seed = None if base_seed is None else base_seed + attempt
+            try:
+                out, swap_count, final_layout = self._run_once(
+                    circuit,
+                    attempt_seed,
+                    layout_hint,
+                )
+            except RuntimeError as exc:
+                if "Exceeded swap budget" not in str(exc):
+                    raise
+                last_exc = exc
+                continue
+
+            self.last_swap_count = swap_count
+            self.last_final_layout = final_layout
+
+            if self.context is not None:
+                if layout_hint:
+                    self.context.final_layout = {
+                        logical_qubit: self.last_final_layout[logical_qubit] for logical_qubit in sorted(layout_hint)
+                    }
+                else:
+                    self.context.final_layout = {
+                        logical_qubit: self.last_final_layout[logical_qubit]
+                        for logical_qubit in range(len(final_layout))
+                    }
+                self.context.metrics["swap_count"] = self.last_swap_count
+
+            self.append_circuit_to_context(out)
+            return out
+
+        if last_exc is not None:
+            raise last_exc
+        raise RuntimeError(f"SABRE routing failed after {attempts} attempts.")
+
+    def _run_once(
+        self,
+        circuit: Circuit,
+        seed: int | None,
+        layout_hint: list[int] | None,
+    ) -> tuple[Circuit, int, list[int]]:
+        rng = random.Random(seed)  # noqa: S311
 
         n_logical = circuit.nqubits
-        phys_nodes = list(self.coupling.node_indices())
+        phys_nodes = sorted(int(x) for x in self.topology.node_indices())
         if not phys_nodes:
-            raise ValueError("Coupling graph has no nodes.")
-        n_physical = max(int(x) for x in phys_nodes) + 1
+            raise ValueError("Topology graph has no nodes.")
+        num_phys_nodes = len(phys_nodes)
+        phys_index = {node: idx for idx, node in enumerate(phys_nodes)}
+        max_phys_label_plus_one = max(phys_nodes) + 1
 
-        layout = self._init_layout(n_logical, n_physical)
-        inv_layout = self._invert_layout(layout, n_physical)
-        dist = self._apsp_unweighted(self.coupling, n_physical)
+        active_qubits = {int(q) for g in circuit.gates for q in g.qubits}
+        layout = self._init_layout(n_logical, phys_nodes, active_qubits, layout_hint)
+
+        if self._is_layout_routable(circuit, layout):
+            out_n = max(
+                max_phys_label_plus_one,
+                max(layout) + 1 if layout else max_phys_label_plus_one,
+                circuit.nqubits,
+            )
+            out = Circuit(out_n)
+            for gate in circuit.gates:
+                mapped = tuple(layout[q] for q in gate.qubits)
+                out.add(self._retarget_gate(gate, mapped))
+            return out, 0, layout[:]
+
+        inv_layout = self._invert_layout(layout, phys_index)
+        dist = self._apsp_unweighted(self.topology, phys_nodes, phys_index)
 
         # Preprocess 2Q structure for SABRE scoring
         twoq_ops_idx, twoq_pairs, per_qubit = self._twoq_structure(circuit)
@@ -131,11 +222,15 @@ class SabreSwapPass(CircuitTranspilerPass):
             advance_front_for(q)
 
         # Output circuit will use physical indices; ensure capacity for max physical index we may touch.
-        out_n = max(n_physical, max(layout) + 1 if layout else n_physical)
+        out_n = max(
+            max_phys_label_plus_one,
+            max(layout) + 1 if layout else max_phys_label_plus_one,
+            circuit.nqubits,
+        )
         out = Circuit(out_n)
 
         # Decay penalties on physical qubits
-        decay = [0.0] * n_physical
+        decay = [0.0] * num_phys_nodes
         swap_count = 0
 
         # Map from op index -> local 2Q index
@@ -162,9 +257,10 @@ class SabreSwapPass(CircuitTranspilerPass):
             k = op_to_2q[op_idx]  # local 2Q index for SABRE bookkeeping
 
             # While mapped endpoints are not adjacent, insert a SABRE-chosen SWAP
-            max_swaps_this_gate = int(self.max_swaps_factor * max(1, dist[layout[u]][layout[v]]))
+            dist_uv = dist[phys_index[layout[u]]][phys_index[layout[v]]]
+            max_swaps_this_gate = int(self.max_swaps_factor * max(1, dist_uv))
             steps = 0
-            while dist[layout[u]][layout[v]] != 1:
+            while dist[phys_index[layout[u]]][phys_index[layout[v]]] != 1:
                 steps += 1
                 if steps > max_swaps_this_gate:
                     raise RuntimeError(
@@ -187,18 +283,18 @@ class SabreSwapPass(CircuitTranspilerPass):
                     pa, pb = layout[a], layout[b]
                     touched.add(pa)
                     touched.add(pb)
-                    for nb in self.coupling.neighbors(pa):
+                    for nb in self.topology.neighbors(pa):
                         x, y = int(pa), int(nb)
                         if x != y:
                             candidates.add((min(x, y), max(x, y)))
-                    for nb in self.coupling.neighbors(pb):
+                    for nb in self.topology.neighbors(pb):
                         x, y = int(pb), int(nb)
                         if x != y:
                             candidates.add((min(x, y), max(x, y)))
 
                 if not candidates:
                     # Fallback: try swaps among touched phys nodes (should be rare)
-                    phys_list = sorted(touched) if touched else list(range(n_physical))
+                    phys_list = sorted(touched) if touched else phys_nodes[:]
                     if len(phys_list) >= 2:
                         a, b = rng.sample(phys_list, 2)
                         candidates.add((min(a, b), max(a, b)))
@@ -206,22 +302,35 @@ class SabreSwapPass(CircuitTranspilerPass):
                         raise RuntimeError("No candidate swaps available; coupling graph likely degenerate.")
 
                 # Decay relaxation
-                for i in range(n_physical):
-                    decay[i] *= self.decay_lambda
+                for idx in range(num_phys_nodes):
+                    decay[idx] *= self.decay_lambda
 
                 # Evaluate SABRE cost for each candidate swap (virtually)
+                current_distance = dist[phys_index[layout[u]]][phys_index[layout[v]]]
+                improving_edge: tuple[int, int] | None = None
+                improving_cost: float = math.inf
                 best_edge: tuple[int, int] | None = None
                 best_cost: float = math.inf
 
                 for a, b in candidates:
-                    la, lb = inv_layout[a], inv_layout[b]
+                    la = inv_layout[phys_index[a]]
+                    lb = inv_layout[phys_index[b]]
                     # Virtually swap mapping
-                    self._swap_mapping(layout, inv_layout, a, b, la, lb)
-                    cost_front = self._cost_set(F, layout, twoq_pairs, dist, decay)
-                    cost_ext = self._cost_set(E, layout, twoq_pairs, dist, None)
+                    self._swap_mapping(layout, inv_layout, phys_index, a, b, la, lb)
+                    # Distance after the hypothetical swap
+                    new_distance = dist[phys_index[layout[u]]][phys_index[layout[v]]]
+                    cost_front = self._cost_set(F, layout, twoq_pairs, dist, decay, phys_index)
+                    cost_ext = self._cost_set(E, layout, twoq_pairs, dist, None, phys_index)
                     cost = cost_front + self.beta * cost_ext
                     # Revert
-                    self._swap_mapping(layout, inv_layout, a, b, lb, la)
+                    self._swap_mapping(layout, inv_layout, phys_index, a, b, lb, la)
+
+                    if new_distance < current_distance:
+                        if cost < improving_cost - 1e-12:
+                            improving_cost = cost
+                            improving_edge = (a, b)
+                        elif abs(cost - improving_cost) <= 1e-12 and rng.random() < 0.5:
+                            improving_edge = (a, b)
 
                     if cost < best_cost - 1e-12:
                         best_cost = cost
@@ -231,13 +340,17 @@ class SabreSwapPass(CircuitTranspilerPass):
 
                 # Apply chosen SWAP physically and in the mapping
                 # assert best_edge is not None
-                a, b = best_edge  # type: ignore[misc]
+                chosen_edge = improving_edge if improving_edge is not None else best_edge
+                if chosen_edge is None:
+                    raise RuntimeError("SABRE heuristic could not select a swap candidate.")
+                a, b = chosen_edge
                 out.add(SWAP(a, b))
                 swap_count += 1
-                la, lb = inv_layout[a], inv_layout[b]
-                self._swap_mapping(layout, inv_layout, a, b, la, lb)
-                decay[a] += self.decay_delta
-                decay[b] += self.decay_delta
+                la = inv_layout[phys_index[a]]
+                lb = inv_layout[phys_index[b]]
+                self._swap_mapping(layout, inv_layout, phys_index, a, b, la, lb)
+                decay[phys_index[a]] += self.decay_delta
+                decay[phys_index[b]] += self.decay_delta
 
             # Now adjacent: emit the mapped 2Q gate
             mapped = (layout[u], layout[v])
@@ -247,18 +360,18 @@ class SabreSwapPass(CircuitTranspilerPass):
             advance_front_for(u)
             advance_front_for(v)
 
-        self.last_swap_count = swap_count
-        self.last_final_layout = layout[:]  # mapping at the end of routing
-
-        if self.context is not None:
-            self.context.final_layout = list(self.last_final_layout or [])
-            self.context.metrics["swap_count"] = self.last_swap_count
-
-        self.append_circuit_to_context(out)
-
-        return out
+        return out, swap_count, layout[:]
 
     # ----------------------- SABRE helpers -----------------------
+
+    def _is_layout_routable(self, circuit: Circuit, layout: list[int]) -> bool:
+        for gate in circuit.gates:
+            qs = gate.qubits
+            if len(qs) != 2:
+                continue
+            if not self.topology.has_edge(layout[qs[0]], layout[qs[1]]):
+                return False
+        return True
 
     @staticmethod
     def _front_set(per_qubit: list[list[int]], pos: list[int], scheduled: list[bool]) -> set[int]:
@@ -298,17 +411,20 @@ class SabreSwapPass(CircuitTranspilerPass):
         twoq_pairs: list[tuple[int, int]],
         dist: list[list[int]],
         decay: list[float] | None,
+        phys_index: dict[int, int],
     ) -> float:
         c = 0.0
         for k in idxs:
             u, v = twoq_pairs[k]
             pu, pv = layout[u], layout[v]
-            d = dist[pu][pv]
+            iu = phys_index[pu]
+            iv = phys_index[pv]
+            d = dist[iu][iv]
             if d >= 1_000_000_000:
                 # Disconnected; make it very expensive
                 d = 1e6  # type: ignore[assignment]
             if decay is not None:
-                c += d * (1.0 + decay[pu] + decay[pv])
+                c += d * (1.0 + decay[iu] + decay[iv])
             else:
                 c += d
         return c
@@ -338,24 +454,32 @@ class SabreSwapPass(CircuitTranspilerPass):
         return twoq_ops_idx, twoq_pairs, per_qubit
 
     @staticmethod
-    def _invert_layout(layout: list[int], n_physical: int) -> list[int | None]:
-        inv = [None] * n_physical
+    def _invert_layout(
+        layout: list[int],
+        phys_index: dict[int, int],
+    ) -> list[int | None]:
+        inv = [None] * len(phys_index)
         for l, p in enumerate(layout):
-            if 0 <= p < n_physical:
-                inv[p] = l  # type: ignore[call-overload]
+            idx = phys_index.get(p)
+            if idx is not None:
+                if inv[idx] is None:
+                    inv[idx] = l  # type: ignore[call-overload]
         return inv  # type: ignore[return-value]
 
     @staticmethod
     def _swap_mapping(
         layout: list[int],
         inv_layout: list[int | None],
+        phys_index: dict[int, int],
         a: int,
         b: int,
         la: int | None,
         lb: int | None,
     ) -> None:
         # update inverse
-        inv_layout[a], inv_layout[b] = lb, la
+        ia = phys_index[a]
+        ib = phys_index[b]
+        inv_layout[ia], inv_layout[ib] = lb, la
         # update forward
         if la is not None:
             layout[la] = b
@@ -363,34 +487,88 @@ class SabreSwapPass(CircuitTranspilerPass):
             layout[lb] = a
 
     @staticmethod
-    def _apsp_unweighted(graph: PyGraph, n_physical: int) -> list[list[int]]:
+    def _apsp_unweighted(
+        graph: PyGraph,
+        phys_nodes: list[int],
+        phys_index: dict[int, int],
+    ) -> list[list[int]]:
         INF = 1_000_000_000
-        dist = [[INF] * n_physical for _ in range(n_physical)]
-        for s in graph.node_indices():
+        dist = [[INF] * len(phys_nodes) for _ in phys_nodes]
+        for s in phys_nodes:
             s = int(s)
-            dist[s][s] = 0
+            s_idx = phys_index[s]
+            dist[s_idx][s_idx] = 0
             q = deque([s])
             seen = {s}
             while q:
                 u = q.popleft()
-                du = dist[s][u]
+                u = int(u)
+                u_idx = phys_index[u]
+                du = dist[s_idx][u_idx]
                 for v in graph.neighbors(u):
                     v = int(v)
                     if v not in seen:
                         seen.add(v)
-                        dist[s][v] = du + 1
+                        v_idx = phys_index[v]
+                        dist[s_idx][v_idx] = du + 1
                         q.append(v)
         return dist
 
-    def _init_layout(self, n_logical: int, n_physical: int) -> list[int]:
-        if self.initial_layout is not None:
-            if len(self.initial_layout) != n_logical:
-                raise ValueError(f"initial_layout length {len(self.initial_layout)} != circuit.nqubits {n_logical}")
-            return list(self.initial_layout)
+    def _init_layout(
+        self,
+        n_logical: int,
+        phys_nodes: list[int],
+        active_qubits: set[int],
+        layout_hint: list[int] | None,
+    ) -> list[int]:
+        if layout_hint is not None:
+            hint = list(layout_hint)
+            active_list = sorted(active_qubits)
+            if len(hint) == n_logical:
+                layout = hint[:n_logical]
+            elif active_list and len(hint) == len(active_list):
+                layout = [None] * n_logical  # type: ignore[list-item]
+                for idx, logical in enumerate(active_list):
+                    layout[logical] = hint[idx]
+            else:
+                # Fallback: treat as prefix mapping and pad/trim
+                layout = hint[:n_logical]
+                if len(layout) < n_logical:
+                    layout.extend([None] * (n_logical - len(layout)))  # type: ignore[list-item]
+            used = {x for x in layout if x is not None}
+            remaining = [node for node in phys_nodes if node not in used]
+            placeholder = phys_nodes[0] if phys_nodes else 0
+            for logical in range(n_logical):
+                if layout[logical] is None:
+                    layout[logical] = remaining.pop(0) if remaining else placeholder
+            available = set(phys_nodes)
+            active_targets = [layout[q] for q in active_qubits]
+            missing = sorted({node for node in active_targets if node not in available})
+            if missing:
+                raise ValueError(
+                    "initial_layout refers to physical qubits not present in the coupling graph for active logical "
+                    f"qubits: {missing}"
+                )
+            if len(set(active_targets)) != len(active_targets):
+                raise ValueError("initial_layout must map active logical qubits to unique physical qubits.")
+            return layout
         # identity by default
-        if n_physical < n_logical:
-            raise ValueError(f"Coupling graph has {n_physical} qubits but circuit needs {n_logical}.")
-        return list(range(n_logical))
+        phys_set = set(phys_nodes)
+        uses_physical_labels = active_qubits <= phys_set
+        if uses_physical_labels:
+            if not phys_nodes:
+                return []
+            layout = [-1] * n_logical
+            for q in active_qubits:
+                layout[q] = q
+            placeholder = phys_nodes[0]
+            for idx in range(n_logical):
+                if layout[idx] == -1:
+                    layout[idx] = idx if idx in phys_set else placeholder
+            return layout
+        if len(phys_nodes) < n_logical:
+            raise ValueError(f"Coupling graph has {len(phys_nodes)} qubits but circuit needs {n_logical}.")
+        return phys_nodes[:n_logical]
 
     # ----------------------- gate (re)construction -----------------------
 

@@ -182,7 +182,7 @@ class CustomLayoutPass(CircuitTranspilerPass):
 
         if self.context is not None:
             self.context.initial_layout = initial_layout
-            self.context.final_layout = list(range(self.topology.num_nodes()))
+            self.context.final_layout = self._user_mapping
 
         self.append_circuit_to_context(new_circuit)
 

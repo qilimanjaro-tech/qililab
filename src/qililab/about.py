@@ -18,6 +18,7 @@ This module contains a function to display all the details of the Qililab instal
 
 import platform
 import sys
+from typing import Any, Callable, cast
 
 import pyvisa_py
 import qblox_instruments
@@ -25,7 +26,23 @@ import qcodes
 import qcodes_contrib_drivers
 import qilisdk
 import qpysequence
-from qm.version import __version__ as qm_version
+
+from qililab._optionals import OptionalFeature, Symbol, import_optional_dependencies
+
+_QM = OptionalFeature(
+    name="quantum-machines",
+    dependencies=[
+        "qm-qua",
+        "qualang-tools",
+    ],
+    symbols=[
+        Symbol(path="qm", name="__version__", kind="callable"),
+    ],
+)
+_qm = import_optional_dependencies(_QM).symbols
+
+# Re-export runtime names (real or stubs)
+qm_version: "Callable[..., str]" = cast("Any", _qm["__version__"])
 
 
 def about():
@@ -39,5 +56,6 @@ def about():
     print(f"QCodes Contrib version:    {qcodes_contrib_drivers.__version__}")
     print(f"Qblox Instrument version:  {qblox_instruments.__version__}")
     print(f"Qpysequence version:       {qpysequence.__version__}")
-    print(f"Quantum Machines version:  {qm_version}")
     print(f"QiliSDK version:           {qilisdk.__version__}")
+    if isinstance(qm_version, str):
+        print(f"Quantum Machines version:  {qm_version}")

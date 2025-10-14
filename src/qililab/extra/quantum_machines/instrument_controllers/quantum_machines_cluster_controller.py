@@ -17,10 +17,10 @@
 from dataclasses import dataclass
 from typing import Sequence
 
+from qililab.extra.quantum_machines.instruments import QuantumMachinesCluster
 from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.typings import QMMDriver
 from qililab.typings.enums import InstrumentControllerName
 

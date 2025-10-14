@@ -5,8 +5,9 @@ import numpy as np
 import pytest
 import qpysequence as QPy
 
-from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, IQDrag, QbloxCompiler, QProgram, Square
+from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, IQDrag, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
+from qililab.qprogram import QbloxCompiler
 from tests.test_utils import is_q1asm_equal
 from qililab.config import logger
 import logging

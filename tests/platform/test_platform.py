@@ -6,7 +6,7 @@ import re
 import warnings
 from pathlib import Path
 from queue import Queue
-from types import MethodType
+from types import MethodType, SimpleNamespace
 from unittest.mock import MagicMock, create_autospec, patch
 
 import numpy as np
@@ -21,18 +21,20 @@ from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
+from qililab.extra.quantum_machines import (
+    QuantumMachinesCluster,
+    QuantumMachinesMeasurementResult,
+)
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.core.variables import Domain
 from qililab.qprogram import Calibration, Experiment, QProgram
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event import GateEvent
@@ -311,6 +313,136 @@ class TestPlatform:
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
 
+    def test_compile_circuit_invokes_transpiler_and_compiler(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """Platform.compile_circuit wires transpilation and compilation stages together."""
+        circuit = Circuit(2)
+        circuit.add(X(0))
+
+        transpiled_circuit = object()
+        compiled_qprogram = QProgram()
+
+        transpiler_instance = MagicMock()
+        transpiler_instance.run.return_value = transpiled_circuit
+        transpiler_instance.context = SimpleNamespace(
+            initial_layout={0: 0, 1: 1},
+            final_layout={0: 1, 1: 0},
+        )
+
+        compiler_instance = MagicMock()
+        compiler_instance.compile.return_value = compiled_qprogram
+
+        transpiler_cls = MagicMock(return_value=transpiler_instance)
+        compiler_cls = MagicMock(return_value=compiler_instance)
+
+        monkeypatch.setattr("qililab.platform.platform.CircuitTranspiler", transpiler_cls)
+        monkeypatch.setattr("qililab.platform.platform.CircuitToQProgramCompiler", compiler_cls)
+
+        qubit_mapping = {0: 1}
+        nshots = 256
+
+        result = platform.compile_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
+
+        transpiler_cls.assert_called_once_with(platform.digital_compilation_settings, qubit_mapping=qubit_mapping)
+        transpiler_instance.run.assert_called_once_with(circuit)
+        compiler_cls.assert_called_once_with(platform.digital_compilation_settings)
+        compiler_instance.compile.assert_called_once_with(transpiled_circuit, nshots)
+
+        assert result[0] is compiled_qprogram
+        assert result[1] == {0: 1, 1: 0}
+
+    def test_compile_circuit_with_default_mapping(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """If no mapping is provided, the transpiler is invoked with qubit_mapping=None and may return None layout."""
+        circuit = Circuit(1)
+
+        transpiler_instance = MagicMock()
+        transpiler_instance.run.return_value = circuit
+        transpiler_instance.context = SimpleNamespace(final_layout=None)
+
+        compiler_instance = MagicMock()
+        compiler_instance.compile.return_value = QProgram()
+
+        transpiler_cls = MagicMock(return_value=transpiler_instance)
+        compiler_cls = MagicMock(return_value=compiler_instance)
+
+        monkeypatch.setattr("qililab.platform.platform.CircuitTranspiler", transpiler_cls)
+        monkeypatch.setattr("qililab.platform.platform.CircuitToQProgramCompiler", compiler_cls)
+
+        qprogram, layout = platform.compile_circuit(circuit, nshots=5)
+
+        transpiler_cls.assert_called_once_with(platform.digital_compilation_settings, qubit_mapping=None)
+        transpiler_instance.run.assert_called_once_with(circuit)
+        compiler_instance.compile.assert_called_once_with(circuit, 5)
+        assert isinstance(qprogram, QProgram)
+        assert layout is None
+
+    def test_compile_circuit_without_digital_settings_raises(
+        self, platform: Platform
+    ):
+        """Raises ValueError when digital compilation settings are missing."""
+        platform.digital_compilation_settings = None
+
+        circuit = Circuit(1)
+
+        with pytest.raises(
+            ValueError, match="Cannot compile Circuit without defining DigitalCompilationSettings."
+        ):
+            platform.compile_circuit(circuit, nshots=128)
+
+    def test_execute_circuit_uses_compilation_and_execution_pipeline(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """execute_circuit compiles, executes, and formats samples via helpers."""
+        circuit = Circuit(1)
+        circuit.add(M(0))
+
+        compiled_qprogram = QProgram()
+        logical_mapping = {0: 0}
+        samples = {"0": 42}
+
+        compile_mock = MagicMock(return_value=(compiled_qprogram, logical_mapping))
+        execute_mock = MagicMock(return_value="results")
+        samples_mock = MagicMock(return_value=samples)
+
+        monkeypatch.setattr(platform, "compile_circuit", compile_mock)
+        monkeypatch.setattr(platform, "execute_qprogram", execute_mock)
+        monkeypatch.setattr("qililab.platform.platform.qprogram_results_to_samples", samples_mock)
+
+        qubit_mapping = {0: 0}
+        nshots = 32
+
+        result = platform.execute_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
+
+        compile_mock.assert_called_once_with(circuit, nshots, qubit_mapping=qubit_mapping)
+        execute_mock.assert_called_once_with(compiled_qprogram)
+        samples_mock.assert_called_once_with("results", logical_mapping)
+
+        assert result == samples
+
+    def test_execute_circuit_handles_none_mapping(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """execute_circuit forwards a None logical-to-physical mapping without modification."""
+        circuit = Circuit(1)
+
+        compile_mock = MagicMock(return_value=(QProgram(), None))
+        execute_mock = MagicMock(return_value="results")
+        samples_mock = MagicMock(return_value={"0": 1})
+
+        monkeypatch.setattr(platform, "compile_circuit", compile_mock)
+        monkeypatch.setattr(platform, "execute_qprogram", execute_mock)
+        monkeypatch.setattr("qililab.platform.platform.qprogram_results_to_samples", samples_mock)
+
+        result = platform.execute_circuit(circuit, nshots=20)
+
+        compile_mock.assert_called_once_with(circuit, 20, qubit_mapping=None)
+        execute_mock.assert_called_once_with(compile_mock.return_value[0])
+        samples_mock.assert_called_once_with("results", None)
+        assert result == {"0": 1}
+
     def test_initial_setup_no_instrument_connection(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""
         platform._connected_to_instruments = False
@@ -451,6 +583,7 @@ class TestPlatform:
             ("flux_q0", Parameter.FLUX, 0.5),
         ],
     )
+    @pytest.mark.qm
     def test_set_parameter_no_instrument_connection_QM(self, bus: str, parameter: Parameter, value: float | str | bool):
         """Test platform raises and error if no instrument connection."""
         # Overwrite platform to use Quantum Machines:
@@ -869,7 +1002,8 @@ class TestMethods:
         ):
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
-
+    
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -922,6 +1056,7 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines_raises_error(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
 
@@ -1028,6 +1163,10 @@ class TestMethods:
                 if flux_bus.flux == flux
             )
 
+    def test_get_element_gate(self, platform: Platform):
+        gate_events = platform.get_element("Rmw(0)_amplitude")
+        assert all(isinstance(gate_event, GateEvent) for gate_event in gate_events)
+
     def test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
         """Test that if parallelisation is attempted on qprograms using at least one bus in common, an error will be raised"""
         error_string = "QPrograms cannot be executed in parallel."
@@ -1051,6 +1190,7 @@ class TestMethods:
             with pytest.raises(ValueError, match=error_string):
                 platform.execute_qprograms_parallel(qp_list, debug=True)
 
+    @pytest.mark.qm
     def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
         error_string = "Parallel execution is not supported in Quantum Machines."
         qp1 = QProgram()

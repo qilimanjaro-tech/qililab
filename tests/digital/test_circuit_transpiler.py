@@ -4,7 +4,7 @@ from qilisdk.digital import Circuit
 
 from qililab.digital.circuit_transpiler import CircuitTranspiler
 from qililab.digital.circuit_transpiler_passes import (
-    AddPhasesToDragsFromRZAndCZPass,
+    AddPhasesToRmwFromRZAndCZPass,
     CancelIdentityPairsPass,
     CanonicalBasisToNativeSetPass,
     CircuitToCanonicalBasisPass,
@@ -45,7 +45,7 @@ def test_circuit_transpiler_builds_default_pipeline(basic_settings: DigitalCompi
         CircuitToCanonicalBasisPass,
         FuseSingleQubitGatesPass,
         CanonicalBasisToNativeSetPass,
-        AddPhasesToDragsFromRZAndCZPass,
+        AddPhasesToRmwFromRZAndCZPass,
     ]
     assert pipeline_types == expected_prefix
 

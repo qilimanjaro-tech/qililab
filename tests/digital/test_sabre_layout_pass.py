@@ -1,4 +1,5 @@
 import pytest
+import random
 from rustworkx import PyGraph
 
 from qilisdk.digital import Circuit, CZ, M, RX, RY, RZ, SWAP, U3
@@ -91,3 +92,75 @@ def test_sabre_layout_retarges_all_gate_types_and_updates_diagnostics():
     assert layout_pass.last_score is not None
     assert context.initial_layout == layout_pass.last_layout
     assert any(key.startswith("SabreLayoutPass") for key in context.circuits)
+
+
+def test_sabre_layout_handles_sparse_physical_indices():
+    topology = PyGraph()
+    topology.add_nodes_from(range(5))
+    for node in (3, 1):
+        topology.remove_node(node)
+    topology.add_edge(0, 2, None)
+    topology.add_edge(2, 4, None)
+    assert sorted(topology.node_indices()) == [0, 2, 4]
+
+    layout_pass = SabreLayoutPass(topology, num_trials=1, seed=5)
+
+    circuit = Circuit(2)
+    circuit.add(CZ(0, 1))
+
+    out = layout_pass.run(circuit)
+
+    assert out.nqubits >= 5
+    assert layout_pass.last_layout is not None
+    assert set(layout_pass.last_layout).issubset({0, 2, 4})
+    assert len(set(layout_pass.last_layout)) == circuit.nqubits
+    assert all(q in {0, 2, 4} for gate in out.gates for q in gate.qubits)
+
+def _line_graph(num_nodes: int) -> PyGraph:
+    graph = PyGraph()
+    graph.add_nodes_from(range(num_nodes))
+    for i in range(num_nodes - 1):
+        graph.add_edge(i, i + 1, None)
+    return graph
+
+
+def _circuit_with_cz() -> Circuit:
+    circuit = Circuit(3)
+    circuit.add(CZ(0, 2))
+    return circuit
+
+
+def test_layout_breaks_when_no_candidates(monkeypatch):
+    graph = _line_graph(3)
+    layout_pass = SabreLayoutPass(graph, lookahead_size=1, seed=0)
+    circuit = _circuit_with_cz()
+
+    # Force all logical qubits onto the same physical node so touched_phys contains a single entry.
+    monkeypatch.setattr(layout_pass, "_random_initial_layout", lambda rng, n_logical, phys_nodes: [0, 0, 0])
+
+    layout_pass.run(circuit)
+    assert layout_pass.last_layout is not None
+
+
+def test_layout_handles_empty_extended_set(monkeypatch):
+    graph = _line_graph(3)
+    layout_pass = SabreLayoutPass(graph, lookahead_size=0, seed=0)
+    circuit = _circuit_with_cz()
+
+    layout_pass.run(circuit)
+
+    assert layout_pass.last_layout is not None
+
+
+def test_layout_tie_break(monkeypatch):
+    graph = _line_graph(3)
+    layout_pass = SabreLayoutPass(graph, lookahead_size=1, seed=0)
+    circuit = _circuit_with_cz()
+
+    # Force candidate swaps to have exactly equal cost
+    monkeypatch.setattr(layout_pass, "_cost_front", lambda *args, **kwargs: 1.0)
+    monkeypatch.setattr(random.Random, "random", lambda self: 0.4)
+
+    layout_pass.run(circuit)
+
+    assert layout_pass.last_layout is not None

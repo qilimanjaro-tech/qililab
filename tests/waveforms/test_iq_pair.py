@@ -21,6 +21,11 @@ class TestIQPair:
         """Test get_duration method."""
         assert iq_pair.get_duration() == 100
 
+    def test_getters_return_original_waveforms(self, iq_pair: IQPair):
+        """IQPair accessors should expose the stored waveforms unchanged."""
+        assert iq_pair.get_I() is iq_pair.I
+        assert iq_pair.get_Q() is iq_pair.Q
+
     def test_iq_pair_with_different_durations_throws_error(self):
         """Test that waveforms of an IQ pair must have the same duration."""
         with pytest.raises(ValueError, match="Waveforms of an IQ pair must have the same duration."):
@@ -33,6 +38,9 @@ class TestIQPair:
                 I=IQPair(I=Square(amplitude=0.5, duration=100), Q=Square(amplitude=1.0, duration=100)),
                 Q=IQPair(I=Square(amplitude=0.5, duration=100), Q=Square(amplitude=1.0, duration=100)),
             )
+
+        with pytest.raises(TypeError, match="Waveform inside IQPair must have Waveform type."):
+            IQPair(I=Square(amplitude=0.5, duration=100), Q="not a waveform")
 
     def test_drag_method(self):
         """Test __init__ method"""

@@ -26,7 +26,7 @@ class TranspilationContext:
     """Shared, mutable state for passes."""
 
     # Artifacts produced/consumed by passes:
-    initial_layout: list[int] = field(default_factory=list)  # logical -> physical (from layout)
-    final_layout: list[int] = field(default_factory=list)  # physical -> physical (from router)
+    initial_layout: list[int] = field(default_factory=list)  # logical -> physical (after layout)
+    final_layout: dict[int, int] = field(default_factory=dict)  # logical -> physical (after router)
     metrics: dict[str, Any] = field(default_factory=dict)
     circuits: dict[str, Circuit] = field(default_factory=dict)

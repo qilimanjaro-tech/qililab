@@ -22,35 +22,29 @@ from qilisdk.digital.gates import CZ, RZ, M
 from qililab.digital.native_gates import Rmw
 
 from .circuit_transpiler_pass import CircuitTranspilerPass
+from .numeric_helpers import _wrap_angle
 
 if TYPE_CHECKING:
     from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
     from qililab.settings.digital.gate_event import GateEvent
 
 
-class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
-    """This pass adds the phases from RZs and CZs gates of the circuit to the next Drag gates.
+class AddPhasesToRmwFromRZAndCZPass(CircuitTranspilerPass):
+    """Fold all Z-axis phases from RZs and CZ phase-corrections into subsequent resonant
+    microwave rotations (Rmw) as *virtual-Z* updates applied directly to the pulse phase.
 
-        - The CZs added phases on the Drags, come from a correction from their calibration, stored on the setting of the CZs.
-        - The RZs added phases on the Drags, come from commuting all the RZs all the way to the end of the circuit, so they can be deleted as "virtual Z gates".
+    Key points:
+      - RZ(φ) commuting forward adds +φ to the axis of every later XY pulse on that qubit.
+      - CZ calibration may specify per-qubit phase corrections; we accumulate both.
+      - The per-qubit Z-frame persists; do NOT reset it after an Rmw.
+      - Any residual Z-frame at the end is irrelevant to Z-basis measurement, so RZs can be deleted.
 
-    This is done by moving all RZ to the left of all operators as a single RZ. The corresponding cumulative rotation
-    from each RZ is carried on as phase in all drag pulses left of the RZ operator.
+    Sign convention:
+      Because the VZ is realized by rotating the *pulse* (logical axis) rather than an NCO frame,
+      the phase we emit for an Rmw becomes: phase_out = wrap(gate.phase + shift[q]).
 
-    Virtual Z gates are also applied to correct phase errors from CZ gates.
-
-    The final RZ operator left to be applied as the last operator in the circuit can afterwards be removed since the last
-    operation is going to be a measurement, which is performed on the Z basis and is therefore invariant under rotations
-    around the Z axis.
-
-    This last step can also be seen from the fact that an RZ operator applied on a single qubit, with no operations carried
-    on afterwards induces a phase rotation. Since phase is an imaginary unitary component, its absolute value will be 1
-    independent on any (unitary) operations carried on it.
-
-    Mind that moving an operator to the left is equivalent to applying this operator last so
-    it is actually moved to the _right_ of ``Circuit.queue`` (last element of list).
-
-    For more information on virtual Z gates, see https://arxiv.org/abs/1612.00858
+    Phases are wrapped to [-π, π) for numerical hygiene.
+    For background on persistent virtual-Z / frame updates, see https://arxiv.org/abs/1612.00858
     """
 
     def __init__(self, settings: DigitalCompilationSettings) -> None:
@@ -61,30 +55,29 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
         circuit_gates = circuit.gates
 
         out_circuit = Circuit(nqubits)
-        shift = dict.fromkeys(range(nqubits), 0.0)
+        shift: dict[int, float] = dict.fromkeys(range(nqubits), 0.0)
 
         for gate in circuit_gates:
             out_gate: Optional[Union[M, Rmw, CZ]] = None
 
             # Accumulate phase shifts from commutating RZ to the end, to discard them as VirtualZ.
             if isinstance(gate, RZ):
-                shift[gate.target_qubits[0]] += gate.phi
+                qubit = gate.target_qubits[0]
+                shift[qubit] = _wrap_angle(shift[qubit] + gate.phi)
 
-            # Accumulate phase shifts from the phase corrections of the CZs, and leave CZs unchanged.
+            # Pass through CZ, while accumulating its per-qubit phase corrections
             elif isinstance(gate, CZ):
-                control_qubit, target_qubit = gate.control_qubits[0], gate.target_qubits[0]  # Assumes 2 qubits
+                control_qubit, target_qubit = gate.control_qubits[0], gate.target_qubits[0]
                 gate_settings = self._settings.get_gate(name="CZ", qubits=(control_qubit, target_qubit))
-                gate_corrections = self._extract_gate_corrections(gate_settings, control_qubit)
-                if gate_corrections is not None:
-                    shift[control_qubit] += gate_corrections[f"q{control_qubit}_phase_correction"]
-                    shift[target_qubit] += gate_corrections[f"q{target_qubit}_phase_correction"]
+                gate_corrections = self._extract_gate_corrections(gate_settings, control_qubit, target_qubit)
+                shift[control_qubit] = _wrap_angle(shift[control_qubit] + gate_corrections[f"q{control_qubit}_phase_correction"])
+                shift[target_qubit] = _wrap_angle(shift[target_qubit] + gate_corrections[f"q{target_qubit}_phase_correction"])
                 out_gate = CZ(control_qubit, target_qubit)
 
-            # Correct Drag phase with accumulated phase shifts.
+             # Apply VZ by rotating the *pulse* axis: phase_out = phase_in + shift[q]
             elif isinstance(gate, Rmw):
-                qubit: int = gate.qubits[0]  # Assumes single qubit
-                out_gate = Rmw(qubit, theta=gate.theta, phase=(gate.phase - shift[qubit]))
-                shift[qubit] = 0.0
+                qubit = gate.qubits[0]
+                out_gate = Rmw(qubit, theta=gate.theta, phase=_wrap_angle(gate.phase + shift[qubit]))
 
             # Measurement gates, do not change
             elif isinstance(gate, M):
@@ -92,24 +85,46 @@ class AddPhasesToDragsFromRZAndCZPass(CircuitTranspilerPass):
 
             # If gate is not supported, raise an error
             else:
-                raise ValueError(f"{gate.name} not part of native supported gates {(RZ, Rmw, CZ, M)}")
+                raise ValueError(
+                    f"Unsupported gate {gate!r} (name={getattr(gate, 'name', type(gate).__name__)}) "
+                    f"— supported: {RZ.__name__}, {Rmw.__name__}, {CZ.__name__}, {M.__name__}"
+                )
 
             # Add the processed gate to the output circuit
             if out_gate is not None:
                 out_circuit.add(out_gate)
 
+        # (Residual Z-frames are harmless; measurement in Z basis is invariant.)
         self.append_circuit_to_context(out_circuit)
-
         return out_circuit
 
     @staticmethod
-    def _extract_gate_corrections(gate_settings: list[GateEvent], control_qubit: int) -> dict | None:
-        """Given a CZ gate settings, extract the phase corrections needed for its control and target qubits."""
-        return next(
-            (
-                event.options
-                for event in gate_settings
-                if event.options is not None and f"q{control_qubit}_phase_correction" in event.options
-            ),
-            None,
-        )
+    def _extract_gate_corrections(
+        gate_settings: list[GateEvent], c: int, t: int
+    ) -> dict[str, float]:
+        """
+        Given a CZ gate's settings, extract any present per-qubit phase corrections.
+        Returns a dict with zero defaults if not present.
+        Expected keys: f"q{c}_phase_correction", f"q{t}_phase_correction" (radians).
+        """
+        corr = {
+            f"q{c}_phase_correction": 0.0,
+            f"q{t}_phase_correction": 0.0,
+        }
+        # Find the first event containing at least one relevant key
+        for event in gate_settings or []:
+            opts = getattr(event, "options", None)
+            if not isinstance(opts, dict):
+                continue
+            updated = False
+            key_c = f"q{c}_phase_correction"
+            key_t = f"q{t}_phase_correction"
+            if key_c in opts and isinstance(opts[key_c], (int, float)):
+                corr[key_c] = float(opts[key_c])
+                updated = True
+            if key_t in opts and isinstance(opts[key_t], (int, float)):
+                corr[key_t] = float(opts[key_t])
+                updated = True
+            if updated:
+                break
+        return corr

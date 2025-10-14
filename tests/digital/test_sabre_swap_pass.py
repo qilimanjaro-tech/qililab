@@ -20,22 +20,13 @@ def test_sabre_swap_requires_pygraph():
         SabreSwapPass("not-a-graph")  # type: ignore[arg-type]
 
 
-def test_sabre_swap_rejects_empty_coupling_graph():
+def test_sabre_swap_rejects_empty_topology_graph():
     topology = PyGraph()
     swap_pass = SabreSwapPass(topology)
     circuit = Circuit(1)
     circuit.add(RX(0, theta=0.3))
 
-    with pytest.raises(ValueError, match="Coupling graph has no nodes"):
-        swap_pass.run(circuit)
-
-
-def test_sabre_swap_initial_layout_length_must_match_logical_qubits():
-    topology = make_line_topology(2)
-    swap_pass = SabreSwapPass(topology, initial_layout=[0])
-    circuit = Circuit(2)
-
-    with pytest.raises(ValueError, match="initial_layout length 1 != circuit.nqubits 2"):
+    with pytest.raises(ValueError, match="Topology graph has no nodes"):
         swap_pass.run(circuit)
 
 
@@ -56,7 +47,7 @@ def test_sabre_swap_routes_adjacent_gate_without_swaps_and_updates_context():
     assert [gate.qubits for gate in out.gates] == [(0,), (0, 1), (1,)]
     assert swap_pass.last_swap_count == 0
     assert swap_pass.last_final_layout == [0, 1]
-    assert context.final_layout == [0, 1]
+    assert context.final_layout == {0: 0, 1: 1}
     assert context.metrics["swap_count"] == 0
     assert any(name.startswith("SabreSwapPass") for name in context.circuits)
 
@@ -125,3 +116,72 @@ def test_sabre_swap_raises_when_swap_budget_exceeded():
 
     with pytest.raises(RuntimeError, match="Exceeded swap budget"):
         swap_pass.run(circuit)
+
+
+def test_sabre_swap_handles_sparse_physical_indices_with_default_layout():
+    topology = PyGraph()
+    topology.add_nodes_from(range(5))
+    for node in (3, 1):
+        topology.remove_node(node)
+    topology.add_edge(0, 2, None)
+    topology.add_edge(2, 4, None)
+    assert sorted(topology.node_indices()) == [0, 2, 4]
+
+    swap_pass = SabreSwapPass(topology, seed=3)
+
+    circuit = Circuit(2)
+    circuit.add(CZ(0, 1))
+
+    out = swap_pass.run(circuit)
+
+    assert out.nqubits >= 5
+    assert all(q in {0, 2, 4} for gate in out.gates for q in gate.qubits)
+    assert swap_pass.last_final_layout is not None
+    assert set(swap_pass.last_final_layout).issubset({0, 2, 4})
+
+
+def test_sabre_swap_handles_sparse_physical_indices_with_custom_layout():
+    topology = PyGraph()
+    topology.add_nodes_from(range(5))
+    for node in (3, 1):
+        topology.remove_node(node)
+    topology.add_edge(0, 2, None)
+    topology.add_edge(2, 4, None)
+    assert sorted(topology.node_indices()) == [0, 2, 4]
+
+    swap_pass = SabreSwapPass(topology, initial_layout=[0, 4], seed=5)
+
+    circuit = Circuit(2)
+    circuit.add(CZ(0, 1))
+
+    out = swap_pass.run(circuit)
+
+    assert out.nqubits >= 5
+    assert any(type(g).__name__ == "SWAP" for g in out.gates)
+    assert all(q in {0, 2, 4} for gate in out.gates for q in gate.qubits)
+    assert swap_pass.last_final_layout is not None
+    assert set(swap_pass.last_final_layout).issubset({0, 2, 4})
+    assert swap_pass.last_swap_count and swap_pass.last_swap_count > 0
+
+
+def test_sabre_swap_accepts_padding_qubits_after_layout():
+    topology = PyGraph()
+    topology.add_nodes_from(range(5))
+    topology.remove_node(3)
+    topology.add_edge(0, 1, None)
+    topology.add_edge(1, 2, None)
+    topology.add_edge(2, 4, None)
+    assert sorted(topology.node_indices()) == [0, 1, 2, 4]
+
+    swap_pass = SabreSwapPass(topology, seed=7)
+
+    circuit = Circuit(5)
+    circuit.add(CZ(0, 4))
+
+    out = swap_pass.run(circuit)
+
+    assert out.nqubits >= 5
+    assert swap_pass.last_final_layout is not None
+    assert len(swap_pass.last_final_layout) == circuit.nqubits
+    assert set(q for gate in out.gates for q in gate.qubits).issubset({0, 1, 2, 4})
+    assert 3 not in swap_pass.last_final_layout

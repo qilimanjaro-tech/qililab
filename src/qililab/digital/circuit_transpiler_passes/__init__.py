@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .add_phases_to_drags_from_rz_and_cz import AddPhasesToDragsFromRZAndCZPass
+from .add_phases_to_drags_from_rz_and_cz import AddPhasesToRmwFromRZAndCZPass
 from .cancel_identity_pairs_pass import CancelIdentityPairsPass
 from .canonical_basis_to_native_set_pass import CanonicalBasisToNativeSetPass
 from .circuit_to_canonical_basis_pass import CircuitToCanonicalBasisPass
@@ -24,7 +24,7 @@ from .sabre_swap_pass import SabreSwapPass
 from .transpilation_context import TranspilationContext
 
 __all__ = [
-    "AddPhasesToDragsFromRZAndCZPass",
+    "AddPhasesToRmwFromRZAndCZPass",
     "CancelIdentityPairsPass",
     "CanonicalBasisToNativeSetPass",
     "CircuitToCanonicalBasisPass",
