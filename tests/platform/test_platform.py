@@ -22,10 +22,7 @@ from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
-from qililab.extra.quantum_machines import (
-    QuantumMachinesCluster,
-    QuantumMachinesMeasurementResult,
-)
+from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
@@ -960,7 +957,7 @@ class TestMethods:
         ):
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
-    
+
     @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
@@ -1365,69 +1362,71 @@ class TestMethods:
         """Test the normalization of bus mappings"""
         n = 3
         bus_mappings = None
-        
+
         none_mapping = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
         assert isinstance(none_mapping, list)
-        assert len(none_mapping)==n
-        assert none_mapping==[None]*n
-        
-        bus_mappings = {'readout':'readout_q0_bus'}
+        assert len(none_mapping) == n
+        assert none_mapping == [None] * n
+
+        bus_mappings = {"readout": "readout_q0_bus"}
         one_mapping = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
         assert isinstance(one_mapping, list)
-        assert len(one_mapping)==n
+        assert len(one_mapping) == n
         for mapping in one_mapping:
-            assert mapping==bus_mappings
-            
-        bus_mappings = [{'readout':'readout_q0_bus'}, None, {'readout':'readout_q2_bus'}]
+            assert mapping == bus_mappings
+
+        bus_mappings = [{"readout": "readout_q0_bus"}, None, {"readout": "readout_q2_bus"}]
         mappings = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
         assert isinstance(mappings, list)
-        assert len(mappings)==n
-        assert mappings==bus_mappings
-        
-        bus_mappings = [{'readout':'readout_q0_bus'}, {'readout':'readout_q2_bus'}]
+        assert len(mappings) == n
+        assert mappings == bus_mappings
+
+        bus_mappings = [{"readout": "readout_q0_bus"}, {"readout": "readout_q2_bus"}]
         with pytest.raises(ValueError, match=re.escape(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")):
             platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
-    
-    def test_normalize_calibrations(self, platform: Platform, calibration: Calibration, calibration_with_preparation_block: Calibration):
+
+    def test_normalize_calibrations(
+        self, platform: Platform, calibration: Calibration, calibration_with_preparation_block: Calibration
+    ):
         """Test the normalization of calibrations"""
         n = 3
         calibrations = None
-        
+
         none_calibration = platform._normalize_calibrations(calibrations=calibrations, n=n)
         assert isinstance(none_calibration, list)
-        assert len(none_calibration)==n
-        assert none_calibration==[None]*n
-        
+        assert len(none_calibration) == n
+        assert none_calibration == [None] * n
+
         one_calibration = platform._normalize_calibrations(calibrations=calibration, n=n)
         assert isinstance(one_calibration, list)
-        assert len(one_calibration)==n
+        assert len(one_calibration) == n
         for calibration_instance in one_calibration:
-            assert calibration_instance==calibration
-            
+            assert calibration_instance == calibration
+
         calibrations = [calibration, None, calibration_with_preparation_block]
         calibrations_normalized = platform._normalize_calibrations(calibrations=calibrations, n=n)
         assert isinstance(calibrations_normalized, list)
-        assert len(calibrations_normalized)==n
-        assert calibrations_normalized==calibrations
-        
+        assert len(calibrations_normalized) == n
+        assert calibrations_normalized == calibrations
+
         calibrations = [calibration, calibration_with_preparation_block]
         with pytest.raises(ValueError, match=re.escape(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")):
             platform._normalize_calibrations(calibrations=calibrations, n=n)
 
     def test_mapped_buses(self, platform: Platform):
         """Test the mappings of buses"""
-        qp_buses = set({'readout', 'drive'})
+        qp_buses = set({"readout", "drive"})
         mapping = None
-        
-        mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
-        assert mapped_buses==qp_buses
 
-        mapping = {'readout': 'readout_q0_bus', 'drive': 'drive_q0_bus'}
         mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
-        assert len(mapped_buses)==len(mapping)
-        assert 'readout_q0_bus' in mapped_buses
-        assert 'drive_q0_bus' in mapped_buses
-        
+        assert mapped_buses == qp_buses
+
+        mapping = {"readout": "readout_q0_bus", "drive": "drive_q0_bus"}
+        mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
+        assert len(mapped_buses) == len(mapping)
+        assert "readout_q0_bus" in mapped_buses
+        assert "drive_q0_bus" in mapped_buses
+
     def test_parallelisation_execute_qblox(self, platform: Platform):
         """Test that the execute parallelisation returns the same result per qprogram as the regular excute method"""
 
@@ -1470,7 +1469,7 @@ class TestMethods:
             # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
             assert result_parallel[0].results == non_parallel_results1.results
             assert result_parallel[1].results == non_parallel_results2.results
-            assert []==no_qprograms
+            assert [] == no_qprograms
 
     def test_calibrate_mixers(self, platform: Platform):
         """Test calibrating the Qblox mixers."""
@@ -1519,7 +1518,7 @@ class TestMethods:
             platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
 
     @patch("qililab.platform.platform.get_db_manager")
-    @patch("qililab.result.database._load_config")
+    @patch("qililab.result.database.database_manager._load_config")
     def test_load_db_manager(self, mock_load_config, mock_get_db_manager, platform: Platform):
         """Test load_db_manager createing a database from a given path"""
         path = "~/database_test.ini"
@@ -1541,7 +1540,7 @@ class TestMethods:
         mock_get_db_manager.assert_called_once_with(path)
 
     @patch("qililab.platform.platform.get_db_manager")
-    @patch("qililab.result.database._load_config")
+    @patch("qililab.result.database.database_manager._load_config")
     def test_load_db_manager_no_path(self, mock_load_config, mock_get_db_manager, platform: Platform):
         """Test load_db_manager createing a database without a given path"""
         mock_load_config.return_value = {

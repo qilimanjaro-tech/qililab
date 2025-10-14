@@ -20,7 +20,6 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from qililab.result.result_management import load_results
 
-
 base = declarative_base()
 
 
@@ -44,7 +43,7 @@ class Calibration_run(base):  # type: ignore
         self.calibration_tree = calibration_tree
         self.calibration_completed = calibration_completed
 
-    def end_calibration(self, Session):
+    def end_calibration(self, Session, traceback=None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 

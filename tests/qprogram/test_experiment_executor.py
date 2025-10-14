@@ -6,11 +6,11 @@ from unittest.mock import MagicMock, Mock, call, create_autospec, patch
 import numpy as np
 import pytest
 
+from qililab.extra.quantum_machines import QuantumMachinesMeasurementResult
 from qililab.platform.platform import Platform
 from qililab.qprogram.blocks import ForLoop, Loop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
-from qililab.extra.quantum_machines import QuantumMachinesMeasurementResult
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import Domain, QProgram
 from qililab.result.experiment_results import ExperimentResults
@@ -287,8 +287,6 @@ class TestExperimentExecutor:
         mock_measurement.result_path = expected_result_path
 
         mock_db_manager = Mock()
-        mock_db_manager.current_sample = "sample"
-        mock_db_manager.current_cd = "cd"
         mock_get_db_manager.return_value = mock_db_manager
         platform.db_manager = mock_db_manager
 
@@ -317,13 +315,16 @@ class TestExperimentExecutor:
                 experiment=experiment,
                 live_plot=False,
                 slurm_execution=False,
+                job_id=1,
+                sample="sample_test",
+                cooldown="cooldown_test",
             )
             executor.loop_indices = True
             executor.execute()
 
             assert executor._db_metadata == {
-                "cooldown": "cd",
+                "job_id": 1,
+                "cooldown": "cooldown_test",
                 "experiment_name": "experiment",
-                "optional_identifier": "Test",
-                "sample_name": "sample",
+                "sample_name": "sample_test",
             }

@@ -116,12 +116,20 @@ class ExperimentExecutor:
         live_plot: bool = False,
         slurm_execution: bool = True,
         port_number: int | None = None,
+        job_id: int | None = None,
+        sample: str | None = None,
+        cooldown: str | None = None,
     ):
         self.platform = platform
         self.experiment = experiment
         self._live_plot = live_plot
         self._slurm_execution = slurm_execution
         self._port_number = port_number
+
+        # In case the results are saved in a database, load the correct sample and cooldown.
+        self.job_id = job_id
+        self.sample = sample
+        self.cooldown = cooldown
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -159,11 +167,6 @@ class ExperimentExecutor:
 
         # ExperimentResultsWriter object responsible for saving experiment results to file in real-time.
         self._results_writer: ExperimentResultsWriter
-
-        # In case the results are saved in a database, load the correct sample and cooldown.
-        self.job_id: int
-        self.sample: str | None = None
-        self.cooldown: str | None = None
 
     def _prepare_metadata(self, executed_at: datetime):
         """Prepares the loop values and result shape before execution."""
@@ -262,6 +265,8 @@ class ExperimentExecutor:
             qprograms={},
         )
         if self.platform.save_experiment_results_in_database:
+            if self.job_id is None:
+                raise ValueError("Job id has not been defined")
             self._db_metadata = ExperimentDataBaseMetadata(
                 job_id=self.job_id,
                 experiment_name=self.experiment.label,

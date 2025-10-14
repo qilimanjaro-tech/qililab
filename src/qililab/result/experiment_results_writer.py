@@ -21,7 +21,6 @@ import numpy as np
 from qililab.result.database import DatabaseManager, QaaS_Experiment
 from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
-from qililab.utils.serialization import serialize
 
 
 class VariableMetadata(TypedDict):
@@ -233,13 +232,6 @@ class ExperimentResultsWriter(ExperimentResults):
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
         if self._db_metadata:
-            with self._db_manager.Session() as session:
-                experiment_id = session.query(QaaS_Experiment).order_by(QaaS_Experiment.experiment_id.desc()).first()
-            self.results_path = (
-                f"{self.results_path}experiment_{experiment_id}"
-                if self.results_path[-1] == "/"
-                else f"{self.results_path}/experiment_{experiment_id}"
-            )
             self.measurement = self._db_manager.add_experiment(
                 job_id=self._db_metadata["job_id"],
                 experiment_name=self._db_metadata["experiment_name"],
