@@ -14,7 +14,7 @@
 from copy import deepcopy
 
 from qilisdk.digital import Circuit
-from rustworkx import PyGraph
+from rustworkx import PyGraph, is_strongly_connected
 
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 
@@ -86,6 +86,8 @@ class CircuitTranspiler:
         # rustworkx node indices aligned with the real physical labels.
         for missing in sorted({node for node in range(max_label + 1) if node not in active_nodes}, reverse=True):
             topology.remove_node(missing)
+        if not is_strongly_connected(topology.to_directed()):
+            raise NotImplementedError("Partially connected devices not supported")
         return topology
 
     @property
