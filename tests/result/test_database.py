@@ -2,6 +2,7 @@
 
 # pylint: disable=protected-access
 import datetime
+import os
 from unittest.mock import MagicMock, patch
 
 import matplotlib as mpl
@@ -10,12 +11,12 @@ import pytest
 
 from qililab.result.database.database_manager import (
     DatabaseManager,
-    Measurement,
     _load_config,
     get_db_manager,
     get_engine,
     load_by_id,
 )
+from qililab.result.database.database_measurements import Measurement
 
 mpl.use("Agg")  # Use non-interactive backend for testing
 
@@ -26,20 +27,31 @@ EXPERIMENT_RESULTS_PATH = "dummy.hdf5"
 
 @pytest.fixture(name="db_manager")
 def fixture_db_manager():
-    with patch("qililab.result.database.get_engine") as mock_engine:
+    with patch("qililab.result.database.database_manager.get_engine") as mock_engine:
         mock_engine.return_value = MagicMock()
 
-        with patch("qililab.result.database.sessionmaker") as mock_sessionmaker:
-            mock_session = MagicMock()
-            mock_context_manager = MagicMock()
-            mock_context_manager.__enter__.return_value = mock_session
-            mock_sessionmaker.return_value = lambda: mock_context_manager
+        with patch("qililab.result.database.database_manager.sessionmaker") as mock_sessionmaker:
 
-            dbm = DatabaseManager(
-                "user", "pass", "host", "5432", "db", "/local_test/", "/shared_test/", "mesaurement_folder"
-            )
-            dbm._mock_session = mock_session  # Add reference for testing
-            return dbm
+            with patch("qililab.result.database.database_manager._load_config") as mock_load_config:
+                mock_load_config.return_value = {
+                    "user": "user",
+                    "passwd": "pass",
+                    "host": "host",
+                    "port": "5432",
+                    "database": "db",
+                    "base_path_local": "/local_test/",
+                    "base_path_shared": "/shared_test/",
+                    "data_write_folder": "mesaurement_folder",
+                }
+
+                mock_session = MagicMock()
+                mock_context_manager = MagicMock()
+                mock_context_manager.__enter__.return_value = mock_session
+                mock_sessionmaker.return_value = lambda: mock_context_manager
+
+                dbm = DatabaseManager("test_file.ini", "database")
+                dbm._mock_session = mock_session
+                return dbm
 
 
 @pytest.fixture(name="measurement")
@@ -57,7 +69,7 @@ def fixture_measurement():
 class TestMeasurement:
     """Test Measurement class"""
 
-    @patch("qililab.result.database.datetime")
+    @patch("qililab.result.database.database_measurements.datetime")
     def test_end_experiment(self, mock_datetime, measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 14, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -74,7 +86,7 @@ class TestMeasurement:
         assert result.run_length == fixed_now - measurement.start_time
         mock_session.commit.assert_called_once()
 
-    @patch("qililab.result.database.datetime")
+    @patch("qililab.result.database.database_manager.datetime")
     def test_end_experiment_raises_exception(self, mock_datetime, measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 14, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -90,7 +102,7 @@ class TestMeasurement:
 
         mock_session.rollback.assert_called_once()
 
-    @patch("qililab.result.database.ExperimentResults")
+    @patch("qililab.result.database.database_measurements.ExperimentResults")
     def test_read_experiment(self, mock_experiment_results, measurement):
         mock_instance = MagicMock()
         mock_instance.get.return_value = ("data", "dims")
@@ -102,8 +114,8 @@ class TestMeasurement:
         assert dims == "dims"
         mock_experiment_results.assert_called_once_with(measurement.result_path)
 
-    @patch("qililab.result.database.ExperimentResults")
-    @patch("qililab.result.database.DataArray")
+    @patch("qililab.result.database.database_measurements.ExperimentResults")
+    @patch("qililab.result.database.database_measurements.DataArray")
     def test_read_experiment_xarray(self, mock_data_array, mock_experiment_results, measurement):
         mock_results = MagicMock()
         dims_mock = [
@@ -122,24 +134,24 @@ class TestMeasurement:
         data_mock.take.assert_any_call(indices=1, axis=1)
         mock_data_array.assert_called_once()
 
-    @patch("qililab.result.database.load_results")
+    @patch("qililab.result.database.database_measurements.load_results")
     def test_load_old_h5(self, mock_load_results, measurement):
         measurement.load_old_h5()
         mock_load_results.assert_called_once_with(measurement.result_path)
 
-    @patch("qililab.result.database.read_hdf")
+    @patch("qililab.result.database.database_measurements.read_hdf")
     def test_load_df(self, mock_read_hdf, measurement):
         measurement.load_df()
         mock_read_hdf.assert_called_once_with(measurement.result_path)
 
-    @patch("qililab.result.database.read_hdf")
+    @patch("qililab.result.database.database_measurements.read_hdf")
     def test_load_xarray(self, mock_read_hdf, measurement):
         mock_df = MagicMock()
         mock_read_hdf.return_value = mock_df
         measurement.load_xarray()
         mock_df.to_xarray.assert_called_once()
 
-    @patch("qililab.result.database.read_hdf")
+    @patch("qililab.result.database.database_measurements.read_hdf")
     def test_read_numpy(self, mock_read_hdf, measurement):
         mock_da = MagicMock()
         mock_da.dims = ["batch", "x", "y"]
@@ -302,7 +314,7 @@ class Testdatabase:
         with patch("os.path.isfile", return_value=False):
             db_manager.load_by_id(123)
 
-    @patch("qililab.result.database.read_sql")
+    @patch("qililab.result.database.database_manager.read_sql")
     def test_tail(self, mock_read_sql, db_manager: DatabaseManager):
         db_manager.current_sample = "sampleA"
 
@@ -340,7 +352,7 @@ class Testdatabase:
         mock_read_sql.assert_called_once()
         assert result_pandas == df_mock
 
-    @patch("qililab.result.database.read_sql")
+    @patch("qililab.result.database.database_manager.read_sql")
     def test_head(self, mock_read_sql, db_manager: DatabaseManager):
         db_manager.current_sample = "sampleA"
 
@@ -419,8 +431,8 @@ class Testdatabase:
 
         assert qprogram == mock_session.query(Measurement.debug_file).filter(Measurement.measurement_id == 123).scalar()
 
-    @patch("qililab.result.database.os.makedirs")
-    @patch("qililab.result.database.datetime")
+    @patch("qililab.result.database.database_manager.os.makedirs")
+    @patch("qililab.result.database.database_manager.datetime")
     def test_add_measurement(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
         # Setup
         db_manager.current_sample = "sampleA"
@@ -447,8 +459,8 @@ class Testdatabase:
         with pytest.raises(Exception, match="Please set at least a sample using set_sample_and_cooldown(...)"):
             db_manager.add_measurement(experiment_name="exp1", experiment_completed=True)
 
-    @patch("qililab.result.database.os.makedirs")
-    @patch("qililab.result.database.datetime")
+    @patch("qililab.result.database.database_manager.os.makedirs")
+    @patch("qililab.result.database.database_manager.datetime")
     def test_add_measurement_raises_exception(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
         db_manager.current_sample = "sampleA"
         db_manager.current_cd = "cdX"
@@ -468,10 +480,10 @@ class Testdatabase:
 
         mock_session.rollback.assert_called_once
 
-    @patch("qililab.result.database.h5py.File")
-    @patch("qililab.result.database.os.makedirs")
-    @patch("qililab.result.database.os.path.isdir")
-    @patch("qililab.result.database.datetime")
+    @patch("qililab.result.database.database_manager.h5py.File")
+    @patch("qililab.result.database.database_manager.os.makedirs")
+    @patch("qililab.result.database.database_manager.os.path.isdir")
+    @patch("qililab.result.database.database_manager.datetime")
     def test_add_results(self, mock_datetime, mock_isdir, mock_makedirs, mock_h5py_file, db_manager: DatabaseManager):
         db_manager.current_sample = "sampleA"
         db_manager.current_cd = "cdX"
@@ -514,10 +526,10 @@ class Testdatabase:
         with pytest.raises(Exception, match="Please set at least a sample using set_sample_and_cooldown(...)"):
             db_manager.add_results(experiment_name="exp1", results=results, loops=loops)
 
-    @patch("qililab.result.database.h5py.File")
-    @patch("qililab.result.database.os.makedirs")
-    @patch("qililab.result.database.os.path.isdir")
-    @patch("qililab.result.database.datetime")
+    @patch("qililab.result.database.database_manager.h5py.File")
+    @patch("qililab.result.database.database_manager.os.makedirs")
+    @patch("qililab.result.database.database_manager.os.path.isdir")
+    @patch("qililab.result.database.database_manager.datetime")
     def test_add_results_raises_exception(
         self, mock_datetime, mock_isdir, mock_makedirs, mock_h5py_file, db_manager: DatabaseManager
     ):
@@ -554,7 +566,7 @@ class Testdatabase:
         mock_session.rollback.assert_called_once
 
 
-@patch("qililab.result.database.ConfigParser")
+@patch("qililab.result.database.database_manager.ConfigParser")
 def test_load_config_success(mock_config_parser):
     mock_parser = MagicMock()
     mock_parser.has_section.return_value = True
@@ -568,7 +580,7 @@ def test_load_config_success(mock_config_parser):
     mock_parser.has_section.assert_called_once_with("postgresql")
 
 
-@patch("qililab.result.database.ConfigParser")
+@patch("qililab.result.database.database_manager.ConfigParser")
 def test_load_config_missing_section(mock_config_parser):
     mock_parser = MagicMock()
     mock_parser.has_section.return_value = False
@@ -578,21 +590,14 @@ def test_load_config_missing_section(mock_config_parser):
         _load_config(filename="failfile.ini", section="section")
 
 
-@patch("qililab.result.database._load_config")
-@patch("qililab.result.database.DatabaseManager")
-def test_get_db_manager(mock_db_manager, mock_load_config):
-    mock_load_config.return_value = {
-        "host": "localhost",
-        "user": "user",
-        "password": "pass",
-        "port": "5432",
-        "database": "testdb",
-    }
+@patch("qililab.result.database.database_manager.DatabaseManager")
+def test_get_db_manager(mock_db_manager):
+    filename = os.path.expanduser("~/database.ini")
     get_db_manager()
-    mock_db_manager.assert_called_once_with(**mock_load_config.return_value)
+    mock_db_manager.assert_called_once_with(filename, "postgresql")
 
 
-@patch("qililab.result.database.create_engine")
+@patch("qililab.result.database.database_manager.create_engine")
 def test_get_engine(mock_create_engine):
     user = "user"
     passwd = "password"
@@ -605,7 +610,7 @@ def test_get_engine(mock_create_engine):
     mock_create_engine.assert_called_once_with(expected_url)
 
 
-@patch("qililab.result.database.get_db_manager")
+@patch("qililab.result.database.database_manager.get_db_manager")
 def test_independent_load_by_id(mock_get_db_manager):
     mock_db = MagicMock()
     mock_get_db_manager.return_value = mock_db
