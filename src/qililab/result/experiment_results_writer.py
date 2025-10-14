@@ -18,7 +18,7 @@ from typing import Any, TypedDict
 import h5py
 import numpy as np
 
-from qililab.result.database import DatabaseManager, QaaS_Experiment
+from qililab.result.database import DatabaseManager
 from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
 
