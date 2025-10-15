@@ -28,7 +28,7 @@ from .rswu_sp16tr import BeckerRSWUSP16TR
 from .yokogawa_gs200 import YokogawaGS200
 
 __all__ = [
-    "RSWUSP16TR",
+    "BeckerRSWUSP16TR",
     "Cluster",
     "Device",
     "Keithley2600Driver",
