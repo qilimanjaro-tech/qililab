@@ -20,7 +20,6 @@ from typing import Sequence
 from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
-from qililab.instruments.keysight.e5080b_vna import E5080B
 from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentName
 from qililab.typings.instruments.rswu_sp16tr import RSWUSP16TR
 

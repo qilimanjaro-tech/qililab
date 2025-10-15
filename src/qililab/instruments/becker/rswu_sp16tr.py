@@ -22,7 +22,6 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
 from qililab.typings.instruments.rswu_sp16tr import RSWUSP16TR
 
-
 _CHANNELS = tuple(f"RF{i}" for i in range(1, 17))
 
 
@@ -71,7 +70,7 @@ class RSWUSP16TR(Instrument):
             str: settings.active_channel.
         """
         ch = self.device.active_channel.get()
-        self.settings.active_channel = cast(str, ch)
+        self.settings.active_channel = cast("str", ch)
 
         return ch
 
@@ -118,7 +117,7 @@ class RSWUSP16TR(Instrument):
         if parameter == "active_channel":
             # ensure it's in sync
             self.settings.active_channel = self.device.active_channel.get()
-            return cast(str, self.settings.active_channel)
+            return cast("str", self.settings.active_channel)
 
         raise ParameterNotFound(self, parameter)
 
