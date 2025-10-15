@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Tuple
+from typing import Any, Tuple, TYPE_CHECKING
 
 from qcodes import VisaInstrument
-from qcodes.parameters import Parameter
+
+if TYPE_CHECKING:
+    from qcodes.parameters import Parameter
+
 from qcodes.validators import Enum
 
 _CHANNELS: Tuple[str, ...] = tuple(f"RF{i}" for i in range(1, 17))

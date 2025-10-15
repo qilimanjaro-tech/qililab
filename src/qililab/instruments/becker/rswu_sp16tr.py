@@ -44,7 +44,7 @@ class RSWUSP16TR(Instrument):
     @property
     def active_channel(self) -> str | None:
         """Currently routed output channel.
-        
+
         Returns:
             str: settings.active_channel.
         """
@@ -53,7 +53,7 @@ class RSWUSP16TR(Instrument):
     @log_set_parameter
     def route(self, channel: str):
         """Route to a specific output
-        
+
         Args:
             channel (str): name of the channel, valid: RF1..RF16.
         """
@@ -65,7 +65,7 @@ class RSWUSP16TR(Instrument):
 
     def query_active(self) -> str:
         """Query active channel from the device and update settings.
-        
+
         Returns:
             str: settings.active_channel.
         """
@@ -85,7 +85,7 @@ class RSWUSP16TR(Instrument):
 
     def to_dict(self):
         """Return a dict representation.
-        
+
         Returns:
             dict.
         """
@@ -110,7 +110,7 @@ class RSWUSP16TR(Instrument):
         Args:
             parameter (Parameter): Name of the parameter to get.
             channel_id (int | None): channel id of the parameter to get.
-        
+
         Returns:
             ParameterValue.
         """
