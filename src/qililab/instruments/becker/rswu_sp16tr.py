@@ -20,7 +20,7 @@ from qililab.instruments.decorators import check_device_initialized, log_set_par
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
-from qililab.typings.instruments.rswu_sp16tr import RSWUSP16TR
+from qililab.typings.instruments.rswu_sp16tr import BeckerRSWUSP16TR
 
 _CHANNELS = tuple(f"RF{i}" for i in range(1, 17))
 
@@ -30,7 +30,7 @@ class RSWUSP16TR(Instrument):
     """Becker Nachrichtentechnik RSWU-SP16TR RF switch."""
 
     # Update this enum key to whatever you use in your codebase (e.g. InstrumentName.RSWU_SP16TR)
-    name = InstrumentName.RSWU_SP16TR
+    name = InstrumentName.Becker_RSWU_SP16TR
     timeout: int = DEFAULT_TIMEOUT
 
     @dataclass
@@ -39,7 +39,7 @@ class RSWUSP16TR(Instrument):
         active_channel: str | None = None
 
     settings: RSWUSP16TRSettings
-    device: RSWUSP16TR
+    device: BeckerRSWUSP16TR
 
     @property
     def active_channel(self) -> str | None:
