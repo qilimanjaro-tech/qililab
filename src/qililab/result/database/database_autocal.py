@@ -153,7 +153,7 @@ class Autocal_Measurement(base):  # type: ignore
         """Load old experiment data from h5 files."""
         return load_results(self.result_path)
 
-    def update_platform(self, Session, platform_before=None):
+    def update_platform(self, Session, platform_before):
         """Function to update measurement platform. The function sets inside the database information
         about the platform_before."""
 

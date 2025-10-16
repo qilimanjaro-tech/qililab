@@ -188,6 +188,21 @@ class DatabaseManager:
                 measurement_by_id.result_path = new_path
 
             return measurement_by_id
+        
+    def load_experiment_by_id(self, id):
+        """Load QaaS measurement by its measurement_id."""
+        with self.Session() as session:
+            experiment_by_id = (
+                session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
+            )
+
+            path = experiment_by_id.result_path
+            if not os.path.isfile(path):
+
+                new_path = path.replace(self.base_path_local, self.base_path_share)
+                experiment_by_id.result_path = new_path
+
+            return experiment_by_id
 
     def tail(
         self,

@@ -142,6 +142,39 @@ class TestMeasurement:
         mock_session.rollback.assert_called_once()
 
     @patch("qililab.result.database.database_autocal.datetime")
+    def test_autocalibration_update_platform(self, mock_datetime, autocalibration_measurement):
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = autocalibration_measurement
+
+        result = autocalibration_measurement.update_platform(lambda: mock_session_context)
+
+        assert result.end_time == fixed_now
+        assert result.experiment_completed is True
+        assert result.run_length == fixed_now - autocalibration_measurement.start_time
+        mock_session.commit.assert_called_once()
+
+    @patch("qililab.result.database.database_autocal.datetime")
+    def test_autocalibration_update_platform_raises_exception(self, mock_datetime, autocalibration_measurement):
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = autocalibration_measurement
+        mock_session.commit.side_effect = Exception("Measurement error")
+
+        with pytest.raises(Exception, match="Measurement error"):
+            result = autocalibration_measurement.update_platform(lambda: mock_session_context)
+
+        mock_session.rollback.assert_called_once()
+
+    @patch("qililab.result.database.database_autocal.datetime")
     def test_autocalibration_end_experiment(self, mock_datetime, autocalibration_measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
@@ -307,6 +340,16 @@ class TestMeasurement:
         assert isinstance(arr, np.ndarray)
         assert "x" in labels and "y" in labels
         mock_read_hdf.assert_called_once()
+
+    @patch("qililab.result.database.database_autocal.load_results")
+    def test_autocalibration_load_h5(self, mock_load_results, autocalibration_measurement):
+        autocalibration_measurement.load_h5()
+        mock_load_results.assert_called_once_with(autocalibration_measurement.result_path)
+
+    @patch("qililab.result.database.database_qaas.load_results")
+    def test_experiment_load_experiment(self, mock_load_results, qaas_measurement):
+        qaas_measurement.load_experiment()
+        mock_load_results.assert_called_once_with(qaas_measurement.result_path)
 
 
 class Testdatabase:
@@ -544,6 +587,29 @@ class Testdatabase:
         with patch("os.path.isfile", return_value=False):
             db_manager.load_calibration_by_id(123)
 
+    def test_load_experiment_by_id(self, db_manager: DatabaseManager):
+        mock_measurement = MagicMock(spec=Autocal_Measurement)
+        mock_measurement.result_path = "/local_test/results/file.h5"
+        mock_measurement.measurement_id = 123
+
+        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+
+        with patch("os.path.isfile", return_value=False):
+            result = db_manager.load_experiment_by_id(123)
+
+        db_manager._mock_session.query.assert_called
+        assert result.result_path == "/shared_test/results/file.h5"
+
+    def test_load_experiment_by_id_path_not_found(self, db_manager: DatabaseManager):
+        # Setup a mock measurement
+        mock_measurement = MagicMock(spec=Autocal_Measurement)
+        mock_measurement.result_path = "/local_test/results/file.h5"
+        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+
+        # Patch os.path.isfile to return False to simulate missing file
+        with patch("os.path.isfile", return_value=False):
+            db_manager.load_experiment_by_id(123)
+
     @patch("qililab.result.database.database_manager.read_sql")
     def test_tail(self, mock_read_sql, db_manager: DatabaseManager):
         db_manager.current_sample = "sampleA"
@@ -710,6 +776,14 @@ class Testdatabase:
             _ = db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
         mock_session.rollback.assert_called_once
+
+    def test_update_platform(self, db_manager: DatabaseManager):
+
+        measurement = db_manager.update_platform(platform)
+
+        assert measurement.result_path == expected_path
+        db_manager._mock_session.add.assert_called_once
+        db_manager._mock_session.commit.assert_called_once
 
     @patch("qililab.result.database.database_manager.datetime")
     def test_add_experiment(self, mock_datetime, db_manager: DatabaseManager):
