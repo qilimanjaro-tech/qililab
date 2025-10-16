@@ -11,6 +11,7 @@ import pytest
 
 from qililab.qprogram import Calibration
 from qililab.result import Autocal_Measurement
+from qililab.result.database import Calibration_run, QaaS_Experiment
 from qililab.result.database.database_manager import (
     DatabaseManager,
     _load_config,
@@ -68,12 +69,48 @@ def fixture_measurement():
     )
 
 
+@pytest.fixture(name="autocalibration_measurement")
+def fixture_autocalibration_measurement():
+    return Autocal_Measurement(
+        experiment_name="test_experiment",
+        sample_name="sampleA",
+        calibration_id=1,
+        result_path="/test/result.h5",
+        experiment_completed=False,
+        start_time=datetime.datetime(2023, 1, 1, 12, 0, 0),
+        qbit_idx=0,
+        cooldown="CDX",
+    )
+
+
+@pytest.fixture(name="calibration_tree")
+def fixture_calibration_tree():
+    return Calibration_run(
+        date=datetime.datetime(2023, 1, 1, 12, 0, 0),
+        calibration_tree={"test_tree": "test"},
+        calibration_completed=False,
+    )
+
+
+@pytest.fixture(name="qaas_measurement")
+def fixture_qaas_measurement():
+    return QaaS_Experiment(
+        job_id=1,
+        experiment_name="test_experiment",
+        sample_name="sampleA",
+        result_path="/test/result.h5",
+        experiment_completed=False,
+        start_time=datetime.datetime(2023, 1, 1, 12, 0, 0),
+        cooldown="CDX",
+    )
+
+
 class TestMeasurement:
     """Test Measurement class"""
 
     @patch("qililab.result.database.database_measurements.datetime")
     def test_end_experiment(self, mock_datetime, measurement):
-        fixed_now = datetime.datetime(2023, 1, 1, 14, 0, 0)
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
 
         mock_session_context = MagicMock()
@@ -90,7 +127,7 @@ class TestMeasurement:
 
     @patch("qililab.result.database.database_manager.datetime")
     def test_end_experiment_raises_exception(self, mock_datetime, measurement):
-        fixed_now = datetime.datetime(2023, 1, 1, 14, 0, 0)
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
 
         mock_session_context = MagicMock()
@@ -101,6 +138,104 @@ class TestMeasurement:
 
         with pytest.raises(Exception, match="Measurement error"):
             result = measurement.end_experiment(lambda: mock_session_context)
+
+        mock_session.rollback.assert_called_once()
+
+    @patch("qililab.result.database.database_autocal.datetime")
+    def test_autocalibration_end_experiment(self, mock_datetime, autocalibration_measurement):
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = autocalibration_measurement
+
+        result = autocalibration_measurement.end_experiment(lambda: mock_session_context)
+
+        assert result.end_time == fixed_now
+        assert result.experiment_completed is True
+        assert result.run_length == fixed_now - autocalibration_measurement.start_time
+        mock_session.commit.assert_called_once()
+
+    @patch("qililab.result.database.database_autocal.datetime")
+    def test_autocalibration_end_experiment_raises_exception(self, mock_datetime, autocalibration_measurement):
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = autocalibration_measurement
+        mock_session.commit.side_effect = Exception("Measurement error")
+
+        with pytest.raises(Exception, match="Measurement error"):
+            result = autocalibration_measurement.end_experiment(lambda: mock_session_context)
+
+        mock_session.rollback.assert_called_once()
+
+    @patch("qililab.result.database.database_autocal.datetime")
+    def test_autocalibration_end_calibration(self, mock_datetime, calibration_tree):
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = calibration_tree
+
+        result = calibration_tree.end_calibration(lambda: mock_session_context)
+
+        assert result.date == fixed_now
+        assert result.calibration_completed is True
+        mock_session.commit.assert_called_once()
+
+    @patch("qililab.result.database.database_autocal.datetime")
+    def test_autocalibration_end_calibration_raises_exception(self, mock_datetime, calibration_tree):
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = calibration_tree
+        mock_session.commit.side_effect = Exception("Measurement error")
+
+        with pytest.raises(Exception, match="Measurement error"):
+            result = calibration_tree.end_calibration(lambda: mock_session_context)
+
+        mock_session.rollback.assert_called_once()
+
+    @patch("qililab.result.database.database_qaas.datetime")
+    def test_qaas_end_experiment(self, mock_datetime, qaas_measurement):
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = qaas_measurement
+
+        result = qaas_measurement.end_experiment(lambda: mock_session_context)
+
+        assert result.end_time == fixed_now
+        assert result.experiment_completed is True
+        assert result.run_length == fixed_now - qaas_measurement.start_time
+        mock_session.commit.assert_called_once()
+
+    @patch("qililab.result.database.database_qaas.datetime")
+    def test_qaas_end_experiment_raises_exception(self, mock_datetime, qaas_measurement):
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = qaas_measurement
+        mock_session.commit.side_effect = Exception("Measurement error")
+
+        with pytest.raises(Exception, match="Measurement error"):
+            result = qaas_measurement.end_experiment(lambda: mock_session_context)
 
         mock_session.rollback.assert_called_once()
 
