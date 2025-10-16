@@ -248,8 +248,6 @@ class CircuitToCanonicalBasisPass(CircuitTranspilerPass):
             return [U3(g.qubits[0], theta=math.pi / 2.0, phi=g.phi, gamma=g.gamma)]
 
         # 2q
-        if isinstance(g, CZ):
-            return [g]
         if isinstance(g, CNOT):
             c, t = g.control_qubits[0], g.target_qubits[0]
             return _CNOT_as_CZ_plus_1q(c, t)
