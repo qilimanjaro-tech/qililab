@@ -31,8 +31,17 @@ def fixture_stream_array():
     mock_database = MagicMock()
     db_manager = mock_database
 
+    qprogram = QProgram()
+    qprogram.play("readout_q0", Square(1.0, 100))
+    qprogram.wait("readout_q0", 100)
+
     return StreamArray(
-        shape=shape, loops=loops, platform=platform, experiment_name=experiment_name, db_manager=db_manager
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        qprogram=qprogram,
     )
 
 
