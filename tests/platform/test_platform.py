@@ -22,11 +22,14 @@ from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
+from qililab.extra.quantum_machines import (
+    QuantumMachinesCluster,
+    QuantumMachinesMeasurementResult,
+)
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
@@ -34,7 +37,6 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
@@ -453,6 +455,7 @@ class TestPlatform:
             ("flux_q0", Parameter.FLUX, 0.5),
         ],
     )
+    @pytest.mark.qm
     def test_set_parameter_no_instrument_connection_QM(self, bus: str, parameter: Parameter, value: float | str | bool):
         """Test platform raises and error if no instrument connection."""
         # Overwrite platform to use Quantum Machines:
@@ -957,7 +960,8 @@ class TestMethods:
         ):
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
-
+    
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1010,6 +1014,7 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines_raises_error(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
 
@@ -1335,6 +1340,7 @@ class TestMethods:
             with pytest.raises(ValueError, match=error_string):
                 platform.execute_qprograms_parallel(qp_list, debug=True)
 
+    @pytest.mark.qm
     def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
         error_string = "Parallel execution is not supported in Quantum Machines."
         qp1 = QProgram()
