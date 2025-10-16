@@ -16,7 +16,10 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
+
+import numpy as np
 
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.variable import Domain
@@ -33,6 +36,7 @@ class IQPair:
 
     I: Waveform
     Q: Waveform
+    phase: float = 0
 
     def __post_init__(self):
         if not isinstance(self.I, Waveform) or not isinstance(self.Q, Waveform):
@@ -40,6 +44,13 @@ class IQPair:
 
         if self.I.get_duration() != self.Q.get_duration():
             raise ValueError("Waveforms of an IQ pair must have the same duration.")
+
+        if not np.isclose(self.phase, 0):
+            if np.isclose(self.phase, 90):
+                self.I = deepcopy(self.Q)
+                self.Q = deepcopy(self.I)
+            else:
+                raise NotImplementedError("A phase different than 0 or 90 degrees is currently not available.")
 
     def get_duration(self) -> int:
         """Get the duration of the waveforms
@@ -53,8 +64,9 @@ class IQPair:
     @requires_domain("duration", Domain.Time)
     @requires_domain("num_sigmas", Domain.Scalar)
     @requires_domain("drag_coefficient", Domain.Scalar)
+    @requires_domain("phase", Domain.Scalar)
     @staticmethod
-    def DRAG(amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float) -> IQPair:
+    def DRAG(amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float, phase: float = 0) -> IQPair:
         """Create a DRAG pulse. This is an IQ pair where the I channel corresponds to the gaussian wave and the Q is the drag correction, which corresponds to the derivative of the I channel times a ``drag_coefficient``.
 
         Args:
@@ -63,7 +75,8 @@ class IQPair:
             num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
             drag_coefficient (float): Drag coefficient that gives the DRAG its imaginary components.
         """
+
         waveform_i = Gaussian(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas)
         waveform_q = DragCorrection(drag_coefficient=drag_coefficient, waveform=waveform_i)
 
-        return IQPair(I=waveform_i, Q=waveform_q)
+        return IQPair(I=waveform_i, Q=waveform_q, phase=phase)
