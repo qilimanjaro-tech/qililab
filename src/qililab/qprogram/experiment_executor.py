@@ -266,7 +266,7 @@ class ExperimentExecutor:
         )
         if self.platform.save_experiment_results_in_database:
             if self.job_id is None:
-                raise ValueError("Job id has not been defined")
+                raise ValueError("Job id has not been defined.")
             self._db_metadata = ExperimentDataBaseMetadata(
                 job_id=self.job_id,
                 experiment_name=self.experiment.label,

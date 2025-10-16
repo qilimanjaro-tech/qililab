@@ -9,6 +9,8 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 
+from qililab.qprogram import Calibration
+from qililab.result import Autocal_Measurement
 from qililab.result.database.database_manager import (
     DatabaseManager,
     _load_config,
@@ -41,7 +43,7 @@ def fixture_db_manager():
                     "database": "db",
                     "base_path_local": "/local_test/",
                     "base_path_shared": "/shared_test/",
-                    "data_write_folder": "mesaurement_folder",
+                    "data_write_folder": "measurement_folder",
                 }
 
                 mock_session = MagicMock()
@@ -291,6 +293,76 @@ class Testdatabase:
 
         mock_session.rollback.assert_called_once
 
+    def test_add_calibration_run(self, db_manager: DatabaseManager):
+        calibration_tree = {
+            "nodes": [
+                {
+                    "name": "TwoTone",
+                    "experiment": "two_tone",
+                    "parameters": {
+                        "qubit_idx": [11, 13],
+                        "hw_avg": 2000,
+                        "repetition_duration": 200000,
+                        "sweep_values": [-5e6, 5e6, 0.2e6],
+                    },
+                },
+                {
+                    "name": "Rabi",
+                    "experiment": "rabi",
+                    "parameters": {
+                        "qubit_idx": [11, 13],
+                        "hw_avg": 4000,
+                        "repetition_duration": 200000,
+                        "sweep_values": [0, 1, 61],
+                    },
+                },
+            ],
+            "dependencies": [["TwoTone", "Rabi"]],
+        }
+
+        db_manager.add_calibration_run(calibration_tree=calibration_tree)
+
+        db_manager._mock_session.add.assert_called
+        db_manager._mock_session.commit.assert_called
+
+    def test_add_calibration_run_raises_exception(self, db_manager: DatabaseManager):
+        calibration_tree = {
+            "nodes": [
+                {
+                    "name": "TwoTone",
+                    "experiment": "two_tone",
+                    "parameters": {
+                        "qubit_idx": [11, 13],
+                        "hw_avg": 2000,
+                        "repetition_duration": 200000,
+                        "sweep_values": [-5e6, 5e6, 0.2e6],
+                    },
+                },
+                {
+                    "name": "Rabi",
+                    "experiment": "rabi",
+                    "parameters": {
+                        "qubit_idx": [11, 13],
+                        "hw_avg": 4000,
+                        "repetition_duration": 200000,
+                        "sweep_values": [0, 1, 61],
+                    },
+                },
+            ],
+            "dependencies": [["TwoTone", "Rabi"]],
+        }
+
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_session
+        mock_session.commit.side_effect = Exception("DB error")
+
+        db_manager.Session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(Exception, match="DB error"):
+            db_manager.add_calibration_run(calibration_tree=calibration_tree)
+
+        mock_session.rollback.assert_called_once
+
     def test_load_by_id(self, db_manager: DatabaseManager):
         mock_measurement = MagicMock(spec=Measurement)
         mock_measurement.result_path = "/local_test/results/file.h5"
@@ -313,6 +385,29 @@ class Testdatabase:
         # Patch os.path.isfile to return False to simulate missing file
         with patch("os.path.isfile", return_value=False):
             db_manager.load_by_id(123)
+
+    def test_load_calibration_by_id(self, db_manager: DatabaseManager):
+        mock_measurement = MagicMock(spec=Autocal_Measurement)
+        mock_measurement.result_path = "/local_test/results/file.h5"
+        mock_measurement.measurement_id = 123
+
+        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+
+        with patch("os.path.isfile", return_value=False):
+            result = db_manager.load_calibration_by_id(123)
+
+        db_manager._mock_session.query.assert_called
+        assert result.result_path == "/shared_test/results/file.h5"
+
+    def test_load_calibration_by_id_path_not_found(self, db_manager: DatabaseManager):
+        # Setup a mock measurement
+        mock_measurement = MagicMock(spec=Autocal_Measurement)
+        mock_measurement.result_path = "/local_test/results/file.h5"
+        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+
+        # Patch os.path.isfile to return False to simulate missing file
+        with patch("os.path.isfile", return_value=False):
+            db_manager.load_calibration_by_id(123)
 
     @patch("qililab.result.database.database_manager.read_sql")
     def test_tail(self, mock_read_sql, db_manager: DatabaseManager):
@@ -431,6 +526,99 @@ class Testdatabase:
 
         assert qprogram == mock_session.query(Measurement.debug_file).filter(Measurement.measurement_id == 123).scalar()
 
+    @patch("qililab.result.database.database_manager.datetime")
+    def test_add_autocal_measurement(self, mock_datetime, db_manager: DatabaseManager):
+        # Setup
+        mock_session_instance = MagicMock()
+        mock_session_context = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session_instance
+        db_manager.Session = MagicMock(return_value=mock_session_context)
+
+        mock_query = MagicMock()
+        mock_order_by = MagicMock()
+        mock_order_by.first.return_value = 1
+        mock_query.order_by.return_value = mock_order_by
+        mock_session_instance.query.return_value = mock_query
+
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+
+        calibration = Calibration()
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        # Act
+        measurement = db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
+
+        # Assert
+        expected_path = "/shared_test/calibration_1/exp1.h5"
+        assert measurement.result_path == expected_path
+        db_manager._mock_session.add.assert_called_once
+        db_manager._mock_session.commit.assert_called_once
+
+    @patch("qililab.result.database.database_manager.datetime")
+    def test_add_autocal_measurement_raises_exception(self, mock_datetime, db_manager: DatabaseManager):
+
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_session
+        mock_session.commit.side_effect = Exception("DB error")
+
+        calibration = Calibration()
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+
+        db_manager.Session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(Exception, match="DB error"):
+            _ = db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
+
+        mock_session.rollback.assert_called_once
+
+    @patch("qililab.result.database.database_manager.datetime")
+    def test_add_experiment(self, mock_datetime, db_manager: DatabaseManager):
+
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+
+        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+
+        measurement = db_manager.add_experiment(
+            job_id=1, experiment_name="exp1", result_path=expected_path, sample_name="sample_test", cooldown="cd_test"
+        )
+
+        assert measurement.result_path == expected_path
+        db_manager._mock_session.add.assert_called_once
+        db_manager._mock_session.commit.assert_called_once
+
+    @patch("qililab.result.database.database_manager.datetime")
+    def test_add_experiment_raises_exception(self, mock_datetime, db_manager: DatabaseManager):
+
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_session
+        mock_session.commit.side_effect = Exception("DB error")
+
+        db_manager.Session = MagicMock(return_value=mock_session)
+
+        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+
+        with pytest.raises(Exception, match="DB error"):
+            _ = db_manager.add_experiment(
+                job_id=1,
+                experiment_name="exp1",
+                result_path=expected_path,
+                sample_name="sample_test",
+                cooldown="cd_test",
+            )
+
+        mock_session.rollback.assert_called_once
+
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.datetime")
     def test_add_measurement(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
@@ -446,11 +634,11 @@ class Testdatabase:
         measurement = db_manager.add_measurement("exp1", experiment_completed=True)
 
         # Assert
-        expected_path = "/shared_test/mesaurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
         assert measurement.result_path == expected_path
         db_manager._mock_session.add.assert_called_once
         db_manager._mock_session.commit.assert_called_once
-        mock_makedirs.assert_called_once_with("/shared_test/mesaurement_folder/sampleA/cdX/2023-01-01/12_00_00")
+        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00")
 
     def test_add_measurement_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set

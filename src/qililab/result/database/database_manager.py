@@ -423,23 +423,14 @@ class DatabaseManager:
         sample_name: str,
         cooldown: str,
     ):
-        """Add measurement metadata and data path
+        """Add queued experiment metadata and data path
 
         Args:
+            job_id (int): Queue job ID.
             experiment_name (str): Experiment name.
-            experiment_completed (bool): Status of the experiment.
-            base_path (str): Base path for data location.
-            cooldown (str | None, optional): Cooldown id. Defaults to None.
-            sample_name (str | None, optional): Sample id. Defaults to None.
-            optional_identifier (str | None, optional): Optional additional information. Defaults to None.
-            end_time (datetime.datetime | None, optional): Finishing time of the experiment. Defaults to None.
-            run_length (float | None, optional): Time length of the experiment. Defaults to None.
-            platform (Platform, optional): Platform used on the experiment. Defaults to None.
-            experiment (Experiment | None, optional): Experiment class used on the experiment. Defaults to None.
-            qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.
-            calibration (Calibration | None, optional): Calibration used on the experiment. Defaults to None.
-            parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
-            data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
+            result_path (str): Result path for data location.
+            cooldown (str): Cooldown id.
+            sample_name (str): Sample id.
         """
 
         start_time = datetime.datetime.now()
