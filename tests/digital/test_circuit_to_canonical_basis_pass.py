@@ -229,7 +229,7 @@ def test_rewrite_gate_returns_cz_directly():
 
         def __instancecheck__(cls, instance):
             cls.count += 1
-            return cls.count >= 2 and isinstance(instance, cls.real_cls)
+            return cls.count >= 1 and isinstance(instance, cls.real_cls)
 
     class ProxyCZ(metaclass=ProxyCZMeta):
         pass
