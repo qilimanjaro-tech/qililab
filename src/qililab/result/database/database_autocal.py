@@ -130,16 +130,13 @@ class Autocal_Measurement(base):  # type: ignore
 
         # self.result_array = result_array
 
-    def end_experiment(self, Session, platform_before=None, traceback=None):
+    def end_experiment(self, Session, traceback=None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 
         with Session() as session:
             # Merge the detached instance into the current session
             persistent_instance = session.merge(self)
-
-            if platform_before:
-                persistent_instance.platform_before = platform_before
 
             persistent_instance.end_time = datetime.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
@@ -155,6 +152,23 @@ class Autocal_Measurement(base):  # type: ignore
     def load_h5(self):
         """Load old experiment data from h5 files."""
         return load_results(self.result_path)
+
+    def update_platform(self, Session, platform_before=None):
+        """Function to update measurement platform. The function sets inside the database information
+        about the platform_before."""
+
+        with Session() as session:
+            # Merge the detached instance into the current session
+            persistent_instance = session.merge(self)
+
+            persistent_instance.platform_before = platform_before
+
+            try:
+                session.commit()
+                return persistent_instance
+            except Exception as e:
+                session.rollback()
+                raise e
 
     def __repr__(self):
         return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.sample_name} {self.cooldown} {self.calibration_id}"

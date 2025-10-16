@@ -38,6 +38,8 @@ if TYPE_CHECKING:
 class DatabaseManager:
     """Database manager for measurements results and metadata"""
 
+    calibration_measurement: Autocal_Measurement
+
     def __init__(self, filename: str, database_name: str):
         """
         Args:
@@ -390,7 +392,7 @@ class DatabaseManager:
         result_path = f"{dir_path}/{experiment_name}.h5"
         fitting_path = f"{dir_path}/fits/"
 
-        measurement = Autocal_Measurement(
+        self.calibration_measurement = Autocal_Measurement(
             experiment_name=experiment_name,
             sample_name=sample_name,
             calibration_id=calibration_id,
@@ -407,13 +409,21 @@ class DatabaseManager:
             data_shape=data_shape,
         )
         with self.Session() as session:
-            session.add(measurement)
+            session.add(self.calibration_measurement)
             try:
                 session.commit()
-                return measurement
+                return self.calibration_measurement
             except Exception as e:
                 session.rollback()
                 raise e
+
+    def update_platform(self, platform: "Platform"):
+        """Update calibration platform after fitting
+
+        Args:
+            platform (Platform): New platform to be set at platform_before column from `Autocal_Measurement`.
+        """
+        self.calibration_measurement.update_platform(self.Session(), platform)
 
     def add_experiment(
         self,

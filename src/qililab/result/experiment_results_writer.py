@@ -251,12 +251,12 @@ class ExperimentResultsWriter(ExperimentResults):
 
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, exc_type, exc_value, traceback):
         """Exit the context manager and close the HDF5 file and end experiment if there is a database."""
         if self._file is not None:
             self._file.close()
         if self._db_metadata:
-            self.measurement = self.measurement.end_experiment(self._db_manager.Session)
+            self.measurement = self.measurement.end_experiment(self._db_manager.Session, traceback)
 
     def __setitem__(self, key: tuple, value: Any):
         """Sets an item in the results dataset.
