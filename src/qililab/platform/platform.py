@@ -1558,9 +1558,10 @@ class Platform:
             if not np.all(np.isnan(result.array)):
                 results.append(result)
 
-        for instrument in self.instruments.elements:
-            if isinstance(instrument, QbloxModule):
-                instrument.desync_sequencers()
+        for instrument_controller in self.instrument_controllers.elements:
+            for instrument in instrument_controller.modules:
+                if isinstance(instrument, QbloxModule):
+                    instrument.desync_sequencers()
 
         # Flatten results if more than one readout bus was used for a qblox module
         if len(results) > 1:
