@@ -18,7 +18,7 @@ import numpy as np
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.qprogram.qprogram import Calibration, QProgram
-from qililab.result.database import DatabaseManager, Measurement
+from qililab.result.database import Autocal_Measurement, DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ class StreamArray:
 
     path: str
     _dataset: h5py.Dataset
-    measurement: Measurement | None = None
+    measurement: Measurement | Autocal_Measurement | None = None
     _file: h5py.File | None = None
 
     def __init__(

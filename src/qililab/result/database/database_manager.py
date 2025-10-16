@@ -172,6 +172,21 @@ class DatabaseManager:
 
             return measurement_by_id
 
+    def load_calibration_by_id(self, id):
+        """Load autocalibration measurement by its measurement_id."""
+        with self.Session() as session:
+            measurement_by_id = (
+                session.query(Autocal_Measurement).where(Autocal_Measurement.measurement_id == id).one_or_none()
+            )
+
+            path = measurement_by_id.result_path
+            if not os.path.isfile(path):
+
+                new_path = path.replace(self.base_path_local, self.base_path_share)
+                measurement_by_id.result_path = new_path
+
+            return measurement_by_id
+
     def tail(
         self,
         exp_name: str | None = None,
