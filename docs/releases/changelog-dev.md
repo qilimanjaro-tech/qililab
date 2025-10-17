@@ -33,9 +33,10 @@
   [#995](https://github.com/qilimanjaro-tech/qililab/pull/995)
 
 - Update qblox-instruments to 0.16.0 and qblox firmware to 0.11
-[#1015](https://github.com/qilimanjaro-tech/qililab/pull/1015)
+  [#1015](https://github.com/qilimanjaro-tech/qililab/pull/1015)
 
 - This PR is the beginning of a series that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
+
   1. When possible, waits will be combined together. For example, before this PR the following Q1ASM could be generated:
 
       ```
@@ -43,11 +44,21 @@
       wait 40
       ```
 
+     ```
+     wait 10
+     wait 40
+     ```
+
       It will now be generated as:
 
       ```
       wait 50
       ```
+     It will now be generated as:
+
+     ```
+     wait 50
+     ```
 
   2. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_index_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
   For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
@@ -83,11 +94,11 @@
 
       But they will now only use 1 register (R1):
 
-      ```
-      setup:
-                    wait_sync        4              
-                    set_mrk          0              
-                    upd_param        4              
+     ```
+     setup:
+                   wait_sync        4
+                   set_mrk          0
+                   upd_param        4
 
       main:
                       move             0, R0          
@@ -342,9 +353,12 @@ The data automatically selects between the local or shared domains depending on 
 
 - Fixed `FluxVector.set_crosstalk_from_bias(...)` and `platform.set_bias_to_zero(...)` related to automatic crosstalk compensation. Now the bias is set to 0 correctly and the fluxes are set to the correct value based on the offset.
   [#983](https://github.com/qilimanjaro-tech/qililab/pull/983)
-  
+
 - Fixed documentation for results `counts`, now it warns the user that instead of `num_avg` they must use `num_bins`.
   [#989](https://github.com/qilimanjaro-tech/qililab/pull/989)
 
 - Fixed an error impeding two instances of QDAC2 to be executed through platform.connect when the runcard included 2 different `qdevil_qdac2` controllers inside `instrument_controllers`.
   [#990](https://github.com/qilimanjaro-tech/qililab/pull/990)
+
+- Qblox module `desynch_sequencers` now iterates over instrument_controllers in the Runcard, instead than the plain instruments, solving a bug, where a discrepancy in the runcard between both used to error, trying to desynch an instrument that wasn't connected (connect loops instrument_controllers, not instruments too).
+  [#964](https://github.com/qilimanjaro-tech/qililab/pull/964)
