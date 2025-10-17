@@ -51,9 +51,9 @@ class StreamArray:
         self,
         shape: list | tuple,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
-        platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
+        platform: "Platform" = None,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -77,7 +77,7 @@ class StreamArray:
             experiment_name=self.experiment_name,
             experiment_completed=False,
             optional_identifier=self.optional_identifier,
-            platform=self.platform.to_dict(),
+            platform=self.platform.to_dict() if self.platform else None,
             qprogram=serialize(self.qprogram),
         )
         self.path = self.measurement.result_path
