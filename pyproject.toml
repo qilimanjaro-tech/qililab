@@ -40,7 +40,7 @@ dependencies = [
     "submitit>=1.5.2",
     "urllib3>=2.3.0",
     "xarray>=2024.3.0",
-    "qilisdk",
+    "qilisdk==0.1.5",
     "rustworkx>=0.17.1",
 ]
 
@@ -78,8 +78,8 @@ build-backend = "hatchling.build"
 [tool.uv]
 prerelease = "allow"
 
-[tool.uv.sources]
-qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
+# [tool.uv.sources]
+# qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
 
 [tool.ruff]
 line-length = 120
