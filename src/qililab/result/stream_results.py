@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any
 import h5py
 import numpy as np
 
-from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.qprogram.qprogram import Calibration, QProgram
 from qililab.result.database import Autocal_Measurement, DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
@@ -72,7 +71,6 @@ class StreamArray:
         self.calibration = calibration
         self.autocalibration = autocalibration
         self.qubit_idx = qubit_idx
-
         self._first_value = True
 
     def __enter__(self):
@@ -147,13 +145,13 @@ class StreamArray:
             self._file.flush()
         self.results[key] = value
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, *args):
         """Exits the context manager."""
         if self._file is not None:
             self._file.__exit__()
             self._file = None
 
-        self.measurement = self.measurement.end_experiment(self.db_manager.Session, traceback)
+        self.measurement = self.measurement.end_experiment(self.db_manager.Session)
 
     def __getitem__(self, index: int):
         """Gets item by index.
@@ -189,35 +187,6 @@ class StreamArray:
             bool: True if an item is contained in results.
         """
         return item in self.results
-
-    def _get_debug(self):
-        bus_aliases = set(self.qprogram.buses)
-        buses = {bus_alias: self.platform.buses.get(alias=bus_alias) for bus_alias in bus_aliases}
-        instruments = {
-            instrument
-            for _, bus in buses.items()
-            for instrument in bus.instruments
-            if isinstance(instrument, QbloxModule)
-        }
-        if instruments and all(isinstance(instrument, QbloxModule) for instrument in instruments):
-            compiled = self.platform.compile_qprogram(self.qprogram, self.calibration)
-
-            sequences = compiled.sequences
-            for bus_alias, bus in buses.items():
-                if bus.distortions:
-                    for distortion in bus.distortions:
-                        for waveform in sequences[bus_alias]._waveforms._waveforms:
-                            sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
-
-            lines = []
-            for bus_alias, seq in sequences.items():
-                lines.append(f"Bus {bus_alias}:")
-                lines.append(str(seq._program))
-                lines.append("")
-
-            return "\n".join(lines)
-        debug_exception = "Non Qblox machine."
-        return debug_exception
 
 
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
