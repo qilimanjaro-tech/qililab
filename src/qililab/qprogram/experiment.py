@@ -14,13 +14,13 @@
 from types import MappingProxyType
 from typing import Callable
 
+from qililab.core.variables import Domain, Variable
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import Domain, Variable
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Driver for QDevil QDAC-II"""
+
 from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import QDac2 as Driver_QDac2
 
 from qililab.typings.instruments.device import Device

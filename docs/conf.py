@@ -36,7 +36,7 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*"]
 source_suffix = [".rst", ".md"]
 pygments_style = "default"
-language = 'en'
+language = "en"
 
 # Napoleon settings
 napoleon_google_docstring = True

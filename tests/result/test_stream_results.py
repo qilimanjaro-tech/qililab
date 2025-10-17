@@ -172,6 +172,7 @@ class TestStreamArray:
                 assert [1, 2] in stream_array
                 assert (stream_array[0] == [1, 2]).all
 
+    @pytest.mark.qm
     @patch("h5py.File", return_value=MockFile(), autospec=False)
     def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_array_complex: StreamArray):
         """Tests context manager real time saving."""
