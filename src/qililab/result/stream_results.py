@@ -53,7 +53,7 @@ class StreamArray:
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
         experiment_name: str,
         db_manager: DatabaseManager,
-        platform: "Platform" = None,
+        platform: "Platform" | None = None,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
