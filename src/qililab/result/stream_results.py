@@ -18,12 +18,12 @@ from typing import TYPE_CHECKING, Any
 import h5py
 import numpy as np
 
-from qililab.qprogram.qprogram import QProgram
-from qililab.result.database import DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform import Platform
+    from qililab.qprogram.qprogram import QProgram
+    from qililab.result.database import DatabaseManager, Measurement
 
 
 class StreamArray:
