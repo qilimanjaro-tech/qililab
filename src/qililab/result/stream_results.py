@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import h5py
@@ -53,7 +55,7 @@ class StreamArray:
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
         experiment_name: str,
         db_manager: DatabaseManager,
-        platform: "Platform" | None = None,
+        platform: Platform | None = None,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
