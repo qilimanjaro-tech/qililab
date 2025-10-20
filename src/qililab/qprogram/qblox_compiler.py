@@ -16,8 +16,10 @@ import math
 from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
+if TYPE_CHECKING:
+    from uuid import UUID
 import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
@@ -183,7 +185,7 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
-        self._acquisition_metadata: dict[str, dict[str, int]] = {}
+        self._acquisition_metadata: dict[str, dict[UUID, int]] = {}
 
     def traverse_qprogram_acquire(self, block: Block):
         """Traverses a QProgram to gather information on the acquisition."""
