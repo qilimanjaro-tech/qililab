@@ -81,20 +81,58 @@
 - This PR is the beginning of a series that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
 
   1. When possible, waits will be combined together. For example, before this PR the following Q1ASM could be generated:
+      ```
+      wait 10
+      wait 40
+      ```
 
      ```
      wait 10
      wait 40
      ```
 
+      It will now be generated as:
+      ```
+      wait 50
+      ```
      It will now be generated as:
 
      ```
      wait 50
      ```
 
-  1. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_index_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
-     For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
+  2. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_index_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
+  For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
+      ```
+      setup:
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
+
+      main:
+                      move             0, R0          
+                      move             0, R1          
+                      move             0, R2          
+                      move             0, R3          
+                      move             0, R4          
+                      move             0, R5          
+                      move             101, R6        
+                      move             0, R7          
+      loop_0:
+                      play             0, 0, 4        
+                      acquire_weighed  0, R5, R4, R3, 100
+                      add              R5, 1, R5      
+                      play             0, 0, 4        
+                      acquire_weighed  1, R2, R1, R0, 100
+                      add              R2, 1, R2      
+                      add              R7, 1, R7      
+                      loop             R6, @loop_0    
+                      set_mrk          0              
+                      upd_param        4              
+                      stop
+      ```
+      
+      But they will now only use 1 register (R1):
 
      ```
      setup:
@@ -102,76 +140,46 @@
                    set_mrk          0
                    upd_param        4
 
-     main:
-                     move             0, R0
-                     move             0, R1
-                     move             0, R2
-                     move             0, R3
-                     move             0, R4
-                     move             0, R5
-                     move             101, R6
-                     move             0, R7
-     loop_0:
-                     play             0, 0, 4
-                     acquire_weighed  0, R5, R4, R3, 100
-                     add              R5, 1, R5
-                     play             0, 0, 4
-                     acquire_weighed  1, R2, R1, R0, 100
-                     add              R2, 1, R2
-                     add              R7, 1, R7
-                     loop             R6, @loop_0
-                     set_mrk          0
-                     upd_param        4
-                     stop
-     ```
-
-     But they will now only use 1 register (R1):
-
-     ```
-     setup:
-                   wait_sync        4
-                   set_mrk          0
-                   upd_param        4
-
-     main:
-                     move             0, R0
-                     move             0, R1
-                     move             0, R2
-                     move             101, R3
-                     move             0, R4
-     loop_0:
-                     play             0, 0, 4
-                     acquire_weighed  0, R2, R1, R1, 100
-                     add              R2, 1, R2
-                     play             0, 0, 4
-                     acquire_weighed  1, R0, R1, R1, 100
-                     add              R0, 1, R0
-                     add              R4, 1, R4
-                     loop             R3, @loop_0
-                     set_mrk          0
-                     upd_param        4
-                     stop
-     ```
-
+      main:
+                      move             0, R0          
+                      move             0, R1          
+                      move             0, R2          
+                      move             101, R3        
+                      move             0, R4          
+      loop_0:
+                      play             0, 0, 4        
+                      acquire_weighed  0, R2, R1, R1, 100
+                      add              R2, 1, R2      
+                      play             0, 0, 4        
+                      acquire_weighed  1, R0, R1, R1, 100
+                      add              R0, 1, R0      
+                      add              R4, 1, R4      
+                      loop             R3, @loop_0    
+                      set_mrk          0              
+                      upd_param        4              
+                      stop
+        ```
+        
   [#1009](https://github.com/qilimanjaro-tech/qililab/pull/1009)
  
 - Added `parameters` dictionary to the `Calibration` class, and removed legacy code.
   [#1005](https://github.com/qilimanjaro-tech/qililab/pull/1005)
 
 - `platform.execute_qprograms_parallel()` now takes a list of bus mappings to allow one bus mapping per qprogram.
-  Parameters for the function have now the same syntax and behaviour:
-  bus_mapping (ist\[dict\[str, str\] | None\] | dict\[str, str\], optional). It can be one of the following:
-  A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
-  A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
-  None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
-  It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
-  Defaults to None.
-  calibrations (list\[Calibration\], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
-  A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
-  A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
-  None. In this case no `.Calibration` instance is used.
-  Defaults to None.
-  [#996](https://github.com/qilimanjaro-tech/qililab/pull/996)
+Parameters for the function have now the same syntax and behaviour:
+bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
+    A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
+    A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
+    None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
+    It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
+    Defaults to None.
+calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
+    A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
+    A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
+    None. In this case no `.Calibration` instance is used.
+    Defaults to None.
+[#996](https://github.com/qilimanjaro-tech/qililab/pull/996)
+
 
 - `%% submit_job`: Added support for `sbatch --chdir` via a new `-c/--chdir` option that is propagated through `slurm_additional_parameters` and also enforced inside the job (`os.chdir(...)`) so it works with `-e local`. Made `--output` mandatory and hardened the output‑assignment check to recognize `Assign`, `AugAssign`, `AnnAssign`, walrus (`NamedExpr`), and tuple targets. Shipment of the notebook namespace is now safer: only picklable values (via `cloudpickle`) are sent, with common pitfalls (modules, loggers, private `_` names, IPython internals) excluded. `--low-priority` is a boolean flag mapping to a sane Slurm `nice=10000`. Paths are handled with `pathlib` plus `expanduser/expandvars`, the logs directory is created if missing, and imports are harvested conservatively from history (one‑line `import`/`from`, excluding `from __future__`). Parameter assembly only includes Slurm extras when provided, and the submitted function compiles the code string internally while accepting the output name and optional workdir. The job object is written to both `local_ns` and the global `user_ns` for IPython robustness. Log cleanup was rewritten to be cross‑platform and resilient: artifacts are grouped by numeric job‑ID prefix, non‑conforming entries are removed, and only the newest `num_files_to_keep` job groups are retained.
   [#994](https://github.com/qilimanjaro-tech/qililab/pull/994)
@@ -221,9 +229,8 @@ plotly_figure, data_draw = platform.draw(qprogram)
 - An additional argument has been added, to Qblox Draw, time_window. It allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the exact number of ns inputted. For example, if the time_window is 100 ns but there is a play operation of 150 ns, the plots will display the data until 150 ns.
   [#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
 
-- Added measurements databases into the results saving structure all the architecture for them is located inside `results/database.py`. Added functionality for stream array using databases through `platform.database_saving` and through the class `StreamArray`, legacy `stream_array()` function still works as usual for retrocompatibility.
+- Added measurements databases into the results saving structure all the architecture for them is located inside `results/database.py`. Added functionality for stream array using databases through `platform.database_saving` and through the class `StreaArray`, legacy `stream_array()` function still works as usual for retrocompatibility.
   [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
-  [#1014](https://github.com/qilimanjaro-tech/qililab/pull/1014)
 
 - Added SQLAlchemy and xarray (usefull tool for measurements) to the dependencies as they are required for databases.
   [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
