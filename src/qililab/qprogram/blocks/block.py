@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from qililab.qprogram.element import Element
@@ -29,7 +28,6 @@ class Block(Element):
     def __init__(self) -> None:
         super().__init__()
         self.elements: list[Block | Operation] = []
-        self.acquire_count: dict = defaultdict(int)
 
     def append(self, element: Block | Operation):
         self.elements.append(element)

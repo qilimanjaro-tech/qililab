@@ -183,6 +183,16 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
+        self._acquisition_metadata: dict[str, dict[str, int]] = {}
+
+    def traverse_qprogram_acquire(self, block: Block):
+        """Traverses a QProgram to gather information on the acquisition."""
+        for element in block.elements:
+            if isinstance(element, Block):
+                self.traverse_qprogram_acquire(element)
+            elif isinstance(element, (Acquire, Measure)):
+                self._acquisition_metadata.setdefault(element.bus, {}).setdefault(block.uuid, 0)
+                self._acquisition_metadata[element.bus][block.uuid] += 1
 
     def compile(
         self,
@@ -223,7 +233,7 @@ class QbloxCompiler:
                     delay_implemented = True
                 if isinstance(element, (Acquire, Measure)) and self._buses[element.bus].first_acquire_of_block is True:
                     self._buses[element.bus].count_nested_level_acquire += 1
-                    self._buses[element.bus].counter_acquire = block.acquire_count[element.bus]
+                    self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid]
                     self._buses[element.bus].first_acquire_of_block = False
                 handler = self._handlers.get(type(element))
                 if not handler:
@@ -273,6 +283,7 @@ class QbloxCompiler:
             self._buses[bus].static_duration += 4
 
         # Recursive traversal to convert QProgram blocks to Sequence
+        self.traverse_qprogram_acquire(self._qprogram._body)
         traverse(self._qprogram._body)
 
         # Post-processing: Set all markers OFF, add stop instructions and compile
