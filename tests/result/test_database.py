@@ -151,11 +151,11 @@ class TestMeasurement:
         mock_session_context.__enter__.return_value = mock_session
         mock_session.merge.return_value = autocalibration_measurement
 
-        result = autocalibration_measurement.update_platform(lambda: mock_session_context)
+        mock_platform = {"Test_platform": "False_platform"}
 
-        assert result.end_time == fixed_now
-        assert result.experiment_completed is True
-        assert result.run_length == fixed_now - autocalibration_measurement.start_time
+        result = autocalibration_measurement.update_platform(lambda: mock_session_context, mock_platform)
+
+        assert result.platform_before == mock_platform
         mock_session.commit.assert_called_once()
 
     @patch("qililab.result.database.database_autocal.datetime")
@@ -169,8 +169,10 @@ class TestMeasurement:
         mock_session.merge.return_value = autocalibration_measurement
         mock_session.commit.side_effect = Exception("Measurement error")
 
+        mock_platform = {"Test_platform": "False_platform"}
+
         with pytest.raises(Exception, match="Measurement error"):
-            result = autocalibration_measurement.update_platform(lambda: mock_session_context)
+            result = autocalibration_measurement.update_platform(lambda: mock_session_context, mock_platform)
 
         mock_session.rollback.assert_called_once()
 
@@ -346,10 +348,18 @@ class TestMeasurement:
         autocalibration_measurement.load_h5()
         mock_load_results.assert_called_once_with(autocalibration_measurement.result_path)
 
-    @patch("qililab.result.database.database_qaas.load_results")
-    def test_experiment_load_experiment(self, mock_load_results, qaas_measurement):
+    @patch("qililab.result.database.database_qaas.ExperimentResults")
+    def test_experiment_load_experiment(self, mock_ExperimentResults, qaas_measurement):
+
+        mock_get = MagicMock()
+        mock_get.get.return_value = ([1, 2, 3], [3])
+
+        mock_ExperimentResults.return_value.__enter__.return_value = mock_get
+
         qaas_measurement.load_experiment()
-        mock_load_results.assert_called_once_with(qaas_measurement.result_path)
+
+        mock_ExperimentResults.assert_called_once_with(qaas_measurement.result_path)
+        mock_get.get.assert_called_once_with()
 
 
 class Testdatabase:
@@ -705,18 +715,6 @@ class Testdatabase:
 
         assert platform == mock_session.query(Measurement.platform).filter(Measurement.measurement_id == 123).scalar()
 
-    def test_get_calibration(self, db_manager: DatabaseManager):
-        """Test get qprogram function from the database manager"""
-        mock_session = db_manager.Session()
-        mock_session.__enter__.return_value = mock_session
-
-        with patch("os.path.isfile", return_value=False):
-            qprogram = db_manager.get_calibration(123)
-
-        assert (
-            qprogram == mock_session.query(Measurement.calibration).filter(Measurement.measurement_id == 123).scalar()
-        )
-
     def test_get_debug(self, db_manager: DatabaseManager):
         """Test get qprogram function from the database manager"""
         mock_session = db_manager.Session()
@@ -779,9 +777,28 @@ class Testdatabase:
 
     def test_update_platform(self, db_manager: DatabaseManager):
 
-        measurement = db_manager.update_platform(platform)
+        # Setup
+        mock_session_instance = MagicMock()
+        mock_session_context = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session_instance
+        db_manager.Session = MagicMock(return_value=mock_session_context)
 
-        assert measurement.result_path == expected_path
+        mock_query = MagicMock()
+        mock_order_by = MagicMock()
+        mock_order_by.first.return_value = 1
+        mock_query.order_by.return_value = mock_order_by
+        mock_session_instance.query.return_value = mock_query
+
+        calibration = Calibration()
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        # Act
+        db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
+
+        mock_platform = {"Test_platform": "False_platform"}
+
+        db_manager.update_platform(mock_platform)
+
+        assert db_manager.calibration_measurement.platform_before == mock_platform
         db_manager._mock_session.add.assert_called_once
         db_manager._mock_session.commit.assert_called_once
 

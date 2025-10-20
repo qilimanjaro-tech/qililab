@@ -88,7 +88,6 @@ class StreamArray:
                 platform=self.platform.to_dict() if self.platform else None,
                 qprogram=serialize(self.qprogram) if self.qprogram else None,
                 calibration=serialize(self.calibration),
-                debug_file=self._get_debug() if self.platform and self.qprogram else None,
                 parameters=self.loops,
                 data_shape=self.shape,
             )
@@ -100,7 +99,6 @@ class StreamArray:
                 platform=self.platform.to_dict() if self.platform else None,
                 qprogram=serialize(self.qprogram) if self.qprogram else None,
                 calibration=serialize(self.calibration) if self.calibration else None,
-                debug_file=self._get_debug() if self.platform and self.qprogram else None,
             )
         self.path = self.measurement.result_path
 

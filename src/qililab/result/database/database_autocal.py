@@ -161,6 +161,7 @@ class Autocal_Measurement(base):  # type: ignore
             # Merge the detached instance into the current session
             persistent_instance = session.merge(self)
 
+            self.platform_before = platform_before
             persistent_instance.platform_before = platform_before
 
             try:
