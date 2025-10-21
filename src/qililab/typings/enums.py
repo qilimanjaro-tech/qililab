@@ -164,6 +164,7 @@ class InstrumentName(str, Enum):
         * keysight_e5080b
         * yokogawa_gs200
         * OPX -> Exactly as Quantum Machines InstrumentType
+        * RSWU-SP16TR
     """
 
     QBLOX_QCM = "QCM"
@@ -179,6 +180,7 @@ class InstrumentName(str, Enum):
     QCMRF = "QCM-RF"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster"
     QDEVIL_QDAC2 = "qdevil_qdac2"
+    RSWU_SP16TR = "rswu_sp16tr"
 
 
 class VNAScatteringParameters(str, Enum):
@@ -304,6 +306,7 @@ class InstrumentControllerName(str, Enum):
         * mini_circuits
         * keithley_2600
         * keysight_e5080b
+        * rswu_sp16tr
         * yokogawa
         * qmm
     """
@@ -317,6 +320,7 @@ class InstrumentControllerName(str, Enum):
     YOKOGAWA_GS200 = "yokogawa_gs200_controller"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
     QDEVIL_QDAC2 = "qdevil_qdac2"
+    RSWU_SP16TR = "rswu_sp16tr"
 
 
 @yaml.register_class

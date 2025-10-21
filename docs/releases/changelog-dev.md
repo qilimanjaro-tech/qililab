@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- Implemented a new driver for the Becker Nachrichtentechnik RSWU-SP16TR
+[#1020](https://github.com/qilimanjaro-tech/qililab/pull/1020)
+
 - This update introduces a new mechanism that allows the library to optionally import either full concrete  implementations or lightweight stubs, depending on the user’s environment and installed dependencies. As part of this improvement, all Quantum Machines–related components have been reorganized under the `extra/quantum-machines` module hierarchy for better modularity and maintainability. Additionally, the Quantum Machines integration has been moved to the `[project.optional-dependencies]` section of the configuration, enabling users to install it only when needed.
 
   For example, to install the base library without any optional dependencies, run:
