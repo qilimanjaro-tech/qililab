@@ -856,6 +856,9 @@ class TestMethods:
                 live_plot=False,
                 slurm_execution=True,
                 port_number=None,
+                job_id=None,
+                sample=None,
+                cooldown=None,
             )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
