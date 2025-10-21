@@ -11,17 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import h5py
 import numpy as np
 
-from qililab.qprogram.qprogram import QProgram
-from qililab.result.database import DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform import Platform
+    from qililab.qprogram.qprogram import QProgram
+    from qililab.result.database import DatabaseManager, Measurement
 
 
 class StreamArray:
@@ -51,9 +53,9 @@ class StreamArray:
         self,
         shape: list | tuple,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
-        platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
+        platform: Platform | None = None,
         qprogram: QProgram | None = None,
         optional_identifier: str | None = None,
     ):
@@ -77,7 +79,7 @@ class StreamArray:
             experiment_name=self.experiment_name,
             experiment_completed=False,
             optional_identifier=self.optional_identifier,
-            platform=self.platform.to_dict(),
+            platform=self.platform.to_dict() if self.platform else None,
             qprogram=serialize(self.qprogram),
         )
         self.path = self.measurement.result_path
