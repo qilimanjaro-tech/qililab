@@ -25,7 +25,7 @@ base = declarative_base()
 class QaaS_Experiment(base):  # type: ignore
     """Creates and manipulates Experiment metadata database"""
 
-    __tablename__ = "experiments"
+    __tablename__ = "executions"
 
     experiment_id: Column = Column("experiment_id", Integer, primary_key=True)
     job_id: Column = Column("job_id", Integer)
