@@ -20,13 +20,11 @@ import numpy as np
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.qprogram.qblox_compiler import QbloxCompiler
-from qililab.qprogram.qprogram import Calibration, QProgram
-from qililab.result.database import DatabaseManager, Measurement
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform import Platform
-    from qililab.qprogram.qprogram import QProgram
+    from qililab.qprogram.qprogram import Calibration, QProgram
     from qililab.result.database import DatabaseManager, Measurement
 
 
