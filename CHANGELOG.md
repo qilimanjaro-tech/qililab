@@ -18,6 +18,10 @@
 - Qblox-instruments version updated to the right one.
   [#929](https://github.com/qilimanjaro-tech/qililab/pull/929)
 
+### Deprecations / Removals
+
+- Deprecated IQPair.DRAG in favour of IQDrag.
+
 ## 0.29.2 (2025-03-31)
 
 ### New features since last release

@@ -61,7 +61,7 @@ class QProgram(StructuredProgram):
             qp = QProgram()
 
             # Pulse used for changing the state of qubit
-            control_wf = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4.0, drag_correction=-2.5)
+            control_wf = IQDrag(amplitude=1.0, duration=40, num_sigmas=4.0, drag_correction=-2.5, angle=[pi], phase=0)
 
             # Pulse used for exciting the resonator for readout
             readout_wf = IQPair(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
