@@ -44,6 +44,8 @@ from .waveforms import (
     Waveform,
     Ramp,
     Chained,
+    IQDrag,
+    IQWaveform,
 )
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
@@ -66,7 +68,9 @@ __all__ = [
     "ExperimentResults",
     "FlatTop",
     "Gaussian",
+    "IQDrag",
     "IQPair",
+    "IQWaveform",
     "Measurement",
     "Parameter",
     "Platform",

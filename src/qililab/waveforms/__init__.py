@@ -39,7 +39,9 @@ from .chained import Chained
 from .drag_correction import DragCorrection
 from .flat_top import FlatTop
 from .gaussian import Gaussian
+from .iq_drag import IQDrag
 from .iq_pair import IQPair
+from .iq_waveform import IQWaveform
 from .ramp import Ramp
 from .snz import SuddenNetZero
 from .square import Square
@@ -51,7 +53,9 @@ __all__ = [
     "DragCorrection",
     "FlatTop",
     "Gaussian",
+    "IQDrag",
     "IQPair",
+    "IQWaveform",
     "Ramp",
     "Square",
     "SuddenNetZero",
