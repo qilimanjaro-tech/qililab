@@ -14,8 +14,9 @@
 
 """Waveform protocol class."""
 
-import numpy as np
 from typing import Optional
+
+import numpy as np
 
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.variable import Domain
