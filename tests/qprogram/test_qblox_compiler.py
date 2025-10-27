@@ -117,6 +117,17 @@ def fixture_offset_no_path1() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="offset_loop")
+def fixture_offset_loop() -> QProgram:
+    qp = QProgram()
+    variable_offset = qp.variable(label="offset", domain=Domain.Voltage)
+    with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
+        qp.set_offset(bus="drive", offset_path0=variable_offset, offset_path1=0.2)
+    with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
+        qp.set_offset(bus="drive", offset_path0=0.2, offset_path1=variable_offset)
+    return qp
+
+
 @pytest.fixture(name="dynamic_wait")
 def fixture_dynamic_wait() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -1110,6 +1121,45 @@ class TestQBloxCompiler:
             "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
             in caplog.text
         )
+
+    def test_set_offset_with_loop_and_constant_second_path(
+        self, offset_loop: QProgram
+    ):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=offset_loop)
+
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+            setup:
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            move             6553, R0       
+                            move             6553, R1       
+                            move             3, R2          
+                            move             0, R3          
+            loop_0:
+                            set_awg_offs     R3, R1         
+                            add              R3, 3276, R3   
+                            loop             R2, @loop_0    
+                            nop                             
+                            move             3, R4          
+                            move             0, R5          
+                            nop                             
+            loop_1:
+                            set_awg_offs     R0, R5         
+                            add              R5, 3276, R5   
+                            loop             R4, @loop_1    
+                            set_mrk          0              
+                            upd_param        4              
+                            stop
+        """
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
         compiler = QbloxCompiler()
