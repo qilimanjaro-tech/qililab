@@ -26,7 +26,6 @@ from qililab.waveforms.iq_waveform import IQWaveform
 from qililab.waveforms.waveform import Waveform
 from qililab.yaml import yaml
 
-warnings.simplefilter("always", DeprecationWarning)
 
 
 @yaml.register_class
@@ -69,9 +68,6 @@ class IQPair(IQWaveform):
             num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
             drag_coefficient (float): Drag coefficient that gives the DRAG its imaginary components.
         """
-        warnings.warn("IQPair.DRAG is being deprecated in the following months in favour of IQDrag",
-                      DeprecationWarning,
-                      stacklevel=4)
         waveform_i = Gaussian(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas)
         waveform_q = DragCorrection(drag_coefficient=drag_coefficient, waveform=waveform_i)
 

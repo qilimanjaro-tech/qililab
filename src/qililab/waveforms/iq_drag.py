@@ -47,8 +47,8 @@ class IQDrag(IQWaveform):
         self.num_sigmas = num_sigmas
         self.drag_coefficient = drag_coefficient
         self.angle = (angle + np.pi) % (2 * np.pi) - np.pi
-        if self.angle < 0:
-            self.angle = -self.angle
+        if self.angle * self.amplitude < 0:
+            self.amplitude = -self.amplitude
             self.phase = (phase) % (2 * np.pi) - np.pi
         else:
             self.phase = (phase + np.pi) % (2 * np.pi) - np.pi
