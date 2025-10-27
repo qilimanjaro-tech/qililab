@@ -594,7 +594,7 @@ class TestQBloxCompiler:
             in caplog.text
         )
 
-    def test_set_offset_with_loop_and_constant_second_path(
+    def test_set_offset_with_loop(
         self, offset_loop: QProgram
     ):
         compiler = QbloxCompiler()
