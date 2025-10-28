@@ -28,9 +28,7 @@ else:
     from .instrument_controllers import QuantumMachinesClusterController
     from .instruments import QuantumMachinesCluster
     from .qprogram import QuantumMachinesCompilationOutput, QuantumMachinesCompiler
-    from .result.qprogram.quantum_machines_measurement_result import (
-        QuantumMachinesMeasurementResult,
-    )
+    from .result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
     from .runtime import generate_qua_script
 
 __all__ = [
