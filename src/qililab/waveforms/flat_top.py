@@ -31,7 +31,7 @@ class FlatTop(Waveform):
     Args:
         duration (int): Duration of the pulse (ns).
         amplitude (float): Maximum amplitude of the pulse.
-        smooth_duration (float, optional): duration of the smoothing component in ns.
+        smooth_duration (float): duration of the smoothing component in ns.
         buffer (float, optional): Buffer of the waveform. Defaults to 0.
     """
 
