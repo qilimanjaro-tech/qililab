@@ -50,6 +50,7 @@ from .waveforms import (
 from .digital import Drag, Wait
 from .analog import AnnealingProgram  # same as circuit transpiler, top modules should be imported at top
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
+from .qililab_settings import get_settings
 
 __all__ = [
     "AnnealingProgram",
@@ -84,6 +85,7 @@ __all__ = [
     "deserialize_from",
     "execute",
     "get_db_manager",
+    "get_settings",
     "load_by_id",
     "load_results",
     "logger",

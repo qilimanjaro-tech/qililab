@@ -28,6 +28,7 @@ from uuid import UUID
 import numpy as np
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
+from qililab.qililab_settings import get_settings
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
@@ -74,10 +75,6 @@ class ExperimentExecutor:
     Args:
         platform (Platform): The platform on which the experiment is to be executed.
         experiment (Experiment): The experiment object defining the sequence of operations and loops.
-        base_data_path (str): The base directory path where the experiment results will be stored.
-        live_plot (bool): Flag that abilitates live plotting. Defaults to False.
-        slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
-        port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
 
     Example:
         .. code-block::
@@ -85,20 +82,23 @@ class ExperimentExecutor:
             from qililab.data_management import build_platform
             from qililab.qprogram import Experiment
             from qililab.executor import ExperimentExecutor
+            from qililab.qililab_settings import get_settings
 
             # Initialize the platform
             platform = build_platform(runcard="path/to/runcard.yml")
+
+            # (Optional) Configure global experiment settings
+            settings = get_settings()
+            settings.experiment_results_base_path = "/data/experiments"
+            settings.experiment_live_plot_enabled = True
 
             # Define your experiment
             experiment = Experiment(label="my_experiment")
             # Add blocks, loops, operations to the experiment
             # ...
 
-            # Set the base data path for storing results
-            base_data_path = "/data/experiments"
-
             # Create the ExperimentExecutor
-            executor = ExperimentExecutor(platform=platform, experiment=experiment, base_data_path=base_data_path)
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
 
             # Execute the experiment
             results_path = executor.execute()
@@ -106,22 +106,16 @@ class ExperimentExecutor:
 
     Note:
         - Ensure that the platform and experiment are properly configured before execution.
-        - The results will be saved in a timestamped directory within the `base_data_path`.
+        - Result paths, live plotting and database persistence are configured via :func:`qililab.qililab_settings.get_settings`.
     """
 
     def __init__(
         self,
         platform: "Platform",
         experiment: Experiment,
-        live_plot: bool = False,
-        slurm_execution: bool = True,
-        port_number: int | None = None,
     ):
         self.platform = platform
         self.experiment = experiment
-        self._live_plot = live_plot
-        self._slurm_execution = slurm_execution
-        self._port_number = port_number
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -161,7 +155,7 @@ class ExperimentExecutor:
         self._results_writer: ExperimentResultsWriter
 
         # In case the results are saved in a database, load the correct sample and cooldown.
-        if platform.save_experiment_results_in_database:
+        if get_settings().experiment_results_save_in_database:
             self.sample = self.platform.db_manager.current_sample
             self.cooldown = self.platform.db_manager.current_cd
 
@@ -261,7 +255,7 @@ class ExperimentExecutor:
             execution_time=0.0,
             qprograms={},
         )
-        if self.platform.save_experiment_results_in_database:
+        if get_settings().experiment_results_save_in_database:
             self._db_metadata = ExperimentDataBaseMetadata(
                 experiment_name=self.experiment.label,
                 cooldown=self.cooldown,
@@ -540,8 +534,8 @@ class ExperimentExecutor:
     def _create_results_path(self, executed_at: datetime):
         # Get base path and path format from platform
 
-        base_path = self.platform.experiment_results_base_path
-        path_format = self.platform.experiment_results_path_format
+        base_path = get_settings().experiment_results_base_path
+        path_format = get_settings().experiment_results_path_format
 
         # Format date and time for directory names
         date = executed_at.strftime("%Y%m%d")
@@ -600,10 +594,7 @@ class ExperimentExecutor:
             path=results_path,
             metadata=self._metadata,
             db_metadata=self._db_metadata,
-            db_manager=self.platform.db_manager,
-            live_plot=self._live_plot,
-            slurm_execution=self._slurm_execution,
-            port_number=self._port_number,
+            db_manager=self.platform.db_manager
         )
 
         # Event to signal that the execution has completed
