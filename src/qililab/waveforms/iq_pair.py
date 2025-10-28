@@ -16,8 +16,6 @@
 
 from __future__ import annotations
 
-import warnings
-
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.variable import Domain
 from qililab.waveforms.drag_correction import DragCorrection
@@ -25,7 +23,6 @@ from qililab.waveforms.gaussian import Gaussian
 from qililab.waveforms.iq_waveform import IQWaveform
 from qililab.waveforms.waveform import Waveform
 from qililab.yaml import yaml
-
 
 
 @yaml.register_class

@@ -14,8 +14,6 @@
 
 """Waveform protocol class."""
 
-from typing import Optional
-
 import numpy as np
 
 from qililab.qprogram.decorators import requires_domain
@@ -34,11 +32,12 @@ class IQDrag(IQWaveform):
     @requires_domain("duration", Domain.Time)
     @requires_domain("num_sigmas", Domain.Scalar)
     @requires_domain("drag_coefficient", Domain.Scalar)
-    def __init__(self, 
+    def __init__(self,
                  amplitude: float,
                  duration: int,
                  num_sigmas: float,
-                 drag_coefficient: float, *,
+                 drag_coefficient: float,
+                 *,
                  angle: float = np.pi,
                  phase: float = 0):
 
@@ -46,21 +45,24 @@ class IQDrag(IQWaveform):
         self.duration = duration
         self.num_sigmas = num_sigmas
         self.drag_coefficient = drag_coefficient
-        self.angle = (angle + np.pi) % (2 * np.pi) - np.pi
-        if self.angle * self.amplitude < 0:
-            self.amplitude = -self.amplitude
-            self.phase = (phase) % (2 * np.pi) - np.pi
-        else:
-            self.phase = (phase + np.pi) % (2 * np.pi) - np.pi
-        self.I: Optional[Waveform] = None
-        self.Q: Optional[Waveform] = None
+        self.angle = angle
+        self.phase = phase
+        self._compute_waveform()
 
     def _compute_waveform(self) -> None:
-        c, s = np.cos(self.phase), np.sin(self.phase)
-        scale = self.angle / np.pi
+        angle = (self.angle + np.pi) % (2 * np.pi) - np.pi
+        if angle * self.amplitude < 0:
+            amplitude = -self.amplitude
+            phase = (self.phase) % (2 * np.pi) - np.pi
+        else:
+            amplitude = self.amplitude
+            phase = (self.phase + np.pi) % (2 * np.pi) - np.pi
+
+        c, s = np.cos(phase), np.sin(phase)
+        scale = angle / np.pi
 
         gausian = Gaussian(
-            amplitude=self.amplitude,
+            amplitude=amplitude,
             duration=self.duration,
             num_sigmas=self.num_sigmas
             )
@@ -76,13 +78,9 @@ class IQDrag(IQWaveform):
         self.Q = Arbitrary(scale * (gausian * s + drag_correction * c))
 
     def get_I(self) -> Waveform:
-        if self.I is None:
-            self._compute_waveform()
         return self.I
 
     def get_Q(self) -> Waveform:
-        if self.Q is None:
-            self._compute_waveform()
         return self.Q
 
     def get_duration(self) -> int:
