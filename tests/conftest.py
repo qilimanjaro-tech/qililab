@@ -1,7 +1,7 @@
 # conftest.py
 import importlib.metadata as im
-from contextlib import contextmanager
 from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import Any, ContextManager
 
 import pytest

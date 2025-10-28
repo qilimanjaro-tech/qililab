@@ -18,11 +18,11 @@ from typing import Any, TypedDict
 import h5py
 import numpy as np
 
+from qililab.qililab_settings import get_settings
 from qililab.result.database import DatabaseManager
 from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
 from qililab.utils.serialization import serialize
-from qililab.qililab_settings import get_settings
 
 
 class VariableMetadata(TypedDict):
