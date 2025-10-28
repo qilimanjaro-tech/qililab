@@ -351,6 +351,7 @@ class ExperimentExecutor:
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     channel_id=operation.channel_id,
+                                    output_id=operation.output_id,
                                 )
                             }
                         )
@@ -370,6 +371,7 @@ class ExperimentExecutor:
                                     parameter=operation.parameter,
                                     value=current_value_of_variable[operation.value.uuid],
                                     channel_id=operation.channel_id,
+                                    output_id=operation.output_id,
                                 )
                             )
                         else:
@@ -381,6 +383,7 @@ class ExperimentExecutor:
                                     parameter=operation.parameter,
                                     value=value,
                                     channel_id=operation.channel_id,
+                                    output_id=operation.output_id,
                                 )
                             )
                     else:
@@ -391,6 +394,7 @@ class ExperimentExecutor:
                                 parameter=operation.parameter,
                                 value=operation.value,
                                 channel_id=operation.channel_id,
+                                output_id=operation.output_id,
                             )
                         )
 
