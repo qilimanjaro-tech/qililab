@@ -18,11 +18,13 @@ from typing import TYPE_CHECKING, Any
 import h5py
 import numpy as np
 
+from qililab.instruments.qblox.qblox_module import QbloxModule
+from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform import Platform
-    from qililab.qprogram.qprogram import QProgram
+    from qililab.qprogram.qprogram import Calibration, QProgram
     from qililab.result.database import DatabaseManager, Measurement
 
 
@@ -57,6 +59,7 @@ class StreamArray:
         db_manager: DatabaseManager,
         platform: Platform | None = None,
         qprogram: QProgram | None = None,
+        calibration: Calibration | None = None,
         optional_identifier: str | None = None,
     ):
         self.results: np.ndarray
@@ -67,6 +70,7 @@ class StreamArray:
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
+        self.calibration = calibration
         self._first_value = True
 
     def __enter__(self):
@@ -80,7 +84,9 @@ class StreamArray:
             experiment_completed=False,
             optional_identifier=self.optional_identifier,
             platform=self.platform.to_dict() if self.platform else None,
-            qprogram=serialize(self.qprogram),
+            qprogram=serialize(self.qprogram) if self.qprogram else None,
+            calibration=serialize(self.calibration) if self.calibration else None,
+            debug_file=self._get_debug() if self.platform and self.qprogram else None,
         )
         self.path = self.measurement.result_path
 
@@ -125,13 +131,13 @@ class StreamArray:
             self._file.flush()
         self.results[key] = value
 
-    def __exit__(self, *args):
+    def __exit__(self, exc_type, exc_value, traceback):
         """Exits the context manager."""
         if self._file is not None:
             self._file.__exit__()
             self._file = None
 
-        self.measurement = self.measurement.end_experiment(self.db_manager.Session)
+        self.measurement = self.measurement.end_experiment(self.db_manager.Session, traceback)
 
     def __getitem__(self, index: int):
         """Gets item by index.
@@ -167,6 +173,26 @@ class StreamArray:
             bool: True if an item is contained in results.
         """
         return item in self.results
+
+    def _get_debug(self):
+        if any(
+            isinstance(instrument, QbloxModule)
+            for bus in self.platform.buses.elements
+            for instrument in bus.instruments
+        ):
+            qblox_compiler = QbloxCompiler()
+            compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)
+            sequences = compiled.sequences
+
+            lines = []
+            for bus_alias, seq in sequences.items():
+                lines.append(f"Bus {bus_alias}:")
+                lines.append(str(seq._program))
+                lines.append("")
+
+            return "\n".join(lines)
+        debug_exception = "Non Qblox machine."
+        return debug_exception
 
 
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
