@@ -84,6 +84,7 @@
 - This PR is the beginning of a series that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
 
   1. When possible, waits will be combined together. For example, before this PR the following Q1ASM could be generated:
+
       ```
       wait 10
       wait 40
@@ -95,6 +96,7 @@
      ```
 
       It will now be generated as:
+
       ```
       wait 50
       ```
@@ -106,6 +108,7 @@
 
   2. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_index_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
   For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
+
       ```
       setup:
                     wait_sync        4              
@@ -134,7 +137,7 @@
                       upd_param        4              
                       stop
       ```
-      
+
       But they will now only use 1 register (R1):
 
      ```
@@ -162,7 +165,7 @@
                       upd_param        4              
                       stop
         ```
-        
+
   [#1009](https://github.com/qilimanjaro-tech/qililab/pull/1009)
  
 - Added `parameters` dictionary to the `Calibration` class, and removed legacy code.
@@ -183,10 +186,8 @@ calibrations (list[Calibration], Calibration, optional). Contains information of
     Defaults to None.
 [#996](https://github.com/qilimanjaro-tech/qililab/pull/996)
 
-
 - `%% submit_job`: Added support for `sbatch --chdir` via a new `-c/--chdir` option that is propagated through `slurm_additional_parameters` and also enforced inside the job (`os.chdir(...)`) so it works with `-e local`. Made `--output` mandatory and hardened the output‑assignment check to recognize `Assign`, `AugAssign`, `AnnAssign`, walrus (`NamedExpr`), and tuple targets. Shipment of the notebook namespace is now safer: only picklable values (via `cloudpickle`) are sent, with common pitfalls (modules, loggers, private `_` names, IPython internals) excluded. `--low-priority` is a boolean flag mapping to a sane Slurm `nice=10000`. Paths are handled with `pathlib` plus `expanduser/expandvars`, the logs directory is created if missing, and imports are harvested conservatively from history (one‑line `import`/`from`, excluding `from __future__`). Parameter assembly only includes Slurm extras when provided, and the submitted function compiles the code string internally while accepting the output name and optional workdir. The job object is written to both `local_ns` and the global `user_ns` for IPython robustness. Log cleanup was rewritten to be cross‑platform and resilient: artifacts are grouped by numeric job‑ID prefix, non‑conforming entries are removed, and only the newest `num_files_to_keep` job groups are retained.
   [#994](https://github.com/qilimanjaro-tech/qililab/pull/994)
-
 
 - QbloxDraw now supports passing a calibration file as an argument when plotting from both the platform and qprogram.
   [#977](https://github.com/qilimanjaro-tech/qililab/pull/977)
@@ -232,8 +233,9 @@ plotly_figure, data_draw = platform.draw(qprogram)
 - An additional argument has been added, to Qblox Draw, time_window. It allows the user to stop the plotting after the specified number of ns have been plotted. The plotting might not be the exact number of ns inputted. For example, if the time_window is 100 ns but there is a play operation of 150 ns, the plots will display the data until 150 ns.
   [#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
 
-- Added measurements databases into the results saving structure all the architecture for them is located inside `results/database.py`. Added functionality for stream array using databases through `platform.database_saving` and through the class `StreaArray`, legacy `stream_array()` function still works as usual for retrocompatibility.
+- Added measurements databases into the results saving structure all the architecture for them is located inside `results/database.py`. Added functionality for stream array using databases through `platform.database_saving` and through the class `StreamArray`, legacy `stream_array()` function still works as usual for retrocompatibility.
   [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
+  [#1014](https://github.com/qilimanjaro-tech/qililab/pull/1014)
 
 - Added SQLAlchemy and xarray (usefull tool for measurements) to the dependencies as they are required for databases.
   [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
