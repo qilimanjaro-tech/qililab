@@ -148,7 +148,7 @@ class QdacCompiler:
             # get crosstalk changes and coordinates
             element_list = []
             flux_vector = FluxVector()
-            flux_vector.set_crosstalk(self._crosstalk)
+            flux_vector.set_crosstalk(self._crosstalk)  # type: ignore
 
             for i, element in enumerate(block.elements):
                 handler = self._handlers.get(type(element))
@@ -217,7 +217,7 @@ class QdacCompiler:
             elif isinstance(element.waveform, IQPair):
                 envelope = element.waveform.I.envelope()
         elif isinstance(element, SetOffset):  # square with same dimension as play
-            envelope = element.offset_path0
+            envelope = element.offset_path0  # type: ignore
 
         flux_vector[element.bus] = envelope
         return flux_vector
@@ -252,7 +252,10 @@ class QdacCompiler:
                     flux_vector.bias_vector[bus], list
                 ):
                     play = Play(
-                        bus, Arbitrary(flux_vector.bias_vector[bus]), dwell=dwell, delay=delay, repetitions=repetitions
+                        bus,
+                        Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
+                        dwell=dwell, delay=delay,
+                        repetitions=repetitions,
                     )
                     block.elements.insert(element_list[0], play)
         return block

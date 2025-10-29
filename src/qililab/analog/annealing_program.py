@@ -134,6 +134,6 @@ class AnnealingProgram:
                 else bus_flux_dict.flux_vector
             )
             for bus, value in flux_dict.items():
-                annealing_waveforms[bus].append(value)
+                annealing_waveforms[bus].append(value)  # type: ignore
 
         return {key: Arbitrary(np.array(value)) for key, value in annealing_waveforms.items()}
