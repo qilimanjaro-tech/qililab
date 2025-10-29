@@ -11,18 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import h5py
 import numpy as np
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.qprogram.qprogram import Calibration, QProgram
-from qililab.result.database import DatabaseManager, Measurement
+from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform import Platform
+    from qililab.qprogram.qprogram import Calibration, QProgram
+    from qililab.result.database import DatabaseManager, Measurement
 
 
 class StreamArray:
@@ -52,9 +55,9 @@ class StreamArray:
         self,
         shape: list | tuple,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
-        platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
+        platform: Platform | None = None,
         qprogram: QProgram | None = None,
         calibration: Calibration | None = None,
         optional_identifier: str | None = None,
@@ -172,23 +175,14 @@ class StreamArray:
         return item in self.results
 
     def _get_debug(self):
-        bus_aliases = set(self.qprogram.buses)
-        buses = {bus_alias: self.platform.buses.get(alias=bus_alias) for bus_alias in bus_aliases}
-        instruments = {
-            instrument
-            for _, bus in buses.items()
+        if any(
+            isinstance(instrument, QbloxModule)
+            for bus in self.platform.buses.elements
             for instrument in bus.instruments
-            if isinstance(instrument, QbloxModule)
-        }
-        if instruments and all(isinstance(instrument, QbloxModule) for instrument in instruments):
-            compiled = self.platform.compile_qprogram(self.qprogram, self.calibration)[0]
-
+        ):
+            qblox_compiler = QbloxCompiler()
+            compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)
             sequences = compiled.sequences
-            for bus_alias, bus in buses.items():
-                if bus.distortions:
-                    for distortion in bus.distortions:
-                        for waveform in sequences[bus_alias]._waveforms._waveforms:
-                            sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
 
             lines = []
             for bus_alias, seq in sequences.items():
