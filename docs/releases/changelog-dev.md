@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Introduced a Pydantic-powered `QililabSettings` that centralizes runtime configuration, with the singleton `get_settings()` pulling values from multiple sources so teams can pick what fits their workflow. Settings still default to sensible values, but can be overridden directly in code by editing the fields (handy for tests or ad-hoc scripts), by exporting environment variables (for example `QILILAB_EXPERIMENT_RESULTS_BASE_PATH=/data/qililab`), or by dropping the same keys into a project-level `.env` file that is auto-discovered and parsed.
+  [#1025](https://github.com/qilimanjaro-tech/qililab/pull/1025)
+
 ### Improvements
 
 - Added support for real-time predistortion on Qblox hardware.
