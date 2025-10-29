@@ -346,7 +346,7 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 
 - Added new functions to DatabaseManager to support more efficient loading of data for live-plotting application. Such as get_platform and get_qprogram.
   [#979](https://github.com/qilimanjaro-tech/qililab/pull/979)
-  
+
 - Added `ql.load_by_id(id)` in qililab, This function allows to retrieve the data path of a measurement with the given id without creating a `DatabaseManager` instance. This function is intended to be used inside notebooks using slurm as `DatabaseManager` cannot be submitted.
   [#986](https://github.com/qilimanjaro-tech/qililab/pull/986)
 

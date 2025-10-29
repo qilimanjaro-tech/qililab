@@ -60,6 +60,19 @@ class TestFluxVector:
         assert flux_vector.flux_vector == flux
         assert flux_vector.to_dict() == flux_vector.bias_vector
 
+    def test_set_crosstalk_empty_flux_vector(self, crosstalk_matrix):
+        flux_vector = FluxVector()
+        flux_vector.set_crosstalk(crosstalk_matrix)
+        assert flux_vector.crosstalk == crosstalk_matrix
+        assert flux_vector.to_dict() == flux_vector.bias_vector
+
+    def test_set_list(self, crosstalk_matrix):
+        flux_vector = FluxVector()
+        flux_vector.set_crosstalk(crosstalk_matrix)
+        flux_vector["flux_0"] = [1, 2, 3, 4, 5]
+
+        assert np.array_equal(flux_vector.flux_vector["flux_0"], np.array([1, 2, 3, 4, 5]))
+
     def test_set_crosstalk_from_bias_set_vector(self, flux_vector, crosstalk_matrix):
         flux = flux_vector.set_crosstalk_from_bias(
             crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
