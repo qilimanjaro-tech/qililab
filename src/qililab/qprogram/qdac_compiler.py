@@ -219,6 +219,12 @@ class QdacCompiler:
         elif isinstance(element, SetOffset):  # square with same dimension as play
             envelope = element.offset_path0  # type: ignore
 
+        if (
+            isinstance(envelope, np.ndarray)
+            and isinstance(flux_vector[element.bus], np.ndarray)
+            and flux_vector[element.bus].shape != envelope.shape  # type: ignore
+        ):
+            raise ValueError("ql.play elements must have the same size.")
         flux_vector[element.bus] = envelope
         return flux_vector
 
@@ -229,18 +235,6 @@ class QdacCompiler:
                 elements.append(block.elements.pop(element_idx - ii))
 
             play_elements = [element for element in elements if isinstance(element, Play)]
-            if (
-                len(
-                    {
-                        element.waveform.envelope().shape
-                        if isinstance(element.waveform, Waveform)
-                        else element.waveform.I.envelope()
-                        for element in play_elements
-                    }
-                )
-                > 1
-            ):
-                raise ValueError("ql.play elements must have the same size.")
             if play_elements:
                 dwell, delay, repetitions = play_elements[0].dwell, play_elements[0].delay, play_elements[0].repetitions
 
@@ -254,7 +248,8 @@ class QdacCompiler:
                     play = Play(
                         bus,
                         Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
-                        dwell=dwell, delay=delay,
+                        dwell=dwell,
+                        delay=delay,
                         repetitions=repetitions,
                     )
                     block.elements.insert(element_list[0], play)
