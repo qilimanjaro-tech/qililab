@@ -21,7 +21,7 @@ from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import List_Context, QDac2Trigg
 
 from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.voltage_source import VoltageSource
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
 from qililab.waveforms import Waveform
 
@@ -63,7 +63,13 @@ class QDevilQDac2(VoltageSource):
         return self.settings.low_pass_filter
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ):
         """Set parameter to the corresponding value for an instrument's channel.
 
         Args:
@@ -305,7 +311,9 @@ class QDevilQDac2(VoltageSource):
         else:
             self.device.free_all_triggers()
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
+    ):
         """Get parameter's value for an instrument's channel.
 
         Args:

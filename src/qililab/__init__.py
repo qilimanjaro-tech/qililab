@@ -35,10 +35,10 @@ from .qprogram import (
     QbloxCompiler,
     QdacCompiler,
     QProgram,
-    QuantumMachinesCompiler,
     Experiment,
 )
-from .result import ExperimentResults, stream_results
+from .platform import Platform
+from .result import ExperimentResults, load_by_id, stream_results
 from .typings import Parameter
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
 from .waveforms import (
@@ -77,10 +77,10 @@ __all__ = [
     "IQPair",
     "Measurement",
     "Parameter",
+    "Platform",
     "QProgram",
     "QbloxCompiler",
     "QdacCompiler",
-    "QuantumMachinesCompiler",
     "Ramp",
     "Sample",
     "Square",
@@ -94,6 +94,7 @@ __all__ = [
     "deserialize_from",
     "execute",
     "get_db_manager",
+    "load_by_id",
     "load_results",
     "logger",
     "save_platform",

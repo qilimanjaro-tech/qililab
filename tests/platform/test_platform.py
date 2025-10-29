@@ -8,6 +8,7 @@ from pathlib import Path
 from queue import Queue
 from types import MethodType
 from unittest.mock import MagicMock, create_autospec, patch
+import logging
 
 import numpy as np
 import pytest
@@ -33,12 +34,15 @@ from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
+from qililab.extra.quantum_machines import (
+    QuantumMachinesCluster,
+    QuantumMachinesMeasurementResult,
+)
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qdevil import QDevilQDac2
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
 from qililab.qprogram import Calibration, Domain, Experiment, QProgram
@@ -46,7 +50,6 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
@@ -118,6 +121,18 @@ def fixture_platform_with_orphan_digital_bus():
     # For Galadriel.runcard, a unique name like this won't exist in the main buses.
     return build_platform(runcard)
 
+@pytest.fixture(name="platform_galadriel_no_filter")
+def fixture_platform_galadriel_no_filter():
+    """
+    Platform fixture where a bus alias is defined in runcard.digital.buses
+    but not in the main runcard.buses list.
+    The input 'runcard' is a deepcopy from Galadriel.runcard.
+    """
+    # Start from base Galadriel runcard
+    runcard = copy.deepcopy(Galadriel.runcard)
+    del runcard["instruments"][0]["filters"]
+
+    return build_platform(runcard)
 
 @pytest.fixture(name="qblox_results")
 def fixture_qblox_results():
@@ -325,6 +340,9 @@ class TestPlatformInitialization:
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
         assert isinstance(platform.buses, Buses)
+        assert isinstance(platform.qblox_active_filter_exponential, list)
+        assert isinstance(platform.qblox_active_filter_fir, bool)
+        assert isinstance(platform.qblox_alias_module, list)
         assert platform._connected_to_instruments is False
 
 
@@ -475,6 +493,7 @@ class TestPlatform:
             ("flux_q0", Parameter.FLUX, 0.5),
         ],
     )
+    @pytest.mark.qm
     def test_set_parameter_no_instrument_connection_QM(self, bus: str, parameter: Parameter, value: float | str | bool):
         """Test platform raises and error if no instrument connection."""
         # Overwrite platform to use Quantum Machines:
@@ -554,6 +573,74 @@ class TestPlatform:
             assert bus is None
         else:
             assert bus in platform.buses
+
+    def test_get_filter(self, platform: Platform):
+        """Test Get filters"""
+        #  Check that the parameters can be retrieved by bus and by module
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_AMPLITUDE_0, output_id=0) == 0.7
+        assert platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_AMPLITUDE_0, output_id=0) == 0.7
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, output_id=0) == 200
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "enabled"
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_COEFF, output_id=0)== [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+        
+        #  Check that filters marked as delay_comp in the runcard have not been changed
+        assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=3) == "delay_comp"
+        assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0) == "delay_comp"
+
+        #  Check that the state of the filters have been updated to delaycomp as needed (even for modules without filters in the runcard)
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
+        assert platform.get_parameter(alias="flux_line_q2_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=2) == "delay_comp"
+        assert platform.get_parameter(alias="QRM_0", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM_0", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.FIR_STATE, output_id=1) == "delay_comp"
+        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
+
+    def test_set_filter(self, platform: Platform):
+        """Test Set filters"""
+        #  Check that the parameters can be set
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, value = True, output_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, output_id=0) == "enabled"
+
+        print(platform)
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, value = False, output_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, output_id=0) == "bypassed"
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
+
+    def test_update_qblox_filter_state_fir(self, platform_galadriel_no_filter: Platform):
+        """Test that the filter is created if needed"""
+        platform_galadriel_no_filter.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
+        assert platform_galadriel_no_filter.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
+        
+
+    def test_setting_filter_bypassed_give_warning(self, caplog, platform: Platform):
+        #  Check that setting a filter as bypassed will actually put/leave it as delay_comp if needed
+        platform.set_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=1)
+        with caplog.at_level(logging.WARNING):
+            platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1)
+            assert ("Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
+                in caplog.text)
+        assert platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
+
+        platform.set_parameter(alias="QCM", parameter=Parameter.FIR_STATE, value="bypassed", output_id=0)
+        with caplog.at_level(logging.WARNING):
+            platform.get_parameter(alias="QCM", parameter=Parameter.FIR_STATE, output_id=0)
+            assert ("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
+                in caplog.text)
+        assert platform.get_parameter(alias="QCM", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+
+    def test_filter_parameter_with_wrong_output_id_raises_exception(self, platform: Platform):
+        """Test that setting a filter parameter with an output_id>max_output of the instrument raises an Exception."""
+        output_id = 10
+        with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
+            platform.set_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=output_id)
+
+        with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
+            platform.set_parameter(alias="QCM", parameter=Parameter.FIR_STATE, value="bypassed", output_id=output_id)
 
     def test_print_platform(self, platform: Platform):
         """Test print platform."""
@@ -875,7 +962,7 @@ class TestMethods:
             MockExecutor.assert_called_once_with(
                 platform=platform,
                 experiment=mock_experiment,
-                live_plot=True,
+                live_plot=False,
                 slurm_execution=True,
                 port_number=None,
             )
@@ -1171,6 +1258,7 @@ class TestMethods:
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
 
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1223,6 +1311,7 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines_raises_error(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
 
@@ -1548,6 +1637,7 @@ class TestMethods:
             with pytest.raises(ValueError, match=error_string):
                 platform.execute_qprograms_parallel(qp_list, debug=True)
 
+    @pytest.mark.qm
     def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
         error_string = "Parallel execution is not supported in Quantum Machines."
         qp1 = QProgram()
@@ -1572,69 +1662,71 @@ class TestMethods:
         """Test the normalization of bus mappings"""
         n = 3
         bus_mappings = None
-        
+
         none_mapping = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
         assert isinstance(none_mapping, list)
-        assert len(none_mapping)==n
-        assert none_mapping==[None]*n
-        
-        bus_mappings = {'readout':'readout_q0_bus'}
+        assert len(none_mapping) == n
+        assert none_mapping == [None] * n
+
+        bus_mappings = {"readout": "readout_q0_bus"}
         one_mapping = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
         assert isinstance(one_mapping, list)
-        assert len(one_mapping)==n
+        assert len(one_mapping) == n
         for mapping in one_mapping:
-            assert mapping==bus_mappings
-            
-        bus_mappings = [{'readout':'readout_q0_bus'}, None, {'readout':'readout_q2_bus'}]
+            assert mapping == bus_mappings
+
+        bus_mappings = [{"readout": "readout_q0_bus"}, None, {"readout": "readout_q2_bus"}]
         mappings = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
         assert isinstance(mappings, list)
-        assert len(mappings)==n
-        assert mappings==bus_mappings
-        
-        bus_mappings = [{'readout':'readout_q0_bus'}, {'readout':'readout_q2_bus'}]
+        assert len(mappings) == n
+        assert mappings == bus_mappings
+
+        bus_mappings = [{"readout": "readout_q0_bus"}, {"readout": "readout_q2_bus"}]
         with pytest.raises(ValueError, match=re.escape(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")):
             platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
-    
-    def test_normalize_calibrations(self, platform: Platform, calibration: Calibration, calibration_with_preparation_block: Calibration):
+
+    def test_normalize_calibrations(
+        self, platform: Platform, calibration: Calibration, calibration_with_preparation_block: Calibration
+    ):
         """Test the normalization of calibrations"""
         n = 3
         calibrations = None
-        
+
         none_calibration = platform._normalize_calibrations(calibrations=calibrations, n=n)
         assert isinstance(none_calibration, list)
-        assert len(none_calibration)==n
-        assert none_calibration==[None]*n
-        
+        assert len(none_calibration) == n
+        assert none_calibration == [None] * n
+
         one_calibration = platform._normalize_calibrations(calibrations=calibration, n=n)
         assert isinstance(one_calibration, list)
-        assert len(one_calibration)==n
+        assert len(one_calibration) == n
         for calibration_instance in one_calibration:
-            assert calibration_instance==calibration
-            
+            assert calibration_instance == calibration
+
         calibrations = [calibration, None, calibration_with_preparation_block]
         calibrations_normalized = platform._normalize_calibrations(calibrations=calibrations, n=n)
         assert isinstance(calibrations_normalized, list)
-        assert len(calibrations_normalized)==n
-        assert calibrations_normalized==calibrations
-        
+        assert len(calibrations_normalized) == n
+        assert calibrations_normalized == calibrations
+
         calibrations = [calibration, calibration_with_preparation_block]
         with pytest.raises(ValueError, match=re.escape(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")):
             platform._normalize_calibrations(calibrations=calibrations, n=n)
 
     def test_mapped_buses(self, platform: Platform):
         """Test the mappings of buses"""
-        qp_buses = set({'readout', 'drive'})
+        qp_buses = set({"readout", "drive"})
         mapping = None
-        
-        mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
-        assert mapped_buses==qp_buses
 
-        mapping = {'readout': 'readout_q0_bus', 'drive': 'drive_q0_bus'}
         mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
-        assert len(mapped_buses)==len(mapping)
-        assert 'readout_q0_bus' in mapped_buses
-        assert 'drive_q0_bus' in mapped_buses
-        
+        assert mapped_buses == qp_buses
+
+        mapping = {"readout": "readout_q0_bus", "drive": "drive_q0_bus"}
+        mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
+        assert len(mapped_buses) == len(mapping)
+        assert "readout_q0_bus" in mapped_buses
+        assert "drive_q0_bus" in mapped_buses
+
     def test_parallelisation_execute_qblox(self, platform: Platform):
         """Test that the execute parallelisation returns the same result per qprogram as the regular excute method"""
 
@@ -1677,7 +1769,7 @@ class TestMethods:
             # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
             assert result_parallel[0].results == non_parallel_results1.results
             assert result_parallel[1].results == non_parallel_results2.results
-            assert []==no_qprograms
+            assert [] == no_qprograms
 
     def test_calibrate_mixers(self, platform: Platform):
         """Test calibrating the Qblox mixers."""
@@ -1889,3 +1981,45 @@ class TestMethods:
         error_string = "Loops dimensions must be the same than the array introduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
+
+    def test_setting_getting_filter_bus_error_raised(self, platform: Platform):
+        #  Check that setting/getting a filter through a bus incorrectly raises the adequate error
+        output_id = 1
+        bus_alias = "drive_line_q0_bus"
+        with pytest.raises(Exception, match=f"OutputID {output_id} is not linked to bus with alias {bus_alias}"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=output_id)
+
+        with pytest.raises(Exception, match="Filter parameters are controlled using output_id and not channel_id"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", channel_id=output_id)
+            
+        with pytest.raises(Exception, match=f"OutputID {output_id} is not linked to bus with alias {bus_alias}"):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=output_id)
+
+        with pytest.raises(Exception, match="Filter parameters are controlled using output_id and not channel_id"):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, channel_id=output_id)
+
+    def test_setting_getting_filter_parameter_no_output_id_given(self, platform: Platform):
+        old_value = 200
+        new_value = 100
+
+        time_constant = platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0,output_id=0)
+        assert time_constant == old_value
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, value = new_value)
+        time_constant = platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0)
+        assert time_constant == new_value
+
+    def test_setting_getting_non_filter_parameter_error_raised(self, platform: Platform):
+        sequencer = 3
+        bus_alias = "drive_line_q0_bus"
+        with pytest.raises(Exception, match="Only QBlox Filter parameters are controlled using output_id and not channel_id"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=100e6, output_id=sequencer)
+
+        with pytest.raises(Exception, match="Only QBlox Filter parameters are controlled using output_id and not channel_id"):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, output_id=sequencer)
+
+        with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=100e6, channel_id=sequencer)
+
+        with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=sequencer)

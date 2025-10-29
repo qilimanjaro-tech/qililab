@@ -136,3 +136,4 @@ slurm_job_data*
 
 .qibo_configuration
 tmp.*
+.tmp/*
