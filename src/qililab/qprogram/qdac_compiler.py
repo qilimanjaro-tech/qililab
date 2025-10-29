@@ -156,7 +156,6 @@ class QdacCompiler:
                     self._handle_unknown(element)
                 elif (
                     isinstance(element, (Play, SetOffset))
-                    and element.crosstalk
                     and element.bus in self._crosstalk.matrix.keys()  # type: ignore
                 ):
                     element_list.append(i)
