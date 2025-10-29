@@ -1109,8 +1109,7 @@ class Platform:
         Example with database:
             .. code-block:: python
 
-                from qililab import Experiment
-                from qililab.qililab_settings import get_settings
+                from qililab import Experiment, get_settings
 
                 # Initialize your experiment
                 experiment = Experiment(label="my_experiment")
