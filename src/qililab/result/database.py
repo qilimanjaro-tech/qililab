@@ -136,7 +136,7 @@ class Measurement(base):  # type: ignore
     created_by = Column("created_by", String, server_default=text("current_user"))
     # TODO: add error_report = Column("error_report", String, nullable=True)
 
-    def end_experiment(self, Session):
+    def end_experiment(self, Session, traceback=None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 
@@ -146,12 +146,13 @@ class Measurement(base):  # type: ignore
             persistent_instance.end_time = datetime.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
+                if traceback is None:
+                    persistent_instance.experiment_completed = True
+                # TODO: add else: persistent_instance.error_report = traceback
                 session.commit()
-                persistent_instance.experiment_completed = True
                 return persistent_instance
             except Exception as e:
                 session.rollback()
-                # TODO: add persistent_instance.error_report = e.__str__()
                 raise e
 
     def read_experiment(self):
@@ -417,6 +418,7 @@ class DatabaseManager:
             else:
                 query = query.order_by(Measurement.measurement_id.desc())
 
+            Measurement.platform.isnot
             if light_read:
                 query = query.with_entities(  # Note that some columns are missing that currently are not being used
                     Measurement.measurement_id,
@@ -430,9 +432,10 @@ class DatabaseManager:
                     Measurement.sample_name,
                     Measurement.result_path,
                     Measurement.created_by,
-                    Measurement.debug_file,
-                    (Measurement.qprogram.isnot(None)).label("has_qprogram"),
-                    (Measurement.platform.isnot(None)).label("has_platform"),
+                    (Measurement.qprogram != "null").label("has_qprogram"),
+                    (Measurement.platform != "null").label("has_platform"),
+                    (Measurement.calibration != "null").label("has_calibration"),
+                    (Measurement.debug_file != "null").label("has_debug"),
                 )
 
             if pandas_output:
@@ -488,9 +491,10 @@ class DatabaseManager:
                     Measurement.sample_name,
                     Measurement.result_path,
                     Measurement.created_by,
-                    Measurement.debug_file,
-                    (Measurement.qprogram.isnot(None)).label("has_qprogram"),
-                    (Measurement.platform.isnot(None)).label("has_platform"),
+                    (Measurement.qprogram != "null").label("has_qprogram"),
+                    (Measurement.platform != "null").label("has_platform"),
+                    (Measurement.calibration != "null").label("has_calibration"),
+                    (Measurement.debug_file != "null").label("has_debug"),
                 )
 
             if pandas_output:
@@ -504,12 +508,26 @@ class DatabaseManager:
         with self.Session() as session:
             return session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
 
+    def get_calibration(self, measurement_id: int):
+        """Get Calibration of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+        """
+        with self.Session() as session:
+            return session.query(Measurement.calibration).filter(Measurement.measurement_id == measurement_id).scalar()
+
     def get_platform(self, measurement_id: int):
         """Get Platform of a measurement by its measurement_id.
         To be used when you have light loaded measurements
         """
         with self.Session() as session:
             return session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
+
+    def get_debug(self, measurement_id: int):
+        """Get Debug of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+        """
+        with self.Session() as session:
+            return session.query(Measurement.debug_file).filter(Measurement.measurement_id == measurement_id).scalar()
 
     def add_measurement(
         self,
@@ -524,6 +542,7 @@ class DatabaseManager:
         experiment: "Experiment" = None,  # type: ignore
         qprogram: "QProgram" = None,  # type: ignore
         calibration: "Calibration" = None,  # type: ignore
+        debug_file: str | None = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
     ):
@@ -585,6 +604,7 @@ class DatabaseManager:
             experiment=experiment,
             qprogram=qprogram,
             calibration=calibration,
+            debug_file=debug_file,
             parameters=parameters,
             data_shape=data_shape,
         )
