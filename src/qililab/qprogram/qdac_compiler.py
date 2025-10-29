@@ -101,7 +101,8 @@ class QdacCompiler:
         self._qdac_buses_alias: list[str]
         self._channels: dict[str, int]
         self._qdac: QDevilQDac2
-        self._crosstalk: CrosstalkMatrix | None
+
+        self._crosstalk: CrosstalkMatrix | None = None
 
         self._dc_dwell: int = 2
         self._dc_delay: int = 0
@@ -171,12 +172,17 @@ class QdacCompiler:
         self._qprogram = qprogram
         self._qdac = qdac
         self._qdac_buses = qdac_buses
-        self._crosstalk = crosstalk
 
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
+            if calibration.crosstalk_matrix:
+                self._crosstalk = calibration.crosstalk_matrix
+
+        if crosstalk is not None:
+            self._crosstalk = crosstalk
+
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
@@ -219,6 +225,12 @@ class QdacCompiler:
         elif isinstance(element, SetOffset):  # square with same dimension as play
             envelope = element.offset_path0  # type: ignore
 
+        if (
+            isinstance(envelope, np.ndarray)
+            and isinstance(flux_vector[element.bus], np.ndarray)
+            and flux_vector[element.bus].shape != envelope.shape  # type: ignore
+        ):
+            raise ValueError("ql.play elements must have the same size.")
         flux_vector[element.bus] = envelope
         return flux_vector
 
@@ -229,18 +241,6 @@ class QdacCompiler:
                 elements.append(block.elements.pop(element_idx - ii))
 
             play_elements = [element for element in elements if isinstance(element, Play)]
-            if (
-                len(
-                    {
-                        element.waveform.envelope().shape
-                        if isinstance(element.waveform, Waveform)
-                        else element.waveform.I.envelope()
-                        for element in play_elements
-                    }
-                )
-                > 1
-            ):
-                raise ValueError("ql.play elements must have the same size.")
             if play_elements:
                 dwell, delay, repetitions = play_elements[0].dwell, play_elements[0].delay, play_elements[0].repetitions
 
@@ -254,7 +254,8 @@ class QdacCompiler:
                     play = Play(
                         bus,
                         Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
-                        dwell=dwell, delay=delay,
+                        dwell=dwell,
+                        delay=delay,
                         repetitions=repetitions,
                     )
                     block.elements.insert(element_list[0], play)
