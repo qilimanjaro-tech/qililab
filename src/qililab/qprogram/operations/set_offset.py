@@ -19,9 +19,8 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class SetOffset(Operation):
-    def __init__(self, bus: str, offset_path0: float, offset_path1: float | None = None, crosstalk: bool = True):
+    def __init__(self, bus: str, offset_path0: float, offset_path1: float | None = None):
         super().__init__()
         self.bus: str = bus
         self.offset_path0: float = offset_path0
         self.offset_path1: float | None = offset_path1
-        self.crosstalk: bool = crosstalk

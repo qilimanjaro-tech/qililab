@@ -288,7 +288,7 @@ class QProgram(StructuredProgram):
         return copied_qprogram
 
     @overload
-    def play(self, bus: str, waveform: Waveform | IQPair, crosstalk: bool = True) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
@@ -297,7 +297,7 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def play(self, bus: str, waveform: str, crosstalk: bool = True) -> None:
+    def play(self, bus: str, waveform: str) -> None:
         """Play a named waveform on the bus.
 
         Args:
@@ -305,7 +305,7 @@ class QProgram(StructuredProgram):
             waveform (str): An identifier of a named waveform.
         """
 
-    def play(self, bus: str, waveform: Waveform | IQPair | str, crosstalk: bool = True) -> None:
+    def play(self, bus: str, waveform: Waveform | IQPair | str) -> None:
         """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
         This method handles both playing a waveform or IQPair, and playing a
@@ -480,7 +480,7 @@ class QProgram(StructuredProgram):
 
     @requires_domain("offset_path0", Domain.Voltage)
     @requires_domain("offset_path1", Domain.Voltage)
-    def set_offset(self, bus: str, offset_path0: float, offset_path1: float | None = None, crosstalk: bool = True):
+    def set_offset(self, bus: str, offset_path0: float, offset_path1: float | None = None):
         """Set the gain of the AWG associated with bus.
 
         Args:
@@ -488,7 +488,7 @@ class QProgram(StructuredProgram):
             offset_path0 (float): The new offset of the AWG for path0.
             offset_path1 (float): The new offset of the AWG for path1.
         """
-        operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1, crosstalk=crosstalk)
+        operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -543,7 +543,7 @@ class QProgram(StructuredProgram):
             self.qprogram._buses.add(bus)
 
         @overload
-        def play(self, bus: str, waveform: Waveform | IQPair, wait_time: int, crosstalk: bool = True) -> None:
+        def play(self, bus: str, waveform: Waveform | IQPair, wait_time: int) -> None:
             """Play a single waveform or an I/Q pair of waveforms on the bus.
 
             Args:
@@ -552,7 +552,7 @@ class QProgram(StructuredProgram):
             """
 
         @overload
-        def play(self, bus: str, waveform: str, wait_time: int, crosstalk: bool = True) -> None:
+        def play(self, bus: str, waveform: str, wait_time: int) -> None:
             """Play a named waveform on the bus.
 
             Args:
@@ -560,7 +560,7 @@ class QProgram(StructuredProgram):
                 waveform (str): An identifier of a named waveform.
             """
 
-        def play(self, bus: str, waveform: Waveform | IQPair | str, wait_time: int, crosstalk: bool = True) -> None:
+        def play(self, bus: str, waveform: Waveform | IQPair | str, wait_time: int) -> None:
             """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
             This method handles both playing a waveform or IQPair, and playing a
@@ -756,7 +756,6 @@ class QProgram(StructuredProgram):
             dwell: int | None = None,
             delay: int | None = None,
             repetitions: int | None = None,
-            crosstalk: bool = True,
         ) -> None:
             """Play a single waveform or an I/Q pair of waveforms on the bus.
 
@@ -766,7 +765,6 @@ class QProgram(StructuredProgram):
                 dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
                 delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
-                crosstalk (bool, optional): Trigger to apply the crosstalk correction in case a crosstalk is introduced inside platform. Defaults to True.
             """
 
         @overload
@@ -777,7 +775,6 @@ class QProgram(StructuredProgram):
             dwell: int | None = None,
             delay: int | None = None,
             repetitions: int | None = None,
-            crosstalk: bool = True,
         ) -> None:
             """Play a named waveform on the bus.
 
@@ -787,7 +784,6 @@ class QProgram(StructuredProgram):
                 dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
                 delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
-                crosstalk (bool, optional): Trigger to apply the crosstalk correction in case a crosstalk is introduced inside platform. Defaults to True.
             """
 
         def play(
@@ -797,7 +793,6 @@ class QProgram(StructuredProgram):
             dwell: int | None = None,
             delay: int | None = None,
             repetitions: int | None = None,
-            crosstalk: bool = True,
         ) -> None:
             """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
@@ -810,17 +805,14 @@ class QProgram(StructuredProgram):
                 dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
                 delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
-                crosstalk (bool, optional): Trigger to apply the crosstalk correction in case a crosstalk is introduced inside platform. Defaults to True.
             """
 
             operation = (
                 PlayWithCalibratedWaveform(
-                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, crosstalk=crosstalk
+                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions
                 )
                 if isinstance(waveform, str)
-                else Play(
-                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, crosstalk=crosstalk
-                )
+                else Play(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions)
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
