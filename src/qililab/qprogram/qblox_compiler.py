@@ -19,6 +19,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
+from qililab import CrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import FluxVector
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
@@ -173,6 +175,7 @@ class QbloxCompiler:
         self._sync_counter: int
         self._markers: dict[str, str] | None
         self._qblox_buses: list[str]
+        self._crosstalk: CrosstalkMatrix | None
 
     def compile(
         self,
@@ -184,6 +187,7 @@ class QbloxCompiler:
         markers: dict[str, str] | None = None,
         ext_trigger: bool = False,
         qblox_buses: list["Bus"] | None = None,
+        crosstalk: CrosstalkMatrix | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -228,7 +232,31 @@ class QbloxCompiler:
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.pop()
 
+        def crosstalk_traverse(block: Block):
+            # get crosstalk changes and coordinates
+            element_list = []
+            flux_vector = FluxVector()
+            flux_vector.set_crosstalk(self._crosstalk)  # type: ignore
+
+            for i, element in enumerate(block.elements):
+                handler = self._handlers.get(type(element))
+                if not handler:
+                    raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
+                elif (
+                    isinstance(element, (Play, SetOffset))
+                    and element.bus in self._crosstalk.matrix.keys()  # type: ignore
+                ):
+                    element_list.append(i)
+                    flux_vector = self._handle_flux_vector(flux_vector=flux_vector, element=element)
+
+                if isinstance(element, Block):
+                    block.elements[i] = crosstalk_traverse(element)
+
+            block = self._handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
+            return block
+
         self._qprogram = qprogram
+        self._crosstalk = crosstalk
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
@@ -341,6 +369,56 @@ class QbloxCompiler:
         index_I, length_I = handle_weight(weights.I)
         index_Q, _ = handle_weight(weights.Q)
         return index_I, index_Q, length_I
+
+    def _handle_flux_vector(self, flux_vector: FluxVector, element: Play | SetOffset):
+        if not self._crosstalk:
+            raise ValueError(
+                "No Crosstalk set. To implement the crosstalk correction with QDACII create it using platform.set_crosstalk()."
+            )
+
+        if isinstance(element, Play):
+            if isinstance(element.waveform, Waveform):
+                envelope = element.waveform.envelope()
+            elif isinstance(element.waveform, IQPair):
+                envelope = element.waveform.I.envelope()
+        elif isinstance(element, SetOffset):  # square with same dimension as play
+            envelope = element.offset_path0  # type: ignore
+
+        if (
+            isinstance(envelope, np.ndarray)
+            and isinstance(flux_vector[element.bus], np.ndarray)
+            and flux_vector[element.bus].shape != envelope.shape  # type: ignore
+        ):
+            raise ValueError("ql.play elements must have the same size.")
+        flux_vector[element.bus] = envelope
+        return flux_vector
+
+    def _handle_crosstalk_element(self, block: Block, element_list: list[int], flux_vector: FluxVector):
+        if element_list:
+            elements = []
+            for ii, element_idx in enumerate(element_list):
+                elements.append(block.elements.pop(element_idx - ii))
+
+            play_elements = [element for element in elements if isinstance(element, Play)]
+            if play_elements:
+                dwell, delay, repetitions = play_elements[0].dwell, play_elements[0].delay, play_elements[0].repetitions
+
+            for bus in flux_vector.bias_vector.keys():
+                if isinstance(flux_vector.bias_vector[bus], float):
+                    offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
+                    block.elements.insert(element_list[0], offset)
+                elif isinstance(flux_vector.bias_vector[bus], np.ndarray) or isinstance(
+                    flux_vector.bias_vector[bus], list
+                ):
+                    play = Play(
+                        bus,
+                        Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
+                        dwell=dwell,
+                        delay=delay,
+                        repetitions=repetitions,
+                    )
+                    block.elements.insert(element_list[0], play)
+        return block
 
     def _handle_parallel(self, element: Parallel):
         if not element.loops:
@@ -583,14 +661,20 @@ class QbloxCompiler:
             if duration > INST_MAX_WAIT:
                 long_wait = True
                 for iteration in range(duration // INST_MAX_WAIT):
-                    if iteration == (duration // INST_MAX_WAIT) - 1 and 0 <= remainder < INST_MIN_WAIT:  # handle the remainder at the last iteration if below 4
+                    if (
+                        iteration == (duration // INST_MAX_WAIT) - 1 and 0 <= remainder < INST_MIN_WAIT
+                    ):  # handle the remainder at the last iteration if below 4
                         if remainder == 0:
                             self._buses[bus].qpy_block_stack[-1].append_component(
                                 component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
                             )
                         else:
-                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_time=(INST_MAX_WAIT + remainder) - INST_MIN_WAIT))
-                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_time=INST_MIN_WAIT))
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Wait(wait_time=(INST_MAX_WAIT + remainder) - INST_MIN_WAIT)
+                            )
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Wait(wait_time=INST_MIN_WAIT)
+                            )
                             remainder = 0
 
                         break
@@ -601,17 +685,23 @@ class QbloxCompiler:
 
             if duration == INST_MAX_WAIT:
                 self._buses[bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
-                    )
+                    component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                )
 
             #  Combine two waits together if possible
-            combined_duration_flag = False  # Flag to determine if the wait has already been added by combining two waits
+            combined_duration_flag = (
+                False  # Flag to determine if the wait has already been added by combining two waits
+            )
             if long_wait is False:
                 block_components = self._buses[bus].qpy_block_stack[-1].components
-                if block_components and isinstance(block_components[-1], QPyInstructions.Wait):  # Check if the previous element was a wait
+                if block_components and isinstance(
+                    block_components[-1], QPyInstructions.Wait
+                ):  # Check if the previous element was a wait
                     combined_duration = block_components[-1].duration + remainder
                     if combined_duration <= INST_MAX_WAIT:
-                        block_components[-1] = QPyInstructions.Wait(wait_time=combined_duration)  # overwrite the previous wait to combine with the current
+                        block_components[-1] = QPyInstructions.Wait(
+                            wait_time=combined_duration
+                        )  # overwrite the previous wait to combine with the current
                         combined_duration_flag = True
 
             if remainder >= INST_MIN_WAIT and combined_duration_flag is False:
@@ -971,8 +1061,9 @@ class QbloxCompiler:
             self._buses[bus].weight_index_to_register[weight_index] = QPyProgram.Register()
             register = self._buses[bus].weight_index_to_register[weight_index]
             self._buses[bus].qpy_block_stack[block_index].append_component(
-                    component=QPyInstructions.Move(var=weight_index, register=register),
-                    bot_position=len(self._buses[bus].qpy_block_stack[block_index].components))
+                component=QPyInstructions.Move(var=weight_index, register=register),
+                bot_position=len(self._buses[bus].qpy_block_stack[block_index].components),
+            )
         return register
 
     def _handle_block(self, element: Block):
