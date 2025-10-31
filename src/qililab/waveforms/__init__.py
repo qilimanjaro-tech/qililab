@@ -45,6 +45,7 @@ from .iq_waveform import IQWaveform
 from .ramp import Ramp
 from .snz import SuddenNetZero
 from .square import Square
+from .utils import transform_pi_calibrated_waveform
 from .waveform import Waveform
 
 __all__ = [
@@ -60,4 +61,5 @@ __all__ = [
     "Square",
     "SuddenNetZero",
     "Waveform",
+    "transform_pi_calibrated_waveform"
 ]
