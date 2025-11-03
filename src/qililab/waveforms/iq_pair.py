@@ -16,7 +16,7 @@
 
 from warnings import warn
 
-from qililab import Domain
+from qililab.core.variables import Domain, requires_domain
 from qililab.waveforms import Gaussian, GaussianDragCorrection
 from qililab.waveforms.iq_waveform import IQWaveform
 from qililab.waveforms.waveform import Waveform
@@ -56,7 +56,7 @@ class IQPair(IQWaveform):
     @requires_domain("num_sigmas", Domain.Scalar)
     @requires_domain("drag_coefficient", Domain.Scalar)
     @staticmethod
-    def DRAG(amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float) -> IQPair:
+    def DRAG(amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float) -> IQWaveform:
         """Create a DRAG pulse. This is an IQ pair where the I channel corresponds to the gaussian wave and the Q is the drag correction, which corresponds to the derivative of the I channel times a ``drag_coefficient``.
 
         Args:
@@ -65,10 +65,10 @@ class IQPair(IQWaveform):
             num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
             drag_coefficient (float): Drag coefficient that gives the DRAG its imaginary components.
         """
-        warn("IQPair.DRAG will be deprecated in favour of IQDrag on the next release.",
+        warn("\nIQPair.DRAG will be deprecated in favour of IQDrag on the next release.",
              FutureWarning,
-             stacklevel=6)
+             stacklevel=4)
         waveform_i = Gaussian(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas)
-        waveform_q = GaussianDragCorrection(drag_coefficient=drag_coefficient, waveform=waveform_i)
+        waveform_q = GaussianDragCorrection(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas, drag_coefficient=drag_coefficient)
 
         return IQPair(I=waveform_i, Q=waveform_q)
