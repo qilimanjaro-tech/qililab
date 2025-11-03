@@ -101,7 +101,8 @@ class QdacCompiler:
         self._qdac_buses_alias: list[str]
         self._channels: dict[str, int]
         self._qdac: QDevilQDac2
-        self._crosstalk: CrosstalkMatrix | None
+
+        self._crosstalk: CrosstalkMatrix | None = None
 
         self._dc_dwell: int = 2
         self._dc_delay: int = 0
@@ -170,12 +171,17 @@ class QdacCompiler:
         self._qprogram = qprogram
         self._qdac = qdac
         self._qdac_buses = qdac_buses
-        self._crosstalk = crosstalk
 
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
+            if calibration.crosstalk_matrix:
+                self._crosstalk = calibration.crosstalk_matrix
+
+        if crosstalk is not None:
+            self._crosstalk = crosstalk
+
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
