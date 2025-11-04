@@ -102,8 +102,6 @@ class QdacCompiler:
         self._channels: dict[str, int]
         self._qdac: QDevilQDac2
 
-        self._crosstalk: CrosstalkMatrix | None = None
-
         self._dc_dwell: int = 2
         self._dc_delay: int = 0
         self._loop_repetitions: dict[str, int] = {}
@@ -145,29 +143,6 @@ class QdacCompiler:
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.pop()
 
-        def crosstalk_traverse(block: Block):
-            # get crosstalk changes and coordinates
-            element_list = []
-            flux_vector = FluxVector()
-            flux_vector.set_crosstalk(self._crosstalk)  # type: ignore
-
-            for i, element in enumerate(block.elements):
-                handler = self._handlers.get(type(element))
-                if not handler:
-                    self._handle_unknown(element)
-                elif (
-                    isinstance(element, (Play, SetOffset))
-                    and element.bus in self._crosstalk.matrix.keys()  # type: ignore
-                ):
-                    element_list.append(i)
-                    flux_vector = self._handle_flux_vector(flux_vector=flux_vector, element=element)
-
-                if isinstance(element, Block):
-                    block.elements[i] = crosstalk_traverse(element)
-
-            block = self._handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
-            return block
-
         self._qprogram = qprogram
         self._qdac = qdac
         self._qdac_buses = qdac_buses
@@ -177,10 +152,9 @@ class QdacCompiler:
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
             if calibration.crosstalk_matrix:
-                self._crosstalk = calibration.crosstalk_matrix
-
+                crosstalk = calibration.crosstalk_matrix
         if crosstalk is not None:
-            self._crosstalk = crosstalk
+            self._qprogram = self._qprogram.with_crosstalk(crosstalk=crosstalk)
 
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
@@ -188,10 +162,6 @@ class QdacCompiler:
             )
 
         self._populate_qdac_buses()
-
-        # Recursive traversal for Crosstalk
-        if self._crosstalk:
-            self._qprogram._body = crosstalk_traverse(self._qprogram._body)
 
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
@@ -209,56 +179,6 @@ class QdacCompiler:
 
         self._channels = {bus.alias: bus.channels[0] for bus in self._qdac_buses if bus.alias in self._qdac_buses_alias}
         return
-
-    def _handle_flux_vector(self, flux_vector: FluxVector, element: Play | SetOffset):
-        if not self._crosstalk:
-            raise ValueError(
-                "No Crosstalk set. To implement the crosstalk correction with QDACII create it using platform.set_crosstalk()."
-            )
-
-        if isinstance(element, Play):
-            if isinstance(element.waveform, Waveform):
-                envelope = element.waveform.envelope()
-            elif isinstance(element.waveform, IQPair):
-                envelope = element.waveform.I.envelope()
-        elif isinstance(element, SetOffset):  # square with same dimension as play
-            envelope = element.offset_path0  # type: ignore
-
-        if (
-            isinstance(envelope, np.ndarray)
-            and isinstance(flux_vector[element.bus], np.ndarray)
-            and flux_vector[element.bus].shape != envelope.shape  # type: ignore
-        ):
-            raise ValueError("ql.play elements must have the same size.")
-        flux_vector[element.bus] = envelope
-        return flux_vector
-
-    def _handle_crosstalk_element(self, block: Block, element_list: list[int], flux_vector: FluxVector):
-        if element_list:
-            elements = []
-            for ii, element_idx in enumerate(element_list):
-                elements.append(block.elements.pop(element_idx - ii))
-
-            play_elements = [element for element in elements if isinstance(element, Play)]
-            if play_elements:
-                dwell, delay, repetitions = play_elements[0].dwell, play_elements[0].delay, play_elements[0].repetitions
-
-            for bus in flux_vector.bias_vector.keys():
-                if isinstance(flux_vector.bias_vector[bus], float):
-                    offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
-                    block.elements.insert(element_list[0], offset)
-                elif isinstance(flux_vector.bias_vector[bus], np.ndarray) or isinstance(
-                    flux_vector.bias_vector[bus], list
-                ):
-                    play = Play(
-                        bus,
-                        Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
-                        dwell=dwell,
-                        delay=delay,
-                        repetitions=repetitions,
-                    )
-                    block.elements.insert(element_list[0], play)
-        return block
 
     def _handle_parallel(self, element: Parallel):
         if not element.loops:

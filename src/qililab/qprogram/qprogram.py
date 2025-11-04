@@ -14,8 +14,11 @@
 from copy import deepcopy
 from typing import overload
 
+import numpy as np
+from qililab import Arbitrary, CrosstalkMatrix
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import FluxVector
 from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
@@ -285,6 +288,90 @@ class QProgram(StructuredProgram):
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body)
+        return copied_qprogram
+
+    def with_crosstalk(self, crosstalk: CrosstalkMatrix):
+        """Apply crosstalk compensation to the qprogram flux buses.
+
+        This method traverses the elements of the QProgram, replacing any
+        Play or Offset instances by the compensated envelope or offset for
+        all flux buses.
+
+        Args:
+            crosstalk (CrosstalkMatrix): Crosstalk matrix class.
+
+        Returns:
+            QProgram: A new instance of QProgram with calibrated crosstalk.
+        """
+
+        def traverse(block: Block):
+            element_list = []
+            flux_vector = FluxVector()
+            flux_vector.set_crosstalk(crosstalk)  # type: ignore
+
+            for i, element in enumerate(block.elements):
+                if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():  # type: ignore
+                    element_list.append(i)
+                    flux_vector = handle_flux_vector(flux_vector=flux_vector, element=element)
+
+                if isinstance(element, Block):
+                    block.elements[i] = traverse(element)
+
+            block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
+            return block
+
+        def handle_flux_vector(flux_vector: FluxVector, element: Play | SetOffset):
+            if isinstance(element, Play):
+                if isinstance(element.waveform, Waveform):
+                    envelope = element.waveform.envelope()
+                elif isinstance(element.waveform, IQPair):
+                    envelope = element.waveform.I.envelope()
+            elif isinstance(element, SetOffset):  # square with same dimension as play
+                envelope = element.offset_path0  # type: ignore
+
+            if (
+                isinstance(envelope, np.ndarray)
+                and isinstance(flux_vector[element.bus], np.ndarray)
+                and flux_vector[element.bus].shape != envelope.shape  # type: ignore
+            ):
+                raise ValueError("qp.play elements must have the same size.")
+            flux_vector[element.bus] = envelope
+            return flux_vector
+
+        def handle_crosstalk_element(block: Block, element_list: list[int], flux_vector: FluxVector):
+            if element_list:
+                elements = []
+                for ii, element_idx in enumerate(element_list):
+                    elements.append(block.elements.pop(element_idx - ii))
+
+                play_elements = [element for element in elements if isinstance(element, Play)]
+                if play_elements:
+                    dwell, delay, repetitions = (
+                        play_elements[0].dwell,
+                        play_elements[0].delay,
+                        play_elements[0].repetitions,
+                    )
+
+                for bus in flux_vector.bias_vector.keys():
+                    if isinstance(flux_vector.bias_vector[bus], float):
+                        offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
+                        block.elements.insert(element_list[0], offset)
+                    elif isinstance(flux_vector.bias_vector[bus], np.ndarray) or isinstance(
+                        flux_vector.bias_vector[bus], list
+                    ):
+                        play = Play(
+                            bus,
+                            Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
+                            dwell=dwell,
+                            delay=delay,
+                            repetitions=repetitions,
+                        )
+                        block.elements.insert(element_list[0], play)
+            return block
+
+        copied_qprogram = deepcopy(self)
+        copied_qprogram._body = traverse(copied_qprogram._body)
+
         return copied_qprogram
 
     @overload
