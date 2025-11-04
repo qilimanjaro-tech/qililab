@@ -15,11 +15,9 @@
 """__init__.py"""
 
 from .enums import (
-    FILTER_PARAMETERS,
     AcquireTriggerMode,
     AcquisitionName,
     ConnectionName,
-    DistortionState,
     GateName,
     Instrument,
     InstrumentControllerName,
@@ -45,17 +43,15 @@ from .instruments import (
     RohdeSchwarzSGS100A,
     YokogawaGS200,
 )
-from .type_aliases import ChannelID, OutputID, ParameterValue
+from .type_aliases import ChannelID, ParameterValue
 
 __all__ = [
-    "FILTER_PARAMETERS",
     "AcquireTriggerMode",
     "AcquisitionName",
     "ChannelID",
     "Cluster",
     "ConnectionName",
     "Device",
-    "DistortionState",
     "FactoryElement",
     "GateName",
     "Instrument",
@@ -64,7 +60,6 @@ __all__ = [
     "IntegrationMode",
     "Keithley2600Driver",
     "MiniCircuitsDriver",
-    "OutputID",
     "Parameter",
     "ParameterValue",
     "PulseDistortionName",

@@ -15,14 +15,13 @@
 """This file contains the QbloxQCMRF class."""
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional, Sequence
+from typing import ClassVar, Optional
 
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
-from qililab.instruments.qblox.qblox_filters import QbloxFilter
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 
 from .qblox_qcm import QbloxQCM
 
@@ -51,10 +50,6 @@ class QbloxQCMRF(QbloxQCM):
         out_offsets: list[float] = field(
             init=False,
             default_factory=list,  # QCM-RF module doesn't have an `out_offsets` parameter
-        )
-        filters: Sequence[QbloxFilter] = field(
-            init=False,
-            default_factory=list,  # QCM-RF module doesn't have filters
         )
         out0_lo_freq_cal_type_default: Optional[str] = "off"
         out1_lo_freq_cal_type_default: Optional[str] = "off"
@@ -94,13 +89,7 @@ class QbloxQCMRF(QbloxQCM):
             getattr(device_sequencer, f"connect_out{sequencer.outputs[0]}")("IQ")
 
     @log_set_parameter
-    def set_parameter(
-        self,
-        parameter: Parameter,
-        value: ParameterValue,
-        channel_id: ChannelID | None = None,
-        output_id: OutputID | None = None,
-    ):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
@@ -145,18 +134,15 @@ class QbloxQCMRF(QbloxQCM):
             if self.is_device_active():
                 self.device.set(parameter.value, value)
             return
-        super().set_parameter(parameter, value, channel_id, output_id)
+        super().set_parameter(parameter, value, channel_id)
 
-    def get_parameter(
-        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
-    ):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
         """Set a parameter of the Qblox QCM-RF module.
 
         Args:
             parameter (Parameter): Parameter name.
             value (float | str | bool): Value to set.
             channel_id (int, optional): ID of the sequencer. Defaults to None.
-            output_id (int): module id. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
             if channel_id is not None:
@@ -170,13 +156,12 @@ class QbloxQCMRF(QbloxQCM):
 
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)
-        return super().get_parameter(parameter, channel_id, output_id)
+        return super().get_parameter(parameter, channel_id)
 
     def to_dict(self):
         """Return a dict representation of an `QCM-RF` instrument."""
         dictionary = super().to_dict()
         dictionary.pop("out_offsets")
-        dictionary.pop("filters")
         return dictionary
 
     def calibrate_mixers(self, cal_type: str, channel_id: ChannelID | None = None):

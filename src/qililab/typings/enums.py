@@ -443,23 +443,6 @@ class Parameter(str, Enum):
     TRIGGER_SLOPE = "trigger_slope"
     TRIGGER_TYPE = "trigger_type"
     SWEEP_GROUP_COUNT = "sweep_group_count"
-    EXPONENTIAL_AMPLITUDE_0 = "exponential_amplitude_0"
-    EXPONENTIAL_AMPLITUDE_1 = "exponential_amplitude_1"
-    EXPONENTIAL_AMPLITUDE_2 = "exponential_amplitude_2"
-    EXPONENTIAL_AMPLITUDE_3 = "exponential_amplitude_3"
-    EXPONENTIAL_AMPLITUDE = "exponential_amplitude"
-    EXPONENTIAL_TIME_CONSTANT_0 = "exponential_time_constant_0"
-    EXPONENTIAL_TIME_CONSTANT_1 = "exponential_time_constant_1"
-    EXPONENTIAL_TIME_CONSTANT_2 = "exponential_time_constant_2"
-    EXPONENTIAL_TIME_CONSTANT_3 = "exponential_time_constant_3"
-    EXPONENTIAL_TIME_CONSTANT = "exponential_time_constant"
-    EXPONENTIAL_STATE_0 = "exponential_state_0"
-    EXPONENTIAL_STATE_1 = "exponential_state_1"
-    EXPONENTIAL_STATE_2 = "exponential_state_2"
-    EXPONENTIAL_STATE_3 = "exponential_state_3"
-    EXPONENTIAL_STATE = "exponential_state"
-    FIR_COEFF = "fir_coeff"
-    FIR_STATE = "fir_state"
 
     @classmethod
     def to_yaml(cls, representer, node):
@@ -471,16 +454,6 @@ class Parameter(str, Enum):
         """Method to be called automatically during YAML deserialization."""
         _, value = node.value.split("-")
         return cls(value)
-
-
-FILTER_PARAMETERS = [
-    p for p in Parameter
-    if (
-        p.name.startswith("EXPONENTIAL_AMPLITUDE")
-        or p.name.startswith("EXPONENTIAL_TIME_CONSTANT")
-        or p.name.startswith("EXPONENTIAL_STATE")
-        or p.name.startswith("FIR_")
-    )]
 
 
 class ResultName(str, Enum):
@@ -496,21 +469,6 @@ class ResultName(str, Enum):
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
     QUANTUM_MACHINES = "quantum_machines"
     QUANTUM_MACHINES_MEASUREMENT = "quantum_machines_measurement"
-
-
-class DistortionState(str, Enum):
-    """Distortion State
-
-    Args:
-        enum (str): Distortion State for qblox filters:
-        * enabled
-        * bypassed
-        * delay_comp
-    """
-
-    ENABLED = "enabled"
-    BYPASSED = "bypassed"
-    DELAY_COMP = "delay_comp"
 
 
 class ConnectionName(str, Enum):

@@ -20,10 +20,9 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class GetParameter(Operation):
-    def __init__(self, variable: Variable, alias: str, parameter: Parameter, channel_id: int | None = None, output_id: int | None = None) -> None:
+    def __init__(self, variable: Variable, alias: str, parameter: Parameter, channel_id: int | None = None) -> None:
         super().__init__()
         self.variable: Variable = variable
         self.alias: str = alias
         self.parameter: Parameter = parameter
         self.channel_id: int | None = channel_id
-        self.output_id: int | None = output_id

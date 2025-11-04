@@ -21,7 +21,7 @@ from typing import get_type_hints
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import Settings
-from qililab.typings import ChannelID, Device, InstrumentName, OutputID, Parameter, ParameterValue
+from qililab.typings import ChannelID, Device, InstrumentName, Parameter, ParameterValue
 
 
 class Instrument(BusElement, ABC):
@@ -104,12 +104,7 @@ class Instrument(BusElement, ABC):
         """Set initial instrument settings."""
 
     @abstractmethod
-    def get_parameter(
-        self,
-        parameter: Parameter,
-        channel_id: ChannelID | None = None,
-        output_id: OutputID | None = None,
-    ) -> ParameterValue:
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
         """Gets the parameter of a specific instrument.
 
         Args:
@@ -122,13 +117,7 @@ class Instrument(BusElement, ABC):
 
     @log_set_parameter
     @abstractmethod
-    def set_parameter(
-        self,
-        parameter: Parameter,
-        value: ParameterValue,
-        channel_id: ChannelID | None = None,
-        output_id: OutputID | None = None,
-    ):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Sets the parameter of a specific instrument.
 
         Args:

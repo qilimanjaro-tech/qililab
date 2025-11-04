@@ -25,7 +25,7 @@ from qililab.instruments.decorators import check_device_initialized, log_set_par
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.vna_result import VNAResult
-from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
 from qililab.typings.enums import (
     VNAAverageModes,
     VNAFormatBorder,
@@ -287,13 +287,7 @@ class E5080B(Instrument):
         return self.settings.format_border
 
     @log_set_parameter
-    def set_parameter(
-        self,
-        parameter: Parameter,
-        value: ParameterValue,
-        channel_id: ChannelID | None = None,
-        output_id: OutputID | None = None,
-    ):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Get instrument parameter.
 
         Args:
@@ -436,9 +430,7 @@ class E5080B(Instrument):
 
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(
-        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
-    ) -> ParameterValue:
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
         """Get instrument parameter.
 
         Args:
