@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 import h5py
 import numpy as np
 from pandas import read_sql
+from qilisdk.utils.serialization import serialize
 from sqlalchemy import create_engine, exists
 from sqlalchemy.orm import sessionmaker
 
@@ -363,7 +364,7 @@ class DatabaseManager:
         start_time = datetime.datetime.now()
 
         with self.Session() as session:
-            calibration_id = session.query(Calibration_run).order_by(Calibration_run.calibration_id.desc()).first()
+            calibration_id = session.query(Calibration_run).order_by(Calibration_run.calibration_id.desc()).first().calibration_id
 
         sample_name = calibration.parameters["sample_name"]
         cooldown = calibration.parameters["cooldown"]
@@ -377,6 +378,11 @@ class DatabaseManager:
         result_path = f"{dir_path}/{experiment_name}.h5"
         fitting_path = f"{dir_path}/fits/"
 
+        folder = dir_path
+        if not os.path.isfile(folder):
+            os.makedirs(folder)
+            warnings.warn(f"Data folder did not exist. Created one at {folder}")
+
         self.calibration_measurement = Autocal_Measurement(
             experiment_name=experiment_name,
             sample_name=sample_name,
@@ -389,8 +395,8 @@ class DatabaseManager:
             cooldown=cooldown,
             platform_after=platform,
             qprogram=qprogram,
-            calibration=calibration,
-            parameters=parameters,
+            calibration=serialize(calibration),
+            parameters=serialize(parameters),
             data_shape=data_shape,
         )
         with self.Session() as session:

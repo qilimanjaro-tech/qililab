@@ -89,7 +89,7 @@ class StreamArray:
                 qubit_idx=self.qubit_idx,
                 platform=self.platform.to_dict() if self.platform else None,
                 qprogram=serialize(self.qprogram) if self.qprogram else None,
-                calibration=serialize(self.calibration),
+                calibration=self.calibration,
                 parameters=self.loops,
                 data_shape=self.shape,
             )
