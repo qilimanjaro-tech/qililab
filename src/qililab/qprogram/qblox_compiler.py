@@ -19,8 +19,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
-from qililab import CrosstalkMatrix
-from qililab.qprogram.crosstalk_matrix import FluxVector
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
@@ -29,6 +27,7 @@ from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 from qililab.config import logger
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
@@ -175,7 +174,7 @@ class QbloxCompiler:
         self._sync_counter: int
         self._markers: dict[str, str] | None
         self._qblox_buses: list[str]
-        self._crosstalk: CrosstalkMatrix | None
+        self._crosstalk: CrosstalkMatrix | None = None
 
     def compile(
         self,
@@ -256,15 +255,18 @@ class QbloxCompiler:
             return block
 
         self._qprogram = qprogram
-        self._crosstalk = crosstalk
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
+            if calibration.crosstalk_matrix:
+                self._crosstalk = calibration.crosstalk_matrix
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
+        if crosstalk is not None:
+            self._crosstalk = crosstalk
 
         self._qblox_buses = [bus.alias for bus in qblox_buses] if qblox_buses else []
 
@@ -289,6 +291,10 @@ class QbloxCompiler:
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
             self._buses[bus].static_duration += 4
+
+        # Recursive traversal for Crosstalk
+        if self._crosstalk:
+            self._qprogram._body = crosstalk_traverse(self._qprogram._body)
 
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
@@ -689,19 +695,13 @@ class QbloxCompiler:
                 )
 
             #  Combine two waits together if possible
-            combined_duration_flag = (
-                False  # Flag to determine if the wait has already been added by combining two waits
-            )
+            combined_duration_flag = False  # Flag to determine if the wait has already been added by combining two waits
             if long_wait is False:
                 block_components = self._buses[bus].qpy_block_stack[-1].components
-                if block_components and isinstance(
-                    block_components[-1], QPyInstructions.Wait
-                ):  # Check if the previous element was a wait
+                if block_components and isinstance(block_components[-1], QPyInstructions.Wait):  # Check if the previous element was a wait
                     combined_duration = block_components[-1].duration + remainder
                     if combined_duration <= INST_MAX_WAIT:
-                        block_components[-1] = QPyInstructions.Wait(
-                            wait_time=combined_duration
-                        )  # overwrite the previous wait to combine with the current
+                        block_components[-1] = QPyInstructions.Wait(wait_time=combined_duration)  # overwrite the previous wait to combine with the current
                         combined_duration_flag = True
 
             if remainder >= INST_MIN_WAIT and combined_duration_flag is False:
