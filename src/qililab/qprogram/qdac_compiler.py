@@ -16,13 +16,11 @@ import math
 from collections import deque
 from typing import TYPE_CHECKING, Any, Callable
 
-import numpy as np
-
 from qililab.config import logger
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
@@ -41,9 +39,6 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
-from qililab.waveforms.arbitrary import Arbitrary
-from qililab.waveforms.iq_pair import IQPair
-from qililab.waveforms.waveform import Waveform
 
 if TYPE_CHECKING:
     from qililab.platform.components.bus import Bus
