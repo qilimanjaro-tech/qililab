@@ -376,10 +376,10 @@ class DatabaseManager:
             else f"{base_path}/calibration_{calibration_id}"
         )
         result_path = f"{dir_path}/{experiment_name}.h5"
-        fitting_path = f"{dir_path}/fits/"
+        fitting_path = f"{dir_path}/fits_{experiment_name}/"
 
         folder = dir_path
-        if not os.path.isfile(folder):
+        if not os.path.isdir(folder):
             os.makedirs(folder)
             warnings.warn(f"Data folder did not exist. Created one at {folder}")
 
