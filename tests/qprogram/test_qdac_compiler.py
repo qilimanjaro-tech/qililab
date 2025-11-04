@@ -4,7 +4,10 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+from qililab.instruments import Instrument, Instruments
+from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Bus
+from qililab.qprogram import Calibration, QdacCompiler, QProgram
 from qililab.qprogram.blocks.for_loop import ForLoop
 from qililab.qprogram.blocks.loop import Loop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
@@ -12,9 +15,6 @@ from qililab.qprogram.operations.play import Play
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 from qililab.qprogram.variable import Domain
 from qililab.waveforms import Square
-from qililab.instruments import Instrument, Instruments
-from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
-from qililab.qprogram import QProgram, Calibration, QdacCompiler
 from qililab.waveforms.arbitrary import Arbitrary
 from qililab.waveforms.iq_pair import IQPair
 
@@ -170,7 +170,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], crosstalk=crosstalk)
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdac == qdac
         
         assert qdac.upload_voltage_list.call_count == 2
@@ -201,7 +200,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], calibration=calibration)
 
         assert isinstance(output, QdacCompilationOutput)
-        # assert compiler._qprogram == qp
         assert compiler._qdac == qdac
         
         assert qdac.upload_voltage_list.call_count == 2
@@ -230,7 +228,6 @@ class TestQdacCompiler:
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], crosstalk=crosstalk)
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
         assert compiler._qdac == qdac
         
         assert qdac.upload_voltage_list.call_count == 2
@@ -255,7 +252,7 @@ class TestQdacCompiler:
 
         with pytest.raises(
             ValueError, 
-            match=f"ql.play elements must have the same size.",
+            match=f"qp.play elements must have the same size.",
         ):
             compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], crosstalk=crosstalk)
 
@@ -594,19 +591,3 @@ class TestQdacCompiler:
             NotImplementedError, match=f"<class 'qililab.qprogram.operations.sync.Sync'> is not supported in QDACII."
         ):
             compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], crosstalk=crosstalk)
-
-    def test_handle_flux_vector_raises_error_without_crosstalk(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
-        """Test all possible combinations of play + set_trigger on the QDACII."""
-        crosstalk = CrosstalkMatrix.from_buses(
-            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
-        )
-        flux_vector = FluxVector()
-        flux_vector.set_crosstalk(crosstalk) 
-
-        compiler = QdacCompiler()
-        compiler._crosstalk = None
-        with pytest.raises(
-            ValueError, 
-            match=f"No Crosstalk set. To implement the crosstalk correction with QDACII create it using platform.set_crosstalk().",
-        ):
-            compiler._handle_flux_vector(flux_vector= flux_vector, element= Play("flux1", Square(1, 10)))

@@ -15,6 +15,7 @@ from copy import deepcopy
 from typing import overload
 
 import numpy as np
+
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
@@ -41,7 +42,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import Domain
-from qililab.waveforms import Arbitrary, IQPair, Waveform 
+from qililab.waveforms import Arbitrary, IQPair, Waveform
 from qililab.yaml import yaml
 
 
