@@ -715,6 +715,18 @@ class Testdatabase:
 
         assert platform == mock_session.query(Measurement.platform).filter(Measurement.measurement_id == 123).scalar()
 
+    def test_get_calibration(self, db_manager: DatabaseManager):
+        """Test get qprogram function from the database manager"""
+        mock_session = db_manager.Session()
+        mock_session.__enter__.return_value = mock_session
+
+        with patch("os.path.isfile", return_value=False):
+            qprogram = db_manager.get_calibration(123)
+
+        assert (
+            qprogram == mock_session.query(Measurement.calibration).filter(Measurement.measurement_id == 123).scalar()
+        )
+
     def test_get_debug(self, db_manager: DatabaseManager):
         """Test get qprogram function from the database manager"""
         mock_session = db_manager.Session()
