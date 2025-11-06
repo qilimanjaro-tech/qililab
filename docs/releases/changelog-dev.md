@@ -350,7 +350,7 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 - Added `ql.load_by_id(id)` in qililab, This function allows to retrieve the data path of a measurement with the given id without creating a `DatabaseManager` instance. This function is intended to be used inside notebooks using slurm as `DatabaseManager` cannot be submitted.
   [#986](https://github.com/qilimanjaro-tech/qililab/pull/986)
 
-- Implemented crosstalk compensation for `QdacCompiler`. The compiler automatically detects if there is a crosstalk matrix inside platform and implements the crosstalk for any bus inside the `Crosstalk` class. This function can be deactivated by setting the crosstalk variable as False inside `qp.play` and `qp.offset`.
+- Implemented QDACII crosstalk compensation for `Qprogram`. The compiler automatically detects if there is a crosstalk matrix inside platform and implements the crosstalk for any bus inside the `Crosstalk` class. This function can be deactivated by setting the crosstalk variable as False inside `qp.play` and `qp.offset`.
 The crosstalk modifies the structure of the `QProgram`, it changes any play or set offset into a set of plays and offsets of each bus of the crosstalk. It also takes into account different loops.
 With crosstalk, this example qprogram:
 

@@ -146,7 +146,7 @@ class QdacCompiler:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
-            if calibration.crosstalk_matrix:
+            if calibration.crosstalk_matrix and crosstalk is None:
                 crosstalk = calibration.crosstalk_matrix
         if crosstalk is not None:
             self._qprogram = self._qprogram.with_crosstalk(crosstalk=crosstalk)
