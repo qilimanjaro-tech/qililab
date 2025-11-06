@@ -67,6 +67,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
@@ -1269,7 +1270,11 @@ class Platform:
                             acquisitions=acquisitions[bus_alias], channel_id=int(channel)
                         )
                         for bus_result in bus_results:
-                            results.append_result(bus=bus_alias, result=bus_result)
+                            for _, acquisition_data in acquisitions[bus_alias].items():
+                                intertwined = acquisition_data.intertwined
+                                unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                for unintertwined_result in unintertwined_results:
+                                    results.append_result(bus=bus_alias, result=unintertwined_result)
 
         # Reset instrument settings
         for bus_alias in sequences:
@@ -1278,6 +1283,36 @@ class Platform:
                     instrument.desync_sequencer(sequencer_id=int(channel))
 
         return results
+
+    def _unintertwined_qblox_results(self, bus_result: QbloxMeasurementResult, intertwined: int) -> list[QbloxMeasurementResult]:
+        """ Return a list of results where intertwined acquisitions are separated.
+
+        In Qililab, when multiple acquisitions or measurements are performed at the same nested level, their results are intertwined: the bins are looped over
+        while the acquisition index remains constant.
+        If `intertwined` is greater than 1, this function separates each acquisition into its own QbloxMeasurementResult object.
+        QbloxMeasurementResult object. If `intertwined` is 1 the result is returned inside a single-element list.
+
+        Returns:
+            list[QbloxMeasurementResult]: unintertwined results where each element corresponds to one acquisition.
+        """
+        results_unintertwined_list = []
+        if intertwined > 1:
+            for result in range(intertwined):
+                bus = bus_result.bus
+                new_raw_measurement_data = {"scope": {"path0": {"data": bus_result.raw_measurement_data["scope"]["path0"]["data"][result::intertwined]},
+                                                      "path1": {"data": bus_result.raw_measurement_data["scope"]["path1"]["data"][result::intertwined]}},
+                                            "bins": {"integration": {"path0": bus_result.raw_measurement_data["bins"]["integration"]["path0"][result::intertwined],
+                                                                    "path1": bus_result.raw_measurement_data["bins"]["integration"]["path1"][result::intertwined]},
+                                            "threshold": bus_result.raw_measurement_data["bins"]["threshold"][result::intertwined],
+                                            "avg_cnt": bus_result.raw_measurement_data["bins"]["avg_cnt"][result::intertwined]}
+                                            }
+                results_unintertwined = QbloxMeasurementResult(bus=bus, raw_measurement_data=new_raw_measurement_data, shape=bus_result.shape)
+                results_unintertwined_list.append(results_unintertwined)
+
+        else:
+            results_unintertwined_list = [bus_result]
+
+        return results_unintertwined_list
 
     def _execute_quantum_machines_compilation_output(
         self,
@@ -1558,7 +1593,11 @@ class Platform:
                                 acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias], channel_id=int(channel)
                             )
                             for bus_result in bus_results:
-                                results[qprogram_idx].append_result(bus=bus_alias, result=bus_result)
+                                for _, acquisition_data in aquisitions_per_qprogram[qprogram_idx][bus_alias].items():
+                                    intertwined = acquisition_data.intertwined
+                                    unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                    for unintertwined_result in unintertwined_results:
+                                        results[qprogram_idx].append_result(bus=bus_alias, result=unintertwined_result)
 
         # Reset instrument settings
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
