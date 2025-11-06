@@ -374,7 +374,7 @@ class DatabaseManager:
         start_time = datetime.datetime.now()
 
         with self.Session() as session:
-            calibration_id = session.query(Calibration_run).order_by(Calibration_run.calibration_id.desc()).first().calibration_id
+            calibration_id = session.query(Calibration_run).order_by(Calibration_run.calibration_id.desc()).first().calibration_id  # type: ignore
 
         sample_name = calibration.parameters["sample_name"]
         cooldown = calibration.parameters["cooldown"]

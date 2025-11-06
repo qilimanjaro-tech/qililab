@@ -737,17 +737,20 @@ class Testdatabase:
 
         assert qprogram == mock_session.query(Measurement.debug_file).filter(Measurement.measurement_id == 123).scalar()
 
+    @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.datetime")
-    def test_add_autocal_measurement(self, mock_datetime, db_manager: DatabaseManager):
+    def test_add_autocal_measurement(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
         # Setup
         mock_session_instance = MagicMock()
         mock_session_context = MagicMock()
         mock_session_context.__enter__.return_value = mock_session_instance
         db_manager.Session = MagicMock(return_value=mock_session_context)
 
+        mock_calibration_id = MagicMock()
         mock_query = MagicMock()
         mock_order_by = MagicMock()
-        mock_order_by.first.return_value = 1
+        mock_calibration_id.calibration_id = 1  
+        mock_order_by.first.return_value = mock_calibration_id
         mock_query.order_by.return_value = mock_order_by
         mock_session_instance.query.return_value = mock_query
 
@@ -765,9 +768,11 @@ class Testdatabase:
         assert measurement.result_path == expected_path
         db_manager._mock_session.add.assert_called_once
         db_manager._mock_session.commit.assert_called_once
+        mock_makedirs.assert_called_once_with("/shared_test/calibration_1")
 
+    @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.datetime")
-    def test_add_autocal_measurement_raises_exception(self, mock_datetime, db_manager: DatabaseManager):
+    def test_add_autocal_measurement_raises_exception(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
@@ -787,7 +792,8 @@ class Testdatabase:
 
         mock_session.rollback.assert_called_once
 
-    def test_update_platform(self, db_manager: DatabaseManager):
+    @patch("qililab.result.database.database_manager.os.makedirs")
+    def test_update_platform(self, mock_makedirs, db_manager: DatabaseManager):
 
         # Setup
         mock_session_instance = MagicMock()
@@ -797,7 +803,7 @@ class Testdatabase:
 
         mock_query = MagicMock()
         mock_order_by = MagicMock()
-        mock_order_by.first.return_value = 1
+        mock_order_by.first.calibration_id.return_value = 1
         mock_query.order_by.return_value = mock_order_by
         mock_session_instance.query.return_value = mock_query
 
