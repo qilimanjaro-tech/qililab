@@ -50,6 +50,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
+from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
@@ -191,6 +192,16 @@ def fixture_qblox_results():
         },
     ]
 
+@pytest.fixture(name="raw_measurement_data_intertwined")
+def fixture_raw_measurement_data_intertwined() -> dict:
+    """Dictionary of raw measurement data as returned from QRM instruments."""
+    return {"bins": {"integration": {"path0": [1, 2, 3, 4], "path1": [5, 6, 7, 8]}, "threshold": [0.1, 0.2, 0.3, 0.4], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
+
+
+@pytest.fixture(name="raw_measurement_data_intertwined_scope")
+def fixture_raw_measurement_data_intertwinescope() -> dict:
+    """Dictionary of raw measurement data as returned from QRM instruments."""
+    return {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 2, 3, 4]}, "path1":{"data": [5, 6, 7, 8]}}}
 
 @pytest.fixture(name="flux_to_bus_topology")
 def get_flux_to_bus_topology():
@@ -1982,6 +1993,33 @@ class TestMethods:
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
+    def test_qblox_intertwined_results(self, raw_measurement_data_intertwined: dict, platform: Platform):
+        """Test that the results get unintertwined."""
+
+        bus_result = QbloxMeasurementResult(bus="drive", raw_measurement_data=raw_measurement_data_intertwined)
+        intertwined = 2
+
+        unintertwined_results = platform._unintertwined_qblox_results(bus_result, intertwined)
+
+        assert len(unintertwined_results)==intertwined
+
+        assert unintertwined_results[0].raw_measurement_data == {"bins": {"integration": {"path0": [1, 3], "path1": [5, 7]}, "threshold": [0.1, 0.3], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
+        assert unintertwined_results[1].raw_measurement_data == {"bins": {"integration": {"path0": [2, 4], "path1": [6, 8]}, "threshold": [0.2, 0.4], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
+
+
+    def test_qblox_intertwined_results_scope(self, raw_measurement_data_intertwined_scope: dict, platform: Platform):
+        """Test that the scope results get unintertwined."""
+
+        bus_result = QbloxMeasurementResult(bus="drive", raw_measurement_data=raw_measurement_data_intertwined_scope)
+        intertwined = 2
+
+        unintertwined_results = platform._unintertwined_qblox_results(bus_result, intertwined)
+
+        assert len(unintertwined_results)==intertwined
+
+        assert unintertwined_results[0].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 3]}, "path1":{"data": [5, 7]}}}
+        assert unintertwined_results[1].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [2, 4]}, "path1":{"data": [6, 8]}}}
+
     def test_setting_getting_filter_bus_error_raised(self, platform: Platform):
         #  Check that setting/getting a filter through a bus incorrectly raises the adequate error
         output_id = 1
@@ -2023,3 +2061,4 @@ class TestMethods:
 
         with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
             platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=sequencer)
+
