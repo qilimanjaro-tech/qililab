@@ -18,6 +18,7 @@ from typing import Any, TypedDict
 import h5py
 import numpy as np
 
+from qililab.qililab_settings import get_settings
 from qililab.result.database import DatabaseManager
 from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
@@ -113,10 +114,7 @@ class ExperimentResultsWriter(ExperimentResults):
         path: str,
         metadata: ExperimentMetadata,
         db_metadata: ExperimentDataBaseMetadata | None,
-        db_manager: DatabaseManager | None,
-        live_plot: bool = True,
-        slurm_execution: bool = True,
-        port_number: int | None = None,
+        db_manager: DatabaseManager | None
     ):
         """Initializes the ExperimentResultsWriter instance.
 
@@ -132,9 +130,9 @@ class ExperimentResultsWriter(ExperimentResults):
         self._metadata = metadata
         self._db_metadata = db_metadata
         self._db_manager = db_manager
-        self._live_plot_true = live_plot
-        self._slurm_execution = slurm_execution
-        self._port_number = port_number
+        self._live_plot_true = get_settings().experiment_live_plot_enabled
+        self._slurm_execution = get_settings().experiment_live_plot_on_slurm
+        self._port_number = get_settings().experiment_live_plot_port
 
     # pylint: disable=too-many-locals
     def _create_results_file(self):
