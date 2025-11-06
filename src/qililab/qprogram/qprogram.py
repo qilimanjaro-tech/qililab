@@ -286,7 +286,9 @@ class QProgram(StructuredProgram):
                     )
                     block.elements[index] = measure_operation
 
-        return traverse(self.body)
+        copied_qprogram = deepcopy(self)
+        traverse(copied_qprogram.body)
+        return copied_qprogram
 
     def with_crosstalk(self, crosstalk: CrosstalkMatrix):
         """Apply crosstalk compensation to the qprogram flux buses.
@@ -367,8 +369,7 @@ class QProgram(StructuredProgram):
                         block.elements.insert(element_list[0], play)
 
         copied_qprogram = deepcopy(self)
-        traverse(copied_qprogram.body)
-
+        traverse(copied_qprogram._body)
         return copied_qprogram
 
     @overload
