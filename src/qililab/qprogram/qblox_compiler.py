@@ -183,7 +183,6 @@ class BusCompilationInfo:
         self.single_bin_counter: int = 0
 
 
-
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
 
@@ -1247,8 +1246,6 @@ class QbloxCompiler:
 
         self._buses[element.bus].static_duration += integration_length
         self._buses[element.bus].duration_since_sync += integration_length
-        self._buses[element.bus].next_bin_index = 0  # maybe this counter can be removed completely
-        self._buses[element.bus].next_acquisition_index += 1
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].prev_nested_level_acquire = self._buses[element.bus].count_nested_level_acquire
         self._buses[element.bus].upd_param_instruction_pending = False
