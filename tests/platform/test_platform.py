@@ -7,7 +7,7 @@ import warnings
 from pathlib import Path
 from queue import Queue
 from types import MethodType, SimpleNamespace
-from unittest.mock import MagicMock, create_autospec, patch
+from unittest.mock import ANY, MagicMock, create_autospec, patch
 import logging
 
 import numpy as np
@@ -478,35 +478,46 @@ class TestPlatform:
         ):
             platform.initial_setup()
 
-    @patch("qililab.typings.Parameter")
-    def test_set_flux_parameter_qblox_channel0(self, mock_parameter, platform: Platform):
-        """Test platform raises and error if no instrument connection."""
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q0_bus": {"flux_line_q0_bus": 0.1}}))
-        platform.set_parameter(alias="flux_line_q0_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.OFFSET_OUT0.called_once()
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q1_bus": {"flux_line_q1_bus": 0.1}}))
-        platform.set_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.OFFSET_OUT1.called_once()
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q2_bus": {"flux_line_q2_bus": 0.1}}))
-        platform.set_parameter(alias="flux_line_q2_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.OFFSET_OUT2.called_once()
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q3_bus": {"flux_line_q3_bus": 0.1}}))
-        platform.set_parameter(alias="flux_line_q3_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.OFFSET_OUT3.called_once()
+    def test_set_flux_parameter_qblox_channel0(self, platform: Platform, monkeypatch: pytest.MonkeyPatch):
+        """Test platform sets the expected parameter for each QBlox output channel."""
+        alias_to_parameter = {
+            "flux_line_q0_bus": Parameter.OFFSET_OUT0,
+            "flux_line_q1_bus": Parameter.OFFSET_OUT1,
+            "flux_line_q2_bus": Parameter.OFFSET_OUT2,
+            "flux_line_q3_bus": Parameter.OFFSET_OUT3,
+        }
 
-    @patch("qililab.typings.Parameter")
-    def test_set_flux_parameter_spi(self, mock_parameter, platform_spi: Platform):
-        """Test platform raises and error if no instrument connection."""
+        for alias, expected_parameter in alias_to_parameter.items():
+            bus = platform.get_element(alias=alias)
+            set_parameter_mock = MagicMock()
+            monkeypatch.setattr(bus, "set_parameter", set_parameter_mock)
+
+            platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={alias: {alias: 0.1}}))
+            platform.set_parameter(alias=alias, parameter=Parameter.FLUX, value=0.14)
+
+            set_parameter_mock.assert_called_once_with(parameter=expected_parameter, value=ANY)
+
+    def test_set_flux_parameter_spi(self, platform_spi: Platform, monkeypatch: pytest.MonkeyPatch):
+        """Test SPI buses use current when setting flux."""
+        bus = platform_spi.get_element(alias="spi_bus")
+        set_parameter_mock = MagicMock()
+        monkeypatch.setattr(bus, "set_parameter", set_parameter_mock)
+
         platform_spi.set_crosstalk(CrosstalkMatrix.from_buses(buses={"spi_bus": {"spi_bus": 0.1}}))
         platform_spi.set_parameter(alias="spi_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.CURRENT.called_once()
 
-    @patch("qililab.typings.Parameter")
-    def test_set_flux_parameter_qdevil(self, mock_parameter, platform_qdevil: Platform):
-        """Test platform raises and error if no instrument connection."""
+        set_parameter_mock.assert_called_once_with(parameter=Parameter.CURRENT, value=ANY)
+
+    def test_set_flux_parameter_qdevil(self, platform_qdevil: Platform, monkeypatch: pytest.MonkeyPatch):
+        """Test QDevil buses use voltage when setting flux."""
+        bus = platform_qdevil.get_element(alias="qdac_bus")
+        set_parameter_mock = MagicMock()
+        monkeypatch.setattr(bus, "set_parameter", set_parameter_mock)
+
         platform_qdevil.set_crosstalk(CrosstalkMatrix.from_buses(buses={"qdac_bus": {"qdac_bus": 0.1}}))
         platform_qdevil.set_parameter(alias="qdac_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.VOLTAGE.called_once()
+
+        set_parameter_mock.assert_called_once_with(parameter=Parameter.VOLTAGE, value=ANY)
 
     def test_set_flux_parameter_with_set_crosstalk(self, platform: Platform):
         """Test platform set FLUX parameter when crosstalk is given."""
@@ -1703,4 +1714,3 @@ class TestMethods:
 
         with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
             platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=sequencer)
-

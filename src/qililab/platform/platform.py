@@ -906,6 +906,7 @@ class Platform:
         """Context manager to manage platform session, ensuring that resources are always released."""
         cleanup_methods = []
         cleanup_errors = []
+        execution_error: Exception | None = None
         try:
             # Track successfully called setup methods and their cleanup counterparts
             self.connect()
@@ -920,19 +921,29 @@ class Platform:
 
         except Exception as e:
             logger.error(f"An error occurred: {e}")
-            raise  # Re-raise the exception for further handling
+            execution_error = e
         finally:
             # Call the cleanup methods in reverse order
             for cleanup_method in reversed(cleanup_methods):
                 try:
                     cleanup_method()
-                except Exception as e:  # noqa: BLE001
-                    logger.error(f"Error during cleanup: {e}")
-                    cleanup_errors.append(e)
+                except Exception as cleanup_exception:  # noqa: BLE001
+                    logger.error(f"Error during cleanup: {cleanup_exception}")
+                    cleanup_errors.append(cleanup_exception)
 
             # Raise any exception that might have happened during cleanup
             if cleanup_errors:
+                if execution_error is not None:
+                    raise ExceptionGroup(
+                        "Exceptions occurred during execution and cleanup",
+                        [execution_error, *cleanup_errors],
+                    )
+                if len(cleanup_errors) == 1:
+                    raise cleanup_errors[0]
                 raise ExceptionGroup("Exceptions occurred during cleanup", cleanup_errors)
+
+            if execution_error is not None:
+                raise execution_error
 
     def compile_annealing_program(
         self,

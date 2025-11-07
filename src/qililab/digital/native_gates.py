@@ -17,7 +17,7 @@
 from typing import ClassVar
 
 import numpy as np
-from qilisdk.common import Parameter
+from qilisdk.core import Parameter
 from qilisdk.digital.gates import BasicGate
 from qilisdk.yaml import yaml
 
