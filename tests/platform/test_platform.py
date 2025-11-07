@@ -1049,10 +1049,10 @@ class TestMethods:
 
             _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assert upload executed only once (2 because there are 2 buses)
+        # assert upload executed only once (4 because there are 4 buses)
         assert upload.call_count == 4
 
-        # assert run executed all three times (6 because there are 2 buses)
+        # assert run executed all three times (12 because there are 4 buses)
         assert run.call_count == 12
         assert acquire_qprogram_results.call_count == 6  # only readout buses
         assert sync_sequencer.call_count == 12  # called as many times as run

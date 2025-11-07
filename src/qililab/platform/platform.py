@@ -1352,22 +1352,17 @@ class Platform:
                                 acquisitions=acquisitions[bus_alias], channel_id=int(channel)
                             )
                             for bus_result in bus_results:
-                                results.append_result(bus=bus_alias, result=bus_result)
+                                for _, acquisition_data in acquisitions[bus_alias].items():
+                                    intertwined = acquisition_data.intertwined
+                                    unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                    for unintertwined_result in unintertwined_results:
+                                        results.append_result(bus=bus_alias, result=unintertwined_result)
 
             # Reset instrument settings
             for bus_alias in sequences:
                 for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                     if isinstance(instrument, QbloxModule):
                         instrument.desync_sequencer(sequencer_id=int(channel))
-                        bus_results = bus.acquire_qprogram_results(
-                            acquisitions=acquisitions[bus_alias], channel_id=int(channel)
-                        )
-                        for bus_result in bus_results:
-                            for _, acquisition_data in acquisitions[bus_alias].items():
-                                intertwined = acquisition_data.intertwined
-                                unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
-                                for unintertwined_result in unintertwined_results:
-                                    results.append_result(bus=bus_alias, result=unintertwined_result)
 
             return results
         except TimeoutError as timeout:
