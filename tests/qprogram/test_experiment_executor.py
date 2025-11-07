@@ -145,11 +145,16 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
 class TestExperimentExecutor:
     """Test ExperimentExecutor class"""
 
-    def test_execute(self, platform, experiment, qprogram, crosstalk):
+    def test_execute(self, platform, experiment, qprogram, crosstalk, override_settings):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
         platform.save_experiment_results_in_database = False
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, live_plot=False, slurm_execution=False)
-        resuls_path = executor.execute()
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
+            resuls_path = executor.execute()
 
         # Check if the correct file path is returned
         assert resuls_path.startswith(os.path.abspath(tempfile.gettempdir()))
@@ -277,7 +282,9 @@ class TestExperimentExecutor:
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")
-    def test_execute_database_metadata_only(self, mock_h5_file, mock_get_db_manager, platform, experiment):
+    def test_execute_database_metadata_only(
+        self, mock_h5_file, mock_get_db_manager, platform, experiment, override_settings
+    ):
         """Test the execute with database as True."""
 
         platform.save_experiment_results_in_database = True
@@ -312,14 +319,17 @@ class TestExperimentExecutor:
             mock_writer_cls = MagicMock()
             mock_writer_cls.return_value = mock_writer
 
-            executor = ExperimentExecutor(
-                platform=platform,
-                experiment=experiment,
-                live_plot=False,
-                slurm_execution=False,
-            )
-            executor.loop_indices = True
-            executor.execute()
+            with override_settings(
+                experiment_results_save_in_database=True,
+                experiment_live_plot_enabled=False,
+                experiment_live_plot_on_slurm=False,
+            ):
+                executor = ExperimentExecutor(
+                    platform=platform,
+                    experiment=experiment,
+                )
+                executor.loop_indices = True
+                executor.execute()
 
             assert executor._db_metadata == {
                 "cooldown": "cd",

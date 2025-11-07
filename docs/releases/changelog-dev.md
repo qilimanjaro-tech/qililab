@@ -2,7 +2,17 @@
 
 ### New features since last release
 
+- Introduced a Pydantic-powered `QililabSettings` that centralizes runtime configuration, with the singleton `get_settings()` pulling values from multiple sources so teams can pick what fits their workflow. Settings still default to sensible values, but can be overridden directly in code by editing the fields (handy for tests or ad-hoc scripts), by exporting environment variables (for example `QILILAB_EXPERIMENT_RESULTS_BASE_PATH=/data/qililab`), or by dropping the same keys into a project-level `.env` file that is auto-discovered and parsed.
+  [#1025](https://github.com/qilimanjaro-tech/qililab/pull/1025)
+
 ### Improvements
+
+- Improved acquisition result handling in the QBlox Compiler.
+
+  Previously, each acquisition was assigned a unique acquisition index, which meant that a single qprogram could only contain up to 32 acquisitions per bus (due to QBlox’s limit of 32 indices).
+  Now, acquisitions at the same nested level reuse the same acquisition index while incrementing the bin index. This removes the 32-acquisition limit in most cases. A `ValueError` is raised only if more than 32 acquisitions occur at different nested levels.
+  Since the results retrieved from QBlox are now intertwined, a new function `_unintertwined_qblox_results` has been introduced in `platform`. This function called by `_execute_qblox_compilation_output method` and `execute_compilation_outputs_parallel` separates each acquisition into its own QbloxMeasurementResult object.
+[#998](https://github.com/qilimanjaro-tech/qililab/pull/998)
 
 - Added support for real-time predistortion on Qblox hardware.
   - The outputs of a QCM can now set an FIR filter and up to four exponential filters (provided as a list). These parameters can be configured via the runcard (example below) and via platform.set_parameter/get_parameter.
@@ -350,7 +360,7 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 - Added `ql.load_by_id(id)` in qililab, This function allows to retrieve the data path of a measurement with the given id without creating a `DatabaseManager` instance. This function is intended to be used inside notebooks using slurm as `DatabaseManager` cannot be submitted.
   [#986](https://github.com/qilimanjaro-tech/qililab/pull/986)
 
-- Implemented crosstalk compensation for `QdacCompiler`. The compiler automatically detects if there is a crosstalk matrix inside platform and implements the crosstalk for any bus inside the `Crosstalk` class. This function can be deactivated by setting the crosstalk variable as False inside `qp.play` and `qp.offset`.
+- Implemented QDACII crosstalk compensation for `Qprogram`. The compiler automatically detects if there is a crosstalk matrix inside platform and implements the crosstalk for any bus inside the `Crosstalk` class. This function can be deactivated by setting the crosstalk variable as False inside `qp.play` and `qp.offset`.
 The crosstalk modifies the structure of the `QProgram`, it changes any play or set offset into a set of plays and offsets of each bus of the crosstalk. It also takes into account different loops.
 With crosstalk, this example qprogram:
 
