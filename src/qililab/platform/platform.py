@@ -58,6 +58,7 @@ from qililab.platform.components.buses import Buses
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.pulse.qblox_compiler import ModuleSequencer
 from qililab.pulse.qblox_compiler import QbloxCompiler as PulseQbloxCompiler
+from qililab.qililab_settings import get_settings
 from qililab.qprogram import (
     Calibration,
     Domain,
@@ -345,12 +346,6 @@ class Platform:
 
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
-
-        self.experiment_results_base_path: str = tempfile.gettempdir()
-        """Base path for saving experiment results."""
-
-        self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
-        """Format of the experiment results path."""
 
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
@@ -1096,22 +1091,14 @@ class Platform:
 
     def execute_experiment(
         self,
-        experiment: Experiment,
-        live_plot: bool = False,
-        slurm_execution: bool = True,
-        port_number: int | None = None,
+        experiment: Experiment
     ) -> str:
         """Executes a quantum experiment on the platform.
 
-        This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
+        This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. Result storage paths, live plotting, and database persistence are configured through :func:`qililab.qililab_settings.get_settings`.
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
-            live_plot (bool): Flag that abilitates live plotting. Defaults to False.
-            slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell.
-                                    Defaults to True.
-            port_number (int | None): Optional parameter for when slurm_execution is True.
-                                    It defines the port number of the Dash server. Defaults to None.
 
         Returns:
             str: The path to the file where the results are stored.
@@ -1127,13 +1114,13 @@ class Platform:
                 # ...
 
                 # Execute the experiment on the platform
-                results_path = platform.execute_experiment(experiment=experiment, database=False)
+                results_path = platform.execute_experiment(experiment=experiment)
                 print(f"Results saved to {results_path}")
 
         Example with database:
             .. code-block:: python
 
-                from qililab import Experiment
+                from qililab import Experiment, get_settings
 
                 # Initialize your experiment
                 experiment = Experiment(label="my_experiment")
@@ -1144,8 +1131,11 @@ class Platform:
                 db_manager = platform.load_db_manager(db_manager_ini_path)
                 db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
 
+                settings = get_settings()
+                settings.experiment_results_save_in_database = True
+
                 # Execute the experiment on the platform
-                results_path = platform.execute_experiment(experiment=experiment, database=True)
+                results_path = platform.execute_experiment(experiment=experiment)
                 print(f"Results saved to {results_path}")
 
         Note:
@@ -1154,7 +1144,7 @@ class Platform:
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
 
-        if self.save_experiment_results_in_database and not self.db_manager:
+        if get_settings().experiment_results_save_in_database and not self.db_manager:
             try:
                 self.load_db_manager()
             except ReferenceError:
@@ -1162,10 +1152,7 @@ class Platform:
 
         executor = ExperimentExecutor(
             platform=self,
-            experiment=experiment,
-            live_plot=live_plot,
-            slurm_execution=slurm_execution,
-            port_number=port_number,
+            experiment=experiment
         )
         return executor.execute()
 
