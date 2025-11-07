@@ -15,7 +15,7 @@
 """Qblox module class"""
 
 from dataclasses import dataclass, field
-from typing import Sequence, cast, Iterable
+from typing import Iterable, Sequence, cast
 
 from qpysequence import Sequence as QpySequence
 
