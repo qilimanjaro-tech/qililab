@@ -14,7 +14,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -40,7 +39,7 @@ dependencies = [
     "sqlalchemy>=2.0.40",
     "submitit>=1.5.2",
     "urllib3>=2.3.0",
-    "xarray>=2024.3.0",
+    "xarray>=2025.10.1",
     "qilisdk>=0.1.5",
     "rustworkx>=0.17.1",
 ]

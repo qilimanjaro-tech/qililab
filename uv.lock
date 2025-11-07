@@ -3303,7 +3303,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0.40" },
     { name = "submitit", specifier = ">=1.5.2" },
     { name = "urllib3", specifier = ">=2.3.0" },
-    { name = "xarray", specifier = ">=2024.3.0" },
+    { name = "xarray", specifier = ">=2025.10.1" },
 ]
 provides-extras = ["quantum-machines"]
 
@@ -4385,16 +4385,16 @@ wheels = [
 
 [[package]]
 name = "xarray"
-version = "2024.3.0"
+version = "2025.10.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "packaging" },
     { name = "pandas" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/db/ac/9db13d2a6d2e9f72d4d6305ed7796a45ea9cd58f0a4a47d434a276830adf/xarray-2024.3.0.tar.gz", hash = "sha256:5c1db19efdde61db7faedad8fc944f4e29698fb6fbd578d352668b63598bd1d8", size = 3674424, upload-time = "2024-03-29T17:09:00.691Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7b/ce/f5dd613ddd0b3f839c59e6c2fa20c62469bf671bf4c92a12b09dc0972326/xarray-2025.10.1.tar.gz", hash = "sha256:3c2b5ad7389825bd624ada5ff26b01ac54b1aae72e2fe0d724d81d40a2bf5785", size = 3058736, upload-time = "2025-10-07T20:25:56.708Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f7/fe/c4d15ac730b2bcdd530e4bc6491958c53237eb573dba4eec3ad31ff0519a/xarray-2024.3.0-py3-none-any.whl", hash = "sha256:ca2bc4da2bf2e7879e15862a7a7c3fc76ad19f6a08931d030220cef39a29118d", size = 1134478, upload-time = "2024-03-29T17:08:57.554Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/78/4d6d68555a92cb97b4c192759c4ab585c5cb23490f64d4ddf12c66a3b051/xarray-2025.10.1-py3-none-any.whl", hash = "sha256:a4e699433b87a7fac340951bc36648645eeef72bdd915ff055ac2fd99865a73d", size = 1365202, upload-time = "2025-10-07T20:25:54.964Z" },
 ]
 
 [[package]]
