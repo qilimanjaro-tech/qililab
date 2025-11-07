@@ -20,7 +20,6 @@ from __future__ import annotations
 import ast
 import io
 import re
-import tempfile
 import warnings
 from contextlib import contextmanager
 from copy import deepcopy
