@@ -315,10 +315,9 @@ class QProgram(StructuredProgram):
                     flux_vector = handle_flux_vector(flux_vector=flux_vector, element=element)
 
                 if isinstance(element, Block):
-                    block.elements[i] = traverse(element)
+                    traverse(element)
 
             block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
-            return block
 
         def handle_flux_vector(flux_vector: FluxVector, element: Play | SetOffset):
             if isinstance(element, Play):
@@ -369,7 +368,7 @@ class QProgram(StructuredProgram):
                         block.elements.insert(element_list[0], play)
 
         copied_qprogram = deepcopy(self)
-        traverse(copied_qprogram._body)
+        traverse(copied_qprogram.body)
         return copied_qprogram
 
     @overload
