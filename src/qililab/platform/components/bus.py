@@ -159,7 +159,13 @@ class Bus:
                 return sequencer.outputs[0]
         raise Exception(f"No output_id was found to be associated with the bus with alias {self.alias}")
 
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ):
         """Set a parameter to the bus.
 
         Args:
@@ -192,7 +198,9 @@ class Bus:
                 return
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
+    ):
         """Gets a parameter of the bus.
 
         Args:

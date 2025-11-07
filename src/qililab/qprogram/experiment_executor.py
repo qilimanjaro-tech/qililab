@@ -598,7 +598,7 @@ class ExperimentExecutor:
             path=results_path,
             metadata=self._metadata,
             db_metadata=self._db_metadata,
-            db_manager=self.platform.db_manager
+            db_manager=self.platform.db_manager,
         )
 
         # Event to signal that the execution has completed

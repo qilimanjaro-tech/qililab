@@ -70,11 +70,15 @@ class AddPhasesToRmwFromRZAndCZPass(CircuitTranspilerPass):
                 control_qubit, target_qubit = gate.control_qubits[0], gate.target_qubits[0]
                 gate_settings = self._settings.get_gate(name="CZ", qubits=(control_qubit, target_qubit))
                 gate_corrections = self._extract_gate_corrections(gate_settings, control_qubit, target_qubit)
-                shift[control_qubit] = _wrap_angle(shift[control_qubit] + gate_corrections[f"q{control_qubit}_phase_correction"])
-                shift[target_qubit] = _wrap_angle(shift[target_qubit] + gate_corrections[f"q{target_qubit}_phase_correction"])
+                shift[control_qubit] = _wrap_angle(
+                    shift[control_qubit] + gate_corrections[f"q{control_qubit}_phase_correction"]
+                )
+                shift[target_qubit] = _wrap_angle(
+                    shift[target_qubit] + gate_corrections[f"q{target_qubit}_phase_correction"]
+                )
                 out_gate = CZ(control_qubit, target_qubit)
 
-             # Apply VZ by rotating the *pulse* axis: phase_out = phase_in + shift[q]
+            # Apply VZ by rotating the *pulse* axis: phase_out = phase_in + shift[q]
             elif isinstance(gate, Rmw):
                 qubit = gate.qubits[0]
                 out_gate = Rmw(qubit, theta=gate.theta, phase=_wrap_angle(gate.phase + shift[qubit]))
@@ -99,9 +103,7 @@ class AddPhasesToRmwFromRZAndCZPass(CircuitTranspilerPass):
         return out_circuit
 
     @staticmethod
-    def _extract_gate_corrections(
-        gate_settings: list[GateEvent], c: int, t: int
-    ) -> dict[str, float]:
+    def _extract_gate_corrections(gate_settings: list[GateEvent], c: int, t: int) -> dict[str, float]:
         """
         Given a CZ gate's settings, extract any present per-qubit phase corrections.
         Returns a dict with zero defaults if not present.

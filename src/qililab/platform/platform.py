@@ -475,7 +475,9 @@ class Platform:
         """
         return self.buses.get(alias=alias)
 
-    def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
+    def get_parameter(
+        self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
+    ):
         """Get platform parameter.
 
         Args:
@@ -561,10 +563,10 @@ class Platform:
         return data_oscilloscope
 
     def _get_qblox_active_filter_fir(self):
-        """ Determines if any FIR filter is active. Active is considered as either "enabled" or "delay_comp"
+        """Determines if any FIR filter is active. Active is considered as either "enabled" or "delay_comp"
 
-            Returns:
-                qblox_active_filter(bool): true if any FIR filter is active, False otherwise. Defaults to False
+        Returns:
+            qblox_active_filter(bool): true if any FIR filter is active, False otherwise. Defaults to False
         """
         qblox_active_filter = False
         for pair in self.qblox_alias_module:
@@ -577,10 +579,10 @@ class Platform:
         return qblox_active_filter
 
     def _get_qblox_active_filter_exponential(self):
-        """ Determines which exponential index has an active exponential filter. Active is considered as either "enabled" or "delay_comp"
+        """Determines which exponential index has an active exponential filter. Active is considered as either "enabled" or "delay_comp"
 
-            Returns:
-                qblox_active_filter(list): List index of exponential for which an exponential filter is active.
+        Returns:
+            qblox_active_filter(list): List index of exponential for which an exponential filter is active.
         """
         qblox_active_filter = []
         for pair in self.qblox_alias_module:
@@ -590,15 +592,18 @@ class Platform:
                 if filter.output_id == output_id:
                     if filter.exponential_state is not None:
                         for idx, state_exponential in enumerate(filter.exponential_state):
-                            if state_exponential in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and idx not in qblox_active_filter:
+                            if (
+                                state_exponential in {DistortionState.ENABLED, DistortionState.DELAY_COMP}
+                                and idx not in qblox_active_filter
+                            ):
                                 qblox_active_filter.append(idx)
         return qblox_active_filter
 
     def _get_qblox_alias_module(self):
         """Maps the qblox alias to the module_id defined in the bus mapping of the runcard
 
-            Returns:
-                qblox_alias_module(list): List of dict with key the alias of qblox module and value the module_id
+        Returns:
+            qblox_alias_module(list): List of dict with key the alias of qblox module and value the module_id
         """
         buses = list(self.buses)
         qblox_alias_module = []
@@ -653,17 +658,31 @@ class Platform:
             self._set_bias_from_element(element)
             return
 
-        if parameter in {Parameter.EXPONENTIAL_STATE_0, Parameter.EXPONENTIAL_STATE_1, Parameter.EXPONENTIAL_STATE_2, Parameter.EXPONENTIAL_STATE_3}:
+        if parameter in {
+            Parameter.EXPONENTIAL_STATE_0,
+            Parameter.EXPONENTIAL_STATE_1,
+            Parameter.EXPONENTIAL_STATE_2,
+            Parameter.EXPONENTIAL_STATE_3,
+        }:
             exponential_idx = int(parameter.value[-1])
             if value is True:
                 if exponential_idx not in self.qblox_active_filter_exponential:
                     self.qblox_active_filter_exponential.append(exponential_idx)
                 self._update_qblox_filter_state_exponential()
             else:
-                if exponential_idx in self.qblox_active_filter_exponential:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
-                    element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
+                if (
+                    exponential_idx in self.qblox_active_filter_exponential
+                ):  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                    element.set_parameter(
+                        parameter=parameter,
+                        value=DistortionState.DELAY_COMP,
+                        channel_id=channel_id,
+                        output_id=output_id,
+                    )
                     if value in {DistortionState.BYPASSED, False}:
-                        logger.warning("Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
+                        logger.warning(
+                            "Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
+                        )
                     return
 
         if parameter == Parameter.FIR_STATE:
@@ -671,17 +690,23 @@ class Platform:
                 self.qblox_active_filter_fir = True
                 self._update_qblox_filter_state_fir()
 
-            elif self.qblox_active_filter_fir:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
-                element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
+            elif (
+                self.qblox_active_filter_fir
+            ):  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                element.set_parameter(
+                    parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id
+                )
                 if value in {DistortionState.BYPASSED, False}:
-                    logger.warning("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
+                    logger.warning(
+                        "Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
+                    )
                 return
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
 
     def _update_qblox_filter_state_exponential(self):
         """Updates the exponential state as needed.
-            If any exponential idx is active ("enabled" or "delay_comp"), the exponential state of all other outputs will be updated to "delay_comp".
-            This ensures that there are no delays between outputs that have a filter "enabled" or "delay_comp" and outputs with bypassed filters.
+        If any exponential idx is active ("enabled" or "delay_comp"), the exponential state of all other outputs will be updated to "delay_comp".
+        This ensures that there are no delays between outputs that have a filter "enabled" or "delay_comp" and outputs with bypassed filters.
         """
         if self.qblox_active_filter_exponential:
             for pair in self.qblox_alias_module:
@@ -691,19 +716,32 @@ class Platform:
                     pre_exisisting_filter = False
                     qblox_instrument = self.get_element(alias=alias)
                     for filter in qblox_instrument.filters:
-                        if filter.output_id == output_id and pre_exisisting_filter is False and filter.exponential_state is not None:
+                        if (
+                            filter.output_id == output_id
+                            and pre_exisisting_filter is False
+                            and filter.exponential_state is not None
+                        ):
                             if len(filter.exponential_state) > expo_idx:
                                 pre_exisisting_filter = True
-                                state_exponential = self.get_parameter(alias=alias, parameter=parameter, output_id=output_id)
+                                state_exponential = self.get_parameter(
+                                    alias=alias, parameter=parameter, output_id=output_id
+                                )
                                 if state_exponential not in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
-                                    self.set_parameter(alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id)
+                                    self.set_parameter(
+                                        alias=alias,
+                                        parameter=parameter,
+                                        value=DistortionState.DELAY_COMP,
+                                        output_id=output_id,
+                                    )
                     if pre_exisisting_filter is False:  # filter needs to be created
-                        self.set_parameter(alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id)
+                        self.set_parameter(
+                            alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id
+                        )
 
     def _update_qblox_filter_state_fir(self):
         """Updates the FIR state as needed.
-            If any FIR filter is active ("enabled" or "delay_comp"), the FIR state of all other outputs will be updated to "delay_comp".
-            This ensures that there are no delays between outputs that have a filter "enabled" or "delay_comp" and outputs with bypassed filters.
+        If any FIR filter is active ("enabled" or "delay_comp"), the FIR state of all other outputs will be updated to "delay_comp".
+        This ensures that there are no delays between outputs that have a filter "enabled" or "delay_comp" and outputs with bypassed filters.
         """
         if self.qblox_active_filter_fir:
             for pair in self.qblox_alias_module:
@@ -711,13 +749,27 @@ class Platform:
                 pre_exisisting_filter = False
                 qblox_instrument = self.get_element(alias=alias)
                 for filter in qblox_instrument.filters:
-                    if filter.output_id == output_id and pre_exisisting_filter is False and filter.fir_state is not None:
+                    if (
+                        filter.output_id == output_id
+                        and pre_exisisting_filter is False
+                        and filter.fir_state is not None
+                    ):
                         pre_exisisting_filter = True
                         state_fir = self.get_parameter(alias=alias, parameter=Parameter.FIR_STATE, output_id=output_id)
                         if state_fir not in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
-                            self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
+                            self.set_parameter(
+                                alias=alias,
+                                parameter=Parameter.FIR_STATE,
+                                value=DistortionState.DELAY_COMP,
+                                output_id=output_id,
+                            )
                 if pre_exisisting_filter is False:  # filter needs to be created
-                    self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
+                    self.set_parameter(
+                        alias=alias,
+                        parameter=Parameter.FIR_STATE,
+                        value=DistortionState.DELAY_COMP,
+                        output_id=output_id,
+                    )
 
     def _set_bias_from_element(self, element: Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
         """Sets the right parameter depending on the instrument defined inside the element.
@@ -919,7 +971,7 @@ class Platform:
 
             yield  # Experiment logic goes here
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"An error occurred: {e}")
             execution_error = e
         finally:
@@ -1081,10 +1133,7 @@ class Platform:
         )
         return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
-    def execute_experiment(
-        self,
-        experiment: Experiment
-    ) -> str:
+    def execute_experiment(self, experiment: Experiment) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. Result storage paths, live plotting, and database persistence are configured through :func:`qililab.qililab_settings.get_settings`.
@@ -1142,10 +1191,7 @@ class Platform:
             except ReferenceError:
                 raise ReferenceError("Missing initialization information at the desired database '.ini' path.")
 
-        executor = ExperimentExecutor(
-            platform=self,
-            experiment=experiment
-        )
+        executor = ExperimentExecutor(platform=self, experiment=experiment)
         return executor.execute()
 
     def compile_qprogram(
@@ -1286,8 +1332,10 @@ class Platform:
 
         return results
 
-    def _unintertwined_qblox_results(self, bus_result: QbloxMeasurementResult, intertwined: int) -> list[QbloxMeasurementResult]:
-        """ Return a list of results where intertwined acquisitions are separated.
+    def _unintertwined_qblox_results(
+        self, bus_result: QbloxMeasurementResult, intertwined: int
+    ) -> list[QbloxMeasurementResult]:
+        """Return a list of results where intertwined acquisitions are separated.
 
         In Qililab, when multiple acquisitions or measurements are performed at the same nested level, their results are intertwined: the bins are looped over
         while the acquisition index remains constant.
@@ -1301,14 +1349,31 @@ class Platform:
         if intertwined > 1:
             for result in range(intertwined):
                 bus = bus_result.bus
-                new_raw_measurement_data = {"scope": {"path0": {"data": bus_result.raw_measurement_data["scope"]["path0"]["data"][result::intertwined]},
-                                                      "path1": {"data": bus_result.raw_measurement_data["scope"]["path1"]["data"][result::intertwined]}},
-                                            "bins": {"integration": {"path0": bus_result.raw_measurement_data["bins"]["integration"]["path0"][result::intertwined],
-                                                                    "path1": bus_result.raw_measurement_data["bins"]["integration"]["path1"][result::intertwined]},
-                                            "threshold": bus_result.raw_measurement_data["bins"]["threshold"][result::intertwined],
-                                            "avg_cnt": bus_result.raw_measurement_data["bins"]["avg_cnt"][result::intertwined]}
-                                            }
-                results_unintertwined = QbloxMeasurementResult(bus=bus, raw_measurement_data=new_raw_measurement_data, shape=bus_result.shape)
+                new_raw_measurement_data = {
+                    "scope": {
+                        "path0": {
+                            "data": bus_result.raw_measurement_data["scope"]["path0"]["data"][result::intertwined]
+                        },
+                        "path1": {
+                            "data": bus_result.raw_measurement_data["scope"]["path1"]["data"][result::intertwined]
+                        },
+                    },
+                    "bins": {
+                        "integration": {
+                            "path0": bus_result.raw_measurement_data["bins"]["integration"]["path0"][
+                                result::intertwined
+                            ],
+                            "path1": bus_result.raw_measurement_data["bins"]["integration"]["path1"][
+                                result::intertwined
+                            ],
+                        },
+                        "threshold": bus_result.raw_measurement_data["bins"]["threshold"][result::intertwined],
+                        "avg_cnt": bus_result.raw_measurement_data["bins"]["avg_cnt"][result::intertwined],
+                    },
+                }
+                results_unintertwined = QbloxMeasurementResult(
+                    bus=bus, raw_measurement_data=new_raw_measurement_data, shape=bus_result.shape
+                )
                 results_unintertwined_list.append(results_unintertwined)
 
         else:

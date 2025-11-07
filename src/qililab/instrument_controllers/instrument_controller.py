@@ -161,7 +161,7 @@ class InstrumentController(BusElement, ABC):
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
-        output_id: OutputID | None = None
+        output_id: OutputID | None = None,
     ):
         """Updates the reset settings for the controller."""
         if parameter == Parameter.RESET:
@@ -170,10 +170,7 @@ class InstrumentController(BusElement, ABC):
         raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
 
     def get_parameter(
-        self,
-        parameter: Parameter,
-        channel_id: ChannelID | None = None,
-        output_id: OutputID | None = None
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
     ):
         """Updates the reset settings for the controller."""
         if parameter == Parameter.RESET:

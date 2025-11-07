@@ -66,7 +66,9 @@ class Experiment(StructuredProgram):
         self.label: str = label
         self.description: str | None = description
 
-    def get_parameter(self, alias: str, parameter: Parameter, channel_id: int | None = None, output_id: int | None = None):
+    def get_parameter(
+        self, alias: str, parameter: Parameter, channel_id: int | None = None, output_id: int | None = None
+    ):
         """Set a platform parameter.
 
         Appends a SetParameter operation to the active block of the experiment.
@@ -81,7 +83,9 @@ class Experiment(StructuredProgram):
             domain=self._domain_of_parameter.get(parameter, Domain.Scalar),
             type=self._type_of_parameter.get(parameter, None),
         )
-        operation = GetParameter(variable=variable, alias=alias, parameter=parameter, channel_id=channel_id, output_id=output_id)
+        operation = GetParameter(
+            variable=variable, alias=alias, parameter=parameter, channel_id=channel_id, output_id=output_id
+        )
         self._active_block.append(operation)
         return variable
 
@@ -102,7 +106,9 @@ class Experiment(StructuredProgram):
             parameter (Parameter): The parameter to set.
             value (int | float): The value to set for the parameter.
         """
-        operation = SetParameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
+        operation = SetParameter(
+            alias=alias, parameter=parameter, value=value, channel_id=channel_id, output_id=output_id
+        )
         self._active_block.append(operation)
 
     def execute_qprogram(

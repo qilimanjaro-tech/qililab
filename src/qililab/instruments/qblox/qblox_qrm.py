@@ -248,7 +248,13 @@ class QbloxQRM(QbloxModule):
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
 
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ):
         """set a specific parameter to the instrument"""
         if output_id is not None:
             super().set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
