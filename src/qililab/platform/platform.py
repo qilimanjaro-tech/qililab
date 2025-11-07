@@ -556,11 +556,11 @@ class Platform:
                                 if awg.identifier == identifier[0]:
                                     for out in awg.outputs:
                                         if out == 0:
-                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0)
-                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1)
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0) / 1000
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1) / 1000
                                         elif out == 1:
-                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
-                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0) / 1000
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1) / 1000
 
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
