@@ -486,9 +486,8 @@ class QbloxDraw:
             # Load data from the runcard or create the keys of the dict containing all paraemters (frequency, phase, offsets, gains, etc...)
             if runcard_data is not None:
                 parameters[bus] = {
-                key: (runcard_data[bus][key] / 1000 if key in ("dac_offset_i", "dac_offset_q")  # convert mv into v
-                    else runcard_data[bus][key])
-                for key in runcard_data[bus]}  # retrieve runcard data if the qblox draw is called when a platform has been built
+                    key: runcard_data[bus][key] for key in runcard_data[bus]
+                }  # retrieve runcard data if the qblox draw is called when a platform has been built
                 IF = parameters[bus]["intermediate_frequency"] * 4
                 parameters[bus]["intermediate_frequency"] = [IF]
                 parameters[bus]["sequencer_runcard_offset_i"] = parameters[bus]["offset_i"]
