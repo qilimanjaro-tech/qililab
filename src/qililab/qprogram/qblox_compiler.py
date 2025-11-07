@@ -16,8 +16,10 @@ import math
 from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
+if TYPE_CHECKING:
+    from uuid import UUID
 import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
@@ -45,6 +47,9 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.qprogram import QProgram
 from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
+# TODO: move to qpysequence.constants
+MAX_ACQUISITION_INDEX = 31  # 32 is the max number of acquisitions that can be stored
+
 
 @dataclass
 class AcquisitionData:
@@ -53,6 +58,7 @@ class AcquisitionData:
     bus: str
     save_adc: bool
     shape: tuple
+    intertwined: int
 
 
 Sequences = dict[str, QPy.Sequence]
@@ -86,8 +92,6 @@ class BusCompilationInfo:
         self.qpy_sequence = QPy.Sequence(
             program=QPy.Program(), waveforms=QPy.Waveforms(), acquisitions=QPy.Acquisitions(), weights=QPy.Weights()
         )
-
-        # Acquisitions information
         self.acquisitions: dict[str, AcquisitionData] = {}
 
         # Dictionaries to hold mappings useful during compilation.
@@ -105,8 +109,6 @@ class BusCompilationInfo:
         self.qprogram_block_stack: deque[Block] = deque()
 
         # Counters to help with naming and indexing
-        self.next_bin_index = 0
-        self.next_acquisition_index = 0
         self.loop_counter = 0
         self.average_counter = 0
         self.waveform_optimization_counter = 0
@@ -128,8 +130,29 @@ class BusCompilationInfo:
         # Latched Paramter flag
         self.upd_param_instruction_pending: bool = False
 
+        # Counters used for acquisition
+        self.num_bins_per_acquire: int = 0
+        self.num_bins_total: int = 0
+        self.shape_acquire: tuple = ()
+        self.bin_register: QPyProgram.Register = None
+
         # Allows reusing a register if a weight has already been given with the same value
         self.weight_index_to_register: dict[int, QPyProgram.Register] = {}
+
+        # Count the number of different nested levels there are for this bus in a qprogram
+        self.count_nested_level_acquire: int = -1
+
+        # Count the number of acquire in one nested level
+        self.counter_acquire: int = 0
+
+        # Int of the previous nested level used
+        self.prev_nested_level_acquire: int | None = None
+
+        # Flag to know if an acquire is the first in a block
+        self.first_acquire_of_block: bool = False
+
+        # Used in instances where there are no loop on the bin
+        self.single_bin_counter: int = 0
 
 
 class QbloxCompiler:
@@ -162,6 +185,16 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
+        self._acquisition_metadata: dict[str, dict[UUID, int]] = {}
+
+    def traverse_qprogram_acquire(self, block: Block):
+        """Traverses a QProgram to gather information on the acquisition."""
+        for element in block.elements:
+            if isinstance(element, Block):
+                self.traverse_qprogram_acquire(element)
+            elif isinstance(element, (Acquire, Measure)):
+                self._acquisition_metadata.setdefault(element.bus, {}).setdefault(block.uuid, 0)
+                self._acquisition_metadata[element.bus][block.uuid] += 1
 
     def compile(
         self,
@@ -187,6 +220,7 @@ class QbloxCompiler:
             delay_implemented = False
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.append(block)
+                self._buses[bus].first_acquire_of_block = True
             for element in block.elements:
                 if isinstance(element, Play) and not delay_implemented:
                     for bus in self._buses:
@@ -199,6 +233,10 @@ class QbloxCompiler:
                                         element=Wait(bus=other_buses, duration=-self._buses[bus].delay), delay=True
                                     )
                     delay_implemented = True
+                if isinstance(element, (Acquire, Measure)) and self._buses[element.bus].first_acquire_of_block is True:
+                    self._buses[element.bus].count_nested_level_acquire += 1
+                    self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid]
+                    self._buses[element.bus].first_acquire_of_block = False
                 handler = self._handlers.get(type(element))
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
@@ -214,6 +252,7 @@ class QbloxCompiler:
                             self._buses[bus].qpy_block_stack.pop()
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.pop()
+                self._buses[bus].first_acquire_of_block = True
 
         self._qprogram = qprogram
         if bus_mapping is not None:
@@ -246,6 +285,7 @@ class QbloxCompiler:
             self._buses[bus].static_duration += 4
 
         # Recursive traversal to convert QProgram blocks to Sequence
+        self.traverse_qprogram_acquire(self._qprogram._body)
         traverse(self._qprogram._body)
 
         # Post-processing: Set all markers OFF, add stop instructions and compile
@@ -622,56 +662,74 @@ class QbloxCompiler:
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
             if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
-        shape = tuple(loop[1].iterations for loop in loops)
-        num_bins = math.prod(loop[1].iterations for loop in loops)
-        acquisition_name = f"acquisition_{self._buses[element.bus].next_acquisition_index}"
-        self._buses[element.bus].qpy_sequence._acquisitions.add(
-            name=acquisition_name,
-            num_bins=num_bins,
-            index=self._buses[element.bus].next_acquisition_index,
-        )
-        self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
-            bus=element.bus, save_adc=element.save_adc, shape=shape
-        )
 
-        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
+        block_index_for_add_instruction = loops[-1][0] if loops else -1
+        block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
 
-        if num_bins == 1:
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.AcquireWeighed(
-                    acq_index=self._buses[element.bus].next_acquisition_index,
-                    bin_index=self._buses[element.bus].next_bin_index,
-                    weight_index_0=index_I,
-                    weight_index_1=index_Q,
-                    wait_time=integration_length,
+        if self._buses[element.bus].count_nested_level_acquire > MAX_ACQUISITION_INDEX:
+            raise ValueError(f"Acquisition index {self._buses[element.bus].count_nested_level_acquire} exceeds maximum of {MAX_ACQUISITION_INDEX}.")
+
+        # if it is the first acquire at this nested level, set everything up
+        if self._buses[element.bus].count_nested_level_acquire != self._buses[element.bus].prev_nested_level_acquire:
+            self._buses[element.bus].shape_acquire = tuple(loop[1].iterations for loop in loops)
+            self._buses[element.bus].num_bins_per_acquire = math.prod(loop[1].iterations for loop in loops)
+
+            # total nb of bins is number of acquire x numbers of bins by acquire (for each nested level)
+            self._buses[element.bus].num_bins_total = int(self._buses[element.bus].counter_acquire * self._buses[element.bus].num_bins_per_acquire)
+            acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
+            self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(bus=element.bus, save_adc=element.save_adc, shape=self._buses[element.bus].shape_acquire, intertwined=self._buses[element.bus].counter_acquire)
+            self._buses[element.bus].qpy_sequence._acquisitions.add(
+                name=acquisition_name,
+                num_bins=self._buses[element.bus].num_bins_total,
+                index=self._buses[element.bus].count_nested_level_acquire,
+            )
+
+            # using registers is required if the bins are greater than 1
+            if self._buses[element.bus].num_bins_per_acquire > 1:
+                self._buses[element.bus].bin_register = QPyProgram.Register()
+
+                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                    component=QPyInstructions.Move(var=0, register=self._buses[element.bus].bin_register),
+                    bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
                 )
-            )
-        else:
-            bin_register = QPyProgram.Register()
-            block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
-            block_index_for_add_instruction = loops[-1][0] if loops else -1
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
-            )
+
+        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, element.weights)
+
+        # using registers is required if the bins are greater than 1
+        if self._buses[element.bus].num_bins_per_acquire > 1:
             register_I = self._get_or_create_weight_register(element.bus, index_I, block_index_for_move_instruction)
             register_Q = self._get_or_create_weight_register(element.bus, index_Q, block_index_for_move_instruction)
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.AcquireWeighed(
-                    acq_index=self._buses[element.bus].next_acquisition_index,
-                    bin_index=bin_register,
+                    acq_index=self._buses[element.bus].count_nested_level_acquire,
+                    bin_index=self._buses[element.bus].bin_register,
                     weight_index_0=register_I,
                     weight_index_1=register_Q,
                     wait_time=integration_length,
                 )
             )
             self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
-                component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
+                component=QPyInstructions.Add(origin=self._buses[element.bus].bin_register, var=1, destination=self._buses[element.bus].bin_register)
             )
+        else:  # if only 1 bin, the use of register can be avoided
+
+            if self._buses[element.bus].prev_nested_level_acquire != self._buses[element.bus].count_nested_level_acquire:  # reset the bin index if new depth level
+                self._buses[element.bus].single_bin_counter = 0
+
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.AcquireWeighed(
+                    acq_index=self._buses[element.bus].count_nested_level_acquire,
+                    bin_index=self._buses[element.bus].single_bin_counter,
+                    weight_index_0=index_I,
+                    weight_index_1=index_Q,
+                    wait_time=integration_length,
+                )
+            )
+            self._buses[element.bus].single_bin_counter += 1
+
         self._buses[element.bus].static_duration += integration_length
-        self._buses[element.bus].next_bin_index = 0  # maybe this counter can be removed completely
-        self._buses[element.bus].next_acquisition_index += 1
         self._buses[element.bus].marked_for_sync = True
+        self._buses[element.bus].prev_nested_level_acquire = self._buses[element.bus].count_nested_level_acquire
         self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_play(self, element: Play):
@@ -808,12 +866,10 @@ class QbloxCompiler:
         """Create or Retrieve a register for the weight index of the acquisition
             If it is the first weight index of this program with this value, then a new register is created and stored in the dictionary weight_index_to_register.
             If not, the register can be retrieved from the dictionary weight_index_to_register
-
         Args:
             bus (str): Name of the bus.
             weight_index (int): Weight index
             block_index (int): Position in qpy_block_stack to move the Register
-
         Returns:
             register (QPyProgram.Register): register to use to store the weight_index of the acquisition
         """

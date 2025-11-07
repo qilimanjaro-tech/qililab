@@ -27,9 +27,11 @@ class SetParameter(Operation):
         parameter: Parameter,
         value: int | float | bool | Variable,
         channel_id: int | None = None,
+        output_id: int | None = None,
     ) -> None:
         super().__init__()
         self.alias: str = alias
         self.parameter: Parameter = parameter
         self.value: int | float | bool | Variable = value
         self.channel_id: int | None = channel_id
+        self.output_id: int | None = output_id

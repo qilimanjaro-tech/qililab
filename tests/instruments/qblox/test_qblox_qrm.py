@@ -338,8 +338,8 @@ class TestQbloxQRM:
         qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
         qp_acqusitions = {
-            "acquisition_0": AcquisitionData(bus="readout_q0", save_adc=False, shape=(-1,)),
-            "acquisition_1": AcquisitionData(bus="readout_q0", save_adc=True, shape=(-1,)),
+            "acquisition_0": AcquisitionData(bus="readout_q0", save_adc=False, shape=(-1,), intertwined=1),
+            "acquisition_1": AcquisitionData(bus="readout_q0", save_adc=True, shape=(-1,), intertwined=1),
         }
 
         qrm.acquire_qprogram_results(acquisitions=qp_acqusitions, channel_id=0)

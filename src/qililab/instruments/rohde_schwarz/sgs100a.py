@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, RohdeSchwarzSGS100A
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue, RohdeSchwarzSGS100A
 
 
 @InstrumentFactory.register
@@ -133,7 +133,13 @@ class SGS100A(Instrument):
         return dict(super().to_dict().items())
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
         - frequency (1e6, 20e9).
@@ -188,7 +194,12 @@ class SGS100A(Instrument):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
+    def get_parameter(
+        self,
+        parameter: Parameter,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ) -> ParameterValue:
         if parameter == Parameter.POWER:
             return self.settings.power
         if parameter == Parameter.LO_FREQUENCY:
