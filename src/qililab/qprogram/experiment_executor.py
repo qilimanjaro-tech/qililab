@@ -261,7 +261,7 @@ class ExperimentExecutor:
             execution_time=0.0,
             qprograms={},
         )
-        if self.platform.save_experiment_results_in_database:
+        if get_settings().experiment_results_save_in_database:
             if self.job_id is None:
                 raise ValueError("Job id has not been defined.")
             self._db_metadata = ExperimentDataBaseMetadata(
@@ -605,7 +605,7 @@ class ExperimentExecutor:
             path=results_path,
             metadata=self._metadata,
             db_metadata=self._db_metadata,
-            db_manager=self.platform.db_manager
+            db_manager=self.platform.db_manager,
         )
 
         # Event to signal that the execution has completed
