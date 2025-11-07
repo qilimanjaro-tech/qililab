@@ -245,7 +245,7 @@ class QbloxCompiler:
                                         element=Wait(bus=other_buses, duration=-self._buses[bus].delay), delay=True
                                     )
                     delay_implemented = True
-                if isinstance(element, (Acquire, Measure)) and self._buses[element.bus].first_acquire_of_block is True:
+                if isinstance(element, (Acquire, Measure)) and element.bus in self._buses and self._buses[element.bus].first_acquire_of_block is True:
                     self._buses[element.bus].count_nested_level_acquire += 1
                     self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid]
                     self._buses[element.bus].first_acquire_of_block = False
