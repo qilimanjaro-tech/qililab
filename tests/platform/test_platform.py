@@ -920,7 +920,7 @@ class TestMethods:
                 measurement_block="whatever",
             )
 
-    def test_execute_experiment(self):
+    def test_execute_experiment(self, override_settings):
         """Test the execute_experiment method of the Platform class."""
         # Create an autospec of the Platform class
         platform = create_autospec(Platform, instance=True)
@@ -945,15 +945,17 @@ class TestMethods:
 
             # Call the method under test
             platform.db_manager = None
-            results_path = platform.execute_experiment(experiment=mock_experiment)
+            with override_settings(
+                experiment_results_save_in_database=False,
+                experiment_live_plot_enabled=False,
+                experiment_live_plot_on_slurm=False,
+            ):
+                results_path = platform.execute_experiment(experiment=mock_experiment)
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
             MockExecutor.assert_called_once_with(
                 platform=platform,
                 experiment=mock_experiment,
-                live_plot=False,
-                slurm_execution=True,
-                port_number=None,
             )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
@@ -962,7 +964,7 @@ class TestMethods:
             # Ensure that execute_experiment returns the correct value
             assert results_path == expected_results_path
 
-    def test_execute_experiment_raises_reference_error(self):
+    def test_execute_experiment_raises_reference_error(self, override_settings):
         """Test that execute() raises ReferenceError when get_db_manager() fails."""
 
         # Create an autospec of the Platform class
@@ -979,16 +981,21 @@ class TestMethods:
 
         expected_results_path = "mock/results/path/data.h5"
 
-        with patch.object(platform, "load_db_manager", side_effect=ReferenceError):
-            with pytest.raises(
-                ReferenceError, match="Missing initialization information at the desired database '.ini' path."
-            ):
-                # Mock the ExperimentExecutor to ensure it's used correctly
-                with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
-                    mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
-                    mock_executor_instance.execute.return_value = expected_results_path
+        with override_settings(
+            experiment_results_save_in_database=True,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            with patch.object(platform, "load_db_manager", side_effect=ReferenceError):
+                with pytest.raises(
+                    ReferenceError, match="Missing initialization information at the desired database '.ini' path."
+                ):
+                    # Mock the ExperimentExecutor to ensure it's used correctly
+                    with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
+                        mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+                        mock_executor_instance.execute.return_value = expected_results_path
 
-                    platform.execute_experiment(experiment=mock_experiment)
+                        platform.execute_experiment(experiment=mock_experiment)
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""

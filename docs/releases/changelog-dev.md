@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Introduced a Pydantic-powered `QililabSettings` that centralizes runtime configuration, with the singleton `get_settings()` pulling values from multiple sources so teams can pick what fits their workflow. Settings still default to sensible values, but can be overridden directly in code by editing the fields (handy for tests or ad-hoc scripts), by exporting environment variables (for example `QILILAB_EXPERIMENT_RESULTS_BASE_PATH=/data/qililab`), or by dropping the same keys into a project-level `.env` file that is auto-discovered and parsed.
+  [#1025](https://github.com/qilimanjaro-tech/qililab/pull/1025)
+
 ### Improvements
 
 - Improved acquisition result handling in the QBlox Compiler.
@@ -345,6 +348,9 @@ The data automatically selects between the local or shared domains depending on 
 ### Documentation
 
 ### Bug fixes
+
+- Qblox Draw read the dac offsets of RF modules (parameters: `OUT0_OFFSET_PATH0`, `OUT0_OFFSET_PATH1`, `OUT1_OFFSET_PATH0` and `OUT1_OFFSET_PATH1`) in Volt, although they are specified in millivolts. This has been fixed by converting the value to Volts.
+  [#1033](https://github.com/qilimanjaro-tech/qililab/pull/1033)
 
 - Qblox Draw- When dealing with real time and classical time, the real duration was put instead of the wait duration. Note: do not include this comment in the next release changelog as the bug was not in the previous release.
 
