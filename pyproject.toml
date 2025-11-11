@@ -45,10 +45,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-quantum-machines = [
-    "qm-qua==1.2.1",
-    "qualang-tools>=0.19.3",
-]
+# quantum-machines = [
+#     "qm-qua==1.2.1",
+#     "qualang-tools>=0.19.3",
+# ]
 
 [dependency-groups]
 dev = [
