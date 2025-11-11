@@ -287,7 +287,6 @@ class TestExperimentExecutor:
     ):
         """Test the execute with database as True."""
 
-        platform.save_experiment_results_in_database = True
         platform.db_optional_identifier = "test"
         expected_result_path = "/tmp/20250710/155901/experiment.h5"
         mock_measurement = Mock()
@@ -317,17 +316,19 @@ class TestExperimentExecutor:
             mock_writer_cls = MagicMock()
             mock_writer_cls.return_value = mock_writer
 
-            executor = ExperimentExecutor(
-                platform=platform,
-                experiment=experiment,
-                live_plot=False,
-                slurm_execution=False,
-                job_id=1,
-                sample="sample_test",
-                cooldown="cooldown_test",
-            )
-            executor.loop_indices = True
-            executor.execute()
+            with override_settings(experiment_results_save_in_database=True):
+
+                executor = ExperimentExecutor(
+                    platform=platform,
+                    experiment=experiment,
+                    live_plot=False,
+                    slurm_execution=False,
+                    job_id=1,
+                    sample="sample_test",
+                    cooldown="cooldown_test",
+                )
+                executor.loop_indices = True
+                executor.execute()
 
             assert executor._db_metadata == {
                 "job_id": 1,
@@ -338,7 +339,9 @@ class TestExperimentExecutor:
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")
-    def test_execute_database_no_job_id_raises_error(self, mock_h5_file, mock_get_db_manager, platform, experiment):
+    def test_execute_database_no_job_id_raises_error(
+        self, mock_h5_file, mock_get_db_manager, platform, experiment, override_settings
+    ):
         """Test the execute with database as True."""
 
         platform.save_experiment_results_in_database = True
@@ -371,15 +374,17 @@ class TestExperimentExecutor:
             mock_writer_cls = MagicMock()
             mock_writer_cls.return_value = mock_writer
 
-            executor = ExperimentExecutor(
-                platform=platform,
-                experiment=experiment,
-                live_plot=False,
-                slurm_execution=False,
-                sample="sample_test",
-                cooldown="cooldown_test",
-            )
-            executor.loop_indices = True
+            with override_settings(experiment_results_save_in_database=True):
 
-            with pytest.raises(ValueError, match="Job id has not been defined."):
-                executor.execute()
+                executor = ExperimentExecutor(
+                    platform=platform,
+                    experiment=experiment,
+                    live_plot=False,
+                    slurm_execution=False,
+                    sample="sample_test",
+                    cooldown="cooldown_test",
+                )
+                executor.loop_indices = True
+
+                with pytest.raises(ValueError, match="Job id has not been defined."):
+                    executor.execute()
