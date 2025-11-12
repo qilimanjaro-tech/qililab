@@ -46,33 +46,31 @@ def sample_metadata():
 
 
 @pytest.fixture(name="experiment_live_plot")
-def mock_experiment_live_plot(metadata):
+def mock_experiment_live_plot(metadata, override_settings):
     """Create a mock ExperimentResultsWriter structure for testing"""
-    with ExperimentResultsWriter(
-        path=PLOT_RESULTS_PATH,
-        metadata=metadata,
-        live_plot=True,
-        slurm_execution=False,
-        db_metadata=None,
-        db_manager=None,
-    ):
-        ...
+    with override_settings(experiment_live_plot_enabled=True, experiment_live_plot_on_slurm=False):
+        with ExperimentResultsWriter(
+            path=PLOT_RESULTS_PATH,
+            metadata=metadata,
+            db_metadata=None,
+            db_manager=None,
+        ):
+            ...
     yield PLOT_RESULTS_PATH
     Path(PLOT_RESULTS_PATH).unlink()
 
 
 @pytest.fixture(name="experiment_live_plot_slurm")
-def mock_experiment_live_plot_slurm(metadata):
+def mock_experiment_live_plot_slurm(metadata, override_settings):
     """Create a mock ExperimentResultsWriter structure for testing"""
-    with ExperimentResultsWriter(
-        path=PLOT_RESULTS_PATH,
-        metadata=metadata,
-        live_plot=True,
-        slurm_execution=True,
-        db_metadata=None,
-        db_manager=None,
-    ):
-        ...
+    with override_settings(experiment_live_plot_enabled=True, experiment_live_plot_on_slurm=True):
+        with ExperimentResultsWriter(
+            path=PLOT_RESULTS_PATH,
+            metadata=metadata,
+            db_metadata=None,
+            db_manager=None,
+        ):
+            ...
     yield PLOT_RESULTS_PATH
     Path(PLOT_RESULTS_PATH).unlink()
 
@@ -260,18 +258,17 @@ class TestExperimentResultsWriterLivePlot:
     """Test ExperimentResultsWriter class"""
 
     @patch("qililab.result.experiment_live_plot.ExperimentLivePlot.live_plot_figures", autospec=True)
-    def test_set_live_plot(self, mocker_live_plot_figures: MagicMock, metadata):
+    def test_set_live_plot(self, mocker_live_plot_figures: MagicMock, metadata, override_settings):
         """Test setters"""
         test_file_path = "mock_path"
-        with ExperimentResultsWriter(
-            path=test_file_path,
-            metadata=metadata,
-            live_plot=True,
-            slurm_execution=True,
-            db_metadata=None,
-            db_manager=None,
-        ):
-            pass  # Just initializing should create the file structure
+        with override_settings(experiment_live_plot_enabled=True, experiment_live_plot_on_slurm=True):
+            with ExperimentResultsWriter(
+                path=test_file_path,
+                metadata=metadata,
+                db_metadata=None,
+                db_manager=None,
+            ):
+                pass  # Just initializing should create the file structure
 
         # test ExperimentLivePlot call
         mocker_live_plot_figures.assert_called_once()

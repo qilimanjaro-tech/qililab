@@ -28,7 +28,7 @@ from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
 from .execute_circuit import execute
-from .qprogram import Calibration, CrosstalkMatrix, Domain, QProgram, Experiment
+from .qprogram import Calibration, CrosstalkMatrix, Domain, QbloxCompiler, QProgram, Experiment
 from .platform import Platform
 from .result import ExperimentResults, load_by_id, stream_results
 from .typings import Parameter
@@ -50,6 +50,7 @@ from .waveforms import (
 from .digital import Drag, Wait
 from .analog import AnnealingProgram  # same as circuit transpiler, top modules should be imported at top
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
+from .qililab_settings import get_settings
 
 __all__ = [
     "AnnealingProgram",
@@ -71,6 +72,7 @@ __all__ = [
     "Parameter",
     "Platform",
     "QProgram",
+    "QbloxCompiler",
     "Ramp",
     "Sample",
     "Square",
@@ -84,6 +86,7 @@ __all__ = [
     "deserialize_from",
     "execute",
     "get_db_manager",
+    "get_settings",
     "load_by_id",
     "load_results",
     "logger",
