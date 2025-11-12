@@ -31,10 +31,13 @@ from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop,
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
+    LatchReset,
     Measure,
+    MeasureReset,
     Operation,
     Play,
     ResetPhase,
+    SetConditional,
     SetFrequency,
     SetGain,
     SetMarkers,
@@ -167,6 +170,7 @@ class QbloxCompiler:
             Parallel: self._handle_parallel,
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
+            LatchReset: self._handle_latch_rst,
             Loop: self._handle_loop,
             SetFrequency: self._handle_set_frequency,
             SetPhase: self._handle_set_phase,
@@ -177,9 +181,11 @@ class QbloxCompiler:
             Wait: self._handle_wait,
             Sync: self._handle_sync,
             Measure: self._handle_measure,
+            MeasureReset: self._handle_measure_reset,
             Acquire: self._handle_acquire,
             Play: self._handle_play,
             Block: self._handle_block,
+            SetConditional: self._handle_conditional,
         }
 
         self._qprogram: QProgram
@@ -192,9 +198,10 @@ class QbloxCompiler:
         for element in block.elements:
             if isinstance(element, Block):
                 self.traverse_qprogram_acquire(element)
-            elif isinstance(element, (Acquire, Measure)):
-                self._acquisition_metadata.setdefault(element.bus, {}).setdefault(block.uuid, 0)
-                self._acquisition_metadata[element.bus][block.uuid] += 1
+            elif isinstance(element, (Acquire, Measure, MeasureReset)):
+                bus = getattr(element, "bus", None) or getattr(element, "measure_bus", None)
+                self._acquisition_metadata.setdefault(bus, {}).setdefault(block.uuid, 0)
+                self._acquisition_metadata[bus][block.uuid] += 1
 
     def compile(
         self,
@@ -233,10 +240,12 @@ class QbloxCompiler:
                                         element=Wait(bus=other_buses, duration=-self._buses[bus].delay), delay=True
                                     )
                     delay_implemented = True
-                if isinstance(element, (Acquire, Measure)) and self._buses[element.bus].first_acquire_of_block is True:
-                    self._buses[element.bus].count_nested_level_acquire += 1
-                    self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid]
-                    self._buses[element.bus].first_acquire_of_block = False
+                if isinstance(element, (Acquire, Measure, MeasureReset)):
+                    bus = getattr(element, "bus", None) or getattr(element, "measure_bus", None)
+                    if self._buses[bus].first_acquire_of_block is True:
+                        self._buses[bus].count_nested_level_acquire += 1
+                        self._buses[bus].counter_acquire = self._acquisition_metadata[bus][block.uuid]
+                        self._buses[bus].first_acquire_of_block = False
                 handler = self._handlers.get(type(element))
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
@@ -280,6 +289,10 @@ class QbloxCompiler:
         # Pre-processing: Set markers ON/OFF
         for bus in self._buses:
             mask = markers[bus] if markers is not None and bus in markers else "0000"
+            # if qprogram.measure_reset is used the bus using the conditional enables latching at the very top of the q1asm
+            if bus in self._qprogram.qblox.latch_enabled:
+                self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1, 4), 1)
+
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
             self._buses[bus].static_duration += 4
@@ -454,6 +467,13 @@ class QbloxCompiler:
     def _handle_reset_phase(self, element: ResetPhase):
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
+
+    def _handle_latch_rst(self, element: LatchReset):
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.LatchRst(wait_time=element.duration)
+        )
+        self._buses[element.bus].marked_for_sync = True
+        self._buses[element.bus].static_duration += element.duration
 
     def _handle_set_gain(self, element: SetGain):
         convert = QbloxCompiler._convert_value(element)
@@ -719,6 +739,56 @@ class QbloxCompiler:
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].prev_nested_level_acquire = self._buses[element.bus].count_nested_level_acquire
         self._buses[element.bus].upd_param_instruction_pending = False
+
+    def _handle_conditional(self, element: SetConditional):
+        # The conditional does not add any static duration as it is assumed that the operations contained within are the same as the else_duration of the conditional
+        enable = element.enable
+        mask = element.mask
+        operator = element.operator
+        else_duration = element.else_duration
+
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetCond(enable, mask, operator, else_duration)
+        )
+
+        self._buses[element.bus].marked_for_sync = True
+
+    def _handle_measure_reset(self, element: MeasureReset):
+        """Executes a measurement followed by active reset in a single operation
+
+        Args:
+            element (MeasureReset): measure operation and perform active reset
+        """
+        wait_trigger_network = 400  # this corresponds to the time it takes for the qblox trigger network to send a trigger;
+        # 400ns is conservative - the official guideline is 388ns between 2 modules
+
+        time_of_flight = self._buses[element.measure_bus].time_of_flight
+        latch_rst = LatchReset(bus=element.control_bus, duration=4)
+        play = Play(bus=element.measure_bus, waveform=element.waveform, wait_time=time_of_flight)
+        acquire = Acquire(bus=element.measure_bus, weights=element.weights, save_adc=element.save_adc)
+        sync = Sync()
+        wait = Wait(bus=element.control_bus, duration=wait_trigger_network)
+        play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
+        mask = 2 ** (element.trigger_address - 1)
+        conditional_activated = SetConditional(
+            bus=element.control_bus,
+            enable=1,
+            mask=mask,
+            operator=0,
+            else_duration=play_reset_pulse.waveform.get_duration(),
+        )
+        conditional_desactivated = SetConditional(
+            bus=element.control_bus, enable=0, mask=0, operator=0, else_duration=4
+        )
+
+        self._handle_latch_rst(latch_rst)
+        self._handle_play(play)
+        self._handle_acquire(acquire)
+        self._handle_sync(sync)
+        self._handle_wait(wait)
+        self._handle_conditional(conditional_activated)
+        self._handle_play(play_reset_pulse)
+        self._handle_conditional(conditional_desactivated)
 
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()

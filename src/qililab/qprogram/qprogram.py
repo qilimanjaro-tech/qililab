@@ -20,13 +20,16 @@ from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
+    LatchReset,
     Measure,
+    MeasureReset,
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
     Play,
     PlayWithCalibratedWaveform,
     ResetPhase,
+    SetConditional,
     SetFrequency,
     SetGain,
     SetMarkers,
@@ -482,6 +485,8 @@ class QProgram(StructuredProgram):
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
             self.disable_autosync: bool = False
+            self.latch_enabled: list[str] = []
+            self.trigger_network_required: dict[str, int] = {}
 
         def set_markers(self, bus: str, mask: str):
             """Set the markers based on a 4-bit binary mask.
@@ -491,6 +496,36 @@ class QProgram(StructuredProgram):
                 mask (str): A 4-bit mask, where 0 means that the associated marker is open (no signal), and 1 means that the marker is closed (signal).
             """
             operation = SetMarkers(bus=bus, mask=mask)
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
+
+        @requires_domain("duration", Domain.Time)
+        def latch_rst(self, bus: str, duration: int):
+            """Reset all trigger network address counters back to 0.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                duration (int) duration of the command in ns:
+            """
+            operation = LatchReset(bus=bus, duration=duration)
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
+
+        @requires_domain("else_duration", Domain.Time)
+        def set_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
+            """Enable/disable conditionality on all following real-time instructions based on enable.
+            The condition is based on the trigger network address counters.
+
+            Args:
+                bus (str): Unique identifier of the bus.
+                enable (int): 1 to enable the conditional check, 0 to disable.
+                mask (int): bits 0-14, where the bit index plus one corresponds to the trigger address.
+                operator (int): Logical operators are OR, NOR, AND, NAND, XOR, XNOR, where a value for operator of 0 is OR and 5 is XNOR respectively.
+                else_duration (int): duration in ns taken by each real time command if the condition is not met.
+            """
+            operation = SetConditional(
+                bus=bus, enable=enable, mask=mask, operator=operator, else_duration=else_duration
+            )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
@@ -563,6 +598,47 @@ class QProgram(StructuredProgram):
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
+
+        def measure_reset(
+            self,
+            measure_bus: str,
+            waveform: IQPair,
+            weights: IQPair,
+            control_bus: str,
+            reset_pulse: IQPair,
+            trigger_address: int = 1,
+            save_adc: bool = False,
+        ):
+            """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
+
+            If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
+            If the result is 0, the control_bus waits instead.
+
+            Args:
+                measure_bus (str): Identifier of the measurement bus.
+                waveform (IQPair): Waveform played during measurement.
+                weights (IQPair): Weights used for demodulation/integration.
+                control_bus (str): Identifier of the control/reset bus.
+                reset_pulse (IQPair): Pulse used for active reset.
+                trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
+                save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+            """
+            operation: MeasureReset
+
+            operation = MeasureReset(
+                measure_bus=measure_bus,
+                waveform=waveform,
+                weights=weights,
+                control_bus=control_bus,
+                reset_pulse=reset_pulse,
+                trigger_address=trigger_address,
+                save_adc=save_adc,
+            )
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(measure_bus)
+            self.qprogram._buses.add(control_bus)
+            self.latch_enabled.append(control_bus)
+            self.trigger_network_required[measure_bus] = trigger_address
 
     @yaml.register_class
     class _QuantumMachinesInterface:

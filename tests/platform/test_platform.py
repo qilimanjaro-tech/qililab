@@ -28,12 +28,13 @@ from qililab.extra.quantum_machines import (
     QuantumMachinesMeasurementResult,
 )
 from qililab.instrument_controllers import InstrumentControllers
+from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import Calibration, Domain, Experiment, QProgram
+from qililab.qprogram import Calibration, Domain, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results import QbloxResult
@@ -44,7 +45,6 @@ from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
-
 
 @pytest.fixture(name="platform")
 def fixture_platform():
@@ -1785,6 +1785,28 @@ class TestMethods:
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
+    def test_trigger_network_setup_and_reset(self, platform):
+        # Build a fake compilation output with one bus “b” → trigger 5
+        qp = QProgram()
+        qp.qblox.trigger_network_required = {"b": 5}
+        output = QbloxCompilationOutput(qprogram=qp, sequences={"b": None}, acquisitions={"b": []})
+
+        # Stub the bus and controller
+        fake_bus = MagicMock()
+        fake_bus._setup_trigger_network = MagicMock()
+        platform.buses.get = MagicMock(return_value=fake_bus)
+
+        controller = MagicMock(spec=QbloxClusterController)
+        controller.device = MagicMock()
+        platform.instrument_controllers.elements = [controller]
+
+        # Call the method under testus
+        platform._execute_qblox_compilation_output(output)
+
+        # Verify the two lines ran
+        fake_bus._setup_trigger_network.assert_called_once_with(trigger_address=5)
+        controller.device.reset_trigger_monitor_count.assert_called_once_with(address=5)
+
     def test_qblox_intertwined_results(self, raw_measurement_data_intertwined: dict, platform: Platform):
         """Test that the results get unintertwined."""
 
@@ -1853,4 +1875,5 @@ class TestMethods:
 
         with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
             platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=sequencer)
+
 
