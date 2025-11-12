@@ -199,8 +199,9 @@ class QbloxCompiler:
             if isinstance(element, Block):
                 self.traverse_qprogram_acquire(element)
             elif isinstance(element, (Acquire, Measure, MeasureReset)):
-                self._acquisition_metadata.setdefault(element.bus, {}).setdefault(block.uuid, 0)
-                self._acquisition_metadata[element.bus][block.uuid] += 1
+                bus = getattr(element, "bus", None) or getattr(element, "measure_bus", None)
+                self._acquisition_metadata.setdefault(bus, {}).setdefault(block.uuid, 0)
+                self._acquisition_metadata[bus][block.uuid] += 1
 
     def compile(
         self,
@@ -239,10 +240,12 @@ class QbloxCompiler:
                                         element=Wait(bus=other_buses, duration=-self._buses[bus].delay), delay=True
                                     )
                     delay_implemented = True
-                if isinstance(element, (Acquire, Measure, MeasureReset)) and self._buses[element.bus].first_acquire_of_block is True:
-                    self._buses[element.bus].count_nested_level_acquire += 1
-                    self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid]
-                    self._buses[element.bus].first_acquire_of_block = False
+                if isinstance(element, (Acquire, Measure, MeasureReset)):
+                    bus = getattr(element, "bus", None) or getattr(element, "measure_bus", None)
+                    if self._buses[bus].first_acquire_of_block is True:
+                        self._buses[bus].count_nested_level_acquire += 1
+                        self._buses[bus].counter_acquire = self._acquisition_metadata[bus][block.uuid]
+                        self._buses[bus].first_acquire_of_block = False
                 handler = self._handlers.get(type(element))
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
