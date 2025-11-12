@@ -28,12 +28,12 @@ from uuid import UUID
 import numpy as np
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
+from qililab.core.variables import Variable
 from qililab.qililab_settings import get_settings
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
-from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
     ExperimentDataBaseMetadata,
     ExperimentMetadata,
@@ -598,7 +598,7 @@ class ExperimentExecutor:
             path=results_path,
             metadata=self._metadata,
             db_metadata=self._db_metadata,
-            db_manager=self.platform.db_manager
+            db_manager=self.platform.db_manager,
         )
 
         # Event to signal that the execution has completed

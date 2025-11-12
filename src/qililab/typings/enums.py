@@ -322,6 +322,7 @@ class InstrumentControllerName(str, Enum):
 @yaml.register_class
 class Parameter(str, Enum):
     """Parameter names."""
+
     OPERATION_MODE = "operation_mode"
     ALC = "alc"
     IQ_WIDEBAND = "iq_wideband"
@@ -333,8 +334,6 @@ class Parameter(str, Enum):
     AMPLITUDE = "amplitude"
     PHASE = "phase"
     WAIT_TIME = "wait_time"
-    DELAY_BETWEEN_PULSES = "delay_between_pulses"
-    DELAY_BEFORE_READOUT = "delay_before_readout"
     GATE_DURATION = "gate_duration"
     GATE_PARAMETER = "gate_parameter"
     NUM_SIGMAS = "num_sigmas"
@@ -474,13 +473,15 @@ class Parameter(str, Enum):
 
 
 FILTER_PARAMETERS = [
-    p for p in Parameter
+    p
+    for p in Parameter
     if (
         p.name.startswith("EXPONENTIAL_AMPLITUDE")
         or p.name.startswith("EXPONENTIAL_TIME_CONSTANT")
         or p.name.startswith("EXPONENTIAL_STATE")
         or p.name.startswith("FIR_")
-    )]
+    )
+]
 
 
 class ResultName(str, Enum):

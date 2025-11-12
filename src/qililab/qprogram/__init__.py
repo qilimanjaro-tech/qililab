@@ -19,12 +19,10 @@ from .crosstalk_matrix import CrosstalkMatrix, FluxVector
 from .experiment import Experiment
 from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
 from .qprogram import QProgram
-from .variable import Domain
 
 __all__ = [
     "Calibration",
     "CrosstalkMatrix",
-    "Domain",
     "Experiment",
     "FluxVector",
     "QProgram",
