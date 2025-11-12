@@ -5,7 +5,17 @@
 - Updated `qibo` to version 0.2.20, and to fit the requirements `numpy` has been updated to 2.2.6 and `pandas` to 2.2.3.
   [#970](https://github.com/qilimanjaro-tech/qililab/pull/970)
 
+- Introduced a Pydantic-powered `QililabSettings` that centralizes runtime configuration, with the singleton `get_settings()` pulling values from multiple sources so teams can pick what fits their workflow. Settings still default to sensible values, but can be overridden directly in code by editing the fields (handy for tests or ad-hoc scripts), by exporting environment variables (for example `QILILAB_EXPERIMENT_RESULTS_BASE_PATH=/data/qililab`), or by dropping the same keys into a project-level `.env` file that is auto-discovered and parsed.
+  [#1025](https://github.com/qilimanjaro-tech/qililab/pull/1025)
+
 ### Improvements
+
+- Improved acquisition result handling in the QBlox Compiler.
+
+  Previously, each acquisition was assigned a unique acquisition index, which meant that a single qprogram could only contain up to 32 acquisitions per bus (due to QBlox’s limit of 32 indices).
+  Now, acquisitions at the same nested level reuse the same acquisition index while incrementing the bin index. This removes the 32-acquisition limit in most cases. A `ValueError` is raised only if more than 32 acquisitions occur at different nested levels.
+  Since the results retrieved from QBlox are now intertwined, a new function `_unintertwined_qblox_results` has been introduced in `platform`. This function called by `_execute_qblox_compilation_output method` and `execute_compilation_outputs_parallel` separates each acquisition into its own QbloxMeasurementResult object.
+[#998](https://github.com/qilimanjaro-tech/qililab/pull/998)
 
 - Added support for real-time predistortion on Qblox hardware.
   - The outputs of a QCM can now set an FIR filter and up to four exponential filters (provided as a list). These parameters can be configured via the runcard (example below) and via platform.set_parameter/get_parameter.
@@ -341,6 +351,9 @@ The data automatically selects between the local or shared domains depending on 
 ### Documentation
 
 ### Bug fixes
+
+- Qblox Draw read the dac offsets of RF modules (parameters: `OUT0_OFFSET_PATH0`, `OUT0_OFFSET_PATH1`, `OUT1_OFFSET_PATH0` and `OUT1_OFFSET_PATH1`) in Volt, although they are specified in millivolts. This has been fixed by converting the value to Volts.
+  [#1033](https://github.com/qilimanjaro-tech/qililab/pull/1033)
 
 - Qblox Draw- When dealing with real time and classical time, the real duration was put instead of the wait duration. Note: do not include this comment in the next release changelog as the bug was not in the previous release.
 

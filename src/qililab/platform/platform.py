@@ -20,7 +20,6 @@ from __future__ import annotations
 import ast
 import io
 import re
-import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -55,6 +54,7 @@ from qililab.platform.components.buses import Buses
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.pulse.qblox_compiler import ModuleSequencer
 from qililab.pulse.qblox_compiler import QbloxCompiler as PulseQbloxCompiler
+from qililab.qililab_settings import get_settings
 from qililab.qprogram import (
     Calibration,
     Domain,
@@ -67,6 +67,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
@@ -341,12 +342,6 @@ class Platform:
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
 
-        self.experiment_results_base_path: str = tempfile.gettempdir()
-        """Base path for saving experiment results."""
-
-        self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
-        """Format of the experiment results path."""
-
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
 
@@ -358,9 +353,6 @@ class Platform:
 
         self.db_manager: DatabaseManager | None = None
         """Database manager for experiment class and db stream array"""
-
-        self.save_experiment_results_in_database: bool = False
-        """Database trigger to define if the experiment metadata will be saved in a database or not"""
 
         self.qblox_alias_module: list = self._get_qblox_alias_module()
         """List of dict with key the alias of qblox module and value the module_id. Used for the qblox distortions"""
@@ -564,11 +556,11 @@ class Platform:
                                 if awg.identifier == identifier[0]:
                                     for out in awg.outputs:
                                         if out == 0:
-                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0)
-                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1)
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0) / 1000
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1) / 1000
                                         elif out == 1:
-                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
-                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0) / 1000
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1) / 1000
 
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
@@ -1089,22 +1081,14 @@ class Platform:
 
     def execute_experiment(
         self,
-        experiment: Experiment,
-        live_plot: bool = False,
-        slurm_execution: bool = True,
-        port_number: int | None = None,
+        experiment: Experiment
     ) -> str:
         """Executes a quantum experiment on the platform.
 
-        This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
+        This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. Result storage paths, live plotting, and database persistence are configured through :func:`qililab.qililab_settings.get_settings`.
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
-            live_plot (bool): Flag that abilitates live plotting. Defaults to False.
-            slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell.
-                                    Defaults to True.
-            port_number (int | None): Optional parameter for when slurm_execution is True.
-                                    It defines the port number of the Dash server. Defaults to None.
 
         Returns:
             str: The path to the file where the results are stored.
@@ -1120,13 +1104,13 @@ class Platform:
                 # ...
 
                 # Execute the experiment on the platform
-                results_path = platform.execute_experiment(experiment=experiment, database=False)
+                results_path = platform.execute_experiment(experiment=experiment)
                 print(f"Results saved to {results_path}")
 
         Example with database:
             .. code-block:: python
 
-                from qililab import Experiment
+                from qililab import Experiment, get_settings
 
                 # Initialize your experiment
                 experiment = Experiment(label="my_experiment")
@@ -1137,8 +1121,11 @@ class Platform:
                 db_manager = platform.load_db_manager(db_manager_ini_path)
                 db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
 
+                settings = get_settings()
+                settings.experiment_results_save_in_database = True
+
                 # Execute the experiment on the platform
-                results_path = platform.execute_experiment(experiment=experiment, database=True)
+                results_path = platform.execute_experiment(experiment=experiment)
                 print(f"Results saved to {results_path}")
 
         Note:
@@ -1147,7 +1134,7 @@ class Platform:
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
 
-        if self.save_experiment_results_in_database and not self.db_manager:
+        if get_settings().experiment_results_save_in_database and not self.db_manager:
             try:
                 self.load_db_manager()
             except ReferenceError:
@@ -1155,10 +1142,7 @@ class Platform:
 
         executor = ExperimentExecutor(
             platform=self,
-            experiment=experiment,
-            live_plot=live_plot,
-            slurm_execution=slurm_execution,
-            port_number=port_number,
+            experiment=experiment
         )
         return executor.execute()
 
@@ -1286,7 +1270,11 @@ class Platform:
                             acquisitions=acquisitions[bus_alias], channel_id=int(channel)
                         )
                         for bus_result in bus_results:
-                            results.append_result(bus=bus_alias, result=bus_result)
+                            for _, acquisition_data in acquisitions[bus_alias].items():
+                                intertwined = acquisition_data.intertwined
+                                unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                for unintertwined_result in unintertwined_results:
+                                    results.append_result(bus=bus_alias, result=unintertwined_result)
 
         # Reset instrument settings
         for bus_alias in sequences:
@@ -1295,6 +1283,36 @@ class Platform:
                     instrument.desync_sequencer(sequencer_id=int(channel))
 
         return results
+
+    def _unintertwined_qblox_results(self, bus_result: QbloxMeasurementResult, intertwined: int) -> list[QbloxMeasurementResult]:
+        """ Return a list of results where intertwined acquisitions are separated.
+
+        In Qililab, when multiple acquisitions or measurements are performed at the same nested level, their results are intertwined: the bins are looped over
+        while the acquisition index remains constant.
+        If `intertwined` is greater than 1, this function separates each acquisition into its own QbloxMeasurementResult object.
+        QbloxMeasurementResult object. If `intertwined` is 1 the result is returned inside a single-element list.
+
+        Returns:
+            list[QbloxMeasurementResult]: unintertwined results where each element corresponds to one acquisition.
+        """
+        results_unintertwined_list = []
+        if intertwined > 1:
+            for result in range(intertwined):
+                bus = bus_result.bus
+                new_raw_measurement_data = {"scope": {"path0": {"data": bus_result.raw_measurement_data["scope"]["path0"]["data"][result::intertwined]},
+                                                      "path1": {"data": bus_result.raw_measurement_data["scope"]["path1"]["data"][result::intertwined]}},
+                                            "bins": {"integration": {"path0": bus_result.raw_measurement_data["bins"]["integration"]["path0"][result::intertwined],
+                                                                    "path1": bus_result.raw_measurement_data["bins"]["integration"]["path1"][result::intertwined]},
+                                            "threshold": bus_result.raw_measurement_data["bins"]["threshold"][result::intertwined],
+                                            "avg_cnt": bus_result.raw_measurement_data["bins"]["avg_cnt"][result::intertwined]}
+                                            }
+                results_unintertwined = QbloxMeasurementResult(bus=bus, raw_measurement_data=new_raw_measurement_data, shape=bus_result.shape)
+                results_unintertwined_list.append(results_unintertwined)
+
+        else:
+            results_unintertwined_list = [bus_result]
+
+        return results_unintertwined_list
 
     def _execute_quantum_machines_compilation_output(
         self,
@@ -1575,7 +1593,11 @@ class Platform:
                                 acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias], channel_id=int(channel)
                             )
                             for bus_result in bus_results:
-                                results[qprogram_idx].append_result(bus=bus_alias, result=bus_result)
+                                for _, acquisition_data in aquisitions_per_qprogram[qprogram_idx][bus_alias].items():
+                                    intertwined = acquisition_data.intertwined
+                                    unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                    for unintertwined_result in unintertwined_results:
+                                        results[qprogram_idx].append_result(bus=bus_alias, result=unintertwined_result)
 
         # Reset instrument settings
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
