@@ -14,12 +14,13 @@
 
 """Quantum Machines Manager class."""
 
+import hashlib
 import os
 from dataclasses import dataclass
 from typing import Any, cast
 
 import numpy as np
-from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig
+from qm import DictQuaConfig, QmJob, QuantumMachine, QuantumMachinesManager, SimulationConfig, generate_qua_script
 from qm.api.v2.job_api import JobApi
 from qm.jobs.running_qm_job import RunningQmJob
 from qm.octave import QmOctaveConfig
@@ -28,8 +29,14 @@ from qm.program import Program
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue, QMMDriver
-from qililab.utils import hash_qua_program, merge_dictionaries
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue, QMMDriver
+from qililab.utils import merge_dictionaries
+
+
+def hash_qua_program(program: Program) -> str:
+    """Hash a QUA program"""
+    program_str = "\n".join(generate_qua_script(program).split("\n")[3:])
+    return hashlib.md5(program_str.encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
 @InstrumentFactory.register
@@ -585,7 +592,13 @@ class QuantumMachinesCluster(Instrument):
         return (con_name, con_port, con_fem)
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None) -> None:
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ) -> None:
         """Sets the parameter of the instrument into the cache (runtime dataclasses).
 
         And if connection to instruments is established, then to the instruments as well.
@@ -770,7 +783,9 @@ class QuantumMachinesCluster(Instrument):
 
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
+    ) -> ParameterValue:
         """Gets the value of a parameter.
 
         Args:

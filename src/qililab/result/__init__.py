@@ -26,7 +26,6 @@ Classes
     Result
     MeasurementResult
     QbloxMeasurementResult
-    QuantumMachinesMeasurementResult
 
 
 Functions
@@ -48,9 +47,9 @@ from .result import Result
 from .result_management import load_results, save_results
 
 # Moving database here to avoid circular imports
-from .database import Cooldown, DatabaseManager, Sample, get_db_manager, Measurement
+from .database import Cooldown, DatabaseManager, Sample, get_db_manager, load_by_id, Measurement
 from .stream_results import StreamArray, stream_results
-from .qprogram import MeasurementResult, QbloxMeasurementResult, QuantumMachinesMeasurementResult
+from .qprogram import MeasurementResult, QbloxMeasurementResult
 
 __all__ = [
     "Cooldown",
@@ -60,12 +59,12 @@ __all__ = [
     "Measurement",
     "MeasurementResult",
     "QbloxMeasurementResult",
-    "QuantumMachinesMeasurementResult",
     "Result",
     "Sample",
     "StreamArray",
     "get_db_manager",
+    "load_by_id",
     "load_results",
     "save_results",
-    "stream_results"
+    "stream_results",
 ]

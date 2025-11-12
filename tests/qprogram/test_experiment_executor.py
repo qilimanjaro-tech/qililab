@@ -1,7 +1,7 @@
 import datetime
 import os
 import tempfile
-from unittest.mock import Mock, call, create_autospec, patch
+from unittest.mock import MagicMock, Mock, call, create_autospec, patch
 
 import numpy as np
 import pytest
@@ -10,10 +10,11 @@ from qililab.platform.platform import Platform
 from qililab.qprogram.blocks import ForLoop, Loop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
+from qililab.extra.quantum_machines import QuantumMachinesMeasurementResult
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import Domain, QProgram
 from qililab.result.experiment_results import ExperimentResults
-from qililab.result.qprogram import QProgramResults, QuantumMachinesMeasurementResult
+from qililab.result.qprogram import QProgramResults
 from qililab.typings.enums import Parameter
 from qililab.waveforms import IQPair, Square
 
@@ -144,11 +145,16 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
 class TestExperimentExecutor:
     """Test ExperimentExecutor class"""
 
-    def test_execute(self, platform, experiment, qprogram, crosstalk):
+    def test_execute(self, platform, experiment, qprogram, crosstalk, override_settings):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
         platform.save_experiment_results_in_database = False
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, live_plot=False, slurm_execution=False)
-        resuls_path = executor.execute()
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
+            resuls_path = executor.execute()
 
         # Check if the correct file path is returned
         assert resuls_path.startswith(os.path.abspath(tempfile.gettempdir()))
@@ -158,13 +164,13 @@ class TestExperimentExecutor:
         expected_calls = [
             call.to_dict(),
             call.set_crosstalk(crosstalk=crosstalk),
-            call.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
-            call.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
-            call.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None),
-            call.set_parameter(alias="flux_q0", parameter=Parameter.FLUX, value=0.0, channel_id=None),
+            call.set_parameter(alias="drive_q0", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None, output_id=None),
+            call.set_parameter(alias="drive_q1", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None, output_id=None),
+            call.set_parameter(alias="drive_q2", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None, output_id=None),
+            call.set_parameter(alias="flux_q0", parameter=Parameter.FLUX, value=0.0, channel_id=None, output_id=None),
             # Check that get_parameter returns a variable that can be reused
-            call.get_parameter(alias="flux_q0", parameter=Parameter.GAIN, channel_id=None),
-            call.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=1.23, channel_id=None),
+            call.get_parameter(alias="flux_q0", parameter=Parameter.GAIN, channel_id=None, output_id=None),
+            call.set_parameter(alias="flux_q1", parameter=Parameter.GAIN, value=1.23, channel_id=None, output_id=None),
             call.execute_qprogram(
                 qprogram=get_qprogram_gain_by_get_parameter(gain=1.23, qprogram=qprogram),
                 bus_mapping=None,
@@ -172,31 +178,31 @@ class TestExperimentExecutor:
                 debug=False,
             ),
             # Start of nested loops
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None, output_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, output_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, output_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None, output_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, output_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, output_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None, output_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, output_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, output_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             # End of nested loops
             # Start of parallel loop
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.0, channel_id=None, output_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=None, output_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=0.5, channel_id=None, output_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=3e9, channel_id=None, output_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None),
-            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=4e9, channel_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.VOLTAGE, value=1.0, channel_id=None, output_id=None),
+            call.set_parameter(alias="readout_bus", parameter=Parameter.LO_FREQUENCY, value=4e9, channel_id=None, output_id=None),
             call.execute_qprogram(qprogram=qprogram, bus_mapping=None, calibration=None, debug=False),
             # End of parallel loop
             # Start of nshots loop with lambda execution
@@ -275,28 +281,59 @@ class TestExperimentExecutor:
             assert np.allclose(qprogram2_measurement1_data, measurement_data[None, :, :])
 
     @patch("qililab.platform.platform.get_db_manager")
-    def test_execute_database(self, mock_get_db_manager, platform, experiment):
+    @patch("qililab.result.experiment_results_writer.h5py.File")
+    def test_execute_database_metadata_only(
+        self, mock_h5_file, mock_get_db_manager, platform, experiment, override_settings
+    ):
         """Test the execute with database as True."""
+
         platform.save_experiment_results_in_database = True
         platform.db_optional_identifier = "test"
-
         expected_result_path = "/tmp/20250710/155901/experiment.h5"
-
         mock_measurement = Mock()
         mock_measurement.result_path = expected_result_path
 
         mock_db_manager = Mock()
         mock_db_manager.current_sample = "sample"
         mock_db_manager.current_cd = "cd"
-        mock_db_manager.add_measurement.return_value = mock_measurement
-
         mock_get_db_manager.return_value = mock_db_manager
+        platform.db_manager = mock_db_manager
 
-        executor = ExperimentExecutor(
-            platform=platform,
-            experiment=experiment,
-            live_plot=False,
-            slurm_execution=False,
-        )
+        mock_file = MagicMock()
+        mock_h5_file.return_value = mock_file
 
-        result_path = executor.execute()
+        experiment.label = "experiment"
+        experiment.description = "Test"
+
+        with (
+            patch.object(ExperimentExecutor, "_prepare_operations", return_value=[]),
+            patch.object(ExperimentExecutor, "_execute_operations", return_value=None),
+            patch.object(ExperimentExecutor, "_create_results_path", return_value=expected_result_path),
+        ):
+
+            mock_writer = MagicMock()
+            mock_writer.__enter__.return_value = mock_writer
+            mock_writer.__exit__.return_value = None
+            mock_writer.results_path = expected_result_path
+            mock_writer.execution_time = 0.0
+            mock_writer_cls = MagicMock()
+            mock_writer_cls.return_value = mock_writer
+
+            with override_settings(
+                experiment_results_save_in_database=True,
+                experiment_live_plot_enabled=False,
+                experiment_live_plot_on_slurm=False,
+            ):
+                executor = ExperimentExecutor(
+                    platform=platform,
+                    experiment=experiment,
+                )
+                executor.loop_indices = True
+                executor.execute()
+
+            assert executor._db_metadata == {
+                "cooldown": "cd",
+                "experiment_name": "experiment",
+                "optional_identifier": "Test",
+                "sample_name": "sample",
+            }

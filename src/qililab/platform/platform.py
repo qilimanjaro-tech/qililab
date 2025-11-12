@@ -20,7 +20,6 @@ from __future__ import annotations
 import ast
 import io
 import re
-import tempfile
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -29,7 +28,6 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
-from qm import generate_qua_script
 from ruamel.yaml import YAML
 
 from qililab.analog import AnnealingProgram
@@ -37,6 +35,13 @@ from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.digital import CircuitTranspiler
 from qililab.exceptions import ExceptionGroup
+from qililab.extra.quantum_machines import (
+    QuantumMachinesCluster,
+    QuantumMachinesCompilationOutput,
+    QuantumMachinesCompiler,
+    QuantumMachinesMeasurementResult,
+    generate_qua_script,
+)
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
@@ -44,13 +49,13 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.pulse.qblox_compiler import ModuleSequencer
 from qililab.pulse.qblox_compiler import QbloxCompiler as PulseQbloxCompiler
+from qililab.qililab_settings import get_settings
 from qililab.qprogram import (
     Calibration,
     Domain,
@@ -58,22 +63,21 @@ from qililab.qprogram import (
     QbloxCompilationOutput,
     QbloxCompiler,
     QProgram,
-    QuantumMachinesCompilationOutput,
-    QuantumMachinesCompiler,
 )
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
 from qililab.result.stream_results import StreamArray
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
     from queue import Queue
 
+    from qm import generate_qua_script as _T_generate_qua_script  # noqa: F401
     from qpysequence import Sequence as QpySequence
 
     from qililab.digital import DigitalTranspilationConfig
@@ -103,7 +107,7 @@ class Platform:
 
         More information about the runcard structure, in the :ref:`Runcards <runcards>` section of the documentation.
 
-    After initializing a :class:`Platform`, the typical first three steps (which are usually only required at the start) are:
+    After initializing a Platform, the typical first three steps (which are usually only required at the start) are:
 
     >>> platform.connect()  # Connects to all the instruments.
     >>> platform.initial_setup()  # Sets the parameters defined in the runcard.
@@ -175,7 +179,15 @@ class Platform:
             The obtained values correspond to the integral of the I/Q signals received by the digitizer.
             And they have shape `(#sequencers, 2, #bins)`, in this case you only have 1 sequencer and 1 bin.
 
-        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries, with:
+        You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries.
+        To do so the call to execute circuit must be slightly different, as the number of averages must be 1:
+
+        .. code-block:: python
+
+            # Executing the platform with the same amount of loops but using bins:
+            result = platform.execute(program=circuit, num_avg=1, num_bins=1000, repetition_duration=6000)
+
+        Then:
 
         >>> result.counts
         {'0': 501, '1': 499}
@@ -331,12 +343,6 @@ class Platform:
         self._qpy_sequence_cache: dict[str, str] = {}
         """Dictionary for caching qpysequences."""
 
-        self.experiment_results_base_path: str = tempfile.gettempdir()
-        """Base path for saving experiment results."""
-
-        self.experiment_results_path_format: str = "{date}/{time}/{label}.h5"
-        """Format of the experiment results path."""
-
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
 
@@ -349,8 +355,20 @@ class Platform:
         self.db_manager: DatabaseManager | None = None
         """Database manager for experiment class and db stream array"""
 
-        self.save_experiment_results_in_database: bool = True
-        """Database trigger to define if the experiment metadata will be saved in a database or not"""
+        self.qblox_alias_module: list = self._get_qblox_alias_module()
+        """List of dict with key the alias of qblox module and value the module_id. Used for the qblox distortions"""
+
+        self.qblox_active_filter_exponential: list = self._get_qblox_active_filter_exponential()
+        """List of exponential_idx with an active exponential filter. Active is considered as either "enabled" or "delay_comp". Used for the qblox distortions"""
+
+        self.qblox_active_filter_fir: bool = self._get_qblox_active_filter_fir()
+        """Bool to determine if any FIR filter is active. Active is considered as either "enabled" or "delay_comp". Used for the qblox distortions"""
+
+        self._update_qblox_filter_state_exponential()
+        """Updates the exponential state as needed. Used for the qblox distortions"""
+
+        self._update_qblox_filter_state_fir()
+        """Updates the FIR state as needed. Used for the qblox distortions"""
 
     def connect(self):
         """Connects to all the instruments and blocks the connection for other users.
@@ -469,13 +487,14 @@ class Platform:
         """
         return self.buses.get(alias=alias)
 
-    def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(self, alias: str, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Get platform parameter.
 
         Args:
             parameter (Parameter): Name of the parameter to get.
             alias (str): Alias of the bus where the parameter is set.
             channel_id (int, optional): ID of the channel we want to use to set the parameter. Defaults to None.
+            output_id (int, optional): ID of the module we want to use to set the parameter, used for Qblox distortion filters. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
@@ -489,7 +508,7 @@ class Platform:
                 self.flux_parameter[alias] = 0.0
             return self.flux_parameter[alias]
         element = self.get_element(alias=alias)
-        return element.get_parameter(parameter=parameter, channel_id=channel_id)
+        return element.get_parameter(parameter=parameter, channel_id=channel_id, output_id=output_id)
 
     def _data_draw(self):
         """From the runcard retrieve the parameters necessary to draw the qprogram."""
@@ -538,23 +557,72 @@ class Platform:
                                 if awg.identifier == identifier[0]:
                                     for out in awg.outputs:
                                         if out == 0:
-                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0)
-                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1)
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0) / 1000
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1) / 1000
                                         elif out == 1:
-                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
-                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0) / 1000
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1) / 1000
 
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
 
-                        if instrument.name == InstrumentName.QRMRF or instrument.name == InstrumentName.QBLOX_QRM:
-                            integration_length = bus.get_parameter(Parameter.INTEGRATION_LENGTH)
-                            data_oscilloscope[bus.alias]["integration_length"] = integration_length
         else:
             # TODO: the same information could be generated with a Quantum Machine runcard, even if the QBlox Compiler is used in the background.
             raise NotImplementedError("The drawing feature is currently only supported for QBlox.")
 
         return data_oscilloscope
+
+    def _get_qblox_active_filter_fir(self):
+        """ Determines if any FIR filter is active. Active is considered as either "enabled" or "delay_comp"
+
+            Returns:
+                qblox_active_filter(bool): true if any FIR filter is active, False otherwise. Defaults to False
+        """
+        qblox_active_filter = False
+        for pair in self.qblox_alias_module:
+            module_alias, output_id = next(iter(pair.items()))
+            qblox_instrument = self.instruments.get_instrument(module_alias)
+            for filter in qblox_instrument.filters:
+                if filter.output_id == output_id:
+                    if filter.fir_state in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
+                        qblox_active_filter = True
+        return qblox_active_filter
+
+    def _get_qblox_active_filter_exponential(self):
+        """ Determines which exponential index has an active exponential filter. Active is considered as either "enabled" or "delay_comp"
+
+            Returns:
+                qblox_active_filter(list): List index of exponential for which an exponential filter is active.
+        """
+        qblox_active_filter = []
+        for pair in self.qblox_alias_module:
+            module_alias, output_id = next(iter(pair.items()))
+            qblox_instrument = self.instruments.get_instrument(module_alias)
+            for filter in qblox_instrument.filters:
+                if filter.output_id == output_id:
+                    if filter.exponential_state is not None:
+                        for idx, state_exponential in enumerate(filter.exponential_state):
+                            if state_exponential in {DistortionState.ENABLED, DistortionState.DELAY_COMP} and idx not in qblox_active_filter:
+                                qblox_active_filter.append(idx)
+        return qblox_active_filter
+
+    def _get_qblox_alias_module(self):
+        """Maps the qblox alias to the module_id defined in the bus mapping of the runcard
+
+            Returns:
+                qblox_alias_module(list): List of dict with key the alias of qblox module and value the module_id
+        """
+        buses = list(self.buses)
+        qblox_alias_module = []
+        for bus in buses:
+            for instrument, channel in zip(bus.instruments, bus.channels):
+                if isinstance(instrument, QbloxModule):
+                    output_channels = instrument.awg_sequencers[channel].outputs
+                    for output_channel in output_channels:
+                        pair = {instrument.alias: output_channel}
+                        if pair not in qblox_alias_module:
+                            qblox_alias_module.append(pair)
+        return qblox_alias_module
 
     def set_parameter(
         self,
@@ -562,6 +630,7 @@ class Platform:
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
     ):
         """Set a parameter for a platform element.
 
@@ -577,6 +646,7 @@ class Platform:
             value (float | str | bool): New value to set in the parameter.
             alias (str): Alias of the bus where the parameter is set.
             channel_id (int, optional): ID of the channel you want to use to set the parameter. Defaults to None.
+            output_id (int, optional): ID of the module we want to use to set the parameter, used for Qblox distortion filters. Defaults to None.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == "platform" or parameter == Parameter.DELAY or regex_match is not None:
@@ -595,7 +665,71 @@ class Platform:
             self._set_bias_from_element(element)
             return
 
-        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        if parameter in {Parameter.EXPONENTIAL_STATE_0, Parameter.EXPONENTIAL_STATE_1, Parameter.EXPONENTIAL_STATE_2, Parameter.EXPONENTIAL_STATE_3}:
+            exponential_idx = int(parameter.value[-1])
+            if value is True:
+                if exponential_idx not in self.qblox_active_filter_exponential:
+                    self.qblox_active_filter_exponential.append(exponential_idx)
+                self._update_qblox_filter_state_exponential()
+            else:
+                if exponential_idx in self.qblox_active_filter_exponential:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                    element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
+                    if value in {DistortionState.BYPASSED, False}:
+                        logger.warning("Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
+                    return
+
+        if parameter == Parameter.FIR_STATE:
+            if value is True:
+                self.qblox_active_filter_fir = True
+                self._update_qblox_filter_state_fir()
+
+            elif self.qblox_active_filter_fir:  # cannot put the filter as bypassed otherwise this would cause a delay with the other sequencers
+                element.set_parameter(parameter=parameter, value=DistortionState.DELAY_COMP, channel_id=channel_id, output_id=output_id)
+                if value in {DistortionState.BYPASSED, False}:
+                    logger.warning("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers.")
+                return
+        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
+
+    def _update_qblox_filter_state_exponential(self):
+        """Updates the exponential state as needed.
+            If any exponential idx is active ("enabled" or "delay_comp"), the exponential state of all other outputs will be updated to "delay_comp".
+            This ensures that there are no delays between outputs that have a filter "enabled" or "delay_comp" and outputs with bypassed filters.
+        """
+        if self.qblox_active_filter_exponential:
+            for pair in self.qblox_alias_module:
+                alias, output_id = next(iter(pair.items()))
+                for expo_idx in self.qblox_active_filter_exponential:
+                    parameter = getattr(Parameter, f"EXPONENTIAL_STATE_{expo_idx}")
+                    pre_exisisting_filter = False
+                    qblox_instrument = self.get_element(alias=alias)
+                    for filter in qblox_instrument.filters:
+                        if filter.output_id == output_id and pre_exisisting_filter is False and filter.exponential_state is not None:
+                            if len(filter.exponential_state) > expo_idx:
+                                pre_exisisting_filter = True
+                                state_exponential = self.get_parameter(alias=alias, parameter=parameter, output_id=output_id)
+                                if state_exponential not in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
+                                    self.set_parameter(alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id)
+                    if pre_exisisting_filter is False:  # filter needs to be created
+                        self.set_parameter(alias=alias, parameter=parameter, value=DistortionState.DELAY_COMP, output_id=output_id)
+
+    def _update_qblox_filter_state_fir(self):
+        """Updates the FIR state as needed.
+            If any FIR filter is active ("enabled" or "delay_comp"), the FIR state of all other outputs will be updated to "delay_comp".
+            This ensures that there are no delays between outputs that have a filter "enabled" or "delay_comp" and outputs with bypassed filters.
+        """
+        if self.qblox_active_filter_fir:
+            for pair in self.qblox_alias_module:
+                alias, output_id = next(iter(pair.items()))
+                pre_exisisting_filter = False
+                qblox_instrument = self.get_element(alias=alias)
+                for filter in qblox_instrument.filters:
+                    if filter.output_id == output_id and pre_exisisting_filter is False and filter.fir_state is not None:
+                        pre_exisisting_filter = True
+                        state_fir = self.get_parameter(alias=alias, parameter=Parameter.FIR_STATE, output_id=output_id)
+                        if state_fir not in {DistortionState.ENABLED, DistortionState.DELAY_COMP}:
+                            self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
+                if pre_exisisting_filter is False:  # filter needs to be created
+                    self.set_parameter(alias=alias, parameter=Parameter.FIR_STATE, value=DistortionState.DELAY_COMP, output_id=output_id)
 
     def _set_bias_from_element(self, element: list[GateEventSettings] | Bus | InstrumentController | Instrument | None):  # type: ignore[union-attr]
         """Sets the right parameter depending on the instrument defined inside the element.
@@ -693,9 +827,10 @@ class Platform:
             bus_list (list[str] | None, optional): Optional bus list for all the flux used in the experiment. Defaults to the Crosstalk buses.
         """
 
+        if not self.crosstalk:
+            raise ValueError("Crosstalk matrix has not been set")
+
         if not bus_list:
-            if not self.crosstalk:
-                raise ValueError("Neither crosstalk matrix nor bus_list has been set")
             bus_list = list(self.crosstalk.matrix.keys())
 
         if not self.flux_vector:
@@ -703,6 +838,8 @@ class Platform:
         for flux in bus_list:
             if flux not in self.flux_vector.flux_vector.keys():
                 self.flux_vector[flux] = 0
+            self.flux_vector.bias_vector[flux] = 0
+            self.flux_vector.set_crosstalk_from_bias(self.crosstalk)
 
         for flux_alias in bus_list:
             element = self.get_element(alias=flux_alias)
@@ -945,22 +1082,14 @@ class Platform:
 
     def execute_experiment(
         self,
-        experiment: Experiment,
-        live_plot: bool = True,
-        slurm_execution: bool = True,
-        port_number: int | None = None,
+        experiment: Experiment
     ) -> str:
         """Executes a quantum experiment on the platform.
 
-        This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. The results are saved in a timestamped directory within the specified `base_data_path`.
+        This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. Result storage paths, live plotting, and database persistence are configured through :func:`qililab.qililab_settings.get_settings`.
 
         Args:
             experiment (Experiment): The experiment object defining the sequence of operations and loops.
-            live_plot (bool): Flag that abilitates live plotting. Defaults to True.
-            slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell.
-                                    Defaults to True.
-            port_number (int | None): Optional parameter for when slurm_execution is True.
-                                    It defines the port number of the Dash server. Defaults to None.
 
         Returns:
             str: The path to the file where the results are stored.
@@ -976,13 +1105,13 @@ class Platform:
                 # ...
 
                 # Execute the experiment on the platform
-                results_path = platform.execute_experiment(experiment=experiment, database=False)
+                results_path = platform.execute_experiment(experiment=experiment)
                 print(f"Results saved to {results_path}")
 
         Example with database:
             .. code-block:: python
 
-                from qililab import Experiment
+                from qililab import Experiment, get_settings
 
                 # Initialize your experiment
                 experiment = Experiment(label="my_experiment")
@@ -993,8 +1122,11 @@ class Platform:
                 db_manager = platform.load_db_manager(db_manager_ini_path)
                 db_manager.set_sample_and_cooldown(sample=sample, cooldown=cooldown)
 
+                settings = get_settings()
+                settings.experiment_results_save_in_database = True
+
                 # Execute the experiment on the platform
-                results_path = platform.execute_experiment(experiment=experiment, database=True)
+                results_path = platform.execute_experiment(experiment=experiment)
                 print(f"Results saved to {results_path}")
 
         Note:
@@ -1003,7 +1135,7 @@ class Platform:
             - This method handles the setup and execution internally, providing a simplified interface for experiment execution.
         """
 
-        if self.save_experiment_results_in_database and not self.db_manager:
+        if get_settings().experiment_results_save_in_database and not self.db_manager:
             try:
                 self.load_db_manager()
             except ReferenceError:
@@ -1011,10 +1143,7 @@ class Platform:
 
         executor = ExperimentExecutor(
             platform=self,
-            experiment=experiment,
-            live_plot=live_plot,
-            slurm_execution=slurm_execution,
-            port_number=port_number,
+            experiment=experiment
         )
         return executor.execute()
 
@@ -1150,7 +1279,11 @@ class Platform:
                             acquisitions=acquisitions[bus_alias], channel_id=int(channel)
                         )
                         for bus_result in bus_results:
-                            results.append_result(bus=bus_alias, result=bus_result)
+                            for _, acquisition_data in acquisitions[bus_alias].items():
+                                intertwined = acquisition_data.intertwined
+                                unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                for unintertwined_result in unintertwined_results:
+                                    results.append_result(bus=bus_alias, result=unintertwined_result)
 
         # Reset instrument settings
         for bus_alias in sequences:
@@ -1159,6 +1292,36 @@ class Platform:
                     instrument.desync_sequencer(sequencer_id=int(channel))
 
         return results
+
+    def _unintertwined_qblox_results(self, bus_result: QbloxMeasurementResult, intertwined: int) -> list[QbloxMeasurementResult]:
+        """ Return a list of results where intertwined acquisitions are separated.
+
+        In Qililab, when multiple acquisitions or measurements are performed at the same nested level, their results are intertwined: the bins are looped over
+        while the acquisition index remains constant.
+        If `intertwined` is greater than 1, this function separates each acquisition into its own QbloxMeasurementResult object.
+        QbloxMeasurementResult object. If `intertwined` is 1 the result is returned inside a single-element list.
+
+        Returns:
+            list[QbloxMeasurementResult]: unintertwined results where each element corresponds to one acquisition.
+        """
+        results_unintertwined_list = []
+        if intertwined > 1:
+            for result in range(intertwined):
+                bus = bus_result.bus
+                new_raw_measurement_data = {"scope": {"path0": {"data": bus_result.raw_measurement_data["scope"]["path0"]["data"][result::intertwined]},
+                                                      "path1": {"data": bus_result.raw_measurement_data["scope"]["path1"]["data"][result::intertwined]}},
+                                            "bins": {"integration": {"path0": bus_result.raw_measurement_data["bins"]["integration"]["path0"][result::intertwined],
+                                                                    "path1": bus_result.raw_measurement_data["bins"]["integration"]["path1"][result::intertwined]},
+                                            "threshold": bus_result.raw_measurement_data["bins"]["threshold"][result::intertwined],
+                                            "avg_cnt": bus_result.raw_measurement_data["bins"]["avg_cnt"][result::intertwined]}
+                                            }
+                results_unintertwined = QbloxMeasurementResult(bus=bus, raw_measurement_data=new_raw_measurement_data, shape=bus_result.shape)
+                results_unintertwined_list.append(results_unintertwined)
+
+        else:
+            results_unintertwined_list = [bus_result]
+
+        return results_unintertwined_list
 
     def _execute_quantum_machines_compilation_output(
         self,
@@ -1236,11 +1399,66 @@ class Platform:
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
         return self.execute_compilation_output(output=output, debug=debug)
 
+    def _normalize_bus_mappings(
+        self,
+        bus_mappings: list[dict[str, str] | None] | dict[str, str] | None,
+        n: int,
+    ) -> list[dict[str, str] | None]:
+        """
+        Return a list of length n with one mapping per qprogram.
+        Accepts:
+        - None                          -> [None] * n
+        - single dict                   -> [that dict] * n
+        - sequence of dict/None, len n  -> as-is
+        """
+        if bus_mappings is None:
+            return [None] * n
+
+        if isinstance(bus_mappings, dict):
+            return [bus_mappings.copy() for _ in range(n)]
+
+        # sequence case
+        if len(bus_mappings) != n:
+            raise ValueError(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")
+
+        return bus_mappings
+
+    def _normalize_calibrations(
+        self,
+        calibrations: list[Calibration | None] | Calibration | None,
+        n: int,
+    ) -> list[Calibration | None]:
+        """
+        Return a list of length n with one mapping per qprogram.
+        Accepts:
+        - None                          -> [None] * n
+        - single Calibration instance   -> [that Calibration] * n
+        - sequence of Calibration/None, len n  -> as-is
+        """
+        if calibrations is None:
+            return [None] * n
+
+        if isinstance(calibrations, Calibration):
+            return [calibrations for _ in range(n)]
+
+        # sequence case
+        if len(calibrations) != n:
+            raise ValueError(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")
+
+        return calibrations
+
+    def _mapped_buses(self, qp_buses: set[str], mapping: dict[str, str] | None) -> set[str]:
+        """Apply mapping (if any) to a qprogram's logical buses to get physical buses."""
+        if not mapping:
+            return set(qp_buses)
+
+        return {mapping.get(b, b) for b in qp_buses}
+
     def execute_qprograms_parallel(
         self,
         qprograms: list[QProgram],
-        bus_mapping: dict[str, str] | None = None,
-        calibration: Calibration | None = None,
+        bus_mappings: list[dict[str, str] | None] | dict[str, str] | None = None,
+        calibrations: list[Calibration | None] | Calibration | None = None,
         debug: bool = False,
     ) -> list[QProgramResults]:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
@@ -1249,10 +1467,18 @@ class Platform:
         **The execution can be done for (buses associated to) Qblox only. And it can only be done for qprograms that do not share buses.**
 
         Args:
-            qprograms (QProgram): A list of the :class:`.QProgram` to execute.
-            bus_mapping (dict[str, str], optional): A dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values).
-                It is useful for mapping a generic :class:`.QProgram` to a specific experiment. Defaults to None.
-            calibration (Calibration, optional): :class:`.Calibration` instance containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
+            qprograms (list[QProgram]): A list of the :class:`.QProgram` to execute.
+            bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
+                A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
+                A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
+                None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
+                It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
+                Defaults to None.
+            calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
+                A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
+                A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
+                None. In this case no `.Calibration` instance is used.
+                Defaults to None.
             debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
                 Defaults to False.
 
@@ -1261,17 +1487,32 @@ class Platform:
             Each element of the list corresponds to a sequencer.
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
-        buses_per_qprogram = [qprogram.buses for qprogram in qprograms]
-        total_buses = sum(len(s) for s in buses_per_qprogram)
-        unique_buses = len(set.union(*buses_per_qprogram))
-        if total_buses != unique_buses:
-            raise ValueError("QPrograms cannot be executed in parallel.")
-        outputs = [
-            self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
-            for qprogram in qprograms
-        ]
+        if not qprograms:
+            return []
+
+        # Normalize mappings and calibrations to one-per-qprogram
+        bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))
+        calibrations_list = self._normalize_calibrations(calibrations=calibrations, n=len(qprograms))
+
+        # Validate: no shared *physical* buses after applying each mapping
+        all_physical: set[str] = set()
+        if bus_mapping_list:
+            for qp, bus_mapping in zip(qprograms, bus_mapping_list):
+                phys = self._mapped_buses(qp.buses, bus_mapping)  # qp.buses is the set of logical buses
+                if all_physical & phys:
+                    raise ValueError(
+                        f"QPrograms cannot be executed in parallel (bus collision on {all_physical & phys})."
+                    )
+                all_physical |= phys
+
+            outputs = [
+                self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
+                for qp, bus_mapping, calibration in zip(qprograms, bus_mapping_list, calibrations_list)
+            ]
+
         if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
             raise ValueError("Parallel execution is not supported in Quantum Machines.")
+
         return self.execute_compilation_outputs_parallel(
             outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug
         )
@@ -1361,7 +1602,11 @@ class Platform:
                                 acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias], channel_id=int(channel)
                             )
                             for bus_result in bus_results:
-                                results[qprogram_idx].append_result(bus=bus_alias, result=bus_result)
+                                for _, acquisition_data in aquisitions_per_qprogram[qprogram_idx][bus_alias].items():
+                                    intertwined = acquisition_data.intertwined
+                                    unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                    for unintertwined_result in unintertwined_results:
+                                        results[qprogram_idx].append_result(bus=bus_alias, result=unintertwined_result)
 
         # Reset instrument settings
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
@@ -1439,9 +1684,7 @@ class Platform:
 
             # Create platform:
             platform = build_platform(runcard="<path_to_runcard>")
-            transp_config = DigitalTranspilationConfig(
-                routing=True, optimize=False, router=Sabre, placer=ReverseTraversal
-            )
+            transp_config = DigitalTranspilationConfig(routing=True, optimize=False, router=Sabre, placer=ReverseTraversal)
 
             # Execute with automatic transpilation:
             result = platform.execute(c, num_avg=1000, transpilation_config=transp_config)
@@ -1469,9 +1712,10 @@ class Platform:
             if not np.all(np.isnan(result.array)):
                 results.append(result)
 
-        for instrument in self.instruments.elements:
-            if isinstance(instrument, QbloxModule):
-                instrument.desync_sequencers()
+        for instrument_controller in self.instrument_controllers.elements:
+            for instrument in instrument_controller.modules:
+                if isinstance(instrument, QbloxModule):
+                    instrument.desync_sequencers()
 
         # Flatten results if more than one readout bus was used for a qblox module
         if len(results) > 1:
@@ -1650,6 +1894,7 @@ class Platform:
         averages_displayed: bool = False,
         acquisition_showing: bool = True,
         bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None,
     ):
         """Draw the QProgram using QBlox Compiler whilst adding the knowledge of the platform
 
@@ -1666,7 +1911,7 @@ class Platform:
         """
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        sequencer = self.compile_qprogram(qprogram, bus_mapping)
+        sequencer = self.compile_qprogram(qprogram, bus_mapping, calibration)
         plotly_figure, _ = qblox_draw.draw(
             sequencer, runcard_data, time_window, averages_displayed, acquisition_showing
         )

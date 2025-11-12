@@ -30,14 +30,13 @@ dependencies = [
     "pandas==1.5.3",
     "papermill>=2.6.0",
     "psycopg2-binary>=2.9.10",
+    "pydantic-settings>=2.11.0",
     "pyvisa-py>=0.7.2",
-    "qblox-instruments==0.14.2",
+    "qblox-instruments==0.16.0",
     "qcodes>=0.51.0",
     "qcodes-contrib-drivers>=0.23.0",
     "qibo==0.2.15",
-    "qm-qua==1.2.1",
     "qpysequence>=0.10.7",
-    "qualang-tools>=0.19.3",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
     "sqlalchemy>=2.0.40",
@@ -45,6 +44,12 @@ dependencies = [
     "tqdm>=4.67.1",
     "urllib3>=2.3.0",
     "xarray>=2024.3.0",
+]
+
+[project.optional-dependencies]
+quantum-machines = [
+    "qm-qua==1.2.1",
+    "qualang-tools>=0.19.3",
 ]
 
 [dependency-groups]
@@ -234,4 +239,7 @@ mdformat = true
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning"
+]
+markers = [
+    "qm: tests that require Quantum Machines",
 ]

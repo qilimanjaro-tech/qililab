@@ -5,12 +5,14 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from tests.data import Galadriel
+from tests.data import Galadriel, SauronQuantumMachines
 
 from qililab.data_management import build_platform
+from qililab.qprogram import QProgram
 from qililab.result import stream_results
 from qililab.result.stream_results import RawStreamArray, StreamArray
 from qililab.typings.enums import Parameter
+from qililab.waveforms import Square
 
 AMP_VALUES = np.arange(0, 1, 2)
 
@@ -26,6 +28,89 @@ def fixture_stream_array():
     loops = {"test_amp_loop": AMP_VALUES}
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
+    mock_database = MagicMock()
+    db_manager = mock_database
+
+    qprogram = QProgram()
+    qprogram.play("readout_q0", Square(1.0, 100))
+    qprogram.wait("readout_q0", 100)
+
+    return StreamArray(
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        qprogram=qprogram,
+    )
+    
+@pytest.fixture(name="stream_array_bus_not_in_platform")
+def fixture_stream_array_not_in_platform():
+    """fixture_stream_array_not_in_platform to emulate bus mapping
+
+    Returns:
+        stream_array: StreamArray
+    """
+    shape = (2, 2, 1)
+    loops = {"test_amp_loop": AMP_VALUES}
+    platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
+    experiment_name = "test_stream_array"
+    mock_database = MagicMock()
+    db_manager = mock_database
+
+    qprogram = QProgram()
+    qprogram.play("bus_not_in_runcard", Square(1.0, 100))
+    qprogram.wait("bus_not_in_runcard", 100)
+
+    return StreamArray(
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        qprogram=qprogram,
+    )
+
+
+@pytest.fixture(name="stream_array_qm")
+def fixture_stream_array_qm():
+    """fixture_stream_array_qm
+
+    Returns:
+        stream_array: StreamArray
+    """
+    shape = (2, 2, 1)
+    loops = {"test_amp_loop": AMP_VALUES}
+    platform = build_platform(runcard=copy.deepcopy(SauronQuantumMachines.runcard))
+    experiment_name = "test_stream_array_qm"
+    mock_database = MagicMock()
+    db_manager = mock_database
+
+    qprogram = QProgram()
+    qprogram.play("readout_q0", Square(1.0, 100))
+    qprogram.wait("readout_q0", 100)
+
+    return StreamArray(
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        qprogram=qprogram,
+    )
+
+
+@pytest.fixture(name="stream_array_complex")
+def fixture_stream_array_complex():
+    """fixture_stream_array_complex
+
+    Returns:
+        stream_array_complex: StreamArray
+    """
+    shape = (3,)
+    loops = {"test_amp_loop": AMP_VALUES}
+    platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
+    experiment_name = "test_stream_array_complex"
     mock_database = MagicMock()
     db_manager = mock_database
 
@@ -101,7 +186,33 @@ class TestStreamArray:
 
     def test_stream_array_instantiation(self, stream_array: StreamArray):
         """Tests the instantiation of a StreamArray object."""
-        assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
+        # Create mock for the file context
+        debug_q1asm = "Bus readout_q0:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
+
+            with stream_array:
+                assert (stream_array.results == np.zeros(shape=stream_array.shape)).all
+                assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
+                assert stream_array._get_debug() == debug_q1asm
+
+    def test_stream_array_instantiation_for_bus_not_in_platform(self, stream_array_bus_not_in_platform: StreamArray):
+        """Tests the instantiation of a StreamArray object with a bus outside of the runcard to emulate bus mapping."""
+        # Create mock for the file context
+        debug_q1asm = "Bus bus_not_in_runcard:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
+
+            with stream_array_bus_not_in_platform:
+                assert (stream_array_bus_not_in_platform.results == np.zeros(shape=stream_array_bus_not_in_platform.shape)).all
+                assert stream_array_bus_not_in_platform.loops == {"test_amp_loop": np.arange(0, 1, 2)}
+                assert stream_array_bus_not_in_platform._get_debug() == debug_q1asm
 
     def test_stream_array_with_loop_dict(self, stream_array_dict_loops: StreamArray):
         """Tests the instantiation of a StreamArray object."""
@@ -117,46 +228,91 @@ class TestStreamArray:
     @patch("h5py.File", return_value=MockFile(), autospec=False)
     def test_context_manager(self, mock_h5py: MockFile, stream_array: StreamArray):
         """Tests context manager real time saving."""
-        # test adding outside the context manager
-        stream_array[0, 0] = [-2]
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
 
-        # test adding inside the context manager
-        with stream_array:
-            stream_array[0, 0] = [1]
-            stream_array[0, 1] = [2]
-            stream_array[1, 0] = [3]
-            stream_array[1, 1] = [4]
+            with stream_array:
 
-        assert (stream_array.results == [[1, 2], [3, 4]]).all
+                # test adding outside the context manager
+                stream_array[0, 0] = [-2]
 
-        assert len(stream_array) == 2
-        assert sum(1 for _ in iter(stream_array)) == 2
-        assert str(stream_array) == "[[[1.]\n  [2.]]\n\n [[3.]\n  [4.]]]"
+                # test adding inside the context manager
+                with stream_array:
+                    stream_array[0, 0] = [1]
+                    stream_array[0, 1] = [2]
+                    stream_array[1, 0] = [3]
+                    stream_array[1, 1] = [4]
 
-        assert [1, 2] in stream_array
-        assert (stream_array[0] == [1, 2]).all
+                assert (stream_array.results == [[1, 2], [3, 4]]).all
+
+                assert len(stream_array) == 2
+                assert sum(1 for _ in iter(stream_array)) == 2
+                assert str(stream_array) == "[[[1.]\n  [2.]]\n\n [[3.]\n  [4.]]]"
+
+                assert [1, 2] in stream_array
+                assert (stream_array[0] == [1, 2]).all
 
     @patch("h5py.File", return_value=MockFile(), autospec=False)
-    def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_array: StreamArray):
+    def test_context_manager_no_debug(self, mock_h5py: MockFile, stream_array_qm: StreamArray):
         """Tests context manager real time saving."""
-        # test adding outside the context manager
-        stream_array[0, 0] = [np.complex128(-2 + 1j)]
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
 
-        # test adding inside the context manager
-        with stream_array:
-            stream_array[0, 0] = [np.complex128(1 + 1j)]
-            stream_array[0, 1] = [np.complex128(2 + 2j)]
-            stream_array[1, 0] = [np.complex128(3 + 3j)]
-            stream_array[1, 1] = [np.complex128(4 + 4j)]
+            with stream_array_qm:
 
-        assert (stream_array.results == [[1, 2], [3, 4]]).all
+                # test adding outside the context manager
+                stream_array_qm[0, 0] = [-2]
 
-        assert len(stream_array) == 2
-        assert sum(1 for _ in iter(stream_array)) == 2
-        assert str(stream_array) == "[[[1.+1.j]\n  [2.+2.j]]\n\n [[3.+3.j]\n  [4.+4.j]]]"
+                # test adding inside the context manager
+                with stream_array_qm:
+                    stream_array_qm[0, 0] = [1]
+                    stream_array_qm[0, 1] = [2]
+                    stream_array_qm[1, 0] = [3]
+                    stream_array_qm[1, 1] = [4]
 
-        assert [1.0 + 1.0j, 2.0 + 2.0j] in stream_array
-        assert (stream_array[0] == [1.0 + 1.0j, 2.0 + 2.0j]).all
+                assert (stream_array_qm.results == [[1, 2], [3, 4]]).all
+
+                assert len(stream_array_qm) == 2
+                assert sum(1 for _ in iter(stream_array_qm)) == 2
+                assert str(stream_array_qm) == "[[[1.]\n  [2.]]\n\n [[3.]\n  [4.]]]"
+
+                assert [1, 2] in stream_array_qm
+                assert (stream_array_qm[0] == [1, 2]).all
+
+    @patch("h5py.File", return_value=MockFile(), autospec=False)
+    def test_context_manager_complex_values(self, mock_h5py: MockFile, stream_array_complex: StreamArray):
+        """Tests context manager real time saving."""
+
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
+
+            with stream_array_complex:
+                # test adding outside the context manager
+                stream_array_complex[0] = np.complex128(-2 + 1j)
+
+                # test adding inside the context manager
+                with stream_array_complex:
+                    stream_array_complex[0] = np.complex128(1 + 1j)
+                    stream_array_complex[1] = np.complex128(2 + 2j)
+                    stream_array_complex[2] = np.complex128(3 + 3j)
+
+                assert (stream_array_complex.results == [1, 2, 3]).all
+
+                assert len(stream_array_complex) == 3
+                assert sum(1 for _ in iter(stream_array_complex)) == 3
+                assert str(stream_array_complex) == "[1.+1.j 2.+2.j 3.+3.j]"
+
+                assert 1.0 + 1.0j in stream_array_complex
+                assert (stream_array_complex[0] == 1.0 + 1.0j).all
 
 
 class TestRawStreamArray:
