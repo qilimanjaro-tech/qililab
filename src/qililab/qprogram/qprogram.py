@@ -354,6 +354,7 @@ class QProgram(StructuredProgram):
         Args:
             bus (str): Unique identifier of the bus.
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
+            port (optional, int | None): Port channel of the trigger input. Defaults to None.
         """
         operation = WaitTrigger(bus=bus, duration=duration, port=port)
         self._active_block.append(operation)
@@ -506,10 +507,13 @@ class QProgram(StructuredProgram):
 
     @requires_domain("duration", Domain.Time)
     def set_trigger(self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start"):
-        """Adds a delay on the bus and wait for an trigger signal to arrive.
+        """Set the trigger output for a given instrument.
         Args:
             bus (str): Unique identifier of the bus.
-            duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
+            duration (int): Duration of the trigger pulse. Minimum of 4 ns.
+            outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
+            outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end.
+                                    Defaults to start.
         """
         operation = SetTrigger(bus=bus, outputs=outputs, duration=duration, position=position)
         self._active_block.append(operation)

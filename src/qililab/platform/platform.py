@@ -1215,7 +1215,7 @@ class Platform:
 
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
-                bus for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
+                bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
             ]
             return (
                 qblox_compiler.compile(

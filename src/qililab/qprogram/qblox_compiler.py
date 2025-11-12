@@ -49,9 +49,6 @@ from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, Square, Waveform
 
-if TYPE_CHECKING:
-    from qililab.platform.components.bus import Bus
-
 EXT_TRIGGER_ADDRESS: int = 15
 # TODO: move to qpysequence.constants
 MAX_ACQUISITION_INDEX = 31  # 32 is the max number of acquisitions that can be stored
@@ -215,7 +212,7 @@ class QbloxCompiler:
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
         ext_trigger: bool = False,
-        qblox_buses: list["Bus"] | None = None,
+        qblox_buses: list[str] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -276,7 +273,7 @@ class QbloxCompiler:
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
 
-        self._qblox_buses = [bus.alias for bus in qblox_buses] if qblox_buses else []
+        self._qblox_buses = qblox_buses if qblox_buses else []
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
@@ -598,9 +595,8 @@ class QbloxCompiler:
         """
 
         if self._buses[bus].upd_param_instruction_pending:
-            if (
-                4 < duration and duration < 8
-            ):  # you cannot play an update param and then a wait bc both have a minimum of 4
+            # you cannot play an `update_param` and then a `wait` because both have a minimum of 4
+            if 4 < duration < 8:
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
             else:
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))

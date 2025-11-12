@@ -138,8 +138,8 @@ class QDevilQDac2(VoltageSource):
         return self.device.channel(channel_id)
 
     def upload_awg_waveform(self, waveform: Waveform, channel_id: ChannelID):
-        """Uploads a waveform to the instrument and saves it to _cache.
-        IMPORTANT: note that the waveform resolution is not to the ns, it is acutally around 1_micro_second.
+        """Uploads a waveform to the instrument and saves it to _cache_awg.
+        IMPORTANT: note that the waveform resolution is not to the ns, it is actually around 1_micro_second.
 
         Args:
             waveform (Waveform): Waveform to upload
@@ -173,6 +173,15 @@ class QDevilQDac2(VoltageSource):
         sync_delay_s: float = 0,
         repetitions: int = 1,
     ):
+        """Uploads an arbitrary voltage list to the instrument and saves it to _cache_dc.
+
+        Args:
+            waveform (Waveform): Waveform to upload
+            channel_id (ChannelID): Channel id of the qdac
+            dwell_us (int, optional): Dwell of the pulse. Defaults to 1.
+            sync_delay_s (float, optional): Delay of each pulse repetition. Defaults to 0.
+            repetitions (int, optional): Number of pulse repetitions. Defaults to 1.
+        """
         self._validate_channel(channel_id=channel_id)
 
         envelope = waveform.envelope()
@@ -211,6 +220,17 @@ class QDevilQDac2(VoltageSource):
     def set_end_marker_external_trigger(
         self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6
     ):
+        """Uploads an arbitrary voltage list to the instrument and saves it to _cache_dc.
+
+        Args:
+            channel_id (ChannelID): _description_
+            out_port (int): _description_
+            trigger (str): _description_
+            width_s (float, optional): _description_. Defaults to 1e-6.
+
+        Raises:
+            ValueError: _description_
+        """
         self._validate_channel(channel_id=channel_id)
 
         if channel_id not in self._cache_dc.keys():
