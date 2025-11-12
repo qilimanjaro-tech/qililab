@@ -18,7 +18,7 @@ from qilisdk.digital import CZ, Circuit, M
 
 from qililab.core.variables import Domain
 from qililab.qprogram import QProgram
-from qililab.settings.digital import DigitalCompilationSettings
+from qililab.settings.digital import DigitalCompilationSettings, GateEvent
 from qililab.waveforms import Arbitrary, IQDrag, IQPair, Square, Waveform
 
 from .native_gates import Rmw
@@ -71,16 +71,17 @@ class CircuitToQProgramCompiler:
                     for gate_event in gate_events:
                         qp.play(bus=gate_event.bus, waveform=gate_event.waveform)
                 elif isinstance(gate, M):
+                    qubit_gate_events: list[tuple[int, list[GateEvent]]] = []
+                    related_qubits = set(gate.qubits)
                     for qubit in gate.qubits:
                         gate_events = self._settings.get_gate(name=gate.name, qubits=qubit)
-                        related_qubits = {
-                            *gate.qubits,
-                            *(extract_qubit_index(gate_event.bus) for gate_event in gate_events),
-                        }
-                        buses_to_sync = [
-                            f"{kind}_q{q}_bus" for q in related_qubits for kind in ("drive", "flux", "readout")
-                        ]
-                        qp.sync(buses_to_sync)
+                        qubit_gate_events.append((qubit, gate_events))
+                        related_qubits.update(extract_qubit_index(gate_event.bus) for gate_event in gate_events)
+                    buses_to_sync = [
+                        f"{kind}_q{q}_bus" for q in related_qubits for kind in ("drive", "flux", "readout")
+                    ]
+                    qp.sync(buses_to_sync)
+                    for qubit, gate_events in qubit_gate_events:
                         for gate_event in gate_events:
                             if gate_event.weights is None:
                                 raise ValueError(f"M({qubit}) does not have weights defined.")
