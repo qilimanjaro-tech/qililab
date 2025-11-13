@@ -20,6 +20,7 @@ from qililab.config import logger
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
@@ -104,6 +105,8 @@ class QdacCompiler:
         self._trigger_hashes: dict[str, str] = {}
         self._trigger_position: str | None = None
 
+        self._element_popped: dict | None = None
+
     def compile(
         self,
         qprogram: QProgram,
@@ -111,6 +114,7 @@ class QdacCompiler:
         qdac_buses: list["Bus"],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
+        crosstalk: CrosstalkMatrix | None = None,
     ) -> QdacCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
         Args:
@@ -120,6 +124,7 @@ class QdacCompiler:
         """
 
         def traverse(block: Block):
+            # set crosstalk changes based on coordinates
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.append(block)
             for element in block.elements:
@@ -136,10 +141,16 @@ class QdacCompiler:
         self._qprogram = qprogram
         self._qdac = qdac
         self._qdac_buses = qdac_buses
+
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
+            if calibration.crosstalk_matrix and crosstalk is None:
+                crosstalk = calibration.crosstalk_matrix
+        if crosstalk is not None:
+            self._qprogram = self._qprogram.with_crosstalk(crosstalk=crosstalk)
+
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
