@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from qililab.platform.platform import Platform
+from qililab.qprogram.qprogram import QProgramCompilationOutput
 from qililab.typings import Parameter
 
 
@@ -143,9 +144,9 @@ def test_compile_qprogram_uses_quantum_machines(monkeypatch, _restore_quantum_ma
 
     qprogram = _DummyQProgram(["qm_bus"])
 
-    result = platform.compile_qprogram(qprogram)
+    result = platform.compile_qprogram(qprogram).quantum_machines
 
-    assert result[0] == "compiler-output"
+    assert result == "compiler-output"
     assert _restore_quantum_machines.captured_kwargs["thresholds"]["qm_bus"] == pytest.approx(0.5)
     assert _restore_quantum_machines.captured_kwargs["threshold_rotations"]["qm_bus"] == pytest.approx(0.25)
 
@@ -169,7 +170,7 @@ def test_execute_compilation_output_quantum_machines(_restore_quantum_machines):
         measurements=[measurement],
     )
 
-    results = platform.execute_compilation_output(output, None)
+    results = platform.execute_compilation_output(QProgramCompilationOutput(quantum_machines=output), None)
 
     cluster = bus.instruments[0]
     assert cluster.compiled == "qua-program"

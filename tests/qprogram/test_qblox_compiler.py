@@ -583,12 +583,9 @@ class TestQBloxCompiler:
 
     def test_qdac_bus_ignored(self, run_qdac_buses: QProgram):
 
-        mock_qblox_bus = MagicMock()
-        mock_qblox_bus.alias = "drive_q0"
-
         compiler = QbloxCompiler()
         output = compiler.compile(
-            qprogram=run_qdac_buses, bus_mapping={"drive": "drive_q0"}, qblox_buses=[mock_qblox_bus]
+            qprogram=run_qdac_buses, bus_mapping={"drive": "drive_q0"}, qblox_buses=["drive_q0"]
         )
 
         assert len(output.sequences) == 1
@@ -597,13 +594,10 @@ class TestQBloxCompiler:
 
     def test_qdac_sync_raises_error(self, run_qdac_sync: QProgram):
 
-        mock_qblox_bus = MagicMock()
-        mock_qblox_bus.alias = "drive_q0"
-
         compiler = QbloxCompiler()
 
         with pytest.raises(ValueError, match="Non QBLOX buses not allowed inside sync function"):
-            compiler.compile(qprogram=run_qdac_sync, bus_mapping={"drive": "drive_q0"}, qblox_buses=[mock_qblox_bus])
+            compiler.compile(qprogram=run_qdac_sync, bus_mapping={"drive": "drive_q0"}, qblox_buses=["drive_q0"])
 
     def test_set_trigger(self, set_trigger: QProgram):
 
