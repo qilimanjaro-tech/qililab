@@ -17,6 +17,7 @@ from qibo.models import Circuit
 from qililab.data_management import build_platform as platform_build_platform
 from qililab.qprogram import QbloxCompilationOutput
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
+from qililab.qprogram.qprogram import QProgramCompilationOutput
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
 from tests.data import (
@@ -1192,7 +1193,7 @@ class TestMethods:
 
         with pytest.raises(TimeoutError):
             platform_qblox_qdac._execute_qblox_compilation_output(
-                output=mock_output, qdac_output=mock_qdac_output, debug=False
+                output=QProgramCompilationOutput(qblox=mock_output, qdac=mock_qdac_output), debug=False
             )
 
         # Assert it retried 3 times (initial + 3 retries = 4 attempts)
