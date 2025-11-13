@@ -69,7 +69,7 @@ from qililab.qprogram import (
 )
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
-from qililab.qprogram.qdac_compiler import QdacCompilationOutput, QdacCompiler
+from qililab.qprogram.qdac_compiler import QdacCompiler
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
