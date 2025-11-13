@@ -1428,8 +1428,6 @@ class Platform:
 
                 job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
-                if output.qdac.trigger_position == "back":
-                    output.qdac.qdac.start()
             else:
                 job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
@@ -1603,9 +1601,6 @@ class Platform:
 
         if any(isinstance(output.quantum_machines, QuantumMachinesCompilationOutput) for output in outputs):
             raise ValueError("Parallel execution is not supported in Quantum Machines.")
-
-        if any(isinstance(output.qdac, QdacCompilationOutput) for output in outputs):
-            raise ValueError("Parallel execution is not supported for QDACII compiler.")
 
         return self.execute_compilation_outputs_parallel(
             outputs=cast("list[QbloxCompilationOutput]", [output.qblox for output in outputs]), debug=debug

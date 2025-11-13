@@ -531,8 +531,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             duration (int): Duration of the trigger pulse. Minimum of 4 ns.
             outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
-            outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end.
-                                    Defaults to start.
+            outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end. Defaults to start.
         """
         operation = SetTrigger(bus=bus, outputs=outputs, duration=duration, position=position)
         self._active_block.append(operation)
