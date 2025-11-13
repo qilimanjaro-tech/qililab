@@ -1,0 +1,30 @@
+name: qblox_runcard
+
+instruments:
+  - name: QCM
+    alias: qcm
+    out_offsets: [0.0, 0.1, 0.2, 0.3]
+    awg_sequencers:
+      - identifier: 0
+        outputs: [3, 2]
+        intermediate_frequency: 100000000.0
+        gain_imbalance: 0.05
+        phase_imbalance: 0.02
+        hardware_modulation: true
+        gain_i: 1.0
+        gain_q: 1.0
+        offset_i: 0.0
+        offset_q: 0.0
+
+instrument_controllers:
+  - name: qblox_cluster
+    alias: cluster_controller
+    reference_clock: internal
+    connection:
+      name: tcp_ip
+      address: 192.168.1.20
+    modules:
+      - alias: qcm
+        slot_id: 0
+    reset: False
+    ext_trigger: True
