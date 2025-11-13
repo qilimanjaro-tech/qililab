@@ -19,7 +19,7 @@ from .crosstalk_matrix import CrosstalkMatrix, FluxVector
 from .experiment import Experiment
 from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
 from .qdac_compiler import QdacCompilationOutput, QdacCompiler
-from .qprogram import QProgram
+from .qprogram import QProgram, QProgramCompilationOutput
 from .variable import Domain
 
 __all__ = [
@@ -29,6 +29,7 @@ __all__ = [
     "Experiment",
     "FluxVector",
     "QProgram",
+    "QProgramCompilationOutput",
     "QbloxCompilationOutput",
     "QbloxCompiler",
     "QdacCompilationOutput",

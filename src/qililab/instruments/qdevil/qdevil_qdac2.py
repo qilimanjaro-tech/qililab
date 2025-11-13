@@ -138,8 +138,8 @@ class QDevilQDac2(VoltageSource):
         return self.device.channel(channel_id)
 
     def upload_awg_waveform(self, waveform: Waveform, channel_id: ChannelID):
-        """Uploads a waveform to the instrument and saves it to _cache.
-        IMPORTANT: note that the waveform resolution is not to the ns, it is acutally around 1_micro_second.
+        """Uploads a waveform to the instrument and saves it to _cache_awg.
+        IMPORTANT: note that the waveform resolution is not to the ns, it is actually around 1_micro_second.
 
         Args:
             waveform (Waveform): Waveform to upload
@@ -173,6 +173,15 @@ class QDevilQDac2(VoltageSource):
         sync_delay_s: float = 0,
         repetitions: int = 1,
     ):
+        """Uploads an arbitrary voltage list to the instrument and saves it to _cache_dc.
+
+        Args:
+            waveform (Waveform): Waveform to upload
+            channel_id (ChannelID): Channel id of the qdac.
+            dwell_us (int, optional): Dwell of the pulse. Defaults to 1.
+            sync_delay_s (float, optional): Delay of each pulse repetition. Defaults to 0.
+            repetitions (int, optional): Number of pulse repetitions. Defaults to 1.
+        """
         self._validate_channel(channel_id=channel_id)
 
         envelope = waveform.envelope()
@@ -187,6 +196,12 @@ class QDevilQDac2(VoltageSource):
         self._cache_dc[channel_id] = dc_list
 
     def set_in_external_trigger(self, channel_id: ChannelID, in_port: int):
+        """Method to read an external trigger and start a dc list when the Qdac reads this trigger.
+
+        Args:
+            channel_id (ChannelID): Channel id of the qdac
+            in_port (int): Trigger input port.
+        """
 
         self._validate_channel(channel_id=channel_id)
 
@@ -197,6 +212,12 @@ class QDevilQDac2(VoltageSource):
         self._cache_dc[channel_id].start_on_external(in_port)
 
     def set_in_internal_trigger(self, channel_id: ChannelID, trigger: str):
+        """Method to read an external trigger and start a dc list when the Qdac reads this trigger.
+
+        Args:
+            channel_id (ChannelID): Channel id of the qdac
+            trigger (str): Name of the internal trigger.
+        """
 
         self._validate_channel(channel_id=channel_id)
 
@@ -211,6 +232,14 @@ class QDevilQDac2(VoltageSource):
     def set_end_marker_external_trigger(
         self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6
     ):
+        """Method to create an external trigger at the end of every dc_list period.
+
+        Args:
+            channel_id (ChannelID): Channel id of the qdac
+            out_port (int): Trigger output port.
+            trigger (str): Name of the trigger.
+            width_s (float, optional): duration in seconds of the trigger pulse. Defaults to 1e-6.
+        """
         self._validate_channel(channel_id=channel_id)
 
         if channel_id not in self._cache_dc.keys():
@@ -230,6 +259,14 @@ class QDevilQDac2(VoltageSource):
     def set_start_marker_external_trigger(
         self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6
     ):
+        """Method to create an external trigger at the start of every dc_list period.
+
+        Args:
+            channel_id (ChannelID): Channel id of the qdac
+            out_port (int): Trigger output port.
+            trigger (str): Name of the trigger.
+            width_s (float, optional): duration in seconds of the trigger pulse. Defaults to 1e-6.
+        """
         self._validate_channel(channel_id=channel_id)
 
         if channel_id not in self._cache_dc.keys():
@@ -247,6 +284,12 @@ class QDevilQDac2(VoltageSource):
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
     def set_start_marker_internal_trigger(self, channel_id: ChannelID, trigger: str):
+        """Method to create an internal trigger at the start of every dc_list period.
+
+        Args:
+            channel_id (ChannelID): Channel id of the qdac
+            trigger (str): Name of the trigger.
+        """
         self._validate_channel(channel_id=channel_id)
 
         if channel_id not in self._cache_dc.keys():
@@ -262,6 +305,12 @@ class QDevilQDac2(VoltageSource):
         channel.write_channel(f'sour{"{0}"}:dc:mark:pstart {self._triggers[str(trigger)].value}')
 
     def set_end_marker_internal_trigger(self, channel_id: ChannelID, trigger: str):
+        """Method to create an internal trigger at the start of every dc_list period.
+
+        Args:
+            channel_id (ChannelID): Channel id of the qdac
+            trigger (str): Name of the trigger.
+        """
         self._validate_channel(channel_id=channel_id)
 
         if channel_id not in self._cache_dc.keys():
@@ -306,6 +355,7 @@ class QDevilQDac2(VoltageSource):
         self._cache_dc = {}
 
     def clear_trigger(self, trigger: str | None = None):
+        """Clears all created triggers or only the specified trigger in case a trigger string is given."""
         if trigger:
             self.device.free_trigger(self._triggers[str(trigger)])
         else:

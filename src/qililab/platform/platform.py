@@ -65,10 +65,11 @@ from qililab.qprogram import (
     QbloxCompilationOutput,
     QbloxCompiler,
     QProgram,
+    QProgramCompilationOutput,
 )
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
-from qililab.qprogram.qdac_compiler import QdacCompilationOutput, QdacCompiler
+from qililab.qprogram.qdac_compiler import QdacCompiler
 from qililab.result.database import get_db_manager
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
@@ -358,9 +359,6 @@ class Platform:
         self.db_manager: DatabaseManager | None = None
         """Database manager for experiment class and db stream array"""
 
-        self.save_experiment_results_in_database: bool = False
-        """Database trigger to define if the experiment metadata will be saved in a database or not"""
-
         self.trigger_runs: int = 0
 
         self.qblox_alias_module: list = self._get_qblox_alias_module()
@@ -565,11 +563,11 @@ class Platform:
                                 if awg.identifier == identifier[0]:
                                     for out in awg.outputs:
                                         if out == 0:
-                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0)
-                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1)
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT0_OFFSET_PATH0) / 1000
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT0_OFFSET_PATH1) / 1000
                                         elif out == 1:
-                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0)
-                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1)
+                                            dac_offset_i = bus.get_parameter(Parameter.OUT1_OFFSET_PATH0) / 1000
+                                            dac_offset_q = bus.get_parameter(Parameter.OUT1_OFFSET_PATH1) / 1000
 
                             data_oscilloscope[bus.alias]["dac_offset_i"] = dac_offset_i
                             data_oscilloscope[bus.alias]["dac_offset_q"] = dac_offset_q
@@ -1157,7 +1155,7 @@ class Platform:
 
     def compile_qprogram(
         self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
-    ) -> tuple(QbloxCompilationOutput | QuantumMachinesCompilationOutput, QdacCompilationOutput | None):  # type: ignore[valid-type]
+    ) -> QProgramCompilationOutput:
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]
         instruments = {
@@ -1216,10 +1214,11 @@ class Platform:
 
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
-                bus for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
+                bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
             ]
-            return (
-                qblox_compiler.compile(
+
+            return QProgramCompilationOutput(
+                qblox=qblox_compiler.compile(
                     qprogram=qprogram,
                     bus_mapping=bus_mapping,
                     calibration=calibration,
@@ -1229,7 +1228,7 @@ class Platform:
                     ext_trigger=ext_trigger,
                     qblox_buses=qblox_buses,
                 ),
-                compiled_qdac,
+                qdac=compiled_qdac,
             )
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
             if len(instruments) != 1:
@@ -1268,8 +1267,8 @@ class Platform:
                 for bus in buses
                 if any(isinstance(instrument, QuantumMachinesCluster) for instrument in bus.instruments)
             ]
-            return (
-                compiler.compile(
+            return QProgramCompilationOutput(
+                quantum_machines=compiler.compile(
                     qprogram=qprogram,
                     bus_mapping=bus_mapping,
                     thresholds=thresholds,
@@ -1277,34 +1276,31 @@ class Platform:
                     calibration=calibration,
                     qm_buses=qm_buses,
                 ),
-                compiled_qdac,
+                qdac=compiled_qdac,
             )
         raise NotImplementedError("Compiling QProgram for a mixture of AWG instruments is not supported.")
 
     def execute_compilation_output(
         self,
-        output: QbloxCompilationOutput | QuantumMachinesCompilationOutput,
-        qdac_output: QdacCompilationOutput | None,
+        output: QProgramCompilationOutput,
         debug: bool = False,
     ):
-        if isinstance(output, QbloxCompilationOutput):
+        if isinstance(output.qblox, QbloxCompilationOutput):
             self.trigger_runs = 0
-            return self._execute_qblox_compilation_output(output=output, qdac_output=qdac_output, debug=debug)
+            return self._execute_qblox_compilation_output(output=output, debug=debug)
 
-        buses = [self.buses.get(alias=bus_alias) for bus_alias in output.qprogram.buses]
+        buses = [self.buses.get(alias=bus_alias) for bus_alias in output.quantum_machines.qprogram.buses]  # type: ignore[union-attr]
         instruments = {instrument for bus in buses for instrument in bus.instruments if bus.has_adc()}
         if len(instruments) != 1:
             raise NotImplementedError("Executing QProgram in more than one Quantum Machines Cluster is not supported.")
         cluster: QuantumMachinesCluster = cast("QuantumMachinesCluster", next(iter(instruments)))
-        return self._execute_quantum_machines_compilation_output(
-            output=output, qdac_output=qdac_output, cluster=cluster, debug=debug
-        )
+        return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
 
     def _execute_qblox_compilation_output(
-        self, output: QbloxCompilationOutput, qdac_output: QdacCompilationOutput | None, debug: bool = False
+        self, output: QProgramCompilationOutput, debug: bool = False
     ):
         try:
-            sequences, acquisitions = output.sequences, output.acquisitions
+            sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
             for bus_alias, bus in buses.items():
                 if bus.distortions:
@@ -1330,14 +1326,13 @@ class Platform:
                         instrument.sync_sequencer(sequencer_id=int(channel))
 
             # Execute sequences
-            if qdac_output:
-                if qdac_output.trigger_position == "front":
-                    qdac_output.qdac.start()
+            if output.qdac:
+                if output.qdac.trigger_position == "front":
+                    output.qdac.qdac.start()
                 for bus_alias in sequences:
                     buses[bus_alias].run()
-
-                if qdac_output.trigger_position == "back":
-                    qdac_output.qdac.start()
+                if output.qdac.trigger_position == "back":
+                    output.qdac.qdac.start()
             else:
                 for bus_alias in sequences:
                     buses[bus_alias].run()
@@ -1366,7 +1361,7 @@ class Platform:
 
             return results
         except TimeoutError as timeout:
-            if qdac_output:
+            if output.qdac:
                 warnings.warn("Timeout reached for triggered measurement, trying again.")
 
                 # Reset instrument settings
@@ -1377,7 +1372,7 @@ class Platform:
                 self.trigger_runs += 1
 
                 if self.trigger_runs <= 3:
-                    return self._execute_qblox_compilation_output(output, qdac_output, debug)
+                    return self._execute_qblox_compilation_output(output, debug)
 
             raise timeout
 
@@ -1413,12 +1408,13 @@ class Platform:
 
     def _execute_quantum_machines_compilation_output(
         self,
-        output: QuantumMachinesCompilationOutput,
-        qdac_output: QdacCompilationOutput | None,
+        output: QProgramCompilationOutput,
         cluster: QuantumMachinesCluster,
         debug: bool = False,
     ):
-        qua, configuration, measurements = output.qua, output.configuration, output.measurements
+        qua = output.quantum_machines.qua  # type: ignore[union-attr]
+        configuration = output.quantum_machines.configuration  # type: ignore[union-attr]
+        measurements = output.quantum_machines.measurements  # type: ignore[union-attr]
         try:
             cluster.append_configuration(configuration=configuration)
 
@@ -1428,11 +1424,12 @@ class Platform:
 
             compiled_program_id = cluster.compile(program=qua)
 
-            if qdac_output:
-                if qdac_output.trigger_position == "front":
-                    qdac_output.qdac.start()
+            if output.qdac:
+                if output.qdac.trigger_position == "front":
+                    output.qdac.qdac.start()
 
                 job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+
             else:
                 job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
@@ -1490,8 +1487,8 @@ class Platform:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
-        output, qdac_output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
-        return self.execute_compilation_output(output=output, qdac_output=qdac_output, debug=debug)
+        output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+        return self.execute_compilation_output(output=output, debug=debug)
 
     def _normalize_bus_mappings(
         self,
@@ -1600,15 +1597,15 @@ class Platform:
                 all_physical |= phys
 
             outputs = [
-                self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)[0]
+                self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
                 for qp, bus_mapping, calibration in zip(qprograms, bus_mapping_list, calibrations_list)
             ]
 
-        if any(isinstance(output, QuantumMachinesCompilationOutput) for output in outputs):
+        if any(isinstance(output.quantum_machines, QuantumMachinesCompilationOutput) for output in outputs):
             raise ValueError("Parallel execution is not supported in Quantum Machines.")
 
         return self.execute_compilation_outputs_parallel(
-            outputs=cast("list[QbloxCompilationOutput]", outputs), debug=debug
+            outputs=cast("list[QbloxCompilationOutput]", [output.qblox for output in outputs]), debug=debug
         )
 
     def execute_compilation_outputs_parallel(
@@ -2005,7 +2002,7 @@ class Platform:
         """
         runcard_data = self._data_draw()
         qblox_draw = QbloxDraw()
-        sequencer, _ = self.compile_qprogram(qprogram, bus_mapping, calibration)
+        sequencer = self.compile_qprogram(qprogram, bus_mapping, calibration).qblox
         plotly_figure, _ = qblox_draw.draw(
             sequencer, runcard_data, time_window, averages_displayed, acquisition_showing
         )
