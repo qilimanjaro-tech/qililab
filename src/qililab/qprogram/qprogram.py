@@ -196,7 +196,31 @@ class QProgram(StructuredProgram):
                             "buses",
                             [bus_mapping[bus] if bus in bus_mapping else bus for bus in buses],
                         )
+                elif isinstance(element, MeasureReset):
+                    measure_bus = getattr(element, "measure_bus")
+                    control_bus = getattr(element, "control_bus")
+                    if isinstance(measure_bus, str) and measure_bus in bus_mapping:
+                        setattr(block.elements[index], "measure_bus", bus_mapping[measure_bus])
+                    if isinstance(control_bus, str) and control_bus in bus_mapping:
+                        setattr(block.elements[index], "control_bus", bus_mapping[control_bus])
+                    new_latch_enabled = []
+                    for bus in self.qblox.latch_enabled:
+                        if bus in bus_mapping:
+                            new_latch_enabled.append(bus_mapping[bus])
+                        else:
+                            new_latch_enabled.append(bus)
+                    self.qblox.latch_enabled = new_latch_enabled
 
+                    new_trigger_network_required = {}
+                    for bus, value in self.qblox.trigger_network_required.items():
+                        if bus in bus_mapping:
+                            new_trigger_network_required[bus_mapping[bus]] = value
+                        else:
+                            new_trigger_network_required[bus] = value
+
+                    self.qblox.trigger_network_required = new_trigger_network_required
+
+                    # trigger_network_required
         # Copy qprogram so the original remain unaffected
         copied_qprogram = deepcopy(self)
 

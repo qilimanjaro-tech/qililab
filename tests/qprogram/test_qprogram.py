@@ -469,3 +469,47 @@ class TestQProgram(TestStructuredProgram):
         # Interface flags updated
         assert "control" in qp.qblox.latch_enabled
         assert qp.qblox.trigger_network_required["readout"] == 1
+
+    def test_with_bus_mapping_measure_reset(self):
+        """Test with_bus_mapping method"""
+        qp = QProgram()
+        square_wf = Square(1,200)
+        drag = IQPair.DRAG(1, 40, 2, 2)
+        with qp.average(1000):
+                qp.qblox.measure_reset(
+                    measure_bus=f"readout_bus",
+                    waveform=square_wf,
+                    weights=IQPair(I=square_wf, Q=square_wf),
+                    control_bus=f"drive_bus",
+                    reset_pulse=drag,
+                )
+
+        new_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"})
+        assert len(new_qp.buses) == 2
+        assert "drive_bus" not in new_qp.buses
+        assert "readout_bus" not in new_qp.buses
+        assert "drive_q0_bus" in new_qp.buses
+        assert "readout_q0_bus" in new_qp.buses
+
+        assert new_qp.body.elements[0].elements[0].measure_bus == "readout_q0_bus"
+        assert new_qp.body.elements[0].elements[0].control_bus == "drive_q0_bus"
+
+        self_mapping_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_bus", "readout_bus": "readout_bus"})
+
+        assert len(self_mapping_qp.buses) == 2
+        assert "drive_bus" in self_mapping_qp.buses
+        assert "readout_bus" in self_mapping_qp.buses
+
+        assert self_mapping_qp.body.elements[0].elements[0].measure_bus == "readout_bus"
+        assert self_mapping_qp.body.elements[0].elements[0].control_bus == "drive_bus"
+
+        non_existant_mapping_qp = qp.with_bus_mapping(
+            bus_mapping={"non_existant": "drive_bus", "non_existant_readout": "readout_bus"}
+        )
+
+        assert len(non_existant_mapping_qp.buses) == 2
+        assert "drive_bus" in non_existant_mapping_qp.buses
+        assert "readout_bus" in non_existant_mapping_qp.buses
+
+        assert non_existant_mapping_qp.body.elements[0].elements[0].measure_bus == "readout_bus"
+        assert non_existant_mapping_qp.body.elements[0].elements[0].control_bus == "drive_bus"
