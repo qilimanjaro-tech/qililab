@@ -199,7 +199,11 @@ class QbloxCompiler:
             if isinstance(element, Block):
                 self.traverse_qprogram_acquire(element)
             elif isinstance(element, (Acquire, Measure, MeasureReset)):
-                bus = getattr(element, "bus", None) or getattr(element, "measure_bus", None)
+                if isinstance(element, (Acquire, Measure, MeasureReset)):
+                    if isinstance(element, (Acquire, Measure)):
+                        bus = element.bus
+                    else:
+                        bus = element.measure_bus
                 self._acquisition_metadata.setdefault(bus, {}).setdefault(block.uuid, 0)
                 self._acquisition_metadata[bus][block.uuid] += 1
 
@@ -241,7 +245,10 @@ class QbloxCompiler:
                                     )
                     delay_implemented = True
                 if isinstance(element, (Acquire, Measure, MeasureReset)):
-                    bus = getattr(element, "bus", None) or getattr(element, "measure_bus", None)
+                    if isinstance(element, (Acquire, Measure)):
+                        bus = element.bus
+                    else:
+                        bus = element.measure_bus
                     if self._buses[bus].first_acquire_of_block is True:
                         self._buses[bus].count_nested_level_acquire += 1
                         self._buses[bus].counter_acquire = self._acquisition_metadata[bus][block.uuid]
