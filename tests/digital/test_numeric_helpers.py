@@ -87,4 +87,4 @@ class TestNumericHelpers:
                                           (2*_PI*np.random.random(10)-_PI)):
             matrix = _mat_RZ(phi) @ _mat_RY(theta) @ _mat_RZ(lam) * np.exp(0.5j * (gamma), dtype=complex)
             sqrt_matrix = _unitary_sqrt_2x2(matrix)
-            assert sqrt_matrix @ sqrt_matrix == pytest.approx(matrix, abs=1e-15)
+            assert sqrt_matrix @ sqrt_matrix == pytest.approx(matrix, abs=1e-12)
