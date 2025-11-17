@@ -199,11 +199,10 @@ class QbloxCompiler:
             if isinstance(element, Block):
                 self.traverse_qprogram_acquire(element)
             elif isinstance(element, (Acquire, Measure, MeasureReset)):
-                if isinstance(element, (Acquire, Measure, MeasureReset)):
-                    if isinstance(element, (Acquire, Measure)):
-                        bus = element.bus
-                    else:
-                        bus = element.measure_bus
+                if isinstance(element, (Acquire, Measure)):
+                    bus = element.bus
+                else:
+                    bus = element.measure_bus
                 self._acquisition_metadata.setdefault(bus, {}).setdefault(block.uuid, 0)
                 self._acquisition_metadata[bus][block.uuid] += 1
 
@@ -296,7 +295,7 @@ class QbloxCompiler:
         # Pre-processing: Set markers ON/OFF
         for bus in self._buses:
             mask = markers[bus] if markers is not None and bus in markers else "0000"
-            # if qprogram.measure_reset is used the bus using the conditional enables latching at the very top of the q1asm
+            # if qprogram.measure_reset is used, the bus using the conditional enables latching at the very top of the q1asm
             if bus in self._qprogram.qblox.latch_enabled:
                 self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1, 4), 1)
 
@@ -762,7 +761,7 @@ class QbloxCompiler:
         Args:
             element (MeasureReset): measure operation and perform active reset
         """
-        wait_trigger_network = 400  # this corresponds to the time it takes for the qblox trigger network to send a trigger;
+        wait_trigger_network = 400  # this is the time required by qblox trigger network to send a trigger;
         # 400ns is conservative - the official guideline is 388ns between 2 modules
 
         time_of_flight = self._buses[element.measure_bus].time_of_flight
