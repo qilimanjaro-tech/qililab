@@ -31,13 +31,11 @@ from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop,
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
-    LatchReset,
     Measure,
     MeasureReset,
     Operation,
     Play,
     ResetPhase,
-    SetConditional,
     SetFrequency,
     SetGain,
     SetMarkers,
@@ -52,6 +50,10 @@ from qililab.waveforms import Arbitrary, FlatTop, IQPair, Square, Waveform
 
 # TODO: move to qpysequence.constants
 MAX_ACQUISITION_INDEX = 31  # 32 is the max number of acquisitions that can be stored
+
+ENABLE_CONDITIONAL = 1
+DISABLE_CONDITIONAL = 0
+AND_MASK_CONDITIONAL = 0  # Return true if any of the selected counters crossed their thresholds
 
 
 @dataclass
@@ -170,7 +172,6 @@ class QbloxCompiler:
             Parallel: self._handle_parallel,
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
-            LatchReset: self._handle_latch_rst,
             Loop: self._handle_loop,
             SetFrequency: self._handle_set_frequency,
             SetPhase: self._handle_set_phase,
@@ -185,7 +186,6 @@ class QbloxCompiler:
             Acquire: self._handle_acquire,
             Play: self._handle_play,
             Block: self._handle_block,
-            SetConditional: self._handle_conditional,
         }
 
         self._qprogram: QProgram
@@ -468,12 +468,12 @@ class QbloxCompiler:
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
 
-    def _handle_latch_rst(self, element: LatchReset):
-        self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.LatchRst(wait_time=element.duration)
+    def _handle_latch_rst(self, bus: str, duration: int):
+        self._buses[bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.LatchRst(wait_time=duration)
         )
-        self._buses[element.bus].marked_for_sync = True
-        self._buses[element.bus].static_duration += element.duration
+        self._buses[bus].marked_for_sync = True
+        self._buses[bus].static_duration += duration
 
     def _handle_set_gain(self, element: SetGain):
         convert = QbloxCompiler._convert_value(element)
@@ -740,18 +740,14 @@ class QbloxCompiler:
         self._buses[element.bus].prev_nested_level_acquire = self._buses[element.bus].count_nested_level_acquire
         self._buses[element.bus].upd_param_instruction_pending = False
 
-    def _handle_conditional(self, element: SetConditional):
+    def _handle_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
         # The conditional does not add any static duration as it is assumed that the operations contained within are the same as the else_duration of the conditional
-        enable = element.enable
-        mask = element.mask
-        operator = element.operator
-        else_duration = element.else_duration
 
-        self._buses[element.bus].qpy_block_stack[-1].append_component(
+        self._buses[bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetCond(enable, mask, operator, else_duration)
         )
 
-        self._buses[element.bus].marked_for_sync = True
+        self._buses[bus].marked_for_sync = True
 
     def _handle_measure_reset(self, element: MeasureReset):
         """Executes a measurement followed by active reset in a single operation
@@ -763,32 +759,21 @@ class QbloxCompiler:
         # 400ns is conservative - the official guideline is 388ns between 2 modules
 
         time_of_flight = self._buses[element.measure_bus].time_of_flight
-        latch_rst = LatchReset(bus=element.control_bus, duration=4)
         play = Play(bus=element.measure_bus, waveform=element.waveform, wait_time=time_of_flight)
         acquire = Acquire(bus=element.measure_bus, weights=element.weights, save_adc=element.save_adc)
         sync = Sync()
         wait = Wait(bus=element.control_bus, duration=wait_trigger_network)
         play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
         mask = 2 ** (element.trigger_address - 1)
-        conditional_activated = SetConditional(
-            bus=element.control_bus,
-            enable=1,
-            mask=mask,
-            operator=0,
-            else_duration=play_reset_pulse.waveform.get_duration(),
-        )
-        conditional_desactivated = SetConditional(
-            bus=element.control_bus, enable=0, mask=0, operator=0, else_duration=4
-        )
 
-        self._handle_latch_rst(latch_rst)
+        self._handle_latch_rst(bus=element.control_bus, duration=4)
         self._handle_play(play)
         self._handle_acquire(acquire)
         self._handle_sync(sync)
         self._handle_wait(wait)
-        self._handle_conditional(conditional_activated)
+        self._handle_conditional(bus=element.control_bus, enable=ENABLE_CONDITIONAL, mask=mask, operator=AND_MASK_CONDITIONAL, else_duration=play_reset_pulse.waveform.get_duration(),)
         self._handle_play(play_reset_pulse)
-        self._handle_conditional(conditional_desactivated)
+        self._handle_conditional(bus=element.control_bus, enable=DISABLE_CONDITIONAL, mask=0, operator=0, else_duration=4)
 
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()

@@ -5,13 +5,13 @@
 
 - **Active reset for transmon qubits in QBlox**
 
-  Implemented a feedback-based reset for QBlox: measure the qubit, and if it is in the \|1⟩ state apply a corrective DRAG pulse; if it is already in \|0⟩ (ground state), do nothing. This replaces the commonly used passive 200 000 ns wait at the end of each experiment with a much faster, conditional reset, also improving state-preparation fidelity.
+  Implemented a feedback-based reset for QBlox: measure the qubit, and if it is in the \|1⟩ state apply a corrective DRAG pulse; if it is already in \|0⟩ (ground state), do nothing. This replaces the relaxation time at the end of each experiment with a much faster, conditional reset, also improving state-preparation fidelity.
   This has been implemented as **`qprogram.qblox.measure_reset(measure_bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False)`** 
 
   It is compiled by the QBlox compiler as:
     1. `latch_rst 4` on the control_bus
     2. play readout pulse 
-    3. acquire 
+    3. acquire
     4. sync the readout and control buses
     5. wait 400 ns on the control bus (trigger-network propagation)
     6. `set_conditional(1, mask, 0, duration of the reset pulse)` → enable the conditional
@@ -20,15 +20,11 @@
     For the control bus, `latch_en 4` is added to the top of the Q1ASM to enable trigger latching.
 
   Notes:
-    - The 400 ns wait inside `measure_reset` corresponds to the propagation delay of the Qblox trigger network. This figure is conservative as  the official guideline is 388ns.
+    - The 400 ns wait inside `measure_reset` corresponds to the propagation delay of the Qblox trigger network. This figure is conservative as the official guideline is 388ns.
     - Users may supply any IQPair for the reset_pulse, though DRAG pulses are recommended to minimize leakage.
     - After `measure_reset`, users should insert a further wait as needed to allow the readout resonator to ring down before subsequent operations.
     - On compilation, `cluster.reset_trigger_monitor_count(address)` is applied to zero the module’s trigger counter. And the qcodes parameters required to set up the trigger network are implemented by the QbloxQRM class.
     - The Qblox Draw class has been modified so that `latch_rst` instructions are interpreted as a `wait`, and all `set_conditional` commands are ignored.
-    - Set-conditional and latch-rst commands are also available separately in the qblox interface of qprogram:
-      - `qprogram.qblox.latch_rst(bus: str, duration: int)`
-      - `qprogram.set_conditional(bus: str, enable: int, mask: int, operator: int, else_duration: int)`
-
 [#955](https://github.com/qilimanjaro-tech/qililab/pull/955)
 
 

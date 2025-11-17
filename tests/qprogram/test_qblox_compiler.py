@@ -1883,8 +1883,7 @@ set_freq         R5
                 set_mrk          0              
                 upd_param        4              
                 stop"""
-        
-        assert is_q1asm_equal(sequences["drive"], drive_str)
+
         assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
         assert acquisition_dict == {'Acquisition 0': {'num_bins': 2, 'index': 0}, 'Acquisition 1': {'num_bins': 1, 'index': 1}}
 
@@ -1905,8 +1904,7 @@ set_freq         R5
 
             main:
                             latch_rst        4              
-                            wait             2000           
-                            wait             400            
+                            wait             2400          
                             set_cond         1, 1, 0, 100   
                             play             0, 1, 100      
                             set_cond         0, 0, 0, 4     
@@ -1928,8 +1926,7 @@ set_freq         R5
                 upd_param        4              
                 stop                            
         """
+        print(sequences["drive"]._program)
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
-
-

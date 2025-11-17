@@ -10,7 +10,6 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
-    LatchReset,
     Measure,
     MeasureReset,
     MeasureWithCalibratedWaveform,
@@ -19,7 +18,6 @@ from qililab.qprogram.operations import (
     Play,
     PlayWithCalibratedWaveform,
     ResetPhase,
-    SetConditional,
     SetFrequency,
     SetGain,
     SetMarkers,
@@ -471,41 +469,3 @@ class TestQProgram(TestStructuredProgram):
         # Interface flags updated
         assert "control" in qp.qblox.latch_enabled
         assert qp.qblox.trigger_network_required["readout"] == 1
-
-
-    def test_latch_rst_method(self):
-        """Test that qblox.latch_rst appends a LatchReset op and updates interfaces."""
-        qp = QProgram()
-        qp.qblox.latch_rst(bus="drive", duration=75)
-
-        # exactly one op in the program
-        assert len(qp._body.elements) == 1
-
-        op = qp._body.elements[0]
-        assert isinstance(op, LatchReset)
-        assert op.bus == "drive"
-        assert op.duration == 75
-        assert "drive" in qp.buses
-
-    def test_set_conditional_method(self):
-        """Test that qblox.set_conditional appends a SetConditional op and disables autosync."""
-        qp = QProgram()
-        qp.qblox.set_conditional(
-            bus="ctrl",
-            enable=1,
-            mask=2,
-            operator=0,
-            else_duration=100,
-        )
-
-        # exactly one op in the program
-        assert len(qp._body.elements) == 1
-
-        op = qp._body.elements[0]
-        assert isinstance(op, SetConditional)
-        assert op.bus == "ctrl"
-        assert op.enable == 1
-        assert op.mask == 2
-        assert op.operator == 0
-        assert op.else_duration == 100
-        assert "ctrl" in qp.buses

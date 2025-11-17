@@ -20,7 +20,6 @@ from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
-    LatchReset,
     Measure,
     MeasureReset,
     MeasureWithCalibratedWaveform,
@@ -29,7 +28,6 @@ from qililab.qprogram.operations import (
     Play,
     PlayWithCalibratedWaveform,
     ResetPhase,
-    SetConditional,
     SetFrequency,
     SetGain,
     SetMarkers,
@@ -499,35 +497,6 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-        @requires_domain("duration", Domain.Time)
-        def latch_rst(self, bus: str, duration: int):
-            """Reset all trigger network address counters back to 0.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                duration (int) duration of the command in ns:
-            """
-            operation = LatchReset(bus=bus, duration=duration)
-            self.qprogram._active_block.append(operation)
-            self.qprogram._buses.add(bus)
-
-        @requires_domain("else_duration", Domain.Time)
-        def set_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
-            """Enable/disable conditionality on all following real-time instructions based on enable.
-            The condition is based on the trigger network address counters.
-
-            Args:
-                bus (str): Unique identifier of the bus.
-                enable (int): 1 to enable the conditional check, 0 to disable.
-                mask (int): bits 0-14, where the bit index plus one corresponds to the trigger address.
-                operator (int): Logical operators are OR, NOR, AND, NAND, XOR, XNOR, where a value for operator of 0 is OR and 5 is XNOR respectively.
-                else_duration (int): duration in ns taken by each real time command if the condition is not met.
-            """
-            operation = SetConditional(
-                bus=bus, enable=enable, mask=mask, operator=operator, else_duration=else_duration
-            )
-            self.qprogram._active_block.append(operation)
-            self.qprogram._buses.add(bus)
 
         @overload
         def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):
