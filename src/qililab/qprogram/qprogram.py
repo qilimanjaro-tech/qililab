@@ -497,7 +497,6 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-
         @overload
         def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):
             """Acquire results based on the given weights.
