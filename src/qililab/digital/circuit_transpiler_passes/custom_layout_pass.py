@@ -84,19 +84,19 @@ class CustomLayoutPass(CircuitTranspilerPass):
         valid_phys = {int(x) for x in phys_nodes}
 
         # ---- validations on provided mapping ----
-        keys = set(self._user_mapping.keys())
-        expected = set(range(n_logical))
-        if keys != expected:
-            missing = sorted(expected - keys)
-            extra = sorted(keys - expected)
-            msg = []
-            if missing:
-                msg.append(f"missing logical qubits {missing}")
-            if extra:
-                msg.append(f"extraneous logical keys {extra}")
-            raise ValueError(
-                "User mapping must map *every* logical qubit in the circuit exactly once; " + "; ".join(msg)
-            )
+        # keys = set(self._user_mapping.keys())
+        # expected = set(range(n_logical))
+        # if keys != expected:
+        #     missing = sorted(expected - keys)
+        #     extra = sorted(keys - expected)
+        #     msg = []
+        #     if missing:
+        #         msg.append(f"missing logical qubits {missing}")
+        #     if extra:
+        #         msg.append(f"extraneous logical keys {extra}")
+        #     raise ValueError(
+        #         "User mapping must map *every* logical qubit in the circuit exactly once; " + "; ".join(msg)
+        #     )
 
         values = list(self._user_mapping.values())
         if len(set(values)) != len(values):
