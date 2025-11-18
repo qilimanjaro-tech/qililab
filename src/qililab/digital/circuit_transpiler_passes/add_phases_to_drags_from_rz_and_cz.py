@@ -81,7 +81,7 @@ class AddPhasesToRmwFromRZAndCZPass(CircuitTranspilerPass):
             # Apply VZ by rotating the *pulse* axis: phase_out = phase_in + shift[q]
             elif isinstance(gate, Rmw):
                 qubit = gate.qubits[0]
-                out_gate = Rmw(qubit, theta=gate.theta, phase=_wrap_angle(gate.phase + shift[qubit]))
+                out_gate = Rmw(qubit, theta=gate.theta, phase=_wrap_angle(gate.phase - shift[qubit]))
 
             # Measurement gates, do not change
             elif isinstance(gate, M):
