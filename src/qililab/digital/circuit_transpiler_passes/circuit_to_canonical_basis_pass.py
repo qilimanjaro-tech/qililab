@@ -63,7 +63,7 @@ def _CNOT_as_CZ_plus_1q(c: int, t: int) -> List[Gate]:
 
 
 def _CRZ_using_CNOT(c: int, t: int, lam: float) -> List[Gate]:
-    # CRZ(λ) = (I⊗RZ(λ/2)) · CNOT · (I⊗RZ(-λ/2)) · CNOT
+    # CRZ(λ) = (I ⊗ RZ(λ/2)) · CNOT · (I ⊗ RZ(-λ/2)) · CNOT
     return [
         RZ(t, phi=_wrap_angle(lam / 2.0)),
         *_CNOT_as_CZ_plus_1q(c, t),
@@ -73,12 +73,12 @@ def _CRZ_using_CNOT(c: int, t: int, lam: float) -> List[Gate]:
 
 
 def _CRX_using_CRZ(c: int, t: int, theta: float) -> List[Gate]:
-    # RX(θ) = RY(-π/2) · RZ(θ) · RY(π/2)
+    # RX(θ) = (I ⊗ RY(-π/2)) · CRZ(θ) · (I ⊗ RY(π/2))
     return [RY(t, theta=-math.pi / 2.0), *_CRZ_using_CNOT(c, t, theta), RY(t, theta=math.pi / 2.0)]
 
 
 def _CRY_using_CRZ(c: int, t: int, theta: float) -> List[Gate]:
-    # RY(θ) = RX(π/2) · RZ(θ) · RX(-π/2)
+    # RY(θ) = (I ⊗ RX(π/2)) · CRZ(θ) · (I ⊗ RX(-π/2))
     return [RX(t, theta=math.pi / 2.0), *_CRZ_using_CNOT(c, t, theta), RX(t, theta=-math.pi / 2.0)]
 
 

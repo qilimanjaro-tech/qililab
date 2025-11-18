@@ -114,7 +114,7 @@ class CanonicalBasisToNativeSetPass(CircuitTranspilerPass):
             elif isinstance(g, U3):
                 # U3(theta, phi, gamma) with U3 = RZ(phi) RY(theta) RZ(gamma)
                 touch(q)
-                out.add(Rmw(q, theta=g.theta, phase=_wrap_angle(g.phi + math.pi / 2)))
+                out.add(Rmw(q, theta=g.theta, phase=_wrap_angle(g.phi - math.pi / 2)))
                 add_rz(q, _wrap_angle(g.phi + g.gamma))
             else:
                 raise NotImplementedError(f"Unexpected 1-qubit gate in native lowering: {type(g).__name__}")
