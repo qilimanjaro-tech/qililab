@@ -102,7 +102,7 @@ class CircuitToQProgramCompiler:
 
     @staticmethod
     def wrap_to_pi(x):
-        return (x + np.pi) % (2 * np.pi) - np.pi
+        return (x + np.pi) % (2.0 * np.pi) - np.pi
 
     @staticmethod
     def rmw_from_calibrated_pi_drag(pi_drag: IQDrag, theta: float, phase: float) -> IQPair:

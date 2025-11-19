@@ -66,6 +66,7 @@ class FuseSingleQubitGatesPass(CircuitTranspilerPass):
                 return
             U = pending.pop(q)
             theta, phi, gamma = _zyz_from_unitary(U)
+            theta, phi, gamma = float(theta), float(phi), float(gamma)
             theta = _wrap_angle(theta)
             phi = _wrap_angle(phi)
             gamma = _wrap_angle(gamma)
