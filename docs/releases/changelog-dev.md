@@ -371,6 +371,9 @@ The data automatically selects between the local or shared domains depending on 
 
 ### Bug fixes
 
+- Added `py.typed` file in the root dictionary to mark the library as typed and inform type checkers (mypy, pyright, etc.) that this package ships with usable type hints.
+  [#1034](https://github.com/qilimanjaro-tech/qililab/pull/1034)
+
 - Qblox Draw read the dac offsets of RF modules (parameters: `OUT0_OFFSET_PATH0`, `OUT0_OFFSET_PATH1`, `OUT1_OFFSET_PATH0` and `OUT1_OFFSET_PATH1`) in Volt, although they are specified in millivolts. This has been fixed by converting the value to Volts.
   [#1033](https://github.com/qilimanjaro-tech/qililab/pull/1033)
 
