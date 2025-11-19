@@ -84,7 +84,13 @@ class QbloxQRMRF(QbloxQRM):
             sequencer.connect_acq("in0")
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.
@@ -148,7 +154,7 @@ class QbloxQRMRF(QbloxQRM):
                 sequencer.sideband_cal()
         else:
             raise Exception(
-                f"`{cal_type}` for this module must be one of the following values: " "'lo' or 'lo_and_sidebands'."
+                f"`{cal_type}` for this module must be one of the following values: 'lo' or 'lo_and_sidebands'."
             )
 
         return

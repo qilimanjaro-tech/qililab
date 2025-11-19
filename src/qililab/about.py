@@ -24,7 +24,7 @@ import pyvisa_py
 import qblox_instruments
 import qcodes
 import qcodes_contrib_drivers
-import qibo
+import qilisdk
 import qpysequence
 
 from qililab._optionals import OptionalFeature, Symbol, import_optional_dependencies
@@ -56,6 +56,6 @@ def about():
     print(f"QCodes Contrib version:    {qcodes_contrib_drivers.__version__}")
     print(f"Qblox Instrument version:  {qblox_instruments.__version__}")
     print(f"Qpysequence version:       {qpysequence.__version__}")
-    print(f"Qibo version:              {qibo.__version__}")
+    print(f"QiliSDK version:           {qilisdk.__version__}")
     if isinstance(qm_version, str):
         print(f"Quantum Machines version:  {qm_version}")

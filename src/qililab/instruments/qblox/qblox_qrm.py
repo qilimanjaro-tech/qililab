@@ -17,13 +17,11 @@
 from dataclasses import dataclass
 from typing import Sequence, cast
 
-from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.qprogram.qblox_compiler import AcquisitionData
-from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.typings import (
     AcquireTriggerMode,
@@ -131,47 +129,6 @@ class QbloxQRM(QbloxModule):
                 raise ValueError("The scope can only be stored in one sequencer at a time.")
             if self._scoping_sequencer == sequencer.identifier:
                 self._scoping_sequencer = None
-
-    @check_device_initialized
-    def acquire_result(self) -> QbloxResult:
-        """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
-        If any of the timeouts is reached, a TimeoutError is raised.
-
-        Returns:
-            QbloxResult: Class containing the acquisition results.
-
-        """
-        results = []
-        integration_lengths = []
-        for sequencer in self.awg_sequencers:
-            if sequencer.identifier in self.sequences:
-                sequencer_id = sequencer.identifier
-                flags = self.device.get_sequencer_status(
-                    sequencer=sequencer_id, timeout=cast("QbloxADCSequencer", sequencer).sequence_timeout
-                )
-                logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
-                self.device.get_acquisition_status(
-                    sequencer=sequencer_id, timeout=cast("QbloxADCSequencer", sequencer).acquisition_timeout
-                )
-
-                if sequencer.scope_store_enabled:
-                    self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
-
-                for key, data in self.device.get_acquisitions(sequencer=sequencer.identifier).items():
-                    acquisitions = data["acquisition"]
-                    # parse acquisition index
-                    _, qubit, measure = key.split("_")
-                    qubit = int(qubit[1:])
-                    measurement = int(measure)
-                    acquisitions["qubit"] = qubit
-                    acquisitions["measurement"] = measurement
-                    results.append(acquisitions)
-                    integration_lengths.append(sequencer.integration_length)
-                self.device.sequencers[sequencer.identifier].sync_en(False)
-                integration_lengths.append(sequencer.integration_length)
-                self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
-
-        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     @check_device_initialized
     def acquire_qprogram_results(
@@ -291,7 +248,13 @@ class QbloxQRM(QbloxModule):
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
 
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ):
         """set a specific parameter to the instrument"""
         if output_id is not None:
             super().set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
