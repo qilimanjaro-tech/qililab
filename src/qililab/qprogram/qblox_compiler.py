@@ -1123,6 +1123,7 @@ class QbloxCompiler:
                 self._buses[bus].qpy_block_stack[-1].append_component(
                     QPyInstructions.Move(static_duration_current_bus, current_bus_duration_register)
                 )
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
 
                 # This part is the same for the dynamic bus
                 # Maximum duration of the other buses - Duration of this bus
