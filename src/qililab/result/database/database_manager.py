@@ -386,7 +386,6 @@ class DatabaseManager:
             else f"{base_path}/calibration_{calibration_id}"
         )
         result_path = f"{dir_path}/{experiment_name}.h5"
-        fitting_path = f"{dir_path}/fits_{experiment_name}/"
 
         folder = dir_path
         if not os.path.isdir(folder):
@@ -399,7 +398,7 @@ class DatabaseManager:
             calibration_id=calibration_id,
             qbit_idx=qubit_idx,
             result_path=result_path,
-            fitting_path=fitting_path,
+            fitting_path=base_path,
             experiment_completed=False,
             start_time=start_time,
             cooldown=cooldown,
