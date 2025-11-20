@@ -114,7 +114,7 @@ class Autocal_Measurement(base):  # type: ignore
         self.experiment_completed = experiment_completed
         self.start_time = start_time
         self.calibration_id = calibration_id
-        self.qbit_idx = list(qbit_idx)
+        self.qbit_idx = [qbit_idx] if isinstance(qbit_idx, int) else qbit_idx
 
         # Optional fields
         self.fitting_path = fitting_path
