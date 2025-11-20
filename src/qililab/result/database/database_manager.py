@@ -382,10 +382,9 @@ class DatabaseManager:
 
         result_path = os.path.join(base_path, f"{experiment_name}.h5")
 
-        folder = dir_path
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
-            warnings.warn(f"Data folder did not exist. Created one at {folder}")
+        if not os.path.isdir(base_path):
+            os.makedirs(base_path)
+            warnings.warn(f"Data folder did not exist. Created one at {base_path}")
 
         self.calibration_measurement = Autocal_Measurement(
             experiment_name=experiment_name,
