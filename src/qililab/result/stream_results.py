@@ -62,7 +62,7 @@ class StreamArray:
         calibration: Calibration | None = None,
         optional_identifier: str | None = None,
         autocalibration: bool = False,
-        qubit_idx: int | None = None,
+        qubit_idx: int | list[int] | None = None,
     ):
         self.results: np.ndarray
         self.shape = [shape] if isinstance(shape, int) else shape

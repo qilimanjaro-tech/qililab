@@ -79,7 +79,7 @@ class Autocal_Measurement(base):  # type: ignore
     calibration_id: Column = Column("calibration_id", ForeignKey(Calibration_run.calibration_id), nullable=False)
     result_path: Column = Column("result_path", String, unique=True, nullable=False)
     fitting_path: Column = Column("fitting_path", String, unique=True, nullable=True)
-    qbit_idx: Column = Column("qbit_idx", Integer)
+    qbit_idx: Column = Column("qbit_idx", ARRAY(Integer))
     platform_after: Column = Column("platform_after", JSONB)
     platform_before: Column = Column("platform_before", JSONB)
     qprogram: Column = Column("qprogram", JSONB)
@@ -114,7 +114,7 @@ class Autocal_Measurement(base):  # type: ignore
         self.experiment_completed = experiment_completed
         self.start_time = start_time
         self.calibration_id = calibration_id
-        self.qbit_idx = qbit_idx
+        self.qbit_idx = list(qbit_idx)
 
         # Optional fields
         self.fitting_path = fitting_path
