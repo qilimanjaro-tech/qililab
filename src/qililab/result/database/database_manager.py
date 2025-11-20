@@ -424,7 +424,7 @@ class DatabaseManager:
         Args:
             platform (Platform): New platform to be set at platform_before column from `Autocal_Measurement`.
         """
-        self.calibration_measurement.update_platform(self.Session(), platform)
+        self.calibration_measurement.update_platform(self.Session, platform)
 
     def add_experiment(
         self,
