@@ -1,6 +1,7 @@
 """Test StreamArray"""
 
 # pylint: disable=protected-access
+import copy
 import datetime
 import os
 from unittest.mock import MagicMock, patch
@@ -8,7 +9,9 @@ from unittest.mock import MagicMock, patch
 import matplotlib as mpl
 import numpy as np
 import pytest
+from tests.data import Galadriel
 
+from qililab.data_management import build_platform
 from qililab.qprogram import Calibration
 from qililab.result import Autocal_Measurement
 from qililab.result.database import Calibration_run, QaaS_Experiment
@@ -151,11 +154,11 @@ class TestMeasurement:
         mock_session_context.__enter__.return_value = mock_session
         mock_session.merge.return_value = autocalibration_measurement
 
-        mock_platform = {"Test_platform": "False_platform"}
+        mock_platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
 
         result = autocalibration_measurement.update_platform(lambda: mock_session_context, mock_platform)
 
-        assert result.platform_before == mock_platform
+        assert result.platform_before == mock_platform.to_dict()
         mock_session.commit.assert_called_once()
 
     @patch("qililab.result.database.database_autocal.datetime")
@@ -169,7 +172,7 @@ class TestMeasurement:
         mock_session.merge.return_value = autocalibration_measurement
         mock_session.commit.side_effect = Exception("Measurement error")
 
-        mock_platform = {"Test_platform": "False_platform"}
+        mock_platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
 
         with pytest.raises(Exception, match="Measurement error"):
             result = autocalibration_measurement.update_platform(lambda: mock_session_context, mock_platform)
@@ -764,11 +767,11 @@ class Testdatabase:
         measurement = db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
         # Assert
-        expected_path = "/shared_test/calibration_1/exp1.h5"
+        expected_path = "/shared_test/exp1.h5"
         assert measurement.result_path == expected_path
         db_manager._mock_session.add.assert_called_once
         db_manager._mock_session.commit.assert_called_once
-        mock_makedirs.assert_called_once_with("/shared_test/calibration_1")
+        mock_makedirs.assert_called_once_with("/shared_test/")
 
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.datetime")
@@ -812,11 +815,11 @@ class Testdatabase:
         # Act
         db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
-        mock_platform = {"Test_platform": "False_platform"}
+        mock_platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
 
         db_manager.update_platform(mock_platform)
 
-        assert db_manager.calibration_measurement.platform_before == mock_platform
+        assert db_manager.calibration_measurement.platform_before == mock_platform.to_dict()
         db_manager._mock_session.add.assert_called_once
         db_manager._mock_session.commit.assert_called_once
 
