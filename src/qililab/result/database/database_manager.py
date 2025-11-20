@@ -380,12 +380,7 @@ class DatabaseManager:
         cooldown = calibration.parameters["cooldown"]
         base_path = calibration.parameters["base_path"]
 
-        dir_path = (
-            f"{base_path}calibration_{calibration_id}"
-            if base_path[-1] == "/"
-            else f"{base_path}/calibration_{calibration_id}"
-        )
-        result_path = f"{dir_path}/{experiment_name}.h5"
+        result_path = os.path.join(base_path, f"{experiment_name}.h5")
 
         folder = dir_path
         if not os.path.isdir(folder):
