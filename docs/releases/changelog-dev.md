@@ -346,12 +346,37 @@ The data automatically selects between the local or shared domains depending on 
 
 [#951](https://github.com/qilimanjaro-tech/qililab/pull/951)
 
-- Modified smoothed square waveform class `FlatTop(amplitude, duration, smooth_duration, buffer = 0)` which works similar to the `Square` waveform with an additional smoothing on the edges. The only additional parameters are the smoothing duration and the buffer time. In `QbloxCompiler` if the duration exceeds a threshold of 100 ns the pulses are divide into two arbitrary pulses at the beginning and the end for the smooth parts and a loop of square pulses in the middle, with the exact same behavior as `Square` pulses.
-  [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
-
 - Modified `StreamArray` to work with live plot. Now the H5 file has the `swmr_mode` set as true allowing for live reading and `StreamArray`'s `__enter__` and `__setitem__` have `file.flush()` to update the H5 live. Moved `create_dataset` to `__enter__` instead of `__setitem__` to allow for live plot while acounting for VNA results with different data structure. Modified the `experiment_completed` to set as `True` after the execution, now in case of a crash the experiment will not be set as Completed.
   [#966](https://github.com/qilimanjaro-tech/qililab/pull/966)
   [#976](https://github.com/qilimanjaro-tech/qililab/pull/976)
+
+- Implemented a QDACII compiler for triggered voltage lists together with QDACII - QBlox pulse synchronization.
+  Inside the QDACII drivers the functions to create voltage lists, triggered pulses and play those pulse have been created, to simplify the user interaction with the QDACII a `QdacCompiler` has been created using `Qprogram`.
+
+The structure of a qprogram combining QDACII and Qblox is exemplified as:
+
+```
+qp = Qprogram()
+
+qp.qdac.play(bus="flux_1", waveform=qdac_volt_list, dwell=dwell, repetitions=repetitions)
+qp.set_offset(bus="flux_2", offset=value)
+qp.set_trigger(bus="flux_1", duration=duration, outputs=out_trigger, position="start")
+
+# QBLOX WAIT TRIGGER
+qp.wait_trigger(bus="readout", duration=4)
+
+# QBLOX PULSE
+qp.play(bus="drive", waveform=d_wf)
+
+# READOUT PULSE
+qp_rabi.measure(bus="readout", waveform=IQPair(I=r_wf_I, Q=r_wf_Q), weights=IQPair(I=weights_shape, Q=weights_shape))
+```
+
+In this example a pulse is played through QDACII flux line 1 and an offset is played through flux line 2. In the meantime Qblox is waiting for each QDACII pulse repetition.
+[#968](https://github.com/qilimanjaro-tech/qililab/pull/968)
+
+- Modified smoothed square waveform class `FlatTop(amplitude, duration, smooth_duration, buffer = 0)` which works similar to the `Square` waveform with an additional smoothing on the edges. The only additional parameters are the smoothing duration and the buffer time. In `QbloxCompiler` if the duration exceeds a threshold of 100 ns the pulses are divide into two arbitrary pulses at the beginning and the end for the smooth parts and a loop of square pulses in the middle, with the exact same behavior as `Square` pulses.
+  [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
 
 - Modified the `experiment_completed` to set as `True` after the execution, now in case of a crash the experiment will not be set as Completed.
   [#972](https://github.com/qilimanjaro-tech/qililab/pull/972)
