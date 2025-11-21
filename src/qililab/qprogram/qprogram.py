@@ -398,7 +398,11 @@ class QProgram(StructuredProgram):
         return copied_qprogram
 
     @overload
-    def play(self, bus: str, waveform: Waveform | IQPair) -> None:
+    def play(
+        self,
+        bus: str,
+        waveform: Waveform | IQPair,
+    ) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
@@ -407,7 +411,11 @@ class QProgram(StructuredProgram):
         """
 
     @overload
-    def play(self, bus: str, waveform: str) -> None:
+    def play(
+        self,
+        bus: str,
+        waveform: str,
+    ) -> None:
         """Play a named waveform on the bus.
 
         Args:
@@ -415,7 +423,11 @@ class QProgram(StructuredProgram):
             waveform (str): An identifier of a named waveform.
         """
 
-    def play(self, bus: str, waveform: Waveform | IQPair | str) -> None:
+    def play(
+        self,
+        bus: str,
+        waveform: Waveform | IQPair | str,
+    ) -> None:
         """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
         This method handles both playing a waveform or IQPair, and playing a
