@@ -140,7 +140,6 @@ class QdacCompiler:
         self._qprogram = qprogram
         self._qdac = qdac
         self._qdac_buses = qdac_buses
-
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:

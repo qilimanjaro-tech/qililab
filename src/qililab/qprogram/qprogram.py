@@ -42,7 +42,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.qprogram.variable import Domain
-from qililab.waveforms import Arbitrary, IQPair, Waveform
+from qililab.waveforms import Arbitrary, IQPair, Waveform, FlatTop, Square
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
@@ -332,18 +332,22 @@ class QProgram(StructuredProgram):
                 if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():  # type: ignore
                     element_list.append(i)
                     flux_vector = handle_flux_vector(flux_vector=flux_vector, element=element)
-
+                if isinstance(element, SetGain) and element.bus in crosstalk.matrix.keys():  # type: ignore
+                    element_list.append(i)
                 if isinstance(element, Block):
                     traverse(element)
 
             block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
 
-        def handle_flux_vector(flux_vector: FluxVector, element: Play | SetOffset):
+        def handle_flux_vector(flux_vector: FluxVector, element: Play | SetGain | SetOffset):
             if isinstance(element, Play):
                 if isinstance(element.waveform, Waveform):
-                    envelope = element.waveform.envelope()
-                elif isinstance(element.waveform, IQPair):
-                    envelope = element.waveform.I.envelope()
+                    waveform = element.waveform.I if isinstance(element.waveform, IQPair) else element.waveform
+                    if isinstance(waveform, (Square, FlatTop)):
+                        envelope = waveform.amplitude
+                    else:
+                        envelope = waveform.envelope()
+                    # change this part to retrieve amp for Square and flat top and check that the shapes are the same
             elif isinstance(element, SetOffset):  # square with same dimension as play
                 envelope = element.offset_path0  # type: ignore
 
@@ -363,11 +367,13 @@ class QProgram(StructuredProgram):
                     elements.append(block.elements.pop(element_idx - ii))
 
                 play_elements = [element for element in elements if isinstance(element, Play)]
+                gain_elements = [element for element in elements if isinstance(element, SetGain)]
                 if play_elements:
-                    dwell, delay, repetitions = (
+                    dwell, delay, repetitions, wait_time = (
                         play_elements[0].dwell,
                         play_elements[0].delay,
                         play_elements[0].repetitions,
+                        play_elements[0].wait_time,
                     )
 
                 for bus in flux_vector.bias_vector.keys():
@@ -383,6 +389,7 @@ class QProgram(StructuredProgram):
                             dwell=dwell,
                             delay=delay,
                             repetitions=repetitions,
+                            wait_time=wait_time,
                         )
                         block.elements.insert(element_list[0], play)
 
