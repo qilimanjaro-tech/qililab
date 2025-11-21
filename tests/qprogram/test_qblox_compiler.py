@@ -565,6 +565,72 @@ def fixture_bus_mappping_acquire() -> QProgram:
     return qp
 
 
+
+@pytest.fixture(name="cryoscope_qprogram")
+def fixture_cryoscope_qprogram() -> QProgram:
+    qp = QProgram()
+    HW_AVG = 2000
+    REPETITION_DURATION = 200_000
+    POST_DRIVE_BUFFER = 30
+    POST_FLUX_BUFFER = 30
+    AMPLITUDE_VALUES = np.linspace(-.3, .3, num=21)
+    DURATION_VALUES = np.arange(80, 160, step=1)
+    T_SEP = np.max(DURATION_VALUES) + 100 
+    flux_wf = Square(amplitude = 1, duration = 500)
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    flux_amplitude = qp.variable(label='flux_amplitude', domain = Domain.Voltage)
+    square_wf = Square(amplitude=1, duration=1385)
+    square_iq = IQPair(I=square_wf, Q=square_wf)
+    time = qp.variable(label='time', domain = Domain.Time)
+    qp.set_gain(bus=f"drive", gain=1)
+    qp.set_gain(bus=f"readout", gain=1)
+    with qp.average(HW_AVG):
+        with qp.for_loop(variable = flux_amplitude, start=AMPLITUDE_VALUES[0], stop=AMPLITUDE_VALUES[-1], step=AMPLITUDE_VALUES[1]-AMPLITUDE_VALUES[0]):
+            with qp.for_loop(variable = time, start=DURATION_VALUES[0], stop=DURATION_VALUES[-1], step=DURATION_VALUES[1]-DURATION_VALUES[0]):
+            
+                qp.set_gain(bus=f'flux', gain=flux_amplitude)
+                qp.sync()
+                qp.play(bus=f"drive", waveform=drag_pair)
+                qp.sync()
+                qp.wait(bus=f"flux",duration=POST_DRIVE_BUFFER)
+                qp.sync()
+
+                # play a flux pulse of varying duration
+                qp.qblox.play(bus=f'flux', waveform=flux_wf,wait_time=4)
+                qp.wait(bus=f"drive",duration=time)
+                qp.sync()
+                qp.qblox.play(bus=f'flux', waveform=Square(0,500),wait_time=4)
+
+                qp.wait(bus=f"drive",duration=POST_FLUX_BUFFER+ T_SEP-time)
+                qp.play(bus=f"drive", waveform=drag_pair)
+                qp.sync()
+                qp.wait(bus=f"readout",duration=POST_DRIVE_BUFFER)
+                qp.measure(bus=f"readout", waveform=square_iq , weights=square_iq )
+                qp.sync()
+                qp.wait(bus=f"drive",duration=REPETITION_DURATION)
+
+                qp.sync()
+                qp.play(bus=f"drive", waveform=drag_pair)
+                qp.sync()
+                qp.wait(bus=f"flux",duration=POST_DRIVE_BUFFER)
+                qp.sync()
+
+                # play a flux pulse of varying duration
+                qp.qblox.play(bus=f'flux', waveform=flux_wf,wait_time=4)
+                qp.wait(bus=f"drive",duration=time)
+                qp.sync()
+                qp.qblox.play(bus=f'flux', waveform=Square(0,500),wait_time=4)
+                
+                qp.wait(bus=f"drive",duration=POST_FLUX_BUFFER+ T_SEP-time)
+                qp.play(bus=f"drive", waveform=drag_pair)
+                qp.sync()
+                qp.wait(bus=f"readout",duration=POST_DRIVE_BUFFER)
+                qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq )
+                qp.sync()
+                qp.wait(bus=f"drive",duration=REPETITION_DURATION)
+                qp.sync()
+    return qp
+
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
@@ -3034,3 +3100,440 @@ set_freq         R5
         
         assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
         assert acquisition_dict == {'Acquisition 0': {'num_bins': 2, 'index': 0}, 'Acquisition 1': {'num_bins': 1, 'index': 1}}
+
+
+    def test_cryoscope(self, cryoscope_qprogram):
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(cryoscope_qprogram)
+        drive_str = """setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+                main:
+                                set_awg_gain     32767, 32767   
+                                set_awg_gain     32767, 32767   
+                                move             2000, R0       
+                avg_0:
+                                move             21, R1         
+                                move             9830, R2       
+                                nop                             
+                                not              R2, R2         
+                                nop                             
+                                add              R2, 1, R2      
+                loop_0:
+                                move             80, R3         
+                                move             80, R4         
+                loop_1:
+                                play             0, 1, 40       
+                                wait             30             
+                                wait             R4             
+                                move             4, R5          
+                                add              R4, 0, R6      
+                                nop                             
+                                sub              R5, R6, R7     
+                                nop                             
+                                jlt              R7, 2147483648, @dynamic_sync_0
+                                jge              R7, 4294967293, @negative_one_two_three_0
+                after_dynamic_sync_0:
+
+
+                                wait             289            
+                                play             0, 1, 40       
+                                wait             1419           
+                                wait             65532          
+                                wait             65532          
+                                wait             65532          
+                                wait             3404           
+                                play             0, 1, 40       
+                                wait             30             
+                                wait             R4             
+                                move             4, R5          
+                                add              R4, 0, R6      
+                                nop                             
+                                sub              R5, R6, R7     
+                                nop                             
+                                jlt              R7, 2147483648, @dynamic_sync_1
+                                jge              R7, 4294967293, @negative_one_two_three_1
+                after_dynamic_sync_1:
+
+
+                                wait             289            
+                                play             0, 1, 40       
+                                wait             1419           
+                                wait             65532          
+                                wait             65532          
+                                wait             65532          
+                                wait             3404           
+                                add              R4, 1, R4      
+                                loop             R3, @loop_1    
+                                add              R2, 983, R2    
+                                loop             R1, @loop_0    
+                                loop             R0, @avg_0     
+                                set_mrk          0              
+                                upd_param        4              
+                                stop                            
+                dynamic_sync_0:
+
+
+                                jlt              R7, 1, @after_dynamic_sync_0
+                                jlt              R7, 4, @one_two_three_0
+                                jge              R7, 65532, @long_wait_sync_0
+                                wait             R7             
+                                jmp              @after_dynamic_sync_0
+                one_two_three_0:
+
+
+                                add              R7, 4, R7      
+                                nop                             
+                                wait             R7             
+                                jmp              @after_dynamic_sync_0
+                negative_one_two_three_0:
+
+
+                                wait             4              
+                                jmp              @after_dynamic_sync_0
+                long_wait_sync_0:
+
+
+                                wait             65532          
+                                sub              R7, 65532, R7  
+                                nop                             
+                                jge              R7, 65532, @long_wait_sync_0
+                                jmp              @dynamic_sync_0
+                dynamic_sync_1:
+
+
+                                jlt              R7, 1, @after_dynamic_sync_1
+                                jlt              R7, 4, @one_two_three_1
+                                jge              R7, 65532, @long_wait_sync_1
+                                wait             R7             
+                                jmp              @after_dynamic_sync_1
+                one_two_three_1:
+
+
+                                add              R7, 4, R7      
+                                nop                             
+                                wait             R7             
+                                jmp              @after_dynamic_sync_1
+                negative_one_two_three_1:
+
+
+                                wait             4              
+                                jmp              @after_dynamic_sync_1
+                long_wait_sync_1:
+
+
+                                wait             65532          
+                                sub              R7, 65532, R7  
+                                nop                             
+                                jge              R7, 65532, @long_wait_sync_1
+                                jmp              @dynamic_sync_1"""
+                                
+        readout_str="""setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+                main:
+                                set_awg_gain     32767, 32767   
+                                set_awg_gain     32767, 32767   
+                                move             2000, R0       
+                avg_0:
+                                move             0, R1          
+                                move             0, R2          
+                                move             21, R3         
+                                move             9830, R4       
+                                nop                             
+                                not              R4, R4         
+                                nop                             
+                                add              R4, 1, R4      
+                loop_0:
+                                move             80, R5         
+                                move             80, R6         
+                loop_1:
+                                upd_param        4              
+                                wait             66             
+                                move             4, R7          
+                                add              R6, 0, R8      
+                                nop                             
+                                sub              R7, R8, R9     
+                                nop                             
+                                jlt              R9, 2147483648, @other_max_duration_0
+                                move             R8, R9         
+                after_other_max_duration_0:
+
+
+                                move             0, R10         
+                                nop                             
+                                sub              R9, R10, R11   
+                                nop                             
+                                jlt              R11, 2147483648, @dynamic_sync_0
+                                jge              R11, 4294967293, @negative_one_two_three_0
+                after_dynamic_sync_0:
+
+
+                                wait             359            
+                                play             0, 0, 4        
+                                acquire_weighed  0, R2, R1, R1, 1385
+                                add              R2, 1, R2      
+                                wait             65532          
+                                wait             65532          
+                                wait             65532          
+                                wait             3474           
+                                move             4, R7          
+                                add              R6, 0, R8      
+                                nop                             
+                                sub              R7, R8, R9     
+                                nop                             
+                                jlt              R9, 2147483648, @other_max_duration_1
+                                move             R8, R9         
+                after_other_max_duration_1:
+
+
+                                move             0, R12         
+                                nop                             
+                                sub              R9, R12, R11   
+                                nop                             
+                                jlt              R11, 2147483648, @dynamic_sync_1
+                                jge              R11, 4294967293, @negative_one_two_three_1
+                after_dynamic_sync_1:
+
+
+                                wait             359            
+                                play             0, 0, 4        
+                                acquire_weighed  0, R2, R1, R1, 1385
+                                add              R2, 1, R2      
+                                wait             65532          
+                                wait             65532          
+                                wait             65532          
+                                wait             3404           
+                                add              R6, 1, R6      
+                                loop             R5, @loop_1    
+                                add              R4, 983, R4    
+                                loop             R3, @loop_0    
+                                loop             R0, @avg_0     
+                                set_mrk          0              
+                                upd_param        4              
+                                stop                            
+                dynamic_sync_0:
+
+
+                                jlt              R11, 1, @after_dynamic_sync_0
+                                jlt              R11, 4, @one_two_three_0
+                                jge              R11, 65532, @long_wait_sync_0
+                                wait             R11            
+                                jmp              @after_dynamic_sync_0
+                one_two_three_0:
+
+
+                                add              R11, 4, R11    
+                                nop                             
+                                wait             R11            
+                                jmp              @after_dynamic_sync_0
+                negative_one_two_three_0:
+
+
+                                wait             4              
+                                jmp              @after_dynamic_sync_0
+                long_wait_sync_0:
+
+
+                                wait             65532          
+                                sub              R11, 65532, R11
+                                nop                             
+                                jge              R11, 65532, @long_wait_sync_0
+                                jmp              @dynamic_sync_0
+                other_max_duration_0:
+
+
+                                move             R7, R9         
+                                jmp              @after_other_max_duration_0
+                dynamic_sync_1:
+
+
+                                jlt              R11, 1, @after_dynamic_sync_1
+                                jlt              R11, 4, @one_two_three_1
+                                jge              R11, 65532, @long_wait_sync_1
+                                wait             R11            
+                                jmp              @after_dynamic_sync_1
+                one_two_three_1:
+
+
+                                add              R11, 4, R11    
+                                nop                             
+                                wait             R11            
+                                jmp              @after_dynamic_sync_1
+                negative_one_two_three_1:
+
+
+                                wait             4              
+                                jmp              @after_dynamic_sync_1
+                long_wait_sync_1:
+
+
+                                wait             65532          
+                                sub              R11, 65532, R11
+                                nop                             
+                                jge              R11, 65532, @long_wait_sync_1
+                                jmp              @dynamic_sync_1
+                other_max_duration_1:
+
+
+                                move             R7, R9         
+                                jmp              @after_other_max_duration_1"""
+        
+        flux_str="""setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+                main:
+                                move             2000, R0       
+                avg_0:
+                                move             21, R1         
+                                move             9830, R2       
+                                nop                             
+                                not              R2, R2         
+                                nop                             
+                                add              R2, 1, R2      
+                loop_0:
+                                move             80, R3         
+                                move             80, R4         
+                loop_1:
+                                set_awg_gain     R2, R2         
+                                set_awg_gain     R2, R2         
+                                upd_param        4              
+                                wait             66             
+                                play             0, 1, 4        
+                                move             0, R5          
+                                add              R4, 0, R6      
+                                nop                             
+                                sub              R5, R6, R7     
+                                nop                             
+                                jlt              R7, 2147483648, @other_max_duration_0
+                                move             R6, R7         
+                after_other_max_duration_0:
+
+
+                                move             4, R8          
+                                nop                             
+                                sub              R7, R8, R9     
+                                nop                             
+                                jlt              R9, 2147483648, @dynamic_sync_0
+                                jge              R9, 4294967293, @negative_one_two_three_0
+                after_dynamic_sync_0:
+
+
+                                play             2, 1, 4        
+                                wait             1744           
+                                wait             65532          
+                                wait             65532          
+                                wait             65532          
+                                wait             3474           
+                                play             0, 1, 4        
+                                move             0, R5          
+                                add              R4, 0, R6      
+                                nop                             
+                                sub              R5, R6, R7     
+                                nop                             
+                                jlt              R7, 2147483648, @other_max_duration_1
+                                move             R6, R7         
+                after_other_max_duration_1:
+
+
+                                move             4, R10         
+                                nop                             
+                                sub              R7, R10, R9    
+                                nop                             
+                                jlt              R9, 2147483648, @dynamic_sync_1
+                                jge              R9, 4294967293, @negative_one_two_three_1
+                after_dynamic_sync_1:
+
+
+                                play             2, 1, 4        
+                                wait             1744           
+                                wait             65532          
+                                wait             65532          
+                                wait             65532          
+                                wait             3404           
+                                add              R4, 1, R4      
+                                loop             R3, @loop_1    
+                                add              R2, 983, R2    
+                                loop             R1, @loop_0    
+                                loop             R0, @avg_0     
+                                set_mrk          0              
+                                upd_param        4              
+                                stop                            
+                dynamic_sync_0:
+
+
+                                jlt              R9, 1, @after_dynamic_sync_0
+                                jlt              R9, 4, @one_two_three_0
+                                jge              R9, 65532, @long_wait_sync_0
+                                wait             R9             
+                                jmp              @after_dynamic_sync_0
+                one_two_three_0:
+
+
+                                add              R9, 4, R9      
+                                nop                             
+                                wait             R9             
+                                jmp              @after_dynamic_sync_0
+                negative_one_two_three_0:
+
+
+                                wait             4              
+                                jmp              @after_dynamic_sync_0
+                long_wait_sync_0:
+
+
+                                wait             65532          
+                                sub              R9, 65532, R9  
+                                nop                             
+                                jge              R9, 65532, @long_wait_sync_0
+                                jmp              @dynamic_sync_0
+                other_max_duration_0:
+
+
+                                move             R5, R7         
+                                jmp              @after_other_max_duration_0
+                dynamic_sync_1:
+
+
+                                jlt              R9, 1, @after_dynamic_sync_1
+                                jlt              R9, 4, @one_two_three_1
+                                jge              R9, 65532, @long_wait_sync_1
+                                wait             R9             
+                                jmp              @after_dynamic_sync_1
+                one_two_three_1:
+
+
+                                add              R9, 4, R9      
+                                nop                             
+                                wait             R9             
+                                jmp              @after_dynamic_sync_1
+                negative_one_two_three_1:
+
+
+                                wait             4              
+                                jmp              @after_dynamic_sync_1
+                long_wait_sync_1:
+
+
+                                wait             65532          
+                                sub              R9, 65532, R9  
+                                nop                             
+                                jge              R9, 65532, @long_wait_sync_1
+                                jmp              @dynamic_sync_1
+                other_max_duration_1:
+
+
+                                move             R5, R7         
+                                jmp              @after_other_max_duration_1
+                                
+                                """
+        
+        assert is_q1asm_equal(sequences.sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
+        assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
