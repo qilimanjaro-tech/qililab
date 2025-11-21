@@ -1294,7 +1294,6 @@ class Platform:
         cluster: QuantumMachinesCluster = cast("QuantumMachinesCluster", next(iter(instruments)))
         return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
 
-
     def _execute_qblox_compilation_output(self, output: QProgramCompilationOutput, debug: bool = False):
         try:
             sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions

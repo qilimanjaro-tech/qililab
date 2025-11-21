@@ -206,12 +206,8 @@ class QbloxCompiler:
             if isinstance(element, Block):
                 self.traverse_qprogram_acquire(element)
             elif isinstance(element, (Acquire, Measure, MeasureReset)):
-                if isinstance(element, (Acquire, Measure)):
-                    bus = element.bus
-                else:
-                    bus = element.measure_bus
-                self._acquisition_metadata.setdefault(bus, {}).setdefault(block.uuid, 0)
-                self._acquisition_metadata[bus][block.uuid] += 1
+                self._acquisition_metadata.setdefault(element.bus, {}).setdefault(block.uuid, 0)
+                self._acquisition_metadata[element.bus][block.uuid] += 1
 
     def compile(
         self,
@@ -912,10 +908,10 @@ class QbloxCompiler:
         wait_trigger_network = 400  # this is the time required by qblox trigger network to send a trigger;
         # 400ns is conservative - the official guideline is 388ns between 2 modules
 
-        time_of_flight = self._buses[element.measure_bus].time_of_flight
-        play = Play(bus=element.measure_bus, waveform=element.waveform, wait_time=time_of_flight)
-        acquire = Acquire(bus=element.measure_bus, weights=element.weights, save_adc=element.save_adc)
-        sync = Sync()
+        time_of_flight = self._buses[element.bus].time_of_flight
+        play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
+        acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
+        sync = Sync([element.bus, element.control_bus])
         wait = Wait(bus=element.control_bus, duration=wait_trigger_network)
         play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
         mask = 2 ** (element.trigger_address - 1)

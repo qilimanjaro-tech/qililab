@@ -21,7 +21,7 @@ from qililab.yaml import yaml
 class MeasureReset(Operation):
     def __init__(
         self,
-        measure_bus: str,
+        bus: str,
         waveform: IQPair,
         weights: IQPair,
         control_bus: str,
@@ -30,7 +30,7 @@ class MeasureReset(Operation):
         save_adc: bool = False,
     ) -> None:
         super().__init__()
-        self.measure_bus: str = measure_bus
+        self.bus: str = bus
         self.waveform: IQPair = waveform
         self.weights: IQPair = weights
         self.control_bus: str = control_bus

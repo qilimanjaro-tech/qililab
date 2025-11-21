@@ -450,7 +450,7 @@ class TestQProgram(TestStructuredProgram):
         zero_wf = Square(amplitude=0.0, duration=40)
         qp = QProgram()
         qp.qblox.measure_reset(
-            measure_bus="readout",
+            bus="readout",
             waveform=IQPair(one_wf, zero_wf),
             weights=IQPair(one_wf, zero_wf),
             control_bus="control",
@@ -464,7 +464,7 @@ class TestQProgram(TestStructuredProgram):
         op = qp._body.elements[0]
         assert isinstance(op, MeasureReset)
         # Check measurement settings
-        assert op.measure_bus == "readout"
+        assert op.bus == "readout"
         assert np.equal(op.waveform.I, one_wf)
         assert np.equal(op.waveform.Q, zero_wf)
         assert np.equal(op.weights.I, one_wf)
@@ -484,14 +484,14 @@ class TestQProgram(TestStructuredProgram):
     def test_with_bus_mapping_measure_reset(self):
         """Test with_bus_mapping method"""
         qp = QProgram()
-        square_wf = Square(1,200)
+        square_wf = Square(1, 200)
         drag = IQPair.DRAG(1, 40, 2, 2)
         with qp.average(1000):
                 qp.qblox.measure_reset(
-                    measure_bus=f"readout_bus",
+                    bus="readout_bus",
                     waveform=square_wf,
                     weights=IQPair(I=square_wf, Q=square_wf),
-                    control_bus=f"drive_bus",
+                    control_bus="drive_bus",
                     reset_pulse=drag,
                 )
 
@@ -502,7 +502,7 @@ class TestQProgram(TestStructuredProgram):
         assert "drive_q0_bus" in new_qp.buses
         assert "readout_q0_bus" in new_qp.buses
 
-        assert new_qp.body.elements[0].elements[0].measure_bus == "readout_q0_bus"
+        assert new_qp.body.elements[0].elements[0].bus == "readout_q0_bus"
         assert new_qp.body.elements[0].elements[0].control_bus == "drive_q0_bus"
 
         self_mapping_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_bus", "readout_bus": "readout_bus"})
@@ -511,7 +511,7 @@ class TestQProgram(TestStructuredProgram):
         assert "drive_bus" in self_mapping_qp.buses
         assert "readout_bus" in self_mapping_qp.buses
 
-        assert self_mapping_qp.body.elements[0].elements[0].measure_bus == "readout_bus"
+        assert self_mapping_qp.body.elements[0].elements[0].bus == "readout_bus"
         assert self_mapping_qp.body.elements[0].elements[0].control_bus == "drive_bus"
 
         non_existant_mapping_qp = qp.with_bus_mapping(
@@ -522,5 +522,5 @@ class TestQProgram(TestStructuredProgram):
         assert "drive_bus" in non_existant_mapping_qp.buses
         assert "readout_bus" in non_existant_mapping_qp.buses
 
-        assert non_existant_mapping_qp.body.elements[0].elements[0].measure_bus == "readout_bus"
+        assert non_existant_mapping_qp.body.elements[0].elements[0].bus == "readout_bus"
         assert non_existant_mapping_qp.body.elements[0].elements[0].control_bus == "drive_bus"
