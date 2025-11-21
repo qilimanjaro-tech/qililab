@@ -508,6 +508,17 @@ def update_latched_param() -> QProgram:
     qp.wait(bus="drive", duration=6)
     return qp
 
+
+@pytest.fixture(name="measure_reset_program")
+def fixture_measure_reset_program() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    qp.qblox.measure_reset(bus="readout", waveform=readout_pair, weights=weights_pair, control_bus="drive", reset_pulse=drag_wf)
+    return qp
+
+
 @pytest.fixture(name="wait_comprised_between_65532_65535")
 def fixture_wait_comprised_between_65532_65535() -> QProgram:
     qp = QProgram()
@@ -2103,6 +2114,50 @@ set_freq         R5
                 set_mrk          0              
                 upd_param        4              
                 stop"""
-        
+
         assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
         assert acquisition_dict == {'Acquisition 0': {'num_bins': 2, 'index': 0}, 'Acquisition 1': {'num_bins': 1, 'index': 1}}
+
+    def test_measure_reset(self, measure_reset_program: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=measure_reset_program)
+
+        assert len(sequences) == 2
+        assert "drive" in sequences
+        assert "readout" in sequences
+
+        drive_str = """
+            setup:
+                            set_latch_en     1, 4           
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            latch_rst        4              
+                            wait             2400          
+                            set_cond         1, 1, 0, 100   
+                            play             0, 1, 100      
+                            set_cond         0, 0, 0, 4     
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                            
+        """
+
+        readout_str = """
+            setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+            main:
+                play             0, 1, 4        
+                acquire_weighed  0, 0, 0, 1, 2000
+                set_mrk          0              
+                upd_param        4              
+                stop                            
+        """
+        print(sequences["drive"]._program)
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
