@@ -1191,6 +1191,10 @@ class TestMethods:
         platform_qblox_qdac._qpy_sequence_cache = {}
         platform_qblox_qdac.trigger_runs = 0
 
+        mock_output.qprogram = MagicMock(spec=QProgram)
+        mock_output.qprogram.qblox = MagicMock(spec=mock_output.qprogram._QbloxInterface)
+        mock_output.qprogram.qblox.trigger_network_required = []
+
         with pytest.raises(TimeoutError):
             platform_qblox_qdac._execute_qblox_compilation_output(
                 output=QProgramCompilationOutput(qblox=mock_output, qdac=mock_qdac_output), debug=False
