@@ -124,7 +124,6 @@ class QdacCompiler:
         """
 
         def traverse(block: Block):
-            # set crosstalk changes based on coordinates
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.append(block)
             for element in block.elements:

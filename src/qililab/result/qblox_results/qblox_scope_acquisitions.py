@@ -92,8 +92,8 @@ class QbloxScopeAcquisitions(Acquisitions):
         integrated_i = np.mean(i_values[integrate_from:integrate_to])
         integrated_q = np.mean(q_values[integrate_from:integrate_to])
         integrated_acquisitions = deepcopy(self)
-        integrated_acquisitions.scope.path0.data = [integrated_i]
-        integrated_acquisitions.scope.path1.data = [integrated_q]
+        integrated_acquisitions.scope.path0.data = [integrated_i]  # type: ignore[list-item]
+        integrated_acquisitions.scope.path1.data = [integrated_q]  # type: ignore[list-item]
         return integrated_acquisitions
 
     def _iq_values(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
