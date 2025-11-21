@@ -1296,13 +1296,13 @@ class Platform:
 
     def _execute_qblox_compilation_output(self, output: QProgramCompilationOutput, debug: bool = False):
         try:
-            sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions
+            sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
 
             for bus_alias, bus in buses.items():
                 # set up the trigger network if required
-                if bus_alias in output.qblox.qprogram.qblox.trigger_network_required:
-                    trigger_address = output.qblox.qprogram.qblox.trigger_network_required[bus_alias]
+                if bus_alias in output.qblox.qprogram.qblox.trigger_network_required: # type: ignore[union-attr]
+                    trigger_address = output.qblox.qprogram.qblox.trigger_network_required[bus_alias] # type: ignore[union-attr]
                     buses[bus_alias]._setup_trigger_network(trigger_address=trigger_address)
                     for controller in self.instrument_controllers.elements:
                         if isinstance(controller, QbloxClusterController):

@@ -2005,7 +2005,8 @@ class TestMethods:
         # Build a fake compilation output with one bus “b” → trigger 5
         qp = QProgram()
         qp.qblox.trigger_network_required = {"b": 5}
-        output = QbloxCompilationOutput(qprogram=qp, sequences={"b": None}, acquisitions={"b": []})
+        output = QProgramCompilationOutput()
+        output.qblox = QbloxCompilationOutput(qprogram=qp, sequences={"b": None}, acquisitions={"b": []})
 
         # Stub the bus and controller
         fake_bus = MagicMock()
