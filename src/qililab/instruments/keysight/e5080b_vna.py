@@ -286,7 +286,7 @@ class E5080B(Instrument):
             Enum: settings.format_border.
         """
         return self.settings.format_border
-    
+
     @property
     def electrical_delay(self) -> int | None:
         """Gets the electrical delay for plotting purposes only
@@ -443,7 +443,7 @@ class E5080B(Instrument):
             if self.is_device_active():
                 self.device.format_border(self.format_border)
             return
-        
+
         if parameter == Parameter.ELECTRICAL_DELAY:
             self.settings.electrical_delay = int(value)
             return
@@ -550,7 +550,7 @@ class E5080B(Instrument):
         if parameter == Parameter.OPERATION_STATUS:
             self.settings.operation_status = self.device.operation_status.get()
             return cast("ParameterValue", self.settings.operation_status)
-        
+
         if parameter == Parameter.ELECTRICAL_DELAY:
             return cast("ParameterValue", self.settings.electrical_delay)
 
