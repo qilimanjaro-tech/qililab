@@ -292,7 +292,7 @@ class E5080B(Instrument):
         """Gets the electrical delay for plotting purposes only
 
         Returns:
-            int: settings.electrical_delay.
+            float: settings.electrical_delay.
         """
         return self.settings.electrical_delay
 
