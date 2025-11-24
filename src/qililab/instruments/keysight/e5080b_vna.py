@@ -81,7 +81,7 @@ class E5080B(Instrument):
         trigger_source: VNATriggerSource | None = None
         trigger_type: VNATriggerType | None = None
         sweep_group_count: int | None = None
-        electrical_delay: int | None = None
+        electrical_delay: float | None = None
 
     settings: E5080BSettings
     device: KeysightE5080B
@@ -288,7 +288,7 @@ class E5080B(Instrument):
         return self.settings.format_border
 
     @property
-    def electrical_delay(self) -> int | None:
+    def electrical_delay(self) -> float | None:
         """Gets the electrical delay for plotting purposes only
 
         Returns:
@@ -445,7 +445,7 @@ class E5080B(Instrument):
             return
 
         if parameter == Parameter.ELECTRICAL_DELAY:
-            self.settings.electrical_delay = int(value)
+            self.settings.electrical_delay = float(value)
             return
 
         raise ParameterNotFound(self, parameter)
