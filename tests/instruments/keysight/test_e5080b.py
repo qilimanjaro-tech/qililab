@@ -434,7 +434,7 @@ class TestE5080B:
         e5080b.device.reset_mock()
         e5080b.initial_setup()
         if parameter==Parameter.ELECTRICAL_DELAY:
-            assert e5080b.settings.electrical_delay == value
+            assert e5080b.electrical_delay == value
         else:
             getattr(e5080b.device, method).assert_called_once_with(value)
 
