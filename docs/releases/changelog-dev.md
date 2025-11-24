@@ -375,6 +375,9 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 
 ### Documentation
 
+- Added the return typings and missing docstring elements for the DatabaseManager class.
+  [#1036](https://github.com/qilimanjaro-tech/qililab/pull/1036)
+
 ### Bug fixes
 
 - Added `py.typed` file in the root dictionary to mark the library as typed and inform type checkers (mypy, pyright, etc.) that this package ships with usable type hints.
