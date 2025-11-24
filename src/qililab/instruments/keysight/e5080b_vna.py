@@ -81,6 +81,7 @@ class E5080B(Instrument):
         trigger_source: VNATriggerSource | None = None
         trigger_type: VNATriggerType | None = None
         sweep_group_count: int | None = None
+        electrical_delay: int | None = None
 
     settings: E5080BSettings
     device: KeysightE5080B
@@ -285,6 +286,15 @@ class E5080B(Instrument):
             Enum: settings.format_border.
         """
         return self.settings.format_border
+    
+    @property
+    def electrical_delay(self) -> int | None:
+        """Gets the electrical delay for plotting purposes only
+
+        Returns:
+            int: settings.electrical_delay.
+        """
+        return self.settings.electrical_delay
 
     @log_set_parameter
     def set_parameter(
@@ -433,6 +443,10 @@ class E5080B(Instrument):
             if self.is_device_active():
                 self.device.format_border(self.format_border)
             return
+        
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            self.settings.electrical_delay = int(value)
+            return
 
         raise ParameterNotFound(self, parameter)
 
@@ -536,6 +550,10 @@ class E5080B(Instrument):
         if parameter == Parameter.OPERATION_STATUS:
             self.settings.operation_status = self.device.operation_status.get()
             return cast("ParameterValue", self.settings.operation_status)
+        
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            return cast("ParameterValue", self.settings.electrical_delay)
+
         raise ParameterNotFound(self, parameter)
 
     def _get_trace(self):

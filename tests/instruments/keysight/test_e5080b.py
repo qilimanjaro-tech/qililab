@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import time
 
-from qililab.instruments.keysight import E5080B
+from qililab.instruments.keysight import E5080B, e5080b_vna
 from qililab.typings.enums import Parameter
 from ruamel.yaml import YAML
 from enum import Enum
@@ -132,6 +132,7 @@ class TestE5080B:
             (Parameter.SWEEP_GROUP_COUNT, 5),
             (Parameter.TRIGGER_TYPE, VNATriggerType.LEV),
             (Parameter.TRIGGER_SLOPE, VNATriggerSlope.POS),
+            (Parameter.ELECTRICAL_DELAY, 100),
         ],
     )
     def test_set_parameter_method(
@@ -186,6 +187,8 @@ class TestE5080B:
             assert e5080b.settings.trigger_type == value
         if parameter == Parameter.TRIGGER_SLOPE:
             assert e5080b.settings.trigger_slope == value
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            assert e5080b.settings.electrical_delay == value
 
     def test__clear_averages(
             self,
@@ -241,6 +244,7 @@ class TestE5080B:
             (Parameter.SWEEP_GROUP_COUNT, 150),
             (Parameter.TRIGGER_TYPE, VNATriggerType.EDGE),
             (Parameter.TRIGGER_SLOPE,VNATriggerSlope.POS),
+            (Parameter.ELECTRICAL_DELAY, 100),
         ],
     )
     def test_get_parameter_method(
@@ -273,9 +277,16 @@ class TestE5080B:
         Parameter.SWEEP_GROUP_COUNT:     "sweep_group_count",
         Parameter.TRIGGER_SLOPE:     "trigger_slope",
         Parameter.TRIGGER_TYPE:     "trigger_type",
+        Parameter.ELECTRICAL_DELAY:   "electrical_delay",
     }
         raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
-        getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
+        if parameter_get == Parameter.ELECTRICAL_DELAY:
+            # electrical_delay is NOT read from the device; it's just stored in settings
+            e5080b_get_param.settings.electrical_delay = expected_value
+        else:
+            raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
+            getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
+
         value = e5080b_get_param.get_parameter(parameter=parameter_get)
         assert value == expected_value
 
@@ -412,6 +423,7 @@ class TestE5080B:
             (Parameter.SWEEP_GROUP_COUNT, 20000, "sweep_group_count"),
             (Parameter.TRIGGER_SLOPE, VNATriggerSlope.POS, "trigger_slope"),
             (Parameter.TRIGGER_TYPE, VNATriggerType.EDGE, "trigger_type"),
+            (Parameter.ELECTRICAL_DELAY, 100, "electrical_delay"),
         ],
     )
     def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):
@@ -421,7 +433,8 @@ class TestE5080B:
         e5080b.set_parameter(Parameter.SWEEP_TYPE, VNASweepTypes.CW)
         e5080b.device.reset_mock()
         e5080b.initial_setup()
-        getattr(e5080b.device, method).assert_called_once_with(value)
+        if parameter!=Parameter.ELECTRICAL_DELAY:
+            getattr(e5080b.device, method).assert_called_once_with(value)
 
     @patch("qililab.instrument_controllers.keysight.keysight_E5080B_vna_controller.KeysightE5080B", autospec=True)
     @pytest.mark.parametrize("controller_alias", ["keysight_e5080b"])
