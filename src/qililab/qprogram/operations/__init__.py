@@ -21,6 +21,7 @@ from .measure import (
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
 )
+from .measure_reset import MeasureReset
 from .operation import Operation
 from .play import Play, PlayWithCalibratedWaveform
 from .reset_phase import ResetPhase
@@ -42,6 +43,7 @@ __all__ = [
     "ExecuteQProgram",
     "GetParameter",
     "Measure",
+    "MeasureReset",
     "MeasureWithCalibratedWaveform",
     "MeasureWithCalibratedWaveformWeights",
     "MeasureWithCalibratedWeights",
