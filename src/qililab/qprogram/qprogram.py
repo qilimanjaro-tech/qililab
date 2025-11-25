@@ -214,20 +214,20 @@ class QProgram(StructuredProgram):
                     if isinstance(control_bus, str) and control_bus in bus_mapping:
                         setattr(block.elements[index], "control_bus", bus_mapping[control_bus])
                     new_latch_enabled = []
-                    for bus in self.qblox.latch_enabled:
+                    for bus in copied_qprogram.qblox.latch_enabled:
                         if bus in bus_mapping:
                             new_latch_enabled.append(bus_mapping[bus])
                         else:
                             new_latch_enabled.append(bus)
-                    self.qblox.latch_enabled = new_latch_enabled
+                    copied_qprogram.qblox.latch_enabled = new_latch_enabled
 
                     new_trigger_network_required = {}
-                    for bus, value in self.qblox.trigger_network_required.items():
+                    for bus, value in copied_qprogram.qblox.trigger_network_required.items():
                         if bus in bus_mapping:
                             new_trigger_network_required[bus_mapping[bus]] = value
                         else:
                             new_trigger_network_required[bus] = value
-                    self.qblox.trigger_network_required = new_trigger_network_required
+                    copied_qprogram.qblox.trigger_network_required = new_trigger_network_required
                 elif hasattr(element, "bus"):
                     bus = getattr(element, "bus")
                     if isinstance(bus, str) and bus in bus_mapping:
@@ -662,7 +662,6 @@ class QProgram(StructuredProgram):
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
             """
-            operation: MeasureReset
 
             operation = MeasureReset(
                 bus=bus,
