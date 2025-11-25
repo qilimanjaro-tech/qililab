@@ -120,21 +120,21 @@ class QProgram(StructuredProgram):
                         [f"\tWaveform {type(element.waveform).__name__}:\n"]
                         + [f"\t\t{array_line}\n" for array_line in str(element.waveform.envelope()).split("\n")]
                         if isinstance(element.waveform, Waveform)
-                        else [f"\tWaveform I {type(element.waveform.I).__name__}:\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.I.envelope()).split("\n")]
-                        + [f"\tWaveform Q {type(element.waveform.Q).__name__}):\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.Q.envelope()).split("\n")]
+                        else [f"\tWaveform I {type(element.waveform.get_I()).__name__}:\n"]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.get_I().envelope()).split("\n")]
+                        + [f"\tWaveform Q {type(element.waveform.get_Q()).__name__}):\n"]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.get_Q().envelope()).split("\n")]
                     )
                     string_elements.extend(waveform_string)
 
                 if hasattr(element, "weights"):
-                    string_elements.append(f"\tWeights I {type(element.weights.I).__name__}:\n")
+                    string_elements.append(f"\tWeights I {type(element.weights.get_I()).__name__}:\n")
                     string_elements.extend(
-                        [f"\t\t{array_element}\n" for array_element in str(element.weights.I.envelope()).split("\n")]
+                        [f"\t\t{array_element}\n" for array_element in str(element.weights.get_I().envelope()).split("\n")]
                     )
-                    string_elements.append(f"\tWeights Q {type(element.weights.Q).__name__}:\n")
+                    string_elements.append(f"\tWeights Q {type(element.weights.get_Q()).__name__}:\n")
                     string_elements.extend(
-                        [f"\t\t{array_element}\n" for array_element in str(element.weights.Q.envelope()).split("\n")]
+                        [f"\t\t{array_element}\n" for array_element in str(element.weights.get_Q().envelope()).split("\n")]
                     )
 
             return string_elements

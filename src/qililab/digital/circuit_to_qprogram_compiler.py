@@ -18,6 +18,7 @@ from qilisdk.digital import CZ, Circuit, M
 
 from qililab.core.variables import Domain
 from qililab.qprogram import QProgram
+from qililab.qprogram.operations import ResetPhase
 from qililab.settings.digital import DigitalCompilationSettings, GateEvent
 from qililab.waveforms import Arbitrary, IQDrag, IQPair, Square, Waveform
 
@@ -29,6 +30,13 @@ def extract_qubit_index(s: str) -> int:
     if not match:
         raise ValueError(f"No qubit index found in string: {s}")
     return int(match.group(1))
+
+
+def angle_to_0_2pi(a: float) -> float:
+    """Map angle from [-π, π] to [0, 2π]."""
+    if a < 0:
+        return a + 2 * np.pi
+    return a
 
 
 class CircuitToQProgramCompiler:
@@ -51,11 +59,16 @@ class CircuitToQProgramCompiler:
                     ]
                     qp.sync(buses_to_sync)
                     for gate_event in gate_events:
+                        # print(gate.name, gate.qubits, gate_event.model_dump())
                         if isinstance(gate_event.waveform, IQDrag):
-                            rmw = CircuitToQProgramCompiler.rmw_from_calibrated_pi_drag(
-                                gate_event.waveform, gate.theta, gate.phase
+                            iqdrag, phase = CircuitToQProgramCompiler.iqdrag_and_phase_from_calibrated_pi_drag(
+                                target_rmw=gate,
+                                calibrated_pi_drag=gate_event.waveform
                             )
-                            qp.play(bus=gate_event.bus, waveform=rmw)
+                            # print(gate.name, gate.qubits, iqdrag.amplitude, phase)
+                            qp.set_gain(bus=gate_event.bus, gain=iqdrag.amplitude)
+                            qp.set_phase(bus=gate_event.bus, phase=angle_to_0_2pi(phase))
+                            qp.play(bus=gate_event.bus, waveform=IQDrag(amplitude=1.0, duration=iqdrag.duration, num_sigmas=iqdrag.num_sigmas, drag_coefficient=iqdrag.drag_coefficient))
                 elif isinstance(gate, CZ):
                     gate_events = self._settings.get_gate(
                         name=gate.name, qubits=(gate.control_qubits[0], gate.target_qubits[0])
@@ -69,7 +82,10 @@ class CircuitToQProgramCompiler:
                     ]
                     qp.sync(buses_to_sync)
                     for gate_event in gate_events:
-                        qp.play(bus=gate_event.bus, waveform=gate_event.waveform)
+                        # print(gate.name, gate.qubits, gate_event.model_dump())
+                        if isinstance(gate_event.waveform, Square):
+                            qp.set_gain(bus=gate_event.bus, gain=gate_event.waveform.amplitude)  # type: ignore
+                            qp.play(bus=gate_event.bus, waveform=Square(amplitude=1.0, duration=gate_event.waveform.duration))
                 elif isinstance(gate, M):
                     qubit_gate_events: list[tuple[int, list[GateEvent]]] = []
                     related_qubits = set(gate.qubits)
@@ -98,14 +114,46 @@ class CircuitToQProgramCompiler:
                                 qp.measure(bus=gate_event.bus, waveform=gate_event.waveform, weights=gate_event.weights)
                             qp.wait(bus=gate_event.bus, duration=self._settings.relaxation_duration)
 
+        # Hacky way to add reset phases
+        all_fluxes = {f"flux_q{q}_bus" for q in range(circuit.nqubits)}
+        for bus in qp.buses | all_fluxes:
+            qp._buses.add(bus)
+            qp.body.elements.insert(0, ResetPhase(bus))
+
         return qp
 
     @staticmethod
-    def wrap_to_pi(x):
+    def wrap_to_pi(x: float) -> float:
         return (x + np.pi) % (2.0 * np.pi) - np.pi
+    
+    @staticmethod
+    def iqdrag_and_phase_from_calibrated_pi_drag(target_rmw: Rmw, calibrated_pi_drag: IQDrag) -> tuple[IQDrag, float]:
+        """
+        Build (I, Q) envelopes for a microwave rotation Rmw(theta, phase),
+        starting from a DRAG waveform calibrated for an X (π) rotation.
+
+        Args:
+            drag: IQDrag with parameters (amplitude, duration, num_sigmas, drag_coefficient)
+                    calibrated to produce a π rotation about +X when phase=0.
+            theta: desired rotation angle in radians.
+            phase: rotation axis phase in radians (0 -> X, +π/2 -> Y).
+
+        Returns:
+            I_env, Q_env: numpy arrays for the rotated-and-scaled envelopes.
+        """
+        theta = CircuitToQProgramCompiler.wrap_to_pi(target_rmw.theta)
+        amplitude = calibrated_pi_drag.amplitude * theta / np.pi
+
+        phase = CircuitToQProgramCompiler.wrap_to_pi(target_rmw.phase)
+
+        if amplitude < 0:
+            amplitude = -amplitude
+            phase = CircuitToQProgramCompiler.wrap_to_pi(target_rmw.phase + np.pi)
+
+        return IQDrag(amplitude=amplitude, duration=calibrated_pi_drag.duration, num_sigmas=calibrated_pi_drag.num_sigmas, drag_coefficient=calibrated_pi_drag.drag_coefficient), phase
 
     @staticmethod
-    def rmw_from_calibrated_pi_drag(pi_drag: IQDrag, theta: float, phase: float) -> IQPair:
+    def _rmw_from_calibrated_pi_drag(pi_drag: IQDrag, theta: float, phase: float) -> IQPair:
         """
         Build (I, Q) envelopes for a microwave rotation Rmw(theta, phase),
         starting from a DRAG waveform calibrated for an X (π) rotation.
