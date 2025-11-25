@@ -62,13 +62,20 @@ class CircuitToQProgramCompiler:
                         # print(gate.name, gate.qubits, gate_event.model_dump())
                         if isinstance(gate_event.waveform, IQDrag):
                             iqdrag, phase = CircuitToQProgramCompiler.iqdrag_and_phase_from_calibrated_pi_drag(
-                                target_rmw=gate,
-                                calibrated_pi_drag=gate_event.waveform
+                                target_rmw=gate, calibrated_pi_drag=gate_event.waveform
                             )
                             # print(gate.name, gate.qubits, iqdrag.amplitude, phase)
                             qp.set_gain(bus=gate_event.bus, gain=iqdrag.amplitude)
                             qp.set_phase(bus=gate_event.bus, phase=angle_to_0_2pi(phase))
-                            qp.play(bus=gate_event.bus, waveform=IQDrag(amplitude=1.0, duration=iqdrag.duration, num_sigmas=iqdrag.num_sigmas, drag_coefficient=iqdrag.drag_coefficient))
+                            qp.play(
+                                bus=gate_event.bus,
+                                waveform=IQDrag(
+                                    amplitude=1.0,
+                                    duration=iqdrag.duration,
+                                    num_sigmas=iqdrag.num_sigmas,
+                                    drag_coefficient=iqdrag.drag_coefficient,
+                                ),
+                            )
                 elif isinstance(gate, CZ):
                     gate_events = self._settings.get_gate(
                         name=gate.name, qubits=(gate.control_qubits[0], gate.target_qubits[0])
@@ -85,7 +92,10 @@ class CircuitToQProgramCompiler:
                         # print(gate.name, gate.qubits, gate_event.model_dump())
                         if isinstance(gate_event.waveform, Square):
                             qp.set_gain(bus=gate_event.bus, gain=gate_event.waveform.amplitude)  # type: ignore
-                            qp.play(bus=gate_event.bus, waveform=Square(amplitude=1.0, duration=gate_event.waveform.duration))
+                            qp.play(
+                                bus=gate_event.bus,
+                                waveform=Square(amplitude=1.0, duration=gate_event.waveform.duration),
+                            )
                 elif isinstance(gate, M):
                     qubit_gate_events: list[tuple[int, list[GateEvent]]] = []
                     related_qubits = set(gate.qubits)
@@ -125,7 +135,7 @@ class CircuitToQProgramCompiler:
     @staticmethod
     def wrap_to_pi(x: float) -> float:
         return (x + np.pi) % (2.0 * np.pi) - np.pi
-    
+
     @staticmethod
     def iqdrag_and_phase_from_calibrated_pi_drag(target_rmw: Rmw, calibrated_pi_drag: IQDrag) -> tuple[IQDrag, float]:
         """
@@ -150,7 +160,12 @@ class CircuitToQProgramCompiler:
             amplitude = -amplitude
             phase = CircuitToQProgramCompiler.wrap_to_pi(target_rmw.phase + np.pi)
 
-        return IQDrag(amplitude=amplitude, duration=calibrated_pi_drag.duration, num_sigmas=calibrated_pi_drag.num_sigmas, drag_coefficient=calibrated_pi_drag.drag_coefficient), phase
+        return IQDrag(
+            amplitude=amplitude,
+            duration=calibrated_pi_drag.duration,
+            num_sigmas=calibrated_pi_drag.num_sigmas,
+            drag_coefficient=calibrated_pi_drag.drag_coefficient,
+        ), phase
 
     @staticmethod
     def _rmw_from_calibrated_pi_drag(pi_drag: IQDrag, theta: float, phase: float) -> IQPair:

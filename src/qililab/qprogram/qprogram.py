@@ -130,11 +130,17 @@ class QProgram(StructuredProgram):
                 if hasattr(element, "weights"):
                     string_elements.append(f"\tWeights I {type(element.weights.get_I()).__name__}:\n")
                     string_elements.extend(
-                        [f"\t\t{array_element}\n" for array_element in str(element.weights.get_I().envelope()).split("\n")]
+                        [
+                            f"\t\t{array_element}\n"
+                            for array_element in str(element.weights.get_I().envelope()).split("\n")
+                        ]
                     )
                     string_elements.append(f"\tWeights Q {type(element.weights.get_Q()).__name__}:\n")
                     string_elements.extend(
-                        [f"\t\t{array_element}\n" for array_element in str(element.weights.get_Q().envelope()).split("\n")]
+                        [
+                            f"\t\t{array_element}\n"
+                            for array_element in str(element.weights.get_Q().envelope()).split("\n")
+                        ]
                     )
 
             return string_elements
