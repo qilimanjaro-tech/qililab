@@ -44,7 +44,7 @@ from qililab.extra.quantum_machines import (
     generate_qua_script,
 )
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
-from qililab.instrument_controllers.qblox.qblox_cluster_controller import QbloxClusterController
+from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
@@ -1294,13 +1294,19 @@ class Platform:
         cluster: QuantumMachinesCluster = cast("QuantumMachinesCluster", next(iter(instruments)))
         return self._execute_quantum_machines_compilation_output(output=output, cluster=cluster, debug=debug)
 
-    def _execute_qblox_compilation_output(
-        self, output: QProgramCompilationOutput, debug: bool = False
-    ):
+    def _execute_qblox_compilation_output(self, output: QProgramCompilationOutput, debug: bool = False):
         try:
             sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
+
             for bus_alias, bus in buses.items():
+                # set up the trigger network if required
+                if bus_alias in output.qblox.qprogram.qblox.trigger_network_required:  # type: ignore[union-attr]
+                    trigger_address = output.qblox.qprogram.qblox.trigger_network_required[bus_alias]  # type: ignore[union-attr]
+                    buses[bus_alias]._setup_trigger_network(trigger_address=trigger_address)
+                    for controller in self.instrument_controllers.elements:
+                        if isinstance(controller, QbloxClusterController):
+                            controller.device.reset_trigger_monitor_count(address=trigger_address)
                 if bus.distortions:
                     for distortion in bus.distortions:
                         for waveform in sequences[bus_alias]._waveforms._waveforms:

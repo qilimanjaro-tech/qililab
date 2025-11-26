@@ -11,6 +11,7 @@ from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
     Measure,
+    MeasureReset,
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
@@ -442,3 +443,84 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(deserialized_qprogram, QProgram)
 
         os.remove(file)
+
+    def test_measure_reset_method(self):
+        """Test measure_reset method"""
+        one_wf = Square(amplitude=1.0, duration=40)
+        zero_wf = Square(amplitude=0.0, duration=40)
+        qp = QProgram()
+        qp.qblox.measure_reset(
+            bus="readout",
+            waveform=IQPair(one_wf, zero_wf),
+            weights=IQPair(one_wf, zero_wf),
+            control_bus="control",
+            reset_pulse=IQPair(one_wf, zero_wf)
+        )
+
+        # Should append a single MeasureReset operation
+        assert len(qp._active_block.elements) == 1
+        assert len(qp._body.elements) == 1
+
+        op = qp._body.elements[0]
+        assert isinstance(op, MeasureReset)
+        # Check measurement settings
+        assert op.bus == "readout"
+        assert np.equal(op.waveform.I, one_wf)
+        assert np.equal(op.waveform.Q, zero_wf)
+        assert np.equal(op.weights.I, one_wf)
+        assert np.equal(op.weights.Q, zero_wf)
+        # Check reset settings
+        assert op.control_bus == "control"
+        assert np.equal(op.reset_pulse.I, one_wf)
+        assert np.equal(op.reset_pulse.Q, zero_wf)
+        # Defaults for trigger and ADC saving
+        assert op.trigger_address == 1
+        assert not op.save_adc
+
+        # Interface flags updated
+        assert "control" in qp.qblox.latch_enabled
+        assert qp.qblox.trigger_network_required["readout"] == 1
+
+    def test_with_bus_mapping_measure_reset(self):
+        """Test with_bus_mapping method"""
+        qp = QProgram()
+        square_wf = Square(1, 200)
+        drag = IQPair.DRAG(1, 40, 2, 2)
+        with qp.average(1000):
+                qp.qblox.measure_reset(
+                    bus="readout_bus",
+                    waveform=square_wf,
+                    weights=IQPair(I=square_wf, Q=square_wf),
+                    control_bus="drive_bus",
+                    reset_pulse=drag,
+                )
+
+        new_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"})
+        assert len(new_qp.buses) == 2
+        assert "drive_bus" not in new_qp.buses
+        assert "readout_bus" not in new_qp.buses
+        assert "drive_q0_bus" in new_qp.buses
+        assert "readout_q0_bus" in new_qp.buses
+
+        assert new_qp.body.elements[0].elements[0].bus == "readout_q0_bus"
+        assert new_qp.body.elements[0].elements[0].control_bus == "drive_q0_bus"
+
+        self_mapping_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_bus", "readout_bus": "readout_bus"})
+
+        assert len(self_mapping_qp.buses) == 2
+        assert "drive_bus" in self_mapping_qp.buses
+        assert "readout_bus" in self_mapping_qp.buses
+
+        assert self_mapping_qp.body.elements[0].elements[0].bus == "readout_bus"
+        assert self_mapping_qp.body.elements[0].elements[0].control_bus == "drive_bus"
+
+        non_existant_mapping_qp = qp.with_bus_mapping(
+            bus_mapping={"non_existant": "drive_bus", "non_existant_readout": "readout_bus"}
+        )
+
+        assert len(non_existant_mapping_qp.buses) == 2
+        assert "drive_bus" in non_existant_mapping_qp.buses
+        assert "readout_bus" in non_existant_mapping_qp.buses
+
+        assert non_existant_mapping_qp.body.elements[0].elements[0].bus == "readout_bus"
+        assert non_existant_mapping_qp.body.elements[0].elements[0].control_bus == "drive_bus"
