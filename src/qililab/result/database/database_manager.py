@@ -158,6 +158,8 @@ class DatabaseManager:
             session.add(calibration_obj)
             try:
                 session.commit()
+                return calibration_obj
+
             except Exception as e:
                 session.rollback()
                 raise e
