@@ -646,6 +646,7 @@ class QbloxCompiler:
             component=QPyInstructions.LatchRst(wait_time=duration)
         )
         self._buses[bus].marked_for_sync = True
+        self._buses[bus].duration_since_sync += duration
         self._buses[bus].static_duration += duration
 
     def _handle_set_gain(self, element: SetGain):
