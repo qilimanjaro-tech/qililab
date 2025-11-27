@@ -140,9 +140,13 @@ class Autocal_Measurement(base):  # type: ignore
 
             persistent_instance.end_time = datetime.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
+            self.end_time = persistent_instance.end_time
+            self.run_length = persistent_instance.run_length
+
             try:
                 if traceback is None:
                     persistent_instance.experiment_completed = True
+                    self.experiment_completed = True
                 session.commit()
                 return persistent_instance
             except Exception as e:
