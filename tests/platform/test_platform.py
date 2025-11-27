@@ -35,10 +35,7 @@ from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
-from qililab.extra.quantum_machines import (
-    QuantumMachinesCluster,
-    QuantumMachinesMeasurementResult,
-)
+from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instruments import SGS100A
@@ -979,6 +976,12 @@ class TestMethods:
             MockExecutor.assert_called_once_with(
                 platform=platform,
                 experiment=mock_experiment,
+                live_plot=False,
+                slurm_execution=True,
+                port_number=None,
+                job_id=None,
+                sample=None,
+                cooldown=None,
             )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
@@ -1841,7 +1844,7 @@ class TestMethods:
             platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
 
     @patch("qililab.platform.platform.get_db_manager")
-    @patch("qililab.result.database._load_config")
+    @patch("qililab.result.database.database_manager._load_config")
     def test_load_db_manager(self, mock_load_config, mock_get_db_manager, platform: Platform):
         """Test load_db_manager createing a database from a given path"""
         path = "~/database_test.ini"
@@ -1863,7 +1866,7 @@ class TestMethods:
         mock_get_db_manager.assert_called_once_with(path)
 
     @patch("qililab.platform.platform.get_db_manager")
-    @patch("qililab.result.database._load_config")
+    @patch("qililab.result.database.database_manager._load_config")
     def test_load_db_manager_no_path(self, mock_load_config, mock_get_db_manager, platform: Platform):
         """Test load_db_manager createing a database without a given path"""
         mock_load_config.return_value = {
