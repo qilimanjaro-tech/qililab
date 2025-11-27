@@ -17,6 +17,9 @@ from typing import TYPE_CHECKING, overload
 import numpy as np
 
 from qililab.qprogram.blocks.block import Block
+from qililab.qprogram.blocks.for_loop import ForLoop
+from qililab.qprogram.blocks.loop import Loop
+from qililab.qprogram.blocks.parallel import Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.decorators import requires_domain
@@ -41,7 +44,7 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import Domain
+from qililab.qprogram.variable import Domain, Variable
 from qililab.waveforms import Arbitrary, IQPair, Waveform, FlatTop, Square
 from qililab.yaml import yaml
 
@@ -63,6 +66,56 @@ class QProgramCompilationOutput:
         self.qblox = qblox
         self.qdac = qdac
         self.quantum_machines = quantum_machines
+
+class CrosstalkElements:
+    """_summary_
+    """
+
+    def __init__(self, crosstalk: CrosstalkMatrix):
+
+        self.crosstalk = crosstalk
+
+        self.operations: list[str] = []
+        self.element_list: list[int] = []
+        self.flux_vector: dict[str, FluxVector] = {}
+        self.flux_vector_bus: dict[str, list[str]] = {}
+        self.flux_vector_cache: dict[str, list[tuple[list[int], FluxVector]]] = {}
+
+    def restart_flux_vector(self, operation_class, bus, iteration):
+        """Restart flux vector if the bus already has been used for the specific operation_class
+
+        Args:
+            operation_class (_type_): _description_
+            bus (_type_): _description_
+        """
+        if operation_class not in self.operations:
+            self.element_list[operation_class] = []
+            self.flux_vector_bus[operation_class] = []
+            self.flux_vector[operation_class] = FluxVector()
+            self.flux_vector[operation_class].set_crosstalk(self.crosstalk)
+            self.flux_vector_cache[operation_class] = []
+            
+            self.operations.append(operation_class)
+
+        if bus in self.flux_vector_bus[operation_class]:
+            self.flux_vector_cache[operation_class].append((self.element_list[operation_class], self.flux_vector[operation_class]))
+
+            self.element_list[operation_class] = []
+            self.flux_vector_bus[operation_class] = []
+            self.flux_vector[operation_class] = FluxVector()
+            self.flux_vector[operation_class].set_crosstalk(self.crosstalk)  # type: ignore
+
+        self.element_list.append(iteration)
+        self.flux_vector_bus[operation_class].append(bus)
+    
+    def set_flux_vector(self):
+        """_summary_
+
+        Args:
+            operation_class (_type_): _description_
+        """
+        for operation_class in self.operations:
+            self.flux_vector_cache[operation_class].append((self.element_list[operation_class], self.flux_vector[operation_class]))
 
 
 @yaml.register_class
@@ -323,78 +376,135 @@ class QProgram(StructuredProgram):
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
 
-        def traverse(block: Block):
-            element_list = []
-            flux_vector = FluxVector()
-            flux_vector.set_crosstalk(crosstalk)  # type: ignore
+        def traverse(block: Block, variable_loop_list: list[ForLoop | Loop]):
+            crosstalk_elements = CrosstalkElements(crosstalk)
 
             for i, element in enumerate(block.elements):
-                if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():  # type: ignore
-                    element_list.append(i)
-                    flux_vector = handle_flux_vector(flux_vector=flux_vector, element=element)
-                if isinstance(element, SetGain) and element.bus in crosstalk.matrix.keys():  # type: ignore
-                    element_list.append(i)
+                if isinstance(element, (Play, SetOffset, SetGain)) and element.bus in crosstalk.matrix.keys():  # type: ignore
+                    crosstalk_elements.restart_flux_vector(str(element.__class__), element.bus, i)
+
+                    crosstalk_elements.flux_vector[str(element.__class__)], = handle_flux_vector(
+                        flux_vector=crosstalk_elements.flux_vector[str(element.__class__)],
+                        element=element,
+                        variable_loop_list=variable_loop_list,
+                    )
+
                 if isinstance(element, Block):
-                    traverse(element)
+                    if isinstance(element, Loop) or isinstance(element, ForLoop):
+                        variable_loop_list.append(element)
+                    elif isinstance(element, Parallel):
+                        for loop in element.loops:
+                            variable_loop_list.append(loop)
+                    traverse(element, variable_loop_list)
 
-            block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
+                    if isinstance(element, Loop) or isinstance(element, ForLoop) or isinstance(element, Parallel):
+                        variable_loop_list = variable_loop_list[:-1]
+            block = handle_crosstalk_element(block=block, crosstalk_elements=crosstalk_elements)
+            # block = handle_crosstalk_loops(block=block, variable_loop_list=variable_loop_list)
 
-        def handle_flux_vector(flux_vector: FluxVector, element: Play | SetGain | SetOffset):
+        def handle_flux_vector(
+            flux_vector: FluxVector, element: Play | SetGain | SetOffset, variable_loop_list: list[ForLoop | Loop]
+        ):
             if isinstance(element, Play):
                 if isinstance(element.waveform, Waveform):
                     waveform = element.waveform.I if isinstance(element.waveform, IQPair) else element.waveform
-                    if isinstance(waveform, (Square, FlatTop)):
-                        envelope = waveform.amplitude
-                    else:
-                        envelope = waveform.envelope()
-                    # change this part to retrieve amp for Square and flat top and check that the shapes are the same
-            elif isinstance(element, SetOffset):  # square with same dimension as play
+                    envelope = waveform.envelope()
+            elif isinstance(element, SetOffset):
                 envelope = element.offset_path0  # type: ignore
+            elif isinstance(element, SetGain):
+                envelope = element.gain  # type: ignore
 
-            if (
-                isinstance(envelope, np.ndarray)
-                and isinstance(flux_vector[element.bus], np.ndarray)
-                and flux_vector[element.bus].shape != envelope.shape  # type: ignore
-            ):
-                raise ValueError("qp.play elements must have the same size.")
+            if isinstance(envelope, Variable):
+                variable_loop = next((loop for loop in variable_loop_list[::-1] if loop.variable == envelope), None)
+                if variable_loop:
+                    envelope = (
+                        np.arange(variable_loop.start, variable_loop.stop, variable_loop.step)
+                        if isinstance(variable_loop, ForLoop)
+                        else variable_loop
+                    )
             flux_vector[element.bus] = envelope
             return flux_vector
 
-        def handle_crosstalk_element(block: Block, element_list: list[int], flux_vector: FluxVector):
-            if element_list:
-                elements = []
-                for ii, element_idx in enumerate(element_list):
-                    elements.append(block.elements.pop(element_idx - ii))
+        def handle_crosstalk_element(block: Block, crosstalk_elements: CrosstalkElements):
+            crosstalk_elements.set_flux_vector()
+            
+            elements = []
+            for ii, element_idx in enumerate(crosstalk_elements.element_list):
+                elements.append(block.elements.pop(element_idx - ii))
+            
+            for element in elements:
+                for element_list, flux_vector in crosstalk_elements.flux_vector_cache[operation]:
+                    elements = []
+                    for ii, element_idx in enumerate(element_list):
+                        elements.append(block.elements.pop(element_idx - ii))
 
-                play_elements = [element for element in elements if isinstance(element, Play)]
-                gain_elements = [element for element in elements if isinstance(element, SetGain)]
-                if play_elements:
-                    dwell, delay, repetitions, wait_time = (
-                        play_elements[0].dwell,
-                        play_elements[0].delay,
-                        play_elements[0].repetitions,
-                        play_elements[0].wait_time,
-                    )
-
-                for bus in flux_vector.bias_vector.keys():
-                    if isinstance(flux_vector.bias_vector[bus], float):
-                        offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
-                        block.elements.insert(element_list[0], offset)
-                    elif isinstance(flux_vector.bias_vector[bus], np.ndarray) or isinstance(
-                        flux_vector.bias_vector[bus], list
-                    ):
-                        play = Play(
-                            bus,
-                            Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
-                            dwell=dwell,
-                            delay=delay,
-                            repetitions=repetitions,
-                            wait_time=wait_time,
+                    if all(isinstance(element, Play) for element in elements):
+                        play_elements = [element for element in elements if isinstance(element, Play)]
+                        if {(play.dwell, play.delay, play.repetitions, play.wait_time) for play in play_elements} > 1: 
+                            raise ValueError("Play elements must be the same for the same play pulse.")
+                        dwell, delay, repetitions, wait_time = (
+                            play_elements[0].dwell,
+                            play_elements[0].delay,
+                            play_elements[0].repetitions,
+                            play_elements[0].wait_time,
                         )
-                        block.elements.insert(element_list[0], play)
+
+                    for bus in flux_vector.bias_vector.keys():
+                        if all(isinstance(element, SetOffset) for element in elements):
+                            offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
+                            block.elements.insert(element_list[0], offset)
+                            
+                        elif all(isinstance(element, SetGain) for element in elements):
+                            gain = SetGain(bus, flux_vector.bias_vector[bus])
+                            block.elements.insert(element_list[0], gain)
+                            
+                        elif all(isinstance(element, Play) for element in elements):
+                            play = Play(
+                                bus,
+                                Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
+                                dwell=dwell,
+                                delay=delay,
+                                repetitions=repetitions,
+                                wait_time=wait_time,
+                            )
+                            block.elements.insert(element_list[0], play)
+
+        # def handle_parallel_crosstalk(block: Block, element_list: list[int], flux_vectors: dict[str, FluxVector]):
+        #     if element_list:
+        #         elements = []
+        #         for ii, element_idx in enumerate(element_list):
+        #             elements.append(block.elements.pop(element_idx - ii))
+
+        #         play_elements = [element for element in elements if isinstance(element, Play)]
+        #         gain_elements = [element for element in elements if isinstance(element, SetGain)]
+        #         if play_elements:
+        #             dwell, delay, repetitions, wait_time = (
+        #                 play_elements[0].dwell,
+        #                 play_elements[0].delay,
+        #                 play_elements[0].repetitions,
+        #                 play_elements[0].wait_time,
+        #             )
+
+        #         for bus in flux_vector.bias_vector.keys():
+        #             if isinstance(flux_vector.bias_vector[bus], float):
+        #                 offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
+        #                 block.elements.insert(element_list[0], offset)
+        #             elif isinstance(flux_vector.bias_vector[bus], np.ndarray) or isinstance(
+        #                 flux_vector.bias_vector[bus], list
+        #             ):
+        #                 play = Play(
+        #                     bus,
+        #                     Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
+        #                     dwell=dwell,
+        #                     delay=delay,
+        #                     repetitions=repetitions,
+        #                     wait_time=wait_time,
+        #                 )
+        #                 block.elements.insert(element_list[0], play)
 
         copied_qprogram = deepcopy(self)
-        traverse(copied_qprogram.body)
+        variable_loop_list: list[ForLoop | Loop] = []
+        traverse(copied_qprogram.body, variable_loop_list)
         return copied_qprogram
 
     @overload
