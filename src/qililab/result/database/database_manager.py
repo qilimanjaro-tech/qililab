@@ -164,16 +164,20 @@ class DatabaseManager:
                 session.rollback()
                 raise e
 
-    def load_by_id(self, id):
-        """Load measurement by its measurement_id."""
+    def load_by_id(self, id: int) -> Measurement | None:
+        """Load measurement by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+        """
         with self.Session() as session:
             measurement_by_id = session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
 
-            path = measurement_by_id.result_path
-            if not os.path.isfile(path):
-
-                new_path = path.replace(self.base_path_local, self.base_path_share)
-                measurement_by_id.result_path = new_path
+            if measurement_by_id is not None:
+                path = measurement_by_id.result_path
+                if not os.path.isfile(path):
+                    new_path = path.replace(self.base_path_local, self.base_path_share)
+                    measurement_by_id.result_path = new_path
 
             return measurement_by_id
 
@@ -323,30 +327,42 @@ class DatabaseManager:
                 return read_sql(query.statement, con=con)
             return query.all()
 
-    def get_qprogram(self, measurement_id: int):
+    def get_qprogram(self, measurement_id: int) -> str:
         """Get QProgram of a measurement by its measurement_id.
         To be used when you have light loaded measurements
+
+        Args:
+            measurement_id (int): measurement_id value given by the database.
         """
         with self.Session() as session:
             return session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
 
-    def get_calibration(self, measurement_id: int):
+    def get_calibration(self, measurement_id: int) -> str:
         """Get Calibration of a measurement by its measurement_id.
         To be used when you have light loaded measurements
+
+        Args:
+            measurement_id (int): measurement_id value given by the database.
         """
         with self.Session() as session:
             return session.query(Measurement.calibration).filter(Measurement.measurement_id == measurement_id).scalar()
 
-    def get_platform(self, measurement_id: int):
+    def get_platform(self, measurement_id: int) -> dict:
         """Get Platform of a measurement by its measurement_id.
         To be used when you have light loaded measurements
+
+        Args:
+            measurement_id (int): measurement_id value given by the database.
         """
         with self.Session() as session:
             return session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
 
-    def get_debug(self, measurement_id: int):
+    def get_debug(self, measurement_id: int) -> str:
         """Get Debug of a measurement by its measurement_id.
         To be used when you have light loaded measurements
+
+        Args:
+            measurement_id (int): measurement_id value given by the database.
         """
         with self.Session() as session:
             return session.query(Measurement.debug_file).filter(Measurement.measurement_id == measurement_id).scalar()
@@ -648,7 +664,7 @@ def _load_config(filename, section):
     raise ReferenceError("Section {0} not found in the {1} file".format(section, filename))
 
 
-def get_db_manager(path: str = "~/database.ini", database_name: str = "postgresql"):
+def get_db_manager(path: str = "~/database.ini", database_name: str = "postgresql") -> DatabaseManager:
     """Automatic DatabaseManager generator based on default load_config"""
     filename = os.path.expanduser(path)
     return DatabaseManager(filename, database_name)
@@ -668,10 +684,9 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
     return create_engine(url)
 
 
-def load_by_id(id: int, path: str = "~/database.ini") -> str:
+def load_by_id(id: int, path: str = "~/database.ini") -> Measurement | None:
     """Function to get the database ID without loading the Database Manager"""
 
     db = get_db_manager(path)
-    result_path = db.load_by_id(id)
-
-    return result_path
+    measurement_by_id = db.load_by_id(id)
+    return measurement_by_id

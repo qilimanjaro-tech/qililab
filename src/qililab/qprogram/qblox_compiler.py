@@ -32,6 +32,7 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureReset,
     Operation,
     Play,
     ResetPhase,
@@ -52,6 +53,10 @@ from qililab.waveforms import Arbitrary, FlatTop, IQPair, Square, Waveform
 EXT_TRIGGER_ADDRESS: int = 15
 # TODO: move to qpysequence.constants
 MAX_ACQUISITION_INDEX = 31  # 32 is the max number of acquisitions that can be stored
+
+ENABLE_CONDITIONAL = 1
+DISABLE_CONDITIONAL = 0
+AND_MASK_CONDITIONAL = 0  # Return true if any of the selected counters crossed their thresholds
 
 
 @dataclass
@@ -182,6 +187,7 @@ class QbloxCompiler:
             WaitTrigger: self._handle_wait_trigger,
             Sync: self._handle_sync,
             Measure: self._handle_measure,
+            MeasureReset: self._handle_measure_reset,
             Acquire: self._handle_acquire,
             Play: self._handle_play,
             Block: self._handle_block,
@@ -199,7 +205,7 @@ class QbloxCompiler:
         for element in block.elements:
             if isinstance(element, Block):
                 self.traverse_qprogram_acquire(element)
-            elif isinstance(element, (Acquire, Measure)):
+            elif isinstance(element, (Acquire, Measure, MeasureReset)):
                 self._acquisition_metadata.setdefault(element.bus, {}).setdefault(block.uuid, 0)
                 self._acquisition_metadata[element.bus][block.uuid] += 1
 
@@ -242,10 +248,12 @@ class QbloxCompiler:
                                         element=Wait(bus=other_buses, duration=-self._buses[bus].delay), delay=True
                                     )
                     delay_implemented = True
-                if isinstance(element, (Acquire, Measure)) and element.bus in self._buses and self._buses[element.bus].first_acquire_of_block is True:
+
+                if isinstance(element, (Acquire, Measure, MeasureReset)) and element.bus in self._buses and self._buses[element.bus].first_acquire_of_block is True:
                     self._buses[element.bus].count_nested_level_acquire += 1
                     self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid]
                     self._buses[element.bus].first_acquire_of_block = False
+
                 handler = self._handlers.get(type(element))
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
@@ -293,6 +301,10 @@ class QbloxCompiler:
         self._markers = markers
         for bus in self._buses:
             mask = self._markers[bus] if self._markers is not None and bus in self._markers else "0000"
+            # if qprogram.measure_reset is used, the bus using the conditional enables latching at the very top of the q1asm
+            if bus in self._qprogram.qblox.latch_enabled:
+                self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1, 4), 1)
+
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
             self._buses[bus].static_duration += 4
@@ -475,6 +487,13 @@ class QbloxCompiler:
 
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
+
+    def _handle_latch_rst(self, bus: str, duration: int):
+        self._buses[bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.LatchRst(wait_time=duration)
+        )
+        self._buses[bus].marked_for_sync = True
+        self._buses[bus].static_duration += duration
 
     def _handle_set_gain(self, element: SetGain):
         if element.bus not in self._qblox_buses:
@@ -870,6 +889,41 @@ class QbloxCompiler:
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].prev_nested_level_acquire = self._buses[element.bus].count_nested_level_acquire
         self._buses[element.bus].upd_param_instruction_pending = False
+
+    def _handle_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
+        # The conditional does not add any static duration as it is assumed that the operations contained within are the same as the else_duration of the conditional
+
+        self._buses[bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetCond(enable, mask, operator, else_duration)
+        )
+
+        self._buses[bus].marked_for_sync = True
+
+    def _handle_measure_reset(self, element: MeasureReset):
+        """Executes a measurement followed by active reset in a single operation
+
+        Args:
+            element (MeasureReset): measure operation and perform active reset
+        """
+        wait_trigger_network = 400  # this is the time required by qblox trigger network to send a trigger;
+        # 400ns is conservative - the official guideline is 388ns between 2 modules
+
+        time_of_flight = self._buses[element.bus].time_of_flight
+        play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
+        acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
+        sync = Sync([element.bus, element.control_bus])
+        wait = Wait(bus=element.control_bus, duration=wait_trigger_network)
+        play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
+        mask = 2 ** (element.trigger_address - 1)
+
+        self._handle_latch_rst(bus=element.control_bus, duration=4)
+        self._handle_play(play)
+        self._handle_acquire(acquire)
+        self._handle_sync(sync)
+        self._handle_wait(wait)
+        self._handle_conditional(bus=element.control_bus, enable=ENABLE_CONDITIONAL, mask=mask, operator=AND_MASK_CONDITIONAL, else_duration=play_reset_pulse.waveform.get_duration(),)
+        self._handle_play(play_reset_pulse)
+        self._handle_conditional(bus=element.control_bus, enable=DISABLE_CONDITIONAL, mask=0, operator=0, else_duration=4)
 
     def _handle_play(self, element: Play):
         if element.bus not in self._qblox_buses:

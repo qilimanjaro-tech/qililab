@@ -47,7 +47,7 @@ class QbloxDraw:
         elif action_type == "set_awg_gain":
             param = self._handle_gain_draw(program_line, param, register)
 
-        elif action_type == "wait" or action_type == "upd_param":
+        elif action_type == "wait" or action_type == "upd_param" or action_type == "latch_rst":
             wait_duration = int(program_line[1])
             param["classical_time_counter"] += int(wait_duration)
             real_wait = wait_duration - param["real_time_counter"]
@@ -120,7 +120,7 @@ class QbloxDraw:
         elif action_type == "sub":
             self._handle_sub_draw(register, program_line)
 
-        elif action_type in ["loop", "nop"]:
+        elif action_type in ["loop", "nop", "set_cond"]:
             pass
 
         else:
