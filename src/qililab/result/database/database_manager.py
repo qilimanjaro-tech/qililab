@@ -197,11 +197,12 @@ class DatabaseManager:
                 session.query(Autocal_Measurement).where(Autocal_Measurement.measurement_id == id).one_or_none()
             )
 
-            path = measurement_by_id.result_path
-            if not os.path.isfile(path):
+            if measurement_by_id is not None:
+                path = measurement_by_id.result_path
+                if not os.path.isfile(path):
 
-                new_path = path.replace(self.base_path_local, self.base_path_share)
-                measurement_by_id.result_path = new_path
+                    new_path = path.replace(self.base_path_local, self.base_path_share)
+                    measurement_by_id.result_path = new_path
 
             return measurement_by_id
 
@@ -214,11 +215,12 @@ class DatabaseManager:
         with self.Session() as session:
             experiment_by_id = session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
 
-            path = experiment_by_id.result_path
-            if not os.path.isfile(path):
+            if experiment_by_id is not None:
+                path = experiment_by_id.result_path
+                if not os.path.isfile(path):
 
-                new_path = path.replace(self.base_path_local, self.base_path_share)
-                experiment_by_id.result_path = new_path
+                    new_path = path.replace(self.base_path_local, self.base_path_share)
+                    experiment_by_id.result_path = new_path
 
             return experiment_by_id
 
