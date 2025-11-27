@@ -96,6 +96,7 @@ class CircuitToQProgramCompiler:
                                 bus=gate_event.bus,
                                 waveform=Square(amplitude=1.0, duration=gate_event.waveform.duration),
                             )
+                    qp.sync(buses_to_sync)
                 elif isinstance(gate, M):
                     qubit_gate_events: list[tuple[int, list[GateEvent]]] = []
                     related_qubits = set(gate.qubits)
