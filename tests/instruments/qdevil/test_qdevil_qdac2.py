@@ -15,12 +15,12 @@ def fixture_qdac() -> QDevilQDac2:
     qdac = QDevilQDac2(
         {
             "alias": "qdac",
-            "voltage": [0.5, 0.5],
-            "span": ["low", "low"],
-            "ramping_enabled": [True, False],
-            "ramp_rate": [0.01, 0.01],
-            "dacs": [10, 11],
-            "low_pass_filter": ["dc", "dc"],
+            "voltage": [0.5, 0.5, 0.5, 0.5],
+            "span": ["low", "low", "low", "low"],
+            "ramping_enabled": [True, True, True, False],
+            "ramp_rate": [0.01, 0.01, 0.01, 0.01],
+            "dacs": [2, 4, 10, 11],
+            "low_pass_filter": ["dc", "dc", "dc", "dc"],
         }
     )
     qdac.device = MagicMock()
@@ -84,8 +84,16 @@ class TestQDevilQDac2:
 
         qdac.device.channel.assert_has_calls(channel_calls)
 
-    def test_turn_off(self, qdac: QDevilQDac2):
+    def test_turn_off(self, qdac: QDevilQDac2, waveform: Square):
         """Test turn_off method"""
+        # Create test trigger dictionary
+        channel_id = 4
+        out_port = 1
+        trigger = "trigger_test"
+        qdac._triggers = {}
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_start_marker_external_trigger(channel_id, out_port, trigger)
+
         qdac.turn_off()
 
         channel_calls = []
@@ -95,8 +103,16 @@ class TestQDevilQDac2:
 
         qdac.device.channel.assert_has_calls(channel_calls)
 
-    def test_reset(self, qdac: QDevilQDac2):
+    def test_reset(self, qdac: QDevilQDac2, waveform: Square):
         """Test reset method"""
+        # Create test trigger dictionary
+        channel_id = 4
+        out_port = 1
+        trigger = "trigger_test"
+        qdac._triggers = {}
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_start_marker_external_trigger(channel_id, out_port, trigger)
+
         qdac.reset()
 
         qdac.device.reset.assert_called_once()
@@ -109,80 +125,301 @@ class TestQDevilQDac2:
             channel_calls.append(call(channel_id))
         qdac.device.channel.assert_has_calls(channel_calls)
 
-    def test_upload_waveform(self, qdac: QDevilQDac2, waveform: Square):
+    def test_upload_awg_waveform(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
         channel_id = 4
-        qdac.upload_waveform(waveform, channel_id)
+        qdac.upload_awg_waveform(waveform, channel_id)
         qdac.device.allocate_trace.assert_called_once_with(channel_id, len(waveform.envelope()))
-        assert qdac._cache == {4: True}
+        assert qdac._cache_awg == {4: True}
 
-    def test_upload_waveform_fails_overwrite_cache(self, qdac: QDevilQDac2, waveform: Square):
+    def test_upload_awg_waveform_fails_overwrite_cache(self, qdac: QDevilQDac2, waveform: Square):
         """Test that upload waveform raises an error when trying to allocate a waveform to an already allocated channel id"""
         channel_id = 2
-        qdac._cache = {channel_id: True}
-        error_string = re.escape(f"Device {qdac.name} already has a waveform allocated to channel {channel_id}. Clear the cache before allocating a new waveform")
+        qdac._cache_awg = {channel_id: True}
+        error_string = re.escape(
+            f"Device {qdac.name} already has a waveform allocated to channel {channel_id}. Clear the cache before allocating a new waveform"
+        )
         with pytest.raises(ValueError, match=error_string):
-            qdac.upload_waveform(waveform, channel_id)
+            qdac.upload_awg_waveform(waveform, channel_id)
 
-    def test_upload_waveform_fails_odd_value(self, qdac: QDevilQDac2, waveform: Square):
+    def test_upload_awg_waveform_fails_odd_value(self, qdac: QDevilQDac2):
         """Test that upload waveform raises an error when uploading a waveform with odd number of entries"""
         channel_id = 2
         waveform = Square(0.1, 3)
         error_string = "Waveform entries must be even."
         with pytest.raises(ValueError, match=error_string):
-            qdac.upload_waveform(waveform, channel_id)
+            qdac.upload_awg_waveform(waveform, channel_id)
 
-    def test_upload_waveform_fails_amp_range(self, qdac: QDevilQDac2, waveform: Square):
+    def test_upload_awg_waveform_fails_amp_range(self, qdac: QDevilQDac2):
         """Test that upload waveform raises an error when uploading a waveform with outside the allowed amplitude range"""
         channel_id = 2
         waveform = Square(1, 4)
         error_string = re.escape("Waveform amplitudes must be within [-1,1] range.")
         with pytest.raises(ValueError, match=error_string):
-            qdac.upload_waveform(waveform, channel_id)
+            qdac.upload_awg_waveform(waveform, channel_id)
         qdac.clear_cache()
         channel_id = 2
         waveform = Square(-1.1, 4)
         with pytest.raises(ValueError, match=error_string):
-            qdac.upload_waveform(waveform, channel_id)
+            qdac.upload_awg_waveform(waveform, channel_id)
 
-    def test_play(self, qdac: QDevilQDac2):
+    def test_play_awg(self, qdac: QDevilQDac2):
         """Test play method"""
         channel_id = 4
-        channel_calls = [call(10), call(11), call(4), call().start]
-        qdac._cache = {channel_id: True}
-        qdac.play(clear_after=False)
+        channel_calls = [call(4), call().start(), call(4), call().start()]
+        qdac._cache_awg = {channel_id: True}
+        qdac.play_awg(channel_id, clear_after=False)
         # cache not erased if default clear_after
-        assert qdac._cache == {channel_id: True}
-        qdac.play(channel_id)
+        assert qdac._cache_awg == {channel_id: True}
+
+        qdac.play_awg(channel_id)
         qdac.get_dac(4).arbitrary_wave.assert_has_calls(channel_calls)
         # check that cache is erased
-        assert qdac._cache == {}
+        assert qdac._cache_awg == {}
+
+        qdac.play_awg()
+        qdac.device.start_all.assert_called_once()
+
+    def test_upload_voltage_list(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        qdac._cache_dc = {}
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.device.channel(channel_id).dc_list.assert_called_once()
+        waveform = Square(0.1, 3)
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.device.remove_traces.assert_called_once()
+        qdac.device.channel(channel_id).dc_list.assert_called()
+
+    def test_upload_voltage_list_raises_channel_error(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 5
+        with pytest.raises(
+            ValueError,
+            match=f"The specified `channel_id`: {channel_id} is not added to the QDAC-II instrument controller dac list.",
+        ):
+            qdac.upload_voltage_list(waveform, channel_id)
+
+    def test_set_in_external_trigger(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        in_port = 1
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_in_external_trigger(channel_id, in_port)
+
+        qdac._cache_dc[channel_id].start_on_external.assert_called_once()
+
+    def test_set_in_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        in_port = 1
+        qdac._cache_dc = {}
+
+        with pytest.raises(
+            ValueError,
+            match=f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}",
+        ):
+            qdac.set_in_external_trigger(channel_id, in_port)
+
+    def test_set_end_marker_external_trigger(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        out_port = 1
+        trigger = "trigger_test"
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_end_marker_external_trigger(channel_id, out_port, trigger)
+
+        qdac.device.connect_external_trigger.assert_called_once()
+
+        qdac.set_end_marker_external_trigger(channel_id, out_port, trigger)
+        qdac.device.free_trigger.assert_called_once()
+
+    def test_set_end_marker_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        out_port = 1
+        trigger = "trigger_test"
+        qdac._cache_dc = {}
+
+        with pytest.raises(
+            ValueError,
+            match=f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}",
+        ):
+            qdac.set_end_marker_external_trigger(channel_id, out_port, trigger)
+
+    def test_set_start_marker_external_trigger(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        out_port = 1
+        trigger = "trigger_test"
+        qdac._triggers = {}
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_start_marker_external_trigger(channel_id, out_port, trigger)
+
+        qdac.device.connect_external_trigger.assert_called_once()
+
+        qdac.set_start_marker_external_trigger(channel_id, out_port, trigger)
+        qdac.device.free_trigger.assert_called_once()
+
+    def test_set_start_marker_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        out_port = 1
+        trigger = "trigger_test"
+        qdac._cache_dc = {}
+
+        with pytest.raises(
+            ValueError,
+            match=f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}",
+        ):
+            qdac.set_start_marker_external_trigger(channel_id, out_port, trigger)
+
+    def test_set_end_marker_internal_trigger(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        trigger = "trigger_test"
+        qdac._triggers = {}
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_end_marker_internal_trigger(channel_id, trigger)
+
+        qdac.device.channel(channel_id).write_channel.assert_called_once()
+
+        qdac.set_end_marker_internal_trigger(channel_id, trigger)
+        qdac.device.free_trigger.assert_called_once()
+
+    def test_set_end_marker_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        trigger = "trigger_test"
+        qdac._cache_dc = {}
+
+        with pytest.raises(
+            ValueError,
+            match=f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}",
+        ):
+            qdac.set_end_marker_internal_trigger(channel_id, trigger)
+
+    def test_set_start_marker_internal_trigger(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        trigger = "trigger_test"
+        qdac._triggers = {}
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_start_marker_internal_trigger(channel_id, trigger)
+
+        qdac.device.channel(channel_id).write_channel.assert_called_once()
+
+        qdac.set_start_marker_internal_trigger(channel_id, trigger)
+        qdac.device.free_trigger.assert_called_once()
+
+    def test_set_start_marker_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        trigger = "trigger_test"
+        qdac._cache_dc = {}
+
+        with pytest.raises(
+            ValueError,
+            match=f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}",
+        ):
+            qdac.set_start_marker_internal_trigger(channel_id, trigger)
+
+    def test_set_in_internal_trigger(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        trigger = "trigger_test"
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_start_marker_internal_trigger(channel_id, trigger)
+        qdac.set_in_internal_trigger(channel_id, trigger)
+
+        qdac._cache_dc[channel_id].start_on.assert_called_once()
+
+    def test_set_in_internal_trigger_no_trigger_raises_error(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        trigger = "trigger_test"
+        qdac._triggers = {}
+
+        with pytest.raises(
+            ValueError,
+            match=f"Trigger with name {trigger} not created.",
+        ):
+            qdac.set_in_internal_trigger(channel_id, trigger)
+
+    def test_set_in_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        trigger = "trigger_test"
+        qdac._cache_dc = {}
+
+        with pytest.raises(
+            ValueError,
+            match=f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}",
+        ):
+            qdac.set_in_internal_trigger(channel_id, trigger)
+
+    def test_start(self, qdac: QDevilQDac2):
+        qdac.start()
+        qdac.device.start_all()
 
     def test_clear_cache(self, qdac: QDevilQDac2):
         """Test clear_cache method"""
-        qdac._cache = {2: True}
+        qdac._cache_awg = {2: True}
         qdac.clear_cache()
-        assert qdac._cache == {}
+        assert qdac._cache_awg == {}
+        assert qdac._cache_dc == {}
         qdac.device.remove_traces.assert_called_once()
+
+    def test_clear_trigger(self, qdac: QDevilQDac2, waveform: Square):
+        """Test clear_trigger method"""
+        qdac.clear_trigger()
+        qdac.device.free_all_triggers.assert_called_once()
+
+        # Creating test trigger
+        channel_id = 4
+        trigger = "trigger_test"
+        qdac._triggers = {}
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_end_marker_internal_trigger(channel_id, trigger)
+
+        qdac.clear_trigger("trigger_test")
+        qdac.device.free_all_triggers.assert_called_once()
+
+    def test_stop(self, qdac: QDevilQDac2, waveform: Square):
+        channel_id = 4
+        qdac._cache_dc = {}
+
+        # Simulate running a dc pulse
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.start()
+
+        qdac.stop()
+        qdac.device.channel(channel_id).dc_abort.assert_called_once()
 
     def test_input_range_runcard(self, qdac_out_range: QDevilQDac2):
         # Test that an error is raised when the input value on the runcard for the qdac are out of bound
         channel_id = 10
-        error_string = re.escape(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
+        error_string = re.escape(
+            f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s."
+        )
         with pytest.raises(ValueError, match=error_string):
             qdac_out_range.initial_setup()
 
     def test_input_range_set_parameter(self, qdac: QDevilQDac2):
         # Test that an error is raised when the input value on set_parameter RAMPING_RATE for the qdac are out of bound
         channel_id = 10
-        error_string = re.escape(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
+        error_string = re.escape(
+            f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s."
+        )
         with pytest.raises(ValueError, match=error_string):
             qdac.set_parameter(parameter=Parameter.RAMPING_RATE, value=0.0001, channel_id=channel_id)
 
     def test_input_range_set_parameter_enabled(self, qdac_out_range: QDevilQDac2):
         # Test that an error is raised when the input value on set_parameter RAMPING_ENABLED for the qdac are out of bound
         channel_id = 10
-        error_string = re.escape(f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s.")
+        error_string = re.escape(
+            f"The ramp rate is out of range on channel {channel_id}. It should be between 0.01 V/s and 2e7 V/s."
+        )
         with pytest.raises(ValueError, match=error_string):
             qdac_out_range.set_parameter(parameter=Parameter.RAMPING_ENABLED, value=True, channel_id=channel_id)
 
