@@ -24,6 +24,7 @@ from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
     Measure,
+    MeasureReset,
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
@@ -208,6 +209,28 @@ class QProgram(StructuredProgram):
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
+                elif isinstance(element, MeasureReset):
+                    bus = getattr(element, "bus")
+                    control_bus = getattr(element, "control_bus")
+                    if isinstance(bus, str) and bus in bus_mapping:
+                        setattr(block.elements[index], "bus", bus_mapping[bus])
+                    if isinstance(control_bus, str) and control_bus in bus_mapping:
+                        setattr(block.elements[index], "control_bus", bus_mapping[control_bus])
+                    new_latch_enabled = []
+                    for bus in copied_qprogram.qblox.latch_enabled:
+                        if bus in bus_mapping:
+                            new_latch_enabled.append(bus_mapping[bus])
+                        else:
+                            new_latch_enabled.append(bus)
+                    copied_qprogram.qblox.latch_enabled = new_latch_enabled
+
+                    new_trigger_network_required = {}
+                    for bus, value in copied_qprogram.qblox.trigger_network_required.items():
+                        if bus in bus_mapping:
+                            new_trigger_network_required[bus_mapping[bus]] = value
+                        else:
+                            new_trigger_network_required[bus] = value
+                    copied_qprogram.qblox.trigger_network_required = new_trigger_network_required
                 elif hasattr(element, "bus"):
                     bus = getattr(element, "bus")
                     if isinstance(bus, str) and bus in bus_mapping:
@@ -626,6 +649,8 @@ class QProgram(StructuredProgram):
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
             self.disable_autosync: bool = False
+            self.latch_enabled: list[str] = []
+            self.trigger_network_required: dict[str, int] = {}
 
         @overload
         def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):
@@ -696,6 +721,46 @@ class QProgram(StructuredProgram):
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
+
+        def measure_reset(
+            self,
+            bus: str,
+            waveform: IQPair,
+            weights: IQPair,
+            control_bus: str,
+            reset_pulse: IQPair,
+            trigger_address: int = 1,
+            save_adc: bool = False,
+        ):
+            """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
+
+            If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
+            If the result is 0, the control_bus waits instead.
+
+            Args:
+                bus (str): Identifier of the measurement bus.
+                waveform (IQPair): Waveform played during measurement.
+                weights (IQPair): Weights used for demodulation/integration.
+                control_bus (str): Identifier of the control/reset bus.
+                reset_pulse (IQPair): Pulse used for active reset.
+                trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
+                save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+            """
+
+            operation = MeasureReset(
+                bus=bus,
+                waveform=waveform,
+                weights=weights,
+                control_bus=control_bus,
+                reset_pulse=reset_pulse,
+                trigger_address=trigger_address,
+                save_adc=save_adc,
+            )
+            self.qprogram._active_block.append(operation)
+            self.qprogram._buses.add(bus)
+            self.qprogram._buses.add(control_bus)
+            self.latch_enabled.append(control_bus)
+            self.trigger_network_required[bus] = trigger_address
 
         def set_markers(self, bus: str, mask: str):
             """Set the markers based on a 4-bit binary mask.
