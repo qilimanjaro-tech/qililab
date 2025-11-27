@@ -150,7 +150,12 @@ class DatabaseManager:
                 session.rollback()
                 raise e
 
-    def add_calibration_run(self, calibration_tree):
+    def add_calibration_run(self, calibration_tree: dict) -> Calibration_run:
+        """Add autocalibration metadata.
+
+        Args:
+            calibration_tree (dict): Full calibration tree of the run.
+        """
         calibration_obj = Calibration_run(
             date=datetime.datetime.now(), calibration_tree=calibration_tree, calibration_completed=False
         )
@@ -181,8 +186,12 @@ class DatabaseManager:
 
             return measurement_by_id
 
-    def load_calibration_by_id(self, id):
-        """Load autocalibration measurement by its measurement_id."""
+    def load_calibration_by_id(self, id: int) -> Autocal_Measurement | None:
+        """Load autocalibration measurement by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+        """
         with self.Session() as session:
             measurement_by_id = (
                 session.query(Autocal_Measurement).where(Autocal_Measurement.measurement_id == id).one_or_none()
@@ -196,8 +205,12 @@ class DatabaseManager:
 
             return measurement_by_id
 
-    def load_experiment_by_id(self, id):
-        """Load QaaS measurement by its measurement_id."""
+    def load_experiment_by_id(self, id: int) -> QaaS_Experiment | None:
+        """Load QaaS measurement by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+        """
         with self.Session() as session:
             experiment_by_id = session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
 
