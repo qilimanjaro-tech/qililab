@@ -164,7 +164,6 @@ logger-objects = ["qililab.logger"]
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ANN", "S", "CPY", "SLF001", "PLR", "DOC", "RUF012"]
 "docs/*" = ["CPY"]
-"examples/*" = ["CPY", "T20"]
 "src/qililab/about.py" = ["T201"]
 
 [tool.ruff.lint.pydocstyle]
@@ -225,7 +224,6 @@ tag_format = "$version"
         "*/virtualenv/*",
         "*/virtualenvs/*",
         "*/tests/*",
-        "examples/*",
         # TODO: Remove these once we modernize instruments
         "src/qililab/instruments/keithley/keithley_2600.py",
         "src/qililab/instruments/qblox/qblox_d5a.py",

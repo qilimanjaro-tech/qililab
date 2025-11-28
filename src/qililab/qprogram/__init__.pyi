@@ -18,16 +18,18 @@ if TYPE_CHECKING:
     from .crosstalk_matrix import CrosstalkMatrix, FluxVector
     from .experiment import Experiment
     from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
-    from .qprogram import QProgram
-    from .variable import Domain
+    from .qdac_compiler import QdacCompilationOutput, QdacCompiler
+    from .qprogram import QProgram, QProgramCompilationOutput
 
 __all__ = [
     "Calibration",
     "CrosstalkMatrix",
-    "Domain",
     "Experiment",
     "FluxVector",
     "QProgram",
+    "QProgramCompilationOutput",
     "QbloxCompilationOutput",
     "QbloxCompiler",
+    "QdacCompilationOutput",
+    "QdacCompiler",
 ]

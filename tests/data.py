@@ -1010,7 +1010,11 @@ class SauronVNA:
     ]
 
     buses: list[dict[str, Any]] = [
-        {RUNCARD.ALIAS: "keysight_e5080b_bus", RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value], RUNCARD.CHANNELS: [0]},
+        {
+            RUNCARD.ALIAS: "keysight_e5080b_bus",
+            RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
+            RUNCARD.CHANNELS: [0],
+        },
     ]
 
     runcard = {

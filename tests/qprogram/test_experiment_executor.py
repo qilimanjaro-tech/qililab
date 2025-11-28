@@ -12,7 +12,8 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
 from qililab.extra.quantum_machines import QuantumMachinesMeasurementResult
 from qililab.qprogram.experiment_executor import ExperimentExecutor
-from qililab.qprogram.qprogram import Domain, QProgram
+from qililab.qprogram.qprogram import QProgram
+from qililab.core.variables import Domain
 from qililab.result.experiment_results import ExperimentResults
 from qililab.result.qprogram import QProgramResults
 from qililab.typings.enums import Parameter

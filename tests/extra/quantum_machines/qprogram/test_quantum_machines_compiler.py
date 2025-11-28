@@ -1,3 +1,4 @@
+from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 pytest.importorskip("qm", reason="requires the 'quantum-machines' optional dependency")
@@ -25,7 +26,15 @@ def fixture_play_operation() -> QProgram:
     ones_zeros_pair = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
     qp = QProgram()
     qp.play(bus="drive", waveform=ones_zeros_pair)
+    return qp
 
+
+@pytest.fixture(name="qdac_play_operation")
+def fixture_qdac_play_operation() -> QProgram:
+    ones_zeros_pair = IQPair(I=Square(amplitude=1.0, duration=100), Q=Square(amplitude=0.0, duration=100))
+    qp = QProgram()
+    qp.play(bus="drive", waveform=ones_zeros_pair)
+    qp.play(bus="flux", waveform=ones_zeros_pair)
     return qp
 
 
@@ -381,6 +390,16 @@ class TestQuantumMachinesCompiler:
         assert play.qe.name == "drive"
         assert play.named_pulse.name in configuration["pulses"]
 
+    def test_play_operation_qdac(self, qdac_play_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
+        qua_program, _, _ = compiler.compile(qdac_play_operation, qm_buses=[mock_qm_bus])
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 1
+
     def test_block_handlers(self, measurement_blocked_operation: QProgram):
         drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
         readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
@@ -436,6 +455,16 @@ class TestQuantumMachinesCompiler:
         assert play.named_pulse.name in configuration["pulses"]
         assert float(play.amp.v0.literal.value) == 1
 
+    def test_set_gain_and_play_operation_qdac(self, set_gain_and_play_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "not_drive"
+        qua_program, _, _ = compiler.compile(set_gain_and_play_operation, qm_buses=[mock_qm_bus])
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 0
+
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(
@@ -469,6 +498,16 @@ class TestQuantumMachinesCompiler:
         assert update_frequency.keep_phase is False
         assert float(update_frequency.value.literal.value) == 100e6
 
+    def test_set_frequency_operation_qdac(self, set_frequency_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "not_drive"
+        qua_program, _, _ = compiler.compile(set_frequency_operation, qm_buses=[mock_qm_bus])
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 0
+
     def test_set_offset_operation(self, set_offset_operation: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(set_offset_operation)
@@ -479,6 +518,16 @@ class TestQuantumMachinesCompiler:
         set_dc_offset = statements[0].set_dc_offset
         assert set_dc_offset.qe.name == "drive"
 
+    def test_set_offset_operation_qdac(self, set_offset_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "not_drive"
+        qua_program, _, _ = compiler.compile(set_offset_operation, qm_buses=[mock_qm_bus])
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 0
+
     def test_set_dc_offset_operation(self, set_dc_offset_operation: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(set_dc_offset_operation)
@@ -488,6 +537,16 @@ class TestQuantumMachinesCompiler:
 
         set_dc_offset = statements[0].set_dc_offset
         assert set_dc_offset.qe.name == "drive"
+
+    def test_set_dc_offset_operation_qdac(self, set_dc_offset_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "not_drive"
+        qua_program, _, _ = compiler.compile(set_dc_offset_operation, qm_buses=[mock_qm_bus])
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 0
 
     def test_set_phase_operation(self, set_phase_operation: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -500,6 +559,16 @@ class TestQuantumMachinesCompiler:
         assert rotation.qe.name == "drive"
         assert float(rotation.value.literal.value) == 90 / 360.0
 
+    def test_set_phase_operation_qdac(self, set_phase_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "not_drive"
+        qua_program, _, _ = compiler.compile(set_phase_operation, qm_buses=[mock_qm_bus])
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 0
+
     def test_reset_phase_operation(self, reset_phase_operation: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(reset_phase_operation)
@@ -509,6 +578,16 @@ class TestQuantumMachinesCompiler:
 
         reset_frame = statements[0].reset_frame
         assert reset_frame.qe.name == "drive"
+
+    def test_reset_phase_operation_qdac(self, reset_phase_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "not_drive"
+        qua_program, _, _ = compiler.compile(reset_phase_operation, qm_buses=[mock_qm_bus])
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 0
 
     def test_wait_operation(self, wait_operation: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -522,6 +601,16 @@ class TestQuantumMachinesCompiler:
         assert wait.qe[0].name == "drive"
         assert int(wait.time.literal.value) == 100 / 4
 
+    def test_wait_operation_qdac(self, wait_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "not_drive"
+        qua_program, _, _ = compiler.compile(wait_operation, qm_buses=[mock_qm_bus])
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 0
+
     def test_sync_operation(self, sync_operation: QProgram):
         compiler = QuantumMachinesCompiler()
         qua_program, _, _ = compiler.compile(sync_operation)
@@ -533,6 +622,15 @@ class TestQuantumMachinesCompiler:
         assert len(align.qe) == 2
         assert align.qe[0].name == "drive"
         assert align.qe[1].name == "readout"
+
+    def test_sync_operation_qdac_raises_error(self, sync_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "drive"
+
+        with pytest.raises(ValueError, match="Non QM buses not allowed inside sync function"):
+            compiler.compile(sync_operation, qm_buses=[mock_qm_bus])
 
     def test_sync_operation_no_parameters(self, sync_operation_no_parameters: QProgram):
         compiler = QuantumMachinesCompiler()
@@ -568,6 +666,16 @@ class TestQuantumMachinesCompiler:
         assert len(measurements[0].result_handles) == 2
         assert "I_0" in measurements[0].result_handles
         assert "Q_0" in measurements[0].result_handles
+
+    def test_measure_operation_qdac(self, measure_operation: QProgram):
+        compiler = QuantumMachinesCompiler()
+
+        mock_qm_bus = MagicMock()
+        mock_qm_bus.alias = "not_readout"
+        qua_program, _, _ = compiler.compile(measure_operation, qm_buses=[mock_qm_bus])
+
+        statements = qua_program._program.script.body.statements
+        assert len(statements) == 0
 
     def test_measure_operation_save_raw_adc(self, measure_operation_save_raw_adc: QProgram):
         compiler = QuantumMachinesCompiler()

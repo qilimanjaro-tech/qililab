@@ -282,3 +282,9 @@ class Bus:
             )
 
         return total_results[0]
+
+    def _setup_trigger_network(self, trigger_address):
+        for instrument, instrument_channel in zip(self.instruments, self.channels):
+            if isinstance(instrument, (QbloxQRM)):
+                instrument._setup_trigger_network(trigger_address=trigger_address, sequencer_id=instrument_channel)
+                return
