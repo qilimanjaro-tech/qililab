@@ -369,20 +369,20 @@ class Testdatabase:
     """Test database class"""
 
     def test_set_sample(self, db_manager: DatabaseManager):
-        mock_session = db_manager.Session()
+        mock_session = db_manager.session()
         mock_session.query.return_value.scalar.return_value = True
         db_manager.set_sample_and_cooldown("sample1")
         assert db_manager.current_sample == "sample1"
 
     def test_set_sample_and_cooldown(self, db_manager: DatabaseManager):
-        mock_session = db_manager.Session()
+        mock_session = db_manager.session()
         mock_session.query.return_value.scalar.return_value = True
         db_manager.set_sample_and_cooldown("sample1", "CD1")
         assert db_manager.current_sample == "sample1"
         assert db_manager.current_cd == "CD1"
 
     def test_set_sample_and_cooldown_warn_inactive_cd(self, db_manager: DatabaseManager):
-        mock_session = db_manager.Session()
+        mock_session = db_manager.session()
         mock_session.__enter__.return_value = mock_session
 
         # Mock sample and cooldown
@@ -437,7 +437,7 @@ class Testdatabase:
         mock_session.__enter__.return_value = mock_session
         mock_session.commit.side_effect = Exception("DB error")
 
-        db_manager.Session = MagicMock(return_value=mock_session)
+        db_manager.session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
             db_manager.add_cooldown(**cooldown_data)
@@ -477,7 +477,7 @@ class Testdatabase:
         mock_session.__enter__.return_value = mock_session
         mock_session.commit.side_effect = Exception("DB error")
 
-        db_manager.Session = MagicMock(return_value=mock_session)
+        db_manager.session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
             db_manager.add_sample(**sample_data)
@@ -547,7 +547,7 @@ class Testdatabase:
         mock_session.__enter__.return_value = mock_session
         mock_session.commit.side_effect = Exception("DB error")
 
-        db_manager.Session = MagicMock(return_value=mock_session)
+        db_manager.session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
             db_manager.add_calibration_run(calibration_tree=calibration_tree)
@@ -628,7 +628,7 @@ class Testdatabase:
         db_manager.current_sample = "sampleA"
 
         # Capture the mocked session
-        mock_session = db_manager.Session()
+        mock_session = db_manager.session()
         query_mock = MagicMock()
         query_mock.filter.return_value = query_mock
         query_mock.order_by.return_value = query_mock
@@ -666,7 +666,7 @@ class Testdatabase:
         db_manager.current_sample = "sampleA"
 
         # Capture the mocked session
-        mock_session = db_manager.Session()
+        mock_session = db_manager.session()
         query_mock = MagicMock()
         query_mock.filter.return_value = query_mock
         query_mock.order_by.return_value = query_mock
@@ -700,7 +700,7 @@ class Testdatabase:
 
     def test_get_qprogram(self, db_manager: DatabaseManager):
         """Test get qprogram function from the database manager"""
-        mock_session = db_manager.Session()
+        mock_session = db_manager.session()
         mock_session.__enter__.return_value = mock_session
 
         with patch("os.path.isfile", return_value=False):
@@ -710,7 +710,7 @@ class Testdatabase:
 
     def test_get_platform(self, db_manager: DatabaseManager):
         """Test get platform function from the database manager"""
-        mock_session = db_manager.Session()
+        mock_session = db_manager.session()
         mock_session.__enter__.return_value = mock_session
 
         with patch("os.path.isfile", return_value=False):
@@ -720,7 +720,7 @@ class Testdatabase:
 
     def test_get_calibration(self, db_manager: DatabaseManager):
         """Test get qprogram function from the database manager"""
-        mock_session = db_manager.Session()
+        mock_session = db_manager.session()
         mock_session.__enter__.return_value = mock_session
 
         with patch("os.path.isfile", return_value=False):
@@ -732,7 +732,7 @@ class Testdatabase:
 
     def test_get_debug(self, db_manager: DatabaseManager):
         """Test get qprogram function from the database manager"""
-        mock_session = db_manager.Session()
+        mock_session = db_manager.session()
         mock_session.__enter__.return_value = mock_session
 
         with patch("os.path.isfile", return_value=False):
@@ -747,7 +747,7 @@ class Testdatabase:
         mock_session_instance = MagicMock()
         mock_session_context = MagicMock()
         mock_session_context.__enter__.return_value = mock_session_instance
-        db_manager.Session = MagicMock(return_value=mock_session_context)
+        db_manager.session = MagicMock(return_value=mock_session_context)
 
         mock_calibration_id = MagicMock()
         mock_query = MagicMock()
@@ -788,7 +788,7 @@ class Testdatabase:
         calibration = Calibration()
         calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
 
-        db_manager.Session = MagicMock(return_value=mock_session)
+        db_manager.session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
             _ = db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
@@ -802,7 +802,7 @@ class Testdatabase:
         mock_session_instance = MagicMock()
         mock_session_context = MagicMock()
         mock_session_context.__enter__.return_value = mock_session_instance
-        db_manager.Session = MagicMock(return_value=mock_session_context)
+        db_manager.session = MagicMock(return_value=mock_session_context)
 
         mock_query = MagicMock()
         mock_order_by = MagicMock()
@@ -851,7 +851,7 @@ class Testdatabase:
         mock_session.__enter__.return_value = mock_session
         mock_session.commit.side_effect = Exception("DB error")
 
-        db_manager.Session = MagicMock(return_value=mock_session)
+        db_manager.session = MagicMock(return_value=mock_session)
 
         expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
 
@@ -908,7 +908,7 @@ class Testdatabase:
         mock_session.__enter__.return_value = mock_session
         mock_session.commit.side_effect = Exception("DB error")
 
-        db_manager.Session = MagicMock(return_value=mock_session)
+        db_manager.session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
             _ = db_manager.add_measurement("exp1", experiment_completed=True)
@@ -993,7 +993,7 @@ class Testdatabase:
         mock_session.__enter__.return_value = mock_session
         mock_session.commit.side_effect = Exception("DB error")
 
-        db_manager.Session = MagicMock(return_value=mock_session)
+        db_manager.session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
             db_manager.add_results("exp1", results, loops)

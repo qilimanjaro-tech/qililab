@@ -30,7 +30,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 from xarray import DataArray
 
 from qililab.result.experiment_results import ExperimentResults
@@ -122,7 +122,7 @@ class Measurement(base):  # type: ignore
     created_by = Column("created_by", String, server_default=text("current_user"))
     # TODO: add error_report = Column("error_report", String, nullable=True)
 
-    def end_experiment(self, session: Session, traceback: str | None = None):
+    def end_experiment(self, session: sessionmaker[Session], traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 

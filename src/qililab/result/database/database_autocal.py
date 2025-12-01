@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ARRAY, Boolean, Column, DateTime, ForeignKey, Integer, Interval, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from qililab.result.result_management import load_results
 
@@ -48,7 +48,7 @@ class CalibrationRun(base):  # type: ignore
         self.calibration_tree = calibration_tree
         self.calibration_completed = calibration_completed
 
-    def end_calibration(self, session: Session, traceback: str | None = None):
+    def end_calibration(self, session: sessionmaker[Session], traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 
@@ -133,7 +133,7 @@ class AutocalMeasurement(base):  # type: ignore
         self.parameters = parameters
         self.data_shape = data_shape
 
-    def end_experiment(self, session: Session, traceback: str | None = None):
+    def end_experiment(self, session: sessionmaker[Session], traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 
@@ -160,7 +160,7 @@ class AutocalMeasurement(base):  # type: ignore
         """Load old experiment data from h5 files."""
         return load_results(self.result_path)
 
-    def update_platform(self, session: Session, platform_before: "Platform"):
+    def update_platform(self, session: sessionmaker[Session], platform_before: "Platform"):
         """Function to update measurement platform. The function sets inside the database information
         about the platform_before."""
 

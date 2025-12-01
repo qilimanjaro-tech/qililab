@@ -49,7 +49,7 @@ class DatabaseManager:
         """
         config = _load_config(filename, database_name)
         self.engine = get_engine(config["user"], config["passwd"], config["host"], config["port"], config["database"])
-        self.session: Session = sessionmaker(bind=self.engine, expire_on_commit=False)
+        self.session: sessionmaker[Session] = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.current_cd: str | None = None
         self.current_sample: str | None = None
 
