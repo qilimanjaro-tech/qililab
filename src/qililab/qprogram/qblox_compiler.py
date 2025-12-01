@@ -249,7 +249,11 @@ class QbloxCompiler:
                                     )
                     delay_implemented = True
 
-                if isinstance(element, (Acquire, Measure, MeasureReset)) and element.bus in self._buses and self._buses[element.bus].first_acquire_of_block is True:
+                if (
+                    isinstance(element, (Acquire, Measure, MeasureReset))
+                    and element.bus in self._buses
+                    and self._buses[element.bus].first_acquire_of_block is True
+                ):
                     self._buses[element.bus].count_nested_level_acquire += 1
                     self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid]
                     self._buses[element.bus].first_acquire_of_block = False
@@ -489,9 +493,7 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_latch_rst(self, bus: str, duration: int):
-        self._buses[bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.LatchRst(wait_time=duration)
-        )
+        self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.LatchRst(wait_time=duration))
         self._buses[bus].marked_for_sync = True
         self._buses[bus].static_duration += duration
 
@@ -950,9 +952,17 @@ class QbloxCompiler:
         self._handle_acquire(acquire)
         self._handle_sync(sync)
         self._handle_wait(wait)
-        self._handle_conditional(bus=element.control_bus, enable=ENABLE_CONDITIONAL, mask=mask, operator=AND_MASK_CONDITIONAL, else_duration=play_reset_pulse.waveform.get_duration(),)
+        self._handle_conditional(
+            bus=element.control_bus,
+            enable=ENABLE_CONDITIONAL,
+            mask=mask,
+            operator=AND_MASK_CONDITIONAL,
+            else_duration=play_reset_pulse.waveform.get_duration(),
+        )
         self._handle_play(play_reset_pulse)
-        self._handle_conditional(bus=element.control_bus, enable=DISABLE_CONDITIONAL, mask=0, operator=0, else_duration=4)
+        self._handle_conditional(
+            bus=element.control_bus, enable=DISABLE_CONDITIONAL, mask=0, operator=0, else_duration=4
+        )
 
     def _handle_play(self, element: Play):
         if element.bus not in self._qblox_buses:
