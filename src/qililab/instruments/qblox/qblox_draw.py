@@ -680,7 +680,6 @@ class QbloxDraw:
             positions = [0.1 + 0.8 * (i / (len(data_keys) - 1)) for i in range(len(data_keys))]
 
         colorscale = pc.sample_colorscale("Turbo", positions)
-        # colorscale = pc.sample_colorscale("Turbo", [i/len(data_keys) for i in range(len(data_keys))])
 
         for idx, key in enumerate(data_keys):
             q1asm_offset_i = np.array(parameters[key]["q1asm_offset_i"])
