@@ -13,8 +13,8 @@ from tests.data import Galadriel
 
 from qililab.data_management import build_platform
 from qililab.qprogram import Calibration
-from qililab.result import Autocal_Measurement
-from qililab.result.database import Calibration_run, QaaS_Experiment
+from qililab.result import AutocalMeasurement
+from qililab.result.database import CalibrationRun, QaaS_Experiment
 from qililab.result.database.database_manager import (
     DatabaseManager,
     _load_config,
@@ -74,7 +74,7 @@ def fixture_measurement():
 
 @pytest.fixture(name="autocalibration_measurement")
 def fixture_autocalibration_measurement():
-    return Autocal_Measurement(
+    return AutocalMeasurement(
         experiment_name="test_experiment",
         sample_name="sampleA",
         calibration_id=1,
@@ -88,7 +88,7 @@ def fixture_autocalibration_measurement():
 
 @pytest.fixture(name="calibration_tree")
 def fixture_calibration_tree():
-    return Calibration_run(
+    return CalibrationRun(
         date=datetime.datetime(2023, 1, 1, 12, 0, 0),
         calibration_tree={"test_tree": "test"},
         calibration_completed=False,
@@ -578,7 +578,7 @@ class Testdatabase:
             db_manager.load_by_id(123)
 
     def test_load_calibration_by_id(self, db_manager: DatabaseManager):
-        mock_measurement = MagicMock(spec=Autocal_Measurement)
+        mock_measurement = MagicMock(spec=AutocalMeasurement)
         mock_measurement.result_path = "/local_test/results/file.h5"
         mock_measurement.measurement_id = 123
 
@@ -592,7 +592,7 @@ class Testdatabase:
 
     def test_load_calibration_by_id_path_not_found(self, db_manager: DatabaseManager):
         # Setup a mock measurement
-        mock_measurement = MagicMock(spec=Autocal_Measurement)
+        mock_measurement = MagicMock(spec=AutocalMeasurement)
         mock_measurement.result_path = "/local_test/results/file.h5"
         db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
 
@@ -601,7 +601,7 @@ class Testdatabase:
             db_manager.load_calibration_by_id(123)
 
     def test_load_experiment_by_id(self, db_manager: DatabaseManager):
-        mock_measurement = MagicMock(spec=Autocal_Measurement)
+        mock_measurement = MagicMock(spec=AutocalMeasurement)
         mock_measurement.result_path = "/local_test/results/file.h5"
         mock_measurement.measurement_id = 123
 
@@ -615,7 +615,7 @@ class Testdatabase:
 
     def test_load_experiment_by_id_path_not_found(self, db_manager: DatabaseManager):
         # Setup a mock measurement
-        mock_measurement = MagicMock(spec=Autocal_Measurement)
+        mock_measurement = MagicMock(spec=AutocalMeasurement)
         mock_measurement.result_path = "/local_test/results/file.h5"
         db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
 

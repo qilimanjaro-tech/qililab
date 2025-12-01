@@ -22,9 +22,9 @@ import h5py
 import numpy as np
 from pandas import read_sql
 from sqlalchemy import create_engine, exists
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
-from qililab.result.database.database_autocal import Autocal_Measurement, Calibration_run
+from qililab.result.database.database_autocal import AutocalMeasurement, CalibrationRun
 from qililab.result.database.database_measurements import Cooldown, Measurement, Sample
 from qililab.result.database.database_qaas import QaaS_Experiment
 from qililab.utils.serialization import serialize
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 class DatabaseManager:
     """Database manager for measurements results and metadata"""
 
-    calibration_measurement: Autocal_Measurement
+    calibration_measurement: AutocalMeasurement
 
     def __init__(self, filename: str, database_name: str):
         """
@@ -49,7 +49,7 @@ class DatabaseManager:
         """
         config = _load_config(filename, database_name)
         self.engine = get_engine(config["user"], config["passwd"], config["host"], config["port"], config["database"])
-        self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
+        self.session: Session = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.current_cd: str | None = None
         self.current_sample: str | None = None
 
@@ -69,8 +69,8 @@ class DatabaseManager:
             sample (str): Sample name, mandatory parameter as allways needed unlike cooldown
             cooldown (str | None, optional): Cooldown name, contains multiple sample instances. Defaults to None.
         """
-        with self.Session() as session:
-            sample_exists = session.query(exists().where(Sample.sample_name == sample)).scalar()
+        with self.session() as running_session:
+            sample_exists = running_session.query(exists().where(Sample.sample_name == sample)).scalar()
             if sample_exists:
                 self.current_sample = sample
             else:
@@ -78,7 +78,7 @@ class DatabaseManager:
 
             # Setting CD is optional, if you are doing a measurement which is not tied to a CD
             if cooldown:
-                cd_object = session.query(Cooldown).filter(Cooldown.cooldown == cooldown).one_or_none()
+                cd_object = running_session.query(Cooldown).filter(Cooldown.cooldown == cooldown).one_or_none()
                 if cd_object:
                     self.current_cd = cooldown
                     if not cd_object.active:
@@ -101,12 +101,12 @@ class DatabaseManager:
             date (datetime.date, optional): Date of cooldown. Defaults to datetime.date.today().
         """
         cooldown_obj = Cooldown(cooldown=cooldown, date=date, fridge=fridge)
-        with self.Session() as session:
-            session.add(cooldown_obj)
+        with self.session() as running_session:
+            running_session.add(cooldown_obj)
             try:
-                session.commit()
+                running_session.commit()
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def add_sample(
@@ -142,31 +142,31 @@ class DatabaseManager:
             n_qubits_per_device=n_qubits_per_device,
             additional_info=additional_info,
         )
-        with self.Session() as session:
-            session.add(sample_obj)
+        with self.session() as running_session:
+            running_session.add(sample_obj)
             try:
-                session.commit()
+                running_session.commit()
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
-    def add_calibration_run(self, calibration_tree: dict) -> Calibration_run:
+    def add_calibration_run(self, calibration_tree: dict) -> CalibrationRun:
         """Add autocalibration metadata.
 
         Args:
             calibration_tree (dict): Full calibration tree of the run.
         """
-        calibration_obj = Calibration_run(
+        calibration_obj = CalibrationRun(
             date=datetime.datetime.now(), calibration_tree=calibration_tree, calibration_completed=False
         )
-        with self.Session() as session:
-            session.add(calibration_obj)
+        with self.session() as running_session:
+            running_session.add(calibration_obj)
             try:
-                session.commit()
+                running_session.commit()
                 return calibration_obj
 
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def load_by_id(self, id: int) -> Measurement | None:
@@ -175,8 +175,8 @@ class DatabaseManager:
         Args:
             id (int): measurement_id value given by the database.
         """
-        with self.Session() as session:
-            measurement_by_id = session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
+        with self.session() as running_session:
+            measurement_by_id = running_session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
 
             if measurement_by_id is not None:
                 path = measurement_by_id.result_path
@@ -186,15 +186,15 @@ class DatabaseManager:
 
             return measurement_by_id
 
-    def load_calibration_by_id(self, id: int) -> Autocal_Measurement | None:
+    def load_calibration_by_id(self, id: int) -> AutocalMeasurement | None:
         """Load autocalibration measurement by its measurement_id.
 
         Args:
             id (int): measurement_id value given by the database.
         """
-        with self.Session() as session:
+        with self.session() as running_session:
             measurement_by_id = (
-                session.query(Autocal_Measurement).where(Autocal_Measurement.measurement_id == id).one_or_none()
+                running_session.query(AutocalMeasurement).where(AutocalMeasurement.measurement_id == id).one_or_none()
             )
 
             if measurement_by_id is not None:
@@ -212,8 +212,8 @@ class DatabaseManager:
         Args:
             id (int): measurement_id value given by the database.
         """
-        with self.Session() as session:
-            experiment_by_id = session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
+        with self.session() as running_session:
+            experiment_by_id = running_session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
 
             if experiment_by_id is not None:
                 path = experiment_by_id.result_path
@@ -244,7 +244,7 @@ class DatabaseManager:
             since_id (int | None, optional): If provided, only load measurements with measurement_id greater than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
-            query = self.Session().query(Measurement)
+            query = self.session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
@@ -303,7 +303,7 @@ class DatabaseManager:
             before_id (int | None, optional): If provided, only load measurements with measurement_id lower than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
-            query = self.Session().query(Measurement)
+            query = self.session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
@@ -349,8 +349,8 @@ class DatabaseManager:
         Args:
             measurement_id (int): measurement_id value given by the database.
         """
-        with self.Session() as session:
-            return session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
+        with self.session() as running_session:
+            return running_session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
 
     def get_calibration(self, measurement_id: int) -> str:
         """Get Calibration of a measurement by its measurement_id.
@@ -359,8 +359,8 @@ class DatabaseManager:
         Args:
             measurement_id (int): measurement_id value given by the database.
         """
-        with self.Session() as session:
-            return session.query(Measurement.calibration).filter(Measurement.measurement_id == measurement_id).scalar()
+        with self.session() as running_session:
+            return running_session.query(Measurement.calibration).filter(Measurement.measurement_id == measurement_id).scalar()
 
     def get_platform(self, measurement_id: int) -> dict:
         """Get Platform of a measurement by its measurement_id.
@@ -369,8 +369,8 @@ class DatabaseManager:
         Args:
             measurement_id (int): measurement_id value given by the database.
         """
-        with self.Session() as session:
-            return session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
+        with self.session() as running_session:
+            return running_session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
 
     def get_debug(self, measurement_id: int) -> str:
         """Get Debug of a measurement by its measurement_id.
@@ -379,8 +379,8 @@ class DatabaseManager:
         Args:
             measurement_id (int): measurement_id value given by the database.
         """
-        with self.Session() as session:
-            return session.query(Measurement.debug_file).filter(Measurement.measurement_id == measurement_id).scalar()
+        with self.session() as running_session:
+            return running_session.query(Measurement.debug_file).filter(Measurement.measurement_id == measurement_id).scalar()
 
     def add_autocal_measurement(
         self,
@@ -397,7 +397,7 @@ class DatabaseManager:
         Args:
             experiment_name (str): Experiment name.
             qubit_idx (int): Number of qubit index.
-            calibration (Calibration): Calibration used on the experiment.
+            calibration (Calibration): Experiment calibration parameters.
             platform (Platform, optional): Platform used on the experiment. Defaults to None.
             qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
@@ -406,8 +406,8 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
 
-        with self.Session() as session:
-            calibration_id = session.query(Calibration_run).order_by(Calibration_run.calibration_id.desc()).first().calibration_id  # type: ignore
+        with self.session() as running_session:
+            calibration_id = running_session.query(CalibrationRun).order_by(CalibrationRun.calibration_id.desc()).first().calibration_id  # type: ignore
 
         sample_name = calibration.parameters["sample_name"]
         cooldown = calibration.parameters["cooldown"]
@@ -419,7 +419,7 @@ class DatabaseManager:
             os.makedirs(base_path)
             warnings.warn(f"Data folder did not exist. Created one at {base_path}")
 
-        self.calibration_measurement = Autocal_Measurement(
+        self.calibration_measurement = AutocalMeasurement(
             experiment_name=experiment_name,
             sample_name=sample_name,
             calibration_id=calibration_id,
@@ -435,22 +435,22 @@ class DatabaseManager:
             parameters=serialize(parameters),
             data_shape=data_shape,
         )
-        with self.Session() as session:
-            session.add(self.calibration_measurement)
+        with self.session() as running_session:
+            running_session.add(self.calibration_measurement)
             try:
-                session.commit()
+                running_session.commit()
                 return self.calibration_measurement
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def update_platform(self, platform: "Platform"):
         """Update calibration platform after fitting
 
         Args:
-            platform (Platform): New platform to be set at platform_before column from `Autocal_Measurement`.
+            platform (Platform): New platform to be set at platform_before column from `AutocalMeasurement`.
         """
-        self.calibration_measurement.update_platform(self.Session, platform)
+        self.calibration_measurement.update_platform(self.session, platform)
 
     def add_experiment(
         self,
@@ -481,13 +481,13 @@ class DatabaseManager:
             start_time=start_time,
             cooldown=cooldown,
         )
-        with self.Session() as session:
-            session.add(measurement)
+        with self.session() as running_session:
+            running_session.add(measurement)
             try:
-                session.commit()
+                running_session.commit()
                 return measurement
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def add_measurement(
@@ -569,13 +569,13 @@ class DatabaseManager:
             parameters=parameters,
             data_shape=data_shape,
         )
-        with self.Session() as session:
-            session.add(measurement)
+        with self.session() as running_session:
+            running_session.add(measurement)
             try:
-                session.commit()
+                running_session.commit()
                 return measurement
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def add_results(
@@ -654,13 +654,13 @@ class DatabaseManager:
             parameters=parameters,
             data_shape=results.shape,
         )
-        with self.Session() as session:
-            session.add(measurement)
+        with self.session() as running_session:
+            running_session.add(measurement)
             try:
-                session.commit()
+                running_session.commit()
                 return measurement
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
 

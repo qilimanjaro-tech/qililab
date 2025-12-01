@@ -38,14 +38,14 @@ Functions
     save_results
 
 """
-from .database_autocal import Autocal_Measurement, Calibration_run
+from .database_autocal import AutocalMeasurement, CalibrationRun
 from .database_manager import DatabaseManager, get_db_manager, load_by_id
 from .database_measurements import Cooldown, Measurement, Sample
 from .database_qaas import QaaS_Experiment
 
 __all__ = [
-    "Autocal_Measurement",
-    "Calibration_run",
+    "AutocalMeasurement",
+    "CalibrationRun",
     "Cooldown",
     "DatabaseManager",
     "Measurement",

@@ -30,6 +30,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session
 from xarray import DataArray
 
 from qililab.result.experiment_results import ExperimentResults
@@ -121,23 +122,23 @@ class Measurement(base):  # type: ignore
     created_by = Column("created_by", String, server_default=text("current_user"))
     # TODO: add error_report = Column("error_report", String, nullable=True)
 
-    def end_experiment(self, Session, traceback=None):
+    def end_experiment(self, session: Session, traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 
-        with Session() as session:
+        with session() as running_session:
             # Merge the detached instance into the current session
-            persistent_instance = session.merge(self)
+            persistent_instance = running_session.merge(self)
             persistent_instance.end_time = datetime.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
             try:
                 if traceback is None:
                     persistent_instance.experiment_completed = True
                 # TODO: add else: persistent_instance.error_report = traceback
-                session.commit()
+                running_session.commit()
                 return persistent_instance
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def read_experiment(self):
@@ -160,9 +161,9 @@ class Measurement(base):  # type: ignore
                 d.update({dims[i].labels[0]: dims[i].values[0]})
             labels.append(dims[i].labels[0])
 
-        IQ_axis = labels.index("I/Q")
+        iq_axis = labels.index("I/Q")
         labels.remove("I/Q")
-        complex_data = data.take(indices=0, axis=IQ_axis) + 1j * data.take(indices=1, axis=IQ_axis)
+        complex_data = data.take(indices=0, axis=iq_axis) + 1j * data.take(indices=1, axis=iq_axis)
 
         data_xr = DataArray(complex_data, coords=d, dims=labels)
         return data_xr
@@ -226,8 +227,6 @@ class Measurement(base):  # type: ignore
         self.parameters = parameters
         self.data_shape = data_shape
         self.debug_file = debug_file
-
-        # self.result_array = result_array
 
     def __repr__(self):
         return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.sample_name} {self.cooldown}"

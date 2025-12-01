@@ -48,8 +48,8 @@ from .result_management import load_results, save_results
 
 # Moving database here to avoid circular imports
 from .database import (
-    Autocal_Measurement,
-    Calibration_run,
+    AutocalMeasurement,
+    CalibrationRun,
     Cooldown,
     DatabaseManager,
     QaaS_Experiment,
@@ -62,8 +62,8 @@ from .stream_results import StreamArray, stream_results
 from .qprogram import MeasurementResult, QbloxMeasurementResult
 
 __all__ = [
-    "Autocal_Measurement",
-    "Calibration_run",
+    "AutocalMeasurement",
+    "CalibrationRun",
     "Cooldown",
     "DatabaseManager",
     "ExperimentLivePlot",

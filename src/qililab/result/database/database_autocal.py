@@ -14,16 +14,18 @@
 
 import datetime
 
+from qililab.platform.platform import Platform
 from sqlalchemy import ARRAY, Boolean, Column, DateTime, ForeignKey, Integer, Interval, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session
 
 from qililab.result.result_management import load_results
 
 base = declarative_base()
 
 
-class Calibration_run(base):  # type: ignore
+class CalibrationRun(base):  # type: ignore
     """Creates and manipulates Sample metadata database"""
 
     __tablename__ = "calibration_run"
@@ -43,27 +45,27 @@ class Calibration_run(base):  # type: ignore
         self.calibration_tree = calibration_tree
         self.calibration_completed = calibration_completed
 
-    def end_calibration(self, Session, traceback=None):
+    def end_calibration(self, session: Session, traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 
-        with Session() as session:
+        with session() as running_session:
             # Merge the detached instance into the current session
-            persistent_instance = session.merge(self)
+            persistent_instance = running_session.merge(self)
             try:
                 if traceback is None:
                     persistent_instance.calibration_completed = True
-                session.commit()
+                running_session.commit()
                 return persistent_instance
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def __repr__(self):
         return f"calibration_run: {self.calibration_id} {self.date}"
 
 
-class Autocal_Measurement(base):  # type: ignore
+class AutocalMeasurement(base):  # type: ignore
     """Creates and manipulates Measurement metadata database"""
 
     __tablename__ = "measurements"
@@ -76,7 +78,7 @@ class Autocal_Measurement(base):  # type: ignore
     experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
     cooldown: Column = Column("cooldown", String, index=True)
     sample_name: Column = Column("sample_name", String, nullable=False)
-    calibration_id: Column = Column("calibration_id", ForeignKey(Calibration_run.calibration_id), nullable=False)
+    calibration_id: Column = Column("calibration_id", ForeignKey(CalibrationRun.calibration_id), nullable=False)
     result_path: Column = Column("result_path", String, unique=True, nullable=False)
     fitting_path: Column = Column("fitting_path", String, unique=True, nullable=True)
     qbit_idx: Column = Column("qbit_idx", Integer)
@@ -128,15 +130,13 @@ class Autocal_Measurement(base):  # type: ignore
         self.parameters = parameters
         self.data_shape = data_shape
 
-        # self.result_array = result_array
-
-    def end_experiment(self, Session, traceback=None):
+    def end_experiment(self, session: Session, traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 
-        with Session() as session:
+        with session() as running_session:
             # Merge the detached instance into the current session
-            persistent_instance = session.merge(self)
+            persistent_instance = running_session.merge(self)
 
             persistent_instance.end_time = datetime.datetime.now()
             persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
@@ -147,32 +147,32 @@ class Autocal_Measurement(base):  # type: ignore
                 if traceback is None:
                     persistent_instance.experiment_completed = True
                     self.experiment_completed = True
-                session.commit()
+                running_session.commit()
                 return persistent_instance
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def load_h5(self):
         """Load old experiment data from h5 files."""
         return load_results(self.result_path)
 
-    def update_platform(self, Session, platform_before):
+    def update_platform(self, session: Session, platform_before: Platform):
         """Function to update measurement platform. The function sets inside the database information
         about the platform_before."""
 
-        with Session() as session:
+        with session() as running_session:
             # Merge the detached instance into the current session
-            persistent_instance = session.merge(self)
+            persistent_instance = running_session.merge(self)
 
             self.platform_before = platform_before.to_dict()
             persistent_instance.platform_before = platform_before.to_dict()
 
             try:
-                session.commit()
+                running_session.commit()
                 return persistent_instance
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def __repr__(self):

@@ -25,7 +25,7 @@ from qililab.utils.serialization import serialize
 if TYPE_CHECKING:
     from qililab.platform import Platform
     from qililab.qprogram.qprogram import Calibration, QProgram
-    from qililab.result.database import Autocal_Measurement, DatabaseManager, Measurement
+    from qililab.result.database import AutocalMeasurement, DatabaseManager, Measurement
 
 
 class StreamArray:
@@ -48,7 +48,7 @@ class StreamArray:
 
     path: str
     _dataset: h5py.Dataset
-    measurement: Measurement | Autocal_Measurement | None = None
+    measurement: Measurement | AutocalMeasurement | None = None
     _file: h5py.File | None = None
 
     def __init__(
