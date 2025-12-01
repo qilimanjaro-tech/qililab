@@ -2,6 +2,10 @@
 
 ### New features since last release
 
+- QbloxDraw: Replaced the fixed qualitative palette (10 colors) with the continuous "Turbo" colorscale. Previously, plotting more than 10 buses caused an index error due to the palette’s limited size. The new implementation samples the continuous colorscale at evenly spaced positions based on the number of buses.
+[#1039](https://github.com/qilimanjaro-tech/qililab/pull/1039)
+
+
 - **Active reset for transmon qubits in QBlox**
 
   Implemented a feedback-based reset for QBlox: measure the qubit, and if it is in the \|1⟩ state apply a corrective DRAG pulse; if it is already in \|0⟩ (ground state), do nothing. This replaces the relaxation time at the end of each experiment with a much faster, conditional reset.
