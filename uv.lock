@@ -3362,7 +3362,7 @@ docs = [
 [[package]]
 name = "qilisdk"
 version = "0.1.7"
-source = { git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main#0fc9b795e82291360c1a392235c9ebfd4a984887" }
+source = { git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main#3665bf861091ed2a5ed7fc2a7b9ec54d677ee30d" }
 dependencies = [
     { name = "dill" },
     { name = "loguru" },
