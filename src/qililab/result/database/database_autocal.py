@@ -13,14 +13,17 @@
 # limitations under the License.
 
 import datetime
+from typing import TYPE_CHECKING
 
-from qililab.platform.platform import Platform
 from sqlalchemy import ARRAY, Boolean, Column, DateTime, ForeignKey, Integer, Interval, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
 from qililab.result.result_management import load_results
+
+if TYPE_CHECKING:
+    from qililab.platform.platform import Platform
 
 base = declarative_base()
 
@@ -157,7 +160,7 @@ class AutocalMeasurement(base):  # type: ignore
         """Load old experiment data from h5 files."""
         return load_results(self.result_path)
 
-    def update_platform(self, session: Session, platform_before: Platform):
+    def update_platform(self, session: Session, platform_before: "Platform"):
         """Function to update measurement platform. The function sets inside the database information
         about the platform_before."""
 
