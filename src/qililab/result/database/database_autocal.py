@@ -57,7 +57,7 @@ class CalibrationRun(base):  # type: ignore
             persistent_instance = running_session.merge(self)
             try:
                 if traceback is None:
-                    persistent_instance.calibration_completed = True
+                    persistent_instance.calibration_completed = True  # type: ignore[assignment]
                 running_session.commit()
                 return persistent_instance
             except Exception as e:
@@ -141,15 +141,15 @@ class AutocalMeasurement(base):  # type: ignore
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
 
-            persistent_instance.end_time = datetime.datetime.now()
-            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
+            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
+            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
             self.end_time = persistent_instance.end_time
             self.run_length = persistent_instance.run_length
 
             try:
                 if traceback is None:
-                    persistent_instance.experiment_completed = True
-                    self.experiment_completed = True
+                    persistent_instance.experiment_completed = True  # type: ignore[assignment]
+                    self.experiment_completed = True  # type: ignore[assignment]
                 running_session.commit()
                 return persistent_instance
             except Exception as e:

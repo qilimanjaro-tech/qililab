@@ -129,11 +129,11 @@ class Measurement(base):  # type: ignore
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()
-            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
+            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
+            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
             try:
                 if traceback is None:
-                    persistent_instance.experiment_completed = True
+                    persistent_instance.experiment_completed = True  # type: ignore[assignment]
                 # TODO: add else: persistent_instance.error_report = traceback
                 running_session.commit()
                 return persistent_instance
