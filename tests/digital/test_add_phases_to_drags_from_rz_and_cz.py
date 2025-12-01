@@ -7,6 +7,7 @@ from qilisdk.digital.gates import CZ, RZ, M, Gate, X
 from qililab.digital.circuit_transpiler_passes.add_phases_to_drags_from_rz_and_cz import (
     AddPhasesToRmwFromRZAndCZPass,
 )
+from qililab.digital.circuit_transpiler_passes.numeric_helpers import _wrap_angle
 from qililab.digital.native_gates import Rmw
 from qililab.settings.digital import DigitalCompilationSettings
 
@@ -127,10 +128,10 @@ class TestAddPhasesToRmwFromRZAndCZ:
             Rmw(0, theta=1, phase=1),
             CZ(0, 1),
             M(0),
-            Rmw(0, theta=3, phase=+0.4),
+            Rmw(0, theta=3, phase=-0.4),
             CZ(0, 2),
             CZ(1, 0),
-            Rmw(1, theta=2, phase=-1.0),
+            Rmw(1, theta=2, phase=-3.0),
         ]
 
         circuit = Circuit(3)
@@ -145,7 +146,7 @@ class TestAddPhasesToRmwFromRZAndCZ:
             assert g_exp.qubits == g_tr.qubits
             if isinstance(g_exp, Rmw):
                 assert np.isclose(g_exp.parameters["theta"].value, g_tr.parameters["theta"].value)
-                assert np.isclose(g_exp.parameters["phase"].value, g_tr.parameters["phase"].value)
+                assert np.isclose(_wrap_angle(g_exp.parameters["phase"].value), _wrap_angle(g_tr.parameters["phase"].value))
 
     def test_frame_persists_across_multiple_Rmw(self, digital_settings: DigitalCompilationSettings):
         """
@@ -163,7 +164,7 @@ class TestAddPhasesToRmwFromRZAndCZ:
         assert len(out.gates) == 2
         assert all(isinstance(g, Rmw) for g in out.gates)
         phases = [g.parameters["phase"].value for g in out.gates]
-        assert np.allclose(phases, [0.5, 0.5])
+        assert np.allclose(phases, [-0.5, -0.5])
 
     def test_cz_corrections_applied_to_both_qubits(self, digital_settings: DigitalCompilationSettings):
         """
@@ -181,8 +182,8 @@ class TestAddPhasesToRmwFromRZAndCZ:
         # Check applied phases
         p0 = out.gates[1].parameters["phase"].value
         p1 = out.gates[2].parameters["phase"].value
-        assert np.isclose(p0, 0.1)  # q0
-        assert np.isclose(p1, 0.2)  # q1
+        assert np.isclose(p0, -0.1)  # q0
+        assert np.isclose(p1, -0.2)  # q1
 
     def test_cz_without_corrections_is_noop(self, digital_settings: DigitalCompilationSettings):
         """
@@ -199,7 +200,7 @@ class TestAddPhasesToRmwFromRZAndCZ:
         assert [g.name for g in out.gates] == ["CZ", "Rmw", "Rmw"]
         # Phases must be unchanged (no shift applied from that CZ)
         assert np.isclose(out.gates[1].parameters["phase"].value, 0.05)
-        assert np.isclose(out.gates[2].parameters["phase"].value, -0.07 + 0.1)
+        assert np.isclose(out.gates[2].parameters["phase"].value, -0.07 - 0.1)
 
     def test_trailing_rz_is_removed_and_m_is_untouched(self, digital_settings: DigitalCompilationSettings):
         """

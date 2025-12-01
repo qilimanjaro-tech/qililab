@@ -1245,7 +1245,7 @@ class TestMethods:
         platform_qblox_qdac.trigger_runs = 0
 
         mock_output.qprogram = MagicMock(spec=QProgram)
-        mock_output.qprogram.qblox = MagicMock(spec=mock_output.qprogram._QbloxInterface)
+        mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
         mock_output.qprogram.qblox.trigger_network_required = []
 
         with pytest.raises(TimeoutError):
@@ -1256,6 +1256,7 @@ class TestMethods:
         # Assert it retried 3 times (initial + 3 retries = 4 attempts)
         assert mock_bus.run.call_count == 4
 
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines_and_qdac(self, platform_qm_qdac: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))

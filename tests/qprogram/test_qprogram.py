@@ -487,7 +487,7 @@ class TestQProgram(TestStructuredProgram):
         """Test with_bus_mapping method"""
         qp = QProgram()
         square_wf = Square(1, 200)
-        drag = IQPair.DRAG(1, 40, 2, 2)
+        drag = IQDrag(1, 40, 2, 2)
         with qp.average(1000):
                 qp.qblox.measure_reset(
                     bus="readout_bus",

@@ -46,7 +46,7 @@ def test_rmw_from_calibrated_pi_drag_rotates_and_scales():
     theta = -np.pi / 2
     phase = np.pi / 4
 
-    result = CircuitToQProgramCompiler.rmw_from_calibrated_pi_drag(drag, theta=theta, phase=phase)
+    result = CircuitToQProgramCompiler._rmw_from_calibrated_pi_drag(drag, theta=theta, phase=phase)
 
     I0 = drag.get_I().envelope()
     Q0 = drag.get_Q().envelope()
@@ -119,8 +119,8 @@ def test_compile_generates_qprogram(compiler_settings):
 
     qprogram = compiler.compile(circuit, nshots=3)
 
-    assert len(qprogram.body.elements) == 1
-    loop = qprogram.body.elements[0]
+    assert len(qprogram.body.elements) == 10
+    loop = qprogram.body.elements[-1]
     operations = flatten_operations(loop)
 
     from qililab.qprogram.operations import Measure, Play, Sync, Wait
@@ -130,14 +130,14 @@ def test_compile_generates_qprogram(compiler_settings):
     measure_ops = [op for op in operations if isinstance(op, Measure)]
     wait_ops = [op for op in operations if isinstance(op, Wait)]
 
-    assert len(sync_ops) == 3
+    assert len(sync_ops) == 4
     assert any("drive_q0_bus" in sync.buses for sync in sync_ops)
     assert any(set(sync.buses) >= {"drive_q0_bus", "flux_q0_bus", "readout_q0_bus"} for sync in sync_ops)
     assert any("flux_q1_bus" in sync.buses for sync in sync_ops)
 
     assert len(play_ops) == 3
     assert all(play.bus in {"drive_q0_bus", "flux_q0_bus", "flux_q1_bus"} for play in play_ops)
-    assert any(isinstance(play.waveform, IQPair) for play in play_ops)
+    assert any(isinstance(play.waveform, IQDrag) for play in play_ops)
 
     assert len(measure_ops) == 2
     assert isinstance(measure_ops[0].waveform, IQPair)
