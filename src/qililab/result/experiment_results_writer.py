@@ -254,7 +254,7 @@ class ExperimentResultsWriter(ExperimentResults):
         if self._file is not None:
             self._file.close()
         if self._db_metadata:
-            self.measurement = self.measurement.end_experiment(self._db_manager.Session, traceback)
+            self.measurement = self.measurement.end_experiment(self._db_manager.session, traceback)
 
     def __setitem__(self, key: tuple, value: Any):
         """Sets an item in the results dataset.
