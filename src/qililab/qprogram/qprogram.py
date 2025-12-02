@@ -335,7 +335,7 @@ class QProgram(StructuredProgram):
                     waveform = calibration.get_waveform(bus=element.bus, name=element.waveform)
                     weights = calibration.get_weights(bus=element.bus, name=element.weights)
                     reset_pulse = calibration.get_waveform(bus=element.control_bus, name=element.reset_pulse)
-                    measure_operation = MeasureReset(
+                    measure_reset_operation = MeasureReset(
                         bus=element.bus,
                         waveform=waveform,
                         weights=weights,
@@ -344,7 +344,7 @@ class QProgram(StructuredProgram):
                         trigger_address=element.trigger_address,
                         save_adc=element.save_adc,
                     )
-                    block.elements[index] = measure_operation
+                    block.elements[index] = measure_reset_operation
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body)
@@ -696,10 +696,10 @@ class QProgram(StructuredProgram):
         def measure_reset(
             self,
             bus: str,
-            waveform: IQPair,
-            weights: IQPair,
+            waveform: IQPair | str,
+            weights: IQPair | str,
             control_bus: str,
-            reset_pulse: IQPair,
+            reset_pulse: IQPair | str,
             trigger_address: int = 1,
             save_adc: bool = False,
         ):
@@ -718,7 +718,7 @@ class QProgram(StructuredProgram):
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
             """
             operation: (
-                Measure
+                MeasureReset
                 | MeasureResetCalibrated
             )
             if isinstance(waveform, IQPair) and isinstance(weights, IQPair) and isinstance(reset_pulse, IQPair):
