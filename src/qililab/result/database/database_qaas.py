@@ -16,6 +16,7 @@ import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Integer, Interval, String
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker
 
 from qililab.result.experiment_results import ExperimentResults
 
@@ -57,22 +58,22 @@ class QaaS_Experiment(base):  # type: ignore
         self.start_time = start_time
         self.cooldown = cooldown
 
-    def end_experiment(self, Session, traceback=None):
+    def end_experiment(self, session: sessionmaker[Session], traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
         about the end of the experiment: the finishing time, completeness status and experiment length."""
 
-        with Session() as session:
+        with session() as running_session:
             # Merge the detached instance into the current session
-            persistent_instance = session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()
-            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
+            persistent_instance = running_session.merge(self)
+            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
+            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
             try:
                 if traceback is None:
-                    persistent_instance.experiment_completed = True
-                session.commit()
+                    persistent_instance.experiment_completed = True  # type: ignore[assignment]
+                running_session.commit()
                 return persistent_instance
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def load_experiment(self):
