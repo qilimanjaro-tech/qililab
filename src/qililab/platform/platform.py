@@ -1088,13 +1088,7 @@ class Platform:
 
     def execute_experiment(
         self,
-        experiment: Experiment,
-        live_plot: bool = False,
-        slurm_execution: bool = True,
-        port_number: int | None = None,
-        job_id: int | None = None,
-        sample: str | None = None,
-        cooldown: str | None = None,
+        experiment: Experiment
     ) -> str:
         """Executes a quantum experiment on the platform.
 
@@ -1155,13 +1149,7 @@ class Platform:
 
         executor = ExperimentExecutor(
             platform=self,
-            experiment=experiment,
-            live_plot=live_plot,
-            slurm_execution=slurm_execution,
-            port_number=port_number,
-            job_id=job_id,
-            sample=sample,
-            cooldown=cooldown,
+            experiment=experiment
         )
         return executor.execute()
 

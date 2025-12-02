@@ -22,6 +22,7 @@ from qililab.qililab_settings import get_settings
 from qililab.result.database import DatabaseManager
 from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
+from qililab.utils.serialization import serialize
 
 
 class VariableMetadata(TypedDict):
@@ -95,10 +96,10 @@ class ExperimentDataBaseMetadata(TypedDict, total=False):
         qprograms (dict[str, QProgramMetadata]): Quantum programs included in the experiment.
     """
 
-    job_id: int
     experiment_name: str
     cooldown: str | None
     sample_name: str | None
+    optional_identifier: str | None
 
 
 class ExperimentResultsWriter(ExperimentResults):
@@ -230,12 +231,15 @@ class ExperimentResultsWriter(ExperimentResults):
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
         if self._db_metadata:
-            self.measurement = self._db_manager.add_experiment(
-                job_id=self._db_metadata["job_id"],
+            self.measurement = self._db_manager.add_measurement(
                 experiment_name=self._db_metadata["experiment_name"],
-                result_path=self.results_path,
+                experiment_completed=False,
                 cooldown=self._db_metadata["cooldown"],
                 sample_name=self._db_metadata["sample_name"],
+                optional_identifier=self._db_metadata["optional_identifier"],
+                platform=self._metadata["platform"],
+                experiment=self._metadata["experiment"],
+                qprogram=serialize(self._metadata["qprograms"]),
             )
             self.results_path = self.measurement.result_path
             self._file = h5py.File(str(self.results_path), mode="w", libver="latest")
@@ -249,12 +253,12 @@ class ExperimentResultsWriter(ExperimentResults):
 
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, *args):
         """Exit the context manager and close the HDF5 file and end experiment if there is a database."""
         if self._file is not None:
             self._file.close()
         if self._db_metadata:
-            self.measurement = self.measurement.end_experiment(self._db_manager.Session, traceback)
+            self.measurement = self.measurement.end_experiment(self._db_manager.Session)
 
     def __setitem__(self, key: tuple, value: Any):
         """Sets an item in the results dataset.
