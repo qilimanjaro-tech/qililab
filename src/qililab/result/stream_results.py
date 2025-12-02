@@ -154,7 +154,7 @@ class StreamArray:
             self._file.__exit__()
             self._file = None
 
-        self.measurement = self.measurement.end_experiment(self.db_manager.Session, traceback)
+        self.measurement = self.measurement.end_experiment(self.db_manager.session, traceback)
 
     def __getitem__(self, index: int):
         """Gets item by index.
