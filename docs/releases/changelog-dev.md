@@ -24,6 +24,10 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
 ```
   [#950](https://github.com/qilimanjaro-tech/qililab/pull/950)
 
+- QbloxDraw: Replaced the fixed qualitative palette (10 colors) with the continuous "Turbo" colorscale. Previously, plotting more than 10 buses caused an index error due to the palette’s limited size. The new implementation samples the continuous colorscale at evenly spaced positions based on the number of buses.
+[#1039](https://github.com/qilimanjaro-tech/qililab/pull/1039)
+
+
 - **Active reset for transmon qubits in QBlox**
 
   Implemented a feedback-based reset for QBlox: measure the qubit, and if it is in the \|1⟩ state apply a corrective DRAG pulse; if it is already in \|0⟩ (ground state), do nothing. This replaces the relaxation time at the end of each experiment with a much faster, conditional reset.
@@ -157,6 +161,7 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
       ```
       wait 50
       ```
+
      It will now be generated as:
 
      ```
@@ -409,6 +414,9 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 
 - Added `ql.load_by_id(id)` in qililab, This function allows to retrieve the data path of a measurement with the given id without creating a `DatabaseManager` instance. This function is intended to be used inside notebooks using slurm as `DatabaseManager` cannot be submitted.
   [#986](https://github.com/qilimanjaro-tech/qililab/pull/986)
+
+- Added Database manager for autocalibration and QiliSDK-Speqtrum. Added Database column structure and added new functions on `DatabaseManager` such as `add_calibration_run`, `add_autocal_measurement`, `add_experiment`, `load_calibration_by_id`, `load_experiment_by_id` to control such databases. Moved all functions related to databases inside `result/database/`. Modified `StreamArray` and `ExperimentResultsWriter` to accomodate for these databases.
+  [#1019](https://github.com/qilimanjaro-tech/qililab/pull/1019)
 
 ### Breaking changes
 
