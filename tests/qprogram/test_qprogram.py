@@ -489,7 +489,7 @@ class TestQProgram(TestStructuredProgram):
         with qp.average(1000):
                 qp.qblox.measure_reset(
                     bus="readout_bus",
-                    waveform=square_wf,
+                    waveform=IQPair(square_wf,square_wf),
                     weights=IQPair(I=square_wf, Q=square_wf),
                     control_bus="drive_bus",
                     reset_pulse=drag,
