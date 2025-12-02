@@ -24,11 +24,9 @@ from .qcm_qrm import QcmQrm
 from .qdevil_qdac2 import QDevilQDac2
 from .qmm_driver import QMMDriver
 from .rohde_schwarz import RohdeSchwarzSGS100A
-from .rswu_sp16tr import BeckerRSWUSP16TR
 from .yokogawa_gs200 import YokogawaGS200
 
 __all__ = [
-    "BeckerRSWUSP16TR",
     "Cluster",
     "Device",
     "Keithley2600Driver",

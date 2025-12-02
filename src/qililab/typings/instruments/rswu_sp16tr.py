@@ -13,9 +13,9 @@
 # limitations under the License.
 
 """Class Becker RSWU-SP16TR"""
-from qililab.instruments.becker.driver_rswu_sp16tr import Driver_RSWU_SP16TR
+from qililab.instruments.becker.driver_rswu_sp16tr import DriverRSWUSP16TR
 from qililab.typings.instruments.device import Device
 
 
-class BeckerRSWUSP16TR(Driver_RSWU_SP16TR, Device):
+class BeckerRSWUSP16TR(DriverRSWUSP16TR, Device):
     """Typing class of the QCoDeS driver for the Becker RSWU-SP16TR."""

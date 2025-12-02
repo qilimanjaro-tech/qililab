@@ -30,7 +30,7 @@ class RSWUSP16TR(Instrument):
     """Becker Nachrichtentechnik RSWU-SP16TR RF switch."""
 
     # Update this enum key to whatever you use in your codebase (e.g. InstrumentName.RSWU_SP16TR)
-    name = InstrumentName.Becker_RSWU_SP16TR
+    name = InstrumentName.RSWU_SP16TR
     timeout: int = DEFAULT_TIMEOUT
 
     @dataclass

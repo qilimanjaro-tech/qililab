@@ -15,11 +15,10 @@
 from typing import TYPE_CHECKING, Any, Tuple
 
 from qcodes import VisaInstrument
+from qcodes.validators import Enum
 
 if TYPE_CHECKING:
     from qcodes.parameters import Parameter
-
-from qcodes.validators import Enum
 
 _CHANNELS: Tuple[str, ...] = tuple(f"RF{i}" for i in range(1, 17))
 
