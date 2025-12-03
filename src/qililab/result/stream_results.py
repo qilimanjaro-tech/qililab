@@ -192,13 +192,16 @@ class StreamArray:
         return item in self.results
 
     def _get_debug(self):
-        if any(
-            isinstance(instrument, QbloxModule)
-            for bus in self.platform.buses.elements
-            for instrument in bus.instruments
+        if (
+            any(
+                isinstance(instrument, QbloxModule)
+                for bus in self.platform.buses.elements
+                for instrument in bus.instruments
+            )
+            and self.calibration is None
         ):
             qblox_compiler = QbloxCompiler()
-            compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)
+            compiled = qblox_compiler.compile(qprogram=self.qprogram)
             sequences = compiled.sequences
 
             lines = []
@@ -208,7 +211,7 @@ class StreamArray:
                 lines.append("")
 
             return "\n".join(lines)
-        debug_exception = "Non Qblox machine."
+        debug_exception = "Non Qblox machine. Or non compilable without bus mapping."
         return debug_exception
 
 
