@@ -591,6 +591,12 @@ def fixture_calibration_reset() -> Calibration:
     calibration_reset.add_waveform(bus="drive_q0_bus", name="drag_reset", waveform=drag_reset)
     return calibration_reset
 
+@pytest.fixture(name="measure_reset_calibrated_bus_mapping")
+def fixture_measure_reset_calibrated_bus_mapping() -> QProgram:
+    qp = QProgram()
+    qp.qblox.measure_reset(bus="readout_bus", waveform="readout", weights="weights", control_bus="drive_bus", reset_pulse="drag_reset")
+    return qp
+
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -2173,17 +2179,13 @@ set_freq         R5
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    def test_measure_reset_calibration_and_mapping(self, calibration_reset: Calibration):
+    def test_measure_reset_calibration_and_mapping(self, measure_reset_calibrated_bus_mapping: QProgram, calibration_reset: Calibration):
         compiler = QbloxCompiler()
 
-        readout_pair = calibration_reset.get_waveform(bus="readout_q0_bus", name="readout")
-        weights_pair = calibration_reset.get_weights(bus="readout_q0_bus", name="weights")
-        drag_wf = calibration_reset.get_waveform(bus="drive_q0_bus", name="drag_reset")
         bus_mapping = {"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"}
 
-        qp = QProgram()
-        qp.qblox.measure_reset(bus="readout_bus", waveform=readout_pair, weights=weights_pair, control_bus="drive_bus", reset_pulse=drag_wf)
-        sequences, _ = compiler.compile(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration_reset)
+
+        sequences, _ = compiler.compile(qprogram=measure_reset_calibrated_bus_mapping, bus_mapping=bus_mapping, calibration=calibration_reset)
 
         assert len(sequences) == 2
         assert "drive_q0_bus" in sequences

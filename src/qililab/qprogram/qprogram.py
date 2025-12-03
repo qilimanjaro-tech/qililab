@@ -208,7 +208,7 @@ class QProgram(StructuredProgram):
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
-                elif isinstance(element, MeasureReset):
+                elif isinstance(element, (MeasureReset, MeasureResetCalibrated)):
                     bus = getattr(element, "bus")
                     control_bus = getattr(element, "control_bus")
                     if isinstance(bus, str) and bus in bus_mapping:
