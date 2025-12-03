@@ -485,3 +485,6 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 
 - Qblox module `desynch_sequencers` now iterates over instrument_controllers in the Runcard, instead than the plain instruments, solving a bug, where a discrepancy in the runcard between both used to error, trying to desynch an instrument that wasn't connected (connect loops instrument_controllers, not instruments too).
   [#964](https://github.com/qilimanjaro-tech/qililab/pull/964)
+
+- Fixed a bug where using stream array with `Calibration` raised an error. This was dues to the `StreamArray._get_debug()` function, trying to compile a qprogram with calibration waveforms or block without bus mapping. To fix this now any `StreamArray` instance does not generate the `Q1ASM` (debug column) when the user is using `Calibration`.
+  [#1043](https://github.com/qilimanjaro-tech/qililab/pull/1043)
