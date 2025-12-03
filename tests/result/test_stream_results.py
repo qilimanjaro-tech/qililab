@@ -214,6 +214,20 @@ class TestStreamArray:
                 assert stream_array_bus_not_in_platform.loops == {"test_amp_loop": np.arange(0, 1, 2)}
                 assert stream_array_bus_not_in_platform._get_debug() == debug_q1asm
 
+    def test_stream_array_get_debug_with_calibration(self, stream_array: StreamArray):
+        """Tests _get_debug when a calibration file is given, it should return a warning line as no bus map can be given."""
+        # Create mock for the file context
+        debug_q1asm = "Non Qblox machine. Or non compilable without bus mapping."
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
+            stream_array.calibration = True
+
+            with stream_array:
+                assert stream_array._get_debug() == debug_q1asm
+
     def test_stream_array_autocalibration(self, stream_array: StreamArray):
         """Tests the instantiation of a StreamArray object."""
         stream_array.autocalibration = True
