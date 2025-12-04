@@ -1,6 +1,28 @@
 # Release dev (development release)
 
 ### New features since last release
+- Hardware Loop over the time domain has been implemented for Qblox backend in `QProgram`.
+This allows sweeping wait times entirely in hardware, eliminating the need of software loops (which require uploading multiple Q1ASM).
+The implementation leverages the different Q1ASM jump instructions to ensure correct execution of the `QProgram` sync operation.
+
+- Variable expressions for time domain
+Variable expressions are now supported in `QProgram` for the time domain.
+The supported formats are given in ns: 
+    - `constant + time variable`
+    - `time variable + constant`
+    - `constant - time variable`
+    - `time variable - constant`
+
+Code example:
+```
+qp = QProgram()
+duration = qp.variable(label="time", domain=Domain.Time)
+with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+  qp.wait(bus="drive", duration)
+  qp.sync()
+  qp.wait(bus="drive", duration - 50)
+```
+  [#950](https://github.com/qilimanjaro-tech/qililab/pull/950)
 
 - QbloxDraw: Replaced the fixed qualitative palette (10 colors) with the continuous "Turbo" colorscale. Previously, plotting more than 10 buses caused an index error due to the palette’s limited size. The new implementation samples the continuous colorscale at evenly spaced positions based on the number of buses.
 [#1039](https://github.com/qilimanjaro-tech/qililab/pull/1039)
