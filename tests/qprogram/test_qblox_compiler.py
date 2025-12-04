@@ -632,6 +632,23 @@ def fixture_bus_mappping_acquire() -> QProgram:
                 weights=square_wf,)
     return qp
 
+@pytest.fixture(name="calibration_reset")
+def fixture_calibration_reset() -> Calibration:
+    drag_reset = IQPair.DRAG(amplitude=0.5, duration=100, num_sigmas=4.5, drag_coefficient=-4.5)
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    calibration_reset = Calibration()
+    calibration_reset.add_waveform(bus="readout_q0_bus", name="readout", waveform=readout_pair)
+    calibration_reset.add_weights(bus="readout_q0_bus", name="weights", weights=weights_pair)
+    calibration_reset.add_waveform(bus="drive_q0_bus", name="drag_reset", waveform=drag_reset)
+    return calibration_reset
+
+@pytest.fixture(name="measure_reset_calibrated_bus_mapping")
+def fixture_measure_reset_calibrated_bus_mapping() -> QProgram:
+    qp = QProgram()
+    qp.qblox.measure_reset(bus="readout_bus", waveform="readout", weights="weights", control_bus="drive_bus", reset_pulse="drag_reset")
+    return qp
+
 
 
 @pytest.fixture(name="cryoscope_qprogram")
@@ -2231,7 +2248,7 @@ set_freq         R5
 
     
     def test_bus_mapping_and_acquire(self, bus_mappping_acquire):
-        """Test bus mapping and ascquisition together"""
+        """Test bus mapping and acquisition together"""
         compiler = QbloxCompiler()
         sequences = compiler.compile(bus_mappping_acquire)
         acquisition_dict = sequences.sequences["readout"]._acquisitions.to_dict()
@@ -3878,3 +3895,51 @@ other_max_duration_0:
                 jmp              @after_other_max_duration_0"""
         
         assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
+
+    def test_measure_reset_calibration_and_mapping(self, measure_reset_calibrated_bus_mapping: QProgram, calibration_reset: Calibration):
+        compiler = QbloxCompiler()
+
+        bus_mapping = {"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"}
+
+
+        sequences, _ = compiler.compile(qprogram=measure_reset_calibrated_bus_mapping, bus_mapping=bus_mapping, calibration=calibration_reset)
+
+        assert len(sequences) == 2
+        assert "drive_q0_bus" in sequences
+        assert "readout_q0_bus" in sequences
+
+        drive_str = """
+            setup:
+                            set_latch_en     1, 4           
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            latch_rst        4              
+                            wait             2400          
+                            set_cond         1, 1, 0, 100   
+                            play             0, 1, 100      
+                            set_cond         0, 0, 0, 4     
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                            
+        """
+
+        readout_str = """
+            setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+            main:
+                play             0, 1, 4        
+                acquire_weighed  0, 0, 0, 1, 2000
+                set_mrk          0              
+                upd_param        4              
+                stop                            
+        """
+        print(sequences["readout_q0_bus"]._program)
+        assert is_q1asm_equal(sequences["drive_q0_bus"], drive_str)
+        assert is_q1asm_equal(sequences["readout_q0_bus"], readout_str)
+
