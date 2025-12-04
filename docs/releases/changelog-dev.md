@@ -418,7 +418,6 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 
 - Added `ql.load_by_id(id)` in qililab, This function allows to retrieve the data path of a measurement with the given id without creating a `DatabaseManager` instance. This function is intended to be used inside notebooks using slurm as `DatabaseManager` cannot be submitted.
   [#986](https://github.com/qilimanjaro-tech/qililab/pull/986)
- 
 - Added Database manager for autocalibration and QiliSDK-Speqtrum. Added Database column structure and added new functions on `DatabaseManager` such as `add_calibration_run`, `add_autocal_measurement`, `add_experiment`, `load_calibration_by_id`, `load_experiment_by_id` to control such databases. Moved all functions related to databases inside `result/database/`. Modified `StreamArray` and `ExperimentResultsWriter` to accomodate for these databases.
   [#1019](https://github.com/qilimanjaro-tech/qililab/pull/1019)
 
