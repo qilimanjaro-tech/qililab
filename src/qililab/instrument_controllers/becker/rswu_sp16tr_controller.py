@@ -20,8 +20,9 @@ from typing import Sequence
 from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
+from qililab.instruments.becker import RSWUSP16TR
 from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentName
-from qililab.typings.instruments.rswu_sp16tr import RSWUSP16TR
+from qililab.typings.instruments.rswu_sp16tr import BeckerRSWUSP16TR
 
 
 @InstrumentControllerFactory.register
@@ -35,7 +36,7 @@ class RSWUSP16TRController(SingleInstrumentController):
     """
 
     name = InstrumentControllerName.RSWU_SP16TR
-    device: RSWUSP16TR
+    device: BeckerRSWUSP16TR
 
     modules: Sequence[RSWUSP16TR]
 
@@ -58,7 +59,7 @@ class RSWUSP16TRController(SingleInstrumentController):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
 
-        self.device = RSWUSP16TR(
+        self.device = BeckerRSWUSP16TR(
             name=f"{self.name.value}_{self.alias}", address=f"TCPIP::{self.address}::INSTR", visalib="@py"
         )
 
