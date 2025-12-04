@@ -699,6 +699,38 @@ def fixture_cryoscope_qprogram() -> QProgram:
                 qp.sync()
     return qp
 
+@pytest.fixture(name="dynamic_wait_three_buses_dynamic_static")
+def fixture_dynamic_wait_three_buses_dynamic_static() -> QProgram:
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    duration = qp.variable(label="time", domain=Domain.Time)
+    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+        qp.wait(bus="drive", duration=duration)
+        qp.sync()
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.sync(["drive","readout"])
+        qp.wait(bus="drive", duration=duration)
+        qp.sync()
+        qp.play(bus="flux", waveform=drag_pair)
+        qp.sync()
+    return qp
+
+@pytest.fixture(name="dynamic_wait_three_buses_static_static")
+def fixture_dynamic_wait_three_buses_static_static() -> QProgram:
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    duration = qp.variable(label="time", domain=Domain.Time)
+    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+        qp.wait(bus="drive", duration=duration)
+        qp.sync()
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.sync(["drive","readout"])
+        qp.wait(bus="drive", duration=10)
+        qp.sync()
+        qp.play(bus="flux", waveform=drag_pair)
+        qp.sync()
+    return qp
+
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
@@ -3644,4 +3676,205 @@ set_freq         R5
 
         assert is_q1asm_equal(sequences.sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
+        assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
+
+
+    def test_dynamic_wait_three_buses_dynamic_static(self, dynamic_wait_three_buses_dynamic_static):
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(dynamic_wait_three_buses_dynamic_static)
+        flux_str = """setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+main:
+                move             11, R0         
+                move             100, R1        
+loop_0:
+                move             0, R2          
+                add              R1, 0, R3      
+                nop                             
+                sub              R2, R3, R4     
+                nop                             
+                jlt              R4, 2147483648, @other_max_duration_0
+                move             R3, R4         
+after_other_max_duration_0:
+
+
+                move             0, R5          
+                nop                             
+                sub              R4, R5, R6     
+                nop                             
+                jlt              R6, 2147483648, @dynamic_sync_0
+                jge              R6, 4294967293, @negative_one_two_three_0
+after_dynamic_sync_0:
+
+
+                wait             40             
+                move             0, R2          
+                add              R1, 0, R3      
+                nop                             
+                sub              R2, R3, R4     
+                nop                             
+                jlt              R4, 2147483648, @other_max_duration_1
+                move             R3, R4         
+after_other_max_duration_1:
+
+
+                move             0, R7          
+                nop                             
+                sub              R4, R7, R6     
+                nop                             
+                jlt              R6, 2147483648, @dynamic_sync_1
+                jge              R6, 4294967293, @negative_one_two_three_1
+after_dynamic_sync_1:
+
+
+                play             0, 1, 40       
+                add              R1, 10, R1     
+                loop             R0, @loop_0    
+                set_mrk          0              
+                upd_param        4              
+                stop                            
+dynamic_sync_0:
+
+
+                jlt              R6, 1, @after_dynamic_sync_0
+                jlt              R6, 4, @one_two_three_0
+                jge              R6, 65532, @long_wait_sync_0
+                wait             R6             
+                jmp              @after_dynamic_sync_0
+one_two_three_0:
+
+
+                add              R6, 4, R6      
+                nop                             
+                wait             R6             
+                jmp              @after_dynamic_sync_0
+negative_one_two_three_0:
+
+
+                wait             4              
+                jmp              @after_dynamic_sync_0
+long_wait_sync_0:
+
+
+                wait             65532          
+                sub              R6, 65532, R6  
+                nop                             
+                jge              R6, 65532, @long_wait_sync_0
+                jmp              @dynamic_sync_0
+other_max_duration_0:
+
+
+                move             R2, R4         
+                jmp              @after_other_max_duration_0
+dynamic_sync_1:
+
+
+                jlt              R6, 1, @after_dynamic_sync_1
+                jlt              R6, 4, @one_two_three_1
+                jge              R6, 65532, @long_wait_sync_1
+                wait             R6             
+                jmp              @after_dynamic_sync_1
+one_two_three_1:
+
+
+                add              R6, 4, R6      
+                nop                             
+                wait             R6             
+                jmp              @after_dynamic_sync_1
+negative_one_two_three_1:
+
+
+                wait             4              
+                jmp              @after_dynamic_sync_1
+long_wait_sync_1:
+
+
+                wait             65532          
+                sub              R6, 65532, R6  
+                nop                             
+                jge              R6, 65532, @long_wait_sync_1
+                jmp              @dynamic_sync_1
+other_max_duration_1:
+
+
+                move             R2, R4         
+                jmp              @after_other_max_duration_1"""
+        
+        assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
+
+    def test_dynamic_wait_three_buses_static_static(self, dynamic_wait_three_buses_static_static):
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(dynamic_wait_three_buses_static_static)
+        flux_str = """setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+main:
+                move             11, R0         
+                move             100, R1        
+loop_0:
+                move             0, R2          
+                add              R1, 0, R3      
+                nop                             
+                sub              R2, R3, R4     
+                nop                             
+                jlt              R4, 2147483648, @other_max_duration_0
+                move             R3, R4         
+after_other_max_duration_0:
+
+
+                move             0, R5          
+                nop                             
+                sub              R4, R5, R6     
+                nop                             
+                jlt              R6, 2147483648, @dynamic_sync_0
+                jge              R6, 4294967293, @negative_one_two_three_0
+after_dynamic_sync_0:
+
+
+                wait             50             
+                play             0, 1, 40       
+                add              R1, 10, R1     
+                loop             R0, @loop_0    
+                set_mrk          0              
+                upd_param        4              
+                stop                            
+dynamic_sync_0:
+
+
+                jlt              R6, 1, @after_dynamic_sync_0
+                jlt              R6, 4, @one_two_three_0
+                jge              R6, 65532, @long_wait_sync_0
+                wait             R6             
+                jmp              @after_dynamic_sync_0
+one_two_three_0:
+
+
+                add              R6, 4, R6      
+                nop                             
+                wait             R6             
+                jmp              @after_dynamic_sync_0
+negative_one_two_three_0:
+
+
+                wait             4              
+                jmp              @after_dynamic_sync_0
+long_wait_sync_0:
+
+
+                wait             65532          
+                sub              R6, 65532, R6  
+                nop                             
+                jge              R6, 65532, @long_wait_sync_0
+                jmp              @dynamic_sync_0
+other_max_duration_0:
+
+
+                move             R2, R4         
+                jmp              @after_other_max_duration_0"""
+        
         assert is_q1asm_equal(sequences.sequences["flux"], flux_str)

@@ -1144,6 +1144,11 @@ class QbloxCompiler:
         #  TODO using two times a variable wait is ok but a sync between them is required for now
         # Add delay if needed
         for bus in buses:
+            if self._buses[bus].duration_since_sync < 0:  # If a penalty has been added in static sync, handle it as a standalone wait
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                QPyInstructions.Wait(abs(self._buses[bus].duration_since_sync))
+            )
+                self._buses[bus].duration_since_sync = 0
             max_delay = max(self._buses[bus].delay for bus in buses) if include_delay else 0
             delay_diff = (max_delay - self._buses[bus].delay) if include_delay else 0
             if delay_diff > 0:
