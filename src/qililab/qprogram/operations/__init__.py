@@ -21,7 +21,7 @@ from .measure import (
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
 )
-from .measure_reset import MeasureReset
+from .measure_reset import MeasureReset, MeasureResetCalibrated
 from .operation import Operation
 from .play import Play, PlayWithCalibratedWaveform
 from .reset_phase import ResetPhase
@@ -44,6 +44,7 @@ __all__ = [
     "GetParameter",
     "Measure",
     "MeasureReset",
+    "MeasureResetCalibrated",
     "MeasureWithCalibratedWaveform",
     "MeasureWithCalibratedWaveformWeights",
     "MeasureWithCalibratedWeights",

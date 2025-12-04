@@ -18,6 +18,8 @@ import numpy as np
 import plotly.colors as pc
 import plotly.graph_objects as go
 
+from qililab.qprogram.variable import Domain
+
 
 class QbloxDraw:
     def _call_handlers(self, program_line, param, register, data_draw, waveform_seq):
@@ -475,6 +477,11 @@ class QbloxDraw:
             This function also **plots** the waveforms using the generated data.
 
         """
+
+        if any(variable.domain == Domain.Time for variable in sequencer.qprogram._variables):
+            raise NotImplementedError(
+                "QbloxDraw does not support hardware time-domain loops at the moment."
+            )
 
         self.acquisition_showing = acquisition_showing
         Q1ASM_ordered = self._parse_program(
