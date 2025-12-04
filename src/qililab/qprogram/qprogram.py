@@ -683,7 +683,16 @@ class QProgram(StructuredProgram):
             """
 
         @overload
-        def measure_reset(self, bus: str, waveform: str, weights: str, control_bus: str, reset_pulse: str, trigger_address: int = 1, save_adc: bool = False):
+        def measure_reset(
+            self,
+            bus: str,
+            waveform: str,
+            weights: str,
+            control_bus: str,
+            reset_pulse: str,
+            trigger_address: int = 1,
+            save_adc: bool = False,
+        ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
@@ -723,11 +732,12 @@ class QProgram(StructuredProgram):
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
             """
-            operation: (
-                MeasureReset
-                | MeasureResetCalibrated
-            )
-            if isinstance(waveform, IQWaveform) and isinstance(weights, IQWaveform) and isinstance(reset_pulse, IQWaveform):
+            operation: MeasureReset | MeasureResetCalibrated
+            if (
+                isinstance(waveform, IQWaveform)
+                and isinstance(weights, IQWaveform)
+                and isinstance(reset_pulse, IQWaveform)
+            ):
                 operation = MeasureReset(
                     bus=bus,
                     waveform=waveform,
@@ -750,7 +760,9 @@ class QProgram(StructuredProgram):
 
             #  Raise an error if a calibrated component has been used in conjunction with a non calibrated one
             elif any(isinstance(component, str) for component in (waveform, weights, reset_pulse)):
-                raise NotImplementedError("For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all.")
+                raise NotImplementedError(
+                    "For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all."
+                )
 
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)

@@ -200,7 +200,6 @@ class DatabaseManager:
             if measurement_by_id is not None:
                 path = measurement_by_id.result_path
                 if not os.path.isfile(path):
-
                     new_path = path.replace(self.base_path_local, self.base_path_share)
                     measurement_by_id.result_path = new_path
 
@@ -213,12 +212,13 @@ class DatabaseManager:
             id (int): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            experiment_by_id = running_session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
+            experiment_by_id = (
+                running_session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
+            )
 
             if experiment_by_id is not None:
                 path = experiment_by_id.result_path
                 if not os.path.isfile(path):
-
                     new_path = path.replace(self.base_path_local, self.base_path_share)
                     experiment_by_id.result_path = new_path
 
@@ -350,7 +350,11 @@ class DatabaseManager:
             measurement_id (int): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            return running_session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
+            return (
+                running_session.query(Measurement.qprogram)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
 
     def get_calibration(self, measurement_id: int) -> str:
         """Get Calibration of a measurement by its measurement_id.
@@ -360,7 +364,11 @@ class DatabaseManager:
             measurement_id (int): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            return running_session.query(Measurement.calibration).filter(Measurement.measurement_id == measurement_id).scalar()
+            return (
+                running_session.query(Measurement.calibration)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
 
     def get_platform(self, measurement_id: int) -> dict:
         """Get Platform of a measurement by its measurement_id.
@@ -370,7 +378,11 @@ class DatabaseManager:
             measurement_id (int): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            return running_session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
+            return (
+                running_session.query(Measurement.platform)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
 
     def get_debug(self, measurement_id: int) -> str:
         """Get Debug of a measurement by its measurement_id.
@@ -380,7 +392,11 @@ class DatabaseManager:
             measurement_id (int): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            return running_session.query(Measurement.debug_file).filter(Measurement.measurement_id == measurement_id).scalar()
+            return (
+                running_session.query(Measurement.debug_file)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
 
     def add_autocal_measurement(
         self,
@@ -407,7 +423,12 @@ class DatabaseManager:
         start_time = datetime.datetime.now()
 
         with self.session() as running_session:
-            calibration_id = running_session.query(CalibrationRun).order_by(CalibrationRun.calibration_id.desc()).first().calibration_id  # type: ignore
+            calibration_id = (
+                running_session.query(CalibrationRun)
+                .order_by(CalibrationRun.calibration_id.desc())
+                .first()
+                .calibration_id
+            )  # type: ignore
 
         sample_name = calibration.parameters["sample_name"]
         cooldown = calibration.parameters["cooldown"]
