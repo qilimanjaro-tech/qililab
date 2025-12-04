@@ -252,7 +252,7 @@ class QDevilQDac2(VoltageSource):
         self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
 
         channel = self.device.channel(channel_id)
-        channel.write_channel(f'sour{"{0}"}:dc:mark:pend {self._triggers[str(trigger)].value}')
+        channel.write_channel(f"sour{'{0}'}:dc:mark:pend {self._triggers[str(trigger)].value}")
 
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
@@ -279,7 +279,7 @@ class QDevilQDac2(VoltageSource):
         self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
 
         channel = self.device.channel(channel_id)
-        channel.write_channel(f'sour{"{0}"}:dc:mark:pstart {self._triggers[str(trigger)].value}')
+        channel.write_channel(f"sour{'{0}'}:dc:mark:pstart {self._triggers[str(trigger)].value}")
 
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
@@ -302,7 +302,7 @@ class QDevilQDac2(VoltageSource):
         self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
 
         channel = self.device.channel(channel_id)
-        channel.write_channel(f'sour{"{0}"}:dc:mark:pstart {self._triggers[str(trigger)].value}')
+        channel.write_channel(f"sour{'{0}'}:dc:mark:pstart {self._triggers[str(trigger)].value}")
 
     def set_end_marker_internal_trigger(self, channel_id: ChannelID, trigger: str):
         """Method to create an internal trigger at the start of every dc_list period.
@@ -323,7 +323,7 @@ class QDevilQDac2(VoltageSource):
         self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
 
         channel = self.device.channel(channel_id)
-        channel.write_channel(f'sour{"{0}"}:dc:mark:pend {self._triggers[str(trigger)].value}')
+        channel.write_channel(f"sour{'{0}'}:dc:mark:pend {self._triggers[str(trigger)].value}")
 
     def play_awg(self, channel_id: ChannelID | None = None, clear_after: bool = True):
         """Plays a waveform for a given channel id. If no channel id is given, plays all waveforms stored in the cache.

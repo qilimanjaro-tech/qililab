@@ -11,7 +11,7 @@ import pytest
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings import Runcard, DigitalCompilationSettings, AnalogCompilationSettings
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
-from qililab.settings.digital.gate_event_settings import GateEventSettings
+from qililab.settings.digital.gate_event import GateEvent
 from qililab.typings import Parameter
 from tests.data import Galadriel
 
@@ -50,10 +50,9 @@ class TestDigitalCompilationSettings:
 
     def test_attributes(self, digital: DigitalCompilationSettings):
         """Test that the Runcard.GatesSettings dataclass contains the right attributes."""
-        assert isinstance(digital.delay_before_readout, int)
         assert isinstance(digital.gates, dict)
         assert all(
-            (isinstance(key, str), isinstance(event, GateEventSettings))
+            (isinstance(key, str), isinstance(event, GateEvent))
             for key, settings in digital.gates.items()
             for event in settings
         )
@@ -72,19 +71,19 @@ class TestDigitalCompilationSettings:
             for alias in digital.gates.keys()
         ]
         assert all(
-            isinstance(gate_event, GateEventSettings)
+            isinstance(gate_event, GateEvent)
             for gate_name, gate_qubits in gates_qubits
             for gate_event in digital.get_gate(name=gate_name, qubits=ast.literal_eval(gate_qubits))
         )
 
         # check that CZs commute
         # CZ(0,1) doesn't have spaces in the tuple string
-        assert isinstance(digital.get_gate(name="CZ", qubits=(1, 0))[0], GateEventSettings)
-        assert isinstance(digital.get_gate(name="CZ", qubits=(0, 1))[0], GateEventSettings)
+        assert isinstance(digital.get_gate(name="CZ", qubits=(1, 0))[0], GateEvent)
+        assert isinstance(digital.get_gate(name="CZ", qubits=(0, 1))[0], GateEvent)
 
         # CZ(0, 2) has spaces in the tuple string
-        assert isinstance(digital.get_gate(name="CZ", qubits=(2, 0))[0], GateEventSettings)
-        assert isinstance(digital.get_gate(name="CZ", qubits=(0, 2))[0], GateEventSettings)
+        assert isinstance(digital.get_gate(name="CZ", qubits=(2, 0))[0], GateEvent)
+        assert isinstance(digital.get_gate(name="CZ", qubits=(0, 2))[0], GateEvent)
 
     def test_get_gate_raises_error(self, digital):
         """Test that the ``get_gate`` method raises an error when the name is not found."""
@@ -102,14 +101,6 @@ class TestDigitalCompilationSettings:
         expected_names = list(digital.gates.keys())
         assert digital.gate_names == expected_names
 
-    def test_set_platform_parameters(self, digital: DigitalCompilationSettings):
-        """Test that with ``set_parameter`` we can change all settings of the platform."""
-        digital.set_parameter(alias=None, parameter=Parameter.DELAY_BEFORE_READOUT, value=1234)
-        assert digital.delay_before_readout == 1234
-
-        digital.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.DELAY, value=123)
-        assert digital.buses["drive_line_q0_bus"].delay == 123
-
     def test_set_parameter_fails(self, digital: DigitalCompilationSettings):
         with pytest.raises(ValueError):
             digital.set_parameter(alias="non-existent-bus", parameter=Parameter.DELAY, value=123)
@@ -125,13 +116,13 @@ class TestDigitalCompilationSettings:
         qubits = ast.literal_eval(qubits_str)
 
         digital.set_parameter(alias=alias, parameter=Parameter.DURATION, value=1234)
-        assert digital.get_gate(name=name, qubits=qubits)[0].pulse.duration == 1234
+        assert digital.get_gate(name=name, qubits=qubits)[0].waveform.duration == 1234
 
         digital.set_parameter(alias=alias, parameter=Parameter.PHASE, value=1234)
-        assert digital.get_gate(name=name, qubits=qubits)[0].pulse.phase == 1234
+        assert digital.get_gate(name=name, qubits=qubits)[0].phase == 1234
 
         digital.set_parameter(alias=alias, parameter=Parameter.AMPLITUDE, value=1234)
-        assert digital.get_gate(name=name, qubits=qubits)[0].pulse.amplitude == 1234
+        assert digital.get_gate(name=name, qubits=qubits)[0].waveform.amplitude == 1234
 
     @pytest.mark.parametrize("alias", ["X(0,)", "X()", "X", ""])
     def test_set_gate_parameters_raises_error_when_alias_has_incorrect_format(self, alias: str, digital):

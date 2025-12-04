@@ -3,6 +3,7 @@ import os
 import pytest
 
 from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram import Experiment
 from qililab.utils.serialization import (
     DeserializationError,
     SerializationError,
@@ -12,6 +13,7 @@ from qililab.utils.serialization import (
     serialize_to,
 )
 from qililab.waveforms import Gaussian
+from qililab.typings.enums import Parameter
 
 
 class TestSerialization:
@@ -48,3 +50,14 @@ class TestSerialization:
         with pytest.raises(DeserializationError):
             _ = deserialize_from("waveform.yml", Gaussian)
         os.remove("waveform.yml")
+
+    def test_experiment_with_set_parameter_serialization(self):
+        experiment = Experiment(label="spectroscopy", description="Amplitude scan")
+        experiment.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.AMPLITUDE, value=0.42)
+
+        serialized = serialize(experiment)
+
+        assert "!SetParameter" in serialized
+
+        with pytest.raises(DeserializationError):
+            deserialize(serialized, Experiment)

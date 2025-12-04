@@ -58,7 +58,9 @@ class QbloxFilter:
             self.exponential_state = self.exponential_state + [None] * (4 - len(self.exponential_state))
 
         if self.exponential_time_constant is not None:
-            self.exponential_time_constant = self.exponential_time_constant + [None] * (4 - len(self.exponential_time_constant))
+            self.exponential_time_constant = self.exponential_time_constant + [None] * (
+                4 - len(self.exponential_time_constant)
+            )
 
         if self.exponential_amplitude is not None:
             self.exponential_amplitude = self.exponential_amplitude + [None] * (4 - len(self.exponential_amplitude))
@@ -69,7 +71,9 @@ class QbloxFilter:
             self.fir_state = DistortionState.BYPASSED.value
 
         if self.fir_coeff is not None and len(self.fir_coeff) != QBLOXCONSTANTS.FILTER_FIR_COEFF_LENGTH:
-            raise ValueError(f"The number of elements in the list must be exactly {QBLOXCONSTANTS.FILTER_FIR_COEFF_LENGTH}. Received: {len(self.fir_coeff)}")
+            raise ValueError(
+                f"The number of elements in the list must be exactly {QBLOXCONSTANTS.FILTER_FIR_COEFF_LENGTH}. Received: {len(self.fir_coeff)}"
+            )
 
     def to_dict(self):
         """Return a dict representation of a Qblox Filter."""
