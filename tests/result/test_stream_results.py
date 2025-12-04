@@ -43,7 +43,39 @@ def fixture_stream_array():
         db_manager=db_manager,
         qprogram=qprogram,
     )
+
+
+@pytest.fixture(name="stream_array_bus_map")
+def fixture_stream_array_bus_map():
+    """fixture_stream_array
+
+    Returns:
+        stream_array: StreamArray
+    """
+    shape = (2, 2, 1)
+    loops = {"test_amp_loop": AMP_VALUES}
+    platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
+    experiment_name = "test_stream_array"
+    mock_database = MagicMock()
+    db_manager = mock_database
+
+    qprogram = QProgram()
+    qprogram.play("readout", Square(1.0, 100))
+    qprogram.wait("readout", 100)
     
+    bus_mapping={"readout": "feedline_input_output_bus"}
+
+    return StreamArray(
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        qprogram=qprogram,
+        bus_mapping=bus_mapping
+    )
+
+
 @pytest.fixture(name="stream_array_bus_not_in_platform")
 def fixture_stream_array_not_in_platform():
     """fixture_stream_array_not_in_platform to emulate bus mapping
@@ -199,6 +231,21 @@ class TestStreamArray:
                 assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
                 assert stream_array._get_debug() == debug_q1asm
 
+    def test_stream_array_instantiation_bus_map(self, stream_array_bus_map: StreamArray):
+        """Tests the instantiation of a StreamArray object."""
+        # Create mock for the file context
+        debug_q1asm = "Bus feedline_input_output_bus:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
+
+            with stream_array_bus_map:
+                assert (stream_array_bus_map.results == np.zeros(shape=stream_array_bus_map.shape)).all
+                assert stream_array_bus_map.loops == {"test_amp_loop": np.arange(0, 1, 2)}
+                assert stream_array_bus_map._get_debug() == debug_q1asm
+
     def test_stream_array_instantiation_for_bus_not_in_platform(self, stream_array_bus_not_in_platform: StreamArray):
         """Tests the instantiation of a StreamArray object with a bus outside of the runcard to emulate bus mapping."""
         # Create mock for the file context
@@ -260,9 +307,11 @@ class TestStreamArray:
             mock_file.create_dataset.return_value = mock_dataset
             mock_h5file.return_value = mock_file
 
-            with pytest.raises(ValueError, match="For autocalibration a Calibration file is mandatory."):
+            with pytest.raises(RuntimeError, match="An error occurred while creating the StreamArray.") as excinfo:
                 with stream_array:
                     stream_array[0, 0] = [1]
+        assert isinstance(excinfo.value.__cause__, ValueError)
+        assert "For autocalibration a Calibration file is mandatory." in str(excinfo.value.__cause__)
 
     def test_stream_array_with_loop_dict(self, stream_array_dict_loops: StreamArray):
         """Tests the instantiation of a StreamArray object."""
