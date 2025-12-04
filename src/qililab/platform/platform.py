@@ -1140,7 +1140,13 @@ class Platform:
         )
         return self.execute_qprogram(qprogram=qprogram, calibration=calibration, bus_mapping=bus_mapping, debug=debug)
 
-    def execute_experiment(self, experiment: Experiment) -> str:
+    def execute_experiment(
+        self,
+        experiment: Experiment,
+        job_id: int | None = None,
+        sample: str | None = None,
+        cooldown: str | None = None,
+    ) -> str:
         """Executes a quantum experiment on the platform.
 
         This method manages the execution of a given `Experiment` on the platform by utilizing an `ExperimentExecutor`. It orchestrates the entire process, including traversing the experiment's structure, handling loops and operations, and streaming results in real-time to ensure data integrity. Result storage paths, live plotting, and database persistence are configured through :func:`qililab.qililab_settings.get_settings`.
@@ -1198,7 +1204,13 @@ class Platform:
             except ReferenceError:
                 raise ReferenceError("Missing initialization information at the desired database '.ini' path.")
 
-        executor = ExperimentExecutor(platform=self, experiment=experiment)
+        executor = ExperimentExecutor(
+            platform=self,
+            experiment=experiment,
+            job_id=job_id,
+            sample=sample,
+            cooldown=cooldown,
+        )
         return executor.execute()
 
     def compile_qprogram(

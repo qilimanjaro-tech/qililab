@@ -37,3 +37,25 @@ class MeasureReset(Operation):
         self.reset_pulse: IQWaveform = reset_pulse
         self.trigger_address: int = trigger_address
         self.save_adc: bool = save_adc
+
+
+@yaml.register_class
+class MeasureResetCalibrated(Operation):
+    def __init__(
+        self,
+        bus: str,
+        waveform: str,
+        weights: str,
+        control_bus: str,
+        reset_pulse: str,
+        trigger_address: int = 1,
+        save_adc: bool = False,
+    ) -> None:
+        super().__init__()
+        self.bus: str = bus
+        self.waveform: str = waveform
+        self.weights: str = weights
+        self.control_bus: str = control_bus
+        self.reset_pulse: str = reset_pulse
+        self.trigger_address: int = trigger_address
+        self.save_adc: bool = save_adc

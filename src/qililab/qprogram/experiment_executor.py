@@ -113,9 +113,20 @@ class ExperimentExecutor:
         self,
         platform: "Platform",
         experiment: Experiment,
+        live_plot: bool = False,
+        slurm_execution: bool = True,
+        port_number: int | None = None,
+        job_id: int | None = None,
+        sample: str | None = None,
+        cooldown: str | None = None,
     ):
         self.platform = platform
         self.experiment = experiment
+
+        # In case the results are saved in a database, load the correct sample and cooldown.
+        self.job_id = job_id
+        self.sample = sample
+        self.cooldown = cooldown
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -153,11 +164,6 @@ class ExperimentExecutor:
 
         # ExperimentResultsWriter object responsible for saving experiment results to file in real-time.
         self._results_writer: ExperimentResultsWriter
-
-        # In case the results are saved in a database, load the correct sample and cooldown.
-        if get_settings().experiment_results_save_in_database:
-            self.sample = self.platform.db_manager.current_sample
-            self.cooldown = self.platform.db_manager.current_cd
 
     def _prepare_metadata(self, executed_at: datetime):
         """Prepares the loop values and result shape before execution."""
@@ -256,11 +262,13 @@ class ExperimentExecutor:
             qprograms={},
         )
         if get_settings().experiment_results_save_in_database:
+            if self.job_id is None:
+                raise ValueError("Job id has not been defined.")
             self._db_metadata = ExperimentDataBaseMetadata(
+                job_id=self.job_id,
                 experiment_name=self.experiment.label,
                 cooldown=self.cooldown,
                 sample_name=self.sample,
-                optional_identifier=self.experiment.description,
             )
         traverse_experiment(self.experiment.body)
         self._all_variables = dict(self._all_variables)
@@ -377,8 +385,9 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element,
-                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
+                                lambda operation=element, value=current_value_of_variable[
+                                    element.value.uuid
+                                ]: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     value=value,
@@ -420,9 +429,7 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element,
-                            call_parameters=call_parameters,
-                            qprogram_index=qprogram_index: store_results(
+                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram(
                                         **{

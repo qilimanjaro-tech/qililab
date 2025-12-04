@@ -7,7 +7,7 @@ from qililab import Domain
 from qililab.exceptions import VariableAllocated
 from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.core.variables import FloatVariable, IntVariable
+from qililab.core.variables import FloatVariable, IntVariable, VariableExpression
 
 
 class TestStructuredProgram:
@@ -202,3 +202,101 @@ class TestStructuredProgram:
             ValueError, match="When declaring a variable of a specific domain, its type is inferred by its domain."
         ):
             instance.variable(label="error", domain=Domain.Frequency, type=int)
+
+    def test_variable_expression(self, instance: StructuredProgram):
+        """Test VariableExpression creation and behavior"""
+        time_variable_expression = instance.variable(label="time", domain=Domain.Time)
+
+        expr1 = time_variable_expression + 5
+        expr2 = 10 + time_variable_expression
+        expr3 = time_variable_expression - 5
+        expr4 = 10 - time_variable_expression
+
+        # Check that expressions are instances of VariableExpression
+        assert isinstance(expr1, VariableExpression)
+        assert isinstance(expr2, VariableExpression)
+        assert isinstance(expr3, VariableExpression)
+        assert isinstance(expr4, VariableExpression)
+
+        # Check domain inference
+        assert expr1.domain == Domain.Time
+        assert expr2.domain == Domain.Time
+        assert expr3.domain == Domain.Time
+        assert expr4.domain == Domain.Time
+
+        # Check repr string
+        assert repr(expr1) == f"({time_variable_expression} + 5)"
+        assert repr(expr2) == f"(10 + {time_variable_expression})"
+        assert repr(expr3) == f"({time_variable_expression} - 5)"
+        assert repr(expr4) == f"(10 - {time_variable_expression})"
+
+        # Check extract methods
+        assert expr1.extract_variables() == time_variable_expression
+        assert expr2.extract_variables() == time_variable_expression
+        assert expr3.extract_variables() == time_variable_expression
+        assert expr4.extract_variables() == time_variable_expression
+        assert expr1.extract_constants() == 5
+        assert expr2.extract_constants() == 10
+        assert expr3.extract_constants() == 5
+        assert expr4.extract_constants() == 10
+
+    def test_variable_expression_raises_error_for_non_time_domain(self, instance: StructuredProgram):
+        """Test that VariableExpression raises ValueError if used with a non-Time domain variable"""
+        freq_var = instance.variable("freq", domain=Domain.Frequency)
+        phase_var = instance.variable("phase", domain=Domain.Phase)
+        voltage_var = instance.variable("voltage", domain=Domain.Voltage)
+        flux_var = instance.variable("flux", domain=Domain.Flux)
+        for var in [freq_var, phase_var, voltage_var, flux_var]:
+            with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
+                _ = var + 5
+
+    def test_variable_expression_infer_domain_error(self):
+        # Pure-constant expression should fail to infer a domain
+        with pytest.raises(ValueError, match="Cannot infer domain from constants."):
+            VariableExpression(5, "+", 3)
+
+    def test_variable_expression_nested_operations(self, instance):
+        # Test __add__, __radd__, __sub__ and __rsub__ on an existing VariableExpression
+        time_var = instance.variable(label="time", domain=Domain.Time)
+        base_expr = time_var + 5
+
+        # nested add
+        nested_add = base_expr + 10
+        assert isinstance(nested_add, VariableExpression)
+        assert repr(nested_add) == f"({base_expr} + 10)"
+
+        # reversed add
+        nested_radd = 20 + base_expr
+        assert isinstance(nested_radd, VariableExpression)
+        assert repr(nested_radd) == f"(20 + {base_expr})"
+
+        # nested sub
+        nested_sub = base_expr - 2
+        assert isinstance(nested_sub, VariableExpression)
+        assert repr(nested_sub) == f"({base_expr} - 2)"
+
+        # reversed sub
+        nested_rsub = 30 - base_expr
+        assert isinstance(nested_rsub, VariableExpression)
+        assert repr(nested_rsub) == f"(30 - {base_expr})"
+
+    def test_extract_constants_raises_error_when_no_constants(self, instance):
+        # An expression made of two Variables should have no constants to extract
+        t1 = instance.variable(label="t1", domain=Domain.Time)
+        t2 = instance.variable(label="t2", domain=Domain.Time)
+        expr = t1 + t2
+        with pytest.raises(ValueError, match="No Variable instance found in expression"):
+            expr.extract_constants()
+
+    def test_extract_variables_raises_error_when_no_variables(self, instance):
+        # Create a valid VariableExpression with a Time variable
+        time_var = instance.variable(label="time", domain=Domain.Time)
+        expr = time_var + 5
+
+        # Overwrite operands to simulate pure constants (bypass domain inference)
+        expr.left = 5
+        expr.right = 3
+
+        # Now extract_variables should fail because no Variable remains
+        with pytest.raises(ValueError, match="No Variable instance found in expression"):
+            expr.extract_variables()
