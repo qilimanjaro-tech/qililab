@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, Mock, call, create_autospec, patch
 import numpy as np
 import pytest
 
+from qililab.qililab_settings import get_settings
 from qililab.extra.quantum_machines import QuantumMachinesMeasurementResult
 from qililab.platform.platform import Platform
 from qililab.qprogram.blocks import ForLoop, Loop
@@ -322,8 +323,6 @@ class TestExperimentExecutor:
                 executor = ExperimentExecutor(
                     platform=platform,
                     experiment=experiment,
-                    live_plot=False,
-                    slurm_execution=False,
                     job_id=1,
                     sample="sample_test",
                     cooldown="cooldown_test",
@@ -345,7 +344,7 @@ class TestExperimentExecutor:
     ):
         """Test the execute with database as True."""
 
-        platform.save_experiment_results_in_database = True
+        get_settings().experiment_results_save_in_database = True
         platform.db_optional_identifier = "test"
         expected_result_path = "/tmp/20250710/155901/experiment.h5"
         mock_measurement = Mock()
@@ -380,8 +379,6 @@ class TestExperimentExecutor:
                 executor = ExperimentExecutor(
                     platform=platform,
                     experiment=experiment,
-                    live_plot=False,
-                    slurm_execution=False,
                     sample="sample_test",
                     cooldown="cooldown_test",
                 )

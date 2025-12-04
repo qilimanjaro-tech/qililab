@@ -1036,9 +1036,6 @@ class TestMethods:
             MockExecutor.assert_called_once_with(
                 platform=platform,
                 experiment=mock_experiment,
-                live_plot=False,
-                slurm_execution=True,
-                port_number=None,
                 job_id=None,
                 sample=None,
                 cooldown=None,
@@ -1877,6 +1874,7 @@ class TestMethods:
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
+    @pytest.mark.qm    
     def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
