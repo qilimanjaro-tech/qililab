@@ -8,7 +8,7 @@ import pytest
 from tests.data import Galadriel, SauronQuantumMachines
 
 from qililab.data_management import build_platform
-from qililab.qprogram import QProgram
+from qililab.qprogram import Calibration, QProgram
 from qililab.result import stream_results
 from qililab.result.stream_results import RawStreamArray, StreamArray
 from qililab.typings.enums import Parameter
@@ -31,8 +31,44 @@ def fixture_stream_array():
     mock_database = MagicMock()
     db_manager = mock_database
 
+    qprogram = QProgram()
+    qprogram.play("readout_q0", Square(1.0, 100))
+    qprogram.wait("readout_q0", 100)
+
     return StreamArray(
-        shape=shape, loops=loops, platform=platform, experiment_name=experiment_name, db_manager=db_manager
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        qprogram=qprogram,
+    )
+    
+@pytest.fixture(name="stream_array_bus_not_in_platform")
+def fixture_stream_array_not_in_platform():
+    """fixture_stream_array_not_in_platform to emulate bus mapping
+
+    Returns:
+        stream_array: StreamArray
+    """
+    shape = (2, 2, 1)
+    loops = {"test_amp_loop": AMP_VALUES}
+    platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
+    experiment_name = "test_stream_array"
+    mock_database = MagicMock()
+    db_manager = mock_database
+
+    qprogram = QProgram()
+    qprogram.play("bus_not_in_runcard", Square(1.0, 100))
+    qprogram.wait("bus_not_in_runcard", 100)
+
+    return StreamArray(
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        qprogram=qprogram,
     )
 
 
@@ -151,6 +187,7 @@ class TestStreamArray:
     def test_stream_array_instantiation(self, stream_array: StreamArray):
         """Tests the instantiation of a StreamArray object."""
         # Create mock for the file context
+        debug_q1asm = "Bus readout_q0:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
         with patch("h5py.File") as mock_h5file:
             mock_file = MagicMock()
             mock_dataset = MagicMock()
@@ -160,6 +197,72 @@ class TestStreamArray:
             with stream_array:
                 assert (stream_array.results == np.zeros(shape=stream_array.shape)).all
                 assert stream_array.loops == {"test_amp_loop": np.arange(0, 1, 2)}
+                assert stream_array._get_debug() == debug_q1asm
+
+    def test_stream_array_instantiation_for_bus_not_in_platform(self, stream_array_bus_not_in_platform: StreamArray):
+        """Tests the instantiation of a StreamArray object with a bus outside of the runcard to emulate bus mapping."""
+        # Create mock for the file context
+        debug_q1asm = "Bus bus_not_in_runcard:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
+
+            with stream_array_bus_not_in_platform:
+                assert (stream_array_bus_not_in_platform.results == np.zeros(shape=stream_array_bus_not_in_platform.shape)).all
+                assert stream_array_bus_not_in_platform.loops == {"test_amp_loop": np.arange(0, 1, 2)}
+                assert stream_array_bus_not_in_platform._get_debug() == debug_q1asm
+
+    def test_stream_array_autocalibration(self, stream_array: StreamArray):
+        """Tests the instantiation of a StreamArray object."""
+        stream_array.autocalibration = True
+
+        calibration = Calibration()
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        stream_array.calibration = calibration
+
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
+
+            with stream_array:
+
+                # test adding outside the context manager
+                stream_array[0, 0] = [-2]
+
+                # test adding inside the context manager
+                with stream_array:
+                    stream_array[0, 0] = [1]
+                    stream_array[0, 1] = [2]
+                    stream_array[1, 0] = [3]
+                    stream_array[1, 1] = [4]
+
+                assert (stream_array.results == [[1, 2], [3, 4]]).all
+
+                assert len(stream_array) == 2
+                assert sum(1 for _ in iter(stream_array)) == 2
+                assert str(stream_array) == "[[[1.]\n  [2.]]\n\n [[3.]\n  [4.]]]"
+
+                assert [1, 2] in stream_array
+                assert (stream_array[0] == [1, 2]).all
+
+    def test_stream_array_autocalibration_no_calibration_file_rises_error(self, stream_array: StreamArray):
+        """Tests the instantiation of a StreamArray object."""
+        # Create mock for the file context
+        stream_array.autocalibration = True
+
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
+
+            with pytest.raises(ValueError, match="For autocalibration a Calibration file is mandatory."):
+                with stream_array:
+                    stream_array[0, 0] = [1]
 
     def test_stream_array_with_loop_dict(self, stream_array_dict_loops: StreamArray):
         """Tests the instantiation of a StreamArray object."""

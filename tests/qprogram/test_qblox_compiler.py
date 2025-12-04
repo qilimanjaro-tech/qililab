@@ -1,5 +1,5 @@
 import re
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -38,6 +38,38 @@ def fixture_play_named_operation() -> QProgram:
     qp = QProgram()
     qp.play(bus="drive", waveform="Xpi")
     qp.play(bus="drive", waveform=drag_wf)
+
+    return qp
+
+
+@pytest.fixture(name="run_qdac_buses")
+def fixture_run_qdac_buses() -> QProgram:
+    wf = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    qp = QProgram()
+    qp.play(bus="drive", waveform=wf)
+
+    qp.set_frequency(bus="qdac_flux", frequency=1e6)
+    qp.set_phase(bus="qdac_flux", phase=0.1)
+    qp.reset_phase(bus="qdac_flux")
+    qp.set_gain(bus="qdac_flux", gain=0.1)
+    qp.qblox.set_markers(bus="qdac_flux", mask="0000")
+    qp.set_trigger(bus="qdac_flux", duration=100)
+    qp.wait(bus="qdac_flux", duration=100)
+    qp.wait_trigger(bus="qdac_flux", duration=100)
+    qp.measure(bus="qdac_flux", waveform=wf, weights=wf)
+    qp.play(bus="qdac_flux", waveform=wf)
+    qp.qblox.acquire(bus="qdac_flux", weights=wf)
+
+    return qp
+
+
+@pytest.fixture(name="run_qdac_sync")
+def fixture_run_qdac_sync() -> QProgram:
+    wf = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    qp = QProgram()
+    qp.play(bus="drive", waveform=wf)
+
+    qp.sync(buses=["qdac_flux"])
 
     return qp
 
@@ -351,6 +383,32 @@ def fixture_multiple_play_operations_with_same_waveform() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="set_trigger")
+def fixture_set_trigger() -> QProgram:
+    qp = QProgram()
+    qp.set_trigger(bus="drive", duration=100, outputs=1)
+    qp.wait(bus="drive", duration=100)
+    return qp
+
+
+@pytest.fixture(name="wait_trigger")
+def fixture_wait_trigger() -> QProgram:
+    qp = QProgram()
+    # With update parameter pending
+    qp.set_frequency(bus="drive", frequency=1e6)
+    qp.set_frequency(bus="readout", frequency=1e6)
+    qp.wait_trigger(bus="drive", duration=4)
+    qp.set_frequency(bus="drive", frequency=1e6)
+    qp.wait_trigger(bus="drive", duration=1000, port=1)
+    qp.set_frequency(bus="drive", frequency=1e6)
+    qp.wait_trigger(bus="drive", duration=70000, port=1)
+
+    # No instructions pending
+    qp.wait_trigger(bus="drive", duration=1000, port=1)
+    qp.wait_trigger(bus="drive", duration=70000, port=1)
+    return qp
+
+
 @pytest.fixture(name="multiple_play_operations_with_no_Q_waveform")
 def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
     qp = QProgram()
@@ -450,6 +508,17 @@ def update_latched_param() -> QProgram:
     qp.wait(bus="drive", duration=6)
     return qp
 
+
+@pytest.fixture(name="measure_reset_program")
+def fixture_measure_reset_program() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    qp.qblox.measure_reset(bus="readout", waveform=readout_pair, weights=weights_pair, control_bus="drive", reset_pulse=drag_wf)
+    return qp
+
+
 @pytest.fixture(name="wait_comprised_between_65532_65535")
 def fixture_wait_comprised_between_65532_65535() -> QProgram:
     qp = QProgram()
@@ -458,7 +527,57 @@ def fixture_wait_comprised_between_65532_65535() -> QProgram:
     qp.wait(bus="drive", duration=65532)
     qp.play("drive", Square(1,20))
     qp.wait(bus="drive", duration=65534)
+    return qp
 
+@pytest.fixture(name="error_acquisition_index")
+def fixture_error_acquisition_index() -> QProgram:
+    qp = QProgram()
+    weights_shape = Square(amplitude=1, duration=20)
+    bins = qp.variable("bins", Domain.Scalar, int)
+    for _ in range (40):
+        with qp.for_loop(bins, 0, 100, 1):
+            qp.qblox.acquire("readout", IQPair(I=weights_shape, Q=weights_shape))
+    return qp
+
+@pytest.fixture(name="single_bin_different_depth_qp")
+def fixture_single_bin_different_depth_qp() -> QProgram:
+    qp = QProgram()
+
+    weights_shape = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
+    square_wf = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
+
+    with qp.average(100):
+        qp.measure(bus=f"readout",
+            waveform=square_wf,
+            weights=weights_shape)
+        qp.measure(bus=f"readout",
+            waveform=square_wf,
+            weights=weights_shape)
+
+    qp.measure(bus=f"readout",
+                waveform=square_wf,
+                weights=weights_shape)
+    qp.measure(bus=f"readout",
+                waveform=square_wf,
+                weights=weights_shape)
+    return qp
+
+@pytest.fixture(name="bus_mappping_acquire")
+def fixture_bus_mappping_acquire() -> QProgram:
+    qp = QProgram()
+    square_wf = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
+    with qp.average(10):
+        qp.play("drive", square_wf)
+        qp.measure(bus=f"readout",
+                    waveform=square_wf,
+                    weights=square_wf,)
+        qp.measure(bus=f"readout",
+                waveform=square_wf,
+                weights=square_wf,)
+        qp.wait("readout",100)
+    qp.measure(bus=f"readout",
+                waveform=square_wf,
+                weights=square_wf,)
     return qp
 
 
@@ -472,6 +591,179 @@ class TestQBloxCompiler:
         assert len(output.sequences) == 1
         assert "drive_q0" in output.sequences
         assert isinstance(output.sequences["drive_q0"], QPy.Sequence)
+
+    def test_qdac_bus_ignored(self, run_qdac_buses: QProgram):
+
+        compiler = QbloxCompiler()
+        output = compiler.compile(
+            qprogram=run_qdac_buses, bus_mapping={"drive": "drive_q0"}, qblox_buses=["drive_q0"]
+        )
+
+        assert len(output.sequences) == 1
+        assert "drive_q0" in output.sequences
+        assert isinstance(output.sequences["drive_q0"], QPy.Sequence)
+
+    def test_qdac_sync_raises_error(self, run_qdac_sync: QProgram):
+
+        compiler = QbloxCompiler()
+
+        with pytest.raises(ValueError, match="Non QBLOX buses not allowed inside sync function"):
+            compiler.compile(qprogram=run_qdac_sync, bus_mapping={"drive": "drive_q0"}, qblox_buses=["drive_q0"])
+
+    def test_set_trigger(self, set_trigger: QProgram):
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=set_trigger)
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+                setup:
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+
+                main:
+                                set_mrk          1
+                                upd_param        4
+                                wait             96
+                                set_mrk          0
+                                upd_param        4
+                                wait             96
+                                set_mrk          0
+                                upd_param        4
+                                stop
+            """
+        assert is_q1asm_equal(sequences["drive"]._program, drive_str)
+
+        # RF example with the right markers
+        sequences, _ = compiler.compile(qprogram=set_trigger, markers={"drive": "1100"})
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+                setup:
+                                wait_sync        4
+                                set_mrk          12
+                                upd_param        4
+
+                main:
+                                set_mrk          13
+                                upd_param        4
+                                wait             96
+                                set_mrk          12
+                                upd_param        4
+                                wait             96
+                                set_mrk          0
+                                upd_param        4
+                                stop
+            """
+        assert is_q1asm_equal(sequences["drive"]._program, drive_str)
+
+    def test_set_trigger_raises_no_output_error(self):
+        qp = QProgram()
+        qp.set_trigger(bus="drive", duration=10)
+
+        compiler = QbloxCompiler()
+
+        with pytest.raises(ValueError, match="Missing qblox trigger outputs at qp.set_trigger."):
+            compiler.compile(qprogram=qp)
+
+    def test_set_trigger_raises_output_out_of_range_error(self):
+        qp = QProgram()
+        qp.set_trigger(bus="drive", duration=10, outputs=5)
+
+        compiler = QbloxCompiler()
+
+        with pytest.raises(ValueError, match="Low frequency modules only have 4 trigger outputs, out of range"):
+            compiler.compile(qprogram=qp)
+            pass
+
+        compiler._markers = {"drive": "1100"}
+        with pytest.raises(ValueError, match="RF modules only have 2 trigger outputs, either 1 or 2"):
+            compiler.compile(qprogram=qp, markers={"drive": "1100"})
+            pass
+
+    def test_wait_trigger(self, wait_trigger: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=wait_trigger, ext_trigger=True)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            set_freq         4000000
+                            set_freq         4000000
+                            upd_param        4
+                            wait_trigger     15, 4
+                            wait_sync        4
+                            set_freq         4000000
+                            set_freq         4000000
+                            upd_param        4
+                            wait_trigger     1, 996
+                            wait_sync        4
+                            set_freq         4000000
+                            set_freq         4000000
+                            upd_param        4
+                            wait_trigger     1, 4
+                            wait             65532
+                            wait             65532
+                            wait_sync        4
+                            wait_trigger     1, 1000
+                            wait_sync        4
+                            wait_trigger     1, 4
+                            wait             65532
+                            wait             65532
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+
+        readout_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            set_freq         4000000
+                            set_freq         4000000
+                            wait_sync        4
+                            wait_sync        4
+                            wait_sync        4
+                            wait_sync        4
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_wait_trigger_no_ext_trigger_raises_error(self, wait_trigger: QProgram):
+
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            AttributeError, match="External trigger has not been set as True inside runcard's instrument controllers."
+        ):
+            compiler.compile(qprogram=wait_trigger, ext_trigger=False)
+
+    def test_wait_trigger_var_durationraises_error(self):
+
+        qp = QProgram()
+        duration = qp.variable(label="duration", domain=Domain.Time)
+        with qp.for_loop(variable=duration, start=4, stop=100, step=4):
+            qp.wait_trigger(bus="drive", duration=duration, port=1)
+
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match="Wait trigger duration cannot be a Variable, it must be an int."):
+            compiler.compile(qprogram=qp, ext_trigger=True)
 
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
         drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
@@ -1761,3 +2053,111 @@ set_freq         R5
         """
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_32_acquisiton_raise_error(self, error_acquisition_index: QProgram):
+        "Check that having acquisitions in 31+ nested level raises a Value error"
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match="Acquisition index 32 exceeds maximum of 31."):
+            _ = compiler.compile(error_acquisition_index)
+
+
+    def test_acquire_single_bin_different_nested_level(self, single_bin_different_depth_qp: QProgram):
+        "Check that having single binned acquisitions at different nested level resets the bin index counter to 0"
+        compiler = QbloxCompiler()
+        sequences,_ = compiler.compile(single_bin_different_depth_qp)
+        readout_str = """ 
+        setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+        main:
+                move             100, R0        
+        avg_0:
+                play             0, 1, 4        
+                acquire_weighed  0, 0, 0, 1, 10 
+                play             0, 1, 4        
+                acquire_weighed  0, 1, 0, 1, 10 
+                loop             R0, @avg_0     
+                play             0, 1, 4        
+                acquire_weighed  1, 0, 0, 1, 10 
+                play             0, 1, 4        
+                acquire_weighed  1, 1, 0, 1, 10 
+                set_mrk          0              
+                upd_param        4              
+                stop
+        """
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    
+    def test_bus_mapping_and_acquire(self, bus_mappping_acquire):
+        """Test bus mapping and ascquisition together"""
+        compiler = QbloxCompiler()
+        sequences = compiler.compile(bus_mappping_acquire)
+        acquisition_dict = sequences.sequences["readout"]._acquisitions.to_dict()
+        readout_str = """setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+        main:
+                move             10, R0         
+        avg_0:
+                play             0, 1, 4        
+                acquire_weighed  0, 0, 0, 1, 10 
+                play             0, 1, 4        
+                acquire_weighed  0, 1, 0, 1, 10 
+                wait             100            
+                loop             R0, @avg_0     
+                play             0, 1, 4        
+                acquire_weighed  1, 0, 0, 1, 10 
+                set_mrk          0              
+                upd_param        4              
+                stop"""
+
+        assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
+        assert acquisition_dict == {'Acquisition 0': {'num_bins': 2, 'index': 0}, 'Acquisition 1': {'num_bins': 1, 'index': 1}}
+
+    def test_measure_reset(self, measure_reset_program: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=measure_reset_program)
+
+        assert len(sequences) == 2
+        assert "drive" in sequences
+        assert "readout" in sequences
+
+        drive_str = """
+            setup:
+                            set_latch_en     1, 4           
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            latch_rst        4              
+                            wait             2400          
+                            set_cond         1, 1, 0, 100   
+                            play             0, 1, 100      
+                            set_cond         0, 0, 0, 4     
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                            
+        """
+
+        readout_str = """
+            setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+            main:
+                play             0, 1, 4        
+                acquire_weighed  0, 0, 0, 1, 2000
+                set_mrk          0              
+                upd_param        4              
+                stop                            
+        """
+        print(sequences["drive"]._program)
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)

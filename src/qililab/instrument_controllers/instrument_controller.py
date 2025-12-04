@@ -28,7 +28,7 @@ from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.instruments.utils.loader import Loader
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import Settings
-from qililab.typings import ChannelID, Device, InstrumentControllerName, Parameter, ParameterValue
+from qililab.typings import ChannelID, Device, InstrumentControllerName, OutputID, Parameter, ParameterValue
 from qililab.utils import Factory
 
 
@@ -46,6 +46,7 @@ class InstrumentControllerSettings(Settings):
     alias: str
     connection: Connection
     modules: list[InstrumentReference]
+    ext_trigger: bool = False
     reset: bool = True
 
     def __post_init__(self):
@@ -161,6 +162,7 @@ class InstrumentController(BusElement, ABC):
         parameter: Parameter,
         value: ParameterValue,
         channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None
     ):
         """Updates the reset settings for the controller."""
         if parameter == Parameter.RESET:
@@ -172,6 +174,7 @@ class InstrumentController(BusElement, ABC):
         self,
         parameter: Parameter,
         channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None
     ):
         """Updates the reset settings for the controller."""
         if parameter == Parameter.RESET:
@@ -228,6 +231,15 @@ class InstrumentController(BusElement, ABC):
             str: settings.alias.
         """
         return self.settings.alias
+
+    @property
+    def ext_trigger(self):
+        """Instrument Controller 'ext_trigger' property.
+
+        Returns:
+            str: settings.ext_trigger.
+        """
+        return self.settings.ext_trigger
 
     @property
     def connection(self):

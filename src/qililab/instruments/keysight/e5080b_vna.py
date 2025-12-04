@@ -25,7 +25,7 @@ from qililab.instruments.decorators import check_device_initialized, log_set_par
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.result.vna_result import VNAResult
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.typings.enums import (
     VNAAverageModes,
     VNAFormatBorder,
@@ -81,6 +81,7 @@ class E5080B(Instrument):
         trigger_source: VNATriggerSource | None = None
         trigger_type: VNATriggerType | None = None
         sweep_group_count: int | None = None
+        electrical_delay: float | None = None
 
     settings: E5080BSettings
     device: KeysightE5080B
@@ -286,9 +287,24 @@ class E5080B(Instrument):
         """
         return self.settings.format_border
 
+    @property
+    def electrical_delay(self) -> float | None:
+        """Gets the electrical delay for plotting purposes only
+
+        Returns:
+            float: settings.electrical_delay.
+        """
+        return self.settings.electrical_delay
+
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
-        """Set instrument parameter.
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ):
+        """Get instrument parameter.
 
         Args:
             parameter (Parameter): Name of the parameter to get.
@@ -428,9 +444,15 @@ class E5080B(Instrument):
                 self.device.format_border(self.format_border)
             return
 
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            self.settings.electrical_delay = float(value)
+            return
+
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None) -> ParameterValue:
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
+    ) -> ParameterValue:
         """Get instrument parameter.
 
         Args:
@@ -532,6 +554,10 @@ class E5080B(Instrument):
         if parameter == Parameter.OPERATION_STATUS:
             self.settings.operation_status = self.device.operation_status.get()
             return cast("ParameterValue", self.settings.operation_status)
+
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            return cast("ParameterValue", self.settings.electrical_delay)
+
         raise ParameterNotFound(self, parameter)
 
     def _get_trace(self):

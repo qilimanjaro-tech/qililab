@@ -30,6 +30,7 @@ dependencies = [
     "pandas==1.5.3",
     "papermill>=2.6.0",
     "psycopg2-binary>=2.9.10",
+    "pydantic-settings>=2.11.0",
     "pyvisa-py>=0.7.2",
     "qblox-instruments==0.16.0",
     "qcodes>=0.51.0",
@@ -162,7 +163,6 @@ logger-objects = ["qililab.logger"]
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ANN", "S", "CPY", "SLF001", "PLR", "DOC", "RUF012"]
 "docs/*" = ["CPY"]
-"examples/*" = ["CPY", "T20"]
 "src/qililab/about.py" = ["T201"]
 
 [tool.ruff.lint.pydocstyle]
@@ -223,7 +223,6 @@ tag_format = "$version"
         "*/virtualenv/*",
         "*/virtualenvs/*",
         "*/tests/*",
-        "examples/*",
         # TODO: Remove these once we modernize instruments
         "src/qililab/instruments/keithley/keithley_2600.py",
         "src/qililab/instruments/qblox/qblox_d5a.py",

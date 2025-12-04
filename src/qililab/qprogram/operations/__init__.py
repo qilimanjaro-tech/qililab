@@ -21,6 +21,7 @@ from .measure import (
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
 )
+from .measure_reset import MeasureReset
 from .operation import Operation
 from .play import Play, PlayWithCalibratedWaveform
 from .reset_phase import ResetPhase
@@ -31,8 +32,10 @@ from .set_markers import SetMarkers
 from .set_offset import SetOffset
 from .set_parameter import SetParameter
 from .set_phase import SetPhase
+from .set_trigger import SetTrigger
 from .sync import Sync
 from .wait import Wait
+from .wait_trigger import WaitTrigger
 
 __all__ = [
     "Acquire",
@@ -40,6 +43,7 @@ __all__ = [
     "ExecuteQProgram",
     "GetParameter",
     "Measure",
+    "MeasureReset",
     "MeasureWithCalibratedWaveform",
     "MeasureWithCalibratedWaveformWeights",
     "MeasureWithCalibratedWeights",
@@ -54,6 +58,8 @@ __all__ = [
     "SetOffset",
     "SetParameter",
     "SetPhase",
+    "SetTrigger",
     "Sync",
     "Wait",
+    "WaitTrigger",
 ]

@@ -18,10 +18,10 @@ from typing import Any, TypedDict
 import h5py
 import numpy as np
 
+from qililab.qililab_settings import get_settings
 from qililab.result.database import DatabaseManager
 from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
-from qililab.utils.serialization import serialize
 
 
 class VariableMetadata(TypedDict):
@@ -95,10 +95,10 @@ class ExperimentDataBaseMetadata(TypedDict, total=False):
         qprograms (dict[str, QProgramMetadata]): Quantum programs included in the experiment.
     """
 
+    job_id: int
     experiment_name: str
     cooldown: str | None
     sample_name: str | None
-    optional_identifier: str | None
 
 
 class ExperimentResultsWriter(ExperimentResults):
@@ -113,10 +113,7 @@ class ExperimentResultsWriter(ExperimentResults):
         path: str,
         metadata: ExperimentMetadata,
         db_metadata: ExperimentDataBaseMetadata | None,
-        db_manager: DatabaseManager | None,
-        live_plot: bool = True,
-        slurm_execution: bool = True,
-        port_number: int | None = None,
+        db_manager: DatabaseManager | None
     ):
         """Initializes the ExperimentResultsWriter instance.
 
@@ -132,9 +129,9 @@ class ExperimentResultsWriter(ExperimentResults):
         self._metadata = metadata
         self._db_metadata = db_metadata
         self._db_manager = db_manager
-        self._live_plot_true = live_plot
-        self._slurm_execution = slurm_execution
-        self._port_number = port_number
+        self._live_plot_true = get_settings().experiment_live_plot_enabled
+        self._slurm_execution = get_settings().experiment_live_plot_on_slurm
+        self._port_number = get_settings().experiment_live_plot_port
 
     # pylint: disable=too-many-locals
     def _create_results_file(self):
@@ -233,15 +230,12 @@ class ExperimentResultsWriter(ExperimentResults):
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
         if self._db_metadata:
-            self.measurement = self._db_manager.add_measurement(
+            self.measurement = self._db_manager.add_experiment(
+                job_id=self._db_metadata["job_id"],
                 experiment_name=self._db_metadata["experiment_name"],
-                experiment_completed=False,
+                result_path=self.results_path,
                 cooldown=self._db_metadata["cooldown"],
                 sample_name=self._db_metadata["sample_name"],
-                optional_identifier=self._db_metadata["optional_identifier"],
-                platform=self._metadata["platform"],
-                experiment=self._metadata["experiment"],
-                qprogram=serialize(self._metadata["qprograms"]),
             )
             self.results_path = self.measurement.result_path
             self._file = h5py.File(str(self.results_path), mode="w", libver="latest")
@@ -255,12 +249,12 @@ class ExperimentResultsWriter(ExperimentResults):
 
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, exc_type, exc_value, traceback):
         """Exit the context manager and close the HDF5 file and end experiment if there is a database."""
         if self._file is not None:
             self._file.close()
         if self._db_metadata:
-            self.measurement = self.measurement.end_experiment(self._db_manager.Session)
+            self.measurement = self.measurement.end_experiment(self._db_manager.session, traceback)
 
     def __setitem__(self, key: tuple, value: Any):
         """Sets an item in the results dataset.
