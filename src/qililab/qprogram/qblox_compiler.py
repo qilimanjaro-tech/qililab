@@ -1133,6 +1133,9 @@ class QbloxCompiler:
                 if duration_attr == "static_duration":
                     self._buses[bus].static_duration += duration_diff
                 else:
+                    for non_synced_bus in self._buses:  # Add a negative penalty for a bus that was not synced with the others
+                        if non_synced_bus not in buses:
+                            self._buses[non_synced_bus].duration_since_sync += - max_duration
                     self._buses[bus].duration_since_sync += duration_diff
 
     def _handle_dynamic_sync(self, buses: set[str], include_delay: bool = False):
