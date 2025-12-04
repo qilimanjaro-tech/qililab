@@ -424,11 +424,11 @@ class DatabaseManager:
 
         with self.session() as running_session:
             calibration_id = (
-                running_session.query(CalibrationRun)
+                running_session.query(CalibrationRun)  # type: ignore[union-attr]
                 .order_by(CalibrationRun.calibration_id.desc())
                 .first()
                 .calibration_id
-            )  # type: ignore
+            )
 
         sample_name = calibration.parameters["sample_name"]
         cooldown = calibration.parameters["cooldown"]
