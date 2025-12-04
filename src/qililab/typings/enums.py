@@ -464,6 +464,7 @@ class Parameter(str, Enum):
     EXPONENTIAL_STATE = "exponential_state"
     FIR_COEFF = "fir_coeff"
     FIR_STATE = "fir_state"
+    RF_ACTIVE_CHANNEL = "active_channel"
 
     @classmethod
     def to_yaml(cls, representer, node):

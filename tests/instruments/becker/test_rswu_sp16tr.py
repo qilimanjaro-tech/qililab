@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from qililab.instruments.becker.rswu_sp16tr import RSWUSP16TR
 from qililab.instruments import ParameterNotFound
+from qililab import Parameter
 
 
 @pytest.fixture()
@@ -69,20 +70,20 @@ def test_set_parameter_active_channel_calls_route(switch: RSWUSP16TR, monkeypatc
     """Test set parameter active channel."""
     called = {}
     monkeypatch.setattr(switch, "route", lambda ch: called.setdefault("ch", ch))
-    switch.set_parameter("active_channel", "RF3")
+    switch.set_parameter(Parameter.RF_ACTIVE_CHANNEL, "RF3")
     assert called["ch"] == "RF3"
 
 
 def test_set_parameter_unknown_raises(switch: RSWUSP16TR):
     """Test set parameter unknown raises."""
     with pytest.raises(ParameterNotFound):
-        switch.set_parameter("not_a_param", "x")
+        switch.set_parameter(Parameter.AMPLITUDE, "x")
 
 
 def test_get_parameter_active_channel_reads_device(switch: RSWUSP16TR):
     """Test get parameter active channel reads device."""
     switch.device.active_channel.get.return_value = "RF8"
-    val = switch.get_parameter("active_channel")
+    val = switch.get_parameter(Parameter.RF_ACTIVE_CHANNEL)
     assert val == "RF8"
     assert switch.active_channel == "RF8"  # settings synced
     switch.device.active_channel.get.assert_called_once()
@@ -91,7 +92,7 @@ def test_get_parameter_active_channel_reads_device(switch: RSWUSP16TR):
 def test_get_parameter_unknown_raises(switch: RSWUSP16TR):
     """Test get parameter raises."""
     with pytest.raises(ParameterNotFound):
-        switch.get_parameter("not_a_param")
+        switch.get_parameter(Parameter.AMPLITUDE)
 
 
 def test_to_dict_returns_dict(switch: RSWUSP16TR):

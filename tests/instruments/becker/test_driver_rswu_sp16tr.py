@@ -1,68 +1,42 @@
 """Tests for the DriverRSWUSP16TR class."""
 import pytest
 from typing import Any
+import pyvisa
 
 from qililab.instruments.becker.driver_rswu_sp16tr import DriverRSWUSP16TR
 
+@pytest.fixture(scope="function", name="rf_switchks")
+def _make_rf_switchks():
+    """
+    Create a simulated Keysight E5080B instrument.
+    The pyvisa_sim_file parameter instructs QCoDeS to use the simulation file.
+    """
+    driver = DriverRSWUSP16TR("RSWUSP16TR",
+                              "TCPIP::192.168.0.10::5025::SOCKET",
+                              pyvisa_sim_file="qililab.instruments.sims:RSWUSP16TR.yaml")
+    yield driver
+    driver.close()
 
-class _FakeVisa:
-    def __init__(self, idn="Becker Nachrichtentechnik, RSWU-SP16TR, P/N: 2506.4002.1, S/N: 2509002, HR: 1.00, SR: 1.0.1"):
-        self._idn = idn
-        self._active = "RF1"
-        self.read_termination = "\n"
-        self.write_termination = "\n"
-        self.timeout = 5000
-
-    def write(self, cmd: str) -> None:
-        cmd = cmd.strip()
-        if cmd.upper().startswith("ROUT:CHAN "):
-            ch = cmd.split(" ", 1)[1].strip()
-            self._active = ch
-
-    def query(self, cmd: str) -> str:
-        cmd = cmd.strip().upper()
-        if cmd == "*IDN?":
-            return self._idn
-        if cmd == "ROUT:CHAN?":
-            return self._active
-
-        return ""
-
-    def close(self) -> None:
-        pass
-
-
-@pytest.fixture()
-def switch(monkeypatch) -> DriverRSWUSP16TR:
-    """Instantiate the driver and replace its VISA handle with our stub."""
-    drv = DriverRSWUSP16TR("sw", "TCPIP::192.168.0.10::5025::SOCKET")
-    fake = _FakeVisa()
-    # swap the underlying VISA resource
-    monkeypatch.setattr(drv, "visa_handle", fake, raising=False)
-
-    return drv
-
-
-def test_idn_query(switch: DriverRSWUSP16TR):
+def test_idn_query(rf_switchks: DriverRSWUSP16TR):
     """Test idn_query."""
-    rep = switch.idn()
+    rep = rf_switchks.idn()
 
     assert "RSWU-SP16TR" in rep
 
 
 @pytest.mark.parametrize("ch", ["RF1", "RF6", "RF16"])
-def test_active_channel_set_get(switch: DriverRSWUSP16TR, ch: str):
+def test_active_channel_set_get(rf_switchks: DriverRSWUSP16TR, ch: str):
     """Test active channel."""
-    switch.active_channel(ch)
-    got = switch.active_channel()
+    rf_switchks.active_channel(ch)
+    got = rf_switchks.active_channel()
 
     assert got == ch
 
 
-def test_parser_accepts_lowercase(switch: DriverRSWUSP16TR, monkeypatch):
+def test_parser_accepts_lowercase(rf_switchks: DriverRSWUSP16TR, monkeypatch):
     """Test accepts_lowercase."""
-    switch.visa_handle._active = "rf4"
-    got = switch.active_channel()
+    rf_switchks.active_channel("rf4")
+    got = rf_switchks.active_channel()
 
     assert got == "RF4"
 
@@ -74,14 +48,14 @@ def test_parser_accepts_digits_directly():
     assert DriverRSWUSP16TR._parse_active_channel("XYZ") == "XYZ"
 
 
-def test_route_convenience_method(switch: DriverRSWUSP16TR):
+def test_route_convenience_method(rf_switchks: DriverRSWUSP16TR):
     """Test route_convenience_method."""
-    switch.route("RF3")
+    rf_switchks.route("RF3")
 
-    assert switch.active_channel() == "RF3"
+    assert rf_switchks.active_channel() == "RF3"
 
 
-def test_invalid_channel_raises_validation(switch: DriverRSWUSP16TR):
+def test_invalid_channel_raises_validation(rf_switchks: DriverRSWUSP16TR):
     """Test invalid_channek_raises_validation."""
     with pytest.raises(Exception):
-        switch.active_channel("RF17")
+        rf_switchks.active_channel("RF17")

@@ -19,7 +19,7 @@ from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import InstrumentName
+from qililab.typings import InstrumentName, Parameter, ParameterValue
 from qililab.typings.instruments.rswu_sp16tr import BeckerRSWUSP16TR
 
 _CHANNELS = tuple(f"RF{i}" for i in range(1, 17))
@@ -50,7 +50,6 @@ class RSWUSP16TR(Instrument):
         """
         return self.settings.active_channel
 
-    @log_set_parameter
     def route(self, channel: str):
         """Route to a specific output
 
@@ -91,7 +90,8 @@ class RSWUSP16TR(Instrument):
         """
         return dict(super().to_dict().items())
 
-    def set_parameter(self, parameter, value, channel_id=None):
+    @log_set_parameter
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id=None):
         """Set instrument parameter.
 
         Args:
@@ -99,12 +99,12 @@ class RSWUSP16TR(Instrument):
             value (ParameterValue): value to update the Parameter with
             channel_id (int): Channel identifier of the parameter to update.
         """
-        if parameter == "active_channel":
+        if parameter == Parameter.RF_ACTIVE_CHANNEL:
             self.route(str(value))
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter, channel_id=None):
+    def get_parameter(self, parameter: Parameter, channel_id=None):
         """Get instrument parameter.
 
         Args:
@@ -114,7 +114,7 @@ class RSWUSP16TR(Instrument):
         Returns:
             ParameterValue.
         """
-        if parameter == "active_channel":
+        if parameter == Parameter.RF_ACTIVE_CHANNEL:
             # ensure it's in sync
             self.settings.active_channel = self.device.active_channel.get()
             return cast("str", self.settings.active_channel)
