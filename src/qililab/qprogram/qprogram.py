@@ -25,6 +25,7 @@ from qililab.qprogram.operations import (
     AcquireWithCalibratedWeights,
     Measure,
     MeasureReset,
+    MeasureResetCalibrated,
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
@@ -188,6 +189,7 @@ class QProgram(StructuredProgram):
                         MeasureWithCalibratedWaveform,
                         MeasureWithCalibratedWeights,
                         MeasureWithCalibratedWaveformWeights,
+                        MeasureResetCalibrated,
                     ),
                 ):
                     return True
@@ -209,7 +211,7 @@ class QProgram(StructuredProgram):
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
                     traverse(element)
-                elif isinstance(element, MeasureReset):
+                elif isinstance(element, (MeasureReset, MeasureResetCalibrated)):
                     bus = getattr(element, "bus")
                     control_bus = getattr(element, "control_bus")
                     if isinstance(bus, str) and bus in bus_mapping:
@@ -327,6 +329,25 @@ class QProgram(StructuredProgram):
                         save_adc=element.save_adc,
                     )
                     block.elements[index] = measure_operation
+                elif (
+                    isinstance(element, MeasureResetCalibrated)
+                    and calibration.has_waveform(bus=element.bus, name=element.waveform)
+                    and calibration.has_weights(bus=element.bus, name=element.weights)
+                    and calibration.has_waveform(bus=element.control_bus, name=element.reset_pulse)
+                ):
+                    waveform = calibration.get_waveform(bus=element.bus, name=element.waveform)
+                    weights = calibration.get_weights(bus=element.bus, name=element.weights)
+                    reset_pulse = calibration.get_waveform(bus=element.control_bus, name=element.reset_pulse)
+                    measure_reset_operation = MeasureReset(
+                        bus=element.bus,
+                        waveform=waveform,
+                        weights=weights,
+                        control_bus=element.control_bus,
+                        reset_pulse=reset_pulse,
+                        trigger_address=element.trigger_address,
+                        save_adc=element.save_adc,
+                    )
+                    block.elements[index] = measure_reset_operation
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body)
@@ -722,16 +743,8 @@ class QProgram(StructuredProgram):
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
-        def measure_reset(
-            self,
-            bus: str,
-            waveform: IQPair,
-            weights: IQPair,
-            control_bus: str,
-            reset_pulse: IQPair,
-            trigger_address: int = 1,
-            save_adc: bool = False,
-        ):
+        @overload
+        def measure_reset(self, bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
@@ -747,15 +760,76 @@ class QProgram(StructuredProgram):
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
             """
 
-            operation = MeasureReset(
-                bus=bus,
-                waveform=waveform,
-                weights=weights,
-                control_bus=control_bus,
-                reset_pulse=reset_pulse,
-                trigger_address=trigger_address,
-                save_adc=save_adc,
+        @overload
+        def measure_reset(self, bus: str, waveform: str, weights: str, control_bus: str, reset_pulse: str, trigger_address: int = 1, save_adc: bool = False):
+            """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
+
+            If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
+            If the result is 0, the control_bus waits instead.
+
+            Args:
+                bus (str): Identifier of the measurement bus.
+                waveform (str): Waveform played during measurement.
+                weights (str): Weights used for demodulation/integration.
+                control_bus (str): Identifier of the control/reset bus.
+                reset_pulse (str): Pulse used for active reset.
+                trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
+                save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+            """
+
+        def measure_reset(
+            self,
+            bus: str,
+            waveform: IQPair | str,
+            weights: IQPair | str,
+            control_bus: str,
+            reset_pulse: IQPair | str,
+            trigger_address: int = 1,
+            save_adc: bool = False,
+        ):
+            """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
+
+            If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
+            If the result is 0, the control_bus waits instead.
+
+            Args:
+                bus (str): Identifier of the measurement bus.
+                waveform (IQPair | str): Waveform played during measurement.
+                weights (IQPair | str): Weights used for demodulation/integration.
+                control_bus (str): Identifier of the control/reset bus.
+                reset_pulse (IQPair | str): Pulse used for active reset.
+                trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
+                save_adc (bool, optional): Whether to save ADC data. Defaults to False.
+            """
+            operation: (
+                MeasureReset
+                | MeasureResetCalibrated
             )
+            if isinstance(waveform, IQPair) and isinstance(weights, IQPair) and isinstance(reset_pulse, IQPair):
+                operation = MeasureReset(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    control_bus=control_bus,
+                    reset_pulse=reset_pulse,
+                    trigger_address=trigger_address,
+                    save_adc=save_adc,
+                )
+            elif isinstance(waveform, str) and isinstance(weights, str) and isinstance(reset_pulse, str):
+                operation = MeasureResetCalibrated(
+                    bus=bus,
+                    waveform=waveform,
+                    weights=weights,
+                    control_bus=control_bus,
+                    reset_pulse=reset_pulse,
+                    trigger_address=trigger_address,
+                    save_adc=save_adc,
+                )
+
+            #  Raise an error if a calibrated component has been used in conjunction with a non calibrated one
+            elif any(isinstance(component, str) for component in (waveform, weights, reset_pulse)):
+                raise NotImplementedError("For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all.")
+
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
             self.qprogram._buses.add(control_bus)

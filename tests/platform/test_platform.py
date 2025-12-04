@@ -35,10 +35,7 @@ from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
-from qililab.extra.quantum_machines import (
-    QuantumMachinesCluster,
-    QuantumMachinesMeasurementResult,
-)
+from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
 from qililab.instrument_controllers import InstrumentControllers
 from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instruments import SGS100A
@@ -337,6 +334,13 @@ def get_anneal_qprogram_with_preparation(runcard, flux_to_bus_topology):
                 qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
+
+@pytest.fixture(name="qp_quantum_machine")
+def fixture_qp_quantum_machine() -> QProgram:
+    qp = QProgram()
+    qp.play(bus="drive_q0", waveform=Square(amplitude=1, duration=10))
+    qp.wait("drive_q0", 10)
+    return qp
 
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
@@ -979,6 +983,12 @@ class TestMethods:
             MockExecutor.assert_called_once_with(
                 platform=platform,
                 experiment=mock_experiment,
+                live_plot=False,
+                slurm_execution=True,
+                port_number=None,
+                job_id=None,
+                sample=None,
+                cooldown=None,
             )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
@@ -1841,7 +1851,7 @@ class TestMethods:
             platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
 
     @patch("qililab.platform.platform.get_db_manager")
-    @patch("qililab.result.database._load_config")
+    @patch("qililab.result.database.database_manager._load_config")
     def test_load_db_manager(self, mock_load_config, mock_get_db_manager, platform: Platform):
         """Test load_db_manager createing a database from a given path"""
         path = "~/database_test.ini"
@@ -1863,7 +1873,7 @@ class TestMethods:
         mock_get_db_manager.assert_called_once_with(path)
 
     @patch("qililab.platform.platform.get_db_manager")
-    @patch("qililab.result.database._load_config")
+    @patch("qililab.result.database.database_manager._load_config")
     def test_load_db_manager_no_path(self, mock_load_config, mock_get_db_manager, platform: Platform):
         """Test load_db_manager createing a database without a given path"""
         mock_load_config.return_value = {
@@ -2004,6 +2014,15 @@ class TestMethods:
         error_string = "Loops dimensions must be the same than the array introduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
+
+    def test_platform_draw_quantum_machine_raises_error(
+        self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
+    ):
+
+        with pytest.raises(NotImplementedError) as exc_info:
+            platform_quantum_machines.draw(qp_quantum_machine)
+    
+        assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
 
     def test_trigger_network_setup_and_reset(self, platform):
         # Build a fake compilation output with one bus “b” → trigger 5
