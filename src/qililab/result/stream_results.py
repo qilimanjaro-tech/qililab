@@ -206,7 +206,7 @@ class StreamArray:
                 compiled = self.platform.compile_qprogram(qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration).qblox
             else:
                 qblox_compiler = QbloxCompiler()
-                compiled = qblox_compiler.compile(qprogram=self.qprogram)
+                compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)
 
             sequences = compiled.sequences
             lines = []
