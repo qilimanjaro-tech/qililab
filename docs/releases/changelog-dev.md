@@ -65,6 +65,8 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
 
 ### Improvements
 
+- Implemented a new driver for the Becker Nachrichtentechnik RSWU-SP16TR
+[#1020](https://github.com/qilimanjaro-tech/qililab/pull/1020)
 - Improved acquisition result handling in the QBlox Compiler.
 
   Previously, each acquisition was assigned a unique acquisition index, which meant that a single qprogram could only contain up to 32 acquisitions per bus (due to QBlox’s limit of 32 indices).
