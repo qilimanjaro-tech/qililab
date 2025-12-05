@@ -211,9 +211,6 @@ class FluxVector:
 
         Args:
             crosstalk (CrosstalkMatrix): _description_
-
-        Returns:
-            _type_: _description_
         """
         self.crosstalk = crosstalk
         self.crosstalk_inverse = crosstalk.inverse()
