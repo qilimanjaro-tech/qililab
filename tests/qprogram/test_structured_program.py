@@ -240,15 +240,15 @@ class TestStructuredProgram:
         assert expr3.extract_constants() == 5
         assert expr4.extract_constants() == 10
 
-    def test_variable_expression_raises_error_for_non_time_domain(self, instance: StructuredProgram):
-        """Test that VariableExpression raises ValueError if used with a non-Time domain variable"""
-        freq_var = instance.variable("freq", domain=Domain.Frequency)
-        phase_var = instance.variable("phase", domain=Domain.Phase)
-        voltage_var = instance.variable("voltage", domain=Domain.Voltage)
-        flux_var = instance.variable("flux", domain=Domain.Flux)
-        for var in [freq_var, phase_var, voltage_var, flux_var]:
-            with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
-                _ = var + 5
+    # def test_variable_expression_raises_error_for_non_time_domain(self, instance: StructuredProgram):
+    #     """Test that VariableExpression raises ValueError if used with a non-Time domain variable"""
+    #     freq_var = instance.variable("freq", domain=Domain.Frequency)
+    #     phase_var = instance.variable("phase", domain=Domain.Phase)
+    #     voltage_var = instance.variable("voltage", domain=Domain.Voltage)
+    #     flux_var = instance.variable("flux", domain=Domain.Flux)
+    #     for var in [freq_var, phase_var, voltage_var, flux_var]:
+    #         with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
+    #             _ = var + 5
 
     def test_variable_expression_infer_domain_error(self):
         # Pure-constant expression should fail to infer a domain
@@ -300,3 +300,41 @@ class TestStructuredProgram:
         # Now extract_variables should fail because no Variable remains
         with pytest.raises(ValueError, match="No Variable instance found in expression"):
             expr.extract_variables()
+
+    def test_substraction_raises_error_non_time_domain(self, instance):
+        # Substractions are not implemented for non time domains
+        freq1 = instance.variable(label="freq1", domain=Domain.Frequency)
+        freq2 = instance.variable(label="freq2", domain=Domain.Frequency)
+        with pytest.raises(NotImplementedError, match=f"For the {Domain.Frequency.name} domain, only the addition operator is implemented in VariableExpression."):
+            expr = freq1 - freq2
+
+    def test_two_variables_time_domain(self, instance):
+        # More than 2 variable is not allowed for time domains
+        time1 = instance.variable(label="time1", domain=Domain.Time)
+        time2 = instance.variable(label="time2", domain=Domain.Time)
+        with pytest.raises(NotImplementedError, match="Combining several time variables in one expression is not implemented."):
+            expr = time1 + time2
+
+    def test_three_variable_raises_error(self, instance):
+        # Substractions are not implemented for non time domains
+        freq1 = instance.variable(label="freq1", domain=Domain.Frequency)
+        freq2 = instance.variable(label="freq2", domain=Domain.Frequency)
+        freq3 = instance.variable(label="freq3", domain=Domain.Frequency)
+        with pytest.raises(NotImplementedError, match=f"For the {Domain.Frequency.name} domain, Variable Expression currently supports up to two variables only."):
+            expr = freq1 + freq2 + freq3
+
+    def test_forbidden_operation(self,instance):
+        # Only addition and substraction are possible
+        freq1 = instance.variable(label="freq1", domain=Domain.Frequency)
+        freq2 = instance.variable(label="freq2", domain=Domain.Frequency)
+        with pytest.raises(NotImplementedError, match=f"Operation 'multiplication \(\*\)' is not implemented for QProgram"):
+            expr = freq1 * freq2
+
+
+    def test_combine_domains_raises_error(self,instance):
+        # Only one type of domain per expression is allowed
+        gain = instance.variable(label="gain", domain=Domain.Voltage)
+        freq = instance.variable(label="freq", domain=Domain.Frequency)
+        with pytest.raises(ValueError, match=f"All variables should have the same domain."):
+            expr = gain + freq
+   

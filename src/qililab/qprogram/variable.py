@@ -43,6 +43,13 @@ class Domain(Enum):
         value = int(value)
         return cls(value)
 
+@staticmethod
+def _unsupported(operation_name: str):
+    def method(self, *args, **kwargs):
+        raise NotImplementedError(
+            f"Operation '{operation_name}' is not implemented for QProgram"
+        )
+    return method
 
 @yaml.register_class
 class Variable:
@@ -73,6 +80,28 @@ class Variable:
 
     def __rsub__(self, other):
         return VariableExpression(other, "-", self)
+    
+    # Unsupported operations    
+    __mul__      = _unsupported("multiplication (*)")
+    __matmul__   = _unsupported("matrix multiplication (@)")
+    __truediv__  = _unsupported("division (/)")
+    __floordiv__ = _unsupported("floor division (//)")
+    __mod__      = _unsupported("modulo (%)")
+    __pow__      = _unsupported("power (**)")
+    __and__      = _unsupported("bitwise and (&)")
+    __or__       = _unsupported("bitwise or (|)")
+    __xor__      = _unsupported("bitwise xor (^)")
+    __lshift__   = _unsupported("left shift (<<)")
+    __rshift__   = _unsupported("right shift (>>)")
+    __gt__        = _unsupported("greater-than (>)")
+    __ge__        = _unsupported("greater-or-equal (>=)")
+    __rmul__      = _unsupported("reflected multiplication (*)")
+    __rtruediv__  = _unsupported("reflected division (/)")
+    __iadd__      = _unsupported("in-place addition (+=)")
+    __isub__      = _unsupported("in-place subtraction (-=)")
+    __imul__      = _unsupported("in-place multiplication (*=)")
+    __itruediv__  = _unsupported("in-place division (/=)")
+
 
     @property
     def uuid(self):
@@ -140,18 +169,35 @@ class VariableExpression(Variable):
         self.left = left
         self.operator = operator
         self.right = right
-        domain = self._infer_domain(left, right)
-        if domain != Domain.Time:
-            raise NotImplementedError("Variable Expressions are only supported for Domain.Time.")
+        domain = self._infer_domain()
         self._domain = domain
+        if self.operator !="+" and domain != Domain.Time:
+            raise NotImplementedError(f"For the {domain.name} domain, only the addition operator is implemented in VariableExpression.")
         super().__init__(label="", domain=self._domain)
+        self.variables = self.extract_variables()
+        
 
-    def _infer_domain(self, left, right):
-        if isinstance(left, Variable):
-            return left.domain
-        if isinstance(right, Variable):
-            return right.domain
-        raise ValueError("Cannot infer domain from constants.")
+    def _infer_domain(self):
+        domain_list = []
+        def _collect_domain(expr):
+            if isinstance(expr, VariableExpression):
+                _collect_domain(expr.left)
+                _collect_domain(expr.right)
+            elif isinstance(expr, Variable):
+                domain_list.append(expr.domain)
+        
+        _collect_domain(self)
+        if not domain_list:
+            raise ValueError("Cannot infer domain from constants.")
+
+        domain = domain_list[0]
+        if domain_list and not all(x == domain_list[0] for x in domain_list):
+            raise ValueError("All variables should have the same domain.")
+        elif domain == Domain.Time and len(domain_list) > 1:
+            raise NotImplementedError("Combining several time variables in one expression is not implemented.")
+        elif len(domain_list) > 2:
+            raise NotImplementedError(f"For the {domain.name} domain, Variable Expression currently supports up to two variables only.")            
+        return domain
 
     def __repr__(self):
         return f"({self.left} {self.operator} {self.right})"
@@ -170,21 +216,18 @@ class VariableExpression(Variable):
 
     def extract_variables(self):
         """Recursively extract all Variable instances used in this expression."""
-
+        variables = []
         def _collect(expr):
             if isinstance(expr, VariableExpression):
-                result = _collect(expr.left)
-                if result is not None:
-                    return result
-                return _collect(expr.right)
-            if isinstance(expr, Variable):
-                return expr
-            return None
-
-        result = _collect(self)
-        if result is None:
+                _collect(expr.left)
+                _collect(expr.right)
+            elif isinstance(expr, Variable):
+                variables.append(expr)
+        
+        _collect(self)
+        if not variables:
             raise ValueError(f"No Variable instance found in expression: {self}")
-        return result
+        return variables
 
     def extract_constants(self):
         """Recursively extract all constants used in this expression."""
@@ -200,6 +243,4 @@ class VariableExpression(Variable):
             return None
 
         result = _collect(self)
-        if result is None:
-            raise ValueError(f"No Variable instance found in expression: {self}")
         return result

@@ -3942,4 +3942,3 @@ other_max_duration_0:
         print(sequences["readout_q0_bus"]._program)
         assert is_q1asm_equal(sequences["drive_q0_bus"], drive_str)
         assert is_q1asm_equal(sequences["readout_q0_bus"], readout_str)
-
