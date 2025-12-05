@@ -231,10 +231,10 @@ class TestStructuredProgram:
         assert repr(expr4) == f"(10 - {time_variable_expression})"
 
         # Check extract methods
-        assert expr1.extract_variables()[0] == time_variable_expression
-        assert expr2.extract_variables()[0] == time_variable_expression
-        assert expr3.extract_variables()[0] == time_variable_expression
-        assert expr4.extract_variables()[0] == time_variable_expression
+        assert expr1.extract_variables() == time_variable_expression
+        assert expr2.extract_variables() == time_variable_expression
+        assert expr3.extract_variables() == time_variable_expression
+        assert expr4.extract_variables() == time_variable_expression
         assert expr1.extract_constants() == 5
         assert expr2.extract_constants() == 10
         assert expr3.extract_constants() == 5
@@ -284,8 +284,9 @@ class TestStructuredProgram:
         # An expression made of two Variables should have no constants to extract
         t1 = instance.variable(label="t1", domain=Domain.Time)
         t2 = instance.variable(label="t2", domain=Domain.Time)
-        with pytest.raises(NotImplementedError, match="Combining several time variables in one expression is not implemented"):
-            expr = t1 + t2
+        expr = t1 + t2
+        with pytest.raises(ValueError, match="No Variable instance found in expression"):
+            expr.extract_constants()
 
     def test_extract_variables_raises_error_when_no_variables(self, instance):
         # Create a valid VariableExpression with a Time variable
@@ -329,7 +330,7 @@ class TestStructuredProgram:
         with pytest.raises(NotImplementedError, match=f"Operation 'multiplication \(\*\)' is not implemented for QProgram"):
             expr = freq1 * freq2
 
-    
+
     def test_combine_domains_raises_error(self,instance):
         # Only one type of domain per expression is allowed
         gain = instance.variable(label="gain", domain=Domain.Voltage)
