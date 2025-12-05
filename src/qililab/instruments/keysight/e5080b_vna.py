@@ -15,7 +15,8 @@
 """KeySight Vector Network Analyzer E5080B class."""
 
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from functools import partial
 from typing import cast
 
 import numpy as np
@@ -81,7 +82,7 @@ class E5080B(Instrument):
         trigger_source: VNATriggerSource | None = None
         trigger_type: VNATriggerType | None = None
         sweep_group_count: int | None = None
-        electrical_delay: float | None = None
+        electrical_delay: dict[str, float] = field(default_factory=partial(dict, {"Channel 1": 0.0, "Channel 2": 0.0}))
 
     settings: E5080BSettings
     device: KeysightE5080B
@@ -288,7 +289,7 @@ class E5080B(Instrument):
         return self.settings.format_border
 
     @property
-    def electrical_delay(self) -> float | None:
+    def electrical_delay(self) -> dict[str, float] | None:
         """Gets the electrical delay for plotting purposes only
 
         Returns:
@@ -445,7 +446,13 @@ class E5080B(Instrument):
             return
 
         if parameter == Parameter.ELECTRICAL_DELAY:
-            self.settings.electrical_delay = float(value)
+            if channel_id not in [1, 2, "1", "2"]:
+                raise ValueError(f"channel_id has to be 1 or 2, not {channel_id}")
+            if float(value) > 1e10 or float(value) < -1e10:
+                raise ValueError("Electrical delay has to be between -1e10 and 1e10 nanoseconds")
+            self.settings.electrical_delay[f"Channel {channel_id}"] = float(value)
+            if self.is_device_active():
+                self.device.set_electrical_delay(channel_id=channel_id, value=value)
             return
 
         raise ParameterNotFound(self, parameter)
@@ -552,6 +559,9 @@ class E5080B(Instrument):
             return cast("ParameterValue", self.settings.operation_status)
 
         if parameter == Parameter.ELECTRICAL_DELAY:
+            if channel_id not in [1, 2, "1", "2"]:
+                raise ValueError(f"channel_id has to be 1 or 2, not {channel_id}")
+            self.settings.electrical_delay[f"Channel {channel_id}"] = self.device.get_electrical_delay(channel_id=channel_id)
             return cast("ParameterValue", self.settings.electrical_delay)
 
         raise ParameterNotFound(self, parameter)
