@@ -4,15 +4,19 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+from qililab.instruments import Instrument, Instruments
+from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Bus
+from qililab.qprogram import Calibration, QdacCompiler, QProgram
 from qililab.qprogram.blocks.for_loop import ForLoop
 from qililab.qprogram.blocks.loop import Loop
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
+from qililab.qprogram.operations.play import Play
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 from qililab.qprogram.variable import Domain
 from qililab.waveforms import Square
-from qililab.instruments import Instrument, Instruments
-from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
-from qililab.qprogram import QProgram, Calibration, QdacCompiler
+from qililab.waveforms.arbitrary import Arbitrary
+from qililab.waveforms.iq_pair import IQPair
 
 
 @pytest.fixture(name="qdac_instrument")
@@ -64,6 +68,7 @@ def fixture_qdac() -> QDevilQDac2:
     qdac.set_in_external_trigger = MagicMock()
     qdac.set_in_internal_trigger = MagicMock()
     qdac.upload_voltage_list = MagicMock()
+    qdac.set_parameter = MagicMock()
 
     return qdac
 
@@ -142,6 +147,114 @@ class TestQdacCompiler:
 
         qdac.set_end_marker_internal_trigger.assert_called_once()
         assert qdac.upload_voltage_list.call_count == 8  # accumulative with last calls
+
+    def test_crosstalk_compensation(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Test all possible combinations of play + set_trigger on the QDACII."""
+
+        crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        )
+        flux_wf = Arbitrary(samples=np.array([0,  0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
+        qp = QProgram()
+
+        freq = qp.variable(label="frequency", domain=Domain.Frequency)
+
+        with qp.average(10):
+            qp.set_offset(bus="flux2", offset_path0=0.3)
+            with qp.for_loop(variable=freq, start=10e6, stop=100e6, step=10e6):
+                qp.qdac.play(bus="flux1", waveform=flux_wf, dwell=2)
+                qp.set_offset(bus="flux2", offset_path0=-0.2)
+                qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], crosstalk=crosstalk)
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._qdac == qdac
+        
+        assert qdac.upload_voltage_list.call_count == 2
+        assert qdac.set_parameter.call_count == 2
+
+    def test_crosstalk_compensation_calibration(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Test all possible combinations of play + set_trigger on the QDACII."""
+
+        crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        )
+        calibration = Calibration()
+        calibration.crosstalk_matrix = crosstalk
+
+        flux_wf = Arbitrary(samples=np.array([0,  0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
+        qp = QProgram()
+
+        freq = qp.variable(label="frequency", domain=Domain.Frequency)
+
+        with qp.average(10):
+            qp.set_offset(bus="flux2", offset_path0=0.3)
+            with qp.for_loop(variable=freq, start=10e6, stop=100e6, step=10e6):
+                qp.qdac.play(bus="flux1", waveform=flux_wf, dwell=2)
+                qp.set_offset(bus="flux2", offset_path0=-0.2)
+                qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], calibration=calibration)
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._qdac == qdac
+        
+        assert qdac.upload_voltage_list.call_count == 2
+        assert qdac.set_parameter.call_count == 2
+
+    def test_crosstalk_compensation_IQPair(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Test all possible combinations of play + set_trigger on the QDACII."""
+
+        crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        )
+        flux_wf = IQPair(Arbitrary(samples=np.array([0,  0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0])), 
+                         Arbitrary(samples=np.array([0,  0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0])),)
+        qp = QProgram()
+
+        freq = qp.variable(label="frequency", domain=Domain.Frequency)
+
+        with qp.average(10):
+            qp.set_offset(bus="flux2", offset_path0=0.3)
+            with qp.for_loop(variable=freq, start=10e6, stop=100e6, step=10e6):
+                qp.qdac.play(bus="flux1", waveform=flux_wf, dwell=2)
+                qp.set_offset(bus="flux2", offset_path0=-0.2)
+                qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], crosstalk=crosstalk)
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._qdac == qdac
+        
+        assert qdac.upload_voltage_list.call_count == 2
+        assert qdac.set_parameter.call_count == 2
+    
+    def test_different_size_plays_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Test all possible combinations of play + set_trigger on the QDACII."""
+
+        crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        )
+        flux_wf = Arbitrary(samples=np.array([0,  0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
+        flux_wf_wrong = Arbitrary(samples=np.array([0.1, 0]))
+        qp = QProgram()
+
+        qp.qdac.play(bus="flux1", waveform=flux_wf, dwell=2)
+        qp.qdac.play(bus="flux2", waveform=flux_wf_wrong, dwell=2)
+        qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
+
+        compiler = QdacCompiler()
+        
+
+        with pytest.raises(
+            ValueError, 
+            match=f"qp.play elements must have the same size.",
+        ):
+            compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], crosstalk=crosstalk)
 
     def test_play_bus_map(self, qdac: QDevilQDac2, flux1: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
@@ -458,3 +571,23 @@ class TestQdacCompiler:
             NotImplementedError, match=f"<class 'qililab.qprogram.operations.sync.Sync'> is not supported in QDACII."
         ):
             compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2])
+            
+    def test_handle_unknown_crosstalk(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Test all possible combinations of play + set_trigger on the QDACII."""
+        pulse_wf = Square(1.0, 100)
+        dwell_us = 2
+        crosstalk = CrosstalkMatrix.from_buses(
+            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
+        )
+
+        # Setting external trigger at the beginning of the iteration
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.sync(buses=["flux1", "flux2"])
+
+        compiler = QdacCompiler()
+        with pytest.raises(
+            NotImplementedError, match=f"<class 'qililab.qprogram.operations.sync.Sync'> is not supported in QDACII."
+        ):
+            compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], crosstalk=crosstalk)

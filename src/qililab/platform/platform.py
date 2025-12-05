@@ -1221,6 +1221,7 @@ class Platform:
                     qdac_buses=qdac_buses,
                     bus_mapping=bus_mapping,
                     calibration=calibration,
+                    crosstalk=self.crosstalk,
                 )
 
             qblox_compiler = QbloxCompiler()
@@ -1269,6 +1270,7 @@ class Platform:
                     qdac_buses=qdac_buses,
                     bus_mapping=bus_mapping,
                     calibration=calibration,
+                    crosstalk=self.crosstalk,
                 )
 
             compiler = QuantumMachinesCompiler()
