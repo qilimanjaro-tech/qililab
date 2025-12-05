@@ -3303,7 +3303,7 @@ requires-dist = [
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qibo", specifier = "==0.2.15" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.1" },
-    { name = "qpysequence", specifier = ">=0.10.7" },
+    { name = "qpysequence", specifier = ">=0.10.8" },
     { name = "qualang-tools", marker = "extra == 'quantum-machines'", specifier = ">=0.19.3" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
@@ -3381,15 +3381,15 @@ wheels = [
 
 [[package]]
 name = "qpysequence"
-version = "0.10.7"
+version = "0.10.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "loguru" },
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ea/7c/b4b69037fb00f8896155d8b980ee064e19a37a1d9fe37688e0cfa664a2a9/qpysequence-0.10.7.tar.gz", hash = "sha256:ee6a38211d848294b34377c0b876f1be6a13efec25aa6953adbb6eb840ec7a3a", size = 74522, upload-time = "2025-03-17T11:30:55.723Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/38/910cdfaf3ce7cffb37235cbfef84ed2c7adf9bc8260a1cb5479e78c591aa/qpysequence-0.10.8.tar.gz", hash = "sha256:d47aff11f14905b443013e7b1385a021da86da37f3ae56df086dccb730d838c9", size = 77883, upload-time = "2025-12-05T11:18:55.528Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/1f/e98d61716b7f905b95d1d57777d8304308125b6ca7456c62dda0402e2c39/qpysequence-0.10.7-py3-none-any.whl", hash = "sha256:57dad26e8d3f65aa3c99e01e7988eb1055322c5749744fae900f81d69023d621", size = 79341, upload-time = "2025-03-17T11:30:54.804Z" },
+    { url = "https://files.pythonhosted.org/packages/30/ac/657bd7e88e8d5bb84c73f683662bcae90791e4bc141bb7de1cb6a07d9fd2/qpysequence-0.10.8-py3-none-any.whl", hash = "sha256:ccf0cf66d41cc1bbc79b341375728e09f655b049cfc9ee88cbb8be15cde5d834", size = 79524, upload-time = "2025-12-05T11:18:56.53Z" },
 ]
 
 [[package]]

@@ -65,6 +65,9 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
 
 ### Improvements
 
+- Upgraded requirement: `qpysequence>=0.10.8`
+[#1044](https://github.com/qilimanjaro-tech/qililab/pull/1044)
+
 - Improved acquisition result handling in the QBlox Compiler.
 
   Previously, each acquisition was assigned a unique acquisition index, which meant that a single qprogram could only contain up to 32 acquisitions per bus (due to QBlox’s limit of 32 indices).
