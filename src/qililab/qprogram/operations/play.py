@@ -21,11 +21,22 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class Play(Operation):
-    def __init__(self, bus: str, waveform: Waveform | IQPair, wait_time: int | None = None) -> None:
+    def __init__(
+        self,
+        bus: str,
+        waveform: Waveform | IQPair,
+        wait_time: int | None = None,
+        dwell: int | None = None,
+        delay: int | None = None,
+        repetitions: int | None = None,
+    ) -> None:
         super().__init__()
         self.bus: str = bus
         self.waveform: Waveform | IQPair = waveform
-        self.wait_time: int | None = wait_time  # TODO: remove this in clean fix
+        self.wait_time: int | None = wait_time
+        self.dwell: int | None = dwell
+        self.delay: int | None = delay
+        self.repetitions: int | None = repetitions
 
     def get_waveforms(self) -> tuple[Waveform, Waveform | None]:
         """Get the waveforms.
@@ -61,8 +72,19 @@ class Play(Operation):
 
 @yaml.register_class
 class PlayWithCalibratedWaveform(Operation):
-    def __init__(self, bus: str, waveform: str, wait_time: int | None = None) -> None:
+    def __init__(
+        self,
+        bus: str,
+        waveform: str,
+        wait_time: int | None = None,
+        dwell: int | None = None,
+        delay: int | None = None,
+        repetitions: int | None = None,
+    ) -> None:
         super().__init__()
         self.bus: str = bus
         self.waveform: str = waveform
         self.wait_time: int | None = wait_time
+        self.dwell: int | None = dwell
+        self.delay: int | None = delay
+        self.repetitions: int | None = repetitions

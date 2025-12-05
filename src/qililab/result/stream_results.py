@@ -25,7 +25,7 @@ from qililab.utils.serialization import serialize
 if TYPE_CHECKING:
     from qililab.platform import Platform
     from qililab.qprogram.qprogram import Calibration, QProgram
-    from qililab.result.database import DatabaseManager, Measurement
+    from qililab.result.database import AutocalMeasurement, DatabaseManager, Measurement
 
 
 class StreamArray:
@@ -48,7 +48,7 @@ class StreamArray:
 
     path: str
     _dataset: h5py.Dataset
-    measurement: Measurement | None = None
+    measurement: Measurement | AutocalMeasurement | None = None
     _file: h5py.File | None = None
 
     def __init__(
@@ -60,7 +60,10 @@ class StreamArray:
         platform: Platform | None = None,
         qprogram: QProgram | None = None,
         calibration: Calibration | None = None,
+        bus_mapping: dict[str, str] | None = None,
         optional_identifier: str | None = None,
+        autocalibration: bool = False,
+        qubit_idx: int | None = None,
     ):
         self.results: np.ndarray
         self.shape = [shape] if isinstance(shape, int) else shape
@@ -71,6 +74,9 @@ class StreamArray:
         self.platform = platform
         self.qprogram = qprogram
         self.calibration = calibration
+        self.bus_mapping = bus_mapping
+        self.autocalibration = autocalibration
+        self.qubit_idx = qubit_idx
         self._first_value = True
 
     def __enter__(self):
@@ -79,43 +85,59 @@ class StreamArray:
         Returns:
             StreamArray: StreamArray class created
         """
-        self.measurement = self.db_manager.add_measurement(
-            experiment_name=self.experiment_name,
-            experiment_completed=False,
-            optional_identifier=self.optional_identifier,
-            platform=self.platform.to_dict() if self.platform else None,
-            qprogram=serialize(self.qprogram) if self.qprogram else None,
-            calibration=serialize(self.calibration) if self.calibration else None,
-            debug_file=self._get_debug() if self.platform and self.qprogram else None,
-        )
-        self.path = self.measurement.result_path
-
-        # Save loops
-        self._file = h5py.File(name=self.path, mode="w", libver="latest")
-        self._file.swmr_mode = True
-
-        g = self._file.create_group(name="loops", track_order=True)
-        for loop_name, array in self.loops.items():
-            if isinstance(array, dict):
-                g_dataset = g.create_dataset(name=loop_name, data=array["array"])
-                g_dataset.attrs["bus"] = array["bus"]
-                g_dataset.attrs["parameter"] = array["parameter"]
-                g_dataset.attrs["units"] = array["units"]
+        try:
+            if self.autocalibration:
+                if not self.calibration:
+                    raise ValueError("For autocalibration a Calibration file is mandatory.")
+                self.measurement = self.db_manager.add_autocal_measurement(
+                    experiment_name=self.experiment_name,
+                    qubit_idx=self.qubit_idx,
+                    platform=self.platform.to_dict() if self.platform else None,
+                    qprogram=serialize(self.qprogram) if self.qprogram else None,
+                    calibration=self.calibration,
+                    parameters=self.loops,
+                    data_shape=self.shape,
+                )
             else:
-                g.create_dataset(name=loop_name, data=array)
+                self.measurement = self.db_manager.add_measurement(
+                    experiment_name=self.experiment_name,
+                    experiment_completed=False,
+                    optional_identifier=self.optional_identifier,
+                    platform=self.platform.to_dict() if self.platform else None,
+                    qprogram=serialize(self.qprogram) if self.qprogram else None,
+                    calibration=serialize(self.calibration) if self.calibration else None,
+                    debug_file=self._get_debug() if self.platform and self.qprogram else None,
+                )
+            self.path = self.measurement.result_path
 
-        # Create results dataset only once
-        if len(self.shape) == len(self.loops.keys()):
-            self.results = np.zeros(shape=self.shape, dtype=np.complex128)
-            if self._file:
-                self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
-        else:
-            self.results = np.zeros(shape=self.shape)
-            if self._file:
-                self._dataset = self._file.create_dataset("results", data=self.results)
-        self._file.flush()
+            # Save loops
+            self._file = h5py.File(name=self.path, mode="w", libver="latest")
+            self._file.swmr_mode = True
 
-        return self
+            g = self._file.create_group(name="loops", track_order=True)
+            for loop_name, array in self.loops.items():
+                if isinstance(array, dict):
+                    g_dataset = g.create_dataset(name=loop_name, data=array["array"])
+                    g_dataset.attrs["bus"] = array["bus"]
+                    g_dataset.attrs["parameter"] = array["parameter"]
+                    g_dataset.attrs["units"] = array["units"]
+                else:
+                    g.create_dataset(name=loop_name, data=array)
+
+            # Create results dataset only once
+            if len(self.shape) == len(self.loops.keys()):
+                self.results = np.zeros(shape=self.shape, dtype=np.complex128)
+                if self._file:
+                    self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
+            else:
+                self.results = np.zeros(shape=self.shape)
+                if self._file:
+                    self._dataset = self._file.create_dataset("results", data=self.results)
+            self._file.flush()
+
+            return self
+        except Exception as e:
+            raise RuntimeError("An error occurred while creating the StreamArray.") from e
 
     def __setitem__(
         self, key: tuple, value: np.ndarray[Any, np.dtype[np.floating]] | np.ndarray[Any, np.dtype[np.complexfloating]]
@@ -137,7 +159,7 @@ class StreamArray:
             self._file.__exit__()
             self._file = None
 
-        self.measurement = self.measurement.end_experiment(self.db_manager.Session, traceback)
+        self.measurement = self.measurement.end_experiment(self.db_manager.session, traceback)
 
     def __getitem__(self, index: int):
         """Gets item by index.
@@ -180,10 +202,13 @@ class StreamArray:
             for bus in self.platform.buses.elements
             for instrument in bus.instruments
         ):
-            qblox_compiler = QbloxCompiler()
-            compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)
-            sequences = compiled.sequences
+            if self.bus_mapping is not None:
+                compiled = self.platform.compile_qprogram(qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration).qblox
+            else:
+                qblox_compiler = QbloxCompiler()
+                compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)
 
+            sequences = compiled.sequences
             lines = []
             for bus_alias, seq in sequences.items():
                 lines.append(f"Bus {bus_alias}:")

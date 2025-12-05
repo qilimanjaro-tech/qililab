@@ -337,3 +337,4 @@ class TestStructuredProgram:
         freq = instance.variable(label="freq", domain=Domain.Frequency)
         with pytest.raises(ValueError, match=f"All variables should have the same domain."):
             expr = gain + freq
+   
