@@ -65,7 +65,7 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
 
 ### Improvements
 
-- Upgraded requirement: `qpysequence==0.10.8`
+- Upgraded requirement: `qpysequence>=0.10.8`
 [#1044](https://github.com/qilimanjaro-tech/qililab/pull/1044)
 
 - Improved acquisition result handling in the QBlox Compiler.
