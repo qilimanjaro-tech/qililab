@@ -17,7 +17,7 @@ import re
 import numpy as np
 import plotly.colors as pc
 import plotly.graph_objects as go
-
+from IPython.display import HTML
 from qililab.qprogram.variable import Domain
 
 
@@ -779,8 +779,47 @@ class QbloxDraw:
         fig.update_layout(
             height=600,
             width=1100,
-            title_text="QBlox Oscillator simulation",
+            title_text="🎄 QBlox Oscillator simulation 🎄",
             showlegend=True,
         )
+        html_fig = fig.to_html(include_plotlyjs=True)
+
+        snow_js = """
+        <style>
+        .snowflake {
+            position: fixed;
+            top: -10px;
+            color: white;
+            font-size: 1em;
+            user-select: none;
+            z-index: 9999;
+        }
+        </style>
+
+        <script>
+        // Simple snow effect
+        let snowInterval = setInterval(() => {
+            const snow = document.createElement('div');
+            snow.className = 'snowflake';
+            snow.innerHTML = '❄';
+
+            snow.style.left = Math.random() * window.innerWidth + 'px';
+            snow.style.fontSize = (10 + Math.random()*20) + 'px';
+
+            document.body.appendChild(snow);
+
+            let fall = setInterval(() => {
+                snow.style.top = (parseFloat(snow.style.top || 0) + 2) + 'px';
+                if (parseFloat(snow.style.top) > window.innerHeight) {
+                    snow.remove();
+                    clearInterval(fall);
+                }
+            }, 30);
+        }, 200);
+        </script>
+        """
+
+        with open("christmas_waveform.html", "w", encoding="utf-8") as f:
+            f.write(html_fig + snow_js)
 
         return fig, data_draw
