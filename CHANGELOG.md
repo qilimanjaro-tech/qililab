@@ -32,7 +32,7 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
 
 - **Active reset for transmon qubits in QBlox**
 
-  Implemented a feedback-based reset for QBlox: measure the qubit, and if it is in the \|1⟩ state apply a corrective DRAG pulse; if it is already in \|0⟩ (ground state), do nothing. This replaces the relaxation time at the end of each experiment with a much faster, conditional reset.
+  Implemented a feedback-based reset for QBlox: measure the qubit, and if it is in the `|1⟩` state apply a corrective DRAG pulse; if it is already in `|0⟩` (ground state), do nothing. This replaces the relaxation time at the end of each experiment with a much faster, conditional reset.
   This has been implemented as: **`qprogram.qblox.measure_reset(bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False)`** 
 
   It is compiled by the QBlox compiler as:
