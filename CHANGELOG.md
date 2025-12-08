@@ -48,7 +48,6 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
   
   `MeasureResetCalibrated` has been implemented to enable the use of active reset with a calibration file. 
   After retrieving the waveforms and weights from the calibration file, the measure reset can be called with: **`qprogram.qblox.measure_reset(bus='readout_bus', waveform='Measure', weights='Weights', control_bus='drive_bus', reset_pulse='Drag')`**. Unlike other methods, this one does not allow a mix of calibrated and non-calibrated parameters is not allowed. This method requires the calibration file to be used consistently across `waveform`, `weight`, and `reset_pulse`; either for all three or for none. An error is raised if this condition is not met.
-
   **Notes**
   - The 400 ns wait inside `measure_reset` is the propagation delay of the Qblox trigger network. This figure is conservative as the official guideline is 388ns.
   - Users may supply any IQPair for the reset_pulse, though DRAG pulses are recommended to minimize leakage.
