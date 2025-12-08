@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## BSC-14
+## BSC-14
 
 ### New features since last release
 - Hardware Loop over the time domain has been implemented for Qblox backend in `QProgram`.
