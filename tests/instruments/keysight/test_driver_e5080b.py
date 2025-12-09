@@ -3,9 +3,7 @@
 # This test along the driver code are meant to be qcodes
 from qililab.instruments.keysight.driver_keysight_e5080b import Driver_KeySight_E5080B
 import pytest
-from unittest.mock import MagicMock
 import numpy as np
-import pyvisa
 
 @pytest.fixture(scope="function", name="vnaks")
 def _make_vnaks():
@@ -95,21 +93,8 @@ def test_format_border(vnaks):
     # Valid enum values: "NORM", "SWAP"
     verify_property(vnaks, "format_border", ["NORM", "SWAP"])
 
-def test_electricl_delay(vnaks, monkeypatch):
-    calls = []
-    monkeypatch.setattr(vnaks, "write_raw", lambda cmd: calls.append(cmd))
-    value = 0.23
-    vnaks.set_electrical_delay(channel_id=1, value=value)
-    assert calls[0] == f"CALC1:CORR:EDEL:TIME {value}NS"
-    
-    vnaks.set_electrical_delay(channel_id=2, value=value)
-    assert calls[1] ==f"CALC2:CORR:EDEL:TIME {value}NS"
-
-    drv = Driver_KeySight_E5080B.__new__(Driver_KeySight_E5080B)  
-    drv.ask_raw = MagicMock(return_value="1.25e-9\n")
-
-    assert drv.get_electrical_delay(channel_id=1) == 1.25
-    drv.ask_raw.assert_called_once_with("CALC1:CORR:EDEL:TIME?")
+def test_electrical_delay(vnaks):
+    verify_property(vnaks, "electrical_delay", [1e-9, 2e-4, -5e-2, 9.9])
 
 
 def test_get_data(vnaks, monkeypatch):

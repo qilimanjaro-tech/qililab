@@ -307,6 +307,16 @@ class Driver_KeySight_E5080B(VisaInstrument):
         )
         """Status Operation"""
 
+        self.electrical_delay: Parameter = self.add_parameter(
+            "electrical_delay",
+            label="Electrical Delay",
+            set_cmd="CALC:CORR:EDEL:TIME {}",
+            get_cmd="CALC:CORR:EDEL:TIME?",
+            get_parser=float,
+            vals=Numbers(min_value=-10, max_value=10),
+        )
+        """Electrical Delay"""
+
         # Clear averages
         # Clears and restarts averaging of the measurement data. Does NOT apply to point averaging.
         self.add_function("clear_averages", call_cmd="SENS:AVER:CLE")
@@ -331,11 +341,3 @@ class Driver_KeySight_E5080B(VisaInstrument):
         """return freqpoints"""
         self.format_data("REAL,64")  # recommended to avoid frequency rounding errors
         return np.array(self.visa_handle.query_binary_values("CALC:MEAS:X?"))
-
-    def get_electrical_delay(self, channel_id):
-        """Returns the electrical delay set for the channel in ns"""
-        return float(self.ask_raw(f"CALC{channel_id}:CORR:EDEL:TIME?")) * 1e9
-
-    def set_electrical_delay(self, channel_id, value):
-        """Sets the electrical delay of the channel to the value in nanoseconds"""
-        self.write_raw(f"CALC{channel_id}:CORR:EDEL:TIME {float(value)}NS")
