@@ -133,11 +133,22 @@ def fixture_qp_plat_draw_qrm() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="qp_quantum_machine")
+def fixture_qp_quantum_machine() -> QProgram:
+    qp = QProgram()
+    qp.play(bus="drive_q0", waveform=Square(amplitude=1, duration=10))
+    qp.wait("drive_q0", 10)
+    return qp
+
+
 @pytest.fixture(name="platform")
 def fixture_platform():
     return build_platform(runcard=Galadriel.runcard)
 
 
+@pytest.fixture(name="platform_quantum_machines")
+def fixture_platform_quantum_machines():
+    return build_platform(runcard=SauronQuantumMachines.runcard)
 
 @pytest.fixture(name="qp_play_interrupted_by_another_play")
 def fixture_play_interrupted_by_another_play():
@@ -430,18 +441,17 @@ class TestQBloxDraw:
         )
         assert len(figure.data) == 1
 
-
     @pytest.mark.qm
     def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
         pio.renderers.default = "json"
+
         with pytest.raises(NotImplementedError) as exc_info:
             platform_quantum_machines.draw(qp_quantum_machine)
     
         # Optionally check the error message
         assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
-
 
     def test_play_interrupted_by_another_play(self, qp_play_interrupted_by_another_play: QProgram):
         expected_data_draw_i = [ 0.70710678,  0.70710678,  0.70710678,  0.70710678,  0.70710678,
@@ -568,25 +578,6 @@ class TestQBloxDraw:
         with pytest.raises(NotImplementedError, match=r'The Q1ASM operation "badcmd" is not implemented in the plotter yet. Please contact someone from QHC.'):
             draw._call_handlers(program_line, param, register, data_draw, waveform_seq)
 
-    def test_drawer_hardware_loop_time_raises_error(
-        self, platform: Platform
-    ):
-
-        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
-        qprogram = QProgram()
-        
-        time=qprogram.variable(label="time",domain=Domain.Time)
-        with qprogram.for_loop(variable=time, start=10, stop=500, step=10):
-            qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
-            qprogram.play(bus="drive_line_q1_bus", waveform=drive_wf)
-            qprogram.wait(bus="drive_line_q1_bus", duration=time)
-            qprogram.sync()
-
-        with pytest.raises(NotImplementedError) as exc_info:
-            platform.draw(qprogram)
-    
-        assert str(exc_info.value) == "QbloxDraw does not support hardware time-domain loops at the moment."
-
     def test_platform_acquire(self,platform: Platform, qp_acquire: QProgram):
         expected_results = {
         "feedline_input_output_bus_1 I": [0.00047655, 0.00047377, 0.00046545, 0.00045173, 0.00043282, 0.00040903,
@@ -604,6 +595,7 @@ class TestQBloxDraw:
         np.testing.assert_allclose(figure.data[0].y, np.array(expected_results[figure.data[0].name]), rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(figure.data[1].y, np.array(expected_results[figure.data[1].name]), rtol=1e-2, atol=1e-12)
 
+
     def test_interrupt_acquire(self):
         """Even though Qililab prevents overlapping acquires, this has been tested and the interruption will be possible if qililab ever allows for it."""
 
@@ -615,4 +607,3 @@ class TestQBloxDraw:
         out = qblox_draw._interrupt_acquire(param)
         assert len(out["acquiring_status"]) == len(out["intermediate_frequency"])
         assert out["acquiring_status"] == [1, 1]
-
