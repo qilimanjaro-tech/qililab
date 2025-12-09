@@ -345,7 +345,7 @@ class TestQbloxCompiler:
         expected_gain = int(amplitude * AWG_MAX_GAIN)
         expected_phase = int((phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
 
-        bin_loop = program.blocks[2].components[1]
+        bin_loop = program.blocks[3].components[1]
 
         assert bin_loop.components[0].args[0] == expected_gain
         assert bin_loop.components[0].args[1] == expected_gain
@@ -412,13 +412,14 @@ class TestQbloxCompiler:
             setup:
                             move             0, R0
                             move             1, R1
-                            move             1000, R2
                             wait_sync        4
 
             start:
                             reset_ph
                             set_mrk          0
                             upd_param        4
+
+                            move             1000, R2
 
             average:
                             move             0, R3
@@ -445,13 +446,14 @@ class TestQbloxCompiler:
             setup:
                             move             0, R0
                             move             1, R1
-                            move             1000, R2
                             wait_sync        4
 
             start:
                             reset_ph
                             set_mrk          0
                             upd_param        4
+
+                            move             1000, R2
 
             average:
                             move             0, R3
@@ -500,13 +502,14 @@ class TestQbloxCompiler:
         setup:
                         move             0, R0
                         move             1, R1
-                        move             1000, R2
                         wait_sync        4
 
         start:
                         reset_ph
                         set_mrk          0
                         upd_param        4
+
+                        move             1000, R2
 
         average:
                         move             0, R3

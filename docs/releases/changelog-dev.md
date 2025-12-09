@@ -2,41 +2,6 @@
 
 ### New features since last release
 
-- QbloxDraw: Replaced the fixed qualitative palette (10 colors) with the continuous "Turbo" colorscale. Previously, plotting more than 10 buses caused an index error due to the palette’s limited size. The new implementation samples the continuous colorscale at evenly spaced positions based on the number of buses.
-[#1039](https://github.com/qilimanjaro-tech/qililab/pull/1039)
-
-
-- **Active reset for transmon qubits in QBlox**
-
-  Implemented a feedback-based reset for QBlox: measure the qubit, and if it is in the \|1⟩ state apply a corrective DRAG pulse; if it is already in \|0⟩ (ground state), do nothing. This replaces the relaxation time at the end of each experiment with a much faster, conditional reset.
-  This has been implemented as **`qprogram.qblox.measure_reset(bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False)`** 
-
-  It is compiled by the QBlox compiler as:
-    1. `latch_rst 4` on the control_bus
-    2. play readout pulse 
-    3. acquire
-    4. sync the readout and control buses
-    5. wait 400 ns on the control bus (trigger-network propagation)
-    6. `set_conditional(1, mask, 0, duration of the reset pulse)` → enable the conditional
-    7. Play the reset pulse on the control bus
-    8. `set_conditional(0, 0, 0, 4)` → disable the conditional  
-    For the control bus, `latch_en 4` is added to the top of the Q1ASM to enable trigger latching.
-
-  Notes:
-    - The 400 ns wait inside `measure_reset` is the propagation delay of the Qblox trigger network. This figure is conservative as the official guideline is 388ns.
-    - Users may supply any IQPair for the reset_pulse, though DRAG pulses are recommended to minimize leakage.
-    - After `measure_reset`, users should insert a further wait as needed to allow the readout resonator to ring down before subsequent operations.
-    - On compilation, `cluster.reset_trigger_monitor_count(address)` is applied to zero the module’s trigger counter. And the qcodes parameters required to set up the trigger network are implemented by the QbloxQRM class.
-    - The Qblox Draw class has been modified so that `latch_rst` instructions are interpreted as a `wait`, and all `set_conditional` commands are ignored.
-[#955](https://github.com/qilimanjaro-tech/qililab/pull/955)
-
-- Introduced `electrical_delay` as a new setting for the E5080b VNA driver. It is a pure software setting to be used in autoplotting and not a physical parameter of the device.
-[#1037](https://github.com/qilimanjaro-tech/qililab/pull/1037)
-
-- Introduced a Pydantic-powered `QililabSettings` that centralizes runtime configuration, with the singleton `get_settings()` pulling values from multiple sources so teams can pick what fits their workflow. Settings still default to sensible values, but can be overridden directly in code by editing the fields (handy for tests or ad-hoc scripts), by exporting environment variables (for example `QILILAB_EXPERIMENT_RESULTS_BASE_PATH=/data/qililab`), or by dropping the same keys into a project-level `.env` file that is auto-discovered and parsed.
-  [#1025](https://github.com/qilimanjaro-tech/qililab/pull/1025)
-
-
 ### Improvements
 
 - Implemented a new driver for the Becker Nachrichtentechnik RSWU-SP16TR
@@ -400,90 +365,8 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 
 ### Breaking changes
 
-- Modified file structure for functions `save_results` and `load_results`, previously located inside `qililab/src/qililab/data_management.py` and now located at `qililab/src/qililab/result/result_management.py`. This has been done to improve the logic behind our libraries. The init structure still works in the same way, `import qililab.save_results` and `import qililab.load_results` still works the same way.
-  [#928](https://github.com/qilimanjaro-tech/qililab/pull/928)
-
-- Set database saving and live plotting to `False` by default during experiment execution.
-  [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
-
 ### Deprecations / Removals
 
 ### Documentation
 
-- Added the return typings and missing docstring elements for the DatabaseManager class.
-  [#1036](https://github.com/qilimanjaro-tech/qililab/pull/1036)
-
 ### Bug fixes
-
-- Added `py.typed` file in the root dictionary to mark the library as typed and inform type checkers (mypy, pyright, etc.) that this package ships with usable type hints.
-  [#1034](https://github.com/qilimanjaro-tech/qililab/pull/1034)
-
-- Qblox Draw read the dac offsets of RF modules (parameters: `OUT0_OFFSET_PATH0`, `OUT0_OFFSET_PATH1`, `OUT1_OFFSET_PATH0` and `OUT1_OFFSET_PATH1`) in Volt, although they are specified in millivolts. This has been fixed by converting the value to Volts.
-  [#1033](https://github.com/qilimanjaro-tech/qililab/pull/1033)
-
-- Qblox Draw- When dealing with real time and classical time, the real duration was put instead of the wait duration. Note: do not include this comment in the next release changelog as the bug was not in the previous release.
-
-- Fixed a bug in the QBlox Compiler handling of the wait, long waits that were a multiple of 65532 (the maximum wait) up to 65535 were giving out an error. This has been solved by checking if the remainder would be below 4. If the remainder is 0 it appends a wait of 65532 and if the remainder is between 1 and 3, the duration of the last wait is computed as : `(INST_MAX_WAIT + remainder) - INST_MIN_WAIT` (where `INST_MAX_WAIT` is 65532 and `INST_MIN_WAIT` is 4) and a wait of `INST_MIN_WAIT` is added.
-  [#1006](https://github.com/qilimanjaro-tech/qililab/pull/1006)
-
-- Exposed `Platform` in the global namespace.
-  [#1002](https://github.com/qilimanjaro-tech/qililab/pull/1002)
-
-- Fixed a bug in the reshaping of MeasurementResults within the ExperimentResults.
-  [#999](https://github.com/qilimanjaro-tech/qililab/pull/999)
-
-- Qblox Draw: Previously, when plotting from the platform, the integration length was incorrectly taken from the runcard parameter. However, since Qililab currently only implements acquire_weighted, the integration length should instead be determined by the duration of the weight.
-  This has been corrected and now the behaviour of the acquire is the same when plotting from the platform or the qprogram.
-  The integration length is defined as the duration of the acquire, not the weight, because Qililab ensures they are always equal. As a result, two acquires cannot overlap in Qililab. However, in QbloxDraw’s logic, interruptions remain possible, similar to Play.
-  [#982](https://github.com/qilimanjaro-tech/qililab/pull/982)
-
-- Removed the unsupported zorder kwarg from QbloxDraw plotting to prevent Plotly errors across environments.
-  [#974](https://github.com/qilimanjaro-tech/qililab/pull/974)
-
-- A bug on the tests of Qblox Draw has been fixed. Previously, the test compared `figure.data` using the position of items in the list. Since the order of items can change, this caused inconsistent results. The test now compares the data based on the bus name.
-  [#965](https://github.com/qilimanjaro-tech/qililab/pull/965)
-
-- For Qblox Draw, the move commands  of the Q1ASM were being read correctly once but were not being updated after - this caused problem with loops.
-
-- A 4ns has been added when an acquire_weighed command is added to account for the extra clock cycle
-  [#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
-
-- Qblox Draw: Corrected bug with time window and nested loops- now after the code exits the recursive loop, the code checks the time window flag status and exits if needed.
-  [#937](https://github.com/qilimanjaro-tech/qililab/pull/937)
-
-- VNA Driver Keysight E5080B:
-
-  - The user can now set through the platform the parameters of type Enums, the enums were not being capitalised. - The bounds in the frequency span of the qcodes type driver have been removed as they were wrong.
-  - The bounds of the points in the qcodes type driver have been modified to range from 1 to 100003.
-    [#943](https://github.com/qilimanjaro-tech/qililab/pull/943)
-
-- QbloxDraw:
-
-  - The sequencer offsets given from the runcard (offset_i and offset_q in the runcard) were being applied similarly to the DAC offsets, when they should have been treated like the Q1ASM offsets - this has been fixed and those sequencer offsets havee been renamed sequencer_runcard_offset_i and  sequencer_runcard_offset_q instead of ac_offsets_i and ac_offsets_q for improved clarity.
-  - get_value() in the QbloxDraw class now checks that the given string is a float, it used to check x.isdigit() which didn't work for negative values.
-    [#945](https://github.com/qilimanjaro-tech/qililab/pull/945)
-
-- Fixed a bug for `StreamArray` while using dictionary structures for the loops. Now the order is correct and the data is saved in the correct h5 file format.
-  [#953](https://github.com/qilimanjaro-tech/qililab/pull/953)
-
-- Quick fix for set_parameter of scope_store_enabled. Now it executes the correct Qblox functions to record the scope.
-  [#956](https://github.com/qilimanjaro-tech/qililab/pull/956)
-  [#959](https://github.com/qilimanjaro-tech/qililab/pull/959)
-
-- Added an integer transformation for the play pulse duration at the `QbloxCompiler` `compile`. Before this fix, if a user introduced a pulse duration as a float and greater than 100 ns in `qp.play`, the program would crash with a weir and difficul to trace error report. Now this is fixed.
-  [#969](https://github.com/qilimanjaro-tech/qililab/pull/969)
-
-- Fixed an error inside set_parameter for OUT0_ATT and OUT1_ATT for the QRM-RF and QCM-RF. When the device was disconnected qililab tried to get the non existent device. not it executes as expected.
-  [#973](https://github.com/qilimanjaro-tech/qililab/pull/973)
-
-- Fixed `FluxVector.set_crosstalk_from_bias(...)` and `platform.set_bias_to_zero(...)` related to automatic crosstalk compensation. Now the bias is set to 0 correctly and the fluxes are set to the correct value based on the offset.
-  [#983](https://github.com/qilimanjaro-tech/qililab/pull/983)
-
-- Fixed documentation for results `counts`, now it warns the user that instead of `num_avg` they must use `num_bins`.
-  [#989](https://github.com/qilimanjaro-tech/qililab/pull/989)
-
-- Fixed an error impeding two instances of QDAC2 to be executed through platform.connect when the runcard included 2 different `qdevil_qdac2` controllers inside `instrument_controllers`.
-  [#990](https://github.com/qilimanjaro-tech/qililab/pull/990)
-
-- Qblox module `desynch_sequencers` now iterates over instrument_controllers in the Runcard, instead than the plain instruments, solving a bug, where a discrepancy in the runcard between both used to error, trying to desynch an instrument that wasn't connected (connect loops instrument_controllers, not instruments too).
-  [#964](https://github.com/qilimanjaro-tech/qililab/pull/964)
