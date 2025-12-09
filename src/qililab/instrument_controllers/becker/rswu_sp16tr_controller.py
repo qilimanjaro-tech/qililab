@@ -60,7 +60,7 @@ class RSWUSP16TRController(SingleInstrumentController):
         """Initialize device attribute to the corresponding device class."""
 
         self.device = BeckerRSWUSP16TR(
-            name=f"{self.name.value}_{self.alias}", address=f"TCPIP::{self.address}::SOCKET", visalib="@py"
+            name=f"{self.name.value}_{self.alias}", address=f"TCPIP::{self.address}::5025::SOCKET", visalib="@py"
         )
 
     def _check_supported_modules(self):
