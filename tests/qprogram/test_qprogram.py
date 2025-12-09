@@ -12,7 +12,6 @@ from qililab.qprogram.operations import (
     AcquireWithCalibratedWeights,
     Measure,
     MeasureReset,
-    MeasureResetCalibrated,
     MeasureWithCalibratedWaveform,
     MeasureWithCalibratedWaveformWeights,
     MeasureWithCalibratedWeights,
@@ -122,7 +121,6 @@ class TestQProgram(TestStructuredProgram):
     def test_with_calibration_method(self):
         """Test with_bus_mapping method"""
         xgate = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
-        drag_reset = IQPair.DRAG(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
         readout = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
         weights = IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000))
 
@@ -130,7 +128,6 @@ class TestQProgram(TestStructuredProgram):
         calibration.add_waveform(bus="drive_q0_bus", name="xgate", waveform=xgate)
         calibration.add_waveform(bus="readout_q0_bus", name="readout", waveform=readout)
         calibration.add_weights(bus="readout_q0_bus", name="weights", weights=weights)
-        calibration.add_waveform(bus="drive_q0_bus", name="drag_reset", waveform=drag_reset)
 
         qp = QProgram()
         with qp.average(1000):
@@ -143,7 +140,6 @@ class TestQProgram(TestStructuredProgram):
             qp.quantum_machines.measure(bus="readout_q0_bus", waveform="readout", weights=weights, rotation=np.pi)
             qp.quantum_machines.measure(bus="readout_q0_bus", waveform=readout, weights="weights", rotation=np.pi)
             qp.quantum_machines.measure(bus="readout_q0_bus", waveform="readout", weights="weights", rotation=np.pi)
-            qp.qblox.measure_reset(bus="readout_q0_bus", waveform="readout", weights="weights", control_bus="drive_q0_bus", reset_pulse="drag_reset")
 
         # Check that qp has named operations
         assert qp.has_calibrated_waveforms_or_weights() is True
@@ -167,11 +163,6 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(qp.body.elements[0].elements[8], MeasureWithCalibratedWaveformWeights)
         assert qp.body.elements[0].elements[8].waveform == "readout"
         assert qp.body.elements[0].elements[8].weights == "weights"
-        assert isinstance(qp.body.elements[0].elements[9], MeasureResetCalibrated)
-        assert qp.body.elements[0].elements[9].waveform == "readout"
-        assert qp.body.elements[0].elements[9].weights == "weights"
-        assert qp.body.elements[0].elements[9].control_bus == "drive_q0_bus"
-        assert qp.body.elements[0].elements[9].reset_pulse == "drag_reset"
 
         new_qp = qp.with_calibration(calibration=calibration)
 
@@ -197,11 +188,6 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(qp.body.elements[0].elements[8], MeasureWithCalibratedWaveformWeights)
         assert qp.body.elements[0].elements[8].waveform == "readout"
         assert qp.body.elements[0].elements[8].weights == "weights"
-        assert isinstance(qp.body.elements[0].elements[9], MeasureResetCalibrated)
-        assert qp.body.elements[0].elements[9].waveform == "readout"
-        assert qp.body.elements[0].elements[9].weights == "weights"
-        assert qp.body.elements[0].elements[9].control_bus == "drive_q0_bus"
-        assert qp.body.elements[0].elements[9].reset_pulse == "drag_reset"
 
         # Check that new_qp has no named operations
         assert new_qp.has_calibrated_waveforms_or_weights() is False
@@ -214,7 +200,6 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[0].elements[6], Measure)
         assert isinstance(new_qp.body.elements[0].elements[7], Measure)
         assert isinstance(new_qp.body.elements[0].elements[8], Measure)
-        assert isinstance(new_qp.body.elements[0].elements[9], MeasureReset)
 
     def test_average_method(self):
         """Test acquire_loop method"""
@@ -504,7 +489,7 @@ class TestQProgram(TestStructuredProgram):
         with qp.average(1000):
                 qp.qblox.measure_reset(
                     bus="readout_bus",
-                    waveform=IQPair(square_wf,square_wf),
+                    waveform=square_wf,
                     weights=IQPair(I=square_wf, Q=square_wf),
                     control_bus="drive_bus",
                     reset_pulse=drag,
@@ -539,18 +524,3 @@ class TestQProgram(TestStructuredProgram):
 
         assert non_existant_mapping_qp.body.elements[0].elements[0].bus == "readout_bus"
         assert non_existant_mapping_qp.body.elements[0].elements[0].control_bus == "drive_bus"
-
-    def test_measure_reset_raises_error(self):
-        """Test that calling measure reset with a combination of calibrated and non calibrated parameters raises an error"""
-        drag_reset = IQPair.DRAG(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
-        readout = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
-        weights = IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000))
-
-        calibration = Calibration()
-        calibration.add_waveform(bus="readout_q0_bus", name="readout", waveform=readout)
-        calibration.add_weights(bus="readout_q0_bus", name="weights", weights=weights)
-
-        with pytest.raises(NotImplementedError, match="For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all."):
-            qp = QProgram()
-            with qp.average(1000):
-                qp.qblox.measure_reset(bus="readout_q0_bus", waveform="readout", weights="weights", control_bus="drive_q0_bus", reset_pulse=drag_reset)
