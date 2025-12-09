@@ -58,3 +58,15 @@ class TestRSWUSP16TRController:
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias="wrong_rswu_sp16tr")
         with pytest.raises(ValueError):
             controller_instance._check_supported_modules()
+
+    @patch("qililab.instrument_controllers.becker.rswu_sp16tr_controller.BeckerRSWUSP16TR", autospec=True)
+    def test_initial_setup(self, device_mock: MagicMock, platform: Platform):
+        """Test QRSWUSP16TR controller initializes device correctly."""
+        controller_instance = platform.instrument_controllers.get_instrument_controller(alias="rswu_sp16tr")
+
+        try:
+            controller_instance.connect()
+            controller_instance.initial_setup()
+        except:
+            assert False
+

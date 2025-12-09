@@ -22,7 +22,7 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, Parameter, ParameterValue
 from qililab.typings.instruments.rswu_sp16tr import BeckerRSWUSP16TR
 
-_CHANNELS = tuple(f"RF{i}" for i in range(1, 17))
+_CHANNELS = [f"{r}{i}" for i in range(1, 17) for r in ["RF", "rf"]]
 
 
 @InstrumentFactory.register
