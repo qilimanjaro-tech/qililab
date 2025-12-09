@@ -449,7 +449,7 @@ class E5080B(Instrument):
                 raise ValueError("Electrical delay has to be between -1e10 and 1e10 nanoseconds")
             self.settings.electrical_delay = float(value)
             if self.is_device_active():
-                self.device.electrical_delay(self.electrical_delay / 1e9)
+                self.device.electrical_delay(self.settings.electrical_delay / 1e9)
             return
 
         raise ParameterNotFound(self, parameter)
