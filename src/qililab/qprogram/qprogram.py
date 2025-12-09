@@ -448,7 +448,7 @@ class QProgram(StructuredProgram):
                                 loop for loop in self._parallel_loops[variable] if loop.variable in self._block_variables[variable]
                             ]
                             loop_list.extend(valid_loops)
-                            
+
                             for new_variable in self._block_variables[variable]:
                                 variables[new_variable] = VariableInfo()
                             self._block_variables[variable] = []
@@ -568,7 +568,7 @@ class QProgram(StructuredProgram):
                     )
                 )
             self._parallel_loops[variable] = for_loop_list
-            
+
             if variable not in self._block_variables:
                 self._block_variables[variable] = []
 
