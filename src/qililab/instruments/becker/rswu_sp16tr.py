@@ -104,7 +104,7 @@ class RSWUSP16TR(Instrument):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id=None):
+    def get_parameter(self, parameter: Parameter, channel_id: int | str | None = None, output_id: int | str | None = None):
         """Get instrument parameter.
 
         Args:
