@@ -38,6 +38,9 @@ from qililab.typings.enums import (
 )
 from qililab.typings.instruments.keysight_e5080b import KeysightE5080B
 
+ELECTRICAL_DELAY_MAX = 1e10
+S_TO_NS = 1e9
+
 
 @InstrumentFactory.register
 class E5080B(Instrument):
@@ -445,11 +448,11 @@ class E5080B(Instrument):
             return
 
         if parameter == Parameter.ELECTRICAL_DELAY:
-            if float(value) > 1e10 or float(value) < -1e10:
+            if not (-ELECTRICAL_DELAY_MAX <= float(value) <= ELECTRICAL_DELAY_MAX):
                 raise ValueError("Electrical delay has to be between -1e10 and 1e10 nanoseconds")
             self.settings.electrical_delay = float(value)
             if self.is_device_active():
-                self.device.electrical_delay(self.electrical_delay / 1e9)  # type: ignore [operator]
+                self.device.electrical_delay(self.electrical_delay / S_TO_NS)  # type: ignore [operator]
             return
 
         raise ParameterNotFound(self, parameter)
@@ -556,7 +559,7 @@ class E5080B(Instrument):
             return cast("ParameterValue", self.settings.operation_status)
 
         if parameter == Parameter.ELECTRICAL_DELAY:
-            self.settings.electrical_delay = self.device.electrical_delay.get() * 1e9
+            self.settings.electrical_delay = self.device.electrical_delay.get() * S_TO_NS
             return cast("ParameterValue", self.settings.electrical_delay)
 
         raise ParameterNotFound(self, parameter)
