@@ -654,18 +654,38 @@ class QbloxCompiler:
             return
 
         convert = QbloxCompiler._convert_value(element)
-        gain = (
-            self._buses[element.bus].variable_to_register[element.gain]
-            if isinstance(element.gain, Variable)
-            else convert(element.gain)
-        )
-        self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
-        )
-        # set the gain a second time - because of a qblox bug where the first gain in a hardware loop is false (same is done for the frequency).
-        self._buses[element.bus].qpy_block_stack[-1].append_component(
-            component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
-        )
+
+        if isinstance(element.gain, VariableExpression):
+            gain1, gain2 = element.gain.variables
+            gain1_register = self._buses[element.bus].variable_to_register[gain1]
+            # gain2 = element.gain.variables[1]
+            gain2_register = self._buses[element.bus].variable_to_register[gain2]
+            gain_sum_register = QPyProgram.Register()
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Nop())
+            if element.gain.operator == "+":
+                # TODO: implement the substraction but an extra check that the gain is not 0 needs to be implemented (same as has been done for the time domain)
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Add(gain1_register, gain2_register, gain_sum_register))
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Nop())
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.SetAwgGain(gain_0=gain_sum_register, gain_1=gain_sum_register)
+            )
+
+        else:
+            gain = (
+                self._buses[element.bus].variable_to_register[element.gain]
+                if isinstance(element.gain, Variable)
+                else convert(element.gain)
+            )
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
+            )
+            # set the gain a second time - because of a qblox bug where the first gain in a hardware loop is false (same is done for the frequency).
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.SetAwgGain(gain_0=gain, gain_1=gain)
+            )
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset):
