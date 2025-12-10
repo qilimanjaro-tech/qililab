@@ -15,8 +15,10 @@
 import re
 
 import numpy as np
-import plotly.express as px
+import plotly.colors as pc
 import plotly.graph_objects as go
+
+from qililab.qprogram.variable import Domain
 
 
 class QbloxDraw:
@@ -42,7 +44,7 @@ class QbloxDraw:
             param = self._handle_reset_phase_draw(param)
 
         elif action_type == "set_awg_offs":
-            param = self._handle_offset(program_line, param)
+            param = self._handle_offset(program_line, param, register)
 
         elif action_type == "set_awg_gain":
             param = self._handle_gain_draw(program_line, param, register)
@@ -238,6 +240,7 @@ class QbloxDraw:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with a gain or offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            register (dictionary): registers of the Q1ASM.
 
         Returns:
             Appends the param dictionary
@@ -248,18 +251,21 @@ class QbloxDraw:
         param["gain_i"], param["gain_q"] = i_val, q_val
         return param
 
-    def _handle_offset(self, program_line, param):
+    def _handle_offset(self, program_line, param, register):
         """Updates the param dictionary when an offset is set in the program
 
         Args:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with an offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            register (dictionary): registers of the Q1ASM.
 
         Returns:
             Appends the param dictionary
         """
-        offi, offq = map(int, program_line[1].split(","))
+        offi, offq = program_line[1].split(", ")
+        offi = float(self._get_value(offi, register))
+        offq = float(self._get_value(offq, register))
 
         if param["hardware_modulation"]:
             scaling_offset = param["max_voltage"] / np.sqrt(2)
@@ -476,6 +482,11 @@ class QbloxDraw:
 
         """
 
+        if any(variable.domain == Domain.Time for variable in sequencer.qprogram._variables):
+            raise NotImplementedError(
+                "QbloxDraw does not support hardware time-domain loops at the moment."
+            )
+
         self.acquisition_showing = acquisition_showing
         Q1ASM_ordered = self._parse_program(
             sequencer.sequences.copy()
@@ -663,16 +674,23 @@ class QbloxDraw:
                     ranges.append([start, idx + 1])
             return ranges
 
-        def adjust_color_hex(color_hex, factor):
-            rgb_color = [int(color_hex[i : i + 2], 16) for i in (1, 3, 5)]
-            adjusted_color = ["{0:02x}".format(int(min(255, max(0, c * factor)))) for c in rgb_color]
-            adjusted_color_hex = f"#{''.join(adjusted_color)}"
-            return adjusted_color_hex
+        def adjust_color_rgb(color_rgb, factor):
+            r, g, b = map(int, re.findall(r'\d+', color_rgb))
+            r = int(min(255, max(0, r * factor)))
+            g = int(min(255, max(0, g * factor)))
+            b = int(min(255, max(0, b * factor)))
+
+            return f"rgb({r},{g},{b})"
 
         data_keys = list(data_draw.keys())
 
         fig = go.Figure()
-        palette = px.colors.qualitative.Plotly
+        if len(data_keys) == 1:
+            positions = [0.1]
+        else:
+            positions = [0.1 + 0.8 * (i / (len(data_keys) - 1)) for i in range(len(data_keys))]
+
+        colorscale = pc.sample_colorscale("Turbo", positions)
 
         for idx, key in enumerate(data_keys):
             q1asm_offset_i = np.array(parameters[key]["q1asm_offset_i"])
@@ -680,7 +698,7 @@ class QbloxDraw:
             volt_bounds = parameters[key]["max_voltage"]
             dac_offset_i, dac_offset_q = parameters[key]["dac_offset_i"], parameters[key]["dac_offset_q"]
 
-            base_color = palette[idx]
+            base_color = colorscale[idx]
 
             if not parameters[key]["hardware_modulation"]:  # if hardware modulation is disabled, do not plot Q
                 sequencer_runcard_offset_i = parameters[key]["sequencer_runcard_offset_i"] * volt_bounds
@@ -730,7 +748,7 @@ class QbloxDraw:
                         y=path1_clipped,
                         mode="lines",
                         name=f"{key} Q",
-                        line={"color": adjust_color_hex(base_color, 1.5)},
+                        line={"color": adjust_color_rgb(base_color, 1.5)},
                     )
                 )
                 if self.acquisition_showing is True:
@@ -738,10 +756,10 @@ class QbloxDraw:
                     y_max = (y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8)
                     y_min = (y_min := min(path0_clipped.min(), path1_clipped.min())) * (1.2 if y_min < 0 else 0.8)
 
-                    for i, range in enumerate(ranges):
+                    for i, bound in enumerate(ranges):
                         fig.add_trace(
                             go.Scatter(
-                                x=[range[0], range[1], range[1], range[0]],
+                                x=[bound[0], bound[1], bound[1], bound[0]],
                                 y=[y_min, y_min, y_max, y_max, y_min],
                                 fill="toself",
                                 mode="none",
