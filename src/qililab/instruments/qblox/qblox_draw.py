@@ -44,7 +44,7 @@ class QbloxDraw:
             param = self._handle_reset_phase_draw(param)
 
         elif action_type == "set_awg_offs":
-            param = self._handle_offset(program_line, param)
+            param = self._handle_offset(program_line, param, register)
 
         elif action_type == "set_awg_gain":
             param = self._handle_gain_draw(program_line, param, register)
@@ -240,6 +240,7 @@ class QbloxDraw:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with a gain or offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            register (dictionary): registers of the Q1ASM.
 
         Returns:
             Appends the param dictionary
@@ -250,18 +251,21 @@ class QbloxDraw:
         param["gain_i"], param["gain_q"] = i_val, q_val
         return param
 
-    def _handle_offset(self, program_line, param):
+    def _handle_offset(self, program_line, param, register):
         """Updates the param dictionary when an offset is set in the program
 
         Args:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with an offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            register (dictionary): registers of the Q1ASM.
 
         Returns:
             Appends the param dictionary
         """
-        offi, offq = map(int, program_line[1].split(","))
+        offi, offq = program_line[1].split(", ")
+        offi = float(self._get_value(offi, register))
+        offq = float(self._get_value(offq, register))
 
         if param["hardware_modulation"]:
             scaling_offset = param["max_voltage"] / np.sqrt(2)
