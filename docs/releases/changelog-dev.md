@@ -11,3 +11,6 @@
 ### Documentation
 
 ### Bug fixes
+
+- QbloxDraw: Variable offsets can now be plotted.
+[#1049](https://github.com/qilimanjaro-tech/qililab/pull/1049)
