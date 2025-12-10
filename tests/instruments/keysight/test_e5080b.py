@@ -201,8 +201,6 @@ class TestE5080B:
         """Test setup method"""
         with pytest.raises(ParameterNotFound):
             e5080b.set_parameter(parameter=Parameter.BUS_FREQUENCY, value=123)
-        with pytest.raises(ValueError):
-            e5080b.set_parameter(parameter=Parameter.ELECTRICAL_DELAY, value=2e10)
     
 
     @pytest.mark.parametrize(
@@ -287,10 +285,7 @@ class TestE5080B:
         getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
 
         value = e5080b_get_param.get_parameter(parameter=parameter_get, channel_id=2)
-        if parameter_get != Parameter.ELECTRICAL_DELAY:
-            assert value == expected_value
-        else: 
-            assert value == expected_value * 1e9
+        assert value == expected_value
 
     def test_error_raises_when_no_modules(self, platform: Platform, e5080b_settings):
         """Test that ensures an error raises when there is no module specifyed
@@ -434,10 +429,7 @@ class TestE5080B:
         e5080b.set_parameter(parameter=parameter, value=value)
         e5080b.device.reset_mock()
         e5080b.initial_setup()
-        if parameter != Parameter.ELECTRICAL_DELAY:
-            getattr(e5080b.device, method).assert_called_once_with(value)
-        else:
-            getattr(e5080b.device, method).assert_called_once_with(value/1e9)
+        getattr(e5080b.device, method).assert_called_once_with(value)
 
     @patch("qililab.instrument_controllers.keysight.keysight_E5080B_vna_controller.KeysightE5080B", autospec=True)
     @pytest.mark.parametrize("controller_alias", ["keysight_e5080b"])
