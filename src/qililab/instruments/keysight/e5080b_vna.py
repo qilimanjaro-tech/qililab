@@ -446,6 +446,8 @@ class E5080B(Instrument):
 
         if parameter == Parameter.ELECTRICAL_DELAY:
             self.settings.electrical_delay = float(value)
+            if self.is_device_active():
+                self.device.electrical_delay(self.electrical_delay)
             return
 
         raise ParameterNotFound(self, parameter)
@@ -552,6 +554,7 @@ class E5080B(Instrument):
             return cast("ParameterValue", self.settings.operation_status)
 
         if parameter == Parameter.ELECTRICAL_DELAY:
+            self.settings.electrical_delay = self.device.electrical_delay.get()
             return cast("ParameterValue", self.settings.electrical_delay)
 
         raise ParameterNotFound(self, parameter)
@@ -648,6 +651,8 @@ class E5080B(Instrument):
             self.device.source_power(self.settings.source_power)
         if self.settings.rf_on is not None:
             self.device.rf_on(self.settings.rf_on)
+        if self.settings.electrical_delay is not None:
+            self.device.electrical_delay(self.settings.electrical_delay)
 
     def update_settings(self):
         """Queries the VNA for all parameters and stores the updated value in settings."""

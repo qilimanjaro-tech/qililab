@@ -139,6 +139,13 @@ devices:
           r: "{}"
         setter:
           q: "FORM:BORD {}"
+      electrical_delay:
+        default: "0"
+        getter:
+          q: "CALC:CORR:EDEL:TIME?"
+          r: "{}"
+        setter:
+          q: "CALC:CORR:EDEL:TIME {}"
     functions:
       clear_averages:
         call: "SENS:AVER:CLE"

@@ -132,7 +132,7 @@ class TestE5080B:
             (Parameter.SWEEP_GROUP_COUNT, 5),
             (Parameter.TRIGGER_TYPE, VNATriggerType.LEV),
             (Parameter.TRIGGER_SLOPE, VNATriggerSlope.POS),
-            (Parameter.ELECTRICAL_DELAY, 100),
+            (Parameter.ELECTRICAL_DELAY, 10000)
         ],
     )
     def test_set_parameter_method(
@@ -142,7 +142,7 @@ class TestE5080B:
         value: float,
     ):
         """Test setup parameter"""
-        e5080b.set_parameter(parameter=parameter, value=value)
+        e5080b.set_parameter(parameter=parameter, value=value,)
         if parameter == Parameter.SOURCE_POWER:
             assert e5080b.settings.source_power == value
         if parameter == Parameter.FREQUENCY_START:
@@ -201,6 +201,7 @@ class TestE5080B:
         """Test setup method"""
         with pytest.raises(ParameterNotFound):
             e5080b.set_parameter(parameter=Parameter.BUS_FREQUENCY, value=123)
+    
 
     @pytest.mark.parametrize(
         "parameter_get, expected_value",
@@ -244,7 +245,7 @@ class TestE5080B:
             (Parameter.SWEEP_GROUP_COUNT, 150),
             (Parameter.TRIGGER_TYPE, VNATriggerType.EDGE),
             (Parameter.TRIGGER_SLOPE,VNATriggerSlope.POS),
-            (Parameter.ELECTRICAL_DELAY, 100),
+            (Parameter.ELECTRICAL_DELAY, 1e-8),
         ],
     )
     def test_get_parameter_method(
@@ -280,14 +281,10 @@ class TestE5080B:
         Parameter.ELECTRICAL_DELAY:   "electrical_delay",
     }
         raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
-        if parameter_get == Parameter.ELECTRICAL_DELAY:
-            # electrical_delay is NOT read from the device; it's just stored in settings
-            e5080b_get_param.settings.electrical_delay = expected_value
-        else:
-            raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
-            getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
+        raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
+        getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
 
-        value = e5080b_get_param.get_parameter(parameter=parameter_get)
+        value = e5080b_get_param.get_parameter(parameter=parameter_get, channel_id=2)
         assert value == expected_value
 
     def test_error_raises_when_no_modules(self, platform: Platform, e5080b_settings):
@@ -423,20 +420,16 @@ class TestE5080B:
             (Parameter.SWEEP_GROUP_COUNT, 20000, "sweep_group_count"),
             (Parameter.TRIGGER_SLOPE, VNATriggerSlope.POS, "trigger_slope"),
             (Parameter.TRIGGER_TYPE, VNATriggerType.EDGE, "trigger_type"),
-            (Parameter.ELECTRICAL_DELAY, 100, "electrical_delay"),
+            (Parameter.ELECTRICAL_DELAY, 9, "electrical_delay"),
         ],
     )
     def test_initial_setup_with_parameter(self, e5080b: E5080B, parameter: Parameter, value: float, method: str):
         """Test the initial setup when sweep_type is not 'SEGM'."""
         e5080b.reset()
         e5080b.set_parameter(parameter=parameter, value=value)
-        e5080b.set_parameter(Parameter.SWEEP_TYPE, VNASweepTypes.CW)
         e5080b.device.reset_mock()
         e5080b.initial_setup()
-        if parameter==Parameter.ELECTRICAL_DELAY:
-            assert e5080b.electrical_delay == value
-        else:
-            getattr(e5080b.device, method).assert_called_once_with(value)
+        getattr(e5080b.device, method).assert_called_once_with(value)
 
     @patch("qililab.instrument_controllers.keysight.keysight_E5080B_vna_controller.KeysightE5080B", autospec=True)
     @pytest.mark.parametrize("controller_alias", ["keysight_e5080b"])
