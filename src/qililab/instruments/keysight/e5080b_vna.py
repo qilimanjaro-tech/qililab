@@ -457,6 +457,10 @@ class E5080B(Instrument):
 
         Args:
             parameter (Parameter): Name of the parameter to get.
+            channel_id (int | None): channel id of the parameter to get.
+
+        Returns:
+            ParameterValue.
         """
 
         if parameter == Parameter.FREQUENCY_START:
