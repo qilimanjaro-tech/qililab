@@ -22,8 +22,6 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, Parameter, ParameterValue
 from qililab.typings.instruments.rswu_sp16tr import BeckerRSWUSP16TR
 
-_CHANNELS = [f"{r}{i}" for i in range(1, 17) for r in ["RF", "rf"]]
-
 
 @InstrumentFactory.register
 class RSWUSP16TR(Instrument):
@@ -54,10 +52,9 @@ class RSWUSP16TR(Instrument):
         """Route to a specific output
 
         Args:
-            channel (str): name of the channel, valid: RF1..RF16.
+            channel (str): name of the channel, valid: Numbers 1 to 16 preceded by one of the following [RF, rf] or nothing or 
+            X followed by a number from 101 to 116, the two last numbers denoting the channel.
         """
-        if channel not in _CHANNELS:
-            raise ValueError(f"Invalid channel '{channel}'. Expected one of {list(_CHANNELS)}.")
         self.settings.active_channel = channel
         if self.is_device_active():
             self.device.active_channel(channel)

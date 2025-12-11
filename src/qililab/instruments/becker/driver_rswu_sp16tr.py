@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import TYPE_CHECKING, Any
 
 from qcodes import VisaInstrument
 from qcodes.validators import Enum
@@ -20,7 +20,7 @@ from qcodes.validators import Enum
 if TYPE_CHECKING:
     from qcodes.parameters import Parameter
 
-_CHANNELS: Tuple[str, ...] = tuple(f"{r}{i}" for i in range(1, 17) for r in ["RF", "rf"])
+_CHANNELS: tuple[str, ...] = (*(f"{r}{i}" for i in range(1, 17) for r in ["RF", "rf", ""]), *(f"X{i}" for i in range(101, 117)))
 
 
 class DriverRSWUSP16TR(VisaInstrument):
@@ -61,12 +61,9 @@ class DriverRSWUSP16TR(VisaInstrument):
     @staticmethod
     def _parse_active_channel(reply: str) -> str:
         rep = reply.strip().upper()
-        if rep in _CHANNELS:
-            return rep
-        if rep.isdigit():
-            idx = int(rep)
-            if 1 <= idx <= 16:
-                return f"RF{idx}"
+        for channel in _CHANNELS:
+            if channel in rep:
+                return channel
         return rep  # fallback
 
     def route(self, channel: str) -> None:
