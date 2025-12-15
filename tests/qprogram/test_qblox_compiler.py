@@ -748,6 +748,50 @@ def fixture_dynamic_wait_three_buses_static_static() -> QProgram:
         qp.sync()
     return qp
 
+@pytest.fixture(name="variable_expression_one_gain")
+def variable_expression_one_gain() -> QProgram:
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    with qp.for_loop(variable=gain, start=0, stop=1, step=0.1):
+        qp.set_gain("drive",gain + 10)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive",gain - 10)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive",-10 + gain)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", -10 - gain)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", 10 + gain)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", 10 - gain)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", - gain)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", - gain + 10)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", - gain - 10)
+        qp.play(bus="drive", waveform=drag_pair)
+    return qp
+
+@pytest.fixture(name="variable_expression_two_gains")
+def variable_expression_two_gains() -> QProgram:
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    gain1 = qp.variable(label="gain1", domain=Domain.Voltage)
+    gain2 = qp.variable(label="gain2", domain=Domain.Voltage)
+    with qp.for_loop(variable=gain1, start=0, stop=1, step=0.1):
+        with qp.for_loop(variable=gain2, start=1, stop=0, step=-0.1):
+            qp.set_gain("drive",gain1 + gain2)
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.set_gain("drive",gain1 - gain2)
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.set_gain("drive",-gain1 - gain2)
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.set_gain("drive",-gain1 + gain2)
+            qp.play(bus="drive", waveform=drag_pair)
+    return qp
+
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
@@ -2314,7 +2358,6 @@ set_freq         R5
                 upd_param        4              
                 stop                            
         """
-        print(sequences["drive"]._program)
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -3939,6 +3982,73 @@ other_max_duration_0:
                 upd_param        4              
                 stop                            
         """
-        print(sequences["readout_q0_bus"]._program)
         assert is_q1asm_equal(sequences["drive_q0_bus"], drive_str)
         assert is_q1asm_equal(sequences["readout_q0_bus"], readout_str)
+
+    def test_variable_expression_one_gain(self, variable_expression_one_gain: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=variable_expression_one_gain)
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+            setup:     
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            move             11, R0         
+                            move             0, R1          
+            loop_0:
+                            nop
+                            add              R1, 10, R2
+                            nop
+                            set_awg_gain     R2, R2
+                            play             0, 1, 40  
+                            nop
+                            sub              R1, 10, R3
+                            nop
+                            set_awg_gain     R3, R3
+                            play             0, 1, 40  
+                            nop
+                            sub              R1, 10, R4
+                            nop
+                            set_awg_gain     R4, R4
+                            play             0, 1, 40     
+                            nop
+                            move             0, R5
+                            nop
+                            sub              R5, 10, R6
+                            nop
+                            sub              R6, R1, R7
+                            nop
+                            set_awg_gain     R7, R7
+                            play             0, 1, 40
+                            nop
+                            add              R1, 10, R8
+                            nop
+                            set_awg_gain     R8, R8
+                            play             0, 1, 40
+                            nop
+                            move             10, R9
+                            nop
+                            sub              R9, R1, R10
+                            nop
+                            set_awg_gain     R10, R10
+                            play             0, 1, 40    
+                            nop
+                            move             0, R11
+                            nop
+                            sub              R11, R1, R12
+                            nop
+                            set_awg_gain     R12, R12
+                            play             0, 1, 40 
+                            add              R1, 3276, R1   
+                            loop             R0, @loop_0    
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                
+        """
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)

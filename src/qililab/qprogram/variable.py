@@ -13,12 +13,12 @@
 # limitations under the License.
 
 """This file contains all the variables used inside a QProgram."""
-
+# fuck block for non qblox backend?
 from enum import Enum
 from uuid import UUID, uuid4
 
 from qililab.yaml import yaml
-
+# fuck should do proper error raising for the non implemented cases
 
 @yaml.register_class
 class Domain(Enum):
@@ -70,17 +70,25 @@ class Variable:
         return other is not None and isinstance(other, Variable) and self._uuid == other._uuid
 
     def __add__(self, other):
+        # if other < 0:
+        #     return VariableExpression(self, "-", abs(other))
         return VariableExpression(self, "+", other)
 
     def __radd__(self, other):
-        return VariableExpression(other, "+", self)
+        # order change because Q1ASM can only have a register as first argument, changing it here avoids additional code in the qblox compiler
+        if other < 0:
+            return VariableExpression(self, "-", abs(other))
+        return VariableExpression(self, "+", other)
 
     def __sub__(self, other):
         return VariableExpression(self, "-", other)
 
     def __rsub__(self, other):
         return VariableExpression(other, "-", self)
-    
+
+    def __neg__(self):
+        return VariableExpression(0, "-", self)
+
     # Unsupported operations    
     __mul__      = _unsupported("multiplication (*)")
     __matmul__   = _unsupported("matrix multiplication (@)")
@@ -171,11 +179,15 @@ class VariableExpression(Variable):
         self.right = right
         domain = self._infer_domain()
         self._domain = domain
-        if self.operator !="+" and domain != Domain.Time:
-            raise NotImplementedError(f"For the {domain.name} domain, only the addition operator is implemented in VariableExpression.")
+        # if self.operator !="+" and domain != Domain.Time:
+        #     raise NotImplementedError(f"For the {domain.name} domain, only the addition operator is implemented in VariableExpression.")
         super().__init__(label="", domain=self._domain)
-        self.variables = self.extract_variables()
+        self.variables = self._extract_variables()
+        self.components = self._extract_components()
+        self.constants = self._extract_constants()
         
+    def __repr__(self):
+        return f"({self.left} {self.operator} {self.right})"
 
     def _infer_domain(self):
         domain_list = []
@@ -199,22 +211,7 @@ class VariableExpression(Variable):
             raise NotImplementedError(f"For the {domain.name} domain, Variable Expression currently supports up to two variables only.")            
         return domain
 
-    def __repr__(self):
-        return f"({self.left} {self.operator} {self.right})"
-
-    def __add__(self, other):
-        return VariableExpression(self, "+", other)
-
-    def __radd__(self, other):
-        return VariableExpression(other, "+", self)
-
-    def __sub__(self, other):
-        return VariableExpression(self, "-", other)
-
-    def __rsub__(self, other):
-        return VariableExpression(other, "-", self)
-
-    def extract_variables(self):
+    def _extract_variables(self):
         """Recursively extract all Variable instances used in this expression."""
         variables = []
         def _collect(expr):
@@ -229,7 +226,7 @@ class VariableExpression(Variable):
             raise ValueError(f"No Variable instance found in expression: {self}")
         return variables
 
-    def extract_constants(self):
+    def _extract_constants(self):
         """Recursively extract all constants used in this expression."""
 
         def _collect(expr):
@@ -243,4 +240,19 @@ class VariableExpression(Variable):
             return None
 
         result = _collect(self)
-        return result
+        return result    
+    
+    def _extract_components(self):
+        """Recursively extract all components (variables and constants) used in this expression."""
+
+        # fuck check this code
+        component = []
+        def _collect(expr):
+            if isinstance(expr, VariableExpression):
+                _collect(expr.left)
+                _collect(expr.right)
+            else:
+                component.append(expr)
+
+        _collect(self)
+        return component

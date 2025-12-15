@@ -15,11 +15,14 @@
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
+from qililab.qprogram.variable import Variable, VariableExpression
 
+# fuck not sure at all, and might need to be extended to fre, offset, phase etc...
+# variable expression is a child of variable do i need it?
 
 @yaml.register_class
 class SetGain(Operation):
-    def __init__(self, bus: str, gain: float) -> None:
+    def __init__(self, bus: str, gain: float | Variable) -> None:
         super().__init__()
         self.bus: str = bus
-        self.gain: float = gain
+        self.gain: float | Variable = gain
