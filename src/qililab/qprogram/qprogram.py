@@ -141,6 +141,8 @@ class QProgram(StructuredProgram):
 
                 # if not a block, it is assumed that element is type Operation
                 if hasattr(element, "waveform"):
+                    print(element)
+                    print(element.waveform)
                     waveform_string = (
                         [f"\tWaveform {type(element.waveform).__name__}:\n"]
                         + [f"\t\t{array_line}\n" for array_line in str(element.waveform.envelope()).split("\n")]
