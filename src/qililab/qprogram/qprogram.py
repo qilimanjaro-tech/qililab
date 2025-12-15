@@ -272,7 +272,7 @@ class QProgram(StructuredProgram):
         """
         buses_to_add: set[str] = set()
         latch_to_add: list[str] = []
-        trigger_updates: dict[str, int] = {}
+        trigger_network_to_add: dict[str, int] = {}
 
         def traverse(block: Block):
             for index, element in enumerate(block.elements):
@@ -350,7 +350,7 @@ class QProgram(StructuredProgram):
                     block.elements[index] = measure_reset_operation
                     buses_to_add.add(element.control_bus)
                     latch_to_add.append(element.control_bus)
-                    trigger_updates[element.bus] = element.trigger_address
+                    trigger_network_to_add[element.bus] = element.trigger_address
 
                 if hasattr(element, "bus"):
                     bus = getattr(element, "bus")
@@ -365,8 +365,8 @@ class QProgram(StructuredProgram):
         if latch_to_add:
             copied_qprogram.qblox.latch_enabled.extend(latch_to_add)
 
-        if trigger_updates:
-            copied_qprogram.qblox.trigger_network_required.update(trigger_updates)
+        if trigger_network_to_add:
+            copied_qprogram.qblox.trigger_network_required.update(trigger_network_to_add)
 
         return copied_qprogram
 
