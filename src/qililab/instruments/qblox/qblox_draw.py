@@ -59,7 +59,7 @@ class QbloxDraw:
                 data_draw = self._handle_wait_draw(data_draw, param, real_wait)
                 param["real_time_counter"] = max(0, param["real_time_counter"] - wait_duration)
 
-            # extend the acquiring status array - cannot be inside the wait handler in the case where real wait is below 0
+            # extend the acquiring status array - cannot be inside the wait handler in the case where real wait is less than 0
             if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
                 extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
                 param["acquiring_status"] = np.concatenate(
@@ -757,7 +757,7 @@ class QbloxDraw:
                     y_max = (y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8)
                     y_min = (y_min := min(path0_clipped.min(), path1_clipped.min())) * (1.2 if y_min < 0 else 0.8)
 
-                    # Ensures that the acquisition plots even if there no waveform
+                    # Ensures that the acquisition is visisble even if there is no waveform
                     if y_max == 0 and y_min == 0:
                         y_max = 0.5
                         y_min = -0.5
