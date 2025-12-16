@@ -59,6 +59,13 @@ class QbloxDraw:
                 data_draw = self._handle_wait_draw(data_draw, param, real_wait)
                 param["real_time_counter"] = max(0, param["real_time_counter"] - wait_duration)
 
+            # extend the acquiring status array - cannot be inside the wait handler in the case where real wait is below 0
+            if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
+                extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
+                param["acquiring_status"] = np.concatenate(
+                    [param["acquiring_status"], np.zeros(extension_length, dtype=int)]
+                )
+
         elif action_type == "play":
             param["play_idx"] += 1
             #  Essentially interrupting the previous play that is still running and extend the play status to the current play
@@ -224,12 +231,6 @@ class QbloxDraw:
                 param[f"{key}_new"] = False
             else:
                 param[key].extend([param[key][-1]] * len(y_wait))
-
-        if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
-            extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
-            param["acquiring_status"] = np.concatenate(
-                [param["acquiring_status"], np.zeros(extension_length, dtype=int)]
-            )
 
         return data_draw
 
@@ -755,6 +756,11 @@ class QbloxDraw:
                     ranges = range_acquire(parameters[key]["acquiring_status"])
                     y_max = (y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8)
                     y_min = (y_min := min(path0_clipped.min(), path1_clipped.min())) * (1.2 if y_min < 0 else 0.8)
+
+                    # Ensures that the acquisition plots even if there no waveform
+                    if y_max == 0 and y_min == 0:
+                        y_max = 0.5
+                        y_min = -0.5
 
                     for i, bound in enumerate(ranges):
                         fig.add_trace(
