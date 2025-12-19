@@ -120,7 +120,7 @@ class TestQProgram(TestStructuredProgram):
         assert non_existant_mapping_qp.body.elements[0].elements[2].bus == "drive_bus"
 
     def test_with_calibration_method(self):
-        """Test with_bus_mapping method"""
+        """Test with_calibration method"""
         xgate = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
         drag_reset = IQPair.DRAG(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
         readout = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
@@ -215,6 +215,39 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[0].elements[7], Measure)
         assert isinstance(new_qp.body.elements[0].elements[8], Measure)
         assert isinstance(new_qp.body.elements[0].elements[9], MeasureReset)
+
+    def test_with_calibration_method_block(self):
+        """Test with_calibration block method"""
+        drag_reset = IQPair.DRAG(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
+        readout = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
+        weights = IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000))
+
+        calibration = Calibration()
+        calibration.add_waveform(bus="readout", name="readout", waveform=readout)
+        calibration.add_weights(bus="readout", name="weights", weights=weights)
+        calibration.add_waveform(bus="drive", name="drag_reset", waveform=drag_reset)
+
+        measure_qp_block = QProgram()
+        measure_qp_block.qblox.measure_reset(bus='readout',waveform="readout", weights="weights", control_bus='drive',reset_pulse="drag_reset")
+        calibration.add_block("reset",measure_qp_block.body)
+        reset_block = calibration.get_block(name="reset")
+
+
+        qp = QProgram()
+        with qp.average(1000):
+            qp.insert_block(reset_block)
+
+        assert qp.has_calibrated_waveforms_or_weights() is True
+        assert isinstance(qp.body.elements[0].elements[0], MeasureResetCalibrated)
+        assert qp.body.elements[0].elements[0].waveform == "readout"
+        assert qp.body.elements[0].elements[0].weights == "weights"
+        assert qp.body.elements[0].elements[0].control_bus == "drive"
+        assert qp.body.elements[0].elements[0].reset_pulse == "drag_reset"
+
+        new_qp = qp.with_calibration(calibration=calibration)
+
+        assert isinstance(new_qp.body.elements[0].elements[0], MeasureReset)
+
 
     def test_average_method(self):
         """Test acquire_loop method"""

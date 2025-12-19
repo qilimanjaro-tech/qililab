@@ -100,7 +100,8 @@ class StructuredProgram:
         return list(self._variables)
 
     def insert_block(self, block: Block):
-        self._active_block.append(block)
+        for element in block.elements:
+            self._active_block.append(element)
 
     def block(self):
         """Define a generic block for scoping operations.
