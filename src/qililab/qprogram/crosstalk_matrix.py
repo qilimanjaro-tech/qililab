@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
 import numpy as np
 
 from qililab.yaml import yaml
@@ -271,6 +272,30 @@ class FluxVector:
         if self.bias_vector:
             return self.bias_vector
         return self.flux_vector
+
+    def get_decomposed_vector(self, bus_list: list[str] | None = None):
+        """Return dictionary with flux vector decomposed by variables, for each flux return a flux vector considering
+        the rest of fluxes (or the rest of the fluxes from the bus_list if given) as 0.
+        This is typically used to sum variables in flux vs flux Qprogram.
+
+        Args:
+            flux_dict (optional, list[str] | None): List of fluxes to be decomposed. Defaults to None
+
+        Returns:
+            dict[str, float]: Dictionary containing different flux vectors for each bus.
+        """
+        list_fluxes = {}
+        if self.crosstalk:
+            for bus in self.crosstalk.matrix.keys():
+                flux_vector_copy = deepcopy(self)
+                for zero_flux in self.crosstalk.matrix.keys():
+                    if bus_list is not None and bus in bus_list and zero_flux in bus_list and zero_flux != bus:
+                        flux_vector_copy[zero_flux] = 0
+                    elif bus_list is None and zero_flux != bus:
+                        flux_vector_copy[zero_flux] = 0
+                if (bus_list is not None and bus in bus_list) or bus_list is None:
+                    list_fluxes[bus] = flux_vector_copy
+        return list_fluxes
 
     @classmethod
     def from_dict(cls, flux_dict: dict[str, float | list[float] | np.ndarray]) -> "FluxVector":
