@@ -451,15 +451,15 @@ class QProgram(StructuredProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
-        self._dictionary_variables: dict[tuple[Variable, str], Variable] = {}
+        self._bus_variable_map: dict[tuple[Variable, str], Variable] = {}
         self._block_variables: dict[Variable, list[Variable]] = {}
         self._parallel_loops: dict[Variable, list[ForLoop]] = {}
-        self._loop_list: list[ForLoop] = []
-        self._loop_index: list[int] = []
+        self._active_loops: list[ForLoop] = []
+        self._loop_depths: list[int] = []
 
         def traverse(block: Block, variables: dict[Variable, VariableInfo]):
             crosstalk_elements = CrosstalkElements(crosstalk)
-            loop_idx = self._loop_index[-1] + 1 if self._loop_index else 0
+            loop_idx = self._loop_depths[-1] + 1 if self._loop_depths else 0
 
             for i, element in enumerate(block.elements):
                 if isinstance(element, (Play, SetOffset, SetGain)) and element.bus in crosstalk.matrix.keys():
@@ -480,13 +480,13 @@ class QProgram(StructuredProgram):
                     variable_list = None
                     if isinstance(element, ForLoop):
                         variable_list = [element.variable]
-                        self._loop_list.append(element)
-                        self._loop_index.append(loop_idx)
+                        self._active_loops.append(element)
+                        self._loop_depths.append(loop_idx)
                     if isinstance(element, Parallel) and all(isinstance(loop, ForLoop) for loop in element.loops):
                         variable_list = [loop.variable for loop in element.loops]
                         for loop in element.loops:
-                            self._loop_list.append(loop)  # type: ignore [arg-type]
-                            self._loop_index.append(loop_idx)
+                            self._active_loops.append(loop)  # type: ignore [arg-type]
+                            self._loop_depths.append(loop_idx)
 
                     traverse(element, variables)
 
@@ -508,8 +508,8 @@ class QProgram(StructuredProgram):
                         parallel_loop = Parallel(loops=loop_list)
                         parallel_loop.elements = element.elements
                         block.elements[i] = parallel_loop
-                        self._loop_list = self._loop_list[:-1]
-                        self._loop_index = self._loop_index[:-1]
+                        self._active_loops = self._active_loops[:-1]
+                        self._loop_depths = self._loop_depths[:-1]
 
             block = handle_crosstalk_element(block=block, crosstalk_elements=crosstalk_elements)
 
@@ -524,7 +524,7 @@ class QProgram(StructuredProgram):
                 envelope = element.gain  # type: ignore [assignment]
 
             if isinstance(envelope, Variable):
-                variable_loop = next((loop for loop in self._loop_list[::-1] if loop.variable == envelope), None)
+                variable_loop = next((loop for loop in self._active_loops[::-1] if loop.variable == envelope), None)
                 if variable_loop:
                     envelope = (
                         np.arange(variable_loop.start, variable_loop.stop, variable_loop.step)
@@ -556,117 +556,150 @@ class QProgram(StructuredProgram):
                 if all(isinstance(elements[element], (SetOffset, SetGain)) for element in element_group):
                     _, variable_list = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
 
-                if all(isinstance(elements[element], Play) for element in element_group):
-                    play_elements = [
-                        elements[element] for element in element_group if isinstance(elements[element], Play)
-                    ]
-                    if len({(play.dwell, play.delay, play.repetitions, play.wait_time) for play in play_elements}) > 1:  # type: ignore [union-attr]
-                        raise ValueError("Play elements must be the same for the same play pulse.")
-                    dwell, delay, repetitions, wait_time = (
-                        play_elements[0].dwell,  # type: ignore [union-attr]
-                        play_elements[0].delay,  # type: ignore [union-attr]
-                        play_elements[0].repetitions,  # type: ignore [union-attr]
-                        play_elements[0].wait_time,  # type: ignore [union-attr]
-                    )
-
                 for bus in flux_vector.bias_vector.keys():
                     if bus not in element_group_bus or element.bus == bus:
                         bias_vector = flux_vector.bias_vector[bus]
-                        if isinstance(element, SetOffset):
-                            if isinstance(bias_vector, np.ndarray):
-                                variable = (
-                                    element.offset_path0
-                                    if isinstance(element.offset_path0, Variable)
-                                    else next(
-                                        (
-                                            elements[element_id].offset_path0  # type: ignore [union-attr, misc]
-                                            for element_id in element_group
-                                            if isinstance(elements[element_id].offset_path0, Variable)  # type: ignore [union-attr]
-                                        ),
-                                        None,  # type: ignore [arg-type]
-                                    )
-                                )
-                                dict_variable = self._dictionary_variables[variable, bus]
-
-                                if len(variable_list) > 1 and variable in variable_list:
-                                    for var in variable_list:
-                                        if var.label != variable.label:
-                                            dict_variable += self._dictionary_variables[var, bus]
-                                            self._block_variables[var].append(self._dictionary_variables[var, bus])
-
-                                offset = SetOffset(bus, dict_variable)
-                                self._block_variables[variable].append(dict_variable)
-                            elif isinstance(bias_vector, float):
-                                offset = SetOffset(bus, bias_vector)
-                            block.elements.insert(element_idx + additional_elements, offset)
-
-                        elif isinstance(element, SetGain):
-                            if isinstance(bias_vector, np.ndarray):
-                                variable = (
-                                    element.gain
-                                    if isinstance(element.gain, Variable)
-                                    else next(
-                                        (
-                                            elements[element_id].gain  # type: ignore [union-attr, misc]
-                                            for element_id in element_group
-                                            if isinstance(elements[element_id].gain, Variable)  # type: ignore [union-attr]
-                                        ),
-                                        None,  # type: ignore [arg-type]
-                                    )
-                                )
-                                dict_variable = self._dictionary_variables[variable, bus]
-
-                                if len(variable_list) > 1 and variable in variable_list:
-                                    for var in variable_list:
-                                        if var.label != variable.label:
-                                            dict_variable += self._dictionary_variables[var, bus]
-                                            self._block_variables[var].append(self._dictionary_variables[var, bus])
-
-                                gain = SetGain(bus, dict_variable)
-                                self._block_variables[variable].append(dict_variable)
-                            elif isinstance(bias_vector, float):
-                                gain = SetGain(bus, bias_vector)
-                            block.elements.insert(element_idx + additional_elements, gain)
-
-                        elif isinstance(element, Play):
-                            waveforms: Sequence[Square | FlatTop | Waveform] = [
-                                elements[element].waveform for element in element_group  # type: ignore [union-attr, misc]
-                            ]
-                            if any(isinstance(element, SetGain) for element in elements.values()):
-                                # NOTE: normalizes everytime gain is used
-                                flux_vector.bias_vector[bus] = flux_vector.bias_vector[bus] / np.max(
-                                    flux_vector.bias_vector[bus]
-                                )
-                            if all(isinstance(wf, Square) for wf in waveforms):
-                                if len({(wf.duration) for wf in waveforms}) > 1:  # type: ignore [union-attr]
-                                    raise ValueError("Square duration must be the same for all compensated pulses.")
-                                waveform = Square(
-                                    amplitude=np.max(flux_vector.bias_vector[bus]), duration=waveforms[0].duration  # type: ignore [union-attr]
-                                )
-                            elif all(isinstance(wf, FlatTop) for wf in waveforms):
-                                if len({(wf.duration, wf.smooth_duration, wf.buffer) for wf in waveforms}) > 1:  # type: ignore [union-attr]
-                                    raise ValueError("FlatTop parameters must be the same for all compensated pulses.")
-                                waveform = FlatTop(
-                                    amplitude=np.max(flux_vector.bias_vector[bus]),  # type: ignore [union-attr]
-                                    duration=waveforms[0].duration,  # type: ignore [union-attr]
-                                    smooth_duration=waveforms[0].smooth_duration,  # type: ignore [union-attr]
-                                    buffer=waveforms[0].buffer,  # type: ignore [union-attr]
-                                )
-                            else:
-                                waveform = Arbitrary(flux_vector.bias_vector[bus])  # type: ignore [arg-type]
-
-                            play = Play(
-                                bus=bus,
-                                waveform=waveform,
-                                dwell=dwell,
-                                delay=delay,
-                                repetitions=repetitions,
-                                wait_time=wait_time,
-                            )
-                            block.elements.insert(element_idx + additional_elements, play)
+                        operation = handle_element(element, bus, bias_vector, element_group, variable_list, elements)
+                        block.elements.insert(element_idx + additional_elements, operation)
                         if bus not in element_group_bus:
                             additional_elements += 1
             return block
+
+        def handle_element(
+            element: SetOffset | SetGain | Play,
+            bus: str,
+            bias_vector: float | list[float] | np.ndarray,
+            element_group: list[int],
+            variable_list: list[Variable],
+            elements: dict[int, Play | SetGain | SetOffset],
+        ):
+            if isinstance(element, SetOffset):
+                operation = handle_offset(element, bus, bias_vector, element_group, variable_list, elements)  # type: ignore [arg-type]
+            if isinstance(element, SetGain):
+                operation = handle_gain(element, bus, bias_vector, element_group, variable_list, elements)  # type: ignore [arg-type]
+            if isinstance(element, Play):
+                operation = handle_play(bus, bias_vector, element_group, elements)  # type: ignore [arg-type]
+            return operation
+
+        def handle_offset(
+            element: SetOffset,
+            bus: str,
+            bias_vector: float | list[float] | np.ndarray,
+            element_group: list[int],
+            variable_list: list[Variable],
+            elements: dict[int, SetOffset],
+        ):
+            if isinstance(bias_vector, np.ndarray):
+                variable = (
+                    element.offset_path0
+                    if isinstance(element.offset_path0, Variable)
+                    else next(
+                        (
+                            elements[element_id].offset_path0  # type: ignore [misc]
+                            for element_id in element_group
+                            if isinstance(elements[element_id].offset_path0, Variable)
+                        ),
+                        None,  # type: ignore [arg-type]
+                    )
+                )
+                dict_variable = self._bus_variable_map[variable, bus]
+
+                if len(variable_list) > 1 and variable in variable_list:
+                    for var in variable_list:
+                        if var.label != variable.label:
+                            dict_variable += self._bus_variable_map[var, bus]
+                            self._block_variables[var].append(self._bus_variable_map[var, bus])
+
+                offset = SetOffset(bus, dict_variable)
+                self._block_variables[variable].append(dict_variable)
+            elif isinstance(bias_vector, float):
+                offset = SetOffset(bus, bias_vector)
+
+            return offset
+
+        def handle_gain(
+            element: SetGain,
+            bus: str,
+            bias_vector: float | list[float] | np.ndarray,
+            element_group: list[int],
+            variable_list: list[Variable],
+            elements: dict[int, SetGain],
+        ):
+            if isinstance(bias_vector, np.ndarray):
+                variable = (
+                    element.gain
+                    if isinstance(element.gain, Variable)
+                    else next(
+                        (
+                            elements[element_id].gain  # type: ignore [misc]
+                            for element_id in element_group
+                            if isinstance(elements[element_id].gain, Variable)
+                        ),
+                        None,  # type: ignore [arg-type]
+                    )
+                )
+                dict_variable = self._bus_variable_map[variable, bus]
+
+                if len(variable_list) > 1 and variable in variable_list:
+                    for var in variable_list:
+                        if var.label != variable.label:
+                            dict_variable += self._bus_variable_map[var, bus]
+                            self._block_variables[var].append(self._bus_variable_map[var, bus])
+
+                gain = SetGain(bus, dict_variable)
+                self._block_variables[variable].append(dict_variable)
+            elif isinstance(bias_vector, float):
+                gain = SetGain(bus, bias_vector)
+            return gain
+
+        def handle_play(
+            bus: str,
+            bias_vector: float | list[float] | np.ndarray,
+            element_group: list[int],
+            elements: dict[int, Play],
+        ):
+
+            play_elements = [elements[element] for element in element_group if isinstance(elements[element], Play)]
+            if len({(play.dwell, play.delay, play.repetitions, play.wait_time) for play in play_elements}) > 1:
+                raise ValueError("Play elements must be the same for the same play pulse.")
+            dwell, delay, repetitions, wait_time = (
+                play_elements[0].dwell,
+                play_elements[0].delay,
+                play_elements[0].repetitions,
+                play_elements[0].wait_time,
+            )
+
+            waveforms: Sequence[Square | FlatTop] = [elements[element].waveform for element in element_group]  # type: ignore [misc]
+            if any(isinstance(element, SetGain) for element in elements.values()):
+                # NOTE: normalizes everytime gain is used
+                bias_vector = bias_vector / np.max(bias_vector)
+            if all(isinstance(wf, Square) for wf in waveforms):
+                if len({(wf.duration) for wf in waveforms}) > 1:
+                    raise ValueError("Square duration must be the same for all compensated pulses.")
+                waveform = Square(amplitude=np.max(bias_vector), duration=waveforms[0].duration)
+            elif all(isinstance(wf, FlatTop) for wf in waveforms):
+                if len({(wf.duration, wf.smooth_duration, wf.buffer) for wf in waveforms}) > 1:  # type: ignore [union-attr]
+                    raise ValueError("FlatTop parameters must be the same for all compensated pulses.")
+                waveform = FlatTop(
+                    amplitude=np.max(bias_vector),
+                    duration=waveforms[0].duration,
+                    smooth_duration=waveforms[0].smooth_duration,  # type: ignore [union-attr]
+                    buffer=waveforms[0].buffer,  # type: ignore [union-attr]
+                )
+            else:
+                if not isinstance(bias_vector, np.ndarray):
+                    raise ValueError("Arbitrary samples must be an array.")
+                waveform = Arbitrary(bias_vector)
+
+            play = Play(
+                bus=bus,
+                waveform=waveform,
+                dwell=dwell,
+                delay=delay,
+                repetitions=repetitions,
+                wait_time=wait_time,
+            )
+            return play
 
         def handle_crosstalk_loop(elements_block: list[Block | Operation], crosstalk_elements: CrosstalkElements):
             elements: dict[int, Play | SetGain | SetOffset] = {}
@@ -678,79 +711,63 @@ class QProgram(StructuredProgram):
                 flux_vector, element_group = crosstalk_elements.element_list[element_idx]
                 element_group_bus = [elements[group_id].bus for group_id in element_group]
                 element = elements[element_idx]
-                if (isinstance(element, SetGain) and isinstance(element.gain, Variable)) or (
-                    isinstance(element, SetOffset) and isinstance(element.offset_path0, Variable)
-                ):
-                    for_loop_list = []
-                    variable: Variable = element.gain if isinstance(element, SetGain) else element.offset_path0  # type: ignore [assignment]
-                    list_fluxes, _ = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
+                variable = get_element_variable(element)
 
-                    if len(list_fluxes) > 1:
-                        for bus in crosstalk.matrix.keys():
-                            for_loop = (
-                                list_fluxes[element.bus].bias_vector[bus][0],
-                                list_fluxes[element.bus].bias_vector[bus][-1],
-                                list_fluxes[element.bus].bias_vector[bus][1]
-                                - list_fluxes[element.bus].bias_vector[bus][0],
-                            )
-                            if (variable, bus) not in self._dictionary_variables.keys():
-                                self._dictionary_variables[variable, bus] = Variable(
-                                    label=f"{bus}_{variable}", domain=Domain.Voltage
-                                )
-                            for_loop_list.append(
-                                ForLoop(
-                                    variable=self._dictionary_variables[variable, bus],
-                                    start=for_loop[0],
-                                    stop=for_loop[1],
-                                    step=for_loop[2],
-                                )
-                            )
-                    else:
-                        for bus in crosstalk.matrix.keys():
-                            bias_vector = flux_vector.bias_vector[bus]
-                            if isinstance(bias_vector, (list, np.ndarray)):
-                                for_loop = (
-                                    bias_vector[0],
-                                    bias_vector[-1],
-                                    bias_vector[1] - bias_vector[0],
-                                )
-                            else:
-                                raise TypeError(f"Expected bias_vector[{bus}] to be a list, got {type(bias_vector)}")
+                if variable is None:
+                    return
 
-                            if (variable, bus) not in self._dictionary_variables.keys():
-                                self._dictionary_variables[variable, bus] = Variable(
-                                    label=f"{bus}_{variable}", domain=Domain.Voltage
-                                )
-                            for_loop_list.append(
-                                ForLoop(
-                                    variable=self._dictionary_variables[variable, bus],
-                                    start=for_loop[0],
-                                    stop=for_loop[1],
-                                    step=for_loop[2],
-                                )
-                            )
+                for_loop_list = []
+                list_fluxes, _ = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
 
-                    self._parallel_loops[variable] = for_loop_list
+                if len(list_fluxes) > 1:
+                    for bus in crosstalk.matrix.keys():
+                        bias_vector = list_fluxes[element.bus].bias_vector[bus]
+                        for_loop_list.append(make_for_loop(variable, bus, bias_vector))
+                else:
+                    for bus in crosstalk.matrix.keys():
+                        bias_vector = flux_vector.bias_vector[bus]
+                        for_loop_list.append(make_for_loop(variable, bus, bias_vector))
 
-                    if variable not in self._block_variables:
-                        self._block_variables[variable] = []
+                self._parallel_loops[variable] = for_loop_list
 
-        def handle_flux_v_flux(elements, flux_vector: FluxVector, element_group, element_group_bus):
+                if variable not in self._block_variables:
+                    self._block_variables[variable] = []
+
+        def handle_flux_v_flux(
+            elements: dict[int, Play | SetGain | SetOffset], flux_vector: FluxVector, element_group, element_group_bus
+        ):
             bus_list = []
             variable_list = []
             used_loop_indices = set()
             for ii, element_idx in enumerate(element_group):
                 element = elements[element_idx]
-                variable = element.gain if isinstance(element, SetGain) else element.offset_path0
-                if isinstance(variable, Variable) and variable in [loop.variable for loop in self._loop_list]:
+                variable = get_element_variable(element)
+                if variable is not None and variable in [loop.variable for loop in self._active_loops]:
                     loop_idx = next(
-                        (idx for loop, idx in zip(self._loop_list, self._loop_index) if loop.variable is variable), None
+                        (idx for loop, idx in zip(self._active_loops, self._loop_depths) if loop.variable is variable),
+                        None,
                     )
                     if loop_idx is not None and loop_idx not in used_loop_indices:
                         used_loop_indices.add(loop_idx)
                         bus_list.append(element_group_bus[ii])
                         variable_list.append(variable)
             return flux_vector.get_decomposed_vector(bus_list), variable_list
+
+        def get_element_variable(element: Play | SetGain | SetOffset) -> Variable | None:
+            if isinstance(element, SetGain) and isinstance(element.gain, Variable):
+                return element.gain
+            if isinstance(element, SetOffset) and isinstance(element.offset_path0, Variable):
+                return element.offset_path0
+            return None
+
+        def make_for_loop(variable: Variable, bus: str, bias_vector: Sequence[float]) -> ForLoop:
+            if (variable, bus) not in self._bus_variable_map:
+                self._bus_variable_map[variable, bus] = Variable(label=f"{bus}_{variable}", domain=Domain.Voltage)
+
+            start, stop = bias_vector[0], bias_vector[-1]
+            step = bias_vector[1] - bias_vector[0]
+
+            return ForLoop(variable=self._bus_variable_map[variable, bus], start=start, stop=stop, step=step)
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body, copied_qprogram._variables)
