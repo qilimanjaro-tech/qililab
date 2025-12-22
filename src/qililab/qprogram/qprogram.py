@@ -433,13 +433,18 @@ class QProgram(StructuredProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
+        self._dictionary_variables: dict[tuple[Variable,str], Variable] = {}
+        self._block_variables: dict[Variable, list[Variable]] = {}
+        self._parallel_loops: dict[Variable, list[ForLoop]] = {}
+        self._loop_list: list[ForLoop] = []
+        self._loop_index: list[int] = []
 
         def traverse(block: Block, variables: dict[Variable, VariableInfo]):
             crosstalk_elements = CrosstalkElements(crosstalk)
             loop_idx = self._loop_index[-1] + 1 if self._loop_index else 0
 
             for i, element in enumerate(block.elements):
-                if isinstance(element, (Play, SetOffset, SetGain)) and element.bus in crosstalk.matrix.keys():  # type: ignore
+                if isinstance(element, (Play, SetOffset, SetGain)) and element.bus in crosstalk.matrix.keys():
                     crosstalk_elements.check_flux_vector(element)
 
                     crosstalk_elements.flux_vector[str(element.__class__)] = handle_flux_vector(
@@ -537,13 +542,13 @@ class QProgram(StructuredProgram):
                     play_elements = [
                         elements[element] for element in element_group if isinstance(elements[element], Play)
                     ]
-                    if len({(play.dwell, play.delay, play.repetitions, play.wait_time) for play in play_elements}) > 1:
+                    if len({(play.dwell, play.delay, play.repetitions, play.wait_time) for play in play_elements}) > 1:  # type: ignore [union-attr]
                         raise ValueError("Play elements must be the same for the same play pulse.")
                     dwell, delay, repetitions, wait_time = (
-                        play_elements[0].dwell,
-                        play_elements[0].delay,
-                        play_elements[0].repetitions,
-                        play_elements[0].wait_time,
+                        play_elements[0].dwell,  # type: ignore [union-attr]
+                        play_elements[0].delay,  # type: ignore [union-attr]
+                        play_elements[0].repetitions,  # type: ignore [union-attr]
+                        play_elements[0].wait_time,  # type: ignore [union-attr]
                     )
 
                 for bus in flux_vector.bias_vector.keys():
@@ -555,9 +560,9 @@ class QProgram(StructuredProgram):
                                     if isinstance(element.offset_path0, Variable)
                                     else next(
                                         (
-                                            elements[element_id].offset_path0
+                                            elements[element_id].offset_path0  # type: ignore [union-attr]
                                             for element_id in element_group
-                                            if isinstance(elements[element_id].offset_path0, Variable)
+                                            if isinstance(elements[element_id].offset_path0, Variable)  # type: ignore [union-attr]
                                         ),
                                         None,
                                     )
@@ -583,9 +588,9 @@ class QProgram(StructuredProgram):
                                     if isinstance(element.gain, Variable)
                                     else next(
                                         (
-                                            elements[element_id].gain
+                                            elements[element_id].gain  # type: ignore [union-attr]
                                             for element_id in element_group
-                                            if isinstance(elements[element_id].gain, Variable)
+                                            if isinstance(elements[element_id].gain, Variable)  # type: ignore [union-attr]
                                         ),
                                         None,
                                     )
@@ -606,7 +611,7 @@ class QProgram(StructuredProgram):
 
                         elif isinstance(element, Play):
                             waveforms: list[Square | FlatTop | Waveform] = [
-                                elements[element].waveform for element in element_group
+                                elements[element].waveform for element in element_group  # type: ignore [union-attr]
                             ]
                             if any(isinstance(element, SetGain) for element in elements.values()):
                                 # NOTE: normalizes everytime gain is used
@@ -614,19 +619,19 @@ class QProgram(StructuredProgram):
                                     flux_vector.bias_vector[bus]
                                 )
                             if all(isinstance(wf, Square) for wf in waveforms):
-                                if len({(wf.duration) for wf in waveforms}) > 1:
+                                if len({(wf.duration) for wf in waveforms}) > 1:  # type: ignore [union-attr]
                                     raise ValueError("Square duration must be the same for all compensated pulses.")
                                 waveform = Square(
-                                    amplitude=np.max(flux_vector.bias_vector[bus]), duration=waveforms[0].duration
+                                    amplitude=np.max(flux_vector.bias_vector[bus]), duration=waveforms[0].duration  # type: ignore [union-attr]
                                 )
                             elif all(isinstance(wf, FlatTop) for wf in waveforms):
-                                if len({(wf.duration, wf.smooth_duration, wf.buffer) for wf in waveforms}) > 1:
+                                if len({(wf.duration, wf.smooth_duration, wf.buffer) for wf in waveforms}) > 1:  # type: ignore [union-attr]
                                     raise ValueError("FlatTop parameters must be the same for all compensated pulses.")
                                 waveform = FlatTop(
-                                    amplitude=np.max(flux_vector.bias_vector[bus]),
-                                    duration=waveforms[0].duration,
-                                    smooth_duration=waveforms[0].smooth_duration,
-                                    buffer=waveforms[0].buffer,
+                                    amplitude=np.max(flux_vector.bias_vector[bus]),  # type: ignore [union-attr]
+                                    duration=waveforms[0].duration,  # type: ignore [union-attr]
+                                    smooth_duration=waveforms[0].smooth_duration,  # type: ignore [union-attr]
+                                    buffer=waveforms[0].buffer,  # type: ignore [union-attr]
                                 )
                             else:
                                 waveform = Arbitrary(flux_vector.bias_vector[bus])
@@ -658,7 +663,7 @@ class QProgram(StructuredProgram):
                     isinstance(element, SetOffset) and isinstance(element.offset_path0, Variable)
                 ):
                     for_loop_list = []
-                    variable = element.gain if isinstance(element, SetGain) else element.offset_path0
+                    variable: Variable = element.gain if isinstance(element, SetGain) else element.offset_path0
                     list_fluxes, _ = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
 
                     if len(list_fluxes) > 1:
@@ -724,11 +729,6 @@ class QProgram(StructuredProgram):
             return flux_vector.get_decomposed_vector(bus_list), variable_list
 
         copied_qprogram = deepcopy(self)
-        self._dictionary_variables = {}
-        self._block_variables = {}
-        self._parallel_loops = {}
-        self._loop_list: list[ForLoop] = []
-        self._loop_index: list[int] = []
         traverse(copied_qprogram.body, copied_qprogram._variables)
 
         return copied_qprogram
