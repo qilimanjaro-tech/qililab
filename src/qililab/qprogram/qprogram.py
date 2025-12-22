@@ -340,6 +340,9 @@ class QProgram(StructuredProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated operations.
         """
+        buses_to_add: set[str] = set()
+        latch_to_add: list[str] = []
+        trigger_network_to_add: dict[str, int] = {}
 
         def traverse(block: Block):
             for index, element in enumerate(block.elements):
@@ -415,9 +418,26 @@ class QProgram(StructuredProgram):
                         save_adc=element.save_adc,
                     )
                     block.elements[index] = measure_reset_operation
+                    buses_to_add.add(element.control_bus)
+                    latch_to_add.append(element.control_bus)
+                    trigger_network_to_add[element.bus] = element.trigger_address
+
+                if hasattr(element, "bus"):
+                    bus = getattr(element, "bus")
+                    buses_to_add.add(bus)
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body)
+
+        if buses_to_add:
+            copied_qprogram._buses.update(buses_to_add)
+
+        if latch_to_add:
+            copied_qprogram.qblox.latch_enabled.extend(latch_to_add)
+
+        if trigger_network_to_add:
+            copied_qprogram.qblox.trigger_network_required.update(trigger_network_to_add)
+
         return copied_qprogram
 
     def with_crosstalk(self, crosstalk: CrosstalkMatrix):
