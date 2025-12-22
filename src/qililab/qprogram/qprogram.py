@@ -458,6 +458,9 @@ class QProgram(StructuredProgram):
         self._loop_depths: list[int] = []
 
         def traverse(block: Block, variables: dict[Variable, VariableInfo]):
+            """
+            Traverse through all block elements and modify ForLoop, Parallel, Play, SetOffset and SetGain.
+            """
             crosstalk_elements = CrosstalkElements(crosstalk)
             loop_idx = self._loop_depths[-1] + 1 if self._loop_depths else 0
 
@@ -514,6 +517,9 @@ class QProgram(StructuredProgram):
             block = handle_crosstalk_element(block=block, crosstalk_elements=crosstalk_elements)
 
         def handle_flux_vector(flux_vector: FluxVector, element: Play | SetGain | SetOffset):
+            """
+            Generates the flux vector based on the element parameters, variables and loops.
+            """
             if isinstance(element, Play):
                 if isinstance(element.waveform, Waveform):
                     waveform = element.waveform.I if isinstance(element.waveform, IQPair) else element.waveform
@@ -539,7 +545,10 @@ class QProgram(StructuredProgram):
             return flux_vector
 
         def handle_crosstalk_element(block: Block, crosstalk_elements: CrosstalkElements):
-
+            """
+            Modifies the block for crosstalk compensation.
+            By modifying the voltage of the existing elements and adding new ones based on the compensated bias.
+            """
             elements: dict[int, Play | SetGain | SetOffset] = {}
             additional_elements = 0
 
@@ -553,13 +562,9 @@ class QProgram(StructuredProgram):
                 element = elements[element_idx]
                 element_group_bus = [elements[group_id].bus for group_id in element_group]
 
-                if all(isinstance(elements[element], (SetOffset, SetGain)) for element in element_group):
-                    _, variable_list = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
-
                 for bus in flux_vector.bias_vector.keys():
                     if bus not in element_group_bus or element.bus == bus:
-                        bias_vector = flux_vector.bias_vector[bus]
-                        operation = handle_element(element, bus, bias_vector, element_group, variable_list, elements)
+                        operation = handle_element(element, bus, flux_vector, element_group, element_group_bus, elements)
                         block.elements.insert(element_idx + additional_elements, operation)
                         if bus not in element_group_bus:
                             additional_elements += 1
@@ -568,11 +573,18 @@ class QProgram(StructuredProgram):
         def handle_element(
             element: SetOffset | SetGain | Play,
             bus: str,
-            bias_vector: float | list[float] | np.ndarray,
+            flux_vector: FluxVector,
             element_group: list[int],
-            variable_list: list[Variable],
+            element_group_bus: list[str],
             elements: dict[int, Play | SetGain | SetOffset],
         ):
+            """
+            Modifies SetOffset, SetGain or Play based on its element type.
+            """
+            bias_vector = flux_vector.bias_vector[bus]
+            if all(isinstance(elements[element], (SetOffset, SetGain)) for element in element_group):
+                _, variable_list = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
+
             if isinstance(element, SetOffset):
                 operation = handle_offset(element, bus, bias_vector, element_group, variable_list, elements)  # type: ignore [arg-type]
             if isinstance(element, SetGain):
@@ -589,6 +601,9 @@ class QProgram(StructuredProgram):
             variable_list: list[Variable],
             elements: dict[int, SetOffset],
         ):
+            """
+            Modifies SetOffset by compensating the bias vector or modifying the variables.
+            """
             if isinstance(bias_vector, np.ndarray):
                 variable = (
                     element.offset_path0
@@ -625,6 +640,9 @@ class QProgram(StructuredProgram):
             variable_list: list[Variable],
             elements: dict[int, SetGain],
         ):
+            """
+            Modifies SetGain by compensating the bias vector or modifying the variables.
+            """
             if isinstance(bias_vector, np.ndarray):
                 variable = (
                     element.gain
@@ -658,7 +676,10 @@ class QProgram(StructuredProgram):
             element_group: list[int],
             elements: dict[int, Play],
         ):
-
+            """
+            Modifies Play creating a compensated Arbitrary pulse.
+            For Square and FlatTop pulses uses the same type instead of an Arbitrary pulse.
+            """
             play_elements = [elements[element] for element in element_group if isinstance(elements[element], Play)]
             if len({(play.dwell, play.delay, play.repetitions, play.wait_time) for play in play_elements}) > 1:
                 raise ValueError("Play elements must be the same for the same play pulse.")
@@ -702,6 +723,10 @@ class QProgram(StructuredProgram):
             return play
 
         def handle_crosstalk_loop(elements_block: list[Block | Operation], crosstalk_elements: CrosstalkElements):
+            """
+            Generates necessary information to process for loops into parallel loops for compensating variables.
+            In form of ForLoops lists inside self._parallel_loops.
+            """
             elements: dict[int, Play | SetGain | SetOffset] = {}
 
             for element_idx in crosstalk_elements.element_list.keys():
@@ -713,29 +738,31 @@ class QProgram(StructuredProgram):
                 element = elements[element_idx]
                 variable = get_element_variable(element)
 
-                if variable is None:
-                    return
+                if variable is not None:
+                    for_loop_list = []
+                    list_fluxes, _ = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
 
-                for_loop_list = []
-                list_fluxes, _ = handle_flux_v_flux(elements, flux_vector, element_group, element_group_bus)
+                    if len(list_fluxes) > 1:
+                        for bus in crosstalk.matrix.keys():
+                            bias_vector = list_fluxes[element.bus].bias_vector[bus]
+                            for_loop_list.append(make_for_loop(variable, bus, bias_vector))
+                    else:
+                        for bus in crosstalk.matrix.keys():
+                            bias_vector = flux_vector.bias_vector[bus]
+                            for_loop_list.append(make_for_loop(variable, bus, bias_vector))
 
-                if len(list_fluxes) > 1:
-                    for bus in crosstalk.matrix.keys():
-                        bias_vector = list_fluxes[element.bus].bias_vector[bus]
-                        for_loop_list.append(make_for_loop(variable, bus, bias_vector))
-                else:
-                    for bus in crosstalk.matrix.keys():
-                        bias_vector = flux_vector.bias_vector[bus]
-                        for_loop_list.append(make_for_loop(variable, bus, bias_vector))
+                    self._parallel_loops[variable] = for_loop_list
 
-                self._parallel_loops[variable] = for_loop_list
-
-                if variable not in self._block_variables:
-                    self._block_variables[variable] = []
+                    if variable not in self._block_variables:
+                        self._block_variables[variable] = []
 
         def handle_flux_v_flux(
             elements: dict[int, Play | SetGain | SetOffset], flux_vector: FluxVector, element_group, element_group_bus
         ):
+            """
+            Function to get multiple flux vectors by decomposing the flux_vector for each loop that contains a variable.
+            This is for structures where multiple ForLoops are executed one inside the other (such as flux vs flux).
+            """
             bus_list = []
             variable_list = []
             used_loop_indices = set()
@@ -754,6 +781,9 @@ class QProgram(StructuredProgram):
             return flux_vector.get_decomposed_vector(bus_list), variable_list
 
         def get_element_variable(element: Play | SetGain | SetOffset) -> Variable | None:
+            """
+            Returns variable for SetGain and SetOffset elements.
+            """
             if isinstance(element, SetGain) and isinstance(element.gain, Variable):
                 return element.gain
             if isinstance(element, SetOffset) and isinstance(element.offset_path0, Variable):
@@ -761,6 +791,9 @@ class QProgram(StructuredProgram):
             return None
 
         def make_for_loop(variable: Variable, bus: str, bias_vector: Sequence[float]) -> ForLoop:
+            """
+            Creates a for loop for a given variable with the bus and bias vector.
+            """
             if (variable, bus) not in self._bus_variable_map:
                 self._bus_variable_map[variable, bus] = Variable(label=f"{bus}_{variable}", domain=Domain.Voltage)
 
