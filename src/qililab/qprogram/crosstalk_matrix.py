@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from copy import deepcopy
+
 import numpy as np
 
 from qililab.yaml import yaml

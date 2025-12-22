@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from uuid import UUID
+
 import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
@@ -29,7 +30,7 @@ from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 from qililab.config import logger
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
