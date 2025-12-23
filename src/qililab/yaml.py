@@ -67,3 +67,8 @@ yaml.representer.add_representer(deque, deque_representer)
 yaml.constructor.add_constructor("!deque", deque_constructor)
 yaml.representer.add_representer(types.LambdaType, lambda_representer)
 yaml.constructor.add_constructor("!lambda", lambda_constructor)
+
+
+def restate_lambda_constructor(yaml: YAML):
+    yaml.representer.add_representer(types.LambdaType, lambda_representer)
+    yaml.constructor.add_constructor("!lambda", lambda_constructor)

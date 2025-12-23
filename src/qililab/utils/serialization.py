@@ -17,16 +17,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, TypeVar, overload
 
-from qililab.yaml import lambda_representer, yaml
-
-rep = yaml.representer
-
-
-rep.yaml_representers = rep.yaml_representers.copy()
-rep.yaml_multi_representers = rep.yaml_multi_representers.copy()
-
-
-rep.yaml_representers[types.LambdaType] = lambda_representer
+from qililab.yaml import restate_lambda_constructor, yaml
 
 T = TypeVar("T")
 
@@ -52,6 +43,7 @@ def serialize(obj: Any) -> str:
         str: The serialized YAML string.
     """
     try:
+        restate_lambda_constructor(yaml)
         with StringIO() as stream:
             yaml.dump(obj, stream)
             return stream.getvalue()
@@ -70,6 +62,7 @@ def serialize_to(obj: Any, file: str) -> None:
         SerializationError: If serialization to file fails.
     """
     try:
+        restate_lambda_constructor(yaml)
         yaml.dump(obj, Path(file))
     except Exception as e:
         raise SerializationError(f"Failed to serialize object {e} to file {file}") from e
@@ -97,6 +90,7 @@ def deserialize(string: str, cls: type[T] | None = None) -> Any | T:
         Any | T: The deserialized object, optionally cast to the specified class type.
     """
     try:
+        restate_lambda_constructor(yaml)
         with StringIO(string) as stream:
             result = yaml.load(stream)
     except Exception as e:
@@ -128,6 +122,7 @@ def deserialize_from(file: str, cls: type[T] | None = None) -> Any | T:
         Any | T: The deserialized object, optionally cast to the specified class type.
     """
     try:
+        restate_lambda_constructor(yaml)
         result = yaml.load(Path(file))
     except Exception as e:
         raise DeserializationError(f"Failed to deserialize YAML string {e} from file {file}") from e
