@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import types
+
 from io import StringIO
 from pathlib import Path
 from typing import Any, TypeVar, overload
 
-from qililab.yaml import restate_lambda_constructor, yaml
+from qililab.yaml import yaml
+
+from .yaml_format import restate_lambda_constructor
 
 T = TypeVar("T")
 
