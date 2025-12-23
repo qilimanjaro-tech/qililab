@@ -16,14 +16,9 @@ import types
 
 from ruamel.yaml import YAML
 
-from qililab.core.variables import Domain, Variable
-from qililab.typings.enums import Parameter
 from qililab.yaml import lambda_constructor, lambda_representer
 
 
 def restate_lambda_constructor(yaml: YAML):
     yaml.representer.add_representer(types.LambdaType, lambda_representer)
     yaml.constructor.add_constructor("!lambda", lambda_constructor)
-    yaml.register_class(Domain)
-    yaml.register_class(Variable)
-    yaml.register_class(Parameter)

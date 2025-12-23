@@ -13,6 +13,7 @@
 # limitations under the License.
 import base64
 import types
+from typing import Any
 from collections import deque
 from uuid import UUID
 
@@ -67,3 +68,34 @@ yaml.representer.add_representer(deque, deque_representer)
 yaml.constructor.add_constructor("!deque", deque_constructor)
 yaml.representer.add_representer(types.LambdaType, lambda_representer)
 yaml.constructor.add_constructor("!lambda", lambda_constructor)
+
+
+def register_qililab_class(yaml: YAML) -> Any:
+    """
+    register a class for dumping/loading
+    - if it has attribute yaml_tag use that to register, else use class name
+    - if it has methods to_yaml/from_yaml use those to dump/load else dump attributes
+        as mapping
+    """
+    def decorator(cls: Any):
+        tag = getattr(cls, 'yaml_tag', '!QiliLab.' + cls.__name__)
+        try:
+            yaml.representer.add_representer(cls, cls.to_yaml)
+        except AttributeError:
+
+            def t_y(representer: Any, data: Any) -> Any:
+                return representer.represent_yaml_object(
+                    tag, data, cls, flow_style=representer.default_flow_style,
+                )
+
+            yaml.representer.add_representer(cls, t_y)
+        try:
+            yaml.constructor.add_constructor(tag, cls.from_yaml)
+        except AttributeError:
+
+            def f_y(constructor: Any, node: Any) -> Any:
+                return constructor.construct_yaml_object(node, cls)
+
+            yaml.constructor.add_constructor(tag, f_y)
+        return cls
+    return decorator
