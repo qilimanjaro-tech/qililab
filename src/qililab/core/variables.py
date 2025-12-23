@@ -16,10 +16,10 @@ import functools
 from enum import Enum
 from uuid import UUID, uuid4
 
-from qililab.yaml import yaml
+from qililab.yaml import register_qililab_class, yaml
 
 
-@yaml.register_class
+@register_qililab_class(yaml)
 class Domain(Enum):
     """Domain class."""
 
@@ -33,7 +33,7 @@ class Domain(Enum):
     @classmethod
     def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar("!Domain", f"{node.name}-{node.value}")
+        return representer.represent_scalar("!QiliLab.Domain", f"{node.name}-{node.value}")
 
     @classmethod
     def from_yaml(cls, _, node):
@@ -69,7 +69,7 @@ def requires_domain(parameter: str, domain: Domain):
     return decorator_function
 
 
-@yaml.register_class
+@register_qililab_class(yaml)
 class Variable:
     """Variable class used to define variables inside a QProgram."""
 

@@ -17,7 +17,7 @@
 
 from enum import Enum
 
-from qililab.yaml import yaml
+from qililab.yaml import register_qililab_class, yaml
 
 
 class Instrument(str, Enum):
@@ -319,7 +319,7 @@ class InstrumentControllerName(str, Enum):
     QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
-@yaml.register_class
+@register_qililab_class(yaml)
 class Parameter(str, Enum):
     """Parameter names."""
 
@@ -463,7 +463,7 @@ class Parameter(str, Enum):
     @classmethod
     def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
+        return representer.represent_scalar("!QiliLab.Parameter", f"{node.name}-{node.value}")
 
     @classmethod
     def from_yaml(cls, _, node):
