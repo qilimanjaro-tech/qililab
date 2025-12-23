@@ -12,11 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import types
 from io import StringIO
 from pathlib import Path
 from typing import Any, TypeVar, overload
 
 from qililab.yaml import yaml
+
+rep = yaml.representer
+
+
+rep.yaml_representers = rep.yaml_representers.copy()
+rep.yaml_multi_representers = rep.yaml_multi_representers.copy()
+
+
+old = rep.yaml_representers.get(types.FunctionType) or rep.yaml_multi_representers.get(types.FunctionType)
+
+
+def function_representer_no_lambda_pickling(representer, fn):
+    if getattr(fn, "__name__", None) == "<lambda>":
+        return representer.represent_scalar("tag:yaml.org,2002:str", repr(fn))
+    if old is not None:
+        return old(representer, fn)
+    return representer.represent_scalar("tag:yaml.org,2002:str", repr(fn))
+
+
+# Because LambdaType == FunctionType, overriding FunctionType covers lambdas too.
+rep.yaml_representers[types.FunctionType] = function_representer_no_lambda_pickling
 
 T = TypeVar("T")
 
