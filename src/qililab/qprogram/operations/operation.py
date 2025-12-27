@@ -14,7 +14,7 @@
 
 
 from qililab.qprogram.element import Element
-from qililab.qprogram.variable import Variable
+from qililab.qprogram.variable import Variable, VariableExpression
 
 
 class Operation(Element):
@@ -24,4 +24,14 @@ class Operation(Element):
         Returns:
             set[Variable]: The set of variables used in operation.
         """
-        return {attribute for attribute in self.__dict__.values() if isinstance(attribute, Variable)}
+        variables = set()
+        for attribute in self.__dict__.values():
+            if isinstance(attribute,VariableExpression):
+                variables.update(attribute.variables)
+            elif isinstance(attribute,Variable):
+                variables.add(attribute)
+
+
+        return variables
+
+        # return {attribute for attribute in self.__dict__.values() if isinstance(attribute, (Variable, VariableExpression))}
