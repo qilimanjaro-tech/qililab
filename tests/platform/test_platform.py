@@ -1,7 +1,6 @@
 """Tests for the Platform class."""
 
 import copy
-from exceptiongroup import BaseExceptionGroup
 import io
 import re
 import warnings
@@ -761,27 +760,29 @@ class TestMethods:
         platform.disconnect.assert_called_once()
 
     def test_session_with_exception_in_cleanup(self):
+        """Test the session method when an exception occurs during cleanup."""
+        # Create an autospec of the Platform class
         platform = create_autospec(Platform, instance=True)
+
+        # Manually set the session method to the real one
         platform.session = Platform.session.__get__(platform, Platform)
+
+        # Simulate turn_off_instruments failing
         platform.turn_off_instruments.side_effect = Exception("Turn off instruments error")
 
-        with pytest.raises((Exception, BaseExceptionGroup)) as excinfo:
+        # Simulate no exception during the experiment, but failure during cleanup
+        with pytest.raises(Exception, match="Turn off instruments error"):
             with platform.session():
-                pass
+                pass  # No exception during the experiment
 
-        err = excinfo.value
-        if isinstance(err, BaseExceptionGroup):
-            assert any("Turn off instruments error" in str(e) for e in err.exceptions)
-        else:
-            assert "Turn off instruments error" in str(err)
-
+        # Ensure methods were called in the correct order
         platform.connect.assert_called_once()
         platform.initial_setup.assert_called_once()
         platform.turn_on_instruments.assert_called_once()
+
+        # Ensure the exception is raised in cleanup
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
-
-
 
     def test_session_with_multiple_exceptions_in_cleanup(self):
         """Test the session method when multiple exceptions occur during cleanup."""
