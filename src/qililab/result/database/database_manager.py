@@ -150,14 +150,18 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
-    def add_calibration_run(self, calibration_tree: dict) -> CalibrationRun:
+    def add_calibration_run(self, calibration_tree: dict, sample_name: str, cooldown: str) -> CalibrationRun:
         """Add autocalibration metadata.
 
         Args:
             calibration_tree (dict): Full calibration tree of the run.
         """
         calibration_obj = CalibrationRun(
-            date=datetime.datetime.now(), calibration_tree=calibration_tree, calibration_completed=False
+            date=datetime.datetime.now(),
+            calibration_tree=calibration_tree,
+            calibration_completed=False,
+            sample_name=sample_name,
+            cooldown=cooldown,
         )
         with self.session() as running_session:
             running_session.add(calibration_obj)
@@ -430,8 +434,6 @@ class DatabaseManager:
                 .calibration_id
             )
 
-        sample_name = calibration.parameters["sample_name"]
-        cooldown = calibration.parameters["cooldown"]
         base_path = calibration.parameters["base_path"]
 
         result_path = os.path.join(base_path, f"{experiment_name}.h5")
@@ -442,14 +444,12 @@ class DatabaseManager:
 
         self.calibration_measurement = AutocalMeasurement(
             experiment_name=experiment_name,
-            sample_name=sample_name,
             calibration_id=calibration_id,
             qbit_idx=qubit_idx,
             result_path=result_path,
             fitting_path=base_path,
             experiment_completed=False,
             start_time=start_time,
-            cooldown=cooldown,
             platform_after=platform,
             qprogram=qprogram,
             calibration=serialize(calibration),

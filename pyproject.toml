@@ -33,7 +33,7 @@ dependencies = [
     "qblox-instruments==0.16.0",
     "qcodes>=0.54.3",
     "qcodes-contrib-drivers>=0.23.0",
-    "qpysequence>=0.10.7",
+    "qpysequence>=0.10.8",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
     "sqlalchemy>=2.0.40",

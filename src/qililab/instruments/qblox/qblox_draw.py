@@ -44,7 +44,7 @@ class QbloxDraw:
             param = self._handle_reset_phase_draw(param)
 
         elif action_type == "set_awg_offs":
-            param = self._handle_offset(program_line, param)
+            param = self._handle_offset(program_line, param, register)
 
         elif action_type == "set_awg_gain":
             param = self._handle_gain_draw(program_line, param, register)
@@ -58,6 +58,13 @@ class QbloxDraw:
             else:
                 data_draw = self._handle_wait_draw(data_draw, param, real_wait)
                 param["real_time_counter"] = max(0, param["real_time_counter"] - wait_duration)
+
+            # extend the acquiring status array - cannot be inside the wait handler in the case where real wait is less than 0
+            if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
+                extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
+                param["acquiring_status"] = np.concatenate(
+                    [param["acquiring_status"], np.zeros(extension_length, dtype=int)]
+                )
 
         elif action_type == "play":
             param["play_idx"] += 1
@@ -225,12 +232,6 @@ class QbloxDraw:
             else:
                 param[key].extend([param[key][-1]] * len(y_wait))
 
-        if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
-            extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
-            param["acquiring_status"] = np.concatenate(
-                [param["acquiring_status"], np.zeros(extension_length, dtype=int)]
-            )
-
         return data_draw
 
     def _handle_gain_draw(self, program_line, param, register):
@@ -240,6 +241,7 @@ class QbloxDraw:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with a gain or offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            register (dictionary): registers of the Q1ASM.
 
         Returns:
             Appends the param dictionary
@@ -250,18 +252,21 @@ class QbloxDraw:
         param["gain_i"], param["gain_q"] = i_val, q_val
         return param
 
-    def _handle_offset(self, program_line, param):
+    def _handle_offset(self, program_line, param, register):
         """Updates the param dictionary when an offset is set in the program
 
         Args:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with an offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            register (dictionary): registers of the Q1ASM.
 
         Returns:
             Appends the param dictionary
         """
-        offi, offq = map(int, program_line[1].split(","))
+        offi, offq = program_line[1].split(", ")
+        offi = float(self._get_value(offi, register))
+        offq = float(self._get_value(offq, register))
 
         if param["hardware_modulation"]:
             scaling_offset = param["max_voltage"] / np.sqrt(2)
@@ -749,6 +754,11 @@ class QbloxDraw:
                     ranges = range_acquire(parameters[key]["acquiring_status"])
                     y_max = (y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8)
                     y_min = (y_min := min(path0_clipped.min(), path1_clipped.min())) * (1.2 if y_min < 0 else 0.8)
+
+                    # Ensures that the acquisition is visisble even if there is no waveform
+                    if y_max == 0 and y_min == 0:
+                        y_max = 0.5
+                        y_min = -0.5
 
                     for i, bound in enumerate(ranges):
                         fig.add_trace(
