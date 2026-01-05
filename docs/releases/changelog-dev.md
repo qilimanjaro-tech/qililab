@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- For Autocalibration database, moved `sample_name` and `cooldown` from `AutocalMeasurement` (independent experiment) to `CalibrationRun` (full calibration tree). This way the database does not include redundant information, as these variables do not change from one measurement to another, only in different calibration runs.
+[#1053](https://github.com/qilimanjaro-tech/qililab/pull/1053)
+
 ### Breaking changes
 
 ### Deprecations / Removals
