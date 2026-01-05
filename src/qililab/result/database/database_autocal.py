@@ -37,16 +37,22 @@ class CalibrationRun(base):  # type: ignore
     date: Column = Column("date", DateTime)
     calibration_tree: Column = Column("calibration_tree", JSONB)
     calibration_completed: Column = Column("calibration_completed", Boolean, nullable=False)
+    cooldown: Column = Column("cooldown", String, index=True)
+    sample_name: Column = Column("sample_name", String, nullable=False)
 
     def __init__(
         self,
         date,
         calibration_tree,
         calibration_completed,
+        sample_name,
+        cooldown
     ):
         self.date = date
         self.calibration_tree = calibration_tree
         self.calibration_completed = calibration_completed
+        self.sample_name = sample_name
+        self.cooldown = cooldown
 
     def end_calibration(self, session: sessionmaker[Session], traceback: str | None = None):
         """Function to end measurement of the experiment. The function sets inside the database information
@@ -79,8 +85,6 @@ class AutocalMeasurement(base):  # type: ignore
     end_time: Column = Column("end_time", DateTime)
     run_length: Column = Column("run_length", Interval)
     experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
-    cooldown: Column = Column("cooldown", String, index=True)
-    sample_name: Column = Column("sample_name", String, nullable=False)
     calibration_id: Column = Column("calibration_id", ForeignKey(CalibrationRun.calibration_id), nullable=False)
     result_path: Column = Column("result_path", String, unique=True, nullable=False)
     fitting_path: Column = Column("fitting_path", String, unique=True, nullable=True)
@@ -95,14 +99,12 @@ class AutocalMeasurement(base):  # type: ignore
     def __init__(
         self,
         experiment_name,
-        sample_name,
         calibration_id,
         result_path,
         experiment_completed,
         start_time,
         qbit_idx,
         fitting_path=None,
-        cooldown=None,
         end_time=None,
         run_length=None,
         platform_after=None,
@@ -114,7 +116,6 @@ class AutocalMeasurement(base):  # type: ignore
     ):
         # Required fields
         self.experiment_name = experiment_name
-        self.sample_name = sample_name
         self.result_path = result_path
         self.experiment_completed = experiment_completed
         self.start_time = start_time
@@ -123,7 +124,6 @@ class AutocalMeasurement(base):  # type: ignore
 
         # Optional fields
         self.fitting_path = fitting_path
-        self.cooldown = cooldown
         self.end_time = end_time
         self.run_length = run_length
         self.platform_after = platform_after
@@ -179,4 +179,4 @@ class AutocalMeasurement(base):  # type: ignore
                 raise e
 
     def __repr__(self):
-        return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.sample_name} {self.cooldown} {self.calibration_id}"
+        return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.calibration_id}"
