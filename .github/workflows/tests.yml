@@ -1,4 +1,4 @@
-name: Tests
+name: Code Quality
 
 on:
   push:
@@ -12,38 +12,50 @@ on:
       - "ready_for_review"
 
 jobs:
-  tests:
-    if: github.event.pull_request.draft == false
+  code-quality:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 7
 
     env:
       HOME_REPO: /home/repo
 
+    strategy:
+      matrix:
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install the project
         run: uv sync --group dev --all-extras
 
-      - name: Run tests
-        run: |
-          uv run pytest -n auto --dist loadfile --cov=qililab --cov-report=xml tests
+      - name: Ruff
+        run: uv run ruff check --output-format=github .
 
-      - name: Upload Coverage
-        uses: codecov/codecov-action@v5
-        with:
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: "unittests"
+      - name: Mypy
+        run: uv run mypy src --ignore-missing-imports
+
+      - name: Mdformat
+        run: uv run mdformat .
+
+      - name: nbqa
+        run: |
+          # nbqa ruff .
+          uv run nbqa mypy . --ignore-missing-imports
+          uv run nbqa mdformat .
