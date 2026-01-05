@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
 import math
 from collections import deque
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
+
 from qililab.config import logger
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
