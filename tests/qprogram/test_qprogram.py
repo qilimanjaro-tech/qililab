@@ -218,7 +218,7 @@ class TestQProgram(TestStructuredProgram):
 
     def test_with_calibration_method_block(self):
         """Test with_calibration block method"""
-        drag_reset = IQPair.DRAG(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
+        drag_reset = IQDrag(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
         readout = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
         weights = IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000))
 
