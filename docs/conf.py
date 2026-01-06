@@ -24,7 +24,6 @@ release = qililab.__version__
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx_design",
     "sphinx.ext.autodoc",
     "sphinx_mdinclude",  # allows the mdinclude directive to add Markdown files
     "sphinx.ext.napoleon",  # converts Google docstrings into rst
