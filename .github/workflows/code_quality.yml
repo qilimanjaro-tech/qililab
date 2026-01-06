@@ -45,17 +45,14 @@ jobs:
       - name: Install the project
         run: uv sync --group dev --all-extras
 
-      - name: Ruff
+      - name: Ruff Lint
         run: uv run ruff check --output-format=github .
+
+      - name: Ruff Format
+        run: uv run ruff format --diff --output-format=github .
 
       - name: Mypy
         run: uv run mypy src --ignore-missing-imports
 
       - name: Mdformat
         run: uv run mdformat .
-
-      - name: nbqa
-        run: |
-          # nbqa ruff .
-          uv run nbqa mypy . --ignore-missing-imports
-          uv run nbqa mdformat .
