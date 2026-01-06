@@ -85,7 +85,7 @@ qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "m
 [tool.ruff]
 line-length = 120
 output-format = "concise"
-target-version = "py310"
+target-version = "py313"
 extend-exclude = ["test_*.py", "data.py"]
 
 [tool.ruff.lint]
@@ -120,7 +120,7 @@ select = [
     "SLOT",
     # "SIM",
     "TID",
-    "TCH",
+    "TC",
     # "PTH",
     # "TD",
     # "PL",
@@ -181,7 +181,7 @@ docstring-code-format = true
 docstring-code-line-length = "dynamic"
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.13"
 warn_return_any = false
 ignore_missing_imports = true
 exclude = [
