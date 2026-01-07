@@ -2,11 +2,13 @@ import re
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.waveforms.arbitrary import Arbitrary
 import pytest
 import qpysequence as QPy
 
 from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, QProgram, Square
-from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.qprogram.qblox_compiler import QbloxCompilationOutput, QbloxCompiler
 from qililab.qprogram.blocks import ForLoop
 from tests.test_utils import is_q1asm_equal
 from qililab.config import logger
@@ -747,6 +749,37 @@ def fixture_dynamic_wait_three_buses_static_static() -> QProgram:
         qp.play(bus="flux", waveform=drag_pair)
         qp.sync()
     return qp
+
+
+@pytest.fixture(name="calibration_crosstalk")
+def fixture_calibration_crosstalk() -> Calibration:
+    inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+    crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+
+    calibration_crosstalk = Calibration()
+    calibration_crosstalk.crosstalk_matrix = crosstalk
+
+    return calibration_crosstalk
+
+
+@pytest.fixture(name="crosstalk_qprogram")
+def fixture_crosstalk_qprogram() -> QProgram:
+    square_wf = Square(amplitude=0.1, duration=50)
+    square_iq = IQPair(I=square_wf, Q=square_wf)
+    qp = QProgram()
+    offset = qp.variable(label="offset", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.01):
+        qp.set_offset(bus="flux1", offset_path0=offset)
+        qp.wait(bus="drive", duration=10)
+        qp.wait(bus="flux1", duration=10)
+        qp.wait(bus="flux2", duration=10)
+        qp.set_gain(bus="flux2", gain=0.05)
+        qp.play(bus="flux1", waveform=square_wf)
+        qp.play(bus="drive", waveform=square_iq)
+        qp.sync(["drive","readout"])
+        qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq)
+    return qp
+
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -3943,3 +3976,123 @@ other_max_duration_0:
         assert is_q1asm_equal(sequences["drive_q0_bus"], drive_str)
         assert is_q1asm_equal(sequences["readout_q0_bus"], readout_str)
 
+    def test_crosstalk_compensation(self, crosstalk_qprogram: QProgram):
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=crosstalk_qprogram, crosstalk=crosstalk)
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+            
+        flux1_str = """
+        setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+        main:
+                move             10, R0         
+                move             0, R1          
+                move             0, R2          
+        loop_0:
+                set_awg_offs     R1, R1         
+                upd_param        4              
+                wait             6              
+                set_awg_gain     819, 819       
+                set_awg_gain     819, 819       
+                play             0, 1, 50       
+                wait             54             
+                add              R1, 327, R1    
+                add              R2, 163, R2    
+                loop             R0, @loop_0    
+                set_mrk          0              
+                upd_param        4              
+                stop
+        """
+        flux2_str = """
+        setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+        main:
+                move             10, R0         
+                move             0, R1          
+                move             0, R2          
+        loop_0:
+                set_awg_offs     R2, R2         
+                upd_param        4              
+                wait             6              
+                set_awg_gain     1638, 1638     
+                set_awg_gain     1638, 1638     
+                play             0, 1, 50       
+                wait             54             
+                add              R1, 327, R1    
+                add              R2, 163, R2    
+                loop             R0, @loop_0    
+                nop                             
+                set_mrk          0              
+                upd_param        4              
+                stop
+        """
+        drive_str = """
+        setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+        main:
+                move             10, R0         
+                move             0, R1          
+                move             0, R2          
+        loop_0:
+                wait             10             
+                play             0, 0, 50       
+                wait             54             
+                add              R1, 327, R1    
+                add              R2, 163, R2    
+                loop             R0, @loop_0    
+                set_mrk          0              
+                upd_param        4              
+                stop
+        """
+        readout_str = """
+        setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+        main:
+                move             0, R0          
+                move             0, R1          
+                move             10, R2         
+                move             0, R3          
+                move             0, R4          
+        loop_0:
+                wait             60             
+                play             0, 0, 4        
+                acquire_weighed  0, R1, R0, R0, 50
+                add              R1, 1, R1      
+                add              R3, 327, R3    
+                add              R4, 163, R4    
+                loop             R2, @loop_0    
+                set_mrk          0              
+                upd_param        4              
+                stop
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_str)
+        assert is_q1asm_equal(sequences["flux2"], flux2_str)
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+        
+    def test_crosstalk_compensation_through_calibration(self, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration):
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=crosstalk_qprogram, calibration=calibration_crosstalk)
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)

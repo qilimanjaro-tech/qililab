@@ -324,8 +324,6 @@ class QbloxCompiler:
 
         self._qblox_buses = qblox_buses if qblox_buses else []
 
-        self._qblox_buses = qblox_buses if qblox_buses else []
-
         self._sync_counter = 0
         self._buses = self._populate_buses()
         self._ext_trigger = ext_trigger
