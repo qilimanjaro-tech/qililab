@@ -88,16 +88,16 @@ class TestFluxVector:
         assert flux_vector.crosstalk == crosstalk_matrix
         flux_no_bus_list = flux_vector.get_decomposed_vector()
         flux_bus_list = flux_vector.get_decomposed_vector(bus_list=["flux_0", "flux_1"])
-        assert flux_no_bus_list["flux_0"].flux_vector == {'flux_0': 0.23, 'flux_1': 0, 'flux_2': 0}
-        assert flux_no_bus_list["flux_0"].bias_vector == {'flux_0': 0.2555555555555556, 'flux_1': 0.0, 'flux_2': -0.08518518518518518}
-        assert flux_no_bus_list["flux_1"].flux_vector == {'flux_0': 0, 'flux_1': pytest.approx(0.3), 'flux_2': 0}
-        assert flux_no_bus_list["flux_1"].bias_vector == {'flux_0': -0.33333333333333326, 'flux_1': 0.0, 'flux_2': 1.111111111111111}
-        assert flux_no_bus_list["flux_2"].flux_vector == {'flux_0': 0, 'flux_1': 0, 'flux_2': 0.2}
-        assert flux_no_bus_list["flux_2"].bias_vector == {'flux_0': 0.17777777777777778, 'flux_1': 0.2, 'flux_2': -0.7259259259259259}
-        assert flux_bus_list["flux_0"].flux_vector == {'flux_0': 0.23, 'flux_1': 0, 'flux_2': 0.2}
-        assert flux_bus_list["flux_0"].bias_vector == {'flux_0': 0.43333333333333335, 'flux_1': 0.2, 'flux_2': -0.811111111111111}
-        assert flux_bus_list["flux_1"].flux_vector == {'flux_0': 0, 'flux_1': 0.3, 'flux_2': 0.2}
-        assert flux_bus_list["flux_1"].bias_vector == {'flux_0': -0.15555555555555547, 'flux_1': 0.2, 'flux_2': 0.3851851851851851}
+        assert flux_no_bus_list["flux_0"].flux_vector == pytest.approx({'flux_0': 0.23, 'flux_1': 0, 'flux_2': 0})
+        assert flux_no_bus_list["flux_0"].bias_vector == pytest.approx({'flux_0': 0.2555555555555556, 'flux_1': 0.0, 'flux_2': -0.08518518518518518})
+        assert flux_no_bus_list["flux_1"].flux_vector == pytest.approx({'flux_0': 0, 'flux_1': 0.3, 'flux_2': 0})
+        assert flux_no_bus_list["flux_1"].bias_vector == pytest.approx({'flux_0': -1 / 3, 'flux_1': 0.0, 'flux_2': 10 / 9})
+        assert flux_no_bus_list["flux_2"].flux_vector == pytest.approx({'flux_0': 0, 'flux_1': 0, 'flux_2': 0.2})
+        assert flux_no_bus_list["flux_2"].bias_vector == pytest.approx({'flux_0': 8 / 45, 'flux_1': 0.2, 'flux_2': -98 / 135})
+        assert flux_bus_list["flux_0"].flux_vector == pytest.approx({'flux_0': 0.23, 'flux_1': 0, 'flux_2': 0.2})
+        assert flux_bus_list["flux_0"].bias_vector == pytest.approx({'flux_0': 13 / 30, 'flux_1': 0.2, 'flux_2': -73 / 90})
+        assert flux_bus_list["flux_1"].flux_vector == pytest.approx({'flux_0': 0, 'flux_1': 0.3, 'flux_2': 0.2})
+        assert flux_bus_list["flux_1"].bias_vector == pytest.approx({'flux_0': -7 / 45, 'flux_1': 0.2, 'flux_2': 52  / 135})
 
 
 class TestCrosstalkMatrix:
