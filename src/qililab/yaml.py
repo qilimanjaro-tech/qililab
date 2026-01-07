@@ -13,42 +13,27 @@
 # limitations under the License.
 import base64
 import types
-from collections import deque
 from uuid import UUID
 
-import numpy as np
 from dill import dumps, loads  # noqa: S403
-from ruamel.yaml import YAML
+from qilisdk.yaml import yaml
 
 
-def ndarray_representer(representer, data):
-    """Representer for ndarray"""
-    value = {"dtype": str(data.dtype), "shape": data.shape, "data": data.ravel().tolist()}
-    return representer.represent_mapping("!ndarray", value)
+def function_representer(representer, data):
+    """Represent a non-lambda function by serializing it."""
+    serialized_function = base64.b64encode(dumps(data, recurse=True)).decode("utf-8")
+    return representer.represent_scalar("!function", serialized_function)
 
 
-def ndarray_constructor(constructor, node):
-    """Constructor for ndarray"""
-    mapping = constructor.construct_mapping(node, deep=True)
-    dtype = np.dtype(mapping["dtype"])
-    shape = tuple(mapping["shape"])
-    data = mapping["data"]
-    return np.array(data, dtype=dtype).reshape(shape)
-
-
-def deque_representer(representer, data):
-    """Representer for deque"""
-    return representer.represent_sequence("!deque", list(data))
-
-
-def deque_constructor(constructor, node):
-    """Constructor for ndarray"""
-    return deque(constructor.construct_sequence(node))
+def function_constructor(constructor, node):
+    """Reconstruct a function from the serialized data."""
+    serialized_function = base64.b64decode(node.value)
+    return loads(serialized_function)  # noqa: S301
 
 
 def lambda_representer(representer, data):
     """Represent a lambda function by serializing its code."""
-    serialized_lambda = base64.b64encode(dumps(data)).decode("utf-8")
+    serialized_lambda = base64.b64encode(dumps(data, recurse=False)).decode("utf-8")
     return representer.represent_scalar("!lambda", serialized_lambda)
 
 
@@ -59,11 +44,10 @@ def lambda_constructor(constructor, node):
     return loads(serialized_lambda)  # noqa: S301
 
 
-yaml = YAML(typ="unsafe")
 yaml.register_class(UUID)
-yaml.representer.add_representer(np.ndarray, ndarray_representer)
-yaml.constructor.add_constructor("!ndarray", ndarray_constructor)
-yaml.representer.add_representer(deque, deque_representer)
-yaml.constructor.add_constructor("!deque", deque_constructor)
+
+# Add the function and lambda representers that are missing in QiliSDK
+yaml.representer.add_representer(types.FunctionType, function_representer)
+yaml.constructor.add_constructor("!function", function_constructor)
 yaml.representer.add_representer(types.LambdaType, lambda_representer)
 yaml.constructor.add_constructor("!lambda", lambda_constructor)
