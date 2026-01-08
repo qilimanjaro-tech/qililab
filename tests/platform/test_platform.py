@@ -289,8 +289,7 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):
             for bus, waveform in anneal_waveforms.items():
                 qp_anneal.play(bus=bus, waveform=waveform)
             qp_anneal.sync()
-            with qp_anneal.block():
-                qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
 
@@ -323,15 +322,13 @@ def get_anneal_qprogram_with_preparation(runcard, flux_to_bus_topology):
     shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
     with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
         with qp_anneal.average(num_averages):
-            with qp_anneal.block():
-                qp_anneal.play(bus="flux_line_phix_q0", waveform=preparation_wf)
-                qp_anneal.play(bus="flux_line_phiz_q0", waveform=preparation_wf)
+            qp_anneal.play(bus="flux_line_phix_q0", waveform=preparation_wf)
+            qp_anneal.play(bus="flux_line_phiz_q0", waveform=preparation_wf)
             qp_anneal.sync()
             for bus, waveform in anneal_waveforms.items():
                 qp_anneal.play(bus=bus, waveform=waveform)
             qp_anneal.sync()
-            with qp_anneal.block():
-                qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
 
@@ -618,8 +615,6 @@ class TestPlatform:
         #  Check that the parameters can be set
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, value = True, output_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, output_id=0) == "enabled"
-
-        print(platform)
 
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, value = False, output_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, output_id=0) == "bypassed"
