@@ -26,3 +26,6 @@ The `insert_block` method in `structured_qprogram` has been modified such that t
 
 - QbloxDraw: Variable offsets can now be plotted.
 [#1049](https://github.com/qilimanjaro-tech/qililab/pull/1049)
+
+- Removed threading for `ExperimentExecutor()`. This feature caused a deadlock on the execution if any error is raised inside it (mainly involving the ExperimentsResultsWriter). The threading has been removed as it was only necessary for parallel time tracking.
+[#1055](https://github.com/qilimanjaro-tech/qililab/pull/1055)
