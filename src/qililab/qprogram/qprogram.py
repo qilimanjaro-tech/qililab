@@ -692,11 +692,9 @@ class QProgram(StructuredProgram):
 
             waveforms: Sequence[Square | FlatTop] = [elements[element].waveform for element in element_group]  # type: ignore [misc]
             if any(isinstance(element, SetGain) for element in elements.values()):
-                # NOTE: normalizes everytime gain is used
+                # Normalizes every time gain is used
                 bias_vector = bias_vector / np.max(bias_vector)
             if all(isinstance(wf, Square) for wf in waveforms):
-                if len({(wf.duration) for wf in waveforms}) > 1:
-                    raise ValueError("Square duration must be the same for all compensated pulses.")
                 waveform = Square(amplitude=np.max(bias_vector), duration=waveforms[0].duration)
             elif all(isinstance(wf, FlatTop) for wf in waveforms):
                 if len({(wf.duration, wf.smooth_duration, wf.buffer) for wf in waveforms}) > 1:  # type: ignore [union-attr]

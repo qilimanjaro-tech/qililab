@@ -817,6 +817,46 @@ def fixture_crosstalk_qprogram_parallel() -> QProgram:
         qp.wait(bus="flux2", duration=10)
     return qp
 
+@pytest.fixture(name="crosstalk_qprogram_plays")
+def fixture_crosstalk_qprogram_plays() -> QProgram:
+    square_wf = Square(amplitude=0.1, duration=50)
+    flattop_iq = FlatTop(amplitude=0.1, duration=49, smooth_duration=10)
+    arbitrary = Arbitrary(samples=np.linspace(0, 0.1, 50))
+    qp = QProgram()
+    qp.play(bus="flux1", waveform=square_wf)
+    qp.play(bus="flux1", waveform=flattop_iq)
+    qp.play(bus="flux1", waveform=arbitrary)
+    qp.wait(bus="flux1", duration=10)
+    qp.wait(bus="flux2", duration=10)
+    qp.play(bus="flux1", waveform=square_wf)
+    qp.play(bus="flux2", waveform=flattop_iq)
+    return qp
+
+@pytest.fixture(name="crosstalk_qprogram_double_gain_loop")
+def fixture_crosstalk_qprogram_double_gain_loop() -> QProgram:
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
+    gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
+    with qp.for_loop(variable=gain_1, start=0, stop=0.1, step=0.01):
+        with qp.for_loop(variable=gain_2, start=0.1, stop=0, step=-0.01):
+            qp.set_gain(bus="flux1", gain=gain_1)
+            qp.set_gain(bus="flux2", gain=gain_2)
+            qp.play(bus="flux1", waveform=square_wf)
+    return qp
+
+@pytest.fixture(name="crosstalk_qprogram_double_offset_loop")
+def fixture_crosstalk_qprogram_double_offset_loop() -> QProgram:
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset_1, start=0, stop=0.1, step=0.01):
+        with qp.for_loop(variable=offset_2, start=0.1, stop=0, step=-0.01):
+            qp.set_offset(bus="flux1", offset_path0=offset_1)
+            qp.set_offset(bus="flux2", offset_path0=offset_2)
+            qp.play(bus="flux1", waveform=square_wf)
+    return qp
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -4237,6 +4277,77 @@ other_max_duration_0:
         assert is_q1asm_equal(sequences["flux2"], flux2_str)
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_crosstalk_compensation_plays(self, crosstalk_qprogram_plays: QProgram):
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+
+        compiler = QbloxCompiler()
+        compiled_qblox = compiler.compile(qprogram=crosstalk_qprogram_plays, crosstalk=crosstalk)
+
+        for bus in compiled_qblox.sequences:
+            assert isinstance(compiled_qblox.sequences[bus], QPy.Sequence)
+            
+        flux1_str = """
+        setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+        main:
+                play             0, 1, 50       
+                play             2, 1, 50       
+                play             3, 1, 50       
+                wait             10             
+                play             4, 1, 50       
+                set_mrk          0              
+                upd_param        4              
+                stop
+        """
+        flux2_str = """
+        setup:
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
+
+        main:
+                play             0, 1, 50       
+                play             2, 1, 50       
+                play             3, 1, 50       
+                wait             10             
+                play             4, 1, 50       
+                set_mrk          0              
+                upd_param        4              
+                stop  
+        """
+        
+        # 1st 2 plays being Square
+        assert isinstance(compiled_qblox.qprogram.body.elements[0].waveform, Square)
+        assert compiled_qblox.qprogram.body.elements[0].bus == "flux2"
+        assert isinstance(compiled_qblox.qprogram.body.elements[1].waveform, Square)
+        assert compiled_qblox.qprogram.body.elements[1].bus == "flux1"
+        
+        # 2nd 2 plays being FlatTop
+        assert isinstance(compiled_qblox.qprogram.body.elements[2].waveform, FlatTop)
+        assert compiled_qblox.qprogram.body.elements[2].bus == "flux2"
+        assert isinstance(compiled_qblox.qprogram.body.elements[3].waveform, FlatTop)
+        assert compiled_qblox.qprogram.body.elements[3].bus == "flux1"
+        
+        # 3rd 2 plays being ARbitrary
+        assert isinstance(compiled_qblox.qprogram.body.elements[4].waveform, Arbitrary)
+        assert compiled_qblox.qprogram.body.elements[4].bus == "flux2"
+        assert isinstance(compiled_qblox.qprogram.body.elements[5].waveform, Arbitrary)
+        assert compiled_qblox.qprogram.body.elements[5].bus == "flux1"
+        
+        # Last 2 plays being Arbitrary (FlatTop + Square)
+        assert isinstance(compiled_qblox.qprogram.body.elements[8].waveform, Arbitrary)
+        assert compiled_qblox.qprogram.body.elements[8].bus == "flux1"
+        assert isinstance(compiled_qblox.qprogram.body.elements[9].waveform, Arbitrary)
+        assert compiled_qblox.qprogram.body.elements[9].bus == "flux2"
+
+        assert is_q1asm_equal(compiled_qblox.sequences["flux1"], flux1_str)
+        assert is_q1asm_equal(compiled_qblox.sequences["flux2"], flux2_str)
         
     def test_crosstalk_compensation_parallel(self, crosstalk_qprogram_parallel: QProgram):
 
@@ -4316,7 +4427,22 @@ other_max_duration_0:
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
         assert is_q1asm_equal(sequences["flux2"], flux2_str)
-        
+
+    def test_crosstalk_compensation_double_loop(self, crosstalk_qprogram_double_gain_loop: QProgram, crosstalk_qprogram_double_offset_loop: QProgram):
+        """Test to create double loop qprogram with crosstalk. 
+        Currently it raises a non implemented error due to variables summing each other.
+        """
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+
+        compiler_gain = QbloxCompiler()
+        with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
+            compiler_gain.compile(qprogram=crosstalk_qprogram_double_gain_loop, crosstalk=crosstalk)
+
+        compiler_offset = QbloxCompiler()
+        with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
+            compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
+
     def test_crosstalk_compensation_through_calibration(self, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration):
 
         compiler = QbloxCompiler()
@@ -4324,3 +4450,68 @@ other_max_duration_0:
 
         for bus in sequences:
             assert isinstance(sequences[bus], QPy.Sequence)
+
+    def test_crosstalk_compensation_plays_raise_errors(self):
+        """Test the different errors that might rise by using incorrectly the crosstalk play structure."""
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+
+        # Raise error every time there is an element mismatch in the plays (e.g. wait_time)
+        qp = QProgram()
+        square_wf = Square(amplitude=0.1, duration=50)
+        qp.qblox.play(bus="flux1", waveform=square_wf, wait_time=10)
+        qp.qblox.play(bus="flux2", waveform=square_wf, wait_time=20)
+        
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match="Play elements must be the same for the same play pulse."):
+            compiler.compile(qprogram=qp, crosstalk=crosstalk)
+
+        # Raise error for any pulses of different durations
+        qp = QProgram()
+        square_wf = Square(amplitude=0.1, duration=50)
+        square_wf_wrong = Square(amplitude=0.1, duration=500)
+        qp.play(bus="flux1", waveform=square_wf)
+        qp.play(bus="flux2", waveform=square_wf_wrong)
+        
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match=re.escape("operands could not be broadcast together with shapes (50,) (500,) ")):
+            compiler.compile(qprogram=qp, crosstalk=crosstalk)
+
+        # Raise error for FlatTop pulses with different elements (duration, smooth_duration or buffer)
+        qp = QProgram()
+        flattop_wf = FlatTop(amplitude=0.1, duration=49, smooth_duration=10)
+        flattop_wf_wrong  = FlatTop(amplitude=0.1, duration=49, smooth_duration=20)
+        qp.play(bus="flux1", waveform=flattop_wf)
+        qp.play(bus="flux2", waveform=flattop_wf_wrong)
+        
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match="FlatTop parameters must be the same for all compensated pulses."):
+            compiler.compile(qprogram=qp, crosstalk=crosstalk)
+
+        # Raise error for Arbitrary pulse with of one single point.
+        qp = QProgram()
+        arbitrary = Arbitrary(samples=1)
+        qp.play(bus="flux1", waveform=arbitrary)
+        
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match="Arbitrary samples must be an array."):
+            compiler.compile(qprogram=qp, crosstalk=crosstalk)
+
+    def test_crosstalk_compensation_wrong_for_loops_raise_errors(self):
+        """Test the error that raises when the for loop parameter are incorrectly introduced."""
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        # This for loop is empty as the steps point to the wrong direction
+        with qp.for_loop(variable=offset, start=0, stop=0.1, step=-0.01):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.wait(bus="flux1", duration=10)
+            qp.wait(bus="flux2", duration=10)
+        
+        compiler = QbloxCompiler()
+        with pytest.raises(ValueError, match="Parameters of the ForLoop not assigned correctly. Please check start, stop and step values."):
+            compiler.compile(qprogram=qp, crosstalk=crosstalk)
