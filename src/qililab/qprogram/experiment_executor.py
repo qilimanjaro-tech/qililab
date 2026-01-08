@@ -17,7 +17,6 @@ import inspect
 import os
 import threading
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from time import perf_counter
@@ -608,31 +607,21 @@ class ExperimentExecutor:
             db_manager=self.platform.db_manager,
         )
 
-        # Event to signal that the execution has completed
-        execution_completed = threading.Event()
-
-        with ThreadPoolExecutor() as executor:
-            # Start the _measure_execution_time in a separate thread
-            execution_time_future = executor.submit(self._measure_execution_time, execution_completed)
-
-            with self._results_writer:
+        with self._results_writer:
+            start_time = perf_counter()
+            try:
                 with Progress(
                     TextColumn("[progress.description]{task.description}"),
                     BarColumn(bar_width=None),
                     "[progress.percentage]{task.percentage:>3.1f}%",
                     TimeElapsedColumn(),
                 ) as progress:
+                    # every self._prepare_operations updates the h5 though ExperimentResultsWriter
                     operations = self._prepare_operations(self.experiment.body, progress)
                     self._execute_operations(operations, progress)
-
-                # Signal that the execution has completed
-                execution_completed.set()
-
-                # Retrieve the execution time from the Future
-                execution_time = execution_time_future.result()
-
-                # Now write the execution time to the results writer
-                self._results_writer.execution_time = execution_time
+            finally:
+                # Write the execution time to the results writer
+                self._results_writer.execution_time = perf_counter() - start_time
 
         del self.loop_indices
 
