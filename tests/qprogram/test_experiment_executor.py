@@ -6,11 +6,11 @@ from unittest.mock import MagicMock, Mock, call, create_autospec, patch
 import numpy as np
 import pytest
 
+from qililab.extra.quantum_machines import QuantumMachinesMeasurementResult
 from qililab.platform.platform import Platform
 from qililab.qprogram.blocks import ForLoop, Loop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
-from qililab.extra.quantum_machines import QuantumMachinesMeasurementResult
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import Domain, QProgram
 from qililab.result.experiment_results import ExperimentResults
@@ -145,11 +145,16 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
 class TestExperimentExecutor:
     """Test ExperimentExecutor class"""
 
-    def test_execute(self, platform, experiment, qprogram, crosstalk):
+    def test_execute(self, platform, experiment, qprogram, crosstalk, override_settings):
         """Test the execute method to ensure the experiment is executed correctly and results are stored."""
         platform.save_experiment_results_in_database = False
-        executor = ExperimentExecutor(platform=platform, experiment=experiment, live_plot=False, slurm_execution=False)
-        resuls_path = executor.execute()
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
+            resuls_path = executor.execute()
 
         # Check if the correct file path is returned
         assert resuls_path.startswith(os.path.abspath(tempfile.gettempdir()))
@@ -277,18 +282,17 @@ class TestExperimentExecutor:
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")
-    def test_execute_database_metadata_only(self, mock_h5_file, mock_get_db_manager, platform, experiment):
+    def test_execute_database_metadata_only(
+        self, mock_h5_file, mock_get_db_manager, platform, experiment, override_settings
+    ):
         """Test the execute with database as True."""
 
-        platform.save_experiment_results_in_database = True
         platform.db_optional_identifier = "test"
         expected_result_path = "/tmp/20250710/155901/experiment.h5"
         mock_measurement = Mock()
         mock_measurement.result_path = expected_result_path
 
         mock_db_manager = Mock()
-        mock_db_manager.current_sample = "sample"
-        mock_db_manager.current_cd = "cd"
         mock_get_db_manager.return_value = mock_db_manager
         platform.db_manager = mock_db_manager
 
@@ -312,18 +316,75 @@ class TestExperimentExecutor:
             mock_writer_cls = MagicMock()
             mock_writer_cls.return_value = mock_writer
 
-            executor = ExperimentExecutor(
-                platform=platform,
-                experiment=experiment,
-                live_plot=False,
-                slurm_execution=False,
-            )
-            executor.loop_indices = True
-            executor.execute()
+            with override_settings(experiment_results_save_in_database=True):
+
+                executor = ExperimentExecutor(
+                    platform=platform,
+                    experiment=experiment,
+                    live_plot=False,
+                    slurm_execution=False,
+                    job_id=1,
+                    sample="sample_test",
+                    cooldown="cooldown_test",
+                )
+                executor.loop_indices = True
+                executor.execute()
 
             assert executor._db_metadata == {
-                "cooldown": "cd",
+                "job_id": 1,
+                "cooldown": "cooldown_test",
                 "experiment_name": "experiment",
-                "optional_identifier": "Test",
-                "sample_name": "sample",
+                "sample_name": "sample_test",
             }
+
+    @patch("qililab.platform.platform.get_db_manager")
+    @patch("qililab.result.experiment_results_writer.h5py.File")
+    def test_execute_database_no_job_id_raises_error(
+        self, mock_h5_file, mock_get_db_manager, platform, experiment, override_settings
+    ):
+        """Test the execute with database as True."""
+
+        platform.save_experiment_results_in_database = True
+        platform.db_optional_identifier = "test"
+        expected_result_path = "/tmp/20250710/155901/experiment.h5"
+        mock_measurement = Mock()
+        mock_measurement.result_path = expected_result_path
+
+        mock_db_manager = Mock()
+        mock_get_db_manager.return_value = mock_db_manager
+        platform.db_manager = mock_db_manager
+
+        mock_file = MagicMock()
+        mock_h5_file.return_value = mock_file
+
+        experiment.label = "experiment"
+        experiment.description = "Test"
+
+        with (
+            patch.object(ExperimentExecutor, "_prepare_operations", return_value=[]),
+            patch.object(ExperimentExecutor, "_execute_operations", return_value=None),
+            patch.object(ExperimentExecutor, "_create_results_path", return_value=expected_result_path),
+        ):
+
+            mock_writer = MagicMock()
+            mock_writer.__enter__.return_value = mock_writer
+            mock_writer.__exit__.return_value = None
+            mock_writer.results_path = expected_result_path
+            mock_writer.execution_time = 0.0
+            mock_writer_cls = MagicMock()
+            mock_writer_cls.return_value = mock_writer
+
+            with override_settings(experiment_results_save_in_database=True):
+
+                executor = ExperimentExecutor(
+                    platform=platform,
+                    experiment=experiment,
+                    live_plot=False,
+                    slurm_execution=False,
+                    sample="sample_test",
+                    cooldown="cooldown_test",
+                )
+                executor.loop_indices = True
+
+                with pytest.raises(ValueError, match="Job id has not been defined."):
+                    executor.execute()

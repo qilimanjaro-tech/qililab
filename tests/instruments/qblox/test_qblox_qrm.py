@@ -52,6 +52,8 @@ def fixture_qrm(platform: Platform) -> QbloxQRM:
         "connect_acq_Q",
         "thresholded_acq_threshold",
         "thresholded_acq_rotation",
+        "thresholded_acq_trigger_address",
+        "thresholded_acq_trigger_en"
     ]
 
     module_mock_spec = [
@@ -401,8 +403,8 @@ class TestQbloxQRM:
         qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
         qp_acqusitions = {
-            "acquisition_0": AcquisitionData(bus="readout_q0", save_adc=False, shape=(-1,)),
-            "acquisition_1": AcquisitionData(bus="readout_q0", save_adc=True, shape=(-1,)),
+            "acquisition_0": AcquisitionData(bus="readout_q0", save_adc=False, shape=(-1,), intertwined=1),
+            "acquisition_1": AcquisitionData(bus="readout_q0", save_adc=True, shape=(-1,), intertwined=1),
         }
 
         qrm.acquire_qprogram_results(acquisitions=qp_acqusitions, channel_id=0)
@@ -427,3 +429,13 @@ class TestQbloxQRM:
         qrm.device.reset.assert_called_once()
         assert qrm.cache == {}
         assert qrm.sequences == {}
+
+    def test_setup_trigger_network(self, qrm: QbloxQRM):
+        """Test the setup of the trigger network."""
+        sequencer_id = 0
+        trigger_address = 3
+
+        raw_seq = qrm.device.sequencers[sequencer_id]
+        qrm._setup_trigger_network(trigger_address=trigger_address, sequencer_id=sequencer_id)
+        raw_seq.thresholded_acq_trigger_address.assert_called_with(trigger_address)
+        raw_seq.thresholded_acq_trigger_en.assert_called_with(True)
