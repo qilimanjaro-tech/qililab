@@ -15,7 +15,6 @@
 # mypy: disable-error-code="union-attr, arg-type"
 import inspect
 import os
-import threading
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
@@ -565,20 +564,6 @@ class ExperimentExecutor:
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
         return path
-
-    def _measure_execution_time(self, execution_completed: threading.Event):
-        """Measures the execution time while waiting for the experiment to finish."""
-        # Start measuring execution time
-        start_time = perf_counter()
-
-        # Wait for the experiment to finish
-        execution_completed.wait()
-
-        # Stop measuring execution time
-        end_time = perf_counter()
-
-        # Return the execution time
-        return end_time - start_time
 
     def execute(self) -> str:
         """
