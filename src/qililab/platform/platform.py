@@ -1719,10 +1719,51 @@ class Platform:
         """
         sequences_per_qprogram = [output.sequences for output in outputs]
         aquisitions_per_qprogram = [output.acquisitions for output in outputs]
-        buses_per_qprogram = [
+        buses_per_qprogram = self._resolve_qblox_parallel_buses(sequences_per_qprogram=sequences_per_qprogram)
+        self._apply_qblox_distortions_parallel(
+            sequences_per_qprogram=sequences_per_qprogram, buses_per_qprogram=buses_per_qprogram
+        )
+
+        if debug:
+            self._write_qblox_parallel_debug(sequences_per_qprogram=sequences_per_qprogram)
+
+        # Upload sequences
+        self._upload_qblox_parallel_sequences(
+            sequences_per_qprogram=sequences_per_qprogram, buses_per_qprogram=buses_per_qprogram
+        )
+
+        # Execute sequences
+        self._run_qblox_parallel_sequences(
+            sequences_per_qprogram=sequences_per_qprogram, buses_per_qprogram=buses_per_qprogram
+        )
+
+        # Acquire results
+        results = self._acquire_qblox_parallel_results(
+            outputs=outputs,
+            buses_per_qprogram=buses_per_qprogram,
+            aquisitions_per_qprogram=aquisitions_per_qprogram,
+        )
+
+        # Reset instrument settings
+        self._reset_qblox_parallel_sequencers(
+            sequences_per_qprogram=sequences_per_qprogram, buses_per_qprogram=buses_per_qprogram
+        )
+
+        return results
+
+    def _resolve_qblox_parallel_buses(
+        self, sequences_per_qprogram: list[dict[str, Any]]
+    ) -> list[dict[str, Bus]]:
+        return [
             {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
             for sequences in sequences_per_qprogram
         ]
+
+    def _apply_qblox_distortions_parallel(
+        self,
+        sequences_per_qprogram: list[dict[str, Any]],
+        buses_per_qprogram: list[dict[str, Bus]],
+    ) -> None:
         for qprogram_idx, buses in enumerate(buses_per_qprogram):
             for bus_alias, bus in buses.items():
                 if bus.distortions:
@@ -1732,16 +1773,20 @@ class Platform:
                                 waveform.name, distortion.apply(waveform.data)
                             )
 
-        if debug:
-            with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
-                for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
-                    print(f"QProgram {qprogram_idx}:", file=sourceFile)
-                    for bus_alias, sequence in sequences.items():
-                        print(f"Bus {bus_alias}:", file=sourceFile)
-                        print(str(sequence._program), file=sourceFile)
-                        print(file=sourceFile)
+    def _write_qblox_parallel_debug(self, sequences_per_qprogram: list[dict[str, Any]]) -> None:
+        with open("debug_qblox_execution.txt", "w", encoding="utf-8") as sourceFile:
+            for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
+                print(f"QProgram {qprogram_idx}:", file=sourceFile)
+                for bus_alias, sequence in sequences.items():
+                    print(f"Bus {bus_alias}:", file=sourceFile)
+                    print(str(sequence._program), file=sourceFile)
+                    print(file=sourceFile)
 
-        # Upload sequences
+    def _upload_qblox_parallel_sequences(
+        self,
+        sequences_per_qprogram: list[dict[str, Any]],
+        buses_per_qprogram: list[dict[str, Bus]],
+    ) -> None:
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
             for bus_alias in sequences:
                 sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
@@ -1756,12 +1801,21 @@ class Platform:
                     if isinstance(instrument, QbloxModule):
                         instrument.sync_sequencer(sequencer_id=int(channel))
 
-        # Execute sequences
+    def _run_qblox_parallel_sequences(
+        self,
+        sequences_per_qprogram: list[dict[str, Any]],
+        buses_per_qprogram: list[dict[str, Bus]],
+    ) -> None:
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
             for bus_alias in sequences:
                 buses_per_qprogram[qprogram_idx][bus_alias].run()
 
-        # Acquire results
+    def _acquire_qblox_parallel_results(
+        self,
+        outputs: list[QbloxCompilationOutput],
+        buses_per_qprogram: list[dict[str, Bus]],
+        aquisitions_per_qprogram: list[dict[str, Any]],
+    ) -> list[QProgramResults]:
         results = [QProgramResults() for _ in outputs]
         for qprogram_idx, buses in enumerate(buses_per_qprogram):
             for bus_alias, bus in buses.items():
@@ -1777,8 +1831,13 @@ class Platform:
                                     unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
                                     for unintertwined_result in unintertwined_results:
                                         results[qprogram_idx].append_result(bus=bus_alias, result=unintertwined_result)
+        return results
 
-        # Reset instrument settings
+    def _reset_qblox_parallel_sequencers(
+        self,
+        sequences_per_qprogram: list[dict[str, Any]],
+        buses_per_qprogram: list[dict[str, Bus]],
+    ) -> None:
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
             for bus_alias in sequences:
                 for instrument, channel in zip(
@@ -1787,8 +1846,6 @@ class Platform:
                 ):
                     if isinstance(instrument, QbloxModule):
                         instrument.desync_sequencer(sequencer_id=int(channel))
-
-        return results
 
     def execute_circuit(
         self, circuit: Circuit, nshots: int = 1000, *, qubit_mapping: dict[int, int] | None = None

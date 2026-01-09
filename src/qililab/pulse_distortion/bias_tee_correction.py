@@ -59,7 +59,7 @@ class BiasTeeCorrection(PulseDistortion):
             You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = PulseDistortionName.BIAS_TEE_CORRECTION  # noqa: RUF045
+    name = PulseDistortionName.BIAS_TEE_CORRECTION
     tau_bias_tee: float  #: Time constant.
     sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.
 

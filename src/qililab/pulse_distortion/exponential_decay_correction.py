@@ -62,7 +62,7 @@ class ExponentialCorrection(PulseDistortion):
             You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = (  # noqa: RUF045
+    name = (
         PulseDistortionName.EXPONENTIAL_CORRECTION
     )
     tau_exponential: float  #: Tau exponential factor.

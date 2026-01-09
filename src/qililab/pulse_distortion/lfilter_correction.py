@@ -80,7 +80,7 @@ class LFilterCorrection(PulseDistortion):
             You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = PulseDistortionName.LFILTER  # noqa: RUF045
+    name = PulseDistortionName.LFILTER
     a: list[float]  #: The denominator coefficient vector in a 1-D sequence.
     b: list[float]  #: The numerator coefficient vector in a 1-D sequence.
 
