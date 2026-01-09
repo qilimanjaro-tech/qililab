@@ -132,23 +132,6 @@ class PulseDistortionName(str, Enum):
     LFILTER = "lfilter"
 
 
-class PulseShapeName(str, Enum):
-    """Pulse shape options.
-
-    Args:
-        Enum (str): Available types of PulseShape options:
-        * gaussian
-    """
-
-    GAUSSIAN = "gaussian"
-    DRAG = "drag"
-    RECTANGULAR = "rectangular"
-    SNZ = "snz"
-    COSINE = "cosine"
-    FLATTOP = "flat_top"
-    TWOSTEP = "two_step"
-
-
 class InstrumentName(str, Enum):
     """Instrument names.
 
