@@ -25,12 +25,6 @@ def function_representer(representer, data):
     return representer.represent_scalar("!function", serialized_function)
 
 
-def function_constructor(constructor, node):
-    """Reconstruct a function from the serialized data."""
-    serialized_function = base64.b64decode(node.value)
-    return loads(serialized_function)  # noqa: S301
-
-
 def lambda_representer(representer, data):
     """Represent a lambda function by serializing its code."""
     serialized_lambda = base64.b64encode(dumps(data, recurse=False)).decode("utf-8")
@@ -47,7 +41,5 @@ def lambda_constructor(constructor, node):
 yaml.register_class(UUID)
 
 # Add the function and lambda representers that are missing in QiliSDK
-yaml.representer.add_representer(types.FunctionType, function_representer)
-yaml.constructor.add_constructor("!function", function_constructor)
 yaml.representer.add_representer(types.LambdaType, lambda_representer)
 yaml.constructor.add_constructor("!lambda", lambda_constructor)
