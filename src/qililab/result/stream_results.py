@@ -203,7 +203,9 @@ class StreamArray:
             for instrument in bus.instruments
         ):
             if self.bus_mapping is not None:
-                compiled = self.platform.compile_qprogram(qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration).qblox
+                compiled = self.platform.compile_qprogram(
+                    qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration
+                ).qblox
             else:
                 qblox_compiler = QbloxCompiler()
                 compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)

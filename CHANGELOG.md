@@ -3,19 +3,22 @@
 ## BSC-14
 
 ### New features since last release
+
 - Hardware Loop over the time domain has been implemented for Qblox backend in `QProgram`.
-This allows sweeping wait times entirely in hardware, eliminating the need of software loops (which require uploading multiple Q1ASM).
-The implementation leverages the different Q1ASM jump instructions to ensure correct execution of the `QProgram` sync operation.
+  This allows sweeping wait times entirely in hardware, eliminating the need of software loops (which require uploading multiple Q1ASM).
+  The implementation leverages the different Q1ASM jump instructions to ensure correct execution of the `QProgram` sync operation.
 
 - Variable expressions for time domain
-Variable expressions are now supported in `QProgram` for the time domain.
-The supported formats are given in ns: 
-    - `constant + time variable`
-    - `time variable + constant`
-    - `constant - time variable`
-    - `time variable - constant`
+  Variable expressions are now supported in `QProgram` for the time domain.
+  The supported formats are given in ns:
+
+  - `constant + time variable`
+  - `time variable + constant`
+  - `constant - time variable`
+  - `time variable - constant`
 
 Code example:
+
 ```
 qp = QProgram()
 duration = qp.variable(label="time", domain=Domain.Time)
@@ -24,75 +27,81 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
   qp.sync()
   qp.wait(bus="drive", duration - 50)
 ```
-  [#950](https://github.com/qilimanjaro-tech/qililab/pull/950)
+
+[#950](https://github.com/qilimanjaro-tech/qililab/pull/950)
 
 - QbloxDraw: Replaced the fixed qualitative palette (10 colors) with the continuous "Turbo" colorscale. Previously, plotting more than 10 buses caused an index error due to the palette’s limited size. The new implementation samples the continuous colorscale at evenly spaced positions based on the number of buses.
-[#1039](https://github.com/qilimanjaro-tech/qililab/pull/1039)
-
+  [#1039](https://github.com/qilimanjaro-tech/qililab/pull/1039)
 
 - **Active reset for transmon qubits in QBlox**
 
   Implemented a feedback-based reset for QBlox: measure the qubit, and if it is in the `|1⟩` state apply a corrective DRAG pulse; if it is already in `|0⟩` (ground state), do nothing. This replaces the relaxation time at the end of each experiment with a much faster, conditional reset.
-  This has been implemented as: **`qprogram.qblox.measure_reset(bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False)`** 
+  This has been implemented as: **`qprogram.qblox.measure_reset(bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False)`**
 
   It is compiled by the QBlox compiler as:
-    1. `latch_rst 4` on the control_bus
-    2. play readout pulse 
-    3. acquire
-    4. sync the readout and control buses
-    5. wait 400 ns on the control bus (trigger-network propagation)
-    6. `set_conditional(1, mask, 0, duration of the reset pulse)` → enable the conditional
-    7. Play the reset pulse on the control bus
-    8. `set_conditional(0, 0, 0, 4)` → disable the conditional  
-    For the control bus, `latch_en 4` is added to the top of the Q1ASM to enable trigger latching.
-  
-  `MeasureResetCalibrated` has been implemented to enable the use of active reset with a calibration file. 
+
+  1. `latch_rst 4` on the control_bus
+  1. play readout pulse
+  1. acquire
+  1. sync the readout and control buses
+  1. wait 400 ns on the control bus (trigger-network propagation)
+  1. `set_conditional(1, mask, 0, duration of the reset pulse)` → enable the conditional
+  1. Play the reset pulse on the control bus
+  1. `set_conditional(0, 0, 0, 4)` → disable the conditional\
+     For the control bus, `latch_en 4` is added to the top of the Q1ASM to enable trigger latching.
+
+  `MeasureResetCalibrated` has been implemented to enable the use of active reset with a calibration file.
   After retrieving the waveforms and weights from the calibration file, the measure reset can be called with: **`qprogram.qblox.measure_reset(bus='readout_bus', waveform='Measure', weights='Weights', control_bus='drive_bus', reset_pulse='Drag')`**. Unlike other methods, this one does not allow a mix of calibrated and non-calibrated parameters is not allowed. This method requires the calibration file to be used consistently across `waveform`, `weight`, and `reset_pulse`; either for all three or for none. An error is raised if this condition is not met.
   **Notes**
+
   - The 400 ns wait inside `measure_reset` is the propagation delay of the Qblox trigger network. This figure is conservative as the official guideline is 388ns.
   - Users may supply any IQPair for the reset_pulse, though DRAG pulses are recommended to minimize leakage.
   - After `measure_reset`, users should insert a further wait as needed to allow the readout resonator to ring down before subsequent operations.
   - On compilation, `cluster.reset_trigger_monitor_count(address)` is applied to zero the module’s trigger counter. And the qcodes parameters required to set up the trigger network are implemented by the QbloxQRM class.
   - The Qblox Draw class has been modified so that `latch_rst` instructions are interpreted as a `wait`, and all `set_conditional` commands are ignored.
-[#955](https://github.com/qilimanjaro-tech/qililab/pull/955)
-[#1042](https://github.com/qilimanjaro-tech/qililab/pull/1042)
+    [#955](https://github.com/qilimanjaro-tech/qililab/pull/955)
+    [#1042](https://github.com/qilimanjaro-tech/qililab/pull/1042)
 
 - Introduced `electrical_delay` as a new setting for the E5080b VNA driver. It is a pure software setting to be used in autoplotting and not a physical parameter of the device.
-[#1037](https://github.com/qilimanjaro-tech/qililab/pull/1037)
+  [#1037](https://github.com/qilimanjaro-tech/qililab/pull/1037)
 
 - Introduced a Pydantic-powered `QililabSettings` that centralizes runtime configuration, with the singleton `get_settings()` pulling values from multiple sources so teams can pick what fits their workflow. Settings still default to sensible values, but can be overridden directly in code by editing the fields (handy for tests or ad-hoc scripts), by exporting environment variables (for example `QILILAB_EXPERIMENT_RESULTS_BASE_PATH=/data/qililab`), or by dropping the same keys into a project-level `.env` file that is auto-discovered and parsed.
   [#1025](https://github.com/qilimanjaro-tech/qililab/pull/1025)
 
-
 ### Improvements
 
 - Upgraded requirement: `qpysequence>=0.10.8`
-[#1044](https://github.com/qilimanjaro-tech/qililab/pull/1044)
+  [#1044](https://github.com/qilimanjaro-tech/qililab/pull/1044)
 
 - Improved acquisition result handling in the QBlox Compiler.
 
   Previously, each acquisition was assigned a unique acquisition index, which meant that a single qprogram could only contain up to 32 acquisitions per bus (due to QBlox’s limit of 32 indices).
   Now, acquisitions at the same nested level reuse the same acquisition index while incrementing the bin index. This removes the 32-acquisition limit in most cases. A `ValueError` is raised only if more than 32 acquisitions occur at different nested levels.
   Since the results retrieved from QBlox are now intertwined, a new function `_unintertwined_qblox_results` has been introduced in `platform`. This function called by `_execute_qblox_compilation_output method` and `execute_compilation_outputs_parallel` separates each acquisition into its own QbloxMeasurementResult object.
-[#998](https://github.com/qilimanjaro-tech/qililab/pull/998)
+  [#998](https://github.com/qilimanjaro-tech/qililab/pull/998)
 
 - Added support for real-time predistortion on Qblox hardware.
+
   - The outputs of a QCM can now set an FIR filter and up to four exponential filters (provided as a list). These parameters can be configured via the runcard (example below) and via platform.set_parameter/get_parameter.
+
   - The runcard has a new section under each QCM module: `filters: [...]` configured by output. The section is optional.
+
   - The states of a QCM filter are "enabled", "bypassed" and "delay_comp". Users can provide a boolean where True is mapped to "enabled" and False is mapped to "bypassed". When enabling a filter that could cause delay with other module outputs Qililab coerces the state to "delay_comp". This state ensures pulse timing remains consistent with filtered paths, keeping all outputs synchronized.
 
   - Parameters:
+
     - Exponential Filters (given by exponential index)
-        - EXPONENTIAL_AMPLITUDE_0 ... EXPONENTIAL_AMPLITUDE_3
-        - EXPONENTIAL_TIME_CONSTANT_0 ... EXPONENTIAL_TIME_CONSTANT_3
-        - EXPONENTIAL_STATE_0 ... EXPONENTIAL_STATE_3
+      - EXPONENTIAL_AMPLITUDE_0 ... EXPONENTIAL_AMPLITUDE_3
+      - EXPONENTIAL_TIME_CONSTANT_0 ... EXPONENTIAL_TIME_CONSTANT_3
+      - EXPONENTIAL_STATE_0 ... EXPONENTIAL_STATE_3
     - FIR Filters:
-        - FIR_COEFF
-        - FIR_STATE
+      - FIR_COEFF
+      - FIR_STATE
 
   - Note: fir_coeff/FIR_COEFF must contain exactly 32 coefficients.
 
   - Below is an example of the filter part of the runcard:
+
     ```
       filters:
       - output_id: 0
@@ -107,18 +116,19 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
         exponential_state: False
         fir_coeff: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
         fir_state: False
-      ```
+    ```
 
     Below is an example of set/get_parameter, the output_id must be provided:
+
     ```
     platform.set_parameter(alias=bus_alias, parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, value=300, output_id=0)
     platform.get_parameter(alias=bus_alias, parameter=Parameter.FIR_STATE, output_id=2)
     ```
+
   - When setting/getting any parameter from the platform and giving the bus_alias, if an output_id or channel_id not associated with the bus is given, an exception is raised; and if an output_id instead of a channel_id (and vice versa) has been given an Exception is raised.
-[#981](https://github.com/qilimanjaro-tech/qililab/pull/981)
+    [#981](https://github.com/qilimanjaro-tech/qililab/pull/981)
 
-
-- This update introduces a new mechanism that allows the library to optionally import either full concrete  implementations or lightweight stubs, depending on the user’s environment and installed dependencies. As part of this improvement, all Quantum Machines–related components have been reorganized under the `extra/quantum-machines` module hierarchy for better modularity and maintainability. Additionally, the Quantum Machines integration has been moved to the `[project.optional-dependencies]` section of the configuration, enabling users to install it only when needed.
+- This update introduces a new mechanism that allows the library to optionally import either full concrete implementations or lightweight stubs, depending on the user’s environment and installed dependencies. As part of this improvement, all Quantum Machines–related components have been reorganized under the `extra/quantum-machines` module hierarchy for better modularity and maintainability. Additionally, the Quantum Machines integration has been moved to the `[project.optional-dependencies]` section of the configuration, enabling users to install it only when needed.
 
   For example, to install the base library without any optional dependencies, run:
 
@@ -149,26 +159,19 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
 - Update qblox-instruments to 0.16.0 and qblox firmware to 0.11
   [#1015](https://github.com/qilimanjaro-tech/qililab/pull/1015)
 
-
 - This PR is the beginning of a series that will aim to reduce the length of the Q1ASM, which can be limiting for some experiments. This PR has two distinct improvements:
 
   1. When possible, waits will be combined together. For example, before this PR the following Q1ASM could be generated:
-
-      ```
-      wait 10
-      wait 40
-      ```
 
      ```
      wait 10
      wait 40
      ```
 
-      It will now be generated as:
-
-      ```
-      wait 50
-      ```
+     ```
+     wait 10
+     wait 40
+     ```
 
      It will now be generated as:
 
@@ -176,39 +179,45 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
      wait 50
      ```
 
-  2. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_index_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
-  For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
+     It will now be generated as:
 
-      ```
-      setup:
-                    wait_sync        4              
-                    set_mrk          0              
-                    upd_param        4              
+     ```
+     wait 50
+     ```
 
-      main:
-                      move             0, R0          
-                      move             0, R1          
-                      move             0, R2          
-                      move             0, R3          
-                      move             0, R4          
-                      move             0, R5          
-                      move             101, R6        
-                      move             0, R7          
-      loop_0:
-                      play             0, 0, 4        
-                      acquire_weighed  0, R5, R4, R3, 100
-                      add              R5, 1, R5      
-                      play             0, 0, 4        
-                      acquire_weighed  1, R2, R1, R0, 100
-                      add              R2, 1, R2      
-                      add              R7, 1, R7      
-                      loop             R6, @loop_0    
-                      set_mrk          0              
-                      upd_param        4              
-                      stop
-      ```
+  1. When instructing an `acquire_weighed` in Q1ASM, the creation of registers has been optimised. New registers for the weights would be created each time, a dictionary `weight_index_to_register` has been introduced in the QBlox Compiler to track previously used values of weight and reuse the register if possible.
+     For example, two `acquire_weighted` with the same weight would use 4 registers for the weights (R0, R1, R3, R4):
 
-      But they will now only use 1 register (R1):
+     ```
+     setup:
+                   wait_sync        4              
+                   set_mrk          0              
+                   upd_param        4              
+
+     main:
+                     move             0, R0          
+                     move             0, R1          
+                     move             0, R2          
+                     move             0, R3          
+                     move             0, R4          
+                     move             0, R5          
+                     move             101, R6        
+                     move             0, R7          
+     loop_0:
+                     play             0, 0, 4        
+                     acquire_weighed  0, R5, R4, R3, 100
+                     add              R5, 1, R5      
+                     play             0, 0, 4        
+                     acquire_weighed  1, R2, R1, R0, 100
+                     add              R2, 1, R2      
+                     add              R7, 1, R7      
+                     loop             R6, @loop_0    
+                     set_mrk          0              
+                     upd_param        4              
+                     stop
+     ```
+
+     But they will now only use 1 register (R1):
 
      ```
      setup:
@@ -234,27 +243,27 @@ with qp.for_loop(variable=duration, start=100, stop=200, step=10):
                       set_mrk          0              
                       upd_param        4              
                       stop
-        ```
+     ```
 
   [#1009](https://github.com/qilimanjaro-tech/qililab/pull/1009)
- 
+
 - Added `parameters` dictionary to the `Calibration` class, and removed legacy code.
   [#1005](https://github.com/qilimanjaro-tech/qililab/pull/1005)
 
 - `platform.execute_qprograms_parallel()` now takes a list of bus mappings to allow one bus mapping per qprogram.
-Parameters for the function have now the same syntax and behaviour:
-bus_mapping (ist[dict[str, str] | None] | dict[str, str], optional). It can be one of the following:
-    A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
-    A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
-    None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
-    It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
-    Defaults to None.
-calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
-    A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
-    A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
-    None. In this case no `.Calibration` instance is used.
-    Defaults to None.
-[#996](https://github.com/qilimanjaro-tech/qililab/pull/996)
+  Parameters for the function have now the same syntax and behaviour:
+  bus_mapping (ist\[dict[str, str] | None\] | dict[str, str], optional). It can be one of the following:
+  A list of dictionaries mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case, each bus mapping gets assigned to the :class:`.QProgram` in the same index of the list of qprograms passed as first parameter.
+  A single dictionary mapping the buses in the :class:`.QProgram` (keys )to the buses in the platform (values). In this case the same bus mapping is used for each one of the qprograms.
+  None, in this case there is not a bus mapping between :class:`.QProgram` (keys )to the buses in the platform (values) and the buses are as defined in each qprogram.
+  It is useful for mapping a generic :class:`.QProgram` to a specific experiment.
+  Defaults to None.
+  calibrations (list[Calibration], Calibration, optional). Contains information of previously calibrated values, like waveforms, weights and crosstalk matrix. It can be one of the following:
+  A list of :class:`.Calibration` instances, one per :class:`.QProgram` instance in the qprograms parameter.
+  A single instance of :class:`.Calibration`, in this case the same `.Calibration` instance gets associated to all qprograms.
+  None. In this case no `.Calibration` instance is used.
+  Defaults to None.
+  [#996](https://github.com/qilimanjaro-tech/qililab/pull/996)
 
 - `%% submit_job`: Added support for `sbatch --chdir` via a new `-c/--chdir` option that is propagated through `slurm_additional_parameters` and also enforced inside the job (`os.chdir(...)`) so it works with `-e local`. Made `--output` mandatory and hardened the output‑assignment check to recognize `Assign`, `AugAssign`, `AnnAssign`, walrus (`NamedExpr`), and tuple targets. Shipment of the notebook namespace is now safer: only picklable values (via `cloudpickle`) are sent, with common pitfalls (modules, loggers, private `_` names, IPython internals) excluded. `--low-priority` is a boolean flag mapping to a sane Slurm `nice=10000`. Paths are handled with `pathlib` plus `expanduser/expandvars`, the logs directory is created if missing, and imports are harvested conservatively from history (one‑line `import`/`from`, excluding `from __future__`). Parameter assembly only includes Slurm extras when provided, and the submitted function compiles the code string internally while accepting the output name and optional workdir. The job object is written to both `local_ns` and the global `user_ns` for IPython robustness. Log cleanup was rewritten to be cross‑platform and resilient: artifacts are grouped by numeric job‑ID prefix, non‑conforming entries are removed, and only the newest `num_files_to_keep` job groups are retained.
   [#994](https://github.com/qilimanjaro-tech/qililab/pull/994)
@@ -264,8 +273,8 @@ calibrations (list[Calibration], Calibration, optional). Contains information of
 
 - Previously, `platform.draw(qprogram)` and `qprogram.draw()` returned the plotly object and the raw data being plotted. Now they return only the plotly object. This change ensures:
 
-  - When calling `qprogram.draw()` or  `platform.draw(qprogram)` directly, the figure is displayed.
-  - When assigning it to a variable (e.g., `plotly_figure = qprogram.draw()` or  `plotly_figure = platform.draw(qprogram)`), the figure is stored but not automatically shown (since `figure.show()` has been removed from QbloxDraw).
+  - When calling `qprogram.draw()` or `platform.draw(qprogram)` directly, the figure is displayed.
+  - When assigning it to a variable (e.g., `plotly_figure = qprogram.draw()` or `plotly_figure = platform.draw(qprogram)`), the figure is stored but not automatically shown (since `figure.show()` has been removed from QbloxDraw).
 
   If the user needs access to the underlying data, it can be retrieved as follows:
 
@@ -471,7 +480,7 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 - A bug on the tests of Qblox Draw has been fixed. Previously, the test compared `figure.data` using the position of items in the list. Since the order of items can change, this caused inconsistent results. The test now compares the data based on the bus name.
   [#965](https://github.com/qilimanjaro-tech/qililab/pull/965)
 
-- For Qblox Draw, the move commands  of the Q1ASM were being read correctly once but were not being updated after - this caused problem with loops.
+- For Qblox Draw, the move commands of the Q1ASM were being read correctly once but were not being updated after - this caused problem with loops.
 
 - A 4ns has been added when an acquire_weighed command is added to account for the extra clock cycle
   [#933](https://github.com/qilimanjaro-tech/qililab/pull/933)
@@ -487,7 +496,7 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 
 - QbloxDraw:
 
-  - The sequencer offsets given from the runcard (offset_i and offset_q in the runcard) were being applied similarly to the DAC offsets, when they should have been treated like the Q1ASM offsets - this has been fixed and those sequencer offsets havee been renamed sequencer_runcard_offset_i and  sequencer_runcard_offset_q instead of ac_offsets_i and ac_offsets_q for improved clarity.
+  - The sequencer offsets given from the runcard (offset_i and offset_q in the runcard) were being applied similarly to the DAC offsets, when they should have been treated like the Q1ASM offsets - this has been fixed and those sequencer offsets havee been renamed sequencer_runcard_offset_i and sequencer_runcard_offset_q instead of ac_offsets_i and ac_offsets_q for improved clarity.
   - get_value() in the QbloxDraw class now checks that the given string is a float, it used to check x.isdigit() which didn't work for negative values.
     [#945](https://github.com/qilimanjaro-tech/qililab/pull/945)
 
@@ -518,7 +527,6 @@ In this example a pulse is played through QDACII flux line 1 and an offset is pl
 
 - Fixed a bug where using stream array with `Calibration` raised an error. This was dues to the `StreamArray._get_debug()` function, trying to compile a qprogram with calibration waveforms or block without bus mapping. Improved `StreamArray` error traceability and added bus_mapping as a variable for proper compilation.
   [#1043](https://github.com/qilimanjaro-tech/qililab/pull/1043)
-
 
 ## 0.29.3 (2025-04-07)
 
@@ -556,7 +564,7 @@ Developers should install Astral's uv globally (for example, running `curl -LsSf
 
 For the QRM-RF module the parameter is `out0_in0_lo_freq_cal_type_default`, and the values it can take are `off`, `lo` and `lo_and_sidebands`. The first one is the default value, if set the instrument won't do any automatic mixers calibration on its own, to avoid unexpected behaviours by default. The second value will suppress the leakage in the LO, and the third one the LO plus the sidebands. The parameter that will trigger this autocalibration everytime is changed in the instrument is `out0_in0_lo_freq`.
 
-For the QCM-RF module the parameters in the runcard are `out0_lo_freq_cal_type_default` and `out1_lo_freq_cal_type_default`, and the values are the same one that for the QRM-RF described above. The parameters that will trigger this autocalibration everytime is changed in the instrument are `out0_lo_freq`  and `out1_lo_freq`.
+For the QCM-RF module the parameters in the runcard are `out0_lo_freq_cal_type_default` and `out1_lo_freq_cal_type_default`, and the values are the same one that for the QRM-RF described above. The parameters that will trigger this autocalibration everytime is changed in the instrument are `out0_lo_freq` and `out1_lo_freq`.
 
 The second way to use this autocalibration is to trigger it manually using the `Platform` instance by calling its method `Platform.calibrate_mixers()`. As input parameters you will need to specify the `alias` for the bus where the RF instrument is, the `cal_type` which allows to specify one of the three values described above, and the `channel_id` for which mixer you would like to calibrate.
 
@@ -615,7 +623,7 @@ platform.set_flux_to_zero()
 
 ### Bug fixes
 
-- Correction of bugs following the implementation of the qblox drawing class. The user can now play the same waveform twice in one play, and when gains are set as 0 in the qprogram they are no longer replaced by 1 but remain at 0. Some improvements added, the RF modules are now scaled properly instead of on 1, when plotting through qprogram the y axis now reads Amplitude \[a.u.\], and the subplots have been removed, all the lines plot in one plot.
+- Correction of bugs following the implementation of the qblox drawing class. The user can now play the same waveform twice in one play, and when gains are set as 0 in the qprogram they are no longer replaced by 1 but remain at 0. Some improvements added, the RF modules are now scaled properly instead of on 1, when plotting through qprogram the y axis now reads Amplitude [a.u.], and the subplots have been removed, all the lines plot in one plot.
   [#918](https://github.com/qilimanjaro-tech/qililab/pull/918)
 
 - Fixed an issue involving D5a initial setup where the channel id was not correctly set by id index.
@@ -681,7 +689,7 @@ platform.set_flux_to_zero()
   1. **First Pass**: The compiler tries to find a chunk duration that divides the total waveform length evenly (i.e., remainder = 0).
   1. **Second Pass**: If no exact divisor is found, it looks for a chunk duration that leaves a remainder of at least 4 ns. This leftover chunk is large enough to be stored or handled separately.
 
-  Each chunk duration is restricted to the range (\[100, 500\]) ns, ensuring that chunks are neither too small (leading to excessive repetitions) nor too large (risking out-of-memory issues). If no duration within (\[100, 500\]) ns meets these remainder constraints, the compiler defaults to using the original waveform in its entirety.
+  Each chunk duration is restricted to the range ([100, 500]) ns, ensuring that chunks are neither too small (leading to excessive repetitions) nor too large (risking out-of-memory issues). If no duration within ([100, 500]) ns meets these remainder constraints, the compiler defaults to using the original waveform in its entirety.
   [#861](https://github.com/qilimanjaro-tech/qililab/pull/861)
   [#895](https://github.com/qilimanjaro-tech/qililab/pull/895)
 
@@ -1246,7 +1254,7 @@ platform.set_flux_to_zero()
 
   [#743](https://github.com/qilimanjaro-tech/qililab/pull/743)
 
-- Added `threshold_rotations` argument to `compile()` method in `QProgram`. This argument allows to use rotation angles on measurement instructions if not specified. Currently used to use the angle rotations specified on the runcard (if any) so the user does not have to explicitly pass it as argument to the measure instruction.  Used for classification of results in Quantum Machines's modules. The following example shows how to specify this value on the runcard.
+- Added `threshold_rotations` argument to `compile()` method in `QProgram`. This argument allows to use rotation angles on measurement instructions if not specified. Currently used to use the angle rotations specified on the runcard (if any) so the user does not have to explicitly pass it as argument to the measure instruction. Used for classification of results in Quantum Machines's modules. The following example shows how to specify this value on the runcard.
 
   Example:
 
@@ -1342,7 +1350,7 @@ platform.set_flux_to_zero()
 ### Improvements
 
 - Improve Crosstalk matrix `from_buses` method so it can be a dictionary of buses and crosstalks coefficients.
-  \[#784\]<https://github.com/qilimanjaro-tech/qililab/pull/784>
+  [#784]<https://github.com/qilimanjaro-tech/qililab/pull/784>
 
 - Now platform.get_parameter works for QM without the need of connecting to the machine.
 
@@ -1679,7 +1687,7 @@ platform.set_flux_to_zero()
 
 ### Breaking changes
 
-- Added support for Qblox cluster firmware v0.6.1 and qblox-instruments v0.11.2. This changes some of the i/o mappings in the runcard for qblox sequencers so  with older versions is broken.
+- Added support for Qblox cluster firmware v0.6.1 and qblox-instruments v0.11.2. This changes some of the i/o mappings in the runcard for qblox sequencers so with older versions is broken.
   [#680](https://github.com/qilimanjaro-tech/qililab/pull/680)
 
 ### Documentation
@@ -1911,7 +1919,7 @@ platform.set_flux_to_zero()
   qubits even if those did not have measurements on the circuit currently being executed.
   [#576](https://github.com/qilimanjaro-tech/qililab/pull/576)
 
-- [ruamel 0.18.0](https://yaml.readthedocs.io/en/latest/#changelog) eliminated `ruamel.yaml.round_trip_dump`, so we changed its usage to the recommended version:  `ruamel.yaml.YAML().dump` [#577](https://github.com/qilimanjaro-tech/qililab/pull/577)
+- [ruamel 0.18.0](https://yaml.readthedocs.io/en/latest/#changelog) eliminated `ruamel.yaml.round_trip_dump`, so we changed its usage to the recommended version: `ruamel.yaml.YAML().dump` [#577](https://github.com/qilimanjaro-tech/qililab/pull/577)
 
 ## 0.21.0 (2023-10-20)
 
@@ -2257,7 +2265,7 @@ platform.set_flux_to_zero()
 
 ### Documentation
 
-- Documentation for the Chip module: \[#553\] (<https://github.com/qilimanjaro-tech/qililab/pull/553>)
+- Documentation for the Chip module: [#553] (<https://github.com/qilimanjaro-tech/qililab/pull/553>)
 
   Includes documentation for all public features of the Chip module
 
@@ -2308,7 +2316,7 @@ platform.set_flux_to_zero()
   qubits = ql.Chip.qubits()
   ```
 
-- Added to the `draw()` method the option  of specifying if you want:
+- Added to the `draw()` method the option of specifying if you want:
 
   - modulation or not,
   - plot the real, iamginary, absolute or any combination of these options
@@ -3088,7 +3096,7 @@ awg_sequencers:
 
 ### Feat
 
-- Experimentally validated & debugged Spectroscopy  (#134)
+- Experimentally validated & debugged Spectroscopy (#134)
 
 ## 0.14.0 (2023-01-17)
 
@@ -3128,7 +3136,7 @@ awg_sequencers:
 
 ### Refactor
 
-- \[qili-243\] sequence class (#104)
+- [qili-243] sequence class (#104)
 
 ## 0.10.1 (2022-12-14)
 
@@ -3140,7 +3148,7 @@ awg_sequencers:
 
 ### Feat
 
-- \[QILI-201\] multibus support (#101)
+- [QILI-201] multibus support (#101)
 
 ## 0.9.2 (2022-11-17)
 
@@ -3170,43 +3178,43 @@ awg_sequencers:
 
 ### Fix
 
-- \[QILI-169\] load 2D results (#69)
+- [QILI-169] load 2D results (#69)
 
 ## 0.7.2 (2022-08-22)
 
 ### Fix
 
-- \[QILI-187 \] :bug: loops minimum length taking the passed value instead of the self (#57)
+- [QILI-187 ] :bug: loops minimum length taking the passed value instead of the self (#57)
 
 ## 0.7.1 (2022-08-19)
 
 ### Refactor
 
-- \[QILI-186\] :recycle: renamed beta to drag_coefficient (#56)
+- [QILI-186] :recycle: renamed beta to drag_coefficient (#56)
 
 ## 0.7.0 (2022-08-19)
 
 ### Feat
 
-- \[QILI-185\] add option to NOT reset an instrument (#54)
+- [QILI-185] add option to NOT reset an instrument (#54)
 
 ## 0.6.0 (2022-08-18)
 
 ### Feat
 
-- \[QILI-184\] :sparkles: New daily directory generated for results data (#50)
+- [QILI-184] :sparkles: New daily directory generated for results data (#50)
 
 ## 0.5.9 (2022-08-18)
 
 ### Fix
 
-- \[QILI-183\] :bug: accept float master duration gate (#49)
+- [QILI-183] :bug: accept float master duration gate (#49)
 
 ## 0.5.8 (2022-08-18)
 
 ### Fix
 
-- \[QILI-182\] :bug: uses deepcopy before pop dict key (#48)
+- [QILI-182] :bug: uses deepcopy before pop dict key (#48)
 
 ## 0.5.7 (2022-08-17)
 
@@ -3230,43 +3238,43 @@ awg_sequencers:
 
 ### Fix
 
-- \[QILI-181\] :bug: fixed values types when they are numpy (#38)
+- [QILI-181] :bug: fixed values types when they are numpy (#38)
 
 ## 0.5.3 (2022-07-26)
 
 ### Fix
 
-- \[QILI-178\] set beta master (#37)
+- [QILI-178] set beta master (#37)
 
 ## 0.5.2 (2022-07-26)
 
 ### Fix
 
-- \[QILI-180\] :bug: check for multiple loops correctly (#36)
+- [QILI-180] :bug: check for multiple loops correctly (#36)
 
 ## 0.5.1 (2022-07-25)
 
 ### Fix
 
-- \[QILI-177\] :bug: make sure amplitude and duration are float or int (#35)
+- [QILI-177] :bug: make sure amplitude and duration are float or int (#35)
 
 ## 0.5.0 (2022-07-24)
 
 ### Feat
 
-- \[QILI-174\] loop support multiple parameters (#34)
+- [QILI-174] loop support multiple parameters (#34)
 
 ## 0.4.2 (2022-07-23)
 
 ### Fix
 
-- \[QILI-176\] set master value for gate amplitude and duration (#33)
+- [QILI-176] set master value for gate amplitude and duration (#33)
 
 ## 0.4.1 (2022-07-23)
 
 ### Fix
 
-- \[QILI-168\] Set voltage normalization (#32)
+- [QILI-168] Set voltage normalization (#32)
 
 ## 0.4.0 (2022-07-20)
 
@@ -3278,18 +3286,18 @@ awg_sequencers:
 
 ### Feat
 
-- \[QILI-81\] Implement schema class (#5)
+- [QILI-81] Implement schema class (#5)
 
 ## 0.2.0 (2022-04-19)
 
 ### Feat
 
-- \[QILI-46\] Implement instrument classes (#9)
+- [QILI-46] Implement instrument classes (#9)
 
 ## 0.1.0 (2022-04-06)
 
 ### Feat
 
-- \[QILI-48\] Implement platform, backend and settings classes (#8)
+- [QILI-48] Implement platform, backend and settings classes (#8)
 
 ## 0.0.0 (2022-03-28)

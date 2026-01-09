@@ -19,9 +19,9 @@ from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
+    from qililab.core.variables import Variable
     from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.qprogram import QProgram
-    from qililab.qprogram.variable import Variable
 
 
 @yaml.register_class

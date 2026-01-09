@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Single Instrument Controller class"""
+
 from qililab.instrument_controllers.instrument_controller import InstrumentController
 
 
