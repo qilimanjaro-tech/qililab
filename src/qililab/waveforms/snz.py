@@ -33,6 +33,7 @@ class SuddenNetZero(Waveform):
         b (float): Instant stops height when going from the rectangular half-duration to `height = 0`. Coefficient applied to the amplitude.
         t_phi (int): Time at `height = 0`, in the middle of the positive and negative rectangular pulses.
     """
+    yaml_tag = "!SuddenNetZero"
 
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)

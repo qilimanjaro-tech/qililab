@@ -33,7 +33,7 @@ class Domain(Enum):
     @classmethod
     def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar("!Domain", f"{node.name}-{node.value}")
+        return representer.represent_scalar("!qililab.Domain", f"{node.name}-{node.value}")
 
     @classmethod
     def from_yaml(cls, _, node):

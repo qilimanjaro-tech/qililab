@@ -28,6 +28,7 @@ class Waveform(ABC):
 
     Derived: :class:`Arbitrary`,  :class:`Square`, :class:`Gaussian` and :class:`DragCorrection`.
     """
+    yaml_tag = "!Waveform"
 
     @abstractmethod
     def envelope(self, resolution: int = 1) -> np.ndarray:

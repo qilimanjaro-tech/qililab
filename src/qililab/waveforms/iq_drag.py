@@ -24,6 +24,8 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class IQDrag(IQWaveform):
+    yaml_tag = "!IQDrag"
+
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)
     @requires_domain("num_sigmas", Domain.Scalar)

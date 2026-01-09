@@ -50,6 +50,7 @@ class Chained(Waveform):
             # Get waveform's duration
             envelope = chained_wf.get_duration()
     """
+    yaml_tag = "!Chained"
 
     def __init__(self, waveforms: list[Waveform]) -> None:
         """

@@ -68,6 +68,7 @@ class Gaussian(Waveform):
         duration (int): Duration of the pulse (ns).
         num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
     """
+    yaml_tag = "!Gaussian"
 
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)

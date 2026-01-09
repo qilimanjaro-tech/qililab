@@ -32,6 +32,7 @@ class GaussianDragCorrection(Gaussian):
         drag_coefficient (float): drag coefficient
         waveform (Waveform): waveform on which the drag transformation is calculated
     """
+    yaml_tag = "!GaussianDragCorrection"
 
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)

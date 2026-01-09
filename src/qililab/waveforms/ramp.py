@@ -44,6 +44,7 @@ class Ramp(Waveform):
             # Get waveform's envelope
             envelope = ramp_wf.envelope()
     """
+    yaml_tag = "!Ramp"
 
     @requires_domain("from_amplitude", Domain.Voltage)
     @requires_domain("to_amplitude", Domain.Voltage)

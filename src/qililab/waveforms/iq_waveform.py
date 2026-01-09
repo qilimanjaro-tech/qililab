@@ -20,6 +20,8 @@ from qililab.waveforms.waveform import Waveform
 
 
 class IQWaveform(ABC):
+    yaml_tag = "!IQWaveform"
+
     @abstractmethod
     def get_I(self) -> Waveform: ...
 

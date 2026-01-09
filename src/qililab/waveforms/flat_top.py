@@ -33,6 +33,7 @@ class FlatTop(Waveform):
         smooth_duration (float, optional): duration of the smoothing component in ns.
         buffer (float, optional): Buffer of the waveform. Defaults to 0.
     """
+    yaml_tag = "!FlatTop"
 
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)

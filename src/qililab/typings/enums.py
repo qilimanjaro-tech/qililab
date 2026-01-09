@@ -463,7 +463,7 @@ class Parameter(str, Enum):
     @classmethod
     def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
+        return representer.represent_scalar("!qililab.Parameter", f"{node.name}-{node.value}")
 
     @classmethod
     def from_yaml(cls, _, node):

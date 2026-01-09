@@ -45,6 +45,7 @@ class Square(Waveform):
             :width: 800
             :align: center
     """
+    yaml_tag = "!Square"
 
     @requires_domain("amplitude", Domain.Voltage)
     @requires_domain("duration", Domain.Time)

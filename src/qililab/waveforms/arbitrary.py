@@ -45,6 +45,7 @@ class Arbitrary(Waveform):
 
             arbitrary_envelope = ql.Arbitrary(samples=samples)
     """
+    yaml_tag = "!Arbitrary"
 
     def __init__(self, samples: np.ndarray):
         super().__init__()

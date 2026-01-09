@@ -22,6 +22,7 @@ from qililab.yaml import yaml
 @yaml.register_class
 class IQPair(IQWaveform):
     """IQPair containing the 'in-phase' (I) and 'quadrature' (Q) parts of a signal."""
+    yaml_tag = "!IQPair"
 
     def __init__(self, I: Waveform, Q: Waveform):
         if not isinstance(I, Waveform) or not isinstance(Q, Waveform):
