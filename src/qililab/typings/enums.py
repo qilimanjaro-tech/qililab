@@ -319,7 +319,7 @@ class InstrumentControllerName(str, Enum):
     QDEVIL_QDAC2 = "qdevil_qdac2"
 
 
-@yaml.register_class
+@yaml.register_class(shared=True)
 class Parameter(str, Enum):
     """Parameter names."""
 
@@ -463,7 +463,7 @@ class Parameter(str, Enum):
     @classmethod
     def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
+        return representer.represent_scalar(cls.yaml_tag, f"{node.name}-{node.value}")
 
     @classmethod
     def from_yaml(cls, _, node):

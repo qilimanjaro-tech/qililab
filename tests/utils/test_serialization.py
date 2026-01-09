@@ -59,5 +59,4 @@ class TestSerialization:
 
         assert "!SetParameter" in serialized
 
-        with pytest.raises(DeserializationError):
-            deserialize(serialized, Experiment)
+        deserialize(serialized, Experiment)
