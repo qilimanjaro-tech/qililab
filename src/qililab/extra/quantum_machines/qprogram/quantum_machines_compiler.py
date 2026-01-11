@@ -248,17 +248,17 @@ class QuantumMachinesCompiler:
             result_handles: list[str] = []
 
             def _process_stream(stream: qua_dsl._ResultSource, save_as: str) -> None:
-                processing_stream: qua_dsl._ResultSource | qua_dsl._ResultStream = stream
+                processing_stream: qua_dsl._ResultSource = stream
                 for index, loop_info in enumerate(measurement.loop_info_list):
                     if loop_info.is_average:
                         if index < len(measurement.loop_info_list) - 1:
-                            processing_stream = processing_stream.buffer(loop_info.iterations)
-                            processing_stream = processing_stream.map(["average"])
+                            processing_stream = processing_stream.buffer(loop_info.iterations)  # type: ignore[assignment]
+                            processing_stream = processing_stream.map(["average"])  # type: ignore[assignment, arg-type]
                         else:
-                            processing_stream = processing_stream.average()
+                            processing_stream = processing_stream.average()  # type: ignore[assignment]
                     else:
-                        processing_stream = processing_stream.buffer(loop_info.iterations)
-                processing_stream.save(save_as)
+                        processing_stream = processing_stream.buffer(loop_info.iterations)  # type: ignore[assignment]
+                processing_stream.save(save_as)  # type: ignore[union-attr]
                 result_handles.append(save_as)
 
             _process_stream(measurement.stream_I, f"I_{index}")
@@ -375,7 +375,7 @@ class QuantumMachinesCompiler:
             if isinstance(element.frequency, Variable)
             else element.frequency
         )
-        qua.update_frequency(element=element.bus, new_frequency=frequency)
+        qua.update_frequency(element=element.bus, new_frequency=frequency)  # type: ignore[arg-type]
 
     def _handle_set_offset(self, element: SetOffset):
         if element.bus not in self._qm_buses:
@@ -543,14 +543,14 @@ class QuantumMachinesCompiler:
         duration = (
             self._qprogram_to_qua_variables[element.duration]
             if isinstance(element.duration, Variable)
-            else max(element.duration, self.MINIMUM_TIME)
+            else max(element.duration, self.MINIMUM_TIME)  # type: ignore[arg-type]
         )
 
         qua.wait(
             (
                 duration / int(self.WAIT_COEFF)  # type: ignore
                 if isinstance(element.duration, Variable)
-                else int(duration / self.WAIT_COEFF)  # type: ignore[arg-type, operator]
+                else int(duration / self.WAIT_COEFF)  # type: ignore[arg-type, operator, call-overload]
             ),
             element.bus,
         )
