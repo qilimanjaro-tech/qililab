@@ -44,11 +44,10 @@ dependencies = [
     "qilisdk",
 ]
 
-# [project.optional-dependencies]
-# quantum-machines = [
-#     "qm-qua==1.2.1",
-#     "qualang-tools>=0.19.3",
-# ]
+[project.optional-dependencies]
+quantum-machines = [
+    "qm-qua==1.2.4",
+]
 
 [dependency-groups]
 dev = [
@@ -75,7 +74,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv]
-prerelease = "disallow"
+prerelease = "if-necessary"
 
 [tool.uv.sources]
 qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }

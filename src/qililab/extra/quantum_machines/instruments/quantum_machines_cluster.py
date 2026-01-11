@@ -457,7 +457,7 @@ class QuantumMachinesCluster(Instrument):
             QuantumMachinesManager(
                 host=self.settings.address,
                 cluster_name=self.settings.cluster,
-                octave_calibration_db_path=self._octave_config._calibration_db_path,
+                octave_calibration_db_path=self._octave_config.calibration_db,
             )
             if self._octave_config is not None
             else QuantumMachinesManager(

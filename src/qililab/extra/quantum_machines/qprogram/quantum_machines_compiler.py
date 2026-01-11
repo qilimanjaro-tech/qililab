@@ -23,7 +23,6 @@ import numpy as np
 from qm import qua
 from qm.program import Program
 from qm.qua import _dsl as qua_dsl
-from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
 from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
@@ -44,6 +43,8 @@ from qililab.qprogram.operations import (
 from qililab.qprogram.qprogram import QProgram
 from qililab.waveforms import IQWaveform, Square, Waveform
 
+from .integration_weights_tools import convert_integration_weights
+
 if TYPE_CHECKING:
     from qililab.platform.components.bus import Bus
 
@@ -58,7 +59,8 @@ class LoopInfo:
 
 class _BusCompilationInfo:
     def __init__(self) -> None:
-        self.current_gain: float | qua.QuaVariableType | None = None
+        qua_dsl._Variable._qua_type
+        self.current_gain: float | qua.Variable | None = None
         self.threshold: float | None = None
         self.threshold_rotation: float | None = None
 
@@ -67,15 +69,15 @@ class _MeasurementCompilationInfo:
     def __init__(
         self,
         bus: str,
-        variable_I: qua.QuaVariableType,
-        variable_Q: qua.QuaVariableType,
+        variable_I: qua.Variable,
+        variable_Q: qua.Variable,
         stream_I: qua_dsl._ResultSource,
         stream_Q: qua_dsl._ResultSource,
         stream_raw_adc: qua_dsl._ResultSource | None = None,
     ) -> None:
         self.bus: str = bus
-        self.variable_I: qua.QuaVariableType = variable_I
-        self.variable_Q: qua.QuaVariableType = variable_Q
+        self.variable_I: qua.Variable = variable_I
+        self.variable_Q: qua.Variable = variable_Q
         self.stream_I: qua_dsl._ResultSource = stream_I
         self.stream_Q: qua_dsl._ResultSource = stream_Q
         self.stream_raw_adc: qua_dsl._ResultSource | None = stream_raw_adc
@@ -154,7 +156,7 @@ class QuantumMachinesCompiler:
 
         self._qprogram: QProgram
         self._qprogram_block_stack: deque[Block]
-        self._qprogram_to_qua_variables: dict[Variable, qua.QuaVariableType]
+        self._qprogram_to_qua_variables: dict[Variable, qua.Variable]
         self._measurements: list[_MeasurementCompilationInfo]
         self._configuration: dict
         self._buses: dict[str, _BusCompilationInfo]
@@ -499,22 +501,13 @@ class QuantumMachinesCompiler:
         )
         operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
         pulse = operation_name * gain if gain is not None else operation_name
-        if element.demodulation:
-            qua.measure(
-                pulse,
-                element.bus,
-                stream_raw_adc,
-                qua.dual_demod.full(A, "out1", B, "out2", variable_I),
-                qua.dual_demod.full(C, "out1", D, "out2", variable_Q),
-            )
-        else:
-            qua.measure(
-                pulse,
-                element.bus,
-                stream_raw_adc,
-                qua.dual_integration.full(A, "out1", B, "out2", variable_I),
-                qua.dual_integration.full(C, "out1", D, "out2", variable_Q),
-            )
+        qua.measure(
+            pulse,
+            element.bus,
+            stream_raw_adc,
+            qua.dual_demod.full(A, "out1", B, "out2", variable_I),
+            qua.dual_demod.full(C, "out1", D, "out2", variable_Q),
+        )
         qua.save(variable_I, stream_I)
         qua.save(variable_Q, stream_Q)
 

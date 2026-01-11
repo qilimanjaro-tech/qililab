@@ -33,7 +33,6 @@ _QM = OptionalFeature(
     name="quantum-machines",
     dependencies=[
         "qm-qua",
-        "qualang-tools",
     ],
     symbols=[
         Symbol(path="qm", name="__version__", kind="callable"),
