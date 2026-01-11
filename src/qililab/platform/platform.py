@@ -1821,7 +1821,8 @@ class Platform:
                     for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                         if isinstance(instrument, QbloxModule):
                             bus_results = bus.acquire_qprogram_results(
-                                acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias], channel_id=int(channel)  # type: ignore[arg-type]
+                                acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias],
+                                channel_id=int(channel),  # type: ignore[arg-type]
                             )
                             for bus_result in bus_results:
                                 for _, acquisition_data in aquisitions_per_qprogram[qprogram_idx][bus_alias].items():
