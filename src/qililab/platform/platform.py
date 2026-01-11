@@ -1797,7 +1797,7 @@ class Platform:
                     buses_per_qprogram[qprogram_idx][bus_alias].channels,
                 ):
                     if isinstance(instrument, QbloxModule):
-                        instrument.sync_sequencer(sequencer_id=int(channel))
+                        instrument.sync_sequencer(sequencer_id=int(channel))  # type: ignore[arg-type]
 
     def _run_qblox_parallel_sequences(
         self,
@@ -1821,12 +1821,12 @@ class Platform:
                     for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                         if isinstance(instrument, QbloxModule):
                             bus_results = bus.acquire_qprogram_results(
-                                acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias], channel_id=int(channel)
+                                acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias], channel_id=int(channel)  # type: ignore[arg-type]
                             )
                             for bus_result in bus_results:
                                 for _, acquisition_data in aquisitions_per_qprogram[qprogram_idx][bus_alias].items():
                                     intertwined = acquisition_data.intertwined
-                                    unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                    unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)  # type: ignore[arg-type]
                                     for unintertwined_result in unintertwined_results:
                                         results[qprogram_idx].append_result(bus=bus_alias, result=unintertwined_result)
         return results
@@ -1843,7 +1843,7 @@ class Platform:
                     buses_per_qprogram[qprogram_idx][bus_alias].channels,
                 ):
                     if isinstance(instrument, QbloxModule):
-                        instrument.desync_sequencer(sequencer_id=int(channel))
+                        instrument.desync_sequencer(sequencer_id=int(channel))  # type: ignore[arg-type]
 
     def execute_circuit(
         self, circuit: Circuit, nshots: int = 1000, *, qubit_mapping: dict[int, int] | None = None
