@@ -59,12 +59,10 @@ class CircuitToQProgramCompiler:
                     ]
                     qp.sync(buses_to_sync)
                     for gate_event in gate_events:
-                        # print(gate.name, gate.qubits, gate_event.model_dump())
                         if isinstance(gate_event.waveform, IQDrag):
                             iqdrag, phase = CircuitToQProgramCompiler.iqdrag_and_phase_from_calibrated_pi_drag(
                                 target_rmw=gate, calibrated_pi_drag=gate_event.waveform
                             )
-                            # print(gate.name, gate.qubits, iqdrag.amplitude, phase)
                             qp.set_gain(bus=gate_event.bus, gain=iqdrag.amplitude)
                             qp.set_phase(bus=gate_event.bus, phase=angle_to_0_2pi(phase))
                             qp.play(
@@ -89,7 +87,6 @@ class CircuitToQProgramCompiler:
                     ]
                     qp.sync(buses_to_sync)
                     for gate_event in gate_events:
-                        # print(gate.name, gate.qubits, gate_event.model_dump())
                         if isinstance(gate_event.waveform, Square):
                             qp.set_gain(bus=gate_event.bus, gain=gate_event.waveform.amplitude)  # type: ignore
                             qp.play(

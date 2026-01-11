@@ -32,7 +32,6 @@ from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
 from qililab.instrument_controllers import InstrumentControllers

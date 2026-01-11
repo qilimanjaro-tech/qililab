@@ -32,9 +32,6 @@ from .circuit_transpiler_passes import (
 )
 
 
-class DigitalTranspilationConfig: ...
-
-
 class CircuitTranspiler:
     def __init__(
         self,

@@ -62,9 +62,7 @@ class ExponentialCorrection(PulseDistortion):
             You can find more examples in the docstring of the :class:`PulseDistortion` base class.
     """
 
-    name = (
-        PulseDistortionName.EXPONENTIAL_CORRECTION
-    )
+    name = PulseDistortionName.EXPONENTIAL_CORRECTION
     tau_exponential: float  #: Tau exponential factor.
     amp: float  #: Amplitude constant. Value between 0 and 1.
     sampling_rate: float = 1.0  #: Sampling rate. Defaults to 1.

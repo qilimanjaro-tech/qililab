@@ -1751,9 +1751,7 @@ class Platform:
 
         return results
 
-    def _resolve_qblox_parallel_buses(
-        self, sequences_per_qprogram: list[dict[str, Any]]
-    ) -> list[dict[str, Bus]]:
+    def _resolve_qblox_parallel_buses(self, sequences_per_qprogram: list[dict[str, Any]]) -> list[dict[str, Bus]]:
         return [
             {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
             for sequences in sequences_per_qprogram
@@ -1888,9 +1886,6 @@ class Platform:
             num_avg (int): Number of hardware averages used.
             repetition_duration (int): Minimum duration of a single execution.
             num_bins (int): Number of bins used.
-            transpilation_config (DigitalTranspilationConfig, optional): :class:`.DigitalTranspilationConfig` dataclass containing
-                the configuration used during transpilation. Defaults to ``None`` (not changing any default value).
-                Check the class:`.DigitalTranspilationConfig` documentation for the keys and values it can contain.
 
         Returns:
             tuple[dict, list[int] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
