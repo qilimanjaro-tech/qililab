@@ -20,29 +20,14 @@ from typing import TYPE_CHECKING
 
 import h5py
 import numpy as np
-from pandas import read_hdf, read_sql
-from sqlalchemy import (
-    ARRAY,
-    Boolean,
-    Column,
-    Date,
-    DateTime,
-    ForeignKey,
-    Integer,
-    Interval,
-    String,
-    Text,
-    create_engine,
-    exists,
-    text,
-)
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from xarray import DataArray
+from pandas import read_sql
+from sqlalchemy import create_engine, exists
+from sqlalchemy.orm import Session, sessionmaker
 
-from qililab.result.experiment_results import ExperimentResults
-from qililab.result.result_management import load_results
+from qililab.result.database.database_autocal import AutocalMeasurement, CalibrationRun
+from qililab.result.database.database_measurements import Cooldown, Measurement, Sample
+from qililab.result.database.database_qaas import QaaS_Experiment
+from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform.platform import Platform
@@ -50,237 +35,32 @@ if TYPE_CHECKING:
     from qililab.qprogram.experiment import Experiment
     from qililab.qprogram.qprogram import QProgram
 
-base = declarative_base()
-
-
-class Cooldown(base):  # type: ignore
-    """Creates and manipulates CoolDown metadata database"""
-
-    __tablename__ = "cooldowns"
-
-    cooldown: Column = Column("cooldown", String, primary_key=True)
-    date: Column = Column("date", Date)
-    fridge: Column = Column("fridge", String)
-    active: Column = Column("active", Boolean, server_default=text("true"))
-
-    def __init__(self, cooldown, date, fridge):
-        self.cooldown = cooldown
-        self.date = date
-        self.fridge = fridge
-
-    def __repr__(self):
-        return f"{self.cooldown} {self.date} {self.fridge} {self.active}"
-
-
-class Sample(base):  # type: ignore
-    """Creates and manipulates Sample metadata database"""
-
-    __tablename__ = "samples"
-
-    sample_name: Column = Column("sample_name", String, primary_key=True)
-    manufacturer: Column = Column("manufacturer", String)
-    wafer: Column = Column("wafer", String)
-    fab_run: Column = Column("fab_run", String)
-    sample: Column = Column("sample", String)
-    device_design: Column = Column("device_design", String)
-    n_qubits_per_device: Column = Column("n_qubits_per_device", ARRAY(Integer))
-    additional_info: Column = Column("additional_info", String)
-
-    def __init__(
-        self,
-        sample_name,
-        fab_run,
-        wafer,
-        sample,
-        device_design,
-        n_qubits_per_device,
-        additional_info,
-        manufacturer,
-    ):
-        self.sample_name = sample_name
-        self.fab_run = fab_run
-        self.wafer = wafer
-        self.sample = sample
-        self.device_design = device_design
-        self.n_qubits_per_device = n_qubits_per_device
-        self.additional_info = additional_info
-        self.manufacturer = manufacturer
-
-    def __repr__(self):
-        return f"{self.sample_name} {self.manufacturer} {self.additional_info}"
-
-
-class Measurement(base):  # type: ignore
-    """Creates and manipulates Measurement metadata database"""
-
-    __tablename__ = "measurements"
-
-    measurement_id: Column = Column("measurement_id", Integer, primary_key=True)
-    experiment_name: Column = Column("experiment_name", String, nullable=False)
-    optional_identifier: Column = Column("optional_identifier", String)
-    start_time: Column = Column("start_time", DateTime, nullable=False)
-    end_time: Column = Column("end_time", DateTime)
-    run_length: Column = Column("run_length", Interval)
-    experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
-    # TODO: add temperature = Column("temperature", ARRAY(Integer)) when available
-    cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
-    sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
-    result_path: Column = Column("result_path", String, unique=True, nullable=False)
-    platform: Column = Column("platform", JSONB)
-    experiment: Column = Column("experiment", JSONB)
-    qprogram: Column = Column("qprogram", JSONB)
-    calibration: Column = Column("calibration", JSONB)
-    parameters: Column = Column("parameters", JSONB)
-    data_shape: Column = Column("data_shape", ARRAY(Integer))
-    debug_file = Column("debug_file", Text)
-    created_by = Column("created_by", String, server_default=text("current_user"))
-    # TODO: add error_report = Column("error_report", String, nullable=True)
-
-    def end_experiment(self, Session, traceback=None):
-        """Function to end measurement of the experiment. The function sets inside the database information
-        about the end of the experiment: the finishing time, completeness status and experiment length."""
-
-        with Session() as session:
-            # Merge the detached instance into the current session
-            persistent_instance = session.merge(self)
-            persistent_instance.end_time = datetime.datetime.now()
-            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time
-            try:
-                if traceback is None:
-                    persistent_instance.experiment_completed = True
-                # TODO: add else: persistent_instance.error_report = traceback
-                session.commit()
-                return persistent_instance
-            except Exception as e:
-                session.rollback()
-                raise e
-
-    def read_experiment(self):
-        """Reads current experiment."""
-
-        with ExperimentResults(self.result_path) as results:
-            data, dims = results.get()
-        return data, dims
-
-    def read_experiment_xarray(self):
-        """Rewads current experiment in Xarray format."""
-
-        with ExperimentResults(self.result_path) as results:
-            data, dims = results.get()
-
-        d = {}
-        labels = []
-        for i in range(len(dims)):
-            if dims[i].values != []:
-                d.update({dims[i].labels[0]: dims[i].values[0]})
-            labels.append(dims[i].labels[0])
-
-        IQ_axis = labels.index("I/Q")
-        labels.remove("I/Q")
-        complex_data = data.take(indices=0, axis=IQ_axis) + 1j * data.take(indices=1, axis=IQ_axis)
-
-        data_xr = DataArray(complex_data, coords=d, dims=labels)
-        return data_xr
-
-    def load_old_h5(self):
-        """Load old experiment data from h5 files."""
-        return load_results(self.result_path)
-
-    def load_df(self):
-        """Loads experiments data from hdf files."""
-        return read_hdf(self.result_path)
-
-    def load_xarray(self):
-        """Loads experiments data from hdf files into Xarray format."""
-        df = read_hdf(self.result_path)
-        return df.to_xarray().to_dataarray()
-
-    def read_numpy(self):
-        """Loads experiments data from hdf files into numpy array format."""
-        df = read_hdf(self.result_path)
-        da = df.to_xarray().to_dataarray()
-        arr = da.to_numpy()[0,]
-        axis_labels = {dim: da.coords[dim].values for dim in da.dims[1:]}
-        return arr, axis_labels
-
-    def __init__(
-        self,
-        experiment_name,
-        sample_name,
-        result_path,
-        experiment_completed,
-        start_time,
-        cooldown=None,
-        optional_identifier=None,
-        end_time=None,
-        run_length=None,
-        platform=None,
-        experiment=None,
-        qprogram=None,
-        calibration=None,
-        parameters=None,
-        data_shape=None,
-        debug_file=None,
-    ):
-        # Required fields
-        self.experiment_name = experiment_name
-        self.sample_name = sample_name
-        self.result_path = result_path
-        self.experiment_completed = experiment_completed
-        self.start_time = start_time
-
-        # Optional fields
-        self.cooldown = cooldown
-        self.optional_identifier = optional_identifier
-        self.end_time = end_time
-        self.run_length = run_length
-        self.platform = platform
-        self.experiment = experiment
-        self.qprogram = qprogram
-        self.calibration = calibration
-        self.parameters = parameters
-        self.data_shape = data_shape
-        self.debug_file = debug_file
-
-        # self.result_array = result_array
-
-    def __repr__(self):
-        return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.sample_name} {self.cooldown}"
-
 
 class DatabaseManager:
     """Database manager for measurements results and metadata"""
 
-    def __init__(
-        self,
-        user: str,
-        passwd: str,
-        host: str,
-        port: str,
-        database: str,
-        base_path_local: str,
-        base_path_shared: str,
-        data_write_folder: str,
-    ):
+    calibration_measurement: AutocalMeasurement
+
+    def __init__(self, filename: str, database_name: str):
         """
         Args:
-            user (str): SQLalchemy user.
-            passwd (str): Personal password.
-            host (str): Host name.
-            port (str): Host port.
-            database (str): Database name.
-            base_path_local (str): Local base path.
-            base_path_shared  (str): Shared base path.
-            data_write_folder (str): Folder name for data path.
+            filename (str): location of the database `.ini`.
+            database_name (str): Name of the config section inside the `.ini`.
         """
-        self.engine = get_engine(user, passwd, host, port, database)
-        self.Session = sessionmaker(bind=self.engine, expire_on_commit=False)
+        config = _load_config(filename, database_name)
+        self.engine = get_engine(config["user"], config["passwd"], config["host"], config["port"], config["database"])
+        self.session: sessionmaker[Session] = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.current_cd: str | None = None
         self.current_sample: str | None = None
 
-        self.base_path_local = base_path_local
-        self.base_path_share = base_path_shared
-        self.folder_path = data_write_folder
+        self.base_path_local: str | None = None
+        self.base_path_share: str | None = None
+        self.folder_path: str | None = None
+
+        if "base_path_local" in config:
+            self.base_path_local = config["base_path_local"]
+            self.base_path_share = config["base_path_shared"]
+            self.folder_path = config["data_write_folder"]
 
     def set_sample_and_cooldown(self, sample: str, cooldown: str | None = None):
         """Set sample and cooldown of the database
@@ -289,8 +69,8 @@ class DatabaseManager:
             sample (str): Sample name, mandatory parameter as allways needed unlike cooldown
             cooldown (str | None, optional): Cooldown name, contains multiple sample instances. Defaults to None.
         """
-        with self.Session() as session:
-            sample_exists = session.query(exists().where(Sample.sample_name == sample)).scalar()
+        with self.session() as running_session:
+            sample_exists = running_session.query(exists().where(Sample.sample_name == sample)).scalar()
             if sample_exists:
                 self.current_sample = sample
             else:
@@ -298,7 +78,7 @@ class DatabaseManager:
 
             # Setting CD is optional, if you are doing a measurement which is not tied to a CD
             if cooldown:
-                cd_object = session.query(Cooldown).filter(Cooldown.cooldown == cooldown).one_or_none()
+                cd_object = running_session.query(Cooldown).filter(Cooldown.cooldown == cooldown).one_or_none()
                 if cd_object:
                     self.current_cd = cooldown
                     if not cd_object.active:
@@ -321,12 +101,12 @@ class DatabaseManager:
             date (datetime.date, optional): Date of cooldown. Defaults to datetime.date.today().
         """
         cooldown_obj = Cooldown(cooldown=cooldown, date=date, fridge=fridge)
-        with self.Session() as session:
-            session.add(cooldown_obj)
+        with self.session() as running_session:
+            running_session.add(cooldown_obj)
             try:
-                session.commit()
+                running_session.commit()
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def add_sample(
@@ -362,26 +142,91 @@ class DatabaseManager:
             n_qubits_per_device=n_qubits_per_device,
             additional_info=additional_info,
         )
-        with self.Session() as session:
-            session.add(sample_obj)
+        with self.session() as running_session:
+            running_session.add(sample_obj)
             try:
-                session.commit()
+                running_session.commit()
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
-    def load_by_id(self, id):
-        """Load measurement by its measurement_id."""
-        with self.Session() as session:
-            measurement_by_id = session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
+    def add_calibration_run(self, calibration_tree: dict, sample_name: str, cooldown: str) -> CalibrationRun:
+        """Add autocalibration metadata.
 
-            path = measurement_by_id.result_path
-            if not os.path.isfile(path):
+        Args:
+            calibration_tree (dict): Full calibration tree of the run.
+        """
+        calibration_obj = CalibrationRun(
+            date=datetime.datetime.now(),
+            calibration_tree=calibration_tree,
+            calibration_completed=False,
+            sample_name=sample_name,
+            cooldown=cooldown,
+        )
+        with self.session() as running_session:
+            running_session.add(calibration_obj)
+            try:
+                running_session.commit()
+                return calibration_obj
 
-                new_path = path.replace(self.base_path_local, self.base_path_share)
-                measurement_by_id.result_path = new_path
+            except Exception as e:
+                running_session.rollback()
+                raise e
+
+    def load_by_id(self, id: int) -> Measurement | None:
+        """Load measurement by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+        """
+        with self.session() as running_session:
+            measurement_by_id = running_session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
+
+            if measurement_by_id is not None:
+                path = measurement_by_id.result_path
+                if not os.path.isfile(path):
+                    new_path = path.replace(self.base_path_local, self.base_path_share)
+                    measurement_by_id.result_path = new_path
 
             return measurement_by_id
+
+    def load_calibration_by_id(self, id: int) -> AutocalMeasurement | None:
+        """Load autocalibration measurement by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+        """
+        with self.session() as running_session:
+            measurement_by_id = (
+                running_session.query(AutocalMeasurement).where(AutocalMeasurement.measurement_id == id).one_or_none()
+            )
+
+            if measurement_by_id is not None:
+                path = measurement_by_id.result_path
+                if not os.path.isfile(path):
+
+                    new_path = path.replace(self.base_path_local, self.base_path_share)
+                    measurement_by_id.result_path = new_path
+
+            return measurement_by_id
+
+    def load_experiment_by_id(self, id: int) -> QaaS_Experiment | None:
+        """Load QaaS measurement by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+        """
+        with self.session() as running_session:
+            experiment_by_id = running_session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
+
+            if experiment_by_id is not None:
+                path = experiment_by_id.result_path
+                if not os.path.isfile(path):
+
+                    new_path = path.replace(self.base_path_local, self.base_path_share)
+                    experiment_by_id.result_path = new_path
+
+            return experiment_by_id
 
     def tail(
         self,
@@ -403,7 +248,7 @@ class DatabaseManager:
             since_id (int | None, optional): If provided, only load measurements with measurement_id greater than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
-            query = self.Session().query(Measurement)
+            query = self.session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
@@ -462,7 +307,7 @@ class DatabaseManager:
             before_id (int | None, optional): If provided, only load measurements with measurement_id lower than since_id. Defaults to None.
         """
         with self.engine.connect() as con:
-            query = self.Session().query(Measurement)
+            query = self.session().query(Measurement)
 
             if current_sample and self.current_sample:
                 query = query.filter(Measurement.sample_name == self.current_sample)
@@ -501,33 +346,149 @@ class DatabaseManager:
                 return read_sql(query.statement, con=con)
             return query.all()
 
-    def get_qprogram(self, measurement_id: int):
+    def get_qprogram(self, measurement_id: int) -> str:
         """Get QProgram of a measurement by its measurement_id.
         To be used when you have light loaded measurements
-        """
-        with self.Session() as session:
-            return session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
 
-    def get_calibration(self, measurement_id: int):
+        Args:
+            measurement_id (int): measurement_id value given by the database.
+        """
+        with self.session() as running_session:
+            return running_session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
+
+    def get_calibration(self, measurement_id: int) -> str:
         """Get Calibration of a measurement by its measurement_id.
         To be used when you have light loaded measurements
-        """
-        with self.Session() as session:
-            return session.query(Measurement.calibration).filter(Measurement.measurement_id == measurement_id).scalar()
 
-    def get_platform(self, measurement_id: int):
+        Args:
+            measurement_id (int): measurement_id value given by the database.
+        """
+        with self.session() as running_session:
+            return running_session.query(Measurement.calibration).filter(Measurement.measurement_id == measurement_id).scalar()
+
+    def get_platform(self, measurement_id: int) -> dict:
         """Get Platform of a measurement by its measurement_id.
         To be used when you have light loaded measurements
-        """
-        with self.Session() as session:
-            return session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
 
-    def get_debug(self, measurement_id: int):
+        Args:
+            measurement_id (int): measurement_id value given by the database.
+        """
+        with self.session() as running_session:
+            return running_session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
+
+    def get_debug(self, measurement_id: int) -> str:
         """Get Debug of a measurement by its measurement_id.
         To be used when you have light loaded measurements
+
+        Args:
+            measurement_id (int): measurement_id value given by the database.
         """
-        with self.Session() as session:
-            return session.query(Measurement.debug_file).filter(Measurement.measurement_id == measurement_id).scalar()
+        with self.session() as running_session:
+            return running_session.query(Measurement.debug_file).filter(Measurement.measurement_id == measurement_id).scalar()
+
+    def add_autocal_measurement(
+        self,
+        experiment_name: str,
+        qubit_idx: int,
+        calibration: "Calibration",  # type: ignore
+        platform: "Platform" = None,  # type: ignore
+        qprogram: "QProgram" = None,  # type: ignore
+        parameters: list[str] | None = None,
+        data_shape: np.ndarray | None = None,
+    ):
+        """Add autocalibration measurement metadata and data path
+
+        Args:
+            experiment_name (str): Experiment name.
+            qubit_idx (int): Number of qubit index.
+            calibration (Calibration): Experiment calibration parameters.
+            platform (Platform, optional): Platform used on the experiment. Defaults to None.
+            qprogram (QProgram | None, optional): Qprogram used on the experiment. Defaults to None.
+            parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
+            data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
+        """
+
+        start_time = datetime.datetime.now()
+
+        with self.session() as running_session:
+            calibration_id = running_session.query(CalibrationRun).order_by(CalibrationRun.calibration_id.desc()).first().calibration_id  # type: ignore
+
+        base_path = calibration.parameters["base_path"]
+
+        result_path = os.path.join(base_path, f"{experiment_name}.h5")
+
+        if not os.path.isdir(base_path):
+            os.makedirs(base_path)
+            warnings.warn(f"Data folder did not exist. Created one at {base_path}")
+
+        self.calibration_measurement = AutocalMeasurement(
+            experiment_name=experiment_name,
+            calibration_id=calibration_id,
+            qbit_idx=qubit_idx,
+            result_path=result_path,
+            fitting_path=base_path,
+            experiment_completed=False,
+            start_time=start_time,
+            platform_after=platform,
+            qprogram=qprogram,
+            calibration=serialize(calibration),
+            parameters=serialize(parameters),
+            data_shape=data_shape,
+        )
+        with self.session() as running_session:
+            running_session.add(self.calibration_measurement)
+            try:
+                running_session.commit()
+                return self.calibration_measurement
+            except Exception as e:
+                running_session.rollback()
+                raise e
+
+    def update_platform(self, platform: "Platform"):
+        """Update calibration platform after fitting
+
+        Args:
+            platform (Platform): New platform to be set at platform_before column from `AutocalMeasurement`.
+        """
+        self.calibration_measurement.update_platform(self.session, platform)
+
+    def add_experiment(
+        self,
+        job_id: int,
+        experiment_name: str,
+        result_path: str,
+        sample_name: str,
+        cooldown: str,
+    ):
+        """Add queued experiment metadata and data path
+
+        Args:
+            job_id (int): Queue job ID.
+            experiment_name (str): Experiment name.
+            result_path (str): Result path for data location.
+            cooldown (str): Cooldown id.
+            sample_name (str): Sample id.
+        """
+
+        start_time = datetime.datetime.now()
+
+        measurement = QaaS_Experiment(
+            job_id=job_id,
+            experiment_name=experiment_name,
+            sample_name=sample_name,
+            result_path=result_path,
+            experiment_completed=False,
+            start_time=start_time,
+            cooldown=cooldown,
+        )
+        with self.session() as running_session:
+            running_session.add(measurement)
+            try:
+                running_session.commit()
+                return measurement
+            except Exception as e:
+                running_session.rollback()
+                raise e
 
     def add_measurement(
         self,
@@ -608,13 +569,13 @@ class DatabaseManager:
             parameters=parameters,
             data_shape=data_shape,
         )
-        with self.Session() as session:
-            session.add(measurement)
+        with self.session() as running_session:
+            running_session.add(measurement)
             try:
-                session.commit()
+                running_session.commit()
                 return measurement
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
     def add_results(
@@ -693,17 +654,17 @@ class DatabaseManager:
             parameters=parameters,
             data_shape=results.shape,
         )
-        with self.Session() as session:
-            session.add(measurement)
+        with self.session() as running_session:
+            running_session.add(measurement)
             try:
-                session.commit()
+                running_session.commit()
                 return measurement
             except Exception as e:
-                session.rollback()
+                running_session.rollback()
                 raise e
 
 
-def _load_config(filename, section="postgresql"):
+def _load_config(filename, section):
     """Load database configuration based on postrgreSQL"""
     parser = ConfigParser()
     parser.read(filename)
@@ -718,10 +679,10 @@ def _load_config(filename, section="postgresql"):
     raise ReferenceError("Section {0} not found in the {1} file".format(section, filename))
 
 
-def get_db_manager(path: str = "~/database.ini"):
+def get_db_manager(path: str = "~/database.ini", database_name: str = "postgresql") -> DatabaseManager:
     """Automatic DatabaseManager generator based on default load_config"""
     filename = os.path.expanduser(path)
-    return DatabaseManager(**_load_config(filename))
+    return DatabaseManager(filename, database_name)
 
 
 def get_engine(user: str, passwd: str, host: str, port: str, database: str):
@@ -738,10 +699,9 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
     return create_engine(url)
 
 
-def load_by_id(id: int) -> str:
+def load_by_id(id: int, path: str = "~/database.ini") -> Measurement | None:
     """Function to get the database ID without loading the Database Manager"""
 
-    db = get_db_manager()
-    result_path = db.load_by_id(id)
-
-    return result_path
+    db = get_db_manager(path)
+    measurement_by_id = db.load_by_id(id)
+    return measurement_by_id
