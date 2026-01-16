@@ -13,11 +13,13 @@
 # limitations under the License.
 # mypy: disable-error-code="attr-defined"
 from datetime import datetime
-from typing import TypedDict
+from typing import Any, TypedDict
 
 import h5py
 import numpy as np
 
+from qililab.qililab_settings import get_settings
+from qililab.result.database import DatabaseManager
 from qililab.result.experiment_live_plot import ExperimentLivePlot
 from qililab.result.experiment_results import ExperimentResults
 
@@ -82,6 +84,23 @@ class ExperimentMetadata(TypedDict, total=False):
     qprograms: dict[str, QProgramMetadata]
 
 
+class ExperimentDataBaseMetadata(TypedDict, total=False):
+    """Metadata for an experiment database.
+
+    Attributes:
+        platform (str): Platform information.
+        experiment (str): Experiment description.
+        executed_at (datetime): Timestamp when the experiment started execution.
+        execution_time (float): Time taken for the execution in seconds.
+        qprograms (dict[str, QProgramMetadata]): Quantum programs included in the experiment.
+    """
+
+    job_id: int
+    experiment_name: str
+    cooldown: str | None
+    sample_name: str | None
+
+
 class ExperimentResultsWriter(ExperimentResults):
     """
     Allows for real-time saving of results from an experiment using the provided metadata information.
@@ -93,9 +112,8 @@ class ExperimentResultsWriter(ExperimentResults):
         self,
         path: str,
         metadata: ExperimentMetadata,
-        live_plot: bool = True,
-        slurm_execution: bool = True,
-        port_number: int | None = None,
+        db_metadata: ExperimentDataBaseMetadata | None,
+        db_manager: DatabaseManager | None
     ):
         """Initializes the ExperimentResultsWriter instance.
 
@@ -107,10 +125,13 @@ class ExperimentResultsWriter(ExperimentResults):
             port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
         """
         super().__init__(path)
+        self.results_path = path
         self._metadata = metadata
-        self._live_plot_true = live_plot
-        self._slurm_execution = slurm_execution
-        self._port_number = port_number
+        self._db_metadata = db_metadata
+        self._db_manager = db_manager
+        self._live_plot_true = get_settings().experiment_live_plot_enabled
+        self._slurm_execution = get_settings().experiment_live_plot_on_slurm
+        self._port_number = get_settings().experiment_live_plot_port
 
     # pylint: disable=too-many-locals
     def _create_results_file(self):
@@ -208,14 +229,34 @@ class ExperimentResultsWriter(ExperimentResults):
         Returns:
             ExperimentResultsWriter: The ExperimentResultsWriter instance.
         """
-        self._file = h5py.File(self.path, mode="w", libver="latest")
+        if self._db_metadata:
+            self.measurement = self._db_manager.add_experiment(
+                job_id=self._db_metadata["job_id"],
+                experiment_name=self._db_metadata["experiment_name"],
+                result_path=self.results_path,
+                cooldown=self._db_metadata["cooldown"],
+                sample_name=self._db_metadata["sample_name"],
+            )
+            self.results_path = self.measurement.result_path
+            self._file = h5py.File(str(self.results_path), mode="w", libver="latest")
+
+        else:
+            self._file = h5py.File(self.path, mode="w", libver="latest")
         self._create_results_file()
         self._create_resuts_access()
+
         self._append_mode = True
 
         return self
 
-    def __setitem__(self, key: tuple, value: float):
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Exit the context manager and close the HDF5 file and end experiment if there is a database."""
+        if self._file is not None:
+            self._file.close()
+        if self._db_metadata:
+            self.measurement = self.measurement.end_experiment(self._db_manager.session, traceback)
+
+    def __setitem__(self, key: tuple, value: Any):
         """Sets an item in the results dataset.
 
         Args:

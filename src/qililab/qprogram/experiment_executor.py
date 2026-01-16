@@ -15,9 +15,7 @@
 # mypy: disable-error-code="union-attr, arg-type"
 import inspect
 import os
-import threading
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from time import perf_counter
@@ -28,12 +26,14 @@ from uuid import UUID
 import numpy as np
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
+from qililab.qililab_settings import get_settings
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
+    ExperimentDataBaseMetadata,
     ExperimentMetadata,
     ExperimentResultsWriter,
     MeasurementMetadata,
@@ -73,10 +73,6 @@ class ExperimentExecutor:
     Args:
         platform (Platform): The platform on which the experiment is to be executed.
         experiment (Experiment): The experiment object defining the sequence of operations and loops.
-        base_data_path (str): The base directory path where the experiment results will be stored.
-        live_plot (bool): Flag that abilitates live plotting. Defaults to True.
-        slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
-        port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
 
     Example:
         .. code-block::
@@ -84,20 +80,23 @@ class ExperimentExecutor:
             from qililab.data_management import build_platform
             from qililab.qprogram import Experiment
             from qililab.executor import ExperimentExecutor
+            from qililab.qililab_settings import get_settings
 
             # Initialize the platform
             platform = build_platform(runcard="path/to/runcard.yml")
+
+            # (Optional) Configure global experiment settings
+            settings = get_settings()
+            settings.experiment_results_base_path = "/data/experiments"
+            settings.experiment_live_plot_enabled = True
 
             # Define your experiment
             experiment = Experiment(label="my_experiment")
             # Add blocks, loops, operations to the experiment
             # ...
 
-            # Set the base data path for storing results
-            base_data_path = "/data/experiments"
-
             # Create the ExperimentExecutor
-            executor = ExperimentExecutor(platform=platform, experiment=experiment, base_data_path=base_data_path)
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
 
             # Execute the experiment
             results_path = executor.execute()
@@ -105,22 +104,27 @@ class ExperimentExecutor:
 
     Note:
         - Ensure that the platform and experiment are properly configured before execution.
-        - The results will be saved in a timestamped directory within the `base_data_path`.
+        - Result paths, live plotting and database persistence are configured via :func:`qililab.qililab_settings.get_settings`.
     """
 
     def __init__(
         self,
         platform: "Platform",
         experiment: Experiment,
-        live_plot: bool = True,
+        live_plot: bool = False,
         slurm_execution: bool = True,
         port_number: int | None = None,
+        job_id: int | None = None,
+        sample: str | None = None,
+        cooldown: str | None = None,
     ):
         self.platform = platform
         self.experiment = experiment
-        self._live_plot = live_plot
-        self._slurm_execution = slurm_execution
-        self._port_number = port_number
+
+        # In case the results are saved in a database, load the correct sample and cooldown.
+        self.job_id = job_id
+        self.sample = sample
+        self.cooldown = cooldown
 
         # Registry of all variables used in the experiment with their labels and values
         self._all_variables: dict = defaultdict(lambda: {"label": None, "values": {}})
@@ -152,6 +156,9 @@ class ExperimentExecutor:
 
         # Metadata dictionary containing information about the experiment structure and variables.
         self._metadata: ExperimentMetadata
+
+        # DatabaseMetadata dictionary containing information about the experiment structure and variables.
+        self._db_metadata: ExperimentDataBaseMetadata | None = None
 
         # ExperimentResultsWriter object responsible for saving experiment results to file in real-time.
         self._results_writer: ExperimentResultsWriter
@@ -252,6 +259,15 @@ class ExperimentExecutor:
             execution_time=0.0,
             qprograms={},
         )
+        if get_settings().experiment_results_save_in_database:
+            if self.job_id is None:
+                raise ValueError("Job id has not been defined.")
+            self._db_metadata = ExperimentDataBaseMetadata(
+                job_id=self.job_id,
+                experiment_name=self.experiment.label,
+                cooldown=self.cooldown,
+                sample_name=self.sample,
+            )
         traverse_experiment(self.experiment.body)
         self._all_variables = dict(self._all_variables)
 
@@ -341,6 +357,7 @@ class ExperimentExecutor:
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     channel_id=operation.channel_id,
+                                    output_id=operation.output_id,
                                 )
                             }
                         )
@@ -360,6 +377,7 @@ class ExperimentExecutor:
                                     parameter=operation.parameter,
                                     value=current_value_of_variable[operation.value.uuid],
                                     channel_id=operation.channel_id,
+                                    output_id=operation.output_id,
                                 )
                             )
                         else:
@@ -372,6 +390,7 @@ class ExperimentExecutor:
                                     parameter=operation.parameter,
                                     value=value,
                                     channel_id=operation.channel_id,
+                                    output_id=operation.output_id,
                                 )
                             )
                     else:
@@ -382,6 +401,7 @@ class ExperimentExecutor:
                                 parameter=operation.parameter,
                                 value=operation.value,
                                 channel_id=operation.channel_id,
+                                output_id=operation.output_id,
                             )
                         )
 
@@ -450,7 +470,7 @@ class ExperimentExecutor:
             # Determine the index based on current loop indices and store the results in the ExperimentResultsWriter
             for measurement_index, measurement_result in enumerate(qprogram_results.timeline):
                 indices = (qprogram_index, measurement_index, *tuple(index for _, index in self.loop_indices.items()))
-                self._results_writer[indices] = measurement_result.array.T  # type: ignore
+                self._results_writer[indices] = np.moveaxis(measurement_result.array, 0, -1)
 
         if isinstance(block, (Loop, ForLoop, Parallel)):
             # Handle loops
@@ -522,8 +542,9 @@ class ExperimentExecutor:
 
     def _create_results_path(self, executed_at: datetime):
         # Get base path and path format from platform
-        base_path = self.platform.experiment_results_base_path
-        path_format = self.platform.experiment_results_path_format
+
+        base_path = get_settings().experiment_results_base_path
+        path_format = get_settings().experiment_results_path_format
 
         # Format date and time for directory names
         date = executed_at.strftime("%Y%m%d")
@@ -543,20 +564,6 @@ class ExperimentExecutor:
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
         return path
-
-    def _measure_execution_time(self, execution_completed: threading.Event):
-        """Measures the execution time while waiting for the experiment to finish."""
-        # Start measuring execution time
-        start_time = perf_counter()
-
-        # Wait for the experiment to finish
-        execution_completed.wait()
-
-        # Stop measuring execution time
-        end_time = perf_counter()
-
-        # Return the execution time
-        return end_time - start_time
 
     def execute(self) -> str:
         """
@@ -581,37 +588,26 @@ class ExperimentExecutor:
         self._results_writer = ExperimentResultsWriter(
             path=results_path,
             metadata=self._metadata,
-            live_plot=self._live_plot,
-            slurm_execution=self._slurm_execution,
-            port_number=self._port_number,
+            db_metadata=self._db_metadata,
+            db_manager=self.platform.db_manager,
         )
 
-        # Event to signal that the execution has completed
-        execution_completed = threading.Event()
-
-        with ThreadPoolExecutor() as executor:
-            # Start the _measure_execution_time in a separate thread
-            execution_time_future = executor.submit(self._measure_execution_time, execution_completed)
-
-            with self._results_writer:
+        with self._results_writer:
+            start_time = perf_counter()
+            try:
                 with Progress(
                     TextColumn("[progress.description]{task.description}"),
                     BarColumn(bar_width=None),
                     "[progress.percentage]{task.percentage:>3.1f}%",
                     TimeElapsedColumn(),
                 ) as progress:
+                    # every self._prepare_operations updates the h5 though ExperimentResultsWriter
                     operations = self._prepare_operations(self.experiment.body, progress)
                     self._execute_operations(operations, progress)
-
-                # Signal that the execution has completed
-                execution_completed.set()
-
-                # Retrieve the execution time from the Future
-                execution_time = execution_time_future.result()
-
-                # Now write the execution time to the results writer
-                self._results_writer.execution_time = execution_time
+            finally:
+                # Write the execution time to the results writer
+                self._results_writer.execution_time = perf_counter() - start_time
 
         del self.loop_indices
 
-        return results_path
+        return self._results_writer.results_path

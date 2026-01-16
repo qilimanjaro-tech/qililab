@@ -16,13 +16,15 @@ import math
 from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
+if TYPE_CHECKING:
+    from uuid import UUID
 import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
-from qpysequence.constants import INST_MAX_WAIT
+from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 
 from qililab.config import logger
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
@@ -30,6 +32,7 @@ from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
+    MeasureReset,
     Operation,
     Play,
     ResetPhase,
@@ -38,12 +41,26 @@ from qililab.qprogram.operations import (
     SetMarkers,
     SetOffset,
     SetPhase,
+    SetTrigger,
     Sync,
     Wait,
+    WaitTrigger,
 )
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.variable import Variable
-from qililab.waveforms import IQPair, Square, Waveform
+from qililab.qprogram.variable import Domain, Variable, VariableExpression
+from qililab.waveforms import Arbitrary, FlatTop, IQPair, Square, Waveform
+
+SIGN_BIT = 2**31  # 2147483648 -> values >= this are "negative" in 2's complement (MSB = 1)
+NEG_ONE_TO_THREE = (2**32) - 3  # 4294967293 == -3 in 2's complement
+
+EXT_TRIGGER_ADDRESS: int = 15
+
+# TODO: move to qpysequence.constants
+MAX_ACQUISITION_INDEX = 31  # 32 is the max number of acquisitions that can be stored
+
+ENABLE_CONDITIONAL = 1
+DISABLE_CONDITIONAL = 0
+AND_MASK_CONDITIONAL = 0  # Return true if any of the selected counters crossed their thresholds
 
 
 @dataclass
@@ -53,6 +70,7 @@ class AcquisitionData:
     bus: str
     save_adc: bool
     shape: tuple
+    intertwined: int
 
 
 Sequences = dict[str, QPy.Sequence]
@@ -86,8 +104,6 @@ class BusCompilationInfo:
         self.qpy_sequence = QPy.Sequence(
             program=QPy.Program(), waveforms=QPy.Waveforms(), acquisitions=QPy.Acquisitions(), weights=QPy.Weights()
         )
-
-        # Acquisitions information
         self.acquisitions: dict[str, AcquisitionData] = {}
 
         # Dictionaries to hold mappings useful during compilation.
@@ -105,19 +121,22 @@ class BusCompilationInfo:
         self.qprogram_block_stack: deque[Block] = deque()
 
         # Counters to help with naming and indexing
-        self.next_bin_index = 0
-        self.next_acquisition_index = 0
         self.loop_counter = 0
         self.average_counter = 0
-        self.square_optimization_counter = 0
+        self.waveform_optimization_counter = 0
 
         # Syncing durations
         self.static_duration = 0
         self.dynamic_durations: list[Variable] = []
         self.sync_durations: list[QPyProgram.Register] = []
+        self.duration_since_sync = 0
+        self.dynamic_sync_counter: int = 0
 
         # Syncing marker. If true, a real-time instruction has been added since the last sync or the beginning of the program.
         self.marked_for_sync = False
+
+        # Dynamic Syncing marker. If true, a dynamic variable has been used since the last sync or the beginning of the program.
+        self.marked_for_dynamic_sync = False
 
         # Time of flight. Defaults to minimum_wait_duration and is updated if times_of_flight parameter is provided during compilation.
         self.time_of_flight = QbloxCompiler.minimum_wait_duration
@@ -125,8 +144,52 @@ class BusCompilationInfo:
         # Delay. Defaults 0 delay and is updated if delays parameter is provided within the runcard.
         self.delay = 0
 
-        # Latched Paramter flag
+        # Latched Parameter flag
         self.upd_param_instruction_pending: bool = False
+
+        # Counters used for acquisition
+        self.num_bins_per_acquire: int = 0
+        self.num_bins_total: int = 0
+        self.shape_acquire: tuple = ()
+        self.bin_register: QPyProgram.Register = None
+
+        # Allows reusing a register if a weight has already been given with the same value
+        self.weight_index_to_register: dict[int, QPyProgram.Register] = {}
+
+        # Registers values used for the hardware loop over time
+        # (Target duration - this bus duration); negative/positive sign decides branching.
+        self.delta_to_target_duration_register: QPyProgram.Register | None = None
+        # Longest total (static + dynamic) duration among the other buses.
+        self.max_other_total_duration_register: QPyProgram.Register | None = None
+        # Longest static duration among the other buses.
+        self.max_other_static_duration_register: QPyProgram.Register | None = None
+        # (This bus's dynamic portion) + (dynamic bus's static duration).
+        self.dynamic_plus_static_duration_register: QPyProgram.Register | None = None
+        # Single wait chunk (to respect hardware limit on wait size).
+        self.wait_chunk_duration_register: QPyProgram.Register | None = None
+
+        # Variable Expression
+        # Holds evaluated dynamic expression until consumed.
+        self.dynamic_expression_register: QPyProgram.Register = None
+        # True if the above value still needs to be applied to duration registers.
+        self.has_pending_dynamic_expression: bool = False
+        # Dynamic duration register for this bus.
+        self.dynamic_duration_register: QPyProgram.Register | None = None
+
+        # Count the number of different nested levels there are for this bus in a qprogram
+        self.count_nested_level_acquire: int = -1
+
+        # Count the number of acquire in one nested level
+        self.counter_acquire: int = 0
+
+        # Int of the previous nested level used
+        self.prev_nested_level_acquire: int | None = None
+
+        # Flag to know if an acquire is the first in a block
+        self.first_acquire_of_block: bool = False
+
+        # Used in instances where there are no loop on the bin
+        self.single_bin_counter: int = 0
 
 
 class QbloxCompiler:
@@ -148,9 +211,12 @@ class QbloxCompiler:
             SetGain: self._handle_set_gain,
             SetOffset: self._handle_set_offset,
             SetMarkers: self._handle_set_markers,
+            SetTrigger: self._handle_set_trigger,
             Wait: self._handle_wait,
+            WaitTrigger: self._handle_wait_trigger,
             Sync: self._handle_sync,
             Measure: self._handle_measure,
+            MeasureReset: self._handle_measure_reset,
             Acquire: self._handle_acquire,
             Play: self._handle_play,
             Block: self._handle_block,
@@ -159,6 +225,22 @@ class QbloxCompiler:
         self._qprogram: QProgram
         self._buses: dict[str, BusCompilationInfo]
         self._sync_counter: int
+        self._time_loop_counter: int = 0
+        self._long_wait_dynamic: bool = False
+        self._long_wait_dynamic_idx: int = 0
+        self._max_wait_dynamic: int = 0
+        self._markers: dict[str, str] | None
+        self._qblox_buses: list[str]
+        self._acquisition_metadata: dict[str, dict[UUID, int]] = {}
+
+    def traverse_qprogram_acquire(self, block: Block):
+        """Traverses a QProgram to gather information on the acquisition."""
+        for element in block.elements:
+            if isinstance(element, Block):
+                self.traverse_qprogram_acquire(element)
+            elif isinstance(element, (Acquire, Measure, MeasureReset)):
+                self._acquisition_metadata.setdefault(element.bus, {}).setdefault(block.uuid, 0)
+                self._acquisition_metadata[element.bus][block.uuid] += 1
 
     def compile(
         self,
@@ -168,6 +250,8 @@ class QbloxCompiler:
         times_of_flight: dict[str, int] | None = None,
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
+        ext_trigger: bool = False,
+        qblox_buses: list[str] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -184,6 +268,7 @@ class QbloxCompiler:
             delay_implemented = False
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.append(block)
+                self._buses[bus].first_acquire_of_block = True
             for element in block.elements:
                 if isinstance(element, Play) and not delay_implemented:
                     for bus in self._buses:
@@ -196,6 +281,12 @@ class QbloxCompiler:
                                         element=Wait(bus=other_buses, duration=-self._buses[bus].delay), delay=True
                                     )
                     delay_implemented = True
+
+                if isinstance(element, (Acquire, Measure, MeasureReset)) and element.bus in self._buses and self._buses[element.bus].first_acquire_of_block is True:
+                    self._buses[element.bus].count_nested_level_acquire += 1
+                    self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid]
+                    self._buses[element.bus].first_acquire_of_block = False
+
                 handler = self._handlers.get(type(element))
                 if not handler:
                     raise NotImplementedError(f"{element.__class__} is currently not supported in QBlox.")
@@ -211,6 +302,7 @@ class QbloxCompiler:
                             self._buses[bus].qpy_block_stack.pop()
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.pop()
+                self._buses[bus].first_acquire_of_block = True
 
         self._qprogram = qprogram
         if bus_mapping is not None:
@@ -222,8 +314,11 @@ class QbloxCompiler:
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
 
+        self._qblox_buses = qblox_buses if qblox_buses else []
+
         self._sync_counter = 0
         self._buses = self._populate_buses()
+        self._ext_trigger = ext_trigger
 
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
@@ -236,13 +331,19 @@ class QbloxCompiler:
                 self._buses[bus].delay = delays[bus]
 
         # Pre-processing: Set markers ON/OFF
+        self._markers = markers
         for bus in self._buses:
-            mask = markers[bus] if markers is not None and bus in markers else "0000"
+            mask = self._markers[bus] if self._markers is not None and bus in self._markers else "0000"
+            # if qprogram.measure_reset is used, the bus using the conditional enables latching at the very top of the q1asm
+            if bus in self._qprogram.qblox.latch_enabled:
+                self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetLatchEn(1, 4), 1)
+
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.SetMrk(int(mask, 2)))
             self._buses[bus].qpy_sequence._program.blocks[0].append_component(QPyInstructions.UpdParam(4))
             self._buses[bus].static_duration += 4
 
         # Recursive traversal to convert QProgram blocks to Sequence
+        self.traverse_qprogram_acquire(self._qprogram._body)
         traverse(self._qprogram._body)
 
         # Post-processing: Set all markers OFF, add stop instructions and compile
@@ -250,6 +351,122 @@ class QbloxCompiler:
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.SetMrk(0))
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.UpdParam(4))
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Stop())
+
+            if self._long_wait_dynamic:
+                # TODO: this part of the q1asm can be simplified; using by creating a jump table using offset to only have one type of block per program
+
+                if self._buses[bus].dynamic_durations:
+                    for idx in range(self._long_wait_dynamic_idx):
+                        self._buses[bus].qpy_block_stack[0]._append_block(QPyProgram.Block(name=f"long_wait_{idx}"))
+                        self._buses[bus].qpy_block_stack[0].append_component(
+                            component=QPyInstructions.Wait(INST_MAX_WAIT)
+                        )
+                        self._buses[bus].qpy_block_stack[0].append_component(
+                            component=QPyInstructions.Sub(
+                                self._buses[bus].wait_chunk_duration_register,
+                                INST_MAX_WAIT,
+                                self._buses[bus].wait_chunk_duration_register,
+                            )
+                        )
+                        self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Nop())
+                        self._buses[bus].qpy_block_stack[0].append_component(
+                            component=QPyInstructions.Jge(
+                                self._buses[bus].wait_chunk_duration_register, INST_MAX_WAIT, f"@long_wait_{idx}"
+                            )
+                        )
+                        self._buses[bus].qpy_block_stack[0].append_component(
+                            component=QPyInstructions.Wait(self._buses[bus].wait_chunk_duration_register)
+                        )
+                        self._buses[bus].qpy_block_stack[0].append_component(
+                            component=QPyInstructions.Jmp(f"@continue_after_long_wait_{idx}")
+                        )
+
+            # Check if variable waits are used to add the conditional labels after the stop in the q1asm
+            if self._buses[bus].dynamic_sync_counter > 0:
+                for idx in range(self._buses[bus].dynamic_sync_counter):
+                    # Block to add the wait if needed following the Jlt instruction - the code goes into this block if the bus difference is positive
+                    self._buses[bus].qpy_block_stack[0]._append_block(QPyProgram.Block(name=f"dynamic_sync_{idx}"))
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        QPyInstructions.Jlt(
+                            self._buses[bus].delta_to_target_duration_register, 1, f"@after_dynamic_sync_{idx}"
+                        )
+                    )  # if the register difference is 0
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        QPyInstructions.Jlt(
+                            self._buses[bus].delta_to_target_duration_register, INST_MIN_WAIT, f"@one_two_three_{idx}"
+                        )
+                    )  # if the register difference is 1, 2 or 3
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        QPyInstructions.Jge(
+                            self._buses[bus].delta_to_target_duration_register, INST_MAX_WAIT, f"@long_wait_sync_{idx}"
+                        )
+                    )  # if long wait
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        component=QPyInstructions.Wait(self._buses[bus].delta_to_target_duration_register)
+                    )
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        component=QPyInstructions.Jmp(f"@after_dynamic_sync_{idx}")
+                    )
+
+                    #  Block to handle the case where the bus difference is 1, 2 or 3 - need to add the difference + 4 ns (the other buses will also add 4 ns)
+                    self._buses[bus].qpy_block_stack[0]._append_block(QPyProgram.Block(name=f"one_two_three_{idx}"))
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        component=QPyInstructions.Add(
+                            self._buses[bus].delta_to_target_duration_register,
+                            INST_MIN_WAIT,
+                            self._buses[bus].delta_to_target_duration_register,
+                        )
+                    )
+                    self._buses[bus].qpy_block_stack[0].append_component(QPyInstructions.Nop())
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        component=QPyInstructions.Wait(self._buses[bus].delta_to_target_duration_register)
+                    )
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        component=QPyInstructions.Jmp(f"@after_dynamic_sync_{idx}")
+                    )
+
+                    #  Block to handle the case where the bus difference is -1, -2 or -3 - need to add + 4 ns (the other buses will add 4 ns plus the integer)
+                    self._buses[bus].qpy_block_stack[0]._append_block(
+                        QPyProgram.Block(name=f"negative_one_two_three_{idx}")
+                    )
+                    self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Wait(4))
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        component=QPyInstructions.Jmp(f"@after_dynamic_sync_{idx}")
+                    )
+
+                    # Block to handle wait above qblox limit
+                    self._buses[bus].qpy_block_stack[0]._append_block(QPyProgram.Block(name=f"long_wait_sync_{idx}"))
+                    self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Wait(INST_MAX_WAIT))
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        component=QPyInstructions.Sub(
+                            self._buses[bus].delta_to_target_duration_register,
+                            INST_MAX_WAIT,
+                            self._buses[bus].delta_to_target_duration_register,
+                        )
+                    )
+                    self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Nop())
+                    self._buses[bus].qpy_block_stack[0].append_component(
+                        QPyInstructions.Jge(
+                            self._buses[bus].delta_to_target_duration_register, INST_MAX_WAIT, f"@long_wait_sync_{idx}"
+                        )
+                    )
+                    self._buses[bus].qpy_block_stack[0].append_component(QPyInstructions.Jmp(f"@dynamic_sync_{idx}"))
+
+                    #  If the bus is static, an additional check must be implemented to find the longest other bus (dynamic/static comparison)
+                    if self._buses[bus].max_other_total_duration_register is not None:
+                        self._buses[bus].qpy_block_stack[0]._append_block(
+                            QPyProgram.Block(name=f"other_max_duration_{idx}")
+                        )
+                        self._buses[bus].qpy_block_stack[0].append_component(
+                            component=QPyInstructions.Move(
+                                self._buses[bus].max_other_static_duration_register,
+                                self._buses[bus].max_other_total_duration_register,
+                            )
+                        )
+                        self._buses[bus].qpy_block_stack[0].append_component(
+                            component=QPyInstructions.Jmp(f"@after_other_max_duration_{idx}")
+                        )
+
             self._buses[bus].static_duration += 4
             self._buses[bus].qpy_sequence._program.compile()
 
@@ -264,8 +481,10 @@ class QbloxCompiler:
         Returns:
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
-
-        return {bus: BusCompilationInfo() for bus in self._qprogram.buses}
+        if not self._qblox_buses:
+            self._qblox_buses = list(self._qprogram.buses)
+            return {bus: BusCompilationInfo() for bus in self._qprogram.buses}
+        return {bus: BusCompilationInfo() for bus in self._qprogram.buses if bus in self._qblox_buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         """Append waveforms to Sequence's Waveforms of the given bus.
@@ -335,9 +554,6 @@ class QbloxCompiler:
             iterations.append(iters)
         iterations = min(iterations)
 
-        # iterations = min(QbloxCompiler._calculate_iterations(loop.start, loop.stop, loop.step) for loop in element.loops)
-        # loops = [(QbloxCompiler._convert_for_loop_values(for_loop=loop, operation=QbloxCompiler._get_reference_operation_of_loop(element)))[:2]) for loop in element.loops]
-
         for bus in self._buses:
             qpy_loop = QPyProgram.IterativeLoop(
                 name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=loops
@@ -368,6 +584,10 @@ class QbloxCompiler:
     def _handle_for_loop(self, element: ForLoop):
         operation = QbloxCompiler._get_reference_operation_of_loop(element)
         start, step, iterations = QbloxCompiler._convert_for_loop_values(element, operation)
+        if element.variable.domain == Domain.Time and element.stop > INST_MAX_WAIT:
+            self._long_wait_dynamic = True
+        self._max_wait_dynamic = int(element.stop)
+
         for bus in self._buses:
             qpy_loop = QPyProgram.IterativeLoop(
                 name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=[(start, step)]
@@ -382,6 +602,9 @@ class QbloxCompiler:
         raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
 
     def _handle_set_frequency(self, element: SetFrequency):
+        if element.bus not in self._qblox_buses:
+            return
+
         convert = QbloxCompiler._convert_value(element)
         frequency = (
             self._buses[element.bus].variable_to_register[element.frequency]
@@ -399,6 +622,9 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_phase(self, element: SetPhase):
+        if element.bus not in self._qblox_buses:
+            return
+
         convert = QbloxCompiler._convert_value(element)
         phase = (
             self._buses[element.bus].variable_to_register[element.phase]
@@ -409,10 +635,24 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_reset_phase(self, element: ResetPhase):
+        if element.bus not in self._qblox_buses:
+            return
+
         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.ResetPh())
         self._buses[element.bus].upd_param_instruction_pending = True
 
+    def _handle_latch_rst(self, bus: str, duration: int):
+        self._buses[bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.LatchRst(wait_time=duration)
+        )
+        self._buses[bus].marked_for_sync = True
+        self._buses[bus].duration_since_sync += duration
+        self._buses[bus].static_duration += duration
+
     def _handle_set_gain(self, element: SetGain):
+        if element.bus not in self._qblox_buses:
+            return
+
         convert = QbloxCompiler._convert_value(element)
         gain = (
             self._buses[element.bus].variable_to_register[element.gain]
@@ -429,6 +669,9 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset):
+        if element.bus not in self._qblox_buses:
+            return
+
         convert = QbloxCompiler._convert_value(element)
         offset_0 = (
             self._buses[element.bus].variable_to_register[element.offset_path0]
@@ -452,25 +695,247 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_markers(self, element: SetMarkers):
+        if element.bus not in self._qblox_buses:
+            return
+
         marker_outputs = int(element.mask, 2)
         self._buses[element.bus].qpy_block_stack[-1].append_component(
             component=QPyInstructions.SetMrk(marker_outputs=marker_outputs)
         )
         self._buses[element.bus].upd_param_instruction_pending = True
 
+    def _handle_set_trigger(self, element: SetTrigger):
+        if element.bus not in self._qblox_buses:
+            return
+
+        mask = self._markers[element.bus] if self._markers is not None and element.bus in self._markers else "0000"
+        if not element.outputs:
+            raise ValueError("Missing qblox trigger outputs at qp.set_trigger.")
+        for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
+            if int(mask, 2) > 0:
+                output_map = {1: 3, 2: 2}
+                if output not in output_map:
+                    raise ValueError("RF modules only have 2 trigger outputs, either 1 or 2")
+            else:
+                output_map = {1: 3, 2: 2, 3: 1, 4: 0}
+                if output not in output_map:
+                    raise ValueError("Low frequency modules only have 4 trigger outputs, out of range")
+
+            markers = list(mask)
+            markers[output_map[output]] = "1"
+
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetMrk(marker_outputs=int("".join(markers), 2))
+        )
+        self._buses[element.bus].upd_param_instruction_pending = True
+
+        for bus in self._buses:
+            self._handle_wait(element=Wait(bus=bus, duration=element.duration), delay=True)
+
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetMrk(marker_outputs=int(mask, 2))
+        )
+        self._buses[element.bus].upd_param_instruction_pending = True
+
     def _handle_wait(self, element: Wait, delay: bool = False):
+        if element.bus not in self._qblox_buses:
+            return
+
         duration: QPyProgram.Register | int
         if isinstance(element.duration, Variable):
-            duration = self._buses[element.bus].variable_to_register[element.duration]
-            self._buses[element.bus].dynamic_durations.append(element.duration)
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Wait(wait_time=duration)
-            )
+            if self._buses[element.bus].marked_for_dynamic_sync is True:
+                raise NotImplementedError(
+                    "It is not currently not possible to have two dynamic wait without a sync in between them."
+                )
+            buses = set(self._buses)
+            if not isinstance(element.duration, VariableExpression):
+                for bus in buses:
+                    if self._buses[bus].dynamic_duration_register is None:
+                        self._buses[bus].dynamic_duration_register = self._buses[bus].variable_to_register[
+                            element.duration
+                        ]
+                if element.duration not in self._buses[element.bus].dynamic_durations:
+                    self._buses[element.bus].dynamic_durations.append(element.duration)
+
+                if self._long_wait_dynamic:
+                    for bus in buses:
+                        if self._long_wait_dynamic_idx == 0:
+                            self._buses[bus].wait_chunk_duration_register = QPyProgram.Register()
+
+                        if self._buses[bus].dynamic_durations:
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Move(
+                                    self._buses[bus].dynamic_duration_register,
+                                    self._buses[bus].wait_chunk_duration_register,
+                                )
+                            )
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Jge(
+                                    self._buses[bus].dynamic_duration_register,
+                                    INST_MAX_WAIT,
+                                    f"@long_wait_{self._long_wait_dynamic_idx}",
+                                )
+                            )
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Wait(self._buses[bus].dynamic_duration_register)
+                            )
+                            self._buses[bus].qpy_block_stack[-1]._append_block(
+                                QPyProgram.Block(f"continue_after_long_wait_{self._long_wait_dynamic_idx}")
+                            )
+
+                    self._long_wait_dynamic_idx += 1
+
+                else:
+                    self._buses[element.bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Wait(wait_time=self._buses[element.bus].dynamic_duration_register)
+                    )
+
+            else:
+                self._buses[element.bus].dynamic_expression_register = QPyProgram.Register()
+
+                # Retrieve the uuid of the variable instead of the whole expression
+                variable_duration = element.duration.extract_variables()
+                variable_duration_register = self._buses[element.bus].variable_to_register[variable_duration]
+                constant_duration = element.duration.extract_constants()
+                if variable_duration not in self._buses[element.bus].dynamic_durations:
+                    self._buses[element.bus].dynamic_durations.append(variable_duration)
+
+                if element.duration.operator == "+":
+                    self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                    self._buses[element.bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Add(
+                            variable_duration_register,
+                            constant_duration,
+                            self._buses[element.bus].dynamic_expression_register,
+                        )
+                    )
+                    self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                    self._max_wait_dynamic = self._max_wait_dynamic + constant_duration
+
+                    if self._max_wait_dynamic > INST_MAX_WAIT:
+                        # TODO: this can lead to redundancies, for example if you wait a long wait and then a short wait; the second is also treated as a long wait
+                        self._long_wait_dynamic = True
+                    else:
+                        self._buses[element.bus].qpy_block_stack[-1].append_component(
+                            component=QPyInstructions.Wait(self._buses[element.bus].dynamic_expression_register)
+                        )
+
+                elif element.duration.operator == "-":
+                    if isinstance(element.duration.right, Variable):  # CST - Time
+                        constant_duration_register = QPyProgram.Register()
+                        self._buses[element.bus].qpy_block_stack[-1].append_component(
+                            component=QPyInstructions.Move(constant_duration, constant_duration_register)
+                        )
+                        self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                        self._buses[element.bus].qpy_block_stack[-1].append_component(
+                            component=QPyInstructions.Sub(
+                                constant_duration_register,
+                                variable_duration_register,
+                                self._buses[element.bus].dynamic_expression_register,
+                            )
+                        )
+                    else:  # Time - CST
+                        self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                        self._buses[element.bus].qpy_block_stack[-1].append_component(
+                            component=QPyInstructions.Sub(
+                                variable_duration_register,
+                                constant_duration,
+                                self._buses[element.bus].dynamic_expression_register,
+                            )
+                        )
+
+                    self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                    if not self._long_wait_dynamic:
+                        self._buses[element.bus].qpy_block_stack[-1].append_component(
+                            component=QPyInstructions.Wait(self._buses[element.bus].dynamic_expression_register)
+                        )
+                if self._long_wait_dynamic:
+                    dynamic_long_duration_register = self._buses[element.bus].dynamic_expression_register
+                    for bus in buses:
+                        if self._long_wait_dynamic_idx == 0:
+                            self._buses[bus].wait_chunk_duration_register = QPyProgram.Register()
+
+                        if self._buses[bus].dynamic_durations:
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Move(
+                                    dynamic_long_duration_register, self._buses[bus].wait_chunk_duration_register
+                                )
+                            )
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Jge(
+                                    dynamic_long_duration_register,
+                                    INST_MAX_WAIT,
+                                    f"@long_wait_{self._long_wait_dynamic_idx}",
+                                )
+                            )
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Wait(dynamic_long_duration_register)
+                            )
+                            self._buses[bus].qpy_block_stack[-1]._append_block(
+                                QPyProgram.Block(f"continue_after_long_wait_{self._long_wait_dynamic_idx}")
+                            )
+
+                    self._long_wait_dynamic_idx += 1
+
+                # the other buses also need to replicate this operation to be tracking correctly for the dynamic syncs
+                for bus in buses:
+                    if bus != element.bus:
+                        if self._buses[bus].dynamic_expression_register is None:
+                            self._buses[bus].dynamic_expression_register = QPyProgram.Register()
+
+                        variable_duration_register = self._buses[bus].variable_to_register[variable_duration]
+
+                        if element.duration.operator == "+":
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Add(
+                                    variable_duration_register,
+                                    constant_duration,
+                                    self._buses[bus].dynamic_expression_register,
+                                )
+                            )
+
+                        elif element.duration.operator == "-":
+                            if isinstance(element.duration.right, Variable):  # CST - Time
+                                constant_duration_register = QPyProgram.Register()
+                                self._buses[bus].qpy_block_stack[-1].append_component(
+                                    component=QPyInstructions.Move(constant_duration, constant_duration_register)
+                                )
+                                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                                self._buses[bus].qpy_block_stack[-1].append_component(
+                                    component=QPyInstructions.Sub(
+                                        constant_duration_register,
+                                        variable_duration_register,
+                                        self._buses[bus].dynamic_expression_register,
+                                    )
+                                )
+
+                            else:  # Time - CST
+                                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                                self._buses[bus].qpy_block_stack[-1].append_component(
+                                    component=QPyInstructions.Sub(
+                                        variable_duration_register,
+                                        constant_duration,
+                                        self._buses[bus].dynamic_expression_register,
+                                    )
+                                )
+
+                        self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                    self._buses[bus].has_pending_dynamic_expression = True
+
+            self._buses[element.bus].marked_for_dynamic_sync = True
+            self._time_loop_counter += 1
+
         else:
             convert = QbloxCompiler._convert_value(element)
             duration = convert(element.duration)
             if not delay:
                 self._buses[element.bus].static_duration += duration
+                self._buses[element.bus].duration_since_sync += duration
             # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
             self._handle_add_waits(bus=element.bus, duration=duration)
 
@@ -478,6 +943,7 @@ class QbloxCompiler:
 
     def _handle_add_waits(self, bus: str, duration: int):
         """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
+        If the previous instruction was a wait and the current one as well and the sum of both wait is below INST_MAX_WAIT they get combined into one in order to reduce the number of Q1ASM lines.
 
         Args:
             element (Wait): wait element
@@ -485,7 +951,8 @@ class QbloxCompiler:
         """
 
         if self._buses[bus].upd_param_instruction_pending:
-            if 4 < duration < 8:  # you cannot play an update param and then a wait bc both have a minimum of 4
+            # you cannot play an `update_param` and then a `wait` because both have a minimum of 4
+            if 4 < duration < 8:
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
             else:
                 self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
@@ -502,16 +969,126 @@ class QbloxCompiler:
             self._buses[bus].upd_param_instruction_pending = False
 
         else:  # no instructions pending
+            remainder = duration % INST_MAX_WAIT
+            long_wait = False
             if duration > INST_MAX_WAIT:
-                for _ in range(duration // INST_MAX_WAIT):
+                long_wait = True
+                for iteration in range(duration // INST_MAX_WAIT):
+                    if iteration == (duration // INST_MAX_WAIT) - 1 and 0 <= remainder < INST_MIN_WAIT:  # handle the remainder at the last iteration if below 4
+                        if remainder == 0:
+                            self._buses[bus].qpy_block_stack[-1].append_component(
+                                component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                            )
+                        else:
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_time=(INST_MAX_WAIT + remainder) - INST_MIN_WAIT))
+                            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Wait(wait_time=INST_MIN_WAIT))
+                            remainder = 0
+
+                        break
+
                     self._buses[bus].qpy_block_stack[-1].append_component(
                         component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
                     )
-            self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Wait(wait_time=duration % INST_MAX_WAIT)
-            )
+
+            if duration == INST_MAX_WAIT:
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                    )
+
+            #  Combine two waits together if possible
+            combined_duration_flag = False  # Flag to determine if the wait has already been added by combining two waits
+            if long_wait is False:
+                block_components = self._buses[bus].qpy_block_stack[-1].components
+                if block_components and isinstance(block_components[-1], QPyInstructions.Wait):  # Check if the previous element was a wait
+                    combined_duration = block_components[-1].duration + remainder
+                    if combined_duration <= INST_MAX_WAIT:
+                        block_components[-1] = QPyInstructions.Wait(wait_time=combined_duration)  # overwrite the previous wait to combine with the current
+                        combined_duration_flag = True
+
+            if remainder >= INST_MIN_WAIT and combined_duration_flag is False:
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Wait(wait_time=remainder)
+                )
+
+    def _handle_wait_trigger(self, element: WaitTrigger):
+        if element.bus not in self._qblox_buses:
+            return
+
+        duration: QPyProgram.Register | int
+        convert = QbloxCompiler._convert_value(element)
+        duration = convert(element.duration)
+
+        if isinstance(element.duration, Variable):
+            raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
+
+        if not self._ext_trigger:
+            raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
+
+        # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
+        self._handle_add_trigger_waits(bus=element.bus, duration=duration, port=element.port)
+
+    def _handle_add_trigger_waits(self, bus: str, duration: int, port: int | None):
+        """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
+
+        Args:
+            bus (str): wait element
+            duration (int): duration to wait in ns
+        """
+        if not port:
+            port = EXT_TRIGGER_ADDRESS
+        if self._buses[bus].upd_param_instruction_pending:
+            if (
+                4 <= duration and duration <= 8
+            ):  # you cannot play an update param and then a wait bc both have a minimum of 4
+                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(duration))
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.WaitTrigger(address=port, wait_time=4)
+                )
+            else:
+                self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.UpdParam(4))
+                duration -= 4
+                if duration <= INST_MAX_WAIT:
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.WaitTrigger(address=port, wait_time=duration)
+                    )
+                else:
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.WaitTrigger(address=port, wait_time=4)
+                    )
+                    duration -= 4
+                    for _ in range((duration // INST_MAX_WAIT) + 1):
+                        self._buses[bus].qpy_block_stack[-1].append_component(
+                            component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                        )
+            self._buses[bus].upd_param_instruction_pending = False
+
+        else:  # no instructions pending
+            if duration <= INST_MAX_WAIT:
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.WaitTrigger(address=port, wait_time=duration)
+                )
+            else:
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.WaitTrigger(address=port, wait_time=4)
+                )
+                duration -= 4
+                for _ in range((duration // INST_MAX_WAIT) + 1):
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Wait(wait_time=INST_MAX_WAIT)
+                    )
+
+        # Sync all other buses with WaitSync
+        for sync_bus in self._buses:
+            self._buses[sync_bus].qpy_block_stack[-1].append_component(component=QPyInstructions.WaitSync(wait_time=4))
+
+            # After wait sync reset static duration
+            self._buses[sync_bus].marked_for_sync = False
+            self._buses[sync_bus].static_duration = 0
 
     def _handle_sync(self, element: Sync, delay: bool = False):
+        if element.buses and any(bus not in self._qblox_buses for bus in element.buses):
+            raise ValueError("Non QBLOX buses not allowed inside sync function")
+
         # Get the buses involved in the sync operation.
         buses = set(element.buses or self._buses)
 
@@ -520,39 +1097,242 @@ class QbloxCompiler:
             return
 
         # If there is no bus marked for sync, return.
-        if all(not self._buses[bus].marked_for_sync for bus in buses):
+        if all(not self._buses[bus].marked_for_sync and not self._buses[bus].marked_for_dynamic_sync for bus in buses):
             return
 
         # Is there any bus that has dynamic durations?
-        if any(bus for bus in buses if self._buses[bus].dynamic_durations or self._buses[bus].sync_durations):
-            # If yes, we must add a sync block that calculates the difference between buses dynamically.
-            # But the following doesn't work unfortunetely, so raise an error for now.
-            self.__handle_dynamic_sync(buses=buses)
+        if any(self._buses[bus].marked_for_dynamic_sync for bus in buses):
+            self._handle_dynamic_sync(buses=buses, include_delay=delay)
         else:
             # If no, calculating the difference is trivial.
-            self.__handle_static_sync(buses=buses, delay=delay)
+            self._handle_static_sync(buses=buses, include_delay=delay)
 
-        # In any case, mark al buses as synced.
+        # In any case, mark all buses as synced.
         for bus in buses:
             self._buses[bus].marked_for_sync = False
+            self._buses[bus].marked_for_dynamic_sync = False
+            self._buses[bus].duration_since_sync = 0
 
-    def __handle_static_sync(self, buses: set[str], delay: bool = False):
-        max_duration = max(self._buses[bus].static_duration for bus in buses)
-        if delay:
-            max_delay = max(self._buses[bus].delay for bus in buses)
+    def _handle_static_sync(self, buses: set[str], include_delay: bool = False):
+        """
+        Equalize durations across buses when there are no dynamic waits pending. If self._time_loop_counter == 0, we equalize on `static_duration`.
+        Otherwise, we equalize on `duration_since_sync`.
+        If include_delay is True, we also align each bus's delay so the  total (duration + delay) is matched.
+        """
+        duration_attr = "static_duration" if self._time_loop_counter == 0 else "duration_since_sync"
+        max_duration = max(getattr(self._buses[bus], duration_attr) for bus in buses)
+        max_delay = max(self._buses[bus].delay for bus in buses) if include_delay else 0
         for bus in buses:
-            if delay:
-                delay_diff = max_delay - self._buses[bus].delay
-                duration_diff = max_duration - self._buses[bus].static_duration + delay_diff
-            else:
-                duration_diff = max_duration - self._buses[bus].static_duration
+            current_duration = getattr(self._buses[bus], duration_attr)
+            delay_diff = (max_delay - self._buses[bus].delay) if include_delay else 0
+            duration_diff = (max_duration - current_duration) + delay_diff
             if duration_diff > 0:
-                # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
                 self._handle_add_waits(bus=bus, duration=duration_diff)
-                self._buses[bus].static_duration += duration_diff
+                # Only update static_duration once; if duration_attr == duration_since_sync, do not
+                # increment static_duration (it represents total compiled time).
+                if duration_attr == "static_duration":
+                    self._buses[bus].static_duration += duration_diff
+                else:
+                    for non_synced_bus in self._buses:  # Add a negative penalty for a bus that was not synced with the others
+                        if non_synced_bus not in buses:
+                            self._buses[non_synced_bus].duration_since_sync += - max_duration
+                    self._buses[bus].duration_since_sync += duration_diff
 
-    def __handle_dynamic_sync(self, buses: set[str]):
-        raise NotImplementedError("Dynamic syncing is not implemented yet.")
+    def _handle_dynamic_sync(self, buses: set[str], include_delay: bool = False):
+        #  TODO: Implement the case where two buses use the time variable - this will require an additional check similar to the one currently done between the maximum time of the other buses (now we ocmpare the max static and the dynamic,
+        #  but when two buses will be dynamic we need to find the max dynamic before the max static/dynamic)
+        #  TODO using two times a variable wait is ok but a sync between them is required for now
+        # Add delay if needed
+        for bus in buses:
+            if self._buses[bus].duration_since_sync < 0:  # If a penalty has been added in static sync, handle it as a standalone wait
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                QPyInstructions.Wait(abs(self._buses[bus].duration_since_sync))
+            )
+                self._buses[bus].duration_since_sync = 0
+            max_delay = max(self._buses[bus].delay for bus in buses) if include_delay else 0
+            delay_diff = (max_delay - self._buses[bus].delay) if include_delay else 0
+            if delay_diff > 0:
+                self._handle_add_waits(bus=bus, duration=delay_diff)
+                self._buses[bus].duration_since_sync += delay_diff
+
+        # Find the dynamic bus
+        count_dynamic_bus = 0
+        for bus in buses:
+            if self._buses[bus].dynamic_durations:
+                dynamic_bus = bus
+                count_dynamic_bus += 1
+                if count_dynamic_bus >= 2:
+                    raise NotImplementedError(
+                        "More than 2 buses have a dynamic duration, which is not yet implemented."
+                    )
+
+        for bus in buses:
+            if self._buses[bus].dynamic_sync_counter == 0:
+                self._buses[bus].max_other_static_duration_register = QPyProgram.Register()
+                self._buses[bus].dynamic_plus_static_duration_register = QPyProgram.Register()
+                self._buses[bus].delta_to_target_duration_register = QPyProgram.Register()
+                if not self._buses[bus].dynamic_durations:
+                    self._buses[bus].max_other_total_duration_register = QPyProgram.Register()
+
+            #  Get the max static duration of the other buses
+            max_bus = max(
+                (bus_other for bus_other in buses if bus_other != bus),
+                key=lambda bus_other: self._buses[bus_other].duration_since_sync,
+            )
+            max_static = self._buses[max_bus].duration_since_sync
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                QPyInstructions.Move(max_static, self._buses[bus].max_other_static_duration_register)
+            )
+
+            # Compute the duration of the dynamic bus
+            static_duration_dynamic_bus = self._buses[dynamic_bus].duration_since_sync
+
+            if self._buses[bus].dynamic_durations:
+                # TODO if the dynamic bus has the longest static duration, Q1ASM can be further simplified, no need for any comparison
+                # TODO the Q1ASM can be simplified by checking if the static duration is 0 before using it
+                if self._buses[bus].has_pending_dynamic_expression:
+                    self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        QPyInstructions.Add(
+                            self._buses[bus].dynamic_expression_register,
+                            static_duration_dynamic_bus,
+                            self._buses[bus].dynamic_plus_static_duration_register,
+                        )
+                    )
+                    self._buses[bus].has_pending_dynamic_expression = False
+
+                else:
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        QPyInstructions.Add(
+                            self._buses[bus].dynamic_duration_register,
+                            static_duration_dynamic_bus,
+                            self._buses[bus].dynamic_plus_static_duration_register,
+                        )
+                    )
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
+
+                # Maximum duration of the other buses - Duration of this bus
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    QPyInstructions.Sub(
+                        self._buses[bus].max_other_static_duration_register,
+                        self._buses[bus].dynamic_plus_static_duration_register,
+                        self._buses[bus].delta_to_target_duration_register,
+                    )
+                )
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
+
+                # Check the sign of the bus difference, this is done comparing with 147483648 (2**31), anything above it is negative in two's complement (MSB is 1)
+                # NEG_ONE_TO_THREE (4294967293) is -3 in two's complement
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    QPyInstructions.Jlt(
+                        self._buses[bus].delta_to_target_duration_register,
+                        SIGN_BIT,
+                        f"@dynamic_sync_{self._buses[bus].dynamic_sync_counter}",
+                    )
+                )
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    QPyInstructions.Jge(
+                        self._buses[bus].delta_to_target_duration_register,
+                        NEG_ONE_TO_THREE,
+                        f"@negative_one_two_three_{self._buses[bus].dynamic_sync_counter}",
+                    )
+                )  # Check if the difference is -1, -2 or -3
+
+            else:
+                current_bus_duration_register = QPyProgram.Register()
+
+                if self._buses[bus].has_pending_dynamic_expression:
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        QPyInstructions.Add(
+                            self._buses[bus].dynamic_expression_register,
+                            static_duration_dynamic_bus,
+                            self._buses[bus].dynamic_plus_static_duration_register,
+                        )
+                    )
+                    self._buses[bus].has_pending_dynamic_expression = False
+
+                else:
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        QPyInstructions.Add(
+                            self._buses[bus].dynamic_duration_register,
+                            static_duration_dynamic_bus,
+                            self._buses[bus].dynamic_plus_static_duration_register,
+                        )
+                    )
+
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
+
+                # Check which of the other buses has the longest duration (this check is needed in the Q1ASM as at least one bus will have dynamic duration)
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    QPyInstructions.Sub(
+                        self._buses[bus].max_other_static_duration_register,
+                        self._buses[bus].dynamic_plus_static_duration_register,
+                        self._buses[bus].max_other_total_duration_register,
+                    )
+                )
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    QPyInstructions.Jlt(
+                        self._buses[bus].max_other_total_duration_register,
+                        SIGN_BIT,
+                        f"@other_max_duration_{self._buses[bus].dynamic_sync_counter}",
+                    )
+                )
+
+                # If the Jlt condition is not met, the dynamic bus has the longest duration of the other bus
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    QPyInstructions.Move(
+                        self._buses[bus].dynamic_plus_static_duration_register,
+                        self._buses[bus].max_other_total_duration_register,
+                    )
+                )
+
+                #  Add the block to label to continue after the comparison
+                self._buses[bus].qpy_block_stack[-1]._append_block(
+                    QPyProgram.Block(name=f"after_other_max_duration_{self._buses[bus].dynamic_sync_counter}")
+                )
+
+                #  Move the static duration of the current bus to a register
+                static_duration_current_bus = self._buses[bus].duration_since_sync
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    QPyInstructions.Move(static_duration_current_bus, current_bus_duration_register)
+                )
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
+
+                # This part is the same for the dynamic bus
+                # Maximum duration of the other buses - Duration of this bus
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    QPyInstructions.Sub(
+                        self._buses[bus].max_other_total_duration_register,
+                        current_bus_duration_register,
+                        self._buses[bus].delta_to_target_duration_register,
+                    )
+                )
+                self._buses[bus].qpy_block_stack[-1].append_component(QPyInstructions.Nop())
+
+                # Check the sign of the bus difference, this is done comparing with SIGN_BIT (2**31), anything above it is negative in two's complement (MSB is 1)
+                # NEG_ONE_TO_THREE (4294967293) is -3 in two's complement
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    QPyInstructions.Jlt(
+                        self._buses[bus].delta_to_target_duration_register,
+                        SIGN_BIT,
+                        f"@dynamic_sync_{self._buses[bus].dynamic_sync_counter}",
+                    )
+                )
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    QPyInstructions.Jge(
+                        self._buses[bus].delta_to_target_duration_register,
+                        NEG_ONE_TO_THREE,
+                        f"@negative_one_two_three_{self._buses[bus].dynamic_sync_counter}",
+                    )
+                )  # Check if the difference is -1, -2 or -3
+
+            # Add the block to label to continue after the comparison
+            self._buses[bus].qpy_block_stack[-1]._append_block(
+                QPyProgram.Block(name=f"after_dynamic_sync_{self._buses[bus].dynamic_sync_counter}")
+            )
+
+            self._buses[bus].dynamic_sync_counter += 1
 
     def _handle_measure(self, element: Measure):
         """Wrapper for qblox play and acquire methods to be called in a single operation for consistency with QuantumMachines
@@ -561,6 +1341,9 @@ class QbloxCompiler:
         Args:
             element (Measure): measure operation
         """
+        if element.bus not in self._qblox_buses:
+            return
+
         time_of_flight = self._buses[element.bus].time_of_flight
         play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
         acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
@@ -568,72 +1351,125 @@ class QbloxCompiler:
         self._handle_acquire(acquire)
 
     def _handle_acquire(self, element: Acquire):
+        if element.bus not in self._qblox_buses:
+            return
+
         # TODO: unify with measure when time of flight is implemented
         loops = [
             (i, loop)
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
             if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
-        shape = tuple(loop[1].iterations for loop in loops)
-        num_bins = math.prod(loop[1].iterations for loop in loops)
-        acquisition_name = f"acquisition_{self._buses[element.bus].next_acquisition_index}"
-        self._buses[element.bus].qpy_sequence._acquisitions.add(
-            name=acquisition_name,
-            num_bins=num_bins,
-            index=self._buses[element.bus].next_acquisition_index,
-        )
-        self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
-            bus=element.bus, save_adc=element.save_adc, shape=shape
-        )
 
-        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
+        block_index_for_add_instruction = loops[-1][0] if loops else -1
+        block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
 
-        if num_bins == 1:
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.AcquireWeighed(
-                    acq_index=self._buses[element.bus].next_acquisition_index,
-                    bin_index=self._buses[element.bus].next_bin_index,
-                    weight_index_0=index_I,
-                    weight_index_1=index_Q,
-                    wait_time=integration_length,
+        if self._buses[element.bus].count_nested_level_acquire > MAX_ACQUISITION_INDEX:
+            raise ValueError(f"Acquisition index {self._buses[element.bus].count_nested_level_acquire} exceeds maximum of {MAX_ACQUISITION_INDEX}.")
+
+        # if it is the first acquire at this nested level, set everything up
+        if self._buses[element.bus].count_nested_level_acquire != self._buses[element.bus].prev_nested_level_acquire:
+            self._buses[element.bus].shape_acquire = tuple(loop[1].iterations for loop in loops)
+            self._buses[element.bus].num_bins_per_acquire = math.prod(loop[1].iterations for loop in loops)
+
+            # total nb of bins is number of acquire x numbers of bins by acquire (for each nested level)
+            self._buses[element.bus].num_bins_total = int(self._buses[element.bus].counter_acquire * self._buses[element.bus].num_bins_per_acquire)
+            acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
+            self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(bus=element.bus, save_adc=element.save_adc, shape=self._buses[element.bus].shape_acquire, intertwined=self._buses[element.bus].counter_acquire)
+            self._buses[element.bus].qpy_sequence._acquisitions.add(
+                name=acquisition_name,
+                num_bins=self._buses[element.bus].num_bins_total,
+                index=self._buses[element.bus].count_nested_level_acquire,
+            )
+
+            # using registers is required if the bins are greater than 1
+            if self._buses[element.bus].num_bins_per_acquire > 1:
+                self._buses[element.bus].bin_register = QPyProgram.Register()
+
+                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                    component=QPyInstructions.Move(var=0, register=self._buses[element.bus].bin_register),
+                    bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
                 )
-            )
-        else:
-            bin_register = QPyProgram.Register()
-            block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
-            block_index_for_add_instruction = loops[-1][0] if loops else -1
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
-            )
-            register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=index_I, register=register_I),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
-            )
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=index_Q, register=register_Q),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
-            )
+
+        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, element.weights)
+
+        # using registers is required if the bins are greater than 1
+        if self._buses[element.bus].num_bins_per_acquire > 1:
+            register_I = self._get_or_create_weight_register(element.bus, index_I, block_index_for_move_instruction)
+            register_Q = self._get_or_create_weight_register(element.bus, index_Q, block_index_for_move_instruction)
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.AcquireWeighed(
-                    acq_index=self._buses[element.bus].next_acquisition_index,
-                    bin_index=bin_register,
+                    acq_index=self._buses[element.bus].count_nested_level_acquire,
+                    bin_index=self._buses[element.bus].bin_register,
                     weight_index_0=register_I,
                     weight_index_1=register_Q,
                     wait_time=integration_length,
                 )
             )
             self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
-                component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
+                component=QPyInstructions.Add(origin=self._buses[element.bus].bin_register, var=1, destination=self._buses[element.bus].bin_register)
             )
+        else:  # if only 1 bin, the use of register can be avoided
+
+            if self._buses[element.bus].prev_nested_level_acquire != self._buses[element.bus].count_nested_level_acquire:  # reset the bin index if new depth level
+                self._buses[element.bus].single_bin_counter = 0
+
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.AcquireWeighed(
+                    acq_index=self._buses[element.bus].count_nested_level_acquire,
+                    bin_index=self._buses[element.bus].single_bin_counter,
+                    weight_index_0=index_I,
+                    weight_index_1=index_Q,
+                    wait_time=integration_length,
+                )
+            )
+            self._buses[element.bus].single_bin_counter += 1
+
         self._buses[element.bus].static_duration += integration_length
-        self._buses[element.bus].next_bin_index = 0  # maybe this counter can be removed completely
-        self._buses[element.bus].next_acquisition_index += 1
+        self._buses[element.bus].duration_since_sync += integration_length
         self._buses[element.bus].marked_for_sync = True
+        self._buses[element.bus].prev_nested_level_acquire = self._buses[element.bus].count_nested_level_acquire
         self._buses[element.bus].upd_param_instruction_pending = False
 
+    def _handle_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
+        # The conditional does not add any static duration as it is assumed that the operations contained within are the same as the else_duration of the conditional
+
+        self._buses[bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetCond(enable, mask, operator, else_duration)
+        )
+
+        self._buses[bus].marked_for_sync = True
+
+    def _handle_measure_reset(self, element: MeasureReset):
+        """Executes a measurement followed by active reset in a single operation
+
+        Args:
+            element (MeasureReset): measure operation and perform active reset
+        """
+        wait_trigger_network = 400  # this is the time required by qblox trigger network to send a trigger;
+        # 400ns is conservative - the official guideline is 388ns between 2 modules
+
+        time_of_flight = self._buses[element.bus].time_of_flight
+        play = Play(bus=element.bus, waveform=element.waveform, wait_time=time_of_flight)
+        acquire = Acquire(bus=element.bus, weights=element.weights, save_adc=element.save_adc)
+        sync = Sync([element.bus, element.control_bus])
+        wait = Wait(bus=element.control_bus, duration=wait_trigger_network)
+        play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
+        mask = 2 ** (element.trigger_address - 1)
+
+        self._handle_latch_rst(bus=element.control_bus, duration=4)
+        self._handle_play(play)
+        self._handle_acquire(acquire)
+        self._handle_sync(sync)
+        self._handle_wait(wait)
+        self._handle_conditional(bus=element.control_bus, enable=ENABLE_CONDITIONAL, mask=mask, operator=AND_MASK_CONDITIONAL, else_duration=play_reset_pulse.waveform.get_duration(),)
+        self._handle_play(play_reset_pulse)
+        self._handle_conditional(bus=element.control_bus, enable=DISABLE_CONDITIONAL, mask=0, operator=0, else_duration=4)
+
     def _handle_play(self, element: Play):
+        if element.bus not in self._qblox_buses:
+            return
+
         waveform_I, waveform_Q = element.get_waveforms()
         waveform_variables = element.get_waveform_variables()
         if waveform_variables:
@@ -667,7 +1503,7 @@ class QbloxCompiler:
                 bus=element.bus, waveform_I=copied_waveform_I, waveform_Q=copied_waveform_Q
             )
             loop = QPyProgram.IterativeLoop(
-                name=f"square_{self._buses[element.bus].square_optimization_counter}", iterations=iterations
+                name=f"square_{self._buses[element.bus].waveform_optimization_counter}", iterations=iterations
             )
             loop.append_component(component=QPyInstructions.Play(index_I, index_Q, wait_time=chunk_duration))
             self._buses[element.bus].qpy_block_stack[-1].append_component(component=loop)
@@ -681,7 +1517,77 @@ class QbloxCompiler:
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Play(index_I, index_Q, wait_time=remainder)
                 )
-            self._buses[element.bus].square_optimization_counter += 1
+            self._buses[element.bus].waveform_optimization_counter += 1
+        elif (
+            isinstance(waveform_I, FlatTop)
+            and (waveform_Q is None or isinstance(waveform_Q, FlatTop))
+            and ((waveform_I.duration - (waveform_I.smooth_duration + waveform_I.buffer) * 2) >= 100)
+        ):
+            smooth_waveform_I: FlatTop = deepcopy(waveform_I)
+            smooth_waveform_Q: FlatTop | None = deepcopy(waveform_Q)
+            duration = smooth_waveform_I.duration
+            smooth_duration_I = (
+                smooth_waveform_I.smooth_duration + smooth_waveform_I.buffer
+                if smooth_waveform_I.smooth_duration + smooth_waveform_I.buffer > INST_MIN_WAIT
+                else INST_MIN_WAIT
+            )
+            square_duration = duration - smooth_duration_I * 2
+
+            inital_envelope_I = Arbitrary(samples=smooth_waveform_I.envelope()[:smooth_duration_I])
+            end_envelope_I = Arbitrary(samples=smooth_waveform_I.envelope()[-smooth_duration_I:])
+            inital_envelope_Q = None
+            end_envelope_Q = None
+
+            if isinstance(smooth_waveform_Q, FlatTop):
+                if (
+                    smooth_waveform_Q.smooth_duration + smooth_waveform_Q.buffer != smooth_duration_I
+                    and smooth_duration_I != INST_MIN_WAIT
+                ):
+                    raise ValueError("smooth_duration + buffer of both I and Q must be the same.")
+                inital_envelope_Q = Arbitrary(samples=smooth_waveform_Q.envelope()[:smooth_duration_I])
+                end_envelope_Q = Arbitrary(samples=smooth_waveform_Q.envelope()[-smooth_duration_I:])
+
+            index_I, index_Q, _ = self._append_to_waveforms_of_bus(
+                bus=element.bus, waveform_I=inital_envelope_I, waveform_Q=inital_envelope_Q
+            )
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Play(index_I, index_Q, wait_time=smooth_duration_I)
+            )
+
+            chunk_duration, iterations, remainder = QbloxCompiler.calculate_square_waveform_optimization_values(
+                square_duration
+            )
+            square_waveform_I = Square(amplitude=smooth_waveform_I.amplitude, duration=chunk_duration)
+            square_waveform_Q = None
+            if isinstance(smooth_waveform_Q, FlatTop):
+                square_waveform_Q = Square(amplitude=smooth_waveform_Q.amplitude, duration=chunk_duration)
+            index_I, index_Q, _ = self._append_to_waveforms_of_bus(
+                bus=element.bus, waveform_I=square_waveform_I, waveform_Q=square_waveform_Q
+            )
+            loop = QPyProgram.IterativeLoop(
+                name=f"square_{self._buses[element.bus].waveform_optimization_counter}", iterations=iterations
+            )
+            loop.append_component(component=QPyInstructions.Play(index_I, index_Q, wait_time=chunk_duration))
+            self._buses[element.bus].qpy_block_stack[-1].append_component(component=loop)
+            if remainder != 0:
+                square_waveform_I.duration = remainder
+                if isinstance(smooth_waveform_Q, FlatTop):
+                    square_waveform_Q.duration = remainder  # type: ignore [union-attr]
+                index_I, index_Q, _ = self._append_to_waveforms_of_bus(
+                    bus=element.bus, waveform_I=square_waveform_I, waveform_Q=square_waveform_Q
+                )
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Play(index_I, index_Q, wait_time=remainder)
+                )
+
+            index_I, index_Q, _ = self._append_to_waveforms_of_bus(
+                bus=element.bus, waveform_I=end_envelope_I, waveform_Q=end_envelope_Q
+            )
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Play(index_I, index_Q, wait_time=smooth_duration_I)
+            )
+
+            self._buses[element.bus].waveform_optimization_counter += 1
         else:
             index_I, index_Q, duration = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
@@ -690,8 +1596,31 @@ class QbloxCompiler:
                 component=QPyInstructions.Play(index_I, index_Q, wait_time=duration)
             )
         self._buses[element.bus].static_duration += duration
+        self._buses[element.bus].duration_since_sync += duration
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
+
+    def _get_or_create_weight_register(self, bus: str, weight_index: int, block_index: int) -> QPyProgram.Register:
+        """Create or Retrieve a register for the weight index of the acquisition
+            If it is the first weight index of this program with this value, then a new register is created and stored in the dictionary weight_index_to_register.
+            If not, the register can be retrieved from the dictionary weight_index_to_register
+        Args:
+            bus (str): Name of the bus.
+            weight_index (int): Weight index
+            block_index (int): Position in qpy_block_stack to move the Register
+        Returns:
+            register (QPyProgram.Register): register to use to store the weight_index of the acquisition
+        """
+        if weight_index in self._buses[bus].weight_index_to_register:
+            register = self._buses[bus].weight_index_to_register[weight_index]
+
+        else:  # no weight index with this value has been given before
+            self._buses[bus].weight_index_to_register[weight_index] = QPyProgram.Register()
+            register = self._buses[bus].weight_index_to_register[weight_index]
+            self._buses[bus].qpy_block_stack[block_index].append_component(
+                    component=QPyInstructions.Move(var=weight_index, register=register),
+                    bot_position=len(self._buses[bus].qpy_block_stack[block_index].components))
+        return register
 
     def _handle_block(self, element: Block):
         pass
@@ -747,6 +1676,7 @@ class QbloxCompiler:
             SetGain: lambda x: int(x * 32_767),
             SetOffset: lambda x: int(x * 32_767),
             Wait: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
+            WaitTrigger: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
             Play: lambda x: int(max(x, QbloxCompiler.minimum_wait_duration)),
         }
         return conversion_map.get(type(operation), lambda x: int(x))
@@ -759,7 +1689,7 @@ class QbloxCompiler:
         return f"{waveform.__class__.__name__} {hashes}"
 
     @staticmethod
-    def calculate_square_waveform_optimization_values(duration):
+    def calculate_square_waveform_optimization_values(duration: int):
         def remainder_conditions(chunk_duration):
             remainder = duration % chunk_duration
             return remainder, (chunk_duration >= 4 and (remainder == 0 or remainder >= 4))
@@ -771,6 +1701,9 @@ class QbloxCompiler:
                     if valid and condition_func(remainder):
                         return chunk_duration
             return None
+
+        # Make sure that duration ia an integer
+        duration = int(duration)
 
         # First try for remainder == 0
         final_chunk_duration = find_chunk_duration(lambda rem: rem == 0)

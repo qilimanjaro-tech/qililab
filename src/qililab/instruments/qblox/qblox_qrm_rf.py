@@ -15,13 +15,14 @@
 """This file contains the QbloxQCMRF class."""
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Sequence
 
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
+from qililab.instruments.qblox.qblox_filters import QbloxFilter
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 
 from .qblox_qrm import QbloxQRM
 
@@ -45,6 +46,10 @@ class QbloxQRMRF(QbloxQRM):
         out0_offset_path1: float
         out_offsets: list[float] = field(init=False, default_factory=list)
         out0_in0_lo_freq_cal_type_default: Optional[str] = "off"
+        filters: Sequence[QbloxFilter] = field(
+            init=False,
+            default_factory=list,  # QRM-RF module doesn't have filters
+        )
 
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
@@ -79,12 +84,13 @@ class QbloxQRMRF(QbloxQRM):
             sequencer.connect_acq("in0")
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Set a parameter of the Qblox QCM-RF module.
         Args:
             parameter (Parameter): Parameter name.
             value (float | str | bool): Value to set.
             channel_id (int, optional): ID of the sequencer. Defaults to None.
+            output_id (int): module id. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
             value = int(value)
@@ -92,12 +98,13 @@ class QbloxQRMRF(QbloxQRM):
 
         if parameter == Parameter.OUT0_ATT:
             value = int(value)
-            max_att = self.device._get_max_out_att_0()
-            if value > max_att:
-                raise Exception(
-                    f"`{Parameter.OUT0_ATT}` for this module cannot be higher than {max_att}dB.\n"
-                    "Please specify an attenuation level, multiple of 2, below this value."
-                )
+            if self.is_device_active():
+                max_att = self.device._get_max_out_att_0()
+                if value > max_att:
+                    raise Exception(
+                        f"`{Parameter.OUT0_ATT}` for this module cannot be higher than {max_att}dB.\n"
+                        "Please specify an attenuation level, multiple of 2, below this value."
+                    )
 
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
@@ -105,26 +112,30 @@ class QbloxQRMRF(QbloxQRM):
             if self.is_device_active():
                 self.device.set(parameter.value, value)
             return
-        super().set_parameter(parameter, value, channel_id)
+        super().set_parameter(parameter, value, channel_id, output_id)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
+    ):
         """Get a parameter of the Qblox QRM-RF module.
         Args:
             parameter (Parameter): Parameter name.
             value (float | str | bool): Value to set.
             channel_id (int, optional): ID of the sequencer. Defaults to None.
+            output_id (int): module id. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
             parameter = Parameter.OUT0_IN0_LO_FREQ
 
         if parameter in self.parameters:
             return getattr(self.settings, parameter.value)
-        return super().get_parameter(parameter, channel_id)
+        return super().get_parameter(parameter, channel_id, output_id)
 
     def to_dict(self):
         """Return a dict representation of an `QRM-RF` instrument."""
         dictionary = super().to_dict()
         dictionary.pop("out_offsets")
+        dictionary.pop("filters")
         return dictionary
 
     def calibrate_mixers(self, cal_type: str, channel_id: ChannelID | None = None):

@@ -8,42 +8,67 @@ from pathlib import Path
 from queue import Queue
 from types import MethodType
 from unittest.mock import MagicMock, create_autospec, patch
+import logging
 
 import numpy as np
 import pytest
 from qibo import gates
 from qibo.models import Circuit
+from qililab.data_management import build_platform as platform_build_platform
+from qililab.qprogram import QbloxCompilationOutput
+from qililab.qprogram.qdac_compiler import QdacCompilationOutput
+from qililab.qprogram.qprogram import QProgramCompilationOutput
 from qpysequence import Sequence, Waveforms
 from ruamel.yaml import YAML
-from tests.data import Galadriel, SauronQDevil, SauronQuantumMachines, SauronSpiRack, SauronYokogawa
+from tests.data import (
+    Galadriel,
+    SauronQDevil,
+    SauronQuantumMachines,
+    SauronSpiRack,
+    SauronYokogawa,
+)
+
 from tests.test_utils import build_platform
+
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
+from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
 from qililab.instrument_controllers import InstrumentControllers
+from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
-from qililab.instruments.quantum_machines import QuantumMachinesCluster
+from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import Calibration, Domain, Experiment, QProgram
+from qililab.qprogram import Calibration, Domain, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.result.database import get_db_manager
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
-from qililab.result.qprogram.quantum_machines_measurement_result import QuantumMachinesMeasurementResult
+from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
 
-
 @pytest.fixture(name="platform")
 def fixture_platform():
     return build_platform(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="platform_qblox_qdac")
+def fixture_platform_qblox_qdac():
+    return platform_build_platform(runcard="tests/runcards/qblox_and_qdac.yml")
+
+
+@pytest.fixture(name="platform_qm_qdac")
+def fixture_platform_qm_qdac():
+    return platform_build_platform(runcard="tests/runcards/qm_and_qdac.yml")
 
 
 @pytest.fixture(name="platform_quantum_machines")
@@ -95,6 +120,18 @@ def fixture_platform_with_orphan_digital_bus():
     # For Galadriel.runcard, a unique name like this won't exist in the main buses.
     return build_platform(runcard)
 
+@pytest.fixture(name="platform_galadriel_no_filter")
+def fixture_platform_galadriel_no_filter():
+    """
+    Platform fixture where a bus alias is defined in runcard.digital.buses
+    but not in the main runcard.buses list.
+    The input 'runcard' is a deepcopy from Galadriel.runcard.
+    """
+    # Start from base Galadriel runcard
+    runcard = copy.deepcopy(Galadriel.runcard)
+    del runcard["instruments"][0]["filters"]
+
+    return build_platform(runcard)
 
 @pytest.fixture(name="qblox_results")
 def fixture_qblox_results():
@@ -153,6 +190,16 @@ def fixture_qblox_results():
         },
     ]
 
+@pytest.fixture(name="raw_measurement_data_intertwined")
+def fixture_raw_measurement_data_intertwined() -> dict:
+    """Dictionary of raw measurement data as returned from QRM instruments."""
+    return {"bins": {"integration": {"path0": [1, 2, 3, 4], "path1": [5, 6, 7, 8]}, "threshold": [0.1, 0.2, 0.3, 0.4], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
+
+
+@pytest.fixture(name="raw_measurement_data_intertwined_scope")
+def fixture_raw_measurement_data_intertwinescope() -> dict:
+    """Dictionary of raw measurement data as returned from QRM instruments."""
+    return {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 2, 3, 4]}, "path1":{"data": [5, 6, 7, 8]}}}
 
 @pytest.fixture(name="flux_to_bus_topology")
 def get_flux_to_bus_topology():
@@ -242,8 +289,7 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):
             for bus, waveform in anneal_waveforms.items():
                 qp_anneal.play(bus=bus, waveform=waveform)
             qp_anneal.sync()
-            with qp_anneal.block():
-                qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
 
@@ -276,17 +322,22 @@ def get_anneal_qprogram_with_preparation(runcard, flux_to_bus_topology):
     shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
     with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
         with qp_anneal.average(num_averages):
-            with qp_anneal.block():
-                qp_anneal.play(bus="flux_line_phix_q0", waveform=preparation_wf)
-                qp_anneal.play(bus="flux_line_phiz_q0", waveform=preparation_wf)
+            qp_anneal.play(bus="flux_line_phix_q0", waveform=preparation_wf)
+            qp_anneal.play(bus="flux_line_phiz_q0", waveform=preparation_wf)
             qp_anneal.sync()
             for bus, waveform in anneal_waveforms.items():
                 qp_anneal.play(bus=bus, waveform=waveform)
             qp_anneal.sync()
-            with qp_anneal.block():
-                qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
+
+@pytest.fixture(name="qp_quantum_machine")
+def fixture_qp_quantum_machine() -> QProgram:
+    qp = QProgram()
+    qp.play(bus="drive_q0", waveform=Square(amplitude=1, duration=10))
+    qp.wait("drive_q0", 10)
+    return qp
 
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
@@ -302,6 +353,9 @@ class TestPlatformInitialization:
         assert isinstance(platform.instruments, Instruments)
         assert isinstance(platform.instrument_controllers, InstrumentControllers)
         assert isinstance(platform.buses, Buses)
+        assert isinstance(platform.qblox_active_filter_exponential, list)
+        assert isinstance(platform.qblox_active_filter_fir, bool)
+        assert isinstance(platform.qblox_alias_module, list)
         assert platform._connected_to_instruments is False
 
 
@@ -425,7 +479,7 @@ class TestPlatform:
 
     def test_set_bias_to_zero_without_crosstalk_raises_error(self, platform: Platform):
         """Test set_bias_to_zero function error without crosstalk."""
-        error_string = "Neither crosstalk matrix nor bus_list has been set"
+        error_string = "Crosstalk matrix has not been set"
         with pytest.raises(ValueError, match=error_string):
             platform.set_bias_to_zero()
 
@@ -452,6 +506,7 @@ class TestPlatform:
             ("flux_q0", Parameter.FLUX, 0.5),
         ],
     )
+    @pytest.mark.qm
     def test_set_parameter_no_instrument_connection_QM(self, bus: str, parameter: Parameter, value: float | str | bool):
         """Test platform raises and error if no instrument connection."""
         # Overwrite platform to use Quantum Machines:
@@ -531,6 +586,72 @@ class TestPlatform:
             assert bus is None
         else:
             assert bus in platform.buses
+
+    def test_get_filter(self, platform: Platform):
+        """Test Get filters"""
+        #  Check that the parameters can be retrieved by bus and by module
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_AMPLITUDE_0, output_id=0) == 0.7
+        assert platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_AMPLITUDE_0, output_id=0) == 0.7
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, output_id=0) == 200
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "enabled"
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_COEFF, output_id=0)== [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+        
+        #  Check that filters marked as delay_comp in the runcard have not been changed
+        assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=3) == "delay_comp"
+        assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0) == "delay_comp"
+
+        #  Check that the state of the filters have been updated to delaycomp as needed (even for modules without filters in the runcard)
+        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
+        assert platform.get_parameter(alias="flux_line_q2_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=2) == "delay_comp"
+        assert platform.get_parameter(alias="QRM_0", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM_0", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.FIR_STATE, output_id=1) == "delay_comp"
+        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
+
+    def test_set_filter(self, platform: Platform):
+        """Test Set filters"""
+        #  Check that the parameters can be set
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, value = True, output_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, output_id=0) == "enabled"
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, value = False, output_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, output_id=0) == "bypassed"
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
+
+    def test_update_qblox_filter_state_fir(self, platform_galadriel_no_filter: Platform):
+        """Test that the filter is created if needed"""
+        platform_galadriel_no_filter.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
+        assert platform_galadriel_no_filter.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
+        
+
+    def test_setting_filter_bypassed_give_warning(self, caplog, platform: Platform):
+        #  Check that setting a filter as bypassed will actually put/leave it as delay_comp if needed
+        platform.set_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=1)
+        with caplog.at_level(logging.WARNING):
+            platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1)
+            assert ("Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
+                in caplog.text)
+        assert platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
+
+        platform.set_parameter(alias="QCM", parameter=Parameter.FIR_STATE, value="bypassed", output_id=0)
+        with caplog.at_level(logging.WARNING):
+            platform.get_parameter(alias="QCM", parameter=Parameter.FIR_STATE, output_id=0)
+            assert ("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
+                in caplog.text)
+        assert platform.get_parameter(alias="QCM", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
+
+    def test_filter_parameter_with_wrong_output_id_raises_exception(self, platform: Platform):
+        """Test that setting a filter parameter with an output_id>max_output of the instrument raises an Exception."""
+        output_id = 10
+        with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
+            platform.set_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=output_id)
+
+        with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
+            platform.set_parameter(alias="QCM", parameter=Parameter.FIR_STATE, value="bypassed", output_id=output_id)
 
     def test_print_platform(self, platform: Platform):
         """Test print platform."""
@@ -732,12 +853,7 @@ class TestMethods:
         expected_error_message = "Bus with alias 'orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses' defined in Digital/Buses section of the Runcard, not found in main Buses section of the same Runcard."
 
         with pytest.raises(ValueError, match=re.escape(expected_error_message)):
-            platform.compile(
-                program=circuit,
-                num_avg=1000,
-                repetition_duration=200_000,
-                num_bins=1
-            )
+            platform.compile(program=circuit, num_avg=1000, repetition_duration=200_000, num_bins=1)
 
     def test_compile_pulse_schedule(self, platform: Platform):
         """Test the compilation of a qibo Circuit."""
@@ -826,13 +942,18 @@ class TestMethods:
                 measurement_block="whatever",
             )
 
-    def test_execute_experiment(self):
+    def test_execute_experiment(self, override_settings):
         """Test the execute_experiment method of the Platform class."""
         # Create an autospec of the Platform class
         platform = create_autospec(Platform, instance=True)
 
         # Manually set the execute_experiment method to the real one
         platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
+
+        # Mock database manager
+        mock_database = MagicMock()
+        platform.db_manager = mock_database
+        platform.save_experiment_results_in_database = True
 
         # Create an autospec of the Experiment class and Calibration class
         mock_experiment = create_autospec(Experiment)
@@ -845,11 +966,24 @@ class TestMethods:
             mock_executor_instance.execute.return_value = expected_results_path
 
             # Call the method under test
-            results_path = platform.execute_experiment(experiment=mock_experiment)
+            platform.db_manager = None
+            with override_settings(
+                experiment_results_save_in_database=False,
+                experiment_live_plot_enabled=False,
+                experiment_live_plot_on_slurm=False,
+            ):
+                results_path = platform.execute_experiment(experiment=mock_experiment)
 
             # Check that ExperimentExecutor was instantiated with the correct arguments
             MockExecutor.assert_called_once_with(
-                platform=platform, experiment=mock_experiment, live_plot=True, slurm_execution=True, port_number=None
+                platform=platform,
+                experiment=mock_experiment,
+                live_plot=False,
+                slurm_execution=True,
+                port_number=None,
+                job_id=None,
+                sample=None,
+                cooldown=None,
             )
 
             # Ensure the execute method was called on the ExperimentExecutor instance
@@ -857,6 +991,39 @@ class TestMethods:
 
             # Ensure that execute_experiment returns the correct value
             assert results_path == expected_results_path
+
+    def test_execute_experiment_raises_reference_error(self, override_settings):
+        """Test that execute() raises ReferenceError when get_db_manager() fails."""
+
+        # Create an autospec of the Platform class
+        platform = create_autospec(Platform, instance=True)
+
+        # Manually set the execute_experiment method to the real one
+        platform.execute_experiment = MethodType(Platform.execute_experiment, platform)
+
+        platform.db_manager = None
+        platform.save_experiment_results_in_database = True
+
+        # Create an autospec of the Experiment class and Calibration class
+        mock_experiment = create_autospec(Experiment)
+
+        expected_results_path = "mock/results/path/data.h5"
+
+        with override_settings(
+            experiment_results_save_in_database=True,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            with patch.object(platform, "load_db_manager", side_effect=ReferenceError):
+                with pytest.raises(
+                    ReferenceError, match="Missing initialization information at the desired database '.ini' path."
+                ):
+                    # Mock the ExperimentExecutor to ensure it's used correctly
+                    with patch("qililab.platform.platform.ExperimentExecutor") as MockExecutor:
+                        mock_executor_instance = MockExecutor.return_value  # Mock instance of ExperimentExecutor
+                        mock_executor_instance.execute.return_value = expected_results_path
+
+                        platform.execute_experiment(experiment=mock_experiment)
 
     def test_execute_qprogram_with_qblox(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -888,10 +1055,10 @@ class TestMethods:
 
             _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assert upload executed only once (2 because there are 2 buses)
+        # assert upload executed only once (4 because there are 4 buses)
         assert upload.call_count == 4
 
-        # assert run executed all three times (6 because there are 2 buses)
+        # assert run executed all three times (12 because there are 4 buses)
         assert run.call_count == 12
         assert acquire_qprogram_results.call_count == 6  # only readout buses
         assert sync_sequencer.call_count == 12  # called as many times as run
@@ -903,6 +1070,201 @@ class TestMethods:
 
         # assure only one debug was called
         assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_and_qdac(self, platform_qblox_qdac: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+            # Mock Qdac functions without connecting
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+            patch.object(QDevilQDac2, "start") as start,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
+
+            acquire_qprogram_results.return_value = [456]
+            second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
+
+            _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed only once (2 because there are 2 buses)
+        assert upload.call_count == 2
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert sync_sequencer.call_count == 6  # called as many times as run
+        assert desync_sequencer.call_count == 6
+        assert first_execution_results.results["resonator"] == [123]
+        assert second_execution_results.results["resonator"] == [456]
+        assert upload_voltage_list.call_count == 3  # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
+        assert start.call_count == 3  # called as many times as executes
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_and_qdac_back(self, platform_qblox_qdac: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
+        qprogram.wait_trigger(bus="qdac_bus_1", duration=10e-6, port=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+            # Mock Qdac functions without connecting
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
+            patch.object(QDevilQDac2, "start") as start,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
+
+            acquire_qprogram_results.return_value = [456]
+            second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
+
+            _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed only once (2 because there are 2 buses)
+        assert upload.call_count == 2
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert sync_sequencer.call_count == 6  # called as many times as run
+        assert desync_sequencer.call_count == 6
+        assert first_execution_results.results["resonator"] == [123]
+        assert second_execution_results.results["resonator"] == [456]
+        assert upload_voltage_list.call_count == 3  # called as many times as executes
+        assert set_in_external_trigger.call_count == 3  # called as many times as executes
+        assert start.call_count == 3  # called as many times as executes
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_and_qdac_timeout_error(self, platform_qblox_qdac: Platform):
+        """Test that the execute_qprogram method raises the exception if the qprogram failes"""
+
+        # Setup mock QbloxCompilationOutput and QdacCompilationOutput
+        mock_output = MagicMock(spec=QbloxCompilationOutput)
+        mock_qdac_output = MagicMock(spec=QdacCompilationOutput)
+        mock_output.sequences = {"bus1": MagicMock()}
+        mock_output.acquisitions = {"bus1": MagicMock()}
+
+        mock_qdac_output.trigger_position = "front"
+        mock_qdac = MagicMock()
+        mock_qdac_output.qdac = mock_qdac
+
+        mock_bus = MagicMock()
+        mock_bus.has_adc.return_value = False
+        mock_bus.instruments = [MagicMock(spec=QbloxModule)]
+        mock_bus.channels = [0]
+
+        # Raise TimeoutError on run
+        mock_bus.run.side_effect = TimeoutError("Simulated timeout")
+
+        platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
+        platform_qblox_qdac._qpy_sequence_cache = {}
+        platform_qblox_qdac.trigger_runs = 0
+
+        mock_output.qprogram = MagicMock(spec=QProgram)
+        mock_output.qprogram.qblox = MagicMock(spec=mock_output.qprogram._QbloxInterface)
+        mock_output.qprogram.qblox.trigger_network_required = []
+
+        with pytest.raises(TimeoutError):
+            platform_qblox_qdac._execute_qblox_compilation_output(
+                output=QProgramCompilationOutput(qblox=mock_output, qdac=mock_qdac_output), debug=False
+            )
+
+        # Assert it retried 3 times (initial + 3 retries = 4 attempts)
+        assert mock_bus.run.call_count == 4
+
+    def test_execute_qprogram_with_quantum_machines_and_qdac(self, platform_qm_qdac: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="readout", waveform=readout_wf, weights=weights_wf)
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch("qililab.platform.platform.generate_qua_script", return_value=None) as generate_qua,
+            patch.object(QuantumMachinesCluster, "config") as config,
+            patch.object(QuantumMachinesCluster, "append_configuration") as append_configuration,
+            patch.object(QuantumMachinesCluster, "compile") as compile_program,
+            patch.object(QuantumMachinesCluster, "run_compiled_program") as run_compiled_program,
+            patch.object(QuantumMachinesCluster, "get_acquisitions") as get_acquisitions,
+            # Mock Qdac functions without connecting
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+            patch.object(QDevilQDac2, "start") as start,
+        ):
+            cluster = platform_qm_qdac.get_element("qmm")
+            config.return_value = cluster.settings.to_qua_config()
+
+            get_acquisitions.return_value = {"I_0": np.array([1, 2, 3]), "Q_0": np.array([4, 5, 6])}
+            first_execution_results = platform_qm_qdac.execute_qprogram(qprogram=qprogram)
+
+            get_acquisitions.return_value = {"I_0": np.array([3, 2, 1]), "Q_0": np.array([6, 5, 4])}
+            second_execution_results = platform_qm_qdac.execute_qprogram(qprogram=qprogram)
+
+            _ = platform_qm_qdac.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed only once (2 because there are 2 buses)
+        assert append_configuration.call_count == 3
+        assert run_compiled_program.call_count == 3
+        assert get_acquisitions.call_count == 3
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert "readout" in first_execution_results.results
+        assert len(first_execution_results.results["readout"]) == 1
+        assert isinstance(first_execution_results.results["readout"][0], QuantumMachinesMeasurementResult)
+        np.testing.assert_array_equal(first_execution_results.results["readout"][0].I, np.array([1, 2, 3]))
+        np.testing.assert_array_equal(first_execution_results.results["readout"][0].Q, np.array([4, 5, 6]))
+        np.testing.assert_array_equal(second_execution_results.results["readout"][0].I, np.array([3, 2, 1]))
+        np.testing.assert_array_equal(second_execution_results.results["readout"][0].Q, np.array([6, 5, 4]))
+        assert upload_voltage_list.call_count == 3  # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
+        assert start.call_count == 3  # called as many times as executes
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+        assert generate_qua.call_count == 1
 
     def test_execute_qprogram_with_qblox_distortions(self, platform: Platform):
         drive_wf = Square(amplitude=1.0, duration=4)
@@ -924,6 +1286,7 @@ class TestMethods:
             _ = platform.execute_qprogram(qprogram=qprogram)
             assert test_waveforms_q0.to_dict() == upload.call_args_list[0].kwargs["qpysequence"]._waveforms.to_dict()
 
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method executes the qprogram for Quantum Machines correctly"""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -976,6 +1339,7 @@ class TestMethods:
         assert patched_open.call_count == 1
         assert generate_qua.call_count == 1
 
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines_raises_error(self, platform_quantum_machines: Platform):
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
 
@@ -1301,6 +1665,7 @@ class TestMethods:
             with pytest.raises(ValueError, match=error_string):
                 platform.execute_qprograms_parallel(qp_list, debug=True)
 
+    @pytest.mark.qm
     def test_parallelisation_execute_quantum_machine_not_supported(self, platform_quantum_machines: Platform):
         error_string = "Parallel execution is not supported in Quantum Machines."
         qp1 = QProgram()
@@ -1320,6 +1685,75 @@ class TestMethods:
             qp_list = [qp1, qp2, qp3]
             with pytest.raises(ValueError, match=error_string):
                 platform_quantum_machines.execute_qprograms_parallel(qp_list)
+
+    def test_normalize_bus_mappings(self, platform: Platform):
+        """Test the normalization of bus mappings"""
+        n = 3
+        bus_mappings = None
+
+        none_mapping = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+        assert isinstance(none_mapping, list)
+        assert len(none_mapping) == n
+        assert none_mapping == [None] * n
+
+        bus_mappings = {"readout": "readout_q0_bus"}
+        one_mapping = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+        assert isinstance(one_mapping, list)
+        assert len(one_mapping) == n
+        for mapping in one_mapping:
+            assert mapping == bus_mappings
+
+        bus_mappings = [{"readout": "readout_q0_bus"}, None, {"readout": "readout_q2_bus"}]
+        mappings = platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+        assert isinstance(mappings, list)
+        assert len(mappings) == n
+        assert mappings == bus_mappings
+
+        bus_mappings = [{"readout": "readout_q0_bus"}, {"readout": "readout_q2_bus"}]
+        with pytest.raises(ValueError, match=re.escape(f"len(bus_mappings)={len(bus_mappings)} != len(qprograms)={n}")):
+            platform._normalize_bus_mappings(bus_mappings=bus_mappings, n=n)
+
+    def test_normalize_calibrations(
+        self, platform: Platform, calibration: Calibration, calibration_with_preparation_block: Calibration
+    ):
+        """Test the normalization of calibrations"""
+        n = 3
+        calibrations = None
+
+        none_calibration = platform._normalize_calibrations(calibrations=calibrations, n=n)
+        assert isinstance(none_calibration, list)
+        assert len(none_calibration) == n
+        assert none_calibration == [None] * n
+
+        one_calibration = platform._normalize_calibrations(calibrations=calibration, n=n)
+        assert isinstance(one_calibration, list)
+        assert len(one_calibration) == n
+        for calibration_instance in one_calibration:
+            assert calibration_instance == calibration
+
+        calibrations = [calibration, None, calibration_with_preparation_block]
+        calibrations_normalized = platform._normalize_calibrations(calibrations=calibrations, n=n)
+        assert isinstance(calibrations_normalized, list)
+        assert len(calibrations_normalized) == n
+        assert calibrations_normalized == calibrations
+
+        calibrations = [calibration, calibration_with_preparation_block]
+        with pytest.raises(ValueError, match=re.escape(f"len(calibrations)={len(calibrations)} != len(qprograms)={n}")):
+            platform._normalize_calibrations(calibrations=calibrations, n=n)
+
+    def test_mapped_buses(self, platform: Platform):
+        """Test the mappings of buses"""
+        qp_buses = set({"readout", "drive"})
+        mapping = None
+
+        mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
+        assert mapped_buses == qp_buses
+
+        mapping = {"readout": "readout_q0_bus", "drive": "drive_q0_bus"}
+        mapped_buses = platform._mapped_buses(qp_buses=qp_buses, mapping=mapping)
+        assert len(mapped_buses) == len(mapping)
+        assert "readout_q0_bus" in mapped_buses
+        assert "drive_q0_bus" in mapped_buses
 
     def test_parallelisation_execute_qblox(self, platform: Platform):
         """Test that the execute parallelisation returns the same result per qprogram as the regular excute method"""
@@ -1358,10 +1792,12 @@ class TestMethods:
             result_parallel = platform.execute_qprograms_parallel(qp_list, debug=True)
             non_parallel_results1 = platform.execute_qprogram(qprogram=qprogram1, debug=True)
             non_parallel_results2 = platform.execute_qprogram(qprogram=qprogram2, debug=True)
+            no_qprograms = platform.execute_qprograms_parallel(qprograms=None)
 
             # check that each element of the result list of the parallel execution is the same as the regular execution for each respective qprograms
             assert result_parallel[0].results == non_parallel_results1.results
             assert result_parallel[1].results == non_parallel_results2.results
+            assert [] == no_qprograms
 
     def test_calibrate_mixers(self, platform: Platform):
         """Test calibrating the Qblox mixers."""
@@ -1409,6 +1845,48 @@ class TestMethods:
         with pytest.raises(AttributeError, match="Mixers calibration not implemented for this instrument."):
             platform.calibrate_mixers(alias=non_rf_readout_bus, cal_type=cal_type, channel_id=channel_id)
 
+    @patch("qililab.platform.platform.get_db_manager")
+    @patch("qililab.result.database.database_manager._load_config")
+    def test_load_db_manager(self, mock_load_config, mock_get_db_manager, platform: Platform):
+        """Test load_db_manager createing a database from a given path"""
+        path = "~/database_test.ini"
+
+        mock_load_config.return_value = {
+            "host": "localhost",
+            "user": "user",
+            "passwd": "pass",
+            "port": "5432",
+            "database": "testdb",
+            "base_path_local": "base_path_local",
+            "base_path_shared": "base_path_shared",
+            "data_write_folder": "data_write_folder",
+        }
+        mock_get_db_manager.return_value = get_db_manager(path)
+
+        _ = platform.load_db_manager(path)
+
+        mock_get_db_manager.assert_called_once_with(path)
+
+    @patch("qililab.platform.platform.get_db_manager")
+    @patch("qililab.result.database.database_manager._load_config")
+    def test_load_db_manager_no_path(self, mock_load_config, mock_get_db_manager, platform: Platform):
+        """Test load_db_manager createing a database without a given path"""
+        mock_load_config.return_value = {
+            "host": "localhost",
+            "user": "user",
+            "passwd": "pass",
+            "port": "5432",
+            "database": "testdb",
+            "base_path_local": "base_path_local",
+            "base_path_shared": "base_path_shared",
+            "data_write_folder": "data_write_folder",
+        }
+        mock_get_db_manager.return_value = get_db_manager()
+
+        _ = platform.load_db_manager()
+
+        mock_get_db_manager.assert_called_once_with()
+
     def test_db_real_time_saving(self, platform: Platform):
         """Test db_real_time_saving function to save database from platform"""
 
@@ -1416,19 +1894,17 @@ class TestMethods:
         loops = {"test_amp_loop": np.arange(0, 2)}
         experiment_name = "test_db_real_time_saving"
         mock_database = MagicMock()
-        db_manager = mock_database
-        optional_identifier = "optional_identifier"
+        platform.db_manager = mock_database
+        description = "description"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        db_real_time_saving = platform.db_real_time_saving(
-            shape, loops, experiment_name, db_manager, qprogram, optional_identifier
-        )
+        db_real_time_saving = platform.db_real_time_saving(shape, loops, experiment_name, qprogram, description)
 
         assert db_real_time_saving.loops == loops
-        assert db_real_time_saving.optional_identifier == optional_identifier
+        assert db_real_time_saving.optional_identifier == description
         assert db_real_time_saving.platform == platform
         assert db_real_time_saving.qprogram == qprogram
         assert db_real_time_saving.db_manager == mock_database
@@ -1443,16 +1919,34 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
-        db_manager = mock_database
-        optional_identifier = "optional_identifier"
+        platform.db_manager = mock_database
+        description = "description"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
         assert mock_h5file.called
+
+    @patch("h5py.File")
+    def test_db_save_results_raises_error(self, mock_h5file, platform: Platform):
+        """Test db_save_results function raises an error when no database is created"""
+
+        experiment_name = "experiment_name"
+        loops = {"test_amp_loop": np.arange(0, 1)}
+        results = np.array([[1.0, 1.0], [1.0, 1.0]])
+
+        description = "description"
+
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
+
+        error_string = "Missing db_manager, try using platform.load_db_manager()."
+        with pytest.raises(ReferenceError, match=error_string):
+            platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
     @patch("h5py.File")
     def test_db_save_results_loop_dict(self, mock_h5file, platform: Platform):
@@ -1465,14 +1959,14 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
-        db_manager = mock_database
-        optional_identifier = "optional_identifier"
+        platform.db_manager = mock_database
+        description = "description"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+        platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
         assert mock_h5file.called
 
@@ -1485,8 +1979,8 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
-        db_manager = mock_database
-        optional_identifier = "optional_identifier"
+        platform.db_manager = mock_database
+        description = "description"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
@@ -1494,7 +1988,7 @@ class TestMethods:
 
         error_string = "Number of loops must be the same as the number of dimensions of the results except for IQ"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+            platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
     @patch("h5py.File")
     def test_db_save_results_raise_error_incorrect_loops_size(self, mock_h5file, platform: Platform):
@@ -1505,13 +1999,116 @@ class TestMethods:
         results = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         mock_database = MagicMock()
-        db_manager = mock_database
-        optional_identifier = "optional_identifier"
+        platform.db_manager = mock_database
+        description = "description"
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qprogram = QProgram()
         qprogram.play(bus="drive_line_q0_bus", waveform=drive_wf)
 
-        error_string = "Loops dimensions must be the same than the array instroduced, test_amp_loop as 4 != 2"
+        error_string = "Loops dimensions must be the same than the array introduced, test_amp_loop as 4 != 2"
         with pytest.raises(ValueError, match=error_string):
-            platform.db_save_results(experiment_name, results, loops, db_manager, qprogram, optional_identifier)
+            platform.db_save_results(experiment_name, results, loops, qprogram, description)
+
+    def test_platform_draw_quantum_machine_raises_error(
+        self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
+    ):
+
+        with pytest.raises(NotImplementedError) as exc_info:
+            platform_quantum_machines.draw(qp_quantum_machine)
+    
+        assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
+
+    def test_trigger_network_setup_and_reset(self, platform):
+        # Build a fake compilation output with one bus “b” → trigger 5
+        qp = QProgram()
+        qp.qblox.trigger_network_required = {"b": 5}
+        output = QProgramCompilationOutput()
+        output.qblox = QbloxCompilationOutput(qprogram=qp, sequences={"b": None}, acquisitions={"b": []})
+
+        # Stub the bus and controller
+        fake_bus = MagicMock()
+        fake_bus._setup_trigger_network = MagicMock()
+        platform.buses.get = MagicMock(return_value=fake_bus)
+
+        controller = MagicMock(spec=QbloxClusterController)
+        controller.device = MagicMock()
+        platform.instrument_controllers.elements = [controller]
+
+        # Call the method under testus
+        platform._execute_qblox_compilation_output(output)
+
+        # Verify the two lines ran
+        fake_bus._setup_trigger_network.assert_called_once_with(trigger_address=5)
+        controller.device.reset_trigger_monitor_count.assert_called_once_with(address=5)
+
+    def test_qblox_intertwined_results(self, raw_measurement_data_intertwined: dict, platform: Platform):
+        """Test that the results get unintertwined."""
+
+        bus_result = QbloxMeasurementResult(bus="drive", raw_measurement_data=raw_measurement_data_intertwined)
+        intertwined = 2
+
+        unintertwined_results = platform._unintertwined_qblox_results(bus_result, intertwined)
+
+        assert len(unintertwined_results)==intertwined
+
+        assert unintertwined_results[0].raw_measurement_data == {"bins": {"integration": {"path0": [1, 3], "path1": [5, 7]}, "threshold": [0.1, 0.3], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
+        assert unintertwined_results[1].raw_measurement_data == {"bins": {"integration": {"path0": [2, 4], "path1": [6, 8]}, "threshold": [0.2, 0.4], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
+
+
+    def test_qblox_intertwined_results_scope(self, raw_measurement_data_intertwined_scope: dict, platform: Platform):
+        """Test that the scope results get unintertwined."""
+
+        bus_result = QbloxMeasurementResult(bus="drive", raw_measurement_data=raw_measurement_data_intertwined_scope)
+        intertwined = 2
+
+        unintertwined_results = platform._unintertwined_qblox_results(bus_result, intertwined)
+
+        assert len(unintertwined_results)==intertwined
+
+        assert unintertwined_results[0].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 3]}, "path1":{"data": [5, 7]}}}
+        assert unintertwined_results[1].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [2, 4]}, "path1":{"data": [6, 8]}}}
+
+    def test_setting_getting_filter_bus_error_raised(self, platform: Platform):
+        #  Check that setting/getting a filter through a bus incorrectly raises the adequate error
+        output_id = 1
+        bus_alias = "drive_line_q0_bus"
+        with pytest.raises(Exception, match=f"OutputID {output_id} is not linked to bus with alias {bus_alias}"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=output_id)
+
+        with pytest.raises(Exception, match="Filter parameters are controlled using output_id and not channel_id"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", channel_id=output_id)
+            
+        with pytest.raises(Exception, match=f"OutputID {output_id} is not linked to bus with alias {bus_alias}"):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=output_id)
+
+        with pytest.raises(Exception, match="Filter parameters are controlled using output_id and not channel_id"):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, channel_id=output_id)
+
+    def test_setting_getting_filter_parameter_no_output_id_given(self, platform: Platform):
+        old_value = 200
+        new_value = 100
+
+        time_constant = platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0,output_id=0)
+        assert time_constant == old_value
+
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, value = new_value)
+        time_constant = platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0)
+        assert time_constant == new_value
+
+    def test_setting_getting_non_filter_parameter_error_raised(self, platform: Platform):
+        sequencer = 3
+        bus_alias = "drive_line_q0_bus"
+        with pytest.raises(Exception, match="Only QBlox Filter parameters are controlled using output_id and not channel_id"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=100e6, output_id=sequencer)
+
+        with pytest.raises(Exception, match="Only QBlox Filter parameters are controlled using output_id and not channel_id"):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, output_id=sequencer)
+
+        with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
+            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=100e6, channel_id=sequencer)
+
+        with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=sequencer)
+
+

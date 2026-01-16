@@ -83,6 +83,12 @@ class TestBus:
         bus.set_parameter(parameter, value)
         bus.instruments[0].set_parameter.assert_called_once()
 
+    def test_get_outputid_from_channelid_raises_error(self, bus):
+        bus.settings.instruments.append(bus.settings.instruments[1])
+        bus.settings.channels = [1]
+        with pytest.raises(Exception, match=f"No output_id was found to be associated with the bus with alias {bus.alias}"):
+            bus._get_outputid_from_channelid()
+
     def test_bus_set_parameter_raises_error(self, bus):
         bus.settings.instruments = []
         bus.settings.channels = []
@@ -158,3 +164,19 @@ class TestBus:
                 "channels": [None, None]
             }
             _ = Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
+
+    def test_setup_trigger_network(self, bus, mock_instruments):
+            # stub the private method on both mocks so they both have it
+            mock_instruments[0]._setup_trigger_network = MagicMock()
+            mock_instruments[1]._setup_trigger_network = MagicMock()
+
+            # Call the helper under test
+            bus._setup_trigger_network(trigger_address=7)
+
+            # QbloxQRM is mock_instruments[1], channel 0
+            mock_instruments[1]._setup_trigger_network.assert_called_once_with(
+                trigger_address=7,
+                sequencer_id=0
+            )
+            # The QCM should not receive the call
+            mock_instruments[0]._setup_trigger_network.assert_not_called()

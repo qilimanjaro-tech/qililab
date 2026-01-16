@@ -25,7 +25,15 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
-from qililab.typings import AcquireTriggerMode, ChannelID, InstrumentName, IntegrationMode, Parameter, ParameterValue
+from qililab.typings import (
+    AcquireTriggerMode,
+    ChannelID,
+    InstrumentName,
+    IntegrationMode,
+    OutputID,
+    Parameter,
+    ParameterValue,
+)
 
 
 @InstrumentFactory.register
@@ -56,6 +64,7 @@ class QbloxQRM(QbloxModule):
                 QbloxADCSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer
                 for sequencer in self.awg_sequencers
             ]
+
             super().__post_init__()
 
     settings: QbloxQRMSettings
@@ -116,10 +125,12 @@ class QbloxQRM(QbloxModule):
         """
         for sequencer in self.awg_sequencers:
             if sequencer.scope_store_enabled:
-                if self._scoping_sequencer is None:
+                if self._scoping_sequencer in (None, sequencer.identifier):
                     self._scoping_sequencer = sequencer.identifier
-                else:
-                    raise ValueError("The scope can only be stored in one sequencer at a time.")
+                    return
+                raise ValueError("The scope can only be stored in one sequencer at a time.")
+            if self._scoping_sequencer == sequencer.identifier:
+                self._scoping_sequencer = None
 
     @check_device_initialized
     def acquire_result(self) -> QbloxResult:
@@ -280,8 +291,12 @@ class QbloxQRM(QbloxModule):
                 value=self.get_sequencer(sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
 
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """set a specific parameter to the instrument"""
+        if output_id is not None:
+            super().set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
+            return
+
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
 
@@ -322,7 +337,7 @@ class QbloxQRM(QbloxModule):
         if parameter == Parameter.TIME_OF_FLIGHT:
             self._set_time_of_flight(value=int(value), sequencer_id=channel_id)
             return
-        super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        super().set_parameter(parameter=parameter, value=value, channel_id=channel_id, output_id=output_id)
 
     def _set_scope_hardware_averaging(self, value: float | str | bool, sequencer_id: int):
         """set scope_hardware_averaging for the specific channel
@@ -466,6 +481,15 @@ class QbloxQRM(QbloxModule):
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
 
+        self._obtain_scope_sequencer()
+        sequencer = self.get_sequencer(sequencer_id)
+        self._set_acquisition_mode(
+            value=cast("QbloxADCSequencer", sequencer).scope_acquire_trigger_mode, sequencer_id=sequencer_id
+        )
+        self._set_scope_hardware_averaging(
+            value=cast("QbloxADCSequencer", sequencer).scope_hardware_averaging, sequencer_id=sequencer_id
+        )
+
     def _set_time_of_flight(self, value: int | float | str | bool, sequencer_id: int):
         """set time_of_flight
 
@@ -477,3 +501,13 @@ class QbloxQRM(QbloxModule):
             ValueError: when value type is not bool
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).time_of_flight = int(value)
+
+    def _setup_trigger_network(self, trigger_address: int, sequencer_id: int):
+        """Sets the trigger network, currently used if measure_reset is used in qprogram.
+
+        Args:
+           trigger_address (int): address of the trigger network (1-15).
+            sequencer_id (int): sequencer to update the value.
+        """
+        self.device.sequencers[sequencer_id].thresholded_acq_trigger_address(trigger_address)
+        self.device.sequencers[sequencer_id].thresholded_acq_trigger_en(True)

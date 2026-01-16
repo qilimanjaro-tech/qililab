@@ -67,12 +67,16 @@ def sample_metadata():
 
 
 @pytest.fixture(name="experiment_results")
-def mock_experiment_results(metadata):
+def mock_experiment_results(metadata, override_settings):
     """Create a mock HDF5 file structure for testing"""
-    with ExperimentResultsWriter(
-        path=EXPERIMENT_RESULTS_PATH, metadata=metadata, live_plot=False, slurm_execution=False
-    ):
-        ...
+    with override_settings(experiment_live_plot_enabled=False, experiment_live_plot_on_slurm=False):
+        with ExperimentResultsWriter(
+            path=EXPERIMENT_RESULTS_PATH,
+            metadata=metadata,
+            db_metadata=None,
+            db_manager=None,
+        ):
+            ...
     yield EXPERIMENT_RESULTS_PATH
     Path(EXPERIMENT_RESULTS_PATH).unlink()
 
@@ -502,73 +506,87 @@ class TestExperimentResultsWriter:
     """Test ExperimentResultsWriter class"""
 
     @patch("h5py.File")
-    def test_create_results_file(self, mock_h5file, metadata):
+    def test_create_results_file(self, mock_h5file, metadata, override_settings):
         """Test file creation"""
         # Test that the results file is created with the correct structure
-        with ExperimentResultsWriter(path="mock_path", metadata=metadata, live_plot=False, slurm_execution=False):
-            pass  # Just initializing should create the file structure
+        with override_settings(experiment_live_plot_enabled=False, experiment_live_plot_on_slurm=False):
+            with ExperimentResultsWriter(
+                path="mock_path",
+                metadata=metadata,
+                db_metadata=None,
+                db_manager=None,
+            ):
+                pass  # Just initializing should create the file structure
 
         assert mock_h5file.called
         mock_h5file.assert_called_with("mock_path", mode="w", libver="latest")
 
-    def test_setters(self, experiment_results):
+    def test_setters(self, experiment_results, override_settings):
         """Test setters"""
-        with ExperimentResultsWriter(
-            path=experiment_results, metadata={}, live_plot=False, slurm_execution=False
-        ) as exp_writer:
-            # test experiment property
-            exp_writer.experiment = "new_experiment"
-            assert exp_writer.experiment == "new_experiment"
+        with override_settings(experiment_live_plot_enabled=False, experiment_live_plot_on_slurm=False):
+            with ExperimentResultsWriter(
+                path=experiment_results,
+                metadata={},
+                db_metadata=None,
+                db_manager=None,
+            ) as exp_writer:
+                # test experiment property
+                exp_writer.experiment = "new_experiment"
+                assert exp_writer.experiment == "new_experiment"
 
-            # write again to assert that HDF5 old partition is deleted correctly
-            exp_writer.experiment = "newer_experiment"
-            assert exp_writer.experiment == "newer_experiment"
+                # write again to assert that HDF5 old partition is deleted correctly
+                exp_writer.experiment = "newer_experiment"
+                assert exp_writer.experiment == "newer_experiment"
 
-            # test platform property
-            exp_writer.platform = "new_platform"
-            assert exp_writer.platform == "new_platform"
+                # test platform property
+                exp_writer.platform = "new_platform"
+                assert exp_writer.platform == "new_platform"
 
-            # write again to assert that HDF5 old partition is deleted correctly
-            exp_writer.platform = "newer_platform"
-            assert exp_writer.platform == "newer_platform"
+                # write again to assert that HDF5 old partition is deleted correctly
+                exp_writer.platform = "newer_platform"
+                assert exp_writer.platform == "newer_platform"
 
-            # test crosstalk property
-            exp_writer.crosstalk = "new_crosstalk"
-            assert exp_writer.crosstalk == "new_crosstalk"
+                # test crosstalk property
+                exp_writer.crosstalk = "new_crosstalk"
+                assert exp_writer.crosstalk == "new_crosstalk"
 
-            # write again to assert that HDF5 old partition is deleted correctly
-            exp_writer.crosstalk = "newer_crosstalk"
-            assert exp_writer.crosstalk == "newer_crosstalk"
+                # write again to assert that HDF5 old partition is deleted correctly
+                exp_writer.crosstalk = "newer_crosstalk"
+                assert exp_writer.crosstalk == "newer_crosstalk"
 
-            # test executed_at property
-            exp_writer.executed_at = datetime(2025, 1, 1, 0, 0, 0)
-            assert exp_writer.executed_at == datetime(2025, 1, 1, 0, 0, 0)
+                # test executed_at property
+                exp_writer.executed_at = datetime(2025, 1, 1, 0, 0, 0)
+                assert exp_writer.executed_at == datetime(2025, 1, 1, 0, 0, 0)
 
-            # write again to assert that HDF5 old partition is deleted correctly
-            exp_writer.executed_at = datetime(2026, 1, 1, 0, 0, 0)
-            assert exp_writer.executed_at == datetime(2026, 1, 1, 0, 0, 0)
+                # write again to assert that HDF5 old partition is deleted correctly
+                exp_writer.executed_at = datetime(2026, 1, 1, 0, 0, 0)
+                assert exp_writer.executed_at == datetime(2026, 1, 1, 0, 0, 0)
 
-            # test execution_time property
-            exp_writer.execution_time = 1.23
-            assert exp_writer.execution_time == 1.23
+                # test execution_time property
+                exp_writer.execution_time = 1.23
+                assert exp_writer.execution_time == 1.23
 
-            # write again to assert that HDF5 old partition is deleted correctly
-            exp_writer.execution_time = 4.56
-            assert exp_writer.execution_time == 4.56
+                # write again to assert that HDF5 old partition is deleted correctly
+                exp_writer.execution_time = 4.56
+                assert exp_writer.execution_time == 4.56
 
     @patch("qililab.result.experiment_live_plot.ExperimentLivePlot.live_plot")
     @patch("qililab.result.experiment_live_plot.ExperimentLivePlot.live_plot_figures")
-    def test_setitem_calls_live_plot(self, mock_figures, mock_live_plot, metadata):
+    def test_setitem_calls_live_plot(self, mock_figures, mock_live_plot, metadata, override_settings):
         """Test that __setitem__ calls results_liveplot.live_plot when live_plot is True"""
         path = "test_live_plot_writer.h5"  # ✅ temp path
 
-        with ExperimentResultsWriter(
-            path=str(path), metadata=metadata, live_plot=True, slurm_execution=False
-        ) as writer:
-            writer["QProgram_0", "Measurement_0", 0, 0, 0] = 1.0
+        with override_settings(experiment_live_plot_enabled=True, experiment_live_plot_on_slurm=False):
+            with ExperimentResultsWriter(
+                path=str(path),
+                metadata=metadata,
+                db_metadata=None,
+                db_manager=None,
+            ) as writer:
+                writer["QProgram_0", "Measurement_0", 0, 0, 0] = 1.0
 
-            # Assert live_plot was called
-            mock_live_plot.assert_called_once()
+                # Assert live_plot was called
+                mock_live_plot.assert_called_once()
 
         path_obj = Path(path)
         if path_obj.exists():

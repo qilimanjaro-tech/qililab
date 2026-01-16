@@ -11,17 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import h5py
 import numpy as np
 
-from qililab.qprogram import QProgram
-from qililab.result.database import DatabaseManager, Measurement
+from qililab.instruments.qblox.qblox_module import QbloxModule
+from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
     from qililab.platform import Platform
+    from qililab.qprogram.qprogram import Calibration, QProgram
+    from qililab.result.database import AutocalMeasurement, DatabaseManager, Measurement
 
 
 class StreamArray:
@@ -34,38 +38,45 @@ class StreamArray:
 
     Args:
         shape (list | tuple): Shape of the results array.
-        loops (dict[str, np.ndarray]): dictionary of loops with the name of the loop and the array.
+        loops (dict[str, np.ndarray] | dict[str, dict[str, Any]]): dictionary of loops with the name of the loop and the array.
         platform (Platform): platform where the experiment was executed
         experiment_name (str): Name of the experiment.
         db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
-        base_path (str): base path for the results data folder structure.
         qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
         optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
     """
 
     path: str
     _dataset: h5py.Dataset
-    measurement: Measurement | None = None
+    measurement: Measurement | AutocalMeasurement | None = None
     _file: h5py.File | None = None
 
     def __init__(
         self,
         shape: list | tuple,
         loops: dict[str, np.ndarray] | dict[str, dict[str, Any]],
-        platform: "Platform",
         experiment_name: str,
         db_manager: DatabaseManager,
+        platform: Platform | None = None,
         qprogram: QProgram | None = None,
+        calibration: Calibration | None = None,
+        bus_mapping: dict[str, str] | None = None,
         optional_identifier: str | None = None,
+        autocalibration: bool = False,
+        qubit_idx: int | None = None,
     ):
         self.results: np.ndarray
-        self.shape = shape
+        self.shape = [shape] if isinstance(shape, int) else shape
         self.loops = loops
         self.experiment_name = experiment_name
         self.db_manager = db_manager
         self.optional_identifier = optional_identifier
         self.platform = platform
         self.qprogram = qprogram
+        self.calibration = calibration
+        self.bus_mapping = bus_mapping
+        self.autocalibration = autocalibration
+        self.qubit_idx = qubit_idx
         self._first_value = True
 
     def __enter__(self):
@@ -74,31 +85,59 @@ class StreamArray:
         Returns:
             StreamArray: StreamArray class created
         """
-        self.measurement = self.db_manager.add_measurement(
-            experiment_name=self.experiment_name,
-            experiment_completed=False,
-            optional_identifier=self.optional_identifier,
-            platform=self.platform.to_dict(),
-            qprogram=serialize(self.qprogram),
-        )
-        self.path = self.measurement.result_path
-
-        # Save loops
-        self._file = h5py.File(name=self.path, mode="w")
-
-        g = self._file.create_group(name="loops")
-        for loop_name, array in self.loops.items():
-            if isinstance(array, dict):
-                g_dataset = g.create_dataset(name=loop_name, data=array["array"])
-                g_dataset["bus"] = array["bus"]
-                g_dataset["parameter"] = array["parameter"]
-                g_dataset["units"] = array["units"]
+        try:
+            if self.autocalibration:
+                if not self.calibration:
+                    raise ValueError("For autocalibration a Calibration file is mandatory.")
+                self.measurement = self.db_manager.add_autocal_measurement(
+                    experiment_name=self.experiment_name,
+                    qubit_idx=self.qubit_idx,
+                    platform=self.platform.to_dict() if self.platform else None,
+                    qprogram=serialize(self.qprogram) if self.qprogram else None,
+                    calibration=self.calibration,
+                    parameters=self.loops,
+                    data_shape=self.shape,
+                )
             else:
-                g.create_dataset(name=loop_name, data=array)
+                self.measurement = self.db_manager.add_measurement(
+                    experiment_name=self.experiment_name,
+                    experiment_completed=False,
+                    optional_identifier=self.optional_identifier,
+                    platform=self.platform.to_dict() if self.platform else None,
+                    qprogram=serialize(self.qprogram) if self.qprogram else None,
+                    calibration=serialize(self.calibration) if self.calibration else None,
+                    debug_file=self._get_debug() if self.platform and self.qprogram else None,
+                )
+            self.path = self.measurement.result_path
 
-        self._first_value = True
+            # Save loops
+            self._file = h5py.File(name=self.path, mode="w", libver="latest")
+            self._file.swmr_mode = True
 
-        return self
+            g = self._file.create_group(name="loops", track_order=True)
+            for loop_name, array in self.loops.items():
+                if isinstance(array, dict):
+                    g_dataset = g.create_dataset(name=loop_name, data=array["array"])
+                    g_dataset.attrs["bus"] = array["bus"]
+                    g_dataset.attrs["parameter"] = array["parameter"]
+                    g_dataset.attrs["units"] = array["units"]
+                else:
+                    g.create_dataset(name=loop_name, data=array)
+
+            # Create results dataset only once
+            if len(self.shape) == len(self.loops.keys()):
+                self.results = np.zeros(shape=self.shape, dtype=np.complex128)
+                if self._file:
+                    self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
+            else:
+                self.results = np.zeros(shape=self.shape)
+                if self._file:
+                    self._dataset = self._file.create_dataset("results", data=self.results)
+            self._file.flush()
+
+            return self
+        except Exception as e:
+            raise RuntimeError("An error occurred while creating the StreamArray.") from e
 
     def __setitem__(
         self, key: tuple, value: np.ndarray[Any, np.dtype[np.floating]] | np.ndarray[Any, np.dtype[np.complexfloating]]
@@ -109,29 +148,18 @@ class StreamArray:
             key (tuple): key for the item to save.
             value (float | np.complexfloating): value to save.
         """
-        # Create results dataset only once
-        if self._first_value:
-            if isinstance(value[0], np.complexfloating):
-                self.results = np.zeros(shape=self.shape, dtype=np.complex128)
-                if self._file:
-                    self._dataset = self._file.create_dataset("results", data=self.results, dtype=np.complex128)
-            else:
-                self.results = np.zeros(shape=self.shape)
-                if self._file:
-                    self._dataset = self._file.create_dataset("results", data=self.results)
-            self._first_value = False
-
         if self._file is not None and self._dataset is not None:
             self._dataset[key] = value
+            self._file.flush()
         self.results[key] = value
 
-    def __exit__(self, *args):
+    def __exit__(self, exc_type, exc_value, traceback):
         """Exits the context manager."""
         if self._file is not None:
             self._file.__exit__()
             self._file = None
 
-        self.measurement = self.measurement.end_experiment(self.db_manager.Session)
+        self.measurement = self.measurement.end_experiment(self.db_manager.session, traceback)
 
     def __getitem__(self, index: int):
         """Gets item by index.
@@ -167,6 +195,29 @@ class StreamArray:
             bool: True if an item is contained in results.
         """
         return item in self.results
+
+    def _get_debug(self):
+        if any(
+            isinstance(instrument, QbloxModule)
+            for bus in self.platform.buses.elements
+            for instrument in bus.instruments
+        ):
+            if self.bus_mapping is not None:
+                compiled = self.platform.compile_qprogram(qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration).qblox
+            else:
+                qblox_compiler = QbloxCompiler()
+                compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)
+
+            sequences = compiled.sequences
+            lines = []
+            for bus_alias, seq in sequences.items():
+                lines.append(f"Bus {bus_alias}:")
+                lines.append(str(seq._program))
+                lines.append("")
+
+            return "\n".join(lines)
+        debug_exception = "Non Qblox machine."
+        return debug_exception
 
 
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
@@ -234,7 +285,7 @@ def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
                 [0.25 0.  ]
                 [0.5  0.  ]
                 [0.75 0.  ]
-                [1.   0.  ]])
+                [1.   0.  ]]))
     """
     return RawStreamArray(shape=shape, path=path, loops=loops)
 

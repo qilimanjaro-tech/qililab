@@ -15,8 +15,10 @@
 import re
 
 import numpy as np
-import plotly.express as px
+import plotly.colors as pc
 import plotly.graph_objects as go
+
+from qililab.qprogram.variable import Domain
 
 
 class QbloxDraw:
@@ -42,32 +44,41 @@ class QbloxDraw:
             param = self._handle_reset_phase_draw(param)
 
         elif action_type == "set_awg_offs":
-            param = self._handle_offset(program_line, param)
+            param = self._handle_offset(program_line, param, register)
 
         elif action_type == "set_awg_gain":
             param = self._handle_gain_draw(program_line, param, register)
 
-        elif action_type == "wait" or action_type == "upd_param":
+        elif action_type == "wait" or action_type == "upd_param" or action_type == "latch_rst":
             wait_duration = int(program_line[1])
             param["classical_time_counter"] += int(wait_duration)
             real_wait = wait_duration - param["real_time_counter"]
             if real_wait <= 0:
-                param["real_time_counter"] = param["real_time_counter"] - real_wait  # update the real time counter
+                param["real_time_counter"] = param["real_time_counter"] - wait_duration  # update the real time counter
             else:
                 data_draw = self._handle_wait_draw(data_draw, param, real_wait)
                 param["real_time_counter"] = max(0, param["real_time_counter"] - wait_duration)
+
+            # extend the acquiring status array - cannot be inside the wait handler in the case where real wait is less than 0
+            if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
+                extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
+                param["acquiring_status"] = np.concatenate(
+                    [param["acquiring_status"], np.zeros(extension_length, dtype=int)]
+                )
 
         elif action_type == "play":
             param["play_idx"] += 1
             #  Essentially interrupting the previous play that is still running and extend the play status to the current play
             if len(data_draw[0]) != param["classical_time_counter"]:
                 for i in [0, 1]:
-                    data_draw[i] = data_draw[i][:param["classical_time_counter"]]
+                    data_draw[i] = data_draw[i][: param["classical_time_counter"]]
                 for key in ["intermediate_frequency", "phase", "q1asm_offset_i", "q1asm_offset_q"]:
-                    param[key] = param[key][:param["classical_time_counter"]]
+                    param[key] = param[key][: param["classical_time_counter"]]
                     param[f"{key}_new"] = False
 
-            data_draw, wf_length, classical_duration_play = self._handle_play_draw(data_draw, program_line, waveform_seq, param)
+            data_draw, wf_length, classical_duration_play = self._handle_play_draw(
+                data_draw, program_line, waveform_seq, param
+            )
             param["classical_time_counter"] += int(classical_duration_play)
             if wf_length > classical_duration_play:
                 real_time_counter = wf_length - classical_duration_play
@@ -76,21 +87,20 @@ class QbloxDraw:
             elif wf_length < classical_duration_play:
                 real_play_wait = classical_duration_play - wf_length
                 data_draw = self._handle_wait_draw(data_draw, param, real_play_wait)
-                # The counter is not being reset to 0 here because this allows overlaying a future acquire if needed
-                param["real_time_counter"] = param["real_time_counter"] - classical_duration_play
+                param["real_time_counter"] = 0
 
         elif action_type == "acquire_weighed":
             param["acquire_idx"] += 1
-            classical_duration_acquire = self._get_value(program_line[1].split(',')[-1].strip(), register)
+            classical_duration_acquire = self._get_value(program_line[1].split(",")[-1].strip(), register)
 
-            # If plotting from qprogram - assume that the integration_length is the classical duration of the Q1ASM command
-            integration_length = param.get("integration_length")
-            if integration_length is None:
-                integration_length = classical_duration_acquire
+            # the integration is different from the acquire duration but qililab always equate both, if qililab ever allows to have a different
+            # integration length from acquisition duration, the below line should be modified and the rest of the code will be able to handle
+            # the difference
+            integration_length = classical_duration_acquire
 
             #  Essentially interrupting the previous acquire that is still running and extend the acquiring status to the current acquire
             if len(param["acquiring_status"]) != param["classical_time_counter"]:
-                param["acquiring_status"] = param["acquiring_status"][:param["classical_time_counter"]]
+                param["acquiring_status"] = param["acquiring_status"][: param["classical_time_counter"]]
 
             param["classical_time_counter"] += int(classical_duration_acquire)
 
@@ -119,11 +129,13 @@ class QbloxDraw:
         elif action_type == "sub":
             self._handle_sub_draw(register, program_line)
 
-        elif action_type in ["loop", "nop"]:
+        elif action_type in ["loop", "nop", "set_cond"]:
             pass
 
         else:
-            raise NotImplementedError(f'The Q1ASM operation "{action_type}" is not implemented in the plotter yet. Please contact someone from QHC.')
+            raise NotImplementedError(
+                f'The Q1ASM operation "{action_type}" is not implemented in the plotter yet. Please contact someone from QHC.'
+            )
 
         return param, register, data_draw
 
@@ -189,7 +201,9 @@ class QbloxDraw:
 
         if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
             extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
-            param["acquiring_status"] = np.concatenate([param["acquiring_status"], np.zeros(extension_length, dtype=int)])
+            param["acquiring_status"] = np.concatenate(
+                [param["acquiring_status"], np.zeros(extension_length, dtype=int)]
+            )
 
         return data_draw, wf_length, classical_duration_play
 
@@ -218,10 +232,6 @@ class QbloxDraw:
             else:
                 param[key].extend([param[key][-1]] * len(y_wait))
 
-        if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
-            extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
-            param["acquiring_status"] = np.concatenate([param["acquiring_status"], np.zeros(extension_length, dtype=int)])
-
         return data_draw
 
     def _handle_gain_draw(self, program_line, param, register):
@@ -231,6 +241,7 @@ class QbloxDraw:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with a gain or offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            register (dictionary): registers of the Q1ASM.
 
         Returns:
             Appends the param dictionary
@@ -241,18 +252,21 @@ class QbloxDraw:
         param["gain_i"], param["gain_q"] = i_val, q_val
         return param
 
-    def _handle_offset(self, program_line, param):
+    def _handle_offset(self, program_line, param, register):
         """Updates the param dictionary when an offset is set in the program
 
         Args:
             data_draw (list): nested list for each waveform, data points until current time.
             program_line (tuple): line of the Q1ASM program parsed with an offset instruction.
             param (dictionary): parameters of the bus (IF, phase, offset, hardware modulation).
+            register (dictionary): registers of the Q1ASM.
 
         Returns:
             Appends the param dictionary
         """
-        offi, offq = map(int, program_line[1].split(","))
+        offi, offq = program_line[1].split(", ")
+        offi = float(self._get_value(offi, register))
+        offq = float(self._get_value(offq, register))
 
         if param["hardware_modulation"]:
             scaling_offset = param["max_voltage"] / np.sqrt(2)
@@ -446,7 +460,9 @@ class QbloxDraw:
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
-    def draw(self, sequencer, runcard_data=None, time_window=None, averages_displayed=False, acquisition_showing=True) -> dict:
+    def draw(
+        self, sequencer, runcard_data=None, time_window=None, averages_displayed=False, acquisition_showing=True
+    ) -> dict:
         """Parses the program dictionary of the sequence, plots the waveforms and generates waveform data.
         Args:
             sequencer: The compiled qprogram, either at the platform or qprogram level.
@@ -466,6 +482,11 @@ class QbloxDraw:
             This function also **plots** the waveforms using the generated data.
 
         """
+
+        if any(variable.domain == Domain.Time for variable in sequencer.qprogram._variables):
+            raise NotImplementedError(
+                "QbloxDraw does not support hardware time-domain loops at the moment."
+            )
 
         self.acquisition_showing = acquisition_showing
         Q1ASM_ordered = self._parse_program(
@@ -583,6 +604,7 @@ class QbloxDraw:
                                 return current_idx
                             current_idx += 1
                 return current_idx
+
             for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
                 if parameters[bus]["time_reached"]:
                     break
@@ -608,12 +630,18 @@ class QbloxDraw:
                 if param[f"{key}_new"]:
                     param[key].pop()
 
-            if len(param["acquiring_status"]) != len(param["intermediate_frequency"]):  # essentially interrupting the last acquire that is still running
-                param["acquiring_status"] = param["acquiring_status"][:len(param["intermediate_frequency"])]
+            self._interrupt_acquire(param)
             parameters[bus] = param
 
         data_draw = self._oscilloscope_plotting(data_draw, parameters)
         return data_draw
+
+    def _interrupt_acquire(self, param):
+        """Interrupts the last acquire that is still running. This function is not actually used in qililab but if the duration of the acquire
+        and the intergration were to be different, this will allow interrupting acquires similarly to play"""
+        if len(param["acquiring_status"]) != len(param["intermediate_frequency"]):
+            param["acquiring_status"] = param["acquiring_status"][: len(param["intermediate_frequency"])]
+        return param
 
     def _oscilloscope_plotting(self, data_draw, parameters):
         """Plots the waveform data and applies the phase and frequency np array to the data
@@ -626,10 +654,10 @@ class QbloxDraw:
             data_draw (dictionary): A dictionary where keys are bus aliases and values are lists containing numpy arrays for
                 the I and Q components. This includes all data points used for plotting the waveforms. This function modifies this dictionary,
                 it adds the offsets, the phase and the frequency to the waveforms.
+            fig (plotly object): the plotly figure of the data_draw dictionary
 
-        Note:
-            This function also **plots** the waveforms using the generated data.
         """
+
         def range_acquire(nparray):
             ranges = []
             start = None
@@ -647,16 +675,23 @@ class QbloxDraw:
                     ranges.append([start, idx + 1])
             return ranges
 
-        def adjust_color_hex(color_hex, factor):
-            rgb_color = [int(color_hex[i:i + 2], 16) for i in (1, 3, 5)]
-            adjusted_color = ['{0:02x}'.format(int(min(255, max(0, c * factor)))) for c in rgb_color]
-            adjusted_color_hex = f"#{''.join(adjusted_color)}"
-            return adjusted_color_hex
+        def adjust_color_rgb(color_rgb, factor):
+            r, g, b = map(int, re.findall(r'\d+', color_rgb))
+            r = int(min(255, max(0, r * factor)))
+            g = int(min(255, max(0, g * factor)))
+            b = int(min(255, max(0, b * factor)))
+
+            return f"rgb({r},{g},{b})"
 
         data_keys = list(data_draw.keys())
 
         fig = go.Figure()
-        palette = px.colors.qualitative.Plotly
+        if len(data_keys) == 1:
+            positions = [0.1]
+        else:
+            positions = [0.1 + 0.8 * (i / (len(data_keys) - 1)) for i in range(len(data_keys))]
+
+        colorscale = pc.sample_colorscale("Turbo", positions)
 
         for idx, key in enumerate(data_keys):
             q1asm_offset_i = np.array(parameters[key]["q1asm_offset_i"])
@@ -664,7 +699,7 @@ class QbloxDraw:
             volt_bounds = parameters[key]["max_voltage"]
             dac_offset_i, dac_offset_q = parameters[key]["dac_offset_i"], parameters[key]["dac_offset_q"]
 
-            base_color = palette[idx]
+            base_color = colorscale[idx]
 
             if not parameters[key]["hardware_modulation"]:  # if hardware modulation is disabled, do not plot Q
                 sequencer_runcard_offset_i = parameters[key]["sequencer_runcard_offset_i"] * volt_bounds
@@ -679,9 +714,9 @@ class QbloxDraw:
 
             else:
                 sequencer_runcard_offset_i, sequencer_runcard_offset_q = (
-                parameters[key]["sequencer_runcard_offset_i"] * volt_bounds / np.sqrt(2),
-                parameters[key]["sequencer_runcard_offset_q"] * volt_bounds / np.sqrt(2),
-            )
+                    parameters[key]["sequencer_runcard_offset_i"] * volt_bounds / np.sqrt(2),
+                    parameters[key]["sequencer_runcard_offset_q"] * volt_bounds / np.sqrt(2),
+                )
                 wf1, wf2 = data_draw[key][0], data_draw[key][1]
                 fs = 1e9  # sampling frequency of the qblox
                 t = np.arange(0, len(wf1)) / fs
@@ -694,43 +729,55 @@ class QbloxDraw:
                 sin_term = np.sin(2 * np.pi * freq * t + phase)
 
                 # Add the offsets to the waveforms and ensure it is in the voltage range of the instrument
-                wf1_offsetted = np.clip((np.array(wf1) + q1asm_offset_i + sequencer_runcard_offset_i), -volt_bounds, volt_bounds)
-                wf2_offsetted = np.clip((np.array(wf2) + q1asm_offset_q + sequencer_runcard_offset_q), -volt_bounds, volt_bounds)
-                path0 = (
-                    (cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted))
-                    + dac_offset_i
+                wf1_offsetted = np.clip(
+                    (np.array(wf1) + q1asm_offset_i + sequencer_runcard_offset_i), -volt_bounds, volt_bounds
                 )
-                path1 = (
-                    (sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted))
-                    + dac_offset_q
+                wf2_offsetted = np.clip(
+                    (np.array(wf2) + q1asm_offset_q + sequencer_runcard_offset_q), -volt_bounds, volt_bounds
                 )
+                path0 = (cos_term * np.array(wf1_offsetted) - sin_term * np.array(wf2_offsetted)) + dac_offset_i
+                path1 = (sin_term * np.array(wf1_offsetted) + cos_term * np.array(wf2_offsetted)) + dac_offset_q
 
                 # clip the final signal
                 path0_clipped = np.clip(path0, -volt_bounds, volt_bounds)
                 path1_clipped = np.clip(path1, -volt_bounds, volt_bounds)
 
                 data_draw[key][0], data_draw[key][1] = path0_clipped, path1_clipped
-                fig.add_trace(go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I", line={"color": base_color}, zorder=1))
-                fig.add_trace(go.Scatter(y=path1_clipped, mode="lines", name=f"{key} Q", line={"color": adjust_color_hex(base_color, 1.5)}, zorder=1))
+                fig.add_trace(go.Scatter(y=path0_clipped, mode="lines", name=f"{key} I", line={"color": base_color}))
+                fig.add_trace(
+                    go.Scatter(
+                        y=path1_clipped,
+                        mode="lines",
+                        name=f"{key} Q",
+                        line={"color": adjust_color_rgb(base_color, 1.5)},
+                    )
+                )
                 if self.acquisition_showing is True:
                     ranges = range_acquire(parameters[key]["acquiring_status"])
-                    y_max = ((y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8))
-                    y_min = ((y_min := min(path0_clipped.min(), path1_clipped.min())) * (1.2 if y_min < 0 else 0.8))
+                    y_max = (y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8)
+                    y_min = (y_min := min(path0_clipped.min(), path1_clipped.min())) * (1.2 if y_min < 0 else 0.8)
 
-                    for i, range in enumerate(ranges):
-                        fig.add_trace(go.Scatter(
-                            x=[range[0], range[1], range[1], range[0]],
-                            y=[y_min, y_min, y_max, y_max, y_min],
-                            fill="toself",
-                            mode='none',
-                            fillcolor=base_color,
-                            line={"width": 0},
-                            opacity=0.2,
-                            line_width=0,
-                            name=f"{key} Acquisition" if i == 0 else f"{key} Acquisition {i}",
-                            showlegend=(i == 0),
-                            legendgroup=f"{key} Acquisition"
-                        ))
+                    # Ensures that the acquisition is visisble even if there is no waveform
+                    if y_max == 0 and y_min == 0:
+                        y_max = 0.5
+                        y_min = -0.5
+
+                    for i, bound in enumerate(ranges):
+                        fig.add_trace(
+                            go.Scatter(
+                                x=[bound[0], bound[1], bound[1], bound[0]],
+                                y=[y_min, y_min, y_max, y_max, y_min],
+                                fill="toself",
+                                mode="none",
+                                fillcolor=base_color,
+                                line={"width": 0},
+                                opacity=0.2,
+                                line_width=0,
+                                name=f"{key} Acquisition" if i == 0 else f"{key} Acquisition {i}",
+                                showlegend=(i == 0),
+                                legendgroup=f"{key} Acquisition",
+                            )
+                        )
 
         if parameters[key]["instrument_name"] == "QProgram":
             fig.update_yaxes(title_text="Amplitude [a.u.]")
@@ -745,6 +792,5 @@ class QbloxDraw:
             title_text="QBlox Oscillator simulation",
             showlegend=True,
         )
-        fig.show()
 
-        return data_draw
+        return fig, data_draw

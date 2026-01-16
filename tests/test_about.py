@@ -1,8 +1,7 @@
 """Unit tests for the `about` function."""
-import io
+import importlib
 import platform
 import sys
-from subprocess import check_output
 
 import pyvisa_py
 import qblox_instruments
@@ -10,27 +9,41 @@ import qcodes
 import qcodes_contrib_drivers
 import qibo
 import qpysequence
-from qm.version import __version__ as qm_version
 
 import qililab as ql
 
+about_module = importlib.import_module("qililab.about")
 
-def test_about():
-    """Test that the `about` function prints the correct information."""
-    capturedOutput = io.StringIO()
-    sys.stdout = capturedOutput  # Redirect output
+
+def _expected_base_output() -> str:
+    return (
+        f"Platform info:             {platform.platform(aliased=True)}\n"
+        f"Python version:            {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}\n"
+        f"PyVISA version:            {pyvisa_py.__version__}\n"
+        f"QCodes version:            {qcodes.__version__}\n"
+        f"QCodes Contrib version:    {qcodes_contrib_drivers.__version__}\n"
+        f"Qblox Instrument version:  {qblox_instruments.__version__}\n"
+        f"Qpysequence version:       {qpysequence.__version__}\n"
+        f"Qibo version:              {qibo.__version__}\n"
+    )
+
+
+def test_about_without_quantum_machines(monkeypatch, capsys):
+    def _qm_stub(*_args, **_kwargs):
+        raise AssertionError("Quantum Machines functions should not be invoked in this scenario")
+
+    monkeypatch.setattr(about_module, "qm_version", _qm_stub)
+
     ql.about()
-    sys.stdout = sys.__stdout__  # Reset redirect
 
-    expected_string = f"""Platform info:             {platform.platform(aliased=True)}
-Python version:            {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}
-PyVISA version:            {pyvisa_py.__version__}
-QCodes version:            {qcodes.__version__}
-QCodes Contrib version:    {qcodes_contrib_drivers.__version__}
-Qblox Instrument version:  {qblox_instruments.__version__}
-Qpysequence version:       {qpysequence.__version__}
-Quantum Machines version:  {qm_version}
-Qibo version:              {qibo.__version__}
-"""
+    captured = capsys.readouterr().out
+    assert captured == _expected_base_output()
 
-    assert expected_string == capturedOutput.getvalue()
+
+def test_about_with_quantum_machines(monkeypatch, capsys):
+    monkeypatch.setattr(about_module, "qm_version", "1.2.3")
+
+    ql.about()
+
+    captured = capsys.readouterr().out
+    assert captured == _expected_base_output() + "Quantum Machines version:  1.2.3\n"
