@@ -158,7 +158,7 @@ class TestMeasurement:
 
         result = autocalibration_measurement.update_platform(lambda: mock_session_context, mock_platform)
 
-        assert result.platform_before == mock_platform.to_dict()
+        assert result.platform_after == mock_platform.to_dict()
         mock_session.commit.assert_called_once()
 
     @patch("qililab.result.database.database_autocal.datetime")
@@ -819,7 +819,7 @@ class Testdatabase:
 
         db_manager.update_platform(mock_platform)
 
-        assert db_manager.calibration_measurement.platform_before == mock_platform.to_dict()
+        assert db_manager.calibration_measurement.platform_after == mock_platform.to_dict()
         db_manager._mock_session.add.assert_called_once
         db_manager._mock_session.commit.assert_called_once
 
