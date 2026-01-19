@@ -707,7 +707,7 @@ wheels = [
 
 [[package]]
 name = "dash"
-version = "3.0.2"
+version = "4.0.0rc6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flask" },
@@ -720,9 +720,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "werkzeug" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/31/ed/144e12b6297201750eae08aa9372f2212d104269433a11b62ecab0da2446/dash-3.0.2.tar.gz", hash = "sha256:a9e08479d8dcf4f76e87794ee8d79ed4b58423be5f367f609ac8c24bda2f78b0", size = 7599031, upload-time = "2025-04-01T19:43:22.303Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/98/a7/bcee25135f5c8fa42a5d75bcb2df728803d6fe99c69f473cafda41edc394/dash-4.0.0rc6.tar.gz", hash = "sha256:f05361d98cf9979adf04b34e80eb48f88e339b75696dc699d72f84d14a4244d9", size = 8025760, upload-time = "2026-01-12T20:27:04.298Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/52/a4d1320ab57402d0cbe7e70e3bad72524bb66b86973a0330b372f3ce47b2/dash-3.0.2-py3-none-any.whl", hash = "sha256:fa5b03fe47690eb1785c71402031fd22a8ebb1f4b46d556f36e8d5b0e13a4124", size = 7945386, upload-time = "2025-04-01T19:43:14.74Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/92/2575f183729b1678fb4fa8be0a42f28fef55f0e07fab4426c2f509ff6c51/dash-4.0.0rc6-py3-none-any.whl", hash = "sha256:ca9d2f5b9d5d92b8673957a4184ad1decfd9e0bbbcdf86fd782a76ee7c4ab587", size = 8333142, upload-time = "2026-01-12T20:27:01.675Z" },
 ]
 
 [[package]]
@@ -3233,7 +3233,7 @@ wheels = [
 
 [[package]]
 name = "qililab"
-version = "0.30.1"
+version = "0.31.0"
 source = { editable = "." }
 dependencies = [
     { name = "dash" },
@@ -4357,14 +4357,14 @@ wheels = [
 
 [[package]]
 name = "werkzeug"
-version = "3.0.6"
+version = "3.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markupsafe" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/f9/0ba83eaa0df9b9e9d1efeb2ea351d0677c37d41ee5d0f91e98423c7281c9/werkzeug-3.0.6.tar.gz", hash = "sha256:a8dd59d4de28ca70471a34cba79bed5f7ef2e036a76b3ab0835474246eb41f8d", size = 805170, upload-time = "2024-10-25T18:52:31.688Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/70/1469ef1d3542ae7c2c7b72bd5e3a4e6ee69d7978fa8a3af05a38eca5becf/werkzeug-3.1.5.tar.gz", hash = "sha256:6a548b0e88955dd07ccb25539d7d0cc97417ee9e179677d22c7041c8f078ce67", size = 864754, upload-time = "2026-01-08T17:49:23.247Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/69/05837f91dfe42109203ffa3e488214ff86a6d68b2ed6c167da6cdc42349b/werkzeug-3.0.6-py3-none-any.whl", hash = "sha256:1bc0c2310d2fbb07b1dd1105eba2f7af72f322e1e455f2f93c993bee8c8a5f17", size = 227979, upload-time = "2024-10-25T18:52:30.129Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/e4/8d97cca767bcc1be76d16fb76951608305561c6e056811587f36cb1316a8/werkzeug-3.1.5-py3-none-any.whl", hash = "sha256:5111e36e91086ece91f93268bb39b4a35c1e6f1feac762c9c822ded0a4e322dc", size = 225025, upload-time = "2026-01-08T17:49:21.859Z" },
 ]
 
 [[package]]
