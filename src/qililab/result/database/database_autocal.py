@@ -153,16 +153,16 @@ class AutocalMeasurement(base):  # type: ignore
         """Load old experiment data from h5 files."""
         return load_results(self.result_path)
 
-    def update_platform(self, session: sessionmaker[Session], platform_before: "Platform"):
+    def update_platform(self, session: sessionmaker[Session], platform: "Platform"):
         """Function to update measurement platform. The function sets inside the database information
-        about the platform_before."""
+        about the platform."""
 
         with session() as running_session:
             # Merge the detached instance into the current session
             persistent_instance = running_session.merge(self)
 
-            self.platform_before = platform_before.to_dict()
-            persistent_instance.platform_before = platform_before.to_dict()
+            self.platform_after = platform.to_dict()
+            persistent_instance.platform_after = platform.to_dict()
 
             try:
                 running_session.commit()
