@@ -45,8 +45,8 @@ class CircuitToQProgramCompiler:
 
     def compile(self, circuit: Circuit, nshots: int) -> QProgram:
         qp = QProgram()
-        bin = qp.variable(label="Bin", domain=Domain.Scalar, type=int)
-        with qp.for_loop(bin, start=0, stop=nshots - 1):
+        bin_variable = qp.variable(label="Bin", domain=Domain.Scalar, type=int)
+        with qp.for_loop(bin_variable, start=0, stop=nshots - 1):
             for gate in circuit.gates:
                 if isinstance(gate, Rmw):
                     gate_events = self._settings.get_gate(name=gate.name, qubits=gate.target_qubits[0])

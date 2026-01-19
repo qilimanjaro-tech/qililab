@@ -1,6 +1,7 @@
 import pytest
 import random
 from rustworkx import PyGraph
+import math
 
 from qilisdk.digital import Circuit, CZ, M, RX, RY, RZ, SWAP, U3
 
@@ -58,7 +59,7 @@ def test_sabre_layout_identity_when_no_two_qubit_gates():
     assert out.nqubits == 3
     assert [gate.qubits for gate in out.gates] == [(0,), (1,)]
     assert layout_pass.last_layout == [0, 1]
-    assert layout_pass.last_score == 0.0
+    assert math.isclose(layout_pass.last_score, 0.0)
     assert context.initial_layout == [0, 1]
     assert context.circuits == {}
 

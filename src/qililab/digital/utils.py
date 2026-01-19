@@ -88,7 +88,7 @@ def qprogram_results_to_samples(
             raise ValueError("All requested qubits were missing and were skipped; nothing to count.")
 
     # Build [NSHOTS, NLOG] matrix with columns ordered by logical qubit index
-    shot_matrix = np.stack([thresholds[lq] for lq in logicals], axis=1)  # shape = (NSHOTS, NLOG)
+    shot_matrix = np.stack([thresholds[lq] for lq in logicals], axis=1)
 
     if order == "q0-right":
         weights = 1 << np.arange(shot_matrix.shape[1], dtype=np.uint64)
