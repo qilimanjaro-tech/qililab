@@ -624,12 +624,12 @@ class QuantumMachinesCompiler:
         minus_cos_Q = -np.cos(rotation) * envelope_Q
 
         # Convert weights to QM-specific format
-        cos_I_converted = convert_integration_weights(integration_weights=cos_I, N=len(cos_I))
-        sin_I_converted = convert_integration_weights(integration_weights=sin_I, N=len(sin_I))
-        cos_Q_converted = convert_integration_weights(integration_weights=cos_Q, N=len(cos_Q))
-        sin_Q_converted = convert_integration_weights(integration_weights=sin_Q, N=len(sin_Q))
-        minus_sin_I_converted = convert_integration_weights(integration_weights=minus_sin_I, N=len(minus_sin_I))
-        minus_cos_Q_converted = convert_integration_weights(integration_weights=minus_cos_Q, N=len(minus_cos_Q))
+        cos_I_converted = convert_integration_weights(integration_weights=cos_I, ntuples=len(cos_I))
+        sin_I_converted = convert_integration_weights(integration_weights=sin_I, ntuples=len(sin_I))
+        cos_Q_converted = convert_integration_weights(integration_weights=cos_Q, ntuples=len(cos_Q))
+        sin_Q_converted = convert_integration_weights(integration_weights=sin_Q, ntuples=len(sin_Q))
+        minus_sin_I_converted = convert_integration_weights(integration_weights=minus_sin_I, ntuples=len(minus_sin_I))
+        minus_cos_Q_converted = convert_integration_weights(integration_weights=minus_cos_Q, ntuples=len(minus_cos_Q))
 
         # Define weights names
         A = f"{prefix}_A"
