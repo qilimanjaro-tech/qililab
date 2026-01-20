@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-<<<<<<< HEAD:src/qililab/qprogram/variable.py
 """This file contains all the variables used inside a QProgram."""
 from __future__ import annotations
 
-=======
 import functools
->>>>>>> origin/main:src/qililab/core/variables.py
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -48,8 +45,6 @@ class Domain(Enum):
         value = int(value)
         return cls(value)
 
-
-<<<<<<< HEAD:src/qililab/qprogram/variable.py
 def _validate_elements(elements: list[Variable | int]) -> None:
     for element in elements:
         if isinstance(element, VariableExpression):
@@ -66,7 +61,7 @@ def _unsupported_operation(operation_name: str):
             f"Operation '{operation_name}' is not implemented for QProgram."
         )
     return method
-=======
+
 def requires_domain(parameter: str, domain: Domain):
     """Decorator to denote that a parameter requires a variable of a specific domain.
 
@@ -91,7 +86,6 @@ def requires_domain(parameter: str, domain: Domain):
         return wrapper
 
     return decorator_function
->>>>>>> origin/main:src/qililab/core/variables.py
 
 
 @yaml.register_class
