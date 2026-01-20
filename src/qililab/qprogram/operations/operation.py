@@ -31,7 +31,4 @@ class Operation(Element):
             elif isinstance(attribute,Variable):
                 variables.add(attribute)
 
-
         return variables
-
-        # return {attribute for attribute in self.__dict__.values() if isinstance(attribute, (Variable, VariableExpression))}

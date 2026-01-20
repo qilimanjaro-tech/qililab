@@ -655,17 +655,18 @@ class QbloxCompiler:
 
         convert = QbloxCompiler._convert_value(element)
 
+        #TODO: the flattening of all variable expressions will be moved to qpysequence
         if isinstance(element.gain, VariableExpression):
             left_component, right_component = element.gain.components
-            gain1_register = self._buses[element.bus].variable_to_register[left_component] if isinstance(left_component, Variable) else left_component
-            gain2_register = self._buses[element.bus].variable_to_register[right_component] if isinstance(right_component, Variable) else right_component
+            gain0 = self._buses[element.bus].variable_to_register[left_component] if isinstance(left_component, Variable) else left_component
+            gain1 = self._buses[element.bus].variable_to_register[right_component] if isinstance(right_component, Variable) else right_component
             gain_result_register = QPyProgram.Register()
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.Nop())
- 
+
             if element.gain.operator == "+":
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Add(gain1_register, gain2_register, gain_result_register))
+                component=QPyInstructions.Add(gain0, gain1, gain_result_register))
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.Nop())
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
@@ -673,36 +674,35 @@ class QbloxCompiler:
             )
             
             elif element.gain.operator == "-":
-                if isinstance(gain1_register, QPyProgram.Register):
+                if isinstance(gain0, QPyProgram.Register):
                     self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Sub(gain1_register, gain2_register, gain_result_register))
+                    component=QPyInstructions.Sub(gain0, gain1, gain_result_register))
                 else: # Q1ASM forbids the first element of the add to be an immediate
                     constant_register = QPyProgram.Register()
-                    if gain1_register < 0:
+                    if gain0 < 0:
                         zero_register = QPyProgram.Register()
                         self._buses[element.bus].qpy_block_stack[-1].append_component(
                         component=QPyInstructions.Move(0, zero_register))
                         self._buses[element.bus].qpy_block_stack[-1].append_component(
                         component=QPyInstructions.Nop())
                         self._buses[element.bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.Sub(zero_register, abs(gain1_register), constant_register))
+                        component=QPyInstructions.Sub(zero_register, abs(gain0), constant_register))
                         self._buses[element.bus].qpy_block_stack[-1].append_component(
                         component=QPyInstructions.Nop())
                     #TODO: this move is done at every iteration of the loop, ideally it will be done outside of the loop where the registers for the loop iteration are added - this will require a qpysequence modification
                     else:
                         self._buses[element.bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.Move(gain1_register, constant_register))
+                        component=QPyInstructions.Move(gain0, constant_register))
                         self._buses[element.bus].qpy_block_stack[-1].append_component(
                         component=QPyInstructions.Nop())
                     self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Sub(constant_register, gain2_register, gain_result_register))
+                    component=QPyInstructions.Sub(constant_register, gain1, gain_result_register))
 
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.Nop())
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.SetAwgGain(gain_0=gain_result_register, gain_1=gain_result_register)
             )
-
 
         else:
             gain = (
@@ -849,7 +849,7 @@ class QbloxCompiler:
                 # Retrieve the uuid of the variable instead of the whole expression
                 variable_duration = element.duration.variables[0]
                 variable_duration_register = self._buses[element.bus].variable_to_register[variable_duration]
-                constant_duration = element.duration.constants
+                constant_duration = element.duration.constant
                 if variable_duration not in self._buses[element.bus].dynamic_durations:
                     self._buses[element.bus].dynamic_durations.append(variable_duration)
 

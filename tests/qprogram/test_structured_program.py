@@ -2,12 +2,13 @@ from collections import deque
 
 import numpy as np
 import pytest
-
+import operator
+import re
 from qililab import Domain
 from qililab.exceptions import VariableAllocated
 from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.qprogram.variable import FloatVariable, IntVariable, VariableExpression
+from qililab.qprogram.variable import FloatVariable, IntVariable, VariableExpression, Variable
 
 
 class TestStructuredProgram:
@@ -211,82 +212,84 @@ class TestStructuredProgram:
         expr2 = 10 + time_variable_expression
         expr3 = time_variable_expression - 5
         expr4 = 10 - time_variable_expression
+        expr5 = time_variable_expression + -5
+        expr6 = -10 - time_variable_expression
+        expr7 = time_variable_expression -- 10
 
         # Check that expressions are instances of VariableExpression
         assert isinstance(expr1, VariableExpression)
         assert isinstance(expr2, VariableExpression)
         assert isinstance(expr3, VariableExpression)
         assert isinstance(expr4, VariableExpression)
+        assert isinstance(expr5, VariableExpression)
+        assert isinstance(expr6, VariableExpression)
+        assert isinstance(expr7, VariableExpression)
 
         # Check domain inference
         assert expr1.domain == Domain.Time
         assert expr2.domain == Domain.Time
         assert expr3.domain == Domain.Time
         assert expr4.domain == Domain.Time
+        assert expr5.domain == Domain.Time
+        assert expr6.domain == Domain.Time
+        assert expr7.domain == Domain.Time
 
         # Check repr string
         assert repr(expr1) == f"({time_variable_expression} + 5)"
-        assert repr(expr2) == f"(10 + {time_variable_expression})"
+        assert repr(expr2) == f"({time_variable_expression} + 10)"
         assert repr(expr3) == f"({time_variable_expression} - 5)"
         assert repr(expr4) == f"(10 - {time_variable_expression})"
+        assert repr(expr5) == f"({time_variable_expression} - 5)"
+        assert repr(expr6) == f"(-10 - {time_variable_expression})"
+        assert repr(expr7) == f"({time_variable_expression} + 10)"
 
         # Check extract methods
-        assert expr1.extract_variables() == time_variable_expression
-        assert expr2.extract_variables() == time_variable_expression
-        assert expr3.extract_variables() == time_variable_expression
-        assert expr4.extract_variables() == time_variable_expression
-        assert expr1.extract_constants() == 5
-        assert expr2.extract_constants() == 10
-        assert expr3.extract_constants() == 5
-        assert expr4.extract_constants() == 10
+        assert expr1._extract_variables() == [time_variable_expression]
+        assert expr2._extract_variables() == [time_variable_expression]
+        assert expr3._extract_variables() == [time_variable_expression]
+        assert expr4._extract_variables() == [time_variable_expression]
+        assert expr5._extract_variables() == [time_variable_expression]
+        assert expr6._extract_variables() == [time_variable_expression]
+        assert expr7._extract_variables() == [time_variable_expression]
+        assert expr1._extract_constant() == 5
+        assert expr2._extract_constant() == 10
+        assert expr3._extract_constant() == 5
+        assert expr4._extract_constant() == 10
+        assert expr5._extract_constant() == abs(-5)
+        assert expr6._extract_constant() == -10
+        assert expr7._extract_constant() == abs(-10)
 
-    # def test_variable_expression_raises_error_for_non_time_domain(self, instance: StructuredProgram):
-    #     """Test that VariableExpression raises ValueError if used with a non-Time domain variable"""
-    #     freq_var = instance.variable("freq", domain=Domain.Frequency)
-    #     phase_var = instance.variable("phase", domain=Domain.Phase)
-    #     voltage_var = instance.variable("voltage", domain=Domain.Voltage)
-    #     flux_var = instance.variable("flux", domain=Domain.Flux)
-    #     for var in [freq_var, phase_var, voltage_var, flux_var]:
-    #         with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
-    #             _ = var + 5
+    def test_variable_expression_unitary_operations(self, instance: StructuredProgram):
+        """Test unitary expression with Variables"""
+        time_variable = instance.variable(label="time", domain=Domain.Time)
+
+        expr1 = +time_variable
+        expr2 = -time_variable
+
+        # Check that expressions are instances of the correct class
+        assert isinstance(expr1, (Variable, IntVariable))
+        assert not isinstance(expr1, VariableExpression)
+        assert isinstance(expr2, (Variable, IntVariable, VariableExpression))
+
+        # Check domain inference
+        assert expr1.domain == Domain.Time
+        assert expr2.domain == Domain.Time
+
+        # Check repr string
+        assert repr(expr1) == f"{time_variable}"
+        assert repr(expr2) == f"(0 - {time_variable})"
+
+        # Check extract methods
+        assert expr2._extract_variables() == [time_variable]
+        assert expr2._extract_constant() == 0
+        
+        with pytest.raises(NotImplementedError, match="Taking the absolute of a variable is not implemented in QProgram."):
+            abs(time_variable)
 
     def test_variable_expression_infer_domain_error(self):
         # Pure-constant expression should fail to infer a domain
         with pytest.raises(ValueError, match="Cannot infer domain from constants."):
             VariableExpression(5, "+", 3)
-
-    def test_variable_expression_nested_operations(self, instance):
-        # Test __add__, __radd__, __sub__ and __rsub__ on an existing VariableExpression
-        time_var = instance.variable(label="time", domain=Domain.Time)
-        base_expr = time_var + 5
-
-        # nested add
-        nested_add = base_expr + 10
-        assert isinstance(nested_add, VariableExpression)
-        assert repr(nested_add) == f"({base_expr} + 10)"
-
-        # reversed add
-        nested_radd = 20 + base_expr
-        assert isinstance(nested_radd, VariableExpression)
-        assert repr(nested_radd) == f"(20 + {base_expr})"
-
-        # nested sub
-        nested_sub = base_expr - 2
-        assert isinstance(nested_sub, VariableExpression)
-        assert repr(nested_sub) == f"({base_expr} - 2)"
-
-        # reversed sub
-        nested_rsub = 30 - base_expr
-        assert isinstance(nested_rsub, VariableExpression)
-        assert repr(nested_rsub) == f"(30 - {base_expr})"
-
-    def test_extract_constants_raises_error_when_no_constants(self, instance):
-        # An expression made of two Variables should have no constants to extract
-        t1 = instance.variable(label="t1", domain=Domain.Time)
-        t2 = instance.variable(label="t2", domain=Domain.Time)
-        expr = t1 + t2
-        with pytest.raises(ValueError, match="No Variable instance found in expression"):
-            expr.extract_constants()
 
     def test_extract_variables_raises_error_when_no_variables(self, instance):
         # Create a valid VariableExpression with a Time variable
@@ -299,42 +302,110 @@ class TestStructuredProgram:
 
         # Now extract_variables should fail because no Variable remains
         with pytest.raises(ValueError, match="No Variable instance found in expression"):
-            expr.extract_variables()
-
-    def test_substraction_raises_error_non_time_domain(self, instance):
-        # Substractions are not implemented for non time domains
-        freq1 = instance.variable(label="freq1", domain=Domain.Frequency)
-        freq2 = instance.variable(label="freq2", domain=Domain.Frequency)
-        with pytest.raises(NotImplementedError, match=f"For the {Domain.Frequency.name} domain, only the addition operator is implemented in VariableExpression."):
-            expr = freq1 - freq2
+            expr._extract_variables()
 
     def test_two_variables_time_domain(self, instance):
         # More than 2 variable is not allowed for time domains
         time1 = instance.variable(label="time1", domain=Domain.Time)
         time2 = instance.variable(label="time2", domain=Domain.Time)
-        with pytest.raises(NotImplementedError, match="Combining several time variables in one expression is not implemented."):
-            expr = time1 + time2
+        with pytest.raises(NotImplementedError, match='For the Time domain, combining several variables in one expression is not implemented.'):
+            time1 + time2
 
     def test_three_variable_raises_error(self, instance):
+        # Freqeuncy doe snot support Variable Expressions
+        gain1 = instance.variable(label="gain1", domain=Domain.Voltage)
+        gain2 = instance.variable(label="gain2", domain=Domain.Voltage)
+        gain3 = instance.variable(label="gain3", domain=Domain.Voltage)
+        with pytest.raises(NotImplementedError, match=f"Chaining Variable expressions is not supported; use at most one binary operation."):
+            gain1 + gain2 + gain3
+
+    def test_frequency_domain_raises_error(self, instance):
         # Substractions are not implemented for non time domains
         freq1 = instance.variable(label="freq1", domain=Domain.Frequency)
         freq2 = instance.variable(label="freq2", domain=Domain.Frequency)
-        freq3 = instance.variable(label="freq3", domain=Domain.Frequency)
-        with pytest.raises(NotImplementedError, match=f"For the {Domain.Frequency.name} domain, Variable Expression currently supports up to two variables only."):
-            expr = freq1 + freq2 + freq3
+        with pytest.raises(NotImplementedError, match=f"For the {Domain.Frequency.name} domain, VariableExpression is not supported yet."):
+            freq1 + freq2
 
     def test_forbidden_operation(self,instance):
         # Only addition and substraction are possible
         freq1 = instance.variable(label="freq1", domain=Domain.Frequency)
         freq2 = instance.variable(label="freq2", domain=Domain.Frequency)
         with pytest.raises(NotImplementedError, match=f"Operation 'multiplication \(\*\)' is not implemented for QProgram"):
-            expr = freq1 * freq2
+            freq1 * freq2
 
 
     def test_combine_domains_raises_error(self,instance):
         # Only one type of domain per expression is allowed
         gain = instance.variable(label="gain", domain=Domain.Voltage)
         freq = instance.variable(label="freq", domain=Domain.Frequency)
-        with pytest.raises(ValueError, match=f"All variables should have the same domain."):
-            expr = gain + freq
-   
+        with pytest.raises(ValueError, match="All variables should have the same domain."):
+            gain + freq
+
+    @pytest.mark.parametrize(
+        "op, operation_str",
+        [
+            (operator.mul, "multiplication (*)"),
+            (operator.matmul, "matrix multiplication (@)"),
+            (operator.truediv, "division (/)"),
+            (operator.floordiv, "floor division (//)"),
+            (operator.mod, "modulo (%)"),
+            (operator.pow, "power (**)"),
+            (operator.and_, "bitwise and (&)"),
+            (operator.or_, "bitwise or (|)"),
+            (operator.xor, "bitwise xor (^)"),
+            (operator.lshift, "left shift (<<)"),
+            (operator.rshift, "right shift (>>)"),
+            (operator.gt, "greater-than (>)"),
+            (operator.ge, "greater-or-equal (>=)"),
+            # reflected ops
+            (operator.mul, "reflected multiplication (*)"),      # 10 * gain
+            (operator.truediv, "reflected division (/)"),         # 10 / gain
+        ],
+    )
+    def test_unsupported_operations(self, instance, op, operation_str):
+        gain = instance.variable(label="gain", domain=Domain.Voltage)
+
+        if operation_str.startswith("reflected"):
+            expr = lambda: op(10, gain)
+        else:
+            expr = lambda: op(gain, 10)
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(f"Operation '{operation_str}' is not implemented for QProgram"),
+        ):
+            expr()
+
+    def test_unsupported_inplace_operations(self, instance):
+        gain = instance.variable(label="gain", domain=Domain.Voltage)
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape("Operation 'in-place addition (+=)' is not implemented for QProgram"),
+        ):
+            gain += 10
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape("Operation 'in-place subtraction (-=)' is not implemented for QProgram"),
+        ):
+            gain -= 10
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape("Operation 'in-place multiplication (*=)' is not implemented for QProgram"),
+        ):
+            gain *= 10
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape("Operation 'in-place division (/=)' is not implemented for QProgram"),
+        ):
+            gain /= 10
+
+    def test_non_int_constant_raise_error(self, instance):
+        gain = instance.variable(label="gain", domain=Domain.Voltage)
+        with pytest.raises(
+            ValueError,
+            match=re.escape("Constants must be integers."),
+        ):
+            gain + 0.5

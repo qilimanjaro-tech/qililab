@@ -15,10 +15,7 @@
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
-from qililab.qprogram.variable import Variable, VariableExpression
-
-# fuck not sure at all, and might need to be extended to fre, offset, phase etc...
-# variable expression is a child of variable do i need it?
+from qililab.qprogram.variable import Variable
 
 @yaml.register_class
 class SetGain(Operation):
