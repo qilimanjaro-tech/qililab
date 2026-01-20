@@ -14,6 +14,7 @@
 
 import ast
 import re
+import warnings
 
 from pydantic import BaseModel
 
@@ -89,6 +90,13 @@ class DigitalCompilationSettings(BaseModel):
         if regex_match is None:
             raise ValueError(f"Alias {alias} has incorrect format")
         name = regex_match["gate"]
+        if name.upper() == "DRAG":
+            warnings.warn(
+                "'DRAG' gate has been renamed to 'Rmw'. Please change your get/set methods.",
+                FutureWarning,
+                stacklevel=3,
+            )
+            name = "Rmw"
         qubits_str = regex_match["qubits"]
         qubits = ast.literal_eval(qubits_str)
         gates_settings = self.get_gate(name=name, qubits=qubits)
@@ -107,6 +115,13 @@ class DigitalCompilationSettings(BaseModel):
         if regex_match is None:
             raise ValueError(f"Could not find gate {alias} in gate settings.")
         name = regex_match["gate"]
+        if name.upper() == "DRAG":
+            warnings.warn(
+                "'DRAG' gate has been renamed to 'Rmw'. Please change your get/set methods.",
+                FutureWarning,
+                stacklevel=3,
+            )
+            name = "Rmw"
         qubits_str = regex_match["qubits"]
         qubits = ast.literal_eval(qubits_str)
         gates_settings = self.get_gate(name=name, qubits=qubits)

@@ -14,9 +14,13 @@
 
 """IQPair dataclass."""
 
+import warnings
+
 from qililab.waveforms.iq_waveform import IQWaveform
 from qililab.waveforms.waveform import Waveform
 from qililab.yaml import yaml
+
+from .iq_drag import IQDrag
 
 
 @yaml.register_class
@@ -46,3 +50,21 @@ class IQPair(IQWaveform):
             int: The duration of the waveforms.
         """
         return self.I.get_duration()
+
+    @staticmethod
+    def DRAG(amplitude: float, duration: int, num_sigmas: float, drag_coefficient: float) -> IQDrag:
+        """Create a DRAG pulse. This is an IQ pair where the I channel corresponds to the gaussian wave and the Q is the drag correction, which corresponds to the derivative of the I channel times a ``drag_coefficient``.
+
+        Args:
+            amplitude (float): Maximum amplitude of the pulse.
+            duration (int): Duration of the pulse (ns).
+            num_sigmas (float): Sigma number of the gaussian pulse shape. Defines the width of the gaussian pulse.
+            drag_coefficient (float): Drag coefficient that gives the DRAG its imaginary components.
+        """
+
+        warnings.warn(
+            "IQPair.DRAG is deprecated and will be removed in a future release. Use IQDrag(...) instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return IQDrag(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas, drag_coefficient=drag_coefficient)
