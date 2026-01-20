@@ -15,12 +15,13 @@
 """Keithley2600 instrument."""
 
 from dataclasses import dataclass
+import time
 
 import numpy as np
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import ChannelID, InstrumentName, Keithley2400Driver, Parameter, ParameterValue
+from qililab.typings import ChannelID, InstrumentName, Keithley2400Driver, OutputID, Parameter, ParameterValue
 
 
 @InstrumentFactory.register
@@ -38,38 +39,61 @@ class Keithley2400(Instrument):
     class Keithley2400Settings(Instrument.InstrumentSettings):
         """Settings for Keithley2600 instrument."""
 
-        max_current: float
-        max_voltage: float
+        mode: str
+        output: bool = True
+        current: float | None = None
+        voltage: float | None = None
 
-    settings: Keithley2600Settings
-    device: Keithley2600Driver
+    settings: Keithley2400Settings
+    device: Keithley2400Driver
 
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Setup instrument."""
-        if parameter == Parameter.MAX_CURRENT:
-            self.max_current = float(value)
+        if parameter == Parameter.CURRENT:
+            self.current = float(value)
             if self.is_device_active():
-                self.device.smua.limiti(self.max_current)
+                self.device.mode('CURR')
+                self.device.output(True)
+                self.device.curr(self.current)
             return
-        if parameter == Parameter.MAX_VOLTAGE:
-            self.max_voltage = float(value)
+        if parameter == Parameter.VOLTAGE:
+            self.voltage = float(value)
             if self.is_device_active():
-                self.device.smua.limitv(self.max_voltage)
+                self.device.mode('VOLT')
+                self.device.output(True)
+                self.device.volt(self.voltage)
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None):
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
+    ):
         """Setup instrument."""
-        if parameter == Parameter.MAX_CURRENT:
-            return self.max_current
-        if parameter == Parameter.MAX_VOLTAGE:
-            return self.max_voltage
+        if parameter == Parameter.CURRENT:
+            if self.mode == "VOLT" and self.is_device_active():
+                self.current = self.device.curr()
+            return self.current
+        if parameter == Parameter.VOLTAGE:
+            if self.mode == "CURR" and self.is_device_active():
+                self.voltage = self.device.volt()
+            return self.voltage
+            
         raise ParameterNotFound(self, parameter)
 
     def initial_setup(self):
         """performs an initial setup"""
-        self.device.smua.limiti(self.max_current)
-        self.device.smua.limitv(self.max_voltage)
+        self.device.mode(self.mode)
+        self.device.output(self.output)
+        if self.mode == "VOLT":
+            if not self.voltage:
+                raise ValueError("Mode set to VOLTage but no voltage given.")
+            self.device.volt(self.voltage)
+        elif self.mode == "CURR":
+            if not self.current:
+                raise ValueError("Mode set to CURRent but no current given.")
+            self.device.curr(self.current)
+        else:
+            raise ValueError("Mode has to be either CURR (current) or Volt (voltage).")
 
     def turn_on(self):
         """Turn on an instrument."""
@@ -81,59 +105,95 @@ class Keithley2400(Instrument):
         """Reset instrument."""
         self.device.reset()
 
-    def fast_sweep(self, start: float, stop: float, steps: int, mode: str) -> tuple[np.ndarray, np.ndarray]:
-        """Perform a fast sweep using a deployed lua script and return an xarray dataset.
+    def fast_sweep(self, data_sweep: list | np.ndarray, time_interval: float) -> tuple[str, np.ndarray, np.ndarray]:
+        """Perform a fast sweep using a data list and return the dataset.
 
         Args:
-            start: starting sweep value (V or A)
-            stop: end sweep value (V or A)
-            steps: number of steps
-            mode: Type of sweep, either 'IV' (voltage sweep), 'VI' (current sweep two probe setup) or 'VIfourprobe'
-            (current sweep four probe setup)
+            data_sweep(list | np.ndarray): sweep list for either Voltage or Current (V or A)
+            time_interval: waiting time between measurements (in seconds)
 
         Returns:
-            np.ndarray: Measured data.
+            str: data type returned.
+            np.ndarray: Measurement time interval.
+            np.ndarray: Measured voltage or current.
         """
-        data = self.device.smua.doFastSweep(start=start, stop=stop, steps=steps, mode=mode)
-        x_values = np.linspace(start=start, stop=stop, num=steps)
-        return x_values, data.to_xarray().to_array().values.squeeze()
+        data_type = "Voltage (V)" if self.mode == "CURR" else "Current (A)"
+        measured_data = np.zeros(np.array(data_sweep).shape)
+        time_sweep = np.zeros(np.array(data_sweep).shape)
+
+        for ii, value in enumerate(data_sweep):
+            if self.mode == "VOLT":
+                self.voltage(value)
+                measured_data[ii] = self.current
+            if self.mode == "CURR":
+                self.current(value)
+                measured_data[ii] = self.voltage()
+            time.sleep(time_interval)
+            time_sweep[ii] = time.time()
+        return data_type, time_sweep, measured_data
 
     @property
-    def max_current(self):
-        """Keithley2600 'max_current' property.
+    def mode(self):
+        """Keithley2400 'mode' property.
 
         Returns:
-            float: Maximum current allowed in voltage mode.
+            str: Mode of the instrument.
         """
-        return self.settings.max_current
-
-    @max_current.setter
-    def max_current(self, value: float):
-        """Keithley2600 'max_current' setter property.
-
-        Args:
-            float: Maximum current allowed in voltage mode.
-        """
-        if self.is_device_active():
-            self.device.smua.limiti(value)
-        self.settings.max_current = value
+        return self.settings.mode
 
     @property
-    def max_voltage(self):
-        """Keithley2600 'max_voltage' property.
+    def output(self):
+        """Keithley2400 'output' property.
 
         Returns:
-            float: Maximum voltage allowed in current mode.
+            bool: Output of the instrument.
         """
-        return self.settings.max_voltage
+        return self.settings.output
 
-    @max_voltage.setter
-    def max_voltage(self, value: float):
-        """Keithley2600 'max_voltage' setter property.
+    @property
+    def current(self):
+        """Keithley2400 'current' property.
+
+        Returns:
+            float: Current in current (set) or voltage (get) mode.
+        """
+        if self.mode == "VOLT" and self.is_device_active():
+            return self.device.curr()
+        elif self.mode == "CURR":
+            return self.settings.current
+
+    @current.setter
+    def current(self, value: float):
+        """Keithley2400 'current' setter property.
 
         Args:
-            float: Maximum voltage allowed in current mode.
+            float: Current in current (set) mode.
         """
-        if self.is_device_active():
-            self.device.smua.limitv(value)
-        self.settings.max_voltage = value
+        if self.mode == "VOLT":
+            raise ValueError("VOLTage mode set but current given.")
+        elif self.mode == "CURR" and self.is_device_active():
+            self.device.curr(value)
+
+    @property
+    def voltage(self):
+        """Keithley2400 'voltage' property.
+
+        Returns:
+            float: Voltage in current (get) or voltage (set) mode.
+        """
+        if self.mode == "VOLT":
+            return self.settings.voltage
+        elif self.mode == "CURR" and self.is_device_active():
+            return self.device.volt()
+
+    @voltage.setter
+    def voltage(self, value: float):
+        """Keithley2400 'voltage' setter property.
+
+        Args:
+            float: Voltage in voltage (set) mode.
+        """
+        if self.mode == "VOLT" and self.is_device_active():
+            self.device.volt(value)
+        elif self.mode == "CURR":
+            raise ValueError("CURRent mode set but voltage given.")

@@ -30,8 +30,8 @@ class Keithley2400Controller(SingleInstrumentController):
 
     Args:
         name (InstrumentControllerName): Name of the Instrument Controller.
-        device (Keithley2600Driver): Instance of the qcodes Keithley2600 class.
-        settings (Keithley2600Settings): Settings of the instrument.
+        device (Keithley2400Driver): Instance of the qcodes Keithley2400 class.
+        settings (Keithley2400Settings): Settings of the instrument.
     """
 
     name = InstrumentControllerName.KEITHLEY2600
@@ -39,26 +39,26 @@ class Keithley2400Controller(SingleInstrumentController):
     modules: Sequence[Keithley2400]
 
     @dataclass
-    class Keithley2600ControllerSettings(InstrumentControllerSettings):
-        """Contains the settings of a specific Keithley2600 Controller."""
+    class Keithley2400ControllerSettings(InstrumentControllerSettings):
+        """Contains the settings of a specific Keithley2400 Controller."""
 
         def __post_init__(self):
             super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
 
-    settings: Keithley2600ControllerSettings
+    settings: Keithley2400ControllerSettings
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = Keithley2600Driver(
+        self.device = Keithley2400Driver(
             name=f"{self.name.value}_{self.alias}", address=f"TCPIP0::{self.address}::INSTR", visalib="@py"
         )
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
         for module in self.modules:
-            if not isinstance(module, Keithley2600):
+            if not isinstance(module, Keithley2400):
                 raise ValueError(
                     f"Instrument {type(module)} not supported."
-                    + f"The only supported instrument is {InstrumentTypeName.KEITHLEY2600}"
+                    + f"The only supported instrument is {InstrumentTypeName.KEITHLEY2400}"
                 )

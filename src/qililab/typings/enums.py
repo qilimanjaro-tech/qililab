@@ -322,6 +322,7 @@ class InstrumentControllerName(str, Enum):
 @yaml.register_class
 class Parameter(str, Enum):
     """Parameter names."""
+
     OPERATION_MODE = "operation_mode"
     ALC = "alc"
     IQ_WIDEBAND = "iq_wideband"
@@ -474,13 +475,15 @@ class Parameter(str, Enum):
 
 
 FILTER_PARAMETERS = [
-    p for p in Parameter
+    p
+    for p in Parameter
     if (
         p.name.startswith("EXPONENTIAL_AMPLITUDE")
         or p.name.startswith("EXPONENTIAL_TIME_CONSTANT")
         or p.name.startswith("EXPONENTIAL_STATE")
         or p.name.startswith("FIR_")
-    )]
+    )
+]
 
 
 class ResultName(str, Enum):
@@ -535,6 +538,7 @@ class InstrumentTypeName(str, Enum):
         * QbloxQRM
         * SGS100A
         * Attenuator
+        * Keithley2400
         * Keithley2600
         * QbloxD5a
         * QbloxS4g
@@ -546,6 +550,7 @@ class InstrumentTypeName(str, Enum):
     QBLOX_QRM = "QbloxQRM"
     ROHDE_SCHWARZ = "SGS100A"
     MINI_CIRCUITS = "Attenuator"
+    KEITHLEY2400 = "Keithley2400"
     KEITHLEY2600 = "Keithley2600"
     QBLOX_D5A = "QbloxD5a"
     QBLOX_S4G = "QbloxS4g"
