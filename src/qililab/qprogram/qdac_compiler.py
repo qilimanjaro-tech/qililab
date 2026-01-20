@@ -251,7 +251,7 @@ class QdacCompiler:
         """
 
         self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
-        self._buses = {bus: QdacBusCompilationInfo() for bus in self._qprogram.buses if bus in self._qdac_buses_alias}
+        self._buses = {bus: QdacBusCompilationInfo() for bus in self._qdac_buses if bus in self._qdac_buses_alias}
         self._loop_repetitions.update(dict.fromkeys(self._qdac_buses_alias, 1))
 
         self._channels = {bus.alias: bus.channels[0] for bus in self._qdac_buses if bus.alias in self._qdac_buses_alias}

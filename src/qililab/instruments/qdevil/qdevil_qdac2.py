@@ -419,8 +419,10 @@ class QDevilQDac2(VoltageSource):
             channel.dc_constant_V(0.0)
         if self._triggers:
             for trigger_name in self._triggers.keys():
-                self._triggers[trigger_name].close()
+                self.clear_trigger(trigger_name)
+            self._triggers = {}
         self.device.remove_traces()
+        self.device.reset()
         self._cache_awg = {}
         self._cache_dc = {}
 

@@ -1177,7 +1177,7 @@ class Platform:
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
         qdac_buses = [
-            bus for bus in buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
+            bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             # Retrieve the time of flight parameter from settings
