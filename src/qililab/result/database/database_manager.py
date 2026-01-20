@@ -429,7 +429,7 @@ class DatabaseManager:
             fitting_path=base_path,
             experiment_completed=False,
             start_time=start_time,
-            platform_after=platform,
+            platform_before=platform,
             qprogram=qprogram,
             calibration=serialize(calibration),
             parameters=serialize(parameters),
