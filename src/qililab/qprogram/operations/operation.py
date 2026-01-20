@@ -13,8 +13,10 @@
 # limitations under the License.
 
 
+from qililab.core.variables import Variable
 from qililab.qprogram.element import Element
-from qililab.qprogram.variable import Variable, VariableExpression
+from qililab.core.variables import VariableExpression, Variable
+
 
 
 class Operation(Element):
