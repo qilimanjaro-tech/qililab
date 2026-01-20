@@ -1,6 +1,6 @@
 [project]
 name = "qililab"
-version = "0.30.0"
+version = "0.31.0"
 description = "Fundamental package for fast characterization and calibration of quantum chips."
 authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
 urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}

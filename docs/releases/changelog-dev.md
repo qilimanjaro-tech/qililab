@@ -2,8 +2,6 @@
 
 ### New features since last release
 
-## Changelog
-
 - This release introduces a significant architectural refactor of the digital and pulse-related layers, removes legacy dependencies, and aligns naming and abstractions with established superconducting-qubit literature.
 
   All references to **Qibo** have been removed from the codebase, along with the complete removal of the **pulse** module. The **digital** module has been fully restructured around a new, self-contained compilation and transpilation pipeline. This includes the introduction of a native **CircuitTranspiler** and **CircuitToQProgramCompiler**. The new **CircuitTranspiler** is responsible for decomposing circuits into the native gate set, managing logical and physical qubit layouts, and applying optimizations. It is implemented as a linear pipeline of `CircuitTranspilerPass` objects, replacing the previous Router, Placer, and Optimizer components that depended on Qibo-based implementations. Each transpiler pass now has a concrete, narrowly defined responsibility.
