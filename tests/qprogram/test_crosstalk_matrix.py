@@ -7,7 +7,7 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 @pytest.fixture(name="crosstalk_array_buses")
 def get_xtalk_array():
     """Get a tuple of crosstalk array and buses"""
-    xtalk_array = np.array([[1, 2, 3], [0.1, 0.2, 0.3], [0, 1, 0]])
+    xtalk_array = np.array([[1, 0.2, 0.3], [0.1, 1, 0.3], [0, 1, 0]])
     buses = ["flux_0", "flux_1", "flux_2"]
     return (xtalk_array, buses)
 
@@ -27,8 +27,8 @@ def get_flux_vector(flux_vector_dict):
 def get_xtalk_matrix(crosstalk_array_buses):
     """Crosstalk matrix for the following xtalk
             flux_0  flux_1  flux_2
-    flux_0  1       2       3
-    flux_1  0.1     0.2     0.3
+    flux_0  1       0.2     0.3
+    flux_1  0.1     1       0.3
     flux_2  0       1       0
     """
     return CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
@@ -60,6 +60,19 @@ class TestFluxVector:
         assert flux_vector.flux_vector == flux
         assert flux_vector.to_dict() == flux_vector.bias_vector
 
+    def test_set_crosstalk_empty_flux_vector(self, crosstalk_matrix):
+        flux_vector = FluxVector()
+        flux_vector.set_crosstalk(crosstalk_matrix)
+        assert flux_vector.crosstalk == crosstalk_matrix
+        assert flux_vector.to_dict() == flux_vector.bias_vector
+
+    def test_set_list(self, crosstalk_matrix):
+        flux_vector = FluxVector()
+        flux_vector.set_crosstalk(crosstalk_matrix)
+        flux_vector["flux_0"] = [1, 2, 3, 4, 5]
+
+        assert np.array_equal(flux_vector.flux_vector["flux_0"], np.array([1, 2, 3, 4, 5]))
+
     def test_set_crosstalk_from_bias_set_vector(self, flux_vector, crosstalk_matrix):
         flux = flux_vector.set_crosstalk_from_bias(
             crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
@@ -67,6 +80,24 @@ class TestFluxVector:
         assert flux_vector.crosstalk == crosstalk_matrix
         assert flux_vector.flux_vector == flux
         assert flux_vector.to_dict() == flux_vector.bias_vector
+
+    def test_get_decomposed_vector(self, flux_vector, crosstalk_matrix):
+        flux_vector.set_crosstalk_from_bias(
+            crosstalk_matrix, bias_vector={"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
+        )
+        assert flux_vector.crosstalk == crosstalk_matrix
+        flux_no_bus_list = flux_vector.get_decomposed_vector()
+        flux_bus_list = flux_vector.get_decomposed_vector(bus_list=["flux_0", "flux_1"])
+        assert flux_no_bus_list["flux_0"].flux_vector == pytest.approx({'flux_0': 0.23, 'flux_1': 0, 'flux_2': 0})
+        assert flux_no_bus_list["flux_0"].bias_vector == pytest.approx({'flux_0': 0.2555555555555556, 'flux_1': 0.0, 'flux_2': -0.08518518518518518})
+        assert flux_no_bus_list["flux_1"].flux_vector == pytest.approx({'flux_0': 0, 'flux_1': 0.3, 'flux_2': 0})
+        assert flux_no_bus_list["flux_1"].bias_vector == pytest.approx({'flux_0': -1 / 3, 'flux_1': 0.0, 'flux_2': 10 / 9})
+        assert flux_no_bus_list["flux_2"].flux_vector == pytest.approx({'flux_0': 0, 'flux_1': 0, 'flux_2': 0.2})
+        assert flux_no_bus_list["flux_2"].bias_vector == pytest.approx({'flux_0': 8 / 45, 'flux_1': 0.2, 'flux_2': -98 / 135})
+        assert flux_bus_list["flux_0"].flux_vector == pytest.approx({'flux_0': 0.23, 'flux_1': 0, 'flux_2': 0.2})
+        assert flux_bus_list["flux_0"].bias_vector == pytest.approx({'flux_0': 13 / 30, 'flux_1': 0.2, 'flux_2': -73 / 90})
+        assert flux_bus_list["flux_1"].flux_vector == pytest.approx({'flux_0': 0, 'flux_1': 0.3, 'flux_2': 0.2})
+        assert flux_bus_list["flux_1"].bias_vector == pytest.approx({'flux_0': -7 / 45, 'flux_1': 0.2, 'flux_2': 52  / 135})
 
 
 class TestCrosstalkMatrix:
