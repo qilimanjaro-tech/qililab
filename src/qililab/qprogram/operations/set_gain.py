@@ -15,7 +15,7 @@
 
 from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
-from qililab.qprogram.variable import Variable
+from qililab.core.variables import Variable
 
 @yaml.register_class
 class SetGain(Operation):
