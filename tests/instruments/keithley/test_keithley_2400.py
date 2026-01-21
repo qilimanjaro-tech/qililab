@@ -1,4 +1,5 @@
 """Tests for the Keithley2400 class."""
+
 import re
 import pytest
 from unittest import mock
@@ -6,6 +7,7 @@ from qililab.instruments import ParameterNotFound
 from qililab.typings import Parameter, InstrumentName
 from qililab.instruments.utils import InstrumentFactory
 import numpy as np
+
 
 @pytest.fixture
 def keithley2400_curr_mode():
@@ -23,6 +25,7 @@ def keithley2400_curr_mode():
     instrument.is_device_active = mock.Mock(return_value=True)
     return instrument
 
+
 @pytest.fixture
 def keithley2400_volt_mode():
     """Keithley2400 in voltage source mode."""
@@ -38,7 +41,8 @@ def keithley2400_volt_mode():
     instrument.device = mock.Mock()
     instrument.is_device_active = mock.Mock(return_value=True)
     return instrument
-    
+
+
 class TestKeithley2400:
     def test_set_current_parameter(self, keithley2400_curr_mode):
         # Test setting current
@@ -76,6 +80,11 @@ class TestKeithley2400:
 
         assert value == 1e-6
         keithley2400_volt_mode.device.curr.assert_called_once()
+
+    def test_get_parameter_invalid(self, keithley2400_curr_mode):
+        # Test setting an invalid parameter
+        with pytest.raises(ParameterNotFound):
+            keithley2400_curr_mode.get_parameter("INVALID_PARAMETER")
 
     def test_initial_setup_current_mode(self, keithley2400_curr_mode):
         # Test initial setup to ensure it calls the device methods correctly in current mode

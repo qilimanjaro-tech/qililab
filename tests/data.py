@@ -630,6 +630,22 @@ class Galadriel:
         ],
         INSTRUMENTCONTROLLER.RESET: True,
     }
+    
+    keithley_2400_wrong_module: dict[str, Any] = {
+        "name": InstrumentControllerName.KEITHLEY2400.value,
+        "alias": "keithley_2400_wrong_module",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.113",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "keithley_2600",
+                "slot_id": 0,
+            }
+        ],
+        INSTRUMENTCONTROLLER.RESET: True,
+    }
 
     keithley_2400: dict[str, Any] = {
         "name": InstrumentName.KEITHLEY2400.value,
