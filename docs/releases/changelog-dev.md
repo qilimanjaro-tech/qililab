@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Added drivers to operate the Keithley 2400 through the runcard and run a measurement. Through the runcard the user can set the mode and a respective voltage or current. alternatively the user can sweep either current or voltage and retrieve the data of the other component.
+[#1065](https://github.com/qilimanjaro-tech/qililab/pull/1065)
+
 ### Improvements
 
 - For Autocalibration database, moved `sample_name` and `cooldown` from `AutocalMeasurement` (independent experiment) to `CalibrationRun` (full calibration tree). This way the database does not include redundant information, as these variables do not change from one measurement to another, only in different calibration runs.
