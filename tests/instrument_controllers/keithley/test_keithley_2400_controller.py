@@ -1,4 +1,5 @@
 import copy
+from unittest.mock import patch
 
 import pytest
 
@@ -39,6 +40,20 @@ class TestKeithley2400Controller:
         controller_modules = controller_instance.modules
         assert len(controller_modules) == 1
         assert isinstance(controller_modules[0], Keithley2400)
+
+    def test_initialize_device(self, platform: Platform):
+        """Test Keithley2400 Controller initializes the device"""
+        controller_alias = "keithley_2400_controller_0"
+        controller = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
+
+        with patch("qililab.instrument_controllers.keithley.keithley_2400_controller.Keithley2400Driver") as mock_driver:
+            controller._initialize_device()
+            mock_driver.assert_called_once()
+            args, kwargs = mock_driver.call_args
+            assert kwargs["name"] == f"{controller.name.value}_{controller.alias}"
+            assert kwargs["address"] == f"TCPIP0::{controller.address}::INSTR"
+            assert kwargs["visalib"] == "@py"
+            assert controller.device == mock_driver.return_value
 
     def test_check_supported_modules_raises_exception(
         self, keithley_2400_controller_wrong_module: Keithley2400Controller
