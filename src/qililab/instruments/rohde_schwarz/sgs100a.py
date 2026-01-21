@@ -274,7 +274,7 @@ class SGS100A(Instrument):
         else:
             warnings.warn(
                 f"Operation mode '{self.operation_mode}' not allowed, defaulting to normal operation mode",
-                ResourceWarning
+                ResourceWarning,
             )
             self.settings.operation_mode = "normal"
             self.device.write(":SOUR:OPMode NORMal")

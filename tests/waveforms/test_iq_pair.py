@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qililab.waveforms import DragCorrection, Gaussian, IQPair, Square
+from qililab.waveforms import GaussianDragCorrection, Gaussian, IQPair, Square, IQDrag
 
 
 @pytest.fixture(name="iq_pair")
@@ -21,6 +21,11 @@ class TestIQPair:
         """Test get_duration method."""
         assert iq_pair.get_duration() == 100
 
+    def test_getters_return_original_waveforms(self, iq_pair: IQPair):
+        """IQPair accessors should expose the stored waveforms unchanged."""
+        assert iq_pair.get_I() is iq_pair.I
+        assert iq_pair.get_Q() is iq_pair.Q
+
     def test_iq_pair_with_different_durations_throws_error(self):
         """Test that waveforms of an IQ pair must have the same duration."""
         with pytest.raises(ValueError, match="Waveforms of an IQ pair must have the same duration."):
@@ -34,14 +39,17 @@ class TestIQPair:
                 Q=IQPair(I=Square(amplitude=0.5, duration=100), Q=Square(amplitude=1.0, duration=100)),
             )
 
+        with pytest.raises(TypeError, match="Waveform inside IQPair must have Waveform type."):
+            IQPair(I=Square(amplitude=0.5, duration=100), Q="not a waveform")
+
     def test_drag_method(self):
         """Test __init__ method"""
-        drag = IQPair.DRAG(drag_coefficient=0.4, amplitude=0.7, duration=40, num_sigmas=2)
+        drag = IQDrag(drag_coefficient=0.4, amplitude=0.7, duration=40, num_sigmas=2)
         gaus = Gaussian(amplitude=0.7, duration=40, num_sigmas=2)
-        corr = DragCorrection(drag_coefficient=0.4, waveform=gaus)
+        corr = GaussianDragCorrection(amplitude=gaus.amplitude, duration=gaus.duration, num_sigmas=gaus.num_sigmas, drag_coefficient=0.4)
 
-        assert isinstance(drag, IQPair)
-        assert isinstance(drag.I, Gaussian)
-        assert isinstance(drag.Q, DragCorrection)
-        assert np.allclose(drag.I.envelope(), gaus.envelope())
-        assert np.allclose(drag.Q.envelope(), corr.envelope())
+        assert isinstance(drag, IQDrag)
+        assert isinstance(drag.get_I(), Gaussian)
+        assert isinstance(drag.get_Q(), GaussianDragCorrection)
+        assert np.allclose(drag.get_I().envelope(), gaus.envelope())
+        assert np.allclose(drag.get_Q().envelope(), corr.envelope())

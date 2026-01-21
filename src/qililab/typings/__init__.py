@@ -27,7 +27,6 @@ from .enums import (
     IntegrationMode,
     Parameter,
     PulseDistortionName,
-    PulseShapeName,
     ReferenceClock,
     ResultName,
 )
@@ -70,7 +69,6 @@ __all__ = [
     "Parameter",
     "ParameterValue",
     "PulseDistortionName",
-    "PulseShapeName",
     "QDevilQDac2",
     "QMMDriver",
     "QbloxD5a",

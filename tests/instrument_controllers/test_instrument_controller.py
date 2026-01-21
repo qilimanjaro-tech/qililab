@@ -10,7 +10,8 @@ from qililab.instrument_controllers.rohde_schwarz import SGS100AController
 from qililab.platform import Platform
 from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter
 from tests.data import Galadriel
-from tests.test_utils import build_platform
+from qililab.data_management import build_platform
+# from tests.test_utils import build_platform
 
 
 @pytest.fixture(name="platform")
