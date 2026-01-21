@@ -674,7 +674,7 @@ class QbloxCompiler:
                 self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.SetAwgGain(gain_0=gain_result_register, gain_1=gain_result_register)
             )
-            
+
             elif element.gain.operator == "-":
                 if isinstance(gain0, QPyProgram.Register):
                     self._buses[element.bus].qpy_block_stack[-1].append_component(
@@ -1080,11 +1080,12 @@ class QbloxCompiler:
             return
 
         duration: QPyProgram.Register | int
-        convert = QbloxCompiler._convert_value(element)
-        duration = convert(element.duration)
 
         if isinstance(element.duration, Variable):
             raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
+
+        convert = QbloxCompiler._convert_value(element)
+        duration = convert(element.duration)
 
         if not self._ext_trigger:
             raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")

@@ -13,9 +13,10 @@
 # limitations under the License.
 
 
+from qililab.core.variables import Variable
 from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
-from qililab.core.variables import Variable
+
 
 @yaml.register_class
 class SetGain(Operation):

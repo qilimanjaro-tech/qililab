@@ -775,7 +775,7 @@ def fixture_dynamic_wait_three_buses_static_static() -> QProgram:
 
 @pytest.fixture(name="variable_expression_one_gain")
 def variable_expression_one_gain() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     gain = qp.variable(label="gain", domain=Domain.Voltage)
     with qp.for_loop(variable=gain, start=0, stop=1, step=0.1):
@@ -793,9 +793,9 @@ def variable_expression_one_gain() -> QProgram:
         qp.play(bus="drive", waveform=drag_pair)
         qp.set_gain("drive", - gain)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_gain("drive", - gain + 10)
+        qp.set_gain("drive", gain -- 10)
         qp.play(bus="drive", waveform=drag_pair)
-        qp.set_gain("drive", - gain - 10)
+        qp.set_gain("drive", gain +-10)
         qp.play(bus="drive", waveform=drag_pair)
     return qp
 
@@ -3971,13 +3971,23 @@ other_max_duration_0:
                             sub              R9, R1, R10
                             nop
                             set_awg_gain     R10, R10
-                            play             0, 1, 40    
+                            play             0, 1, 40   
                             nop
                             move             0, R11
                             nop
                             sub              R11, R1, R12
                             nop
                             set_awg_gain     R12, R12
+                            play             0, 1, 40 
+                            nop
+                            add              R1, 10, R13
+                            nop
+                            set_awg_gain     R13, R13
+                            play             0, 1, 40 
+                            nop
+                            sub              R1, 10, R14
+                            nop
+                            set_awg_gain     R14, R14
                             play             0, 1, 40 
                             add              R1, 3276, R1   
                             loop             R0, @loop_0    

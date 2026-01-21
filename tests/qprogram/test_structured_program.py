@@ -330,7 +330,7 @@ class TestStructuredProgram:
         # Only addition and substraction are possible
         freq1 = instance.variable(label="freq1", domain=Domain.Frequency)
         freq2 = instance.variable(label="freq2", domain=Domain.Frequency)
-        with pytest.raises(NotImplementedError, match=f"Operation 'multiplication \(\*\)' is not implemented for QProgram"):
+        with pytest.raises(TypeError, match=f"'multiplication \(\*\)' is not a valid operation for QProgram variables."):
             freq1 * freq2
 
 
@@ -357,6 +357,8 @@ class TestStructuredProgram:
             (operator.rshift, "right shift (>>)"),
             (operator.gt, "greater-than (>)"),
             (operator.ge, "greater-or-equal (>=)"),
+            (operator.lt, "less-than (<)"),
+            (operator.le, "lesser-or-equal (<=)"),
             # reflected ops
             (operator.mul, "reflected multiplication (*)"),      # 10 * gain
             (operator.truediv, "reflected division (/)"),         # 10 / gain
@@ -371,34 +373,34 @@ class TestStructuredProgram:
             expr = lambda: op(gain, 10)
 
         with pytest.raises(
-            NotImplementedError,
-            match=re.escape(f"Operation '{operation_str}' is not implemented for QProgram"),
+            TypeError,
+            match=re.escape( f"'{operation_str}' is not a valid operation for QProgram variables."),
         ):
             expr()
 
     def test_unsupported_inplace_operations(self, instance):
         gain = instance.variable(label="gain", domain=Domain.Voltage)
         with pytest.raises(
-            NotImplementedError,
-            match=re.escape("Operation 'in-place addition (+=)' is not implemented for QProgram"),
+            TypeError,
+            match=re.escape("'in-place addition (+=)' is not a valid operation for QProgram variables."),
         ):
             gain += 10
 
         with pytest.raises(
-            NotImplementedError,
-            match=re.escape("Operation 'in-place subtraction (-=)' is not implemented for QProgram"),
+            TypeError,
+            match=re.escape("'in-place subtraction (-=)' is not a valid operation for QProgram variables."),
         ):
             gain -= 10
 
         with pytest.raises(
-            NotImplementedError,
-            match=re.escape("Operation 'in-place multiplication (*=)' is not implemented for QProgram"),
+            TypeError,
+            match=re.escape("'in-place multiplication (*=)' is not a valid operation for QProgram variables."),
         ):
             gain *= 10
 
         with pytest.raises(
-            NotImplementedError,
-            match=re.escape("Operation 'in-place division (/=)' is not implemented for QProgram"),
+            TypeError,
+            match=re.escape("'in-place division (/=)' is not a valid operation for QProgram variables."),
         ):
             gain /= 10
 

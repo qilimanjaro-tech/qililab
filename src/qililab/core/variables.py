@@ -57,8 +57,8 @@ def _validate_elements(elements: list[Variable | int]) -> None:
 
 def _unsupported_operation(operation_name: str):
     def method(self, *args, **kwargs):
-        raise NotImplementedError(
-            f"Operation '{operation_name}' is not implemented for QProgram."
+        raise TypeError(
+            f"'{operation_name}' is not a valid operation for QProgram variables."
         )
     return method
 
@@ -107,21 +107,21 @@ class Variable:
 
     def __add__(self, other):
         _validate_elements([self, other])
-        if isinstance(other, int) and other < 0:  # in the case where we have variable + (-cst)
+        if isinstance(other, int) and not isinstance(other, Variable) and other < 0:  # in the case where we have variable + (-cst)
             return VariableExpression(self, "-", abs(other))
         return VariableExpression(self, "+", other)
 
     def __radd__(self, other):
         # order change because Q1ASM can only have a register as first argument, changing it here avoids additional code in the qblox compiler
         _validate_elements([self, other])
-        if isinstance(other, int) and other < 0:
+        if isinstance(other, int) and not isinstance(other, Variable) and other < 0:
             # deals with the case -cst +gain to reorganise it as gain - cst to simplify the assembly
             return VariableExpression(self, "-", abs(other))
         return VariableExpression(self, "+", other)
 
     def __sub__(self, other):
         _validate_elements([self, other])
-        if isinstance(other, int) and other < 0:
+        if isinstance(other, int) and not isinstance(other, Variable) and other < 0:
             return VariableExpression(self, "+", abs(other))
         return VariableExpression(self, "-", other)
 
@@ -142,7 +142,9 @@ class Variable:
     __lshift__ = _unsupported_operation("left shift (<<)")
     __rshift__ = _unsupported_operation("right shift (>>)")
     __gt__ = _unsupported_operation("greater-than (>)")
+    __lt__ = _unsupported_operation("less-than (<)")
     __ge__ = _unsupported_operation("greater-or-equal (>=)")
+    __le__ = _unsupported_operation("lesser-or-equal (<=)")
     __rmul__ = _unsupported_operation("reflected multiplication (*)")
     __rtruediv__ = _unsupported_operation("reflected division (/)")
     __iadd__ = _unsupported_operation("in-place addition (+=)")

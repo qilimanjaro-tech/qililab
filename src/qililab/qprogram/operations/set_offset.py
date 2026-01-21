@@ -13,8 +13,8 @@
 # limitations under the License.
 
 
+from qililab.core.variables import Variable
 from qililab.qprogram.operations.operation import Operation
-from qililab.qprogram.variable import Variable
 from qililab.yaml import yaml
 
 
