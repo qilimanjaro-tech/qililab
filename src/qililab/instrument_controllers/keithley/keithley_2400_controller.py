@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Keithley2600 Instrument Controller"""
+"""Keithley2400 Instrument Controller"""
+
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -26,7 +27,7 @@ from qililab.typings.enums import ConnectionName, InstrumentControllerName, Inst
 
 @InstrumentControllerFactory.register
 class Keithley2400Controller(SingleInstrumentController):
-    """Keithley2600 class
+    """Keithley2400 class
 
     Args:
         name (InstrumentControllerName): Name of the Instrument Controller.

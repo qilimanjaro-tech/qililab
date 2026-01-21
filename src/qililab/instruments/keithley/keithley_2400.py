@@ -52,14 +52,14 @@ class Keithley2400(Instrument):
         if parameter == Parameter.CURRENT:
             self.settings.current = float(value)
             if self.is_device_active():
-                self.device.mode('CURR')
+                self.device.mode("CURR")
                 self.device.output(True)
                 self.device.curr(self.settings.current)
             return
         if parameter == Parameter.VOLTAGE:
             self.settings.voltage = float(value)
             if self.is_device_active():
-                self.device.mode('VOLT')
+                self.device.mode("VOLT")
                 self.device.output(True)
                 self.device.volt(self.settings.voltage)
             return

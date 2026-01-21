@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Keithley2400 driver."""
+
 from qcodes.instrument_drivers.Keithley import Keithley2400
 
 from qililab.typings.instruments.device import Device
