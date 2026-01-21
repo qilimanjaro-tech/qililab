@@ -34,7 +34,7 @@ class Keithley2400Controller(SingleInstrumentController):
         settings (Keithley2400Settings): Settings of the instrument.
     """
 
-    name = InstrumentControllerName.KEITHLEY2600
+    name = InstrumentControllerName.KEITHLEY2400
     device: Keithley2400Driver
     modules: Sequence[Keithley2400]
 

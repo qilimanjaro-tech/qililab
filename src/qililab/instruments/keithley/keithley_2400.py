@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Keithley2600 instrument."""
+"""Keithley2400 instrument."""
 
-from dataclasses import dataclass
 import time
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -26,18 +26,18 @@ from qililab.typings import ChannelID, InstrumentName, Keithley2400Driver, Outpu
 
 @InstrumentFactory.register
 class Keithley2400(Instrument):
-    """Keithley2600 class.
+    """Keithley2400 class.
     Args:
         name (InstrumentName): name of the instrument
         device (Keithley2400Driver): Instance of the Instrument device driver.
         settings (Keithley2400Settings): Settings of the instrument.
     """
 
-    name = InstrumentName.KEITHLEY2600
+    name = InstrumentName.KEITHLEY2400
 
     @dataclass
     class Keithley2400Settings(Instrument.InstrumentSettings):
-        """Settings for Keithley2600 instrument."""
+        """Settings for Keithley2400 instrument."""
 
         mode: str
         output: bool = True
@@ -50,18 +50,18 @@ class Keithley2400(Instrument):
     def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None):
         """Setup instrument."""
         if parameter == Parameter.CURRENT:
-            self.current = float(value)
+            self.settings.current = float(value)
             if self.is_device_active():
                 self.device.mode('CURR')
                 self.device.output(True)
-                self.device.curr(self.current)
+                self.device.curr(self.settings.current)
             return
         if parameter == Parameter.VOLTAGE:
-            self.voltage = float(value)
+            self.settings.voltage = float(value)
             if self.is_device_active():
                 self.device.mode('VOLT')
                 self.device.output(True)
-                self.device.volt(self.voltage)
+                self.device.volt(self.settings.voltage)
             return
         raise ParameterNotFound(self, parameter)
 
@@ -71,13 +71,13 @@ class Keithley2400(Instrument):
         """Setup instrument."""
         if parameter == Parameter.CURRENT:
             if self.mode == "VOLT" and self.is_device_active():
-                self.current = self.device.curr()
-            return self.current
+                self.settings.current = self.device.curr()
+            return self.settings.current
         if parameter == Parameter.VOLTAGE:
             if self.mode == "CURR" and self.is_device_active():
-                self.voltage = self.device.volt()
-            return self.voltage
-            
+                self.settings.voltage = self.device.volt()
+            return self.settings.voltage
+
         raise ParameterNotFound(self, parameter)
 
     def initial_setup(self):
@@ -123,11 +123,11 @@ class Keithley2400(Instrument):
 
         for ii, value in enumerate(data_sweep):
             if self.mode == "VOLT":
-                self.voltage(value)
+                self.voltage = value
                 measured_data[ii] = self.current
-            if self.mode == "CURR":
-                self.current(value)
-                measured_data[ii] = self.voltage()
+            elif self.mode == "CURR":
+                self.current = value
+                measured_data[ii] = self.voltage
             time.sleep(time_interval)
             time_sweep[ii] = time.time()
         return data_type, time_sweep, measured_data
@@ -158,9 +158,10 @@ class Keithley2400(Instrument):
             float: Current in current (set) or voltage (get) mode.
         """
         if self.mode == "VOLT" and self.is_device_active():
-            return self.device.curr()
+            current = self.device.curr()
         elif self.mode == "CURR":
-            return self.settings.current
+            current = self.settings.current
+        return current
 
     @current.setter
     def current(self, value: float):
@@ -171,7 +172,8 @@ class Keithley2400(Instrument):
         """
         if self.mode == "VOLT":
             raise ValueError("VOLTage mode set but current given.")
-        elif self.mode == "CURR" and self.is_device_active():
+        if self.mode == "CURR" and self.is_device_active():
+            self.settings.current = value
             self.device.curr(value)
 
     @property
@@ -182,9 +184,10 @@ class Keithley2400(Instrument):
             float: Voltage in current (get) or voltage (set) mode.
         """
         if self.mode == "VOLT":
-            return self.settings.voltage
-        elif self.mode == "CURR" and self.is_device_active():
-            return self.device.volt()
+            voltage = self.settings.voltage
+        if self.mode == "CURR" and self.is_device_active():
+            voltage = self.device.volt()
+        return voltage
 
     @voltage.setter
     def voltage(self, value: float):
@@ -194,6 +197,7 @@ class Keithley2400(Instrument):
             float: Voltage in voltage (set) mode.
         """
         if self.mode == "VOLT" and self.is_device_active():
+            self.settings.voltage = value
             self.device.volt(value)
-        elif self.mode == "CURR":
+        if self.mode == "CURR":
             raise ValueError("CURRent mode set but voltage given.")

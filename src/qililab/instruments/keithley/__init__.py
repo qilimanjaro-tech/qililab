@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Keityley module."""
+"""Keithley module."""
 
+from .keithley_2400 import Keithley2400
 from .keithley_2600 import Keithley2600
 
-__all__ = ["Keithley2600"]
+__all__ = ["Keithley2400", "Keithley2600"]

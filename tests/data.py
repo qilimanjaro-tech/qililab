@@ -586,6 +586,29 @@ class Galadriel:
         Parameter.ATTENUATION.value: 30,
     }
 
+    keithley_2400_controller_0: dict[str, Any] = {
+        "name": InstrumentControllerName.KEITHLEY2400.value,
+        "alias": "keithley_2400_controller_0",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.113",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": InstrumentName.KEITHLEY2400.value,
+                "slot_id": 0,
+            }
+        ],
+        INSTRUMENTCONTROLLER.RESET: True,
+    }
+
+    keithley_2400: dict[str, Any] = {
+        "name": InstrumentName.KEITHLEY2400.value,
+        "alias": InstrumentControllerName.KEITHLEY2400.value,
+        Parameter.VOLTAGE.value: 2.0,
+        "mode": "VOLT",
+    }
+
     keithley_2600_controller_0: dict[str, Any] = {
         "name": InstrumentControllerName.KEITHLEY2600.value,
         "alias": "keithley_2600_controller_0",
@@ -618,6 +641,7 @@ class Galadriel:
         rohde_schwarz_0,
         rohde_schwarz_1,
         attenuator,
+        keithley_2400,
         keithley_2600,
     ]
 
@@ -626,6 +650,7 @@ class Galadriel:
         rohde_schwarz_controller_0,
         rohde_schwarz_controller_1,
         attenuator_controller_0,
+        keithley_2400_controller_0,
         keithley_2600_controller_0,
     ]
 

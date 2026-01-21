@@ -158,6 +158,7 @@ class InstrumentName(str, Enum):
         * QRM -> Exactly as Qblox InstrumentType
         * rohde_schwarz
         * mini_circuits
+        * keithley_2400
         * keithley_2600
         * qblox_D5a
         * qblox_S4g
@@ -171,6 +172,7 @@ class InstrumentName(str, Enum):
     QRMRF = "QRM-RF"
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    KEITHLEY2400 = "keithley_2400"
     KEITHLEY2600 = "keithley_2600"
     QBLOX_D5A = "D5a"
     QBLOX_S4G = "S4g"
@@ -302,6 +304,7 @@ class InstrumentControllerName(str, Enum):
         * qblox_cluster
         * rohde_schwarz
         * mini_circuits
+        * keithley_2400
         * keithley_2600
         * keysight_e5080b
         * yokogawa
@@ -311,6 +314,7 @@ class InstrumentControllerName(str, Enum):
     QBLOX_CLUSTER = "qblox_cluster"
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    KEITHLEY2400 = "keithley_2400"
     KEITHLEY2600 = "keithley_2600"
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b"
