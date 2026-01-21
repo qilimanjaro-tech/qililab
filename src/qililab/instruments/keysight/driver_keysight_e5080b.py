@@ -311,9 +311,9 @@ class Driver_KeySight_E5080B(VisaInstrument):
         self.electrical_delay: Parameter = self.add_parameter(
             "electrical_delay",
             label="Electrical Delay",
-            set_cmd="CALC:CORR:EDEL:TIME {}",
-            get_cmd="CALC:CORR:EDEL:TIME?",
-            unit="ns",
+            set_cmd="CALC:MEAS:CORR:EDEL:TIME {}",
+            get_cmd="CALC:MEAS:CORR:EDEL:TIME?",
+            unit="NS",
             get_parser=float,
             vals=Numbers(min_value=-1e10, max_value=1e10),
         )
