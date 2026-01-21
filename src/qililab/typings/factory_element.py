@@ -19,7 +19,6 @@ from qililab.typings.enums import (
     InstrumentControllerName,
     InstrumentName,
     PulseDistortionName,
-    PulseShapeName,
     ResultName,
 )
 
@@ -27,7 +26,7 @@ from qililab.typings.enums import (
 class FactoryElement:
     """Class FactoryElement"""
 
-    name: PulseDistortionName | PulseShapeName | ResultName | InstrumentName | ConnectionName | InstrumentControllerName
+    name: PulseDistortionName | ResultName | InstrumentName | ConnectionName | InstrumentControllerName
 
     def __hash__(self) -> int:
         return hash(repr(self))
