@@ -34,6 +34,7 @@ from .factory_element import FactoryElement
 from .instruments import (
     Cluster,
     Device,
+    Keithley2400Driver,
     Keithley2600Driver,
     MiniCircuitsDriver,
     QbloxD5a,
@@ -61,6 +62,7 @@ __all__ = [
     "InstrumentControllerName",
     "InstrumentName",
     "IntegrationMode",
+    "Keithley2400Driver",
     "Keithley2600Driver",
     "MiniCircuitsDriver",
     "OutputID",
