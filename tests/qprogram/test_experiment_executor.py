@@ -58,7 +58,7 @@ def fixture_qprogram():
             weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
         )
     with qp.average(shots=1000):
-        with qp.for_loop(gain, 0, 1, 0.1):
+        with qp.loop(gain, values=np.linspace(0.0, 1.0, 11)):
             qp.set_gain(bus="readout_bus", gain=gain)
             qp.measure(
                 "readout_bus",
@@ -257,29 +257,29 @@ class TestExperimentExecutor:
 
             # Single QProgram
             qprogram0_measurement0_data, _ = experiment_results.get(0, 0)
-            assert qprogram0_measurement0_data.shape == (10, 2)
+            assert qprogram0_measurement0_data.shape == (11, 2)
             assert np.allclose(qprogram0_measurement0_data, measurement_data[:, :])
 
             qprogram0_measurement1_data, _ = experiment_results.get(0, 1)
-            assert qprogram0_measurement1_data.shape == (10, 2)
+            assert qprogram0_measurement1_data.shape == (11, 2)
             assert np.allclose(qprogram0_measurement1_data, measurement_data[:, :])
 
             # QProgram within nested loops
             qprogram1_measurement0_data, _ = experiment_results.get(1, 0)
-            assert qprogram1_measurement0_data.shape == (3, 2, 10, 2)
+            assert qprogram1_measurement0_data.shape == (3, 2, 11, 2)
             assert np.allclose(qprogram1_measurement0_data, measurement_data[None, None, :, :])
 
             qprogram1_measurement1_data, _ = experiment_results.get(1, 1)
-            assert qprogram1_measurement1_data.shape == (3, 2, 10, 2)
+            assert qprogram1_measurement1_data.shape == (3, 2, 11, 2)
             assert np.allclose(qprogram1_measurement1_data, measurement_data[None, None, :, :])
 
             # QProgram within parallel loops
             qprogram2_measurement0_data, _ = experiment_results.get(2, 0)
-            assert qprogram2_measurement0_data.shape == (3, 10, 2)
+            assert qprogram2_measurement0_data.shape == (3, 11, 2)
             assert np.allclose(qprogram2_measurement0_data, measurement_data[None, :, :])
 
             qprogram2_measurement1_data, _ = experiment_results.get(2, 1)
-            assert qprogram2_measurement1_data.shape == (3, 10, 2)
+            assert qprogram2_measurement1_data.shape == (3, 11, 2)
             assert np.allclose(qprogram2_measurement1_data, measurement_data[None, :, :])
 
     @patch("qililab.platform.platform.get_db_manager")

@@ -495,13 +495,13 @@ class ExperimentExecutor:
         # Check if all inputs are integers
         if all(isinstance(x, int) for x in [start, stop, step]):
             # Use numpy.arange for integer ranges
-            return np.arange(start, stop, step)
+            return np.arange(start, stop + step, step)
 
         # Define the number of decimal places based on the precision of the step
         decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
 
         # Use arange and then round to avoid floating-point inaccuracies
-        result = np.arange(start, stop, step)
+        result = np.arange(start, stop + step, step)
         return np.around(result, decimals=decimal_places)
 
     def _get_variables_of_loop(self, block: Loop | ForLoop | Parallel) -> list[VariableInfo]:
