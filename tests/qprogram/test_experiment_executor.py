@@ -58,7 +58,7 @@ def fixture_qprogram():
             weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
         )
     with qp.average(shots=1000):
-        with qp.loop(gain, values=np.linspace(0.0, 1.0, 11)):
+        with qp.for_loop(gain, 0, 1, 0.1):
             qp.set_gain(bus="readout_bus", gain=gain)
             qp.measure(
                 "readout_bus",
