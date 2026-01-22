@@ -501,7 +501,7 @@ class ExperimentExecutor:
         decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
 
         # Calculate the number of steps
-        num_steps = round((stop - start) / step) + 1
+        num_steps = round((stop - start) / step)
 
         # Use linspace and then round to avoid floating-point inaccuracies
         result = np.linspace(start, stop, num_steps)
