@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This file contains all the variables used inside a QProgram."""
+
 from __future__ import annotations
 
 import functools
@@ -45,6 +46,7 @@ class Domain(Enum):
         value = int(value)
         return cls(value)
 
+
 def _validate_elements(elements: list[Variable | int]) -> None:
     for element in elements:
         if isinstance(element, VariableExpression):
@@ -57,10 +59,10 @@ def _validate_elements(elements: list[Variable | int]) -> None:
 
 def _unsupported_operation(operation_name: str):
     def method(self, *args, **kwargs):
-        raise TypeError(
-            f"'{operation_name}' is not a valid operation for QProgram variables."
-        )
+        raise TypeError(f"'{operation_name}' is not a valid operation for QProgram variables.")
+
     return method
+
 
 def requires_domain(parameter: str, domain: Domain):
     """Decorator to denote that a parameter requires a variable of a specific domain.
@@ -91,6 +93,7 @@ def requires_domain(parameter: str, domain: Domain):
 @yaml.register_class
 class Variable:
     """Variable class used to define variables inside a QProgram."""
+
     def __init__(self, label: str, domain: Domain = Domain.Scalar) -> None:
         self._uuid: UUID = uuid4()
         self._label: str = label
@@ -107,7 +110,9 @@ class Variable:
 
     def __add__(self, other):
         _validate_elements([self, other])
-        if isinstance(other, int) and not isinstance(other, Variable) and other < 0:  # in the case where we have variable + (-cst)
+        if (
+            isinstance(other, int) and not isinstance(other, Variable) and other < 0
+        ):  # in the case where we have variable + (-cst)
             return VariableExpression(self, "-", abs(other))
         return VariableExpression(self, "+", other)
 
@@ -115,7 +120,7 @@ class Variable:
         # order change because Q1ASM can only have a register as first argument, changing it here avoids additional code in the qblox compiler
         _validate_elements([self, other])
         if isinstance(other, int) and not isinstance(other, Variable) and other < 0:
-            # deals with the case -cst +gain to reorganise it as gain - cst to simplify the assembly
+            # deals with the case -cst +gain to reorganise it as gain - cst to simplify the Q1ASM
             return VariableExpression(self, "-", abs(other))
         return VariableExpression(self, "+", other)
 
@@ -201,9 +206,7 @@ class IntVariable(Variable, int):  # type: ignore
         return self
 
     def __abs__(self):
-        raise NotImplementedError(
-            "Taking the absolute of a variable is not implemented in QProgram."
-        )
+        raise NotImplementedError("Taking the absolute of a variable is not implemented in QProgram.")
 
 
 @yaml.register_class
@@ -227,9 +230,7 @@ class FloatVariable(Variable, float):  # type: ignore
         return self
 
     def __abs__(self):
-        raise NotImplementedError(
-            "Taking the absolute of a variable is not implemented in QProgram."
-        )
+        raise NotImplementedError("Taking the absolute of a variable is not implemented in QProgram.")
 
 
 @yaml.register_class
@@ -275,9 +276,13 @@ class VariableExpression(Variable):
         if domain_list and not all(dom == domain_list[0] for dom in domain_list):
             raise ValueError("All variables should have the same domain.")
         if domain == Domain.Time and len(domain_list) > 1:
-            raise NotImplementedError(f"For the {domain.name} domain, combining several variables in one expression is not implemented.")
+            raise NotImplementedError(
+                f"For the {domain.name} domain, combining several variables in one expression is not implemented."
+            )
         if len(domain_list) > 2:
-            raise NotImplementedError(f"For the {domain.name} domain, Variable Expression currently supports up to two variables only.")
+            raise NotImplementedError(
+                f"For the {domain.name} domain, Variable Expression currently supports up to two variables only."
+            )
         return domain
 
     def _extract_variables(self) -> list[Variable]:
@@ -298,6 +303,7 @@ class VariableExpression(Variable):
 
     def _extract_constant(self) -> int | None:
         """Recursively extract the constant used in this expression."""
+
         # If qprogram allows nested/chained operations, and hence having more than one constant, this function should be modified to return a list.
         def _collect(expr):
             if isinstance(expr, VariableExpression):

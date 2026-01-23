@@ -26,9 +26,9 @@ class Operation(Element):
         """
         variables = set()
         for attribute in self.__dict__.values():
-            if isinstance(attribute,VariableExpression):
+            if isinstance(attribute, VariableExpression):
                 variables.update(attribute.variables)
-            elif isinstance(attribute,Variable):
+            elif isinstance(attribute, Variable):
                 variables.add(attribute)
 
         return variables
