@@ -41,7 +41,7 @@ dependencies = [
     "urllib3>=2.3.0",
     "xarray>=2025.11.0",
     "rustworkx>=0.17.1",
-    "qilisdk==0.1.7",
+    "qilisdk",
 ]
 
 [project.optional-dependencies]
@@ -78,6 +78,7 @@ prerelease = "if-necessary"
 
 [tool.uv.sources]
 # qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
+qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", rev = "df21293fd7185277f60426a76a282335b611154f" }
 
 [tool.ruff]
 line-length = 120
