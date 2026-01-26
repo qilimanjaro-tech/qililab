@@ -18,7 +18,7 @@ import numpy as np
 import plotly.colors as pc
 import plotly.graph_objects as go
 
-from qililab.qprogram.variable import Domain
+from qililab.core.variables import Domain
 
 
 class QbloxDraw:
@@ -484,9 +484,7 @@ class QbloxDraw:
         """
 
         if any(variable.domain == Domain.Time for variable in sequencer.qprogram._variables):
-            raise NotImplementedError(
-                "QbloxDraw does not support hardware time-domain loops at the moment."
-            )
+            raise NotImplementedError("QbloxDraw does not support hardware time-domain loops at the moment.")
 
         self.acquisition_showing = acquisition_showing
         Q1ASM_ordered = self._parse_program(
@@ -676,7 +674,7 @@ class QbloxDraw:
             return ranges
 
         def adjust_color_rgb(color_rgb, factor):
-            r, g, b = map(int, re.findall(r'\d+', color_rgb))
+            r, g, b = map(int, re.findall(r"\d+", color_rgb))
             r = int(min(255, max(0, r * factor)))
             g = int(min(255, max(0, g * factor)))
             b = int(min(255, max(0, b * factor)))

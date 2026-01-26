@@ -17,8 +17,7 @@
 import numpy as np
 
 from qililab.config import logger
-from qililab.qprogram.decorators import requires_domain
-from qililab.qprogram.variable import Domain
+from qililab.core.variables import Domain, requires_domain
 from qililab.yaml import yaml
 
 from .waveform import Waveform
@@ -62,13 +61,16 @@ class SuddenNetZero(Waveform):
         if (self.duration / resolution) % 1 != 0 or (half_pulse_t / resolution) % 1 != 0:
             logger.warning(  # pragma: no cover
                 "Envelope length rounded to nearest value %d from division full_snz_duration (%s) / resolution (%s) = %s",
-                len(envelope), self.duration, resolution, self.duration / resolution
+                len(envelope),
+                self.duration,
+                resolution,
+                self.duration / resolution,
             )
 
         envelope[:half_pulse_t] = self.amplitude * np.ones(half_pulse_t)  # positive square halfpulse
         envelope[half_pulse_t] = self.b * self.amplitude  # impulse b
         envelope[half_pulse_t + 1 + self.t_phi] = -self.b * self.amplitude  # impulse -b
-        envelope[half_pulse_t + 2 + self.t_phi:] = -self.amplitude * np.ones(half_pulse_t)  # negative square halfpulse
+        envelope[half_pulse_t + 2 + self.t_phi :] = -self.amplitude * np.ones(half_pulse_t)  # negative square halfpulse
 
         return envelope
 

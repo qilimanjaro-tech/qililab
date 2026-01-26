@@ -12,15 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from qililab.core.variables import Variable
 from qililab.qprogram.operations.operation import Operation
-from qililab.qprogram.variable import Variable
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
 
 
 @yaml.register_class
 class GetParameter(Operation):
-    def __init__(self, variable: Variable, alias: str, parameter: Parameter, channel_id: int | None = None, output_id: int | None = None) -> None:
+    def __init__(
+        self,
+        variable: Variable,
+        alias: str,
+        parameter: Parameter,
+        channel_id: int | None = None,
+        output_id: int | None = None,
+    ) -> None:
         super().__init__()
         self.variable: Variable = variable
         self.alias: str = alias
