@@ -47,14 +47,14 @@ class Domain(Enum):
         return cls(value)
 
 
-def _validate_elements(elements: list[Variable | int]) -> None:
+def _validate_elements(elements: list[Variable | int | float]) -> None:
     for element in elements:
         if isinstance(element, VariableExpression):
             raise NotImplementedError(
                 "Chaining Variable expressions is not supported; use at most one binary operation."
             )
-        if isinstance(element, bool) or not isinstance(element, (Variable, int)):
-            raise ValueError("Constants must be integers.")
+        if isinstance(element, bool):
+            raise ValueError("Constants cannot be a boolean.")
 
 
 def _unsupported_operation(operation_name: str):
@@ -110,23 +110,22 @@ class Variable:
 
     def __add__(self, other):
         _validate_elements([self, other])
-        if (
-            isinstance(other, int) and not isinstance(other, Variable) and other < 0
-        ):  # in the case where we have variable + (-cst)
+        if not isinstance(other, Variable) and other < 0:
+            # deals with the case variable + (-cst)
             return VariableExpression(self, "-", abs(other))
         return VariableExpression(self, "+", other)
 
     def __radd__(self, other):
-        # order change because Q1ASM can only have a register as first argument, changing it here avoids additional code in the qblox compiler
         _validate_elements([self, other])
-        if isinstance(other, int) and not isinstance(other, Variable) and other < 0:
-            # deals with the case -cst +gain to reorganise it as gain - cst to simplify the Q1ASM
+        if not isinstance(other, Variable) and other < 0:
+            # deals with the case -cst + variable
             return VariableExpression(self, "-", abs(other))
         return VariableExpression(self, "+", other)
 
     def __sub__(self, other):
         _validate_elements([self, other])
-        if isinstance(other, int) and not isinstance(other, Variable) and other < 0:
+        if not isinstance(other, Variable) and other < 0:
+            # deals with the case variable - (-cst)
             return VariableExpression(self, "+", abs(other))
         return VariableExpression(self, "-", other)
 
@@ -233,12 +232,13 @@ class FloatVariable(Variable, float):  # type: ignore
         raise NotImplementedError("Taking the absolute of a variable is not implemented in QProgram.")
 
 
+
 @yaml.register_class
 class VariableExpression(Variable):
     """An expression combining Variables and/or constants."""
 
     # TODO: The possible operations are very limited, they could be expanded with * or / if needed; and it could allow for parenthesis in the expression
-    def __init__(self, left: Variable | int, operator: str, right: Variable | int):
+    def __init__(self, left: Variable | int | float, operator: str, right: Variable | int | float):
         if isinstance(left, VariableExpression) or isinstance(right, VariableExpression):
             raise NotImplementedError(
                 "Chaining Variable expressions is not supported; use at most one binary operation."
@@ -301,7 +301,7 @@ class VariableExpression(Variable):
             raise ValueError(f"No Variable instance found in expression: {self}")
         return variables
 
-    def _extract_constant(self) -> int | None:
+    def _extract_constant(self) -> int | float | None:
         """Recursively extract the constant used in this expression."""
 
         # If qprogram allows nested/chained operations, and hence having more than one constant, this function should be modified to return a list.
@@ -311,14 +311,14 @@ class VariableExpression(Variable):
                 if result is not None:
                     return result
                 return _collect(expr.right)
-            if isinstance(expr, int) and not isinstance(expr, IntVariable):
+            if not isinstance(expr, Variable):
                 return expr
             return None
 
         result = _collect(self)
         return result
 
-    def _extract_components(self) -> list[Variable | int]:
+    def _extract_components(self) -> list[Variable | int | float]:
         """Recursively extract all components (variables and constants) used in this expression."""
 
         component = []

@@ -333,6 +333,44 @@ class TestVariables:
         gain = instance.variable(label="gain", domain=Domain.Voltage)
         with pytest.raises(
             ValueError,
-            match=re.escape("Constants must be integers."),
+            match=re.escape("Constants cannot be a boolean."),
         ):
-            _ = gain + 0.5
+            _ = gain + True
+
+    def test_extract_constant(self, instance: StructuredProgram):
+        """Test VariableExpression extract constant"""
+        gain = instance.variable(label="time", domain=Domain.Voltage)
+
+        expr1 = 10 + gain
+        expr2 = gain + 10
+        expr3 = -10 + gain #gain - 10
+        expr4 = gain - 10
+        expr5 = -10 - gain
+        expr6 = 10.5 + gain
+        expr7 = gain + 10.5
+        expr8 = -10.5 + gain #gain - 10.5
+        expr9 = gain - 10.5
+        expr10 = -10.5 - gain
+
+        # Check that expressions are instances of VariableExpression
+        assert isinstance(expr1, VariableExpression)
+        assert isinstance(expr2, VariableExpression)
+        assert isinstance(expr3, VariableExpression)
+        assert isinstance(expr4, VariableExpression)
+        assert isinstance(expr5, VariableExpression)
+        assert isinstance(expr6, VariableExpression)
+        assert isinstance(expr7, VariableExpression)
+        assert isinstance(expr8, VariableExpression)
+        assert isinstance(expr9, VariableExpression)
+        assert isinstance(expr10, VariableExpression)
+
+        assert expr1._extract_constant() == 10
+        assert expr2._extract_constant() == 10
+        assert expr3._extract_constant() == 10
+        assert expr4._extract_constant() == 10
+        assert expr5._extract_constant() == -10
+        assert expr6._extract_constant() == 10.5
+        assert expr7._extract_constant() == 10.5
+        assert expr8._extract_constant() == 10.5
+        assert expr9._extract_constant() == 10.5
+        assert expr10._extract_constant() == -10.5
