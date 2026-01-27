@@ -6,7 +6,7 @@ import pytest
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.typings.enums import Parameter
-from qililab.waveforms import Square
+from qilisdk.qprogram.waveforms import Square
 
 
 @pytest.fixture(name="qdac")

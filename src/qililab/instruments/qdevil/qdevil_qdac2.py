@@ -23,7 +23,7 @@ from qililab.instruments import InstrumentFactory, ParameterNotFound, check_devi
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
-from qililab.waveforms import Waveform
+from qilisdk.qprogram.waveforms import Waveform
 
 
 @InstrumentFactory.register

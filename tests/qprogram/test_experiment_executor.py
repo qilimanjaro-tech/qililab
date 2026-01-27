@@ -18,7 +18,7 @@ from qililab.core.variables import Domain
 from qililab.result.experiment_results import ExperimentResults
 from qililab.result.qprogram import QProgramResults
 from qililab.typings.enums import Parameter
-from qililab.waveforms import IQPair, Square
+from qilisdk.qprogram.waveforms import IQPair, Square
 
 
 @pytest.fixture(name="platform")

@@ -9,7 +9,7 @@ from qililab.qprogram.blocks.for_loop import ForLoop
 from qililab.qprogram.blocks.loop import Loop
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 from qililab.core.variables import Domain
-from qililab.waveforms import Square
+from qilisdk.qprogram.waveforms import Square
 from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.qprogram import QProgram, Calibration, QdacCompiler

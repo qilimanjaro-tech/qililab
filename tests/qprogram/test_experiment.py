@@ -13,7 +13,7 @@ from qililab.qprogram.qprogram import QProgram
 from qililab.core.variables import Domain
 from qililab.typings.enums import Parameter
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
-from qililab.waveforms import IQPair, Square
+from qilisdk.qprogram.waveforms import IQPair, Square
 
 
 class TestExperiment(TestStructuredProgram):

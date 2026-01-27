@@ -7,7 +7,7 @@ from qililab.qprogram import QProgram
 from qililab.qprogram.blocks import Block
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.waveforms import IQPair, Square
+from qilisdk.qprogram.waveforms import IQPair, Square
 from qililab.utils.serialization import serialize_to, deserialize_from
 
 

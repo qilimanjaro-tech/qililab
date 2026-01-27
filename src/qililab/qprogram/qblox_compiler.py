@@ -48,7 +48,7 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.qprogram import QProgram
-from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
+from qilisdk.qprogram.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
 SIGN_BIT = 2**31  # 2147483648 -> values >= this are "negative" in 2's complement (MSB = 1)
 NEG_ONE_TO_THREE = (2**32) - 3  # 4294967293 == -3 in 2's complement

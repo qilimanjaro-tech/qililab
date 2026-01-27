@@ -12,7 +12,7 @@ from qililab.utils.serialization import (
     serialize,
     serialize_to,
 )
-from qililab.waveforms import Gaussian
+from qilisdk.qprogram.waveforms import Gaussian
 from qililab.typings.enums import Parameter
 
 

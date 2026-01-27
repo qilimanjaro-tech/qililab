@@ -12,7 +12,7 @@ from qililab.qprogram import Calibration, QProgram
 from qililab.result import stream_results
 from qililab.result.stream_results import RawStreamArray, StreamArray
 from qililab.typings.enums import Parameter
-from qililab.waveforms import Square
+from qilisdk.qprogram.waveforms import Square
 
 AMP_VALUES = np.arange(0, 1, 2)
 

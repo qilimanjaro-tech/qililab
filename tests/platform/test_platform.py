@@ -51,7 +51,7 @@ from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettin
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 from qililab.settings.digital.gate_event import GateEvent
 from qililab.typings.enums import InstrumentName, Parameter
-from qililab.waveforms import Chained, IQPair, Ramp, Square
+from qilisdk.qprogram.waveforms import Chained, IQPair, Ramp, Square
 
 @pytest.fixture(name="platform")
 def fixture_platform():

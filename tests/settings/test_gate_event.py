@@ -11,8 +11,8 @@ from qililab.settings.digital.gate_event import (
     _to_external,
     _wf_to_mapping,
 )
-from qililab.waveforms import IQDrag, IQPair, Square
-from qililab.waveforms.waveform import Waveform
+from qilisdk.qprogram.waveforms import IQDrag, IQPair, Square
+from qilisdk.qprogram.waveforms.waveform import Waveform
 
 
 @pytest.fixture

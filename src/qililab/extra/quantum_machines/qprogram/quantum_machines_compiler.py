@@ -41,7 +41,7 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.qprogram import QProgram
-from qililab.waveforms import IQWaveform, Square, Waveform
+from qilisdk.qprogram.waveforms import IQWaveform, Square, Waveform
 
 from .integration_weights_tools import convert_integration_weights
 

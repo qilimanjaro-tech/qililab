@@ -14,7 +14,7 @@
 from typing import TYPE_CHECKING, Any
 
 from qililab.qprogram.blocks import Block
-from qililab.waveforms import IQWaveform, Waveform
+from qilisdk.qprogram.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:

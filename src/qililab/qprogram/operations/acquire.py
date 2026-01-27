@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from qililab.qprogram.operations.operation import Operation
-from qililab.waveforms import IQWaveform
+from qilisdk.qprogram.waveforms import IQWaveform
 from qililab.yaml import yaml
 
 

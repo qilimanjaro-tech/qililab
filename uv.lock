@@ -3474,7 +3474,7 @@ wheels = [
 
 [[package]]
 name = "qililab"
-version = "0.30.0"
+version = "0.31.0"
 source = { editable = "." }
 dependencies = [
     { name = "dash" },
@@ -3537,7 +3537,7 @@ requires-dist = [
     { name = "qblox-instruments", specifier = "==0.16.0" },
     { name = "qcodes", specifier = ">=0.54.3" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
-    { name = "qilisdk", git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main" },
+    { name = "qilisdk", git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=sdk-135-euroqcs-add-qprogram-and-waveforms" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.4" },
     { name = "qpysequence", specifier = ">=0.10.8" },
     { name = "rich", specifier = ">=14.0.0" },
@@ -3573,7 +3573,7 @@ docs = [
 [[package]]
 name = "qilisdk"
 version = "0.1.8"
-source = { git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main#91614f66a57f38988b1e05e155bc65f91db99132" }
+source = { git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=sdk-135-euroqcs-add-qprogram-and-waveforms#1b1bf1cb18f7797f44829462d16201f806a696da" }
 dependencies = [
     { name = "dill" },
     { name = "loguru" },

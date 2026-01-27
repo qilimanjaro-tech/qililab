@@ -33,7 +33,7 @@ from .platform import Platform
 from .result import ExperimentResults, load_by_id, stream_results
 from .typings import Parameter
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
-from .waveforms import (
+from qilisdk.qprogram.waveforms import (
     IQPair,
     SuddenNetZero,
     Square,

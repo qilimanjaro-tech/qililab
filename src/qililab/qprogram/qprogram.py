@@ -40,7 +40,7 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.waveforms import IQWaveform, Waveform
+from qilisdk.qprogram.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:

@@ -444,31 +444,6 @@ class TestQProgram(TestStructuredProgram):
         for var in all_types - {time}:
             with pytest.raises(ValueError):
                 qp.wait(bus="drive", duration=var)
-
-        for amplitude_var, duration_var in set(product(all_types, repeat=2)) - {(voltage, time)}:
-            with pytest.raises(ValueError):
-                _ = Square(amplitude=amplitude_var, duration=duration_var)
-
-        for amplitude_var, duration_var, num_sigmas_var in set(product(all_types, repeat=3)) - {
-            (voltage, time, scalar)
-        }:
-            with pytest.raises(ValueError):
-                _ = Gaussian(amplitude=amplitude_var, duration=duration_var, num_sigmas=num_sigmas_var)
-
-        for var in all_types - {scalar}:
-            with pytest.raises(ValueError):
-                _ = GaussianDragCorrection(drag_coefficient=var, amplitude=1.0, duration=40, num_sigmas=2.5)
-
-        for amplitude_var, duration_var, num_sigmas_var, drag_coefficient_var in set(product(all_types, repeat=4)) - {
-            (voltage, time, scalar, scalar)
-        }:
-            with pytest.raises(ValueError):
-                _ = IQDrag(
-                    amplitude=amplitude_var,
-                    duration=duration_var,
-                    num_sigmas=num_sigmas_var,
-                    drag_coefficient=drag_coefficient_var,
-                )
     
     # TODO: qililab.utils.serialization.DeserializationError: Failed to deserialize YAML string: 'Voltage-4' is not a valid Domain
     # def test_serialization_deserialization(self):

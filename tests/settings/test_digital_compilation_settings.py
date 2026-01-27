@@ -4,7 +4,7 @@ import pytest
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 from qililab.settings.digital.gate_event import GateEvent
 from qililab.typings import Parameter
-from qililab.waveforms.gaussian import Gaussian
+from qilisdk.qprogram.waveforms.gaussian import Gaussian
 
 
 def build_settings() -> DigitalCompilationSettings:
