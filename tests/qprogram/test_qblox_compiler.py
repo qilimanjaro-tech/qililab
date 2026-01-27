@@ -117,6 +117,17 @@ def fixture_offset_no_path1() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="offset_loop")
+def fixture_offset_loop() -> QProgram:
+    qp = QProgram()
+    variable_offset = qp.variable(label="offset", domain=Domain.Voltage)
+    with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
+        qp.set_offset(bus="drive", offset_path0=variable_offset, offset_path1=0.2)
+    with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
+        qp.set_offset(bus="drive", offset_path0=0.2, offset_path1=variable_offset)
+    return qp
+
+
 @pytest.fixture(name="dynamic_wait")
 def fixture_dynamic_wait() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -773,6 +784,93 @@ def fixture_dynamic_wait_three_buses_static_static() -> QProgram:
         qp.sync()
     return qp
 
+@pytest.fixture(name="variable_expression_one_gain")
+def variable_expression_one_gain() -> QProgram:
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    with qp.for_loop(variable=gain, start=0.1, stop=0.9, step=0.1):
+        qp.set_gain("drive",gain + 0.1)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive",gain - 0.1)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive",-0.1 + gain)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", -0.1 - gain)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", 0.1 + gain)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", 0.1 - gain)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", - gain)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", gain -- 0.1)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_gain("drive", gain +-0.1)
+        qp.play(bus="drive", waveform=drag_pair)
+    return qp
+
+@pytest.fixture(name="variable_expression_offset")
+def variable_expression_offset() -> QProgram:
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    offset = qp.variable(label="offset", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset, start=0.1, stop=0.9, step=0.1):
+        qp.set_offset("drive",offset + 0.1)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_offset("drive",offset - 0.1)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_offset("drive",-0.1 + offset)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_offset("drive", -0.1 - offset)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_offset("drive", 0.1 + offset)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_offset("drive", 0.1 - offset)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_offset("drive", - offset)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_offset("drive", offset -- 0.1)
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.set_offset("drive", offset +-0.1)
+        qp.play(bus="drive", waveform=drag_pair)
+    return qp
+
+@pytest.fixture(name="variable_expression_two_offset")
+def variable_expression_two_offset() -> QProgram:
+    qp = QProgram()
+    offset = qp.variable(label="offset", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset, start=0, stop=1, step=0.1):
+        qp.set_offset(bus="drive", offset_path0=offset+10, offset_path1=30)
+    return qp
+
+@pytest.fixture(name="variable_expression_offsetq_variable_expression")
+def variable_expression_offsetq_variable_expression() -> QProgram:
+    qp = QProgram()
+    offset = qp.variable(label="offset", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset, start=0, stop=1, step=0.1):
+        qp.set_offset(bus="drive", offset_path0=10, offset_path1=30+offset)
+    return qp
+
+
+@pytest.fixture(name="variable_expression_two_gains")
+def variable_expression_two_gains() -> QProgram:
+    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    gain1 = qp.variable(label="gain1", domain=Domain.Voltage)
+    gain2 = qp.variable(label="gain2", domain=Domain.Voltage)
+    with qp.for_loop(variable=gain1, start=0, stop=1, step=0.1):
+        with qp.for_loop(variable=gain2, start=1, stop=0, step=-0.1):
+            qp.set_gain("drive",gain1 + gain2)
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.set_gain("drive",gain1 - gain2)
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.set_gain("drive",-gain1 - gain2)
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.set_gain("drive",-gain1 + gain2)
+            qp.play(bus="drive", waveform=drag_pair)
+    return qp
+
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
@@ -1023,6 +1121,7 @@ class TestQBloxCompiler:
                             reset_ph
                             set_awg_gain     16383, 16383
                             set_awg_gain     16383, 16383
+                            nop
                             set_awg_offs     16383, 16383
                             play             0, 1, 40
                             set_mrk          0
@@ -1066,6 +1165,45 @@ class TestQBloxCompiler:
             "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
             in caplog.text
         )
+
+    def test_set_offset_with_loop_and_constant_second_path(
+        self, offset_loop: QProgram
+    ):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=offset_loop)
+
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+            setup:
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            move             6553, R0       
+                            move             6553, R1       
+                            move             3, R2          
+                            move             0, R3          
+            loop_0:
+                            nop
+                            set_awg_offs     R3, R1         
+                            add              R3, 3276, R3   
+                            loop             R2, @loop_0                              
+                            move             3, R4          
+                            move             0, R5                                    
+            loop_1:
+                            nop
+                            set_awg_offs     R0, R5         
+                            add              R5, 3276, R5   
+                            loop             R4, @loop_1    
+                            set_mrk          0              
+                            upd_param        4              
+                            stop
+        """
+
+        assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
         compiler = QbloxCompiler()
@@ -2173,6 +2311,7 @@ set_freq         R5
                             upd_param        4
 
             main:
+                            nop
                             set_awg_offs     32767, 0
                             upd_param        4
                             move             1, R0
@@ -2200,6 +2339,7 @@ set_freq         R5
                             set_awg_gain     32767, 32767
                             upd_param        4
                             play             2, 3, 5
+                            nop
                             set_awg_offs     32767, 0
                             upd_param        6
                             set_mrk          0
@@ -2339,7 +2479,6 @@ set_freq         R5
                 upd_param        4              
                 stop                            
         """
-        print(sequences["drive"]._program)
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -3874,7 +4013,168 @@ other_max_duration_0:
                 upd_param        4              
                 stop                            
         """
-        print(sequences["readout_q0_bus"]._program)
         assert is_q1asm_equal(sequences["drive_q0_bus"], drive_str)
         assert is_q1asm_equal(sequences["readout_q0_bus"], readout_str)
 
+    def test_variable_expression_one_gain(self, variable_expression_one_gain: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=variable_expression_one_gain)
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+            setup:     
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            move             0, R0
+                            move             9, R1         
+                            move             3276, R2          
+            loop_0:
+                            nop
+                            add              R2, 3276, R3
+                            nop
+                            set_awg_gain     R3, R3
+                            play             0, 1, 40  
+                            nop
+                            sub              R2, 3276, R4
+                            nop
+                            set_awg_gain     R4, R4
+                            play             0, 1, 40  
+                            nop
+                            sub              R2, 3276, R5
+                            nop
+                            set_awg_gain     R5, R5
+                            play             0, 1, 40     
+                            nop
+                            sub              R0, 3276, R6
+                            nop
+                            sub              R6, R2, R7
+                            nop
+                            set_awg_gain     R7, R7
+                            play             0, 1, 40
+                            nop
+                            add              R2, 3276, R8
+                            nop
+                            set_awg_gain     R8, R8
+                            play             0, 1, 40
+                            nop
+                            move             3276, R9
+                            nop
+                            sub              R9, R2, R10
+                            nop
+                            set_awg_gain     R10, R10
+                            play             0, 1, 40       
+                            nop                             
+                            move             0, R11         
+                            nop                             
+                            sub              R11, R2, R12   
+                            nop                             
+                            set_awg_gain     R12, R12
+                            play             0, 1, 40 
+                            nop
+                            add              R2, 3276, R13
+                            nop
+                            set_awg_gain     R13, R13
+                            play             0, 1, 40 
+                            nop
+                            sub              R2, 3276, R14
+                            nop
+                            set_awg_gain     R14, R14
+                            play             0, 1, 40 
+                            add              R2, 3276, R2   
+                            loop             R1, @loop_0    
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+
+    def test_variable_expression_offset(self, variable_expression_offset: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=variable_expression_offset)
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             0, R0          
+                        move             9, R1          
+                        move             3276, R2       
+        loop_0:
+                        nop                             
+                        add              R2, 3276, R3   
+                        nop                             
+                        set_awg_offs     R3, R3         
+                        play             0, 1, 40       
+                        nop                             
+                        sub              R2, 3276, R4   
+                        nop                             
+                        set_awg_offs     R4, R4         
+                        play             0, 1, 40       
+                        nop                             
+                        sub              R2, 3276, R5   
+                        nop                             
+                        set_awg_offs     R5, R5         
+                        play             0, 1, 40       
+                        nop                             
+                        sub              R0, 3276, R6   
+                        nop                             
+                        sub              R6, R2, R7     
+                        nop                             
+                        set_awg_offs     R7, R7         
+                        play             0, 1, 40       
+                        nop                             
+                        add              R2, 3276, R8   
+                        nop                             
+                        set_awg_offs     R8, R8         
+                        play             0, 1, 40       
+                        nop                             
+                        move             3276, R9       
+                        nop                             
+                        sub              R9, R2, R10    
+                        nop                             
+                        set_awg_offs     R10, R10       
+                        play             0, 1, 40       
+                        nop                             
+                        move             0, R11         
+                        nop                             
+                        sub              R11, R2, R12   
+                        nop                             
+                        set_awg_offs     R12, R12       
+                        play             0, 1, 40       
+                        nop                             
+                        add              R2, 3276, R13  
+                        nop                             
+                        set_awg_offs     R13, R13       
+                        play             0, 1, 40       
+                        nop                             
+                        sub              R2, 3276, R14  
+                        nop                             
+                        set_awg_offs     R14, R14       
+                        play             0, 1, 40       
+                        add              R2, 3276, R2   
+                        loop             R1, @loop_0    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                             
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_variable_expression_two_offset_raise_error_variable_expression(self, variable_expression_two_offset: QProgram):
+        compiler = QbloxCompiler()
+        with pytest.raises(NotImplementedError, match="Having a different offset for I and Q whilst using VariableExpressions is not supported."):
+            sequences, _ = compiler.compile(qprogram=variable_expression_two_offset)
+
+    def test_variable_expression_two_offset_raise_error_variable_expression(self, variable_expression_offsetq_variable_expression: QProgram):
+        compiler = QbloxCompiler()
+        with pytest.raises(NotImplementedError, match="Having a different offset for I and Q whilst using VariableExpressions is not supported."):
+            sequences, _ = compiler.compile(qprogram=variable_expression_offsetq_variable_expression)

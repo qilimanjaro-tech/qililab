@@ -13,14 +13,17 @@
 # limitations under the License.
 
 
+from qililab.core.variables import Variable
 from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
 
 @yaml.register_class
 class SetOffset(Operation):
-    def __init__(self, bus: str, offset_path0: float, offset_path1: float | None = None):
+    def __init__(
+        self, bus: str, offset_path0: int | float | Variable, offset_path1: int | float | Variable | None = None
+    ):
         super().__init__()
         self.bus: str = bus
-        self.offset_path0: float = offset_path0
-        self.offset_path1: float | None = offset_path1
+        self.offset_path0: int | float | Variable = offset_path0
+        self.offset_path1: int | float | Variable | None = offset_path1
