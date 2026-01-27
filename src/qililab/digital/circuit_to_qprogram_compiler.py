@@ -16,11 +16,11 @@ import re
 import numpy as np
 from qilisdk.digital import CZ, Circuit, M
 
-from qililab.core.variables import Domain
+from qililab.core import Domain
 from qililab.qprogram import QProgram
 from qililab.qprogram.operations import ResetPhase
 from qililab.settings.digital import DigitalCompilationSettings, GateEvent
-from qilisdk.qprogram.waveforms import Arbitrary, IQDrag, IQPair, Square, Waveform
+from qililab.waveforms import Arbitrary, IQDrag, IQPair, Square, Waveform
 
 from .native_gates import Rmw
 

@@ -24,7 +24,7 @@ from qm import qua
 from qm.program import Program
 from qm.qua import _dsl as qua_dsl
 
-from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
+from qililab.core import Domain, FloatVariable, IntVariable, Variable
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
@@ -41,7 +41,7 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.qprogram import QProgram
-from qilisdk.qprogram.waveforms import IQWaveform, Square, Waveform
+from qililab.waveforms import IQWaveform, Square, Waveform
 
 from .integration_weights_tools import convert_integration_weights
 

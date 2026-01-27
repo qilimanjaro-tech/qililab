@@ -11,3 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from qilisdk.qprogram.variables import FloatVariable, IntVariable, VariableExpression, requires_domain
+from qilisdk.qprogram.variables import QProgramDomain as Domain
+from qilisdk.qprogram.variables import QProgramVariable as Variable
+
+__all__ = ["Domain", "FloatVariable", "IntVariable", "Variable", "VariableExpression", "requires_domain"]

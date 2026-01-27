@@ -14,11 +14,11 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import QProgram
-from qililab.core.variables import Domain
+from qililab.core import Domain
 from qililab.result.experiment_results import ExperimentResults
 from qililab.result.qprogram import QProgramResults
 from qililab.typings.enums import Parameter
-from qilisdk.qprogram.waveforms import IQPair, Square
+from qililab.waveforms import IQPair, Square
 
 
 @pytest.fixture(name="platform")

@@ -27,13 +27,13 @@ import contextlib
 from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
-from .core.variables import Domain
+from .core import Domain
 from .qprogram import Calibration, CrosstalkMatrix, QProgram, Experiment, QbloxCompiler, QdacCompiler
 from .platform import Platform
 from .result import ExperimentResults, load_by_id, stream_results
 from .typings import Parameter
 from .utils.serialization import serialize, serialize_to, deserialize, deserialize_from
-from qilisdk.qprogram.waveforms import (
+from .waveforms import (
     IQPair,
     SuddenNetZero,
     Square,

@@ -19,7 +19,7 @@ from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
-    from qililab.core.variables import Variable
+    from qililab.core import Variable
     from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.qprogram import QProgram
 

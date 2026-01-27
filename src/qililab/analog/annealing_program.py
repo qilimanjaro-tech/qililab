@@ -18,7 +18,7 @@ import numpy as np
 
 from qililab.qprogram import CrosstalkMatrix, FluxVector
 from qililab.settings.analog import FluxControlTopology
-from qilisdk.qprogram.waveforms import Arbitrary
+from qililab.waveforms import Arbitrary
 
 
 class AnnealingProgram:

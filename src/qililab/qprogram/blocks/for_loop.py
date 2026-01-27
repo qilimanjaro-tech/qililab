@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from qililab.core.variables import Variable
+from qililab.core import Variable
 from qililab.qprogram.blocks.block import Block
 from qililab.yaml import yaml
 

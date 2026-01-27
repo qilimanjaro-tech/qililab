@@ -7,7 +7,7 @@ from qililab import Domain
 from qililab.exceptions import VariableAllocated
 from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.structured_program import StructuredProgram
-from qililab.core.variables import FloatVariable, IntVariable, VariableExpression
+from qililab.core import FloatVariable, IntVariable, VariableExpression
 
 
 class TestStructuredProgram:
@@ -247,7 +247,7 @@ class TestStructuredProgram:
         voltage_var = instance.variable("voltage", domain=Domain.Voltage)
         flux_var = instance.variable("flux", domain=Domain.Flux)
         for var in [freq_var, phase_var, voltage_var, flux_var]:
-            with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
+            with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for QProgramDomain.Time."):
                 _ = var + 5
 
     def test_variable_expression_infer_domain_error(self):

@@ -27,7 +27,7 @@ import qpysequence.program.instructions as QPyInstructions
 from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 
 from qililab.config import logger
-from qililab.core.variables import Domain, Variable, VariableExpression
+from qililab.core import Domain, Variable, VariableExpression
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -48,7 +48,7 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.qprogram import QProgram
-from qilisdk.qprogram.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
+from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 
 SIGN_BIT = 2**31  # 2147483648 -> values >= this are "negative" in 2's complement (MSB = 1)
 NEG_ONE_TO_THREE = (2**32) - 3  # 4294967293 == -3 in 2's complement

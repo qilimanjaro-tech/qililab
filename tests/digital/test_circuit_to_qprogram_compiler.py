@@ -10,7 +10,7 @@ from qililab.digital.circuit_to_qprogram_compiler import (
 from qililab.digital.native_gates import Rmw
 from qililab.settings.digital import DigitalCompilationSettings
 from qililab.settings.digital.gate_event import GateEvent
-from qilisdk.qprogram.waveforms import Arbitrary, IQDrag, IQPair, Square
+from qililab.waveforms import Arbitrary, IQDrag, IQPair, Square
 
 
 @pytest.mark.parametrize(

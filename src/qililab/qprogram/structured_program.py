@@ -15,7 +15,7 @@ from collections import deque
 
 import numpy as np
 
-from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
+from qililab.core import Domain, FloatVariable, IntVariable, Variable
 from qililab.exceptions.variable_allocated import VariableAllocated
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.yaml import yaml
