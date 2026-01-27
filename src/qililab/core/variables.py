@@ -232,7 +232,6 @@ class FloatVariable(Variable, float):  # type: ignore
         raise NotImplementedError("Taking the absolute of a variable is not implemented in QProgram.")
 
 
-
 @yaml.register_class
 class VariableExpression(Variable):
     """An expression combining Variables and/or constants."""
