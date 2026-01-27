@@ -20,7 +20,9 @@ from qililab.yaml import yaml
 
 @yaml.register_class
 class SetOffset(Operation):
-    def __init__(self, bus: str, offset_path0: int | float | Variable, offset_path1: int | float | Variable | None = None):
+    def __init__(
+        self, bus: str, offset_path0: int | float | Variable, offset_path1: int | float | Variable | None = None
+    ):
         super().__init__()
         self.bus: str = bus
         self.offset_path0: int | float | Variable = offset_path0
