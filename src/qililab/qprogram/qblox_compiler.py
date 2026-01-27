@@ -801,7 +801,7 @@ class QbloxCompiler:
                             component=QPyInstructions.Sub(zero_register, abs(offset0), constant_register)
                         )
                         self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-                    # oups check what vyron did below: this move is done at every iteration of the loop, ideally it will be done outside of the loop where the registers for the loop iteration are added - this will require a qpysequence modification
+
                     else:
                         self._buses[element.bus].qpy_block_stack[-1].append_component(
                             component=QPyInstructions.Move(offset0, constant_register)

@@ -197,7 +197,7 @@ class IntVariable(Variable, int):  # type: ignore
     def __init__(self, label: str = "", domain: Domain = Domain.Scalar):
         Variable.__init__(self, label, domain)
 
-    # Unary operators must be defined on IntVariable itself. FloatVariable inherits from float, CPython uses the float numeric slots for unary slots.
+    # Unary operators must be defined on IntVariable itself. IntVariable inherits from int, CPython uses the int numeric slots for unary slots.
     def __neg__(self):
         return VariableExpression(0, "-", self)
 
