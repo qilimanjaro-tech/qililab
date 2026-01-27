@@ -11,12 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
 from copy import deepcopy
 from typing import TYPE_CHECKING, overload
 
 from qililab.core import Domain, requires_domain
-from qililab.qprogram.blocks.block import Block
-from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.blocks import Block
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
@@ -28,23 +29,21 @@ from qililab.qprogram.operations import (
     MeasureWithCalibratedWeights,
     Play,
     PlayWithCalibratedWaveform,
-    ResetPhase,
-    SetFrequency,
     SetGain,
     SetMarkers,
     SetOffset,
-    SetPhase,
     SetTrigger,
-    Sync,
-    Wait,
     WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
+from . import SdkQProgram
+
 if TYPE_CHECKING:
     from qililab.extra.quantum_machines.qprogram.quantum_machines_compiler import QuantumMachinesCompilationOutput
+    from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.qblox_compiler import QbloxCompilationOutput
     from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 
@@ -54,9 +53,9 @@ class QProgramCompilationOutput:
 
     def __init__(
         self,
-        qblox: "QbloxCompilationOutput | None" = None,
-        qdac: "QdacCompilationOutput | None" = None,
-        quantum_machines: "QuantumMachinesCompilationOutput | None" = None,
+        qblox: QbloxCompilationOutput | None = None,
+        qdac: QdacCompilationOutput | None = None,
+        quantum_machines: QuantumMachinesCompilationOutput | None = None,
     ):
         self.qblox = qblox
         self.qdac = qdac
@@ -64,7 +63,7 @@ class QProgramCompilationOutput:
 
 
 @yaml.register_class
-class QProgram(StructuredProgram):
+class QProgram(SdkQProgram, StructuredProgram):
     """QProgram is a hardware-agnostic pulse-level programming interface for describing quantum programs.
 
     This class provides an interface for building quantum programs,
@@ -116,61 +115,6 @@ class QProgram(StructuredProgram):
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
 
-    def __str__(self) -> str:
-        def traverse(block: Block):
-            string_elements = []
-            for element in block.elements:
-                string_elements.append(f"{type(element).__name__}:\n")
-                for attr_name in vars(element):
-                    # ignore uuid, variables. elements, waveforms and weights are handled separately
-                    if attr_name in ("_uuid", "variable", "elements", "waveform", "weights"):
-                        continue
-
-                    attr_value = getattr(element, attr_name)
-                    # Handle UUID checking and append to string_elements
-                    if "UUID" not in str(attr_value):
-                        string_elements.append(f"\t{attr_name}: {attr_value}\n")
-                    else:
-                        string_elements.append(f"\t{attr_name}: None\n")  # pragma: no cover
-
-                if isinstance(element, Block):
-                    # handle blocks
-                    for string_element in traverse(element):
-                        string_elements.append(f"\t{string_element}")
-
-                # if not a block, it is assumed that element is type Operation
-                if hasattr(element, "waveform"):
-                    waveform_string = (
-                        [f"\tWaveform {type(element.waveform).__name__}:\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.envelope()).split("\n")]
-                        if isinstance(element.waveform, Waveform)
-                        else [f"\tWaveform I {type(element.waveform.get_I()).__name__}:\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.get_I().envelope()).split("\n")]
-                        + [f"\tWaveform Q {type(element.waveform.get_Q()).__name__}):\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.get_Q().envelope()).split("\n")]
-                    )
-                    string_elements.extend(waveform_string)
-
-                if hasattr(element, "weights"):
-                    string_elements.append(f"\tWeights I {type(element.weights.get_I()).__name__}:\n")
-                    string_elements.extend(
-                        [
-                            f"\t\t{array_element}\n"
-                            for array_element in str(element.weights.get_I().envelope()).split("\n")
-                        ]
-                    )
-                    string_elements.append(f"\tWeights Q {type(element.weights.get_Q()).__name__}:\n")
-                    string_elements.extend(
-                        [
-                            f"\t\t{array_element}\n"
-                            for array_element in str(element.weights.get_Q().envelope()).split("\n")
-                        ]
-                    )
-
-            return string_elements
-
-        return "".join(traverse(self._body))
-
     def has_calibrated_waveforms_or_weights(self) -> bool:
         """Checks if QProgram has named waveforms or weights. These need to be mapped before compiling to hardware-native code.
 
@@ -198,69 +142,6 @@ class QProgram(StructuredProgram):
             return False
 
         return traverse(self.body)
-
-    def with_bus_mapping(self, bus_mapping: dict[str, str]) -> "QProgram":
-        """Returns a copy of the QProgram with bus mappings applied.
-
-        Args:
-            bus_mapping (dict[str, str]): A dictionary mapping old bus names to new bus names.
-
-        Returns:
-            QProgram: A new instance of QProgram with updated bus names.
-        """
-
-        def traverse(block: Block):
-            for index, element in enumerate(block.elements):
-                if isinstance(element, Block):
-                    traverse(element)
-                elif isinstance(element, (MeasureReset, MeasureResetCalibrated)):
-                    bus = getattr(element, "bus")
-                    control_bus = getattr(element, "control_bus")
-                    if isinstance(bus, str) and bus in bus_mapping:
-                        setattr(block.elements[index], "bus", bus_mapping[bus])
-                    if isinstance(control_bus, str) and control_bus in bus_mapping:
-                        setattr(block.elements[index], "control_bus", bus_mapping[control_bus])
-                    new_latch_enabled = []
-                    for bus in copied_qprogram.qblox.latch_enabled:
-                        if bus in bus_mapping:
-                            new_latch_enabled.append(bus_mapping[bus])
-                        else:
-                            new_latch_enabled.append(bus)
-                    copied_qprogram.qblox.latch_enabled = new_latch_enabled
-
-                    new_trigger_network_required = {}
-                    for bus, value in copied_qprogram.qblox.trigger_network_required.items():
-                        if bus in bus_mapping:
-                            new_trigger_network_required[bus_mapping[bus]] = value
-                        else:
-                            new_trigger_network_required[bus] = value
-                    copied_qprogram.qblox.trigger_network_required = new_trigger_network_required
-                elif hasattr(element, "bus"):
-                    bus = getattr(element, "bus")
-                    if isinstance(bus, str) and bus in bus_mapping:
-                        setattr(block.elements[index], "bus", bus_mapping[bus])
-                elif hasattr(element, "buses"):
-                    buses = getattr(element, "buses")
-                    if isinstance(buses, list):
-                        setattr(
-                            block.elements[index],
-                            "buses",
-                            [bus_mapping[bus] if bus in bus_mapping else bus for bus in buses],
-                        )
-
-        # Copy qprogram so the original remain unaffected
-        copied_qprogram = deepcopy(self)
-
-        # Recursively traverse qprogram applying the bus mapping
-        traverse(copied_qprogram.body)
-
-        # Apply the mapping to buses property
-        for bus in list(copied_qprogram.buses):
-            if bus in bus_mapping:
-                copied_qprogram.buses.remove(bus)
-                copied_qprogram.buses.add(bus_mapping[bus])
-
-        return copied_qprogram
 
     def with_calibration(self, calibration: Calibration):
         """Apply calibration to the operations within the QProgram.
@@ -416,18 +297,6 @@ class QProgram(StructuredProgram):
         self._buses.add(bus)
 
     @requires_domain("duration", Domain.Time)
-    def wait(self, bus: str, duration: int):
-        """Adds a delay on the bus with a specified time.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            time (int): Duration of the delay.
-        """
-        operation = Wait(bus=bus, duration=duration)
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("duration", Domain.Time)
     def wait_trigger(self, bus: str, duration: int, port: int | None = None):
         """Adds a delay on the bus and wait for an trigger signal to arrive.
 
@@ -509,53 +378,6 @@ class QProgram(StructuredProgram):
             operation = MeasureWithCalibratedWaveformWeights(
                 bus=bus, waveform=waveform, weights=weights, save_adc=save_adc
             )
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    def sync(self, buses: list[str] | None = None):
-        """Synchronize operations between buses, so the operations following will start at the same time.
-
-        If no buses are given, then the synchronization will involve all buses present in the QProgram.
-
-        Args:
-            buses (list[str], optional): List of unique identifiers of the buses. Defaults to None.
-        """
-        operation = Sync(buses=buses)
-        self._active_block.append(operation)
-        if buses:
-            self._buses.update(buses)
-
-    def reset_phase(self, bus: str):
-        """Reset the absolute phase of the NCO associated with the bus.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-        """
-        operation = ResetPhase(bus=bus)
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("phase", Domain.Phase)
-    def set_phase(self, bus: str, phase: float):
-        """Set the absolute phase of the NCO associated with the bus.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            phase (float): The new absolute phase of the NCO.
-        """
-        operation = SetPhase(bus=bus, phase=phase)
-        self._active_block.append(operation)
-        self._buses.add(bus)
-
-    @requires_domain("frequency", Domain.Frequency)
-    def set_frequency(self, bus: str, frequency: float):
-        """Set the frequency of the NCO associated with bus.
-
-        Args:
-            bus (str): Unique identifier of the bus.
-            frequency (float): The new frequency of the NCO.
-        """
-        operation = SetFrequency(bus=bus, frequency=frequency)
         self._active_block.append(operation)
         self._buses.add(bus)
 

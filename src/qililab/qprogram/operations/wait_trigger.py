@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from qililab.qprogram.operations.operation import Operation
+from . import Operation
 from qililab.yaml import yaml
 
 

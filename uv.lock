@@ -3573,7 +3573,7 @@ docs = [
 [[package]]
 name = "qilisdk"
 version = "0.1.8"
-source = { git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=sdk-135-euroqcs-add-qprogram-and-waveforms#1b1bf1cb18f7797f44829462d16201f806a696da" }
+source = { git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=sdk-135-euroqcs-add-qprogram-and-waveforms#bc7222e6af1a8dae26bb59c3a2ecf3ed9b335b51" }
 dependencies = [
     { name = "dill" },
     { name = "loguru" },

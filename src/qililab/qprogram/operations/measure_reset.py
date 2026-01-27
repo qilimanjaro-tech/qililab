@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qililab.qprogram.operations.operation import Operation
+from . import Operation
 from qililab.waveforms import IQWaveform
 from qililab.yaml import yaml
 

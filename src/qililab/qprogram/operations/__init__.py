@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from qilisdk.qprogram.operations import Measure as SdkMeasure
+from qilisdk.qprogram.operations import Operation, ResetPhase, SetFrequency, SetPhase, Sync, Wait
+from qilisdk.qprogram.operations import Play as SdkPlay
+
 from .acquire import Acquire, AcquireWithCalibratedWeights
 from .execute_qprogram import ExecuteQProgram
 from .get_parameter import GetParameter
@@ -22,19 +26,13 @@ from .measure import (
     MeasureWithCalibratedWeights,
 )
 from .measure_reset import MeasureReset, MeasureResetCalibrated
-from .operation import Operation
 from .play import Play, PlayWithCalibratedWaveform
-from .reset_phase import ResetPhase
 from .set_crosstalk import SetCrosstalk
-from .set_frequency import SetFrequency
 from .set_gain import SetGain
 from .set_markers import SetMarkers
 from .set_offset import SetOffset
 from .set_parameter import SetParameter
-from .set_phase import SetPhase
 from .set_trigger import SetTrigger
-from .sync import Sync
-from .wait import Wait
 from .wait_trigger import WaitTrigger
 
 __all__ = [
@@ -52,6 +50,8 @@ __all__ = [
     "Play",
     "PlayWithCalibratedWaveform",
     "ResetPhase",
+    "SdkMeasure",
+    "SdkPlay",
     "SetCrosstalk",
     "SetFrequency",
     "SetGain",
@@ -62,5 +62,5 @@ __all__ = [
     "SetTrigger",
     "Sync",
     "Wait",
-    "WaitTrigger",
+    "WaitTrigger"
 ]

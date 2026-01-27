@@ -16,8 +16,9 @@
 import numpy as np
 
 from qililab.core import Variable
-from qililab.qprogram.blocks.block import Block
 from qililab.yaml import yaml
+
+from . import Block
 
 
 @yaml.register_class

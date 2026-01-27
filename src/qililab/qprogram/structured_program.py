@@ -11,135 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections import deque
 
 import numpy as np
 
 from qililab.core import Domain, FloatVariable, IntVariable, Variable
-from qililab.exceptions.variable_allocated import VariableAllocated
-from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.exceptions import VariableAllocated
+from qililab.qprogram.blocks import ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.yaml import yaml
 
-
-@yaml.register_class
-class VariableInfo:
-    def __init__(self) -> None:
-        self.is_allocated: bool = False
-        self.allocated_by: Block | None = None
-
-    def allocate(self, block: Block):
-        self.is_allocated = True
-        self.allocated_by = block
-
-    def free(self):
-        self.is_allocated = False
-        self.allocated_by = None
+from . import SdkStructuredProgram, VariableInfo
 
 
 @yaml.register_class
-class StructuredProgram:
+class StructuredProgram(SdkStructuredProgram):
     """Represents a structured quantum program with various control flow blocks."""
-
-    def __init__(self) -> None:
-        """Initializes a StructuredProgram instance, setting up the body, block stack, variables, and buses."""
-        self._body: Block = Block()
-        self._block_stack: deque[Block] = deque([self._body])
-        self._variables: dict[Variable, VariableInfo] = {}
-        self._buses: set[str] = set()
-
-    def _append_to_block_stack(self, block: Block):
-        """Appends a block to the internal block stack.
-
-        Args:
-            block (Block): The block to append.
-        """
-        self._block_stack.append(block)
-
-    def _pop_from_block_stack(self):
-        """Removes and returns the last block from the block stack.
-
-        Returns:
-            Block: The popped block.
-        """
-        return self._block_stack.pop()
-
-    @property
-    def _active_block(self) -> Block:
-        """Returns the currently active block on top of the block stack.
-
-        Returns:
-            Block: The active block.
-        """
-        return self._block_stack[-1]
-
-    @property
-    def body(self) -> Block:
-        """Get the body of the QProgram
-
-        Returns:
-            Block: The block of the body
-        """
-        return self._body
-
-    @property
-    def buses(self) -> set[str]:
-        """Get the buses.
-
-        Returns:
-            set[str]: A set of the names of the buses
-        """
-        return self._buses
-
-    @property
-    def variables(self) -> list[Variable]:
-        """Get the variables.
-
-        Returns:
-            list[Variable]: A list of variables
-        """
-        return list(self._variables)
-
-    def insert_block(self, block: Block):
-        for element in block.elements:
-            self._active_block.append(element)
-
-    def block(self):
-        """Define a generic block for scoping operations.
-
-        Blocks need to open a scope.
-
-        Returns:
-            Block: The block.
-
-        Examples:
-
-            >>> with qp.block() as block:
-            >>> # operations that shall be executed in the block
-        """
-        return StructuredProgram._BlockContext(program=self)
-
-    def for_loop(self, variable: Variable, start: int | float, stop: int | float, step: int | float = 1):
-        """Define a for_loop block to iterate values over a variable.
-
-        Blocks need to open a scope.
-
-        Args:
-            variable (Variable): The variable to be affected from the loop.
-            start (int | float): The start value.
-            stop (int | float): The stop value.
-            step (int | float, optional): The step value. Defaults to 1.
-
-        Returns:
-            Loop: The loop block.
-
-        Examples:
-
-            >>> variable = qp.variable(int)
-            >>> with qp.for_loop(variable=variable, start=0, stop=100, step=5)):
-            >>> # operations that shall be executed in the for_loop block
-        """
-
-        return StructuredProgram._ForLoopContext(program=self, variable=variable, start=start, stop=stop, step=step)
 
     def loop(self, variable: Variable, values: np.ndarray):
         """Define a loop block to iterate values over a variable.
@@ -197,24 +82,6 @@ class StructuredProgram:
         """
         return StructuredProgram._ParallelContext(program=self, loops=loops)
 
-    def average(self, shots: int):
-        """Define an acquire loop block with averaging in real time.
-
-        Blocks need to open a scope.
-
-        Args:
-            iterations (int): The number of acquire iterations.
-
-        Returns:
-            Average: The average block.
-
-        Examples:
-
-            >>> with qp.average(shots=1000):
-            >>> # operations that shall be executed in the average block
-        """
-        return StructuredProgram._AverageContext(program=self, shots=shots)
-
     def variable(self, label: str, domain: Domain, type: type[int | float] | None = None):
         """Declare a variable.
 
@@ -255,42 +122,7 @@ class StructuredProgram:
             return _float_variable(label, domain)
         raise NotImplementedError
 
-    class _BlockContext:
-        def __init__(self, program: "StructuredProgram"):
-            self.program = program
-            self.block: Block = Block()
-
-        def __enter__(self):
-            self.program._append_to_block_stack(block=self.block)
-            return self.block
-
-        def __exit__(self, exc_type, exc_value, exc_tb):
-            block = self.program._pop_from_block_stack()
-            self.program._active_block.append(block)
-
-    class _ForLoopContext(_BlockContext):
-        def __init__(
-            self,
-            program: "StructuredProgram",
-            variable: Variable,
-            start: int | float,
-            stop: int | float,
-            step: int | float,
-        ):
-            self.program = program
-            self.block: ForLoop = ForLoop(variable=variable, start=start, stop=stop, step=step)
-
-        def __enter__(self) -> ForLoop:
-            if self.program._variables[self.block.variable].is_allocated:
-                raise VariableAllocated(self.block.variable)
-            self.program._variables[self.block.variable].allocate(self.block)
-            return super().__enter__()
-
-        def __exit__(self, exc_type, exc_value, exc_tb):
-            self.program._variables[self.block.variable].free()
-            super().__exit__(exc_type, exc_value, exc_tb)
-
-    class _LoopContext(_BlockContext):
+    class _LoopContext(SdkStructuredProgram._BlockContext):
         def __init__(self, program: "StructuredProgram", variable: Variable, values: np.ndarray):
             self.program = program
             self.block: Loop = Loop(variable=variable, values=values)
@@ -305,12 +137,12 @@ class StructuredProgram:
             self.program._variables[self.block.variable].free()
             super().__exit__(exc_type, exc_value, exc_tb)
 
-    class _InfiniteLoopContext(_BlockContext):
+    class _InfiniteLoopContext(SdkStructuredProgram._BlockContext):
         def __init__(self, program: "StructuredProgram"):
             self.program = program
             self.block: InfiniteLoop = InfiniteLoop()
 
-    class _ParallelContext(_BlockContext):
+    class _ParallelContext(SdkStructuredProgram._BlockContext):
         def __init__(self, program: "StructuredProgram", loops: list[Loop | ForLoop]):
             self.program = program
             self.block: Parallel = Parallel(loops=loops)
@@ -326,8 +158,3 @@ class StructuredProgram:
             for loop in self.block.loops:
                 self.program._variables[loop.variable].free()
             super().__exit__(exc_type, exc_value, exc_tb)
-
-    class _AverageContext(_BlockContext):
-        def __init__(self, program: "StructuredProgram", shots: int):
-            self.program = program
-            self.block: Average = Average(shots=shots)
