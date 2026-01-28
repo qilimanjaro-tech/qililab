@@ -61,8 +61,8 @@ class DriverRSWUSP16TR(VisaInstrument):
     @staticmethod
     def _parse_active_channel(reply: str) -> str:
         rep = reply.strip().upper()
-        for channel in _CHANNELS:
-            if channel in rep:
+        for channel in (f"RF{i}" for i in range(1, 17)):
+            if rep.endswith(channel):
                 return channel
         return rep  # fallback
 

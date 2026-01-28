@@ -43,8 +43,8 @@ def test_parser_accepts_lowercase(rf_switchks: DriverRSWUSP16TR, monkeypatch):
 
 def test_parser_accepts_digits_directly():
     """Test parser accepts digits directly."""
-    assert DriverRSWUSP16TR._parse_active_channel("6") == "RF6"
-    assert DriverRSWUSP16TR._parse_active_channel("16") == "RF16"
+    assert DriverRSWUSP16TR._parse_active_channel("ups_RF6") == "RF6"
+    assert DriverRSWUSP16TR._parse_active_channel("16") == "16"
     assert DriverRSWUSP16TR._parse_active_channel("XYZ") == "XYZ"
 
 

@@ -6,7 +6,7 @@ devices:
         r: "QCoDeS, RSWU-SP16TR_simulated, simulated, 0.0.1"
     properties:
       active_channel:
-        default: "None"
+        default: "RF1"
         getter:
           q: "ROUT:CHAN?"
           r: "{}"
