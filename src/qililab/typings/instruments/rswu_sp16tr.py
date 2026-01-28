@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Class Becker RSWU-SP16TR"""
+
 from qililab.instruments.becker.driver_rswu_sp16tr import DriverRSWUSP16TR
 from qililab.typings.instruments.device import Device
 

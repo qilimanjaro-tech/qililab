@@ -34,6 +34,7 @@ class RSWUSP16TR(Instrument):
     @dataclass
     class RSWUSP16TRSettings(Instrument.InstrumentSettings):
         """Settings for the RF switch."""
+
         active_channel: str | None = None
 
     settings: RSWUSP16TRSettings
@@ -101,7 +102,12 @@ class RSWUSP16TR(Instrument):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: int | str | None = None, output_id: int | str | None = None):
+    def get_parameter(
+            self,
+            parameter: Parameter,
+            channel_id: int | str | None = None,
+            output_id: int | str | None = None
+        ):
         """Get instrument parameter.
 
         Args:

@@ -20,7 +20,10 @@ from qcodes.validators import Enum
 if TYPE_CHECKING:
     from qcodes.parameters import Parameter
 
-_CHANNELS: tuple[str, ...] = (*(f"{r}{i}" for i in range(1, 17) for r in ["RF", "rf", ""]), *(f"X{i}" for i in range(101, 117)))
+_CHANNELS: tuple[str, ...] = (
+    *(f"{r}{i}" for i in range(1, 17) for r in ["RF", "rf", ""]),
+    *(f"X{i}" for i in range(101, 117))
+)
 
 
 class DriverRSWUSP16TR(VisaInstrument):
