@@ -38,5 +38,5 @@ __all__ = [
     "QdacCompiler",
     "SdkQProgram",
     "SdkStructuredProgram",
-    "VariableInfo"
+    "VariableInfo",
 ]

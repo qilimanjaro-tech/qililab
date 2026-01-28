@@ -14,9 +14,10 @@
 
 
 from qililab.core import Variable
-from . import Operation
 from qililab.typings.enums import Parameter
 from qililab.yaml import yaml
+
+from . import Operation
 
 
 @yaml.register_class

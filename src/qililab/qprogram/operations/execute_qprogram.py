@@ -15,8 +15,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
-from . import Operation
 from qililab.yaml import yaml
+
+from . import Operation
 
 if TYPE_CHECKING:
     from qililab.core import Variable

@@ -14,8 +14,9 @@
 
 
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from . import Operation
 from qililab.yaml import yaml
+
+from . import Operation
 
 
 @yaml.register_class

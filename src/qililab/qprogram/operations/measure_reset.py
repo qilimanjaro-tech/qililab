@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import Operation
 from qililab.waveforms import IQWaveform
 from qililab.yaml import yaml
+
+from . import Operation
 
 
 @yaml.register_class

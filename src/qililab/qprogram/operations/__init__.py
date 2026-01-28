@@ -62,5 +62,5 @@ __all__ = [
     "SetTrigger",
     "Sync",
     "Wait",
-    "WaitTrigger"
+    "WaitTrigger",
 ]
