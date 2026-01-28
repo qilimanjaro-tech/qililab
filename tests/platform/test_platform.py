@@ -41,7 +41,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform
-from qililab.core.variables import Domain
+from qililab.core import Domain
 from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager

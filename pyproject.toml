@@ -77,7 +77,7 @@ build-backend = "hatchling.build"
 prerelease = "if-necessary"
 
 [tool.uv.sources]
-qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
+qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "sdk-135-euroqcs-add-qprogram-and-waveforms" }
 
 [tool.ruff]
 line-length = 120
