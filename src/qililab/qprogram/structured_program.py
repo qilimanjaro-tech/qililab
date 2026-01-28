@@ -15,9 +15,9 @@ from collections import deque
 
 import numpy as np
 
+from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
 from qililab.exceptions.variable_allocated import VariableAllocated
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
-from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
 from qililab.yaml import yaml
 
 
@@ -100,7 +100,8 @@ class StructuredProgram:
         return list(self._variables)
 
     def insert_block(self, block: Block):
-        self._active_block.append(block)
+        for element in block.elements:
+            self._active_block.append(element)
 
     def block(self):
         """Define a generic block for scoping operations.

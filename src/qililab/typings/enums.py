@@ -132,23 +132,6 @@ class PulseDistortionName(str, Enum):
     LFILTER = "lfilter"
 
 
-class PulseShapeName(str, Enum):
-    """Pulse shape options.
-
-    Args:
-        Enum (str): Available types of PulseShape options:
-        * gaussian
-    """
-
-    GAUSSIAN = "gaussian"
-    DRAG = "drag"
-    RECTANGULAR = "rectangular"
-    SNZ = "snz"
-    COSINE = "cosine"
-    FLATTOP = "flat_top"
-    TWOSTEP = "two_step"
-
-
 class InstrumentName(str, Enum):
     """Instrument names.
 
@@ -323,9 +306,10 @@ class InstrumentControllerName(str, Enum):
     RSWU_SP16TR = "rswu_sp16tr"
 
 
-@yaml.register_class
+@yaml.register_class(shared=True)
 class Parameter(str, Enum):
     """Parameter names."""
+
     OPERATION_MODE = "operation_mode"
     ALC = "alc"
     IQ_WIDEBAND = "iq_wideband"
@@ -337,8 +321,6 @@ class Parameter(str, Enum):
     AMPLITUDE = "amplitude"
     PHASE = "phase"
     WAIT_TIME = "wait_time"
-    DELAY_BETWEEN_PULSES = "delay_between_pulses"
-    DELAY_BEFORE_READOUT = "delay_before_readout"
     GATE_DURATION = "gate_duration"
     GATE_PARAMETER = "gate_parameter"
     NUM_SIGMAS = "num_sigmas"
@@ -469,7 +451,7 @@ class Parameter(str, Enum):
     @classmethod
     def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
+        return representer.represent_scalar(cls.yaml_tag, f"{node.name}-{node.value}")
 
     @classmethod
     def from_yaml(cls, _, node):
@@ -479,13 +461,15 @@ class Parameter(str, Enum):
 
 
 FILTER_PARAMETERS = [
-    p for p in Parameter
+    p
+    for p in Parameter
     if (
         p.name.startswith("EXPONENTIAL_AMPLITUDE")
         or p.name.startswith("EXPONENTIAL_TIME_CONSTANT")
         or p.name.startswith("EXPONENTIAL_STATE")
         or p.name.startswith("FIR_")
-    )]
+    )
+]
 
 
 class ResultName(str, Enum):
