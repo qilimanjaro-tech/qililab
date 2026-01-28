@@ -115,6 +115,46 @@ class QProgram(SdkQProgram, StructuredProgram):
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
 
+    @classmethod
+    def from_sdk(cls, program: SdkQProgram) -> "QProgram":
+        """Create a QProgram instance from a parent SdkQProgram.
+
+        Args:
+            program (SdkQProgram): The SDK QProgram instance to convert.
+
+        Returns:
+            QProgram: A new QProgram instance with the same state.
+
+        Raises:
+            TypeError: If the provided program is not an instance of SdkQProgram.
+        """
+        if isinstance(program, cls):
+            return deepcopy(program)
+
+        if not isinstance(program, SdkQProgram):
+            raise TypeError(f"Expected SdkQProgram, got {type(program).__name__}.")
+
+        try:
+            state = deepcopy(program.__dict__)
+        except AttributeError:
+            copied_program = deepcopy(program)
+            try:
+                copied_program.__class__ = cls
+            except TypeError as exc:
+                raise TypeError(
+                    "SdkQProgram instance cannot be converted to QProgram due to incompatible class layout."
+                ) from exc
+            qprogram = copied_program
+        else:
+            qprogram = cls.__new__(cls)
+            qprogram.__dict__ = state
+
+        qprogram.qblox = cls._QbloxInterface(qprogram)
+        qprogram.quantum_machines = cls._QuantumMachinesInterface(qprogram)
+        qprogram.qdac = cls._QdacInterface(qprogram)
+
+        return qprogram
+
     def has_calibrated_waveforms_or_weights(self) -> bool:
         """Checks if QProgram has named waveforms or weights. These need to be mapped before compiling to hardware-native code.
 

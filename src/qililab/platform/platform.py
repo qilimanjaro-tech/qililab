@@ -61,6 +61,7 @@ from qililab.qprogram import (
     QbloxCompiler,
     QProgram,
     QProgramCompilationOutput,
+    SdkQProgram,
 )
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
