@@ -1024,6 +1024,70 @@ class SauronVNA:
         RUNCARD.BUSES: buses,
     }
 
+class SauronRSWUSP16TR:
+    """Test data of the sauron platform."""
+
+    name = "sauron_rswu_sp16tr"
+
+    rswu_sp16tr_controller: dict[str, Any] = {
+        "name": InstrumentControllerName.RSWU_SP16TR,
+        "alias": InstrumentControllerName.RSWU_SP16TR.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP,
+            CONNECTION.ADDRESS: "169.254.6.210",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": InstrumentName.RSWU_SP16TR.value,
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    rswu_sp16tr_controller_wrong_module = {
+        "name": InstrumentControllerName.RSWU_SP16TR,
+        "alias": "wrong_rswu_sp16tr",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP,
+            CONNECTION.ADDRESS: "169.254.6.210",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": InstrumentName.KEYSIGHT_E5080B.value,
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    rswu_sp16tr: dict[str, Any] = {
+        "name": InstrumentName.RSWU_SP16TR,
+        "alias": InstrumentName.RSWU_SP16TR.value,
+    }
+    keysight_e5080b: dict[str, Any] = {
+        "name": InstrumentName.KEYSIGHT_E5080B,
+        "alias": InstrumentName.KEYSIGHT_E5080B.value,
+    }
+
+    instruments = [rswu_sp16tr, keysight_e5080b]
+    instrument_controllers = [
+        rswu_sp16tr_controller, rswu_sp16tr_controller_wrong_module
+    ]
+
+    buses: list[dict[str, Any]] = [
+        {
+            RUNCARD.ALIAS: "rswu_sp16tr_bus",
+            RUNCARD.INSTRUMENTS: [InstrumentName.RSWU_SP16TR.value],
+            RUNCARD.CHANNELS: [0],
+        },
+    ]
+
+    runcard = {
+        RUNCARD.NAME: name,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+        RUNCARD.BUSES: buses,
+    }
+
 
 class SauronQuantumMachines:
     """Test data of the sauron with quantum machines platform."""

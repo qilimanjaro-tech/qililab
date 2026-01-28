@@ -12,11 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Class Keysight E5080B"""
+"""keithley Instrument Controllers."""
 
-from qililab.instruments.keysight.driver_keysight_e5080b import Driver_KeySight_E5080B
-from qililab.typings.instruments.device import Device
+from .rswu_sp16tr_controller import RSWUSP16TRController
 
-
-class KeysightE5080B(Driver_KeySight_E5080B, Device):
-    """Typing class of the QCoDeS driver for the Keysight e5080b VNA."""
+__all__ = ["RSWUSP16TRController"]
