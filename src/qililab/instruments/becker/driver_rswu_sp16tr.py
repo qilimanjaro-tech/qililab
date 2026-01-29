@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 _CHANNELS: tuple[str, ...] = (
     *(f"{r}{i}" for i in range(1, 17) for r in ["RF", "rf", ""]),
-    *(f"X{i}" for i in range(101, 117))
+    *(f"X{i}" for i in range(101, 117)),
 )
 
 
