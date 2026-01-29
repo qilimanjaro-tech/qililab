@@ -27,6 +27,7 @@ _CHANNELS: tuple[str, ...] = (
     *(f"X{i}" for i in range(101, 117)),
 )
 
+
 @InstrumentFactory.register
 class RSWUSP16TR(Instrument):
     """Becker Nachrichtentechnik RSWU-SP16TR RF switch."""
@@ -112,8 +113,8 @@ class RSWUSP16TR(Instrument):
         raise ParameterNotFound(self, parameter)
 
     def get_parameter(
-            self, parameter: Parameter, channel_id: int | str | None = None, output_id: int | str | None = None
-        ):
+        self, parameter: Parameter, channel_id: int | str | None = None, output_id: int | str | None = None
+    ):
         """Get instrument parameter.
 
         Args:
