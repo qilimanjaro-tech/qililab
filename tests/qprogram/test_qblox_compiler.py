@@ -1034,6 +1034,7 @@ class TestQBloxCompiler:
                             reset_ph
                             set_awg_gain     16383, 16383
                             set_awg_gain     16383, 16383
+                            nop
                             set_awg_offs     16383, 16383
                             play             0, 1, 40
                             set_mrk          0
@@ -1099,14 +1100,14 @@ class TestQBloxCompiler:
                             move             3, R2          
                             move             0, R3          
             loop_0:
+                            nop
                             set_awg_offs     R3, R1         
                             add              R3, 3276, R3   
-                            loop             R2, @loop_0    
-                            nop                             
+                            loop             R2, @loop_0                      
                             move             3, R4          
-                            move             0, R5          
-                            nop                             
+                            move             0, R5                           
             loop_1:
+                            nop
                             set_awg_offs     R0, R5         
                             add              R5, 3276, R5   
                             loop             R4, @loop_1    
@@ -1114,7 +1115,6 @@ class TestQBloxCompiler:
                             upd_param        4              
                             stop
         """
-
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
@@ -2223,6 +2223,7 @@ set_freq         R5
                             upd_param        4
 
             main:
+                            nop
                             set_awg_offs     32767, 0
                             upd_param        4
                             move             1, R0
@@ -2250,6 +2251,7 @@ set_freq         R5
                             set_awg_gain     32767, 32767
                             upd_param        4
                             play             2, 3, 5
+                            nop
                             set_awg_offs     32767, 0
                             upd_param        6
                             set_mrk          0

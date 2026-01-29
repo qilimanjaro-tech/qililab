@@ -691,7 +691,9 @@ class QbloxCompiler:
                 if isinstance(element.offset_path1, Variable)
                 else convert(element.offset_path1)
             )
-        if (isinstance(offset_0, QPyProgram.Register) and not isinstance(offset_1, QPyProgram.Register)) or (isinstance(offset_1, QPyProgram.Register) and not isinstance(offset_0, QPyProgram.Register)):
+        if (isinstance(offset_0, QPyProgram.Register) and not isinstance(offset_1, QPyProgram.Register)) or (
+            isinstance(offset_1, QPyProgram.Register) and not isinstance(offset_0, QPyProgram.Register)
+        ):
             loops = [
                 (i, loop)
                 for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
@@ -709,8 +711,10 @@ class QbloxCompiler:
                 component=QPyInstructions.Move(var=value, register=register),
                 bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
-
-        self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1))
+        self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
+        )
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_markers(self, element: SetMarkers):
