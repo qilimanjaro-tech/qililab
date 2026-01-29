@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, overload, Self
 
 from qililab.core import Domain, requires_domain
 from qililab.qprogram.blocks import Block
@@ -116,7 +116,7 @@ class QProgram(SdkQProgram, StructuredProgram):
         self.qdac = self._QdacInterface(self)
 
     @classmethod
-    def from_sdk(cls, program: SdkQProgram) -> "QProgram":
+    def from_sdk(cls: type[Self], program: SdkQProgram) -> Self:
         """Create a QProgram instance from a parent SdkQProgram.
 
         Args:
@@ -154,6 +154,52 @@ class QProgram(SdkQProgram, StructuredProgram):
         qprogram.qdac = cls._QdacInterface(qprogram)
 
         return qprogram
+
+    def with_bus_mapping(self, bus_mapping: dict[str, str]) -> Self:
+        """Returns a copy of the QProgram with bus mappings applied.
+
+        Args:
+            bus_mapping (dict[str, str]): A dictionary mapping old bus names to new bus names.
+
+        Returns:
+            QProgram: A new instance of QProgram with updated bus names.
+        """
+
+        def traverse(block: Block) -> None:
+            for index, element in enumerate(block.elements):
+                if isinstance(element, Block):
+                    traverse(element)
+                    continue
+                if hasattr(element, "bus"):
+                    bus = getattr(element, "bus")
+                    if isinstance(bus, str) and bus in bus_mapping:
+                        setattr(block.elements[index], "bus", bus_mapping[bus])
+                if hasattr(element, "control_bus"):
+                    control_bus = getattr(element, "control_bus")
+                    if isinstance(control_bus, str) and control_bus in bus_mapping:
+                        setattr(block.elements[index], "control_bus", bus_mapping[control_bus])
+                if hasattr(element, "buses"):
+                    buses = getattr(element, "buses")
+                    if isinstance(buses, list):
+                        setattr(
+                            block.elements[index],
+                            "buses",
+                            [bus_mapping.get(bus, bus) for bus in buses],
+                        )
+
+        # Copy qprogram so the original remain unaffected
+        copied_qprogram = deepcopy(self)
+
+        # Recursively traverse qprogram applying the bus mapping
+        traverse(copied_qprogram.body)
+
+        # Apply the mapping to buses property
+        for bus in copied_qprogram.buses:
+            if bus in bus_mapping:
+                copied_qprogram.buses.remove(bus)
+                copied_qprogram.buses.add(bus_mapping[bus])
+
+        return copied_qprogram
 
     def has_calibrated_waveforms_or_weights(self) -> bool:
         """Checks if QProgram has named waveforms or weights. These need to be mapped before compiling to hardware-native code.
