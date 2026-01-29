@@ -75,4 +75,3 @@ class DriverRSWUSP16TR(VisaInstrument):
 
     def close(self) -> None:
         super().close()
-
