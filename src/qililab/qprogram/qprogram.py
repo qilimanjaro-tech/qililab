@@ -33,7 +33,7 @@ from qililab.qprogram.operations import (
     SetMarkers,
     SetOffset,
     SetTrigger,
-    WaitTrigger,
+    WaitTrigger, SdkPlay, SdkMeasure,
 )
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.waveforms import IQWaveform, Waveform
@@ -128,6 +128,18 @@ class QProgram(SdkQProgram, StructuredProgram):
         Raises:
             TypeError: If the provided program is not an instance of SdkQProgram.
         """
+        def traverse(block: Block) -> None:
+            for index, element in enumerate(block.elements):
+                if isinstance(element, Block):
+                    traverse(element)
+                elif isinstance(element, SdkPlay):
+                    play_operation = Play(bus=element.bus, waveform=element.waveform)
+                    block.elements[index] = play_operation
+                elif isinstance(element, SdkMeasure):
+                    measure_operation = Measure(bus=element.bus, waveform=element.waveform, weights=element.weights)
+                    block.elements[index] = measure_operation
+
+
         if isinstance(program, cls):
             return deepcopy(program)
 
@@ -152,6 +164,8 @@ class QProgram(SdkQProgram, StructuredProgram):
         qprogram.qblox = cls._QbloxInterface(qprogram)
         qprogram.quantum_machines = cls._QuantumMachinesInterface(qprogram)
         qprogram.qdac = cls._QdacInterface(qprogram)
+
+        traverse(qprogram.body)
 
         return qprogram
 
