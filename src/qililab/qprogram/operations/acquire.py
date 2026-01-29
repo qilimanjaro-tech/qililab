@@ -13,16 +13,16 @@
 # limitations under the License.
 
 from qililab.qprogram.operations.operation import Operation
-from qililab.waveforms import IQWaveform
+from qililab.waveforms import IQPair
 from qililab.yaml import yaml
 
 
 @yaml.register_class
 class Acquire(Operation):
-    def __init__(self, bus: str, weights: IQWaveform, save_adc: bool = False) -> None:
+    def __init__(self, bus: str, weights: IQPair, save_adc: bool = False) -> None:
         super().__init__()
         self.bus: str = bus
-        self.weights: IQWaveform = weights
+        self.weights: IQPair = weights
         self.save_adc: bool = save_adc
 
 

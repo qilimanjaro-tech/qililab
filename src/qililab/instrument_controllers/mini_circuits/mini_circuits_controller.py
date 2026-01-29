@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MiniCircuits Instrument Controller"""
-
+""" MiniCircuits Instrument Controller """
 from dataclasses import dataclass
 from typing import Sequence
 

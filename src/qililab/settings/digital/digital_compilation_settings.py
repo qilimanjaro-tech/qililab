@@ -14,28 +14,39 @@
 
 import ast
 import re
-import warnings
-
-from pydantic import BaseModel
+from dataclasses import asdict, dataclass
 
 from qililab.constants import GATE_ALIAS_REGEX
-from qililab.settings.digital.gate_event import GateEvent
+from qililab.settings.digital.digital_compilation_bus_settings import DigitalCompilationBusSettings
+from qililab.settings.digital.gate_event_settings import GateEventSettings
 from qililab.typings import ChannelID, Parameter, ParameterValue
+from qililab.utils.asdict_factory import dict_factory
 
 
-class DigitalCompilationSettings(BaseModel):
+@dataclass
+class DigitalCompilationSettings:
     """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
+    minimum_clock_time: int
+    delay_before_readout: int
     topology: list[tuple[int, int]]
-    gates: dict[str, list[GateEvent]]
-    relaxation_duration: int = 200_000
+    gates: dict[str, list[GateEventSettings]]
+    buses: dict[str, DigitalCompilationBusSettings]
+
+    def __post_init__(self):
+        """Build the Gates Settings based on the master settings."""
+        self.topology = [tuple(element) if isinstance(element, list) else element for element in self.topology]
+        self.gates = {gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()}
+        self.buses = {bus: DigitalCompilationBusSettings(**settings) for bus, settings in self.buses.items()}
 
     def to_dict(self):
         """Serializes gate settings to dictionary and removes fields with None values"""
 
-        return self.model_dump()
+        return asdict(self, dict_factory=dict_factory) | {
+            "buses": {bus: bus_settings.to_dict() for bus, bus_settings in self.buses.items()}
+        }
 
-    def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]) -> list[GateEvent]:
+    def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
         """Get gates settings from runcard for a given gate name and qubits.
 
         Args:
@@ -86,17 +97,18 @@ class DigitalCompilationSettings(BaseModel):
             channel_id (int, optional): Channel id. Defaults to None.
             alias (str): String which specifies where the parameter can be found.
         """
+        if parameter == Parameter.DELAY_BEFORE_READOUT:
+            self.delay_before_readout = int(value)
+            return
+        if parameter == Parameter.DELAY:
+            if alias not in self.buses:
+                raise ValueError(f"Could not find bus {alias} in gate settings.")
+            self.buses[alias].delay = int(value)
+            return
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if regex_match is None:
             raise ValueError(f"Alias {alias} has incorrect format")
         name = regex_match["gate"]
-        if name.upper() == "DRAG":
-            warnings.warn(
-                "'DRAG' gate has been renamed to 'Rmw'. Please change your get/set methods.",
-                FutureWarning,
-                stacklevel=3,
-            )
-            name = "Rmw"
         qubits_str = regex_match["qubits"]
         qubits = ast.literal_eval(qubits_str)
         gates_settings = self.get_gate(name=name, qubits=qubits)
@@ -111,17 +123,18 @@ class DigitalCompilationSettings(BaseModel):
             channel_id (int, optional): Channel id. Defaults to None.
             alias (str): String which specifies where the parameter can be found.
         """
+        # if alias is None or alias == "platform":
+        #     return super().get_parameter(parameter=parameter, channel_id=channel_id)
+        if parameter == Parameter.DELAY_BEFORE_READOUT:
+            return self.delay_before_readout
+        if parameter == Parameter.DELAY:
+            if alias not in self.buses:
+                raise ValueError(f"Could not find bus {alias} in gate settings.")
+            return self.buses[alias].delay
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if regex_match is None:
             raise ValueError(f"Could not find gate {alias} in gate settings.")
         name = regex_match["gate"]
-        if name.upper() == "DRAG":
-            warnings.warn(
-                "'DRAG' gate has been renamed to 'Rmw'. Please change your get/set methods.",
-                FutureWarning,
-                stacklevel=3,
-            )
-            name = "Rmw"
         qubits_str = regex_match["qubits"]
         qubits = ast.literal_eval(qubits_str)
         gates_settings = self.get_gate(name=name, qubits=qubits)

@@ -4,7 +4,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from qililab import Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square, IQDrag
+from qililab import Domain, DragCorrection, Gaussian, IQPair, QProgram, Square
 from qililab.qprogram.blocks import Average
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -42,7 +42,7 @@ def get_sample_qprogram_string():
 
     r_wf_I = Square(amplitude=r_amp, duration=r_duration)
     r_wf_Q = Square(amplitude=0.0, duration=r_duration)
-    d_wf = IQDrag(amplitude=1.0, duration=d_duration, num_sigmas=4, drag_coefficient=0.1)
+    d_wf = IQPair.DRAG(amplitude=1.0, duration=d_duration, num_sigmas=4, drag_coefficient=0.1)
 
     weights_shape = Square(amplitude=1, duration=r_duration)
 
@@ -121,8 +121,8 @@ class TestQProgram(TestStructuredProgram):
 
     def test_with_calibration_method(self):
         """Test with_bus_mapping method"""
-        xgate = IQDrag(amplitude=1.0, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
-        drag_reset = IQDrag(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
+        xgate = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
+        drag_reset = IQPair.DRAG(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
         readout = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
         weights = IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000))
 
@@ -215,39 +215,6 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[0].elements[7], Measure)
         assert isinstance(new_qp.body.elements[0].elements[8], Measure)
         assert isinstance(new_qp.body.elements[0].elements[9], MeasureReset)
-
-    def test_with_calibration_method_block(self):
-        """Test with_calibration block method"""
-        drag_reset = IQDrag(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
-        readout = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
-        weights = IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000))
-
-        calibration = Calibration()
-        calibration.add_waveform(bus="readout", name="readout", waveform=readout)
-        calibration.add_weights(bus="readout", name="weights", weights=weights)
-        calibration.add_waveform(bus="drive", name="drag_reset", waveform=drag_reset)
-
-        measure_qp_block = QProgram()
-        measure_qp_block.qblox.measure_reset(bus='readout',waveform="readout", weights="weights", control_bus='drive',reset_pulse="drag_reset")
-        calibration.add_block("reset",measure_qp_block.body)
-        reset_block = calibration.get_block(name="reset")
-
-
-        qp = QProgram()
-        with qp.average(1000):
-            qp.insert_block(reset_block)
-
-        assert qp.has_calibrated_waveforms_or_weights() is True
-        assert isinstance(qp.body.elements[0].elements[0], MeasureResetCalibrated)
-        assert qp.body.elements[0].elements[0].waveform == "readout"
-        assert qp.body.elements[0].elements[0].weights == "weights"
-        assert qp.body.elements[0].elements[0].control_bus == "drive"
-        assert qp.body.elements[0].elements[0].reset_pulse == "drag_reset"
-
-        new_qp = qp.with_calibration(calibration=calibration)
-
-        assert isinstance(new_qp.body.elements[0].elements[0], MeasureReset)
-
 
     def test_average_method(self):
         """Test acquire_loop method"""
@@ -456,43 +423,41 @@ class TestQProgram(TestStructuredProgram):
                 _ = Gaussian(amplitude=amplitude_var, duration=duration_var, num_sigmas=num_sigmas_var)
 
         for var in all_types - {scalar}:
+            gaussian = Gaussian(amplitude=1.0, duration=40, num_sigmas=2.5)
             with pytest.raises(ValueError):
-                _ = GaussianDragCorrection(drag_coefficient=var, amplitude=1.0, duration=40, num_sigmas=2.5)
+                _ = DragCorrection(drag_coefficient=var, waveform=gaussian)
 
         for amplitude_var, duration_var, num_sigmas_var, drag_coefficient_var in set(product(all_types, repeat=4)) - {
             (voltage, time, scalar, scalar)
         }:
             with pytest.raises(ValueError):
-                _ = IQDrag(
+                _ = IQPair.DRAG(
                     amplitude=amplitude_var,
                     duration=duration_var,
                     num_sigmas=num_sigmas_var,
                     drag_coefficient=drag_coefficient_var,
                 )
-    
-    # TODO: qililab.utils.serialization.DeserializationError: Failed to deserialize YAML string: 'Voltage-4' is not a valid Domain
-    # def test_serialization_deserialization(self):
-    #     """Test serialization and deserialization works."""
-    #     file = "test_serialization_deserialization_qprogram.yml"
-    #     qp = QProgram()
-    #     gain = qp.variable(label="gain", domain=Domain.Voltage)
-    #     with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
-    #         qp.set_gain(bus="drive_bus", gain=gain)
-    #         qp.play(bus="drive_bus", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
 
-    #     serialized = serialize(qp)
-    #     deserialized_qprogram = deserialize(serialized, QProgram)
+    def test_serialization_deserialization(self):
+        """Test serialization and deserialization works."""
+        file = "test_serialization_deserialization_qprogram.yml"
+        qp = QProgram()
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
+            qp.set_gain(bus="drive_bus", gain=gain)
+            qp.play(bus="drive_bus", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
 
-    #     assert isinstance(deserialized_qprogram, QProgram)
+        serialized = serialize(qp)
+        deserialized_qprogram = deserialize(serialized, QProgram)
 
-    #     serialize_to(qp, file=file)
-    #     deserialized_qprogram = deserialize_from(file, QProgram)
+        assert isinstance(deserialized_qprogram, QProgram)
 
-    #     assert isinstance(deserialized_qprogram, QProgram)
+        serialize_to(qp, file=file)
+        deserialized_qprogram = deserialize_from(file, QProgram)
 
-    #     assert isinstance(deserialized_qprogram, QProgram)
+        assert isinstance(deserialized_qprogram, QProgram)
 
-    #     os.remove(file)
+        os.remove(file)
 
     def test_measure_reset_method(self):
         """Test measure_reset method"""
@@ -535,7 +500,7 @@ class TestQProgram(TestStructuredProgram):
         """Test with_bus_mapping method"""
         qp = QProgram()
         square_wf = Square(1, 200)
-        drag = IQDrag(1, 40, 2, 2)
+        drag = IQPair.DRAG(1, 40, 2, 2)
         with qp.average(1000):
                 qp.qblox.measure_reset(
                     bus="readout_bus",
@@ -577,7 +542,7 @@ class TestQProgram(TestStructuredProgram):
 
     def test_measure_reset_raises_error(self):
         """Test that calling measure reset with a combination of calibrated and non calibrated parameters raises an error"""
-        drag_reset = IQDrag(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
+        drag_reset = IQPair.DRAG(amplitude=0.5, duration=40, num_sigmas=4.5, drag_coefficient=-4.5)
         readout = IQPair(I=Square(1.0, 200), Q=Square(1.0, 200))
         weights = IQPair(I=Square(1.0, 2000), Q=Square(1.0, 2000))
 

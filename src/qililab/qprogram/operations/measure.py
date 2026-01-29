@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from qililab.qprogram.operations.operation import Operation
-from qililab.waveforms import IQWaveform, Waveform
+from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
 
 
@@ -22,16 +22,16 @@ class Measure(Operation):
     def __init__(
         self,
         bus: str,
-        waveform: IQWaveform,
-        weights: IQWaveform,
+        waveform: IQPair,
+        weights: IQPair,
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
     ) -> None:
         super().__init__()
         self.bus: str = bus
-        self.waveform: IQWaveform = waveform
-        self.weights: IQWaveform = weights
+        self.waveform: IQPair = waveform
+        self.weights: IQPair = weights
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
@@ -42,8 +42,8 @@ class Measure(Operation):
         Returns:
             tuple[Waveform, Waveform | None]: The waveforms as tuple.
         """
-        wf_I: Waveform = self.waveform.get_I()
-        wf_Q: Waveform = self.waveform.get_Q()
+        wf_I: Waveform = self.waveform.I
+        wf_Q: Waveform = self.waveform.Q
         return wf_I, wf_Q
 
 
@@ -53,7 +53,7 @@ class MeasureWithCalibratedWaveform(Operation):
         self,
         bus: str,
         waveform: str,
-        weights: IQWaveform,
+        weights: IQPair,
         save_adc: bool = False,
         rotation: float | None = None,
         demodulation: bool = True,
@@ -61,7 +61,7 @@ class MeasureWithCalibratedWaveform(Operation):
         super().__init__()
         self.bus: str = bus
         self.waveform: str = waveform
-        self.weights: IQWaveform = weights
+        self.weights: IQPair = weights
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
@@ -72,7 +72,7 @@ class MeasureWithCalibratedWeights(Operation):
     def __init__(
         self,
         bus: str,
-        waveform: IQWaveform,
+        waveform: IQPair,
         weights: str,
         save_adc: bool = False,
         rotation: float | None = None,
@@ -80,7 +80,7 @@ class MeasureWithCalibratedWeights(Operation):
     ) -> None:
         super().__init__()
         self.bus: str = bus
-        self.waveform: IQWaveform = waveform
+        self.waveform: IQPair = waveform
         self.weights: str = weights
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation

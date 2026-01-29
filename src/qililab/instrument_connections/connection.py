@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Connection class"""
-
 from abc import ABC
 from dataclasses import asdict, dataclass
 from functools import partial
