@@ -683,10 +683,11 @@ class QProgram(StructuredProgram):
             play_elements = [elements[element] for element in element_group if isinstance(elements[element], Play)]
             if len({(play.dwell, play.delay, play.repetitions, play.wait_time) for play in play_elements}) > 1:
                 raise ValueError("Play elements must be the same for the same play pulse.")
-            dwell, delay, repetitions, wait_time = (
+            dwell, delay, repetitions, stepped, wait_time = (
                 play_elements[0].dwell,
                 play_elements[0].delay,
                 play_elements[0].repetitions,
+                play_elements[0].stepped,
                 play_elements[0].wait_time,
             )
 
@@ -716,6 +717,7 @@ class QProgram(StructuredProgram):
                 dwell=dwell,
                 delay=delay,
                 repetitions=repetitions,
+                stepped=stepped,
                 wait_time=wait_time,
             )
             return play
@@ -1384,6 +1386,7 @@ class QProgram(StructuredProgram):
             dwell: int | None = None,
             delay: int | None = None,
             repetitions: int | None = None,
+            stepped: bool | None = None,
         ) -> None:
             """Play a single waveform or an I/Q pair of waveforms on the bus.
 
@@ -1393,6 +1396,7 @@ class QProgram(StructuredProgram):
                 dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
                 delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
+                stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False.
             """
 
         @overload
@@ -1403,6 +1407,7 @@ class QProgram(StructuredProgram):
             dwell: int | None = None,
             delay: int | None = None,
             repetitions: int | None = None,
+            stepped: bool | None = None,
         ) -> None:
             """Play a named waveform on the bus.
 
@@ -1412,6 +1417,7 @@ class QProgram(StructuredProgram):
                 dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
                 delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
+                stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False.
             """
 
         def play(
@@ -1421,6 +1427,7 @@ class QProgram(StructuredProgram):
             dwell: int | None = None,
             delay: int | None = None,
             repetitions: int | None = None,
+            stepped: bool | None = None,
         ) -> None:
             """Play a waveform, IQPair, or calibrated operation on the specified bus.
 
@@ -1433,14 +1440,15 @@ class QProgram(StructuredProgram):
                 dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
                 delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
+                stepped (bool | None, optional): Defining if the ramp will have a stair shape. Defaults to False inside QDACII compiler.
             """
 
             operation = (
                 PlayWithCalibratedWaveform(
-                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions
+                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped
                 )
                 if isinstance(waveform, str)
-                else Play(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions)
+                else Play(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped)
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)

@@ -105,6 +105,7 @@ class QdacCompiler:
 
         self._dc_dwell: int = 2
         self._dc_delay: int = 0
+        self._dc_stepped: bool = False
         self._loop_repetitions: dict[str, int] = {}
         self._infinite_loop: bool = False
 
@@ -195,10 +196,11 @@ class QdacCompiler:
 
                     play_elements = [element for element in elements if isinstance(element, Play)]
                     if play_elements:
-                        dwell, delay, repetitions = (
+                        dwell, delay, repetitions, stepped = (
                             play_elements[0].dwell,
                             play_elements[0].delay,
                             play_elements[0].repetitions,
+                            play_elements[0].stepped,
                         )
 
                     for bus in flux_vector.bias_vector.keys():
@@ -214,6 +216,7 @@ class QdacCompiler:
                                 dwell=dwell,
                                 delay=delay,
                                 repetitions=repetitions,
+                                stepped=stepped,
                             )
                             block.elements.insert(element_list[0], play)
 
@@ -313,9 +316,9 @@ class QdacCompiler:
     def _handle_set_trigger(self, element: SetTrigger):
         if element.bus in self._qdac_buses_alias:
             # Condition to check if positions are properly set.
-            if element.position not in {"end", "start"}:
+            if element.position not in {"end", "start", "step", "end_step"}:
                 raise NotImplementedError(
-                    f"position must be set as 'end' or 'start', {element.position} is not recognized"
+                    f"position must be set as 'end', 'start', 'step' or 'end_step'. {element.position} is not recognized"
                 )
 
             if element.outputs:
@@ -329,12 +332,28 @@ class QdacCompiler:
                             trigger=trigger,
                             width_s=element.duration,
                         )
-                    else:
+                    elif element.position == "start":
                         self._qdac.set_start_marker_external_trigger(
                             channel_id=self._channels[element.bus],
                             out_port=output,
                             trigger=trigger,
                             width_s=element.duration,
+                        )
+                    elif element.position == "step":
+                        self._qdac.set_start_marker_external_trigger(
+                            channel_id=self._channels[element.bus],
+                            out_port=output,
+                            trigger=trigger,
+                            width_s=element.duration,
+                            step=True,
+                        )
+                    elif element.position == "end_step":
+                        self._qdac.set_end_marker_external_trigger(
+                            channel_id=self._channels[element.bus],
+                            out_port=output,
+                            trigger=trigger,
+                            width_s=element.duration,
+                            step=True,
                         )
                 if not self._trigger_position:
                     self._trigger_position = "front"
@@ -342,10 +361,14 @@ class QdacCompiler:
                 trigger = self._hash_trigger(element, None)
                 if element.position == "end":
                     self._qdac.set_end_marker_internal_trigger(channel_id=self._channels[element.bus], trigger=trigger)
-                else:
+                elif element.position == "start":
                     self._qdac.set_start_marker_internal_trigger(
                         channel_id=self._channels[element.bus], trigger=trigger
                     )
+                elif element.position == "step":
+                    self._qdac.set_start_marker_internal_trigger(channel_id=self._channels[element.bus], trigger=trigger, step=True)
+                elif element.position == "end_step":
+                    self._qdac.set_end_marker_internal_trigger(channel_id=self._channels[element.bus], trigger=trigger, step=True)
 
     def _handle_wait_trigger(self, element: WaitTrigger):
         if element.bus in self._qdac_buses_alias:
@@ -372,6 +395,8 @@ class QdacCompiler:
             if not element.delay:
                 element.delay = self._dc_delay
             if not element.repetitions:
+                element.stepped = self._dc_stepped
+            if not element.repetitions:
                 element.repetitions = self._loop_repetitions[element.bus]
             if self._infinite_loop:
                 element.repetitions = -1
@@ -382,6 +407,7 @@ class QdacCompiler:
                 dwell_us=convert(element.dwell),
                 sync_delay_s=element.delay,
                 repetitions=element.repetitions,
+                stepped=element.stepped,
             )
 
             self._loop_repetitions[element.bus] = 1
