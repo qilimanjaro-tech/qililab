@@ -38,7 +38,7 @@ class Play(Operation):
         self.dwell: int | None = dwell
         self.delay: int | None = delay
         self.repetitions: int | None = repetitions
-        self.stepped: bool | None = stepped,
+        self.stepped: bool | None = stepped
 
     def get_waveforms(self) -> tuple[Waveform, Waveform | None]:
         """Get the waveforms.

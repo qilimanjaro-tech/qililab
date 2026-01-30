@@ -569,7 +569,9 @@ class QProgram(StructuredProgram):
 
                 for bus in flux_vector.bias_vector.keys():
                     if bus not in element_group_bus or element.bus == bus:
-                        operation = handle_element(element, bus, flux_vector, element_group, element_group_bus, elements)
+                        operation = handle_element(
+                            element, bus, flux_vector, element_group, element_group_bus, elements
+                        )
                         block.elements.insert(element_idx + additional_elements, operation)
                         if bus not in element_group_bus:
                             additional_elements += 1
@@ -1466,7 +1468,9 @@ class QProgram(StructuredProgram):
                     bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped
                 )
                 if isinstance(waveform, str)
-                else Play(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped)
+                else Play(
+                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped
+                )
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)

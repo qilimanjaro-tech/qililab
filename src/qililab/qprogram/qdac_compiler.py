@@ -100,6 +100,7 @@ class QdacCompiler:
         self._buses: dict[str, QdacBusCompilationInfo]
         self._qdac_buses: list["Bus"]
         self._qdac_buses_alias: list[str]
+        #### !!!! add getting the qdac offsets
         self._channels: dict[str, int]
         self._qdac: QDevilQDac2
 
@@ -366,9 +367,13 @@ class QdacCompiler:
                         channel_id=self._channels[element.bus], trigger=trigger
                     )
                 elif element.position == "step":
-                    self._qdac.set_start_marker_internal_trigger(channel_id=self._channels[element.bus], trigger=trigger, step=True)
+                    self._qdac.set_start_marker_internal_trigger(
+                        channel_id=self._channels[element.bus], trigger=trigger, step=True
+                    )
                 elif element.position == "end_step":
-                    self._qdac.set_end_marker_internal_trigger(channel_id=self._channels[element.bus], trigger=trigger, step=True)
+                    self._qdac.set_end_marker_internal_trigger(
+                        channel_id=self._channels[element.bus], trigger=trigger, step=True
+                    )
 
     def _handle_wait_trigger(self, element: WaitTrigger):
         if element.bus in self._qdac_buses_alias:

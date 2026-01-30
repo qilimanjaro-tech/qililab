@@ -235,7 +235,12 @@ class QDevilQDac2(VoltageSource):
         self._cache_dc[channel_id].start_on(self._triggers[str(trigger)])
 
     def set_end_marker_external_trigger(
-        self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6, step: bool = False,
+        self,
+        channel_id: ChannelID,
+        out_port: int,
+        trigger: str,
+        width_s: float = 1e-6,
+        step: bool = False,
     ):
         """Method to create an external trigger at the end of every dc_list period.
 
@@ -266,7 +271,12 @@ class QDevilQDac2(VoltageSource):
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
     def set_start_marker_external_trigger(
-        self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6, step: bool = False,
+        self,
+        channel_id: ChannelID,
+        out_port: int,
+        trigger: str,
+        width_s: float = 1e-6,
+        step: bool = False,
     ):
         """Method to create an external trigger at the start of every dc_list period.
 
