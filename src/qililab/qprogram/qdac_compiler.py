@@ -404,7 +404,7 @@ class QdacCompiler:
                 element.dwell = self._dc_dwell
             if not element.delay:
                 element.delay = self._dc_delay
-            if not element.repetitions:
+            if not element.stepped:
                 element.stepped = self._dc_stepped
             if not element.repetitions:
                 element.repetitions = self._loop_repetitions[element.bus]

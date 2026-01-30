@@ -441,6 +441,8 @@ class QDevilQDac2(VoltageSource):
             index = self.dacs.index(channel_id)
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(self.voltage[index])
+        self.remove_digital_trace()
+        self.device.reset()
 
     @check_device_initialized
     def turn_off(self):
@@ -448,11 +450,7 @@ class QDevilQDac2(VoltageSource):
         for channel_id in self.dacs:
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(0.0)
-        if self._triggers:
-            for trigger_name in self._triggers.keys():
-                self.clear_trigger(trigger_name)
-            self._triggers = {}
-        self.device.remove_traces()
+        self.remove_digital_trace()
         self.device.reset()
         self._cache_awg = {}
         self._cache_dc = {}
@@ -470,6 +468,12 @@ class QDevilQDac2(VoltageSource):
             for trigger_name in self._triggers.keys():
                 self.clear_trigger(trigger_name)
         self.device.reset()
+
+    def remove_digital_trace(self):
+        if self._triggers:
+            self.clear_trigger()
+            self._triggers = {}
+        self.device.remove_traces()
 
     def _validate_channel(self, channel_id: ChannelID | None):
         """Check if channel identifier is valid and in the allowed range."""
