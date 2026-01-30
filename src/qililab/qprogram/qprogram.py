@@ -16,13 +16,12 @@ from typing import TYPE_CHECKING, Sequence, overload
 
 import numpy as np
 
-from qililab.core.variables import Domain, requires_domain
+from qililab.core.variables import Domain, Variable, requires_domain
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.blocks.for_loop import ForLoop
 from qililab.qprogram.blocks.parallel import Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
-from qililab.qprogram.decorators import requires_domain
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
@@ -47,7 +46,6 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram, VariableInfo
-from qililab.qprogram.variable import Domain, Variable
 from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
 
