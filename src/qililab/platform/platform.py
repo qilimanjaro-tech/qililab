@@ -1396,11 +1396,11 @@ class Platform:
 
             # Execute sequences
             if output.qdac:
-                if output.qdac.trigger_position == "front":
+                if output.qdac.trigger_position == "back":
                     output.qdac.qdac.start()
                 for bus_alias in sequences:
                     buses[bus_alias].run()
-                if output.qdac.trigger_position == "back":
+                if output.qdac.trigger_position == "front":
                     output.qdac.qdac.start()
             else:
                 for bus_alias in sequences:
@@ -1513,7 +1513,7 @@ class Platform:
             compiled_program_id = cluster.compile(program=qua)
 
             if output.qdac:
-                if output.qdac.trigger_position == "front":
+                if output.qdac.trigger_position == "back":
                     output.qdac.qdac.start()
 
                 job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
