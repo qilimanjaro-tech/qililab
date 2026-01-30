@@ -2,6 +2,17 @@
 
 ### New features since last release
 
+- Previously, `QProgram.set_offset` required both I and Q offsets (`offset_path0` and `offset_path1`) to be of the same type (either both constants or both variables).
+ This restriction has been removed: it is now possible to mix constants and variables between I and Q.
+  ```
+  qp = ql.QProgram()
+  offset = qp.variable(label="offset", domain=ql.Domain.Voltage)
+  with qp.for_loop(variable=offset, start=0, stop=1, step=0.1):
+      qp.set_offset(bus="drive", offset_path0= offset, offset_path1=0.5)
+      qp.set_offset(bus="drive", offset_path0=0.1, offset_path1=offset)
+  ```
+  [#1024](https://github.com/qilimanjaro-tech/qililab/pull/1024)
+
 - This release introduces a significant architectural refactor of the digital and pulse-related layers, removes legacy dependencies, and aligns naming and abstractions with established superconducting-qubit literature.
 
   All references to **Qibo** have been removed from the codebase, along with the complete removal of the **pulse** module. The **digital** module has been fully restructured around a new, self-contained compilation and transpilation pipeline. This includes the introduction of a native **CircuitTranspiler** and **CircuitToQProgramCompiler**. The new **CircuitTranspiler** is responsible for decomposing circuits into the native gate set, managing logical and physical qubit layouts, and applying optimizations. It is implemented as a linear pipeline of `CircuitTranspilerPass` objects, replacing the previous Router, Placer, and Optimizer components that depended on Qibo-based implementations. Each transpiler pass now has a concrete, narrowly defined responsibility.
