@@ -1227,6 +1227,7 @@ class Platform:
         qdac_buses = [
             bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
+        qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in qdac_buses]
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             # Retrieve the time of flight parameter from settings
             instrument_controllers = [
@@ -1267,6 +1268,7 @@ class Platform:
                     qprogram=qprogram,
                     qdac=qdac_instrument,
                     qdac_buses=qdac_buses,
+                    qdac_offsets=qdac_offsets,
                     bus_mapping=bus_mapping,
                     calibration=calibration,
                     crosstalk=self.crosstalk,
@@ -1316,6 +1318,7 @@ class Platform:
                     qprogram=qprogram,
                     qdac=qdac_instrument,
                     qdac_buses=qdac_buses,
+                    qdac_offsets=qdac_offsets,
                     bus_mapping=bus_mapping,
                     calibration=calibration,
                     crosstalk=self.crosstalk,

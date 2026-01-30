@@ -100,7 +100,7 @@ class QdacCompiler:
         self._buses: dict[str, QdacBusCompilationInfo]
         self._qdac_buses: list["Bus"]
         self._qdac_buses_alias: list[str]
-        #### !!!! add getting the qdac offsets
+        self._qdac_buses_offset: dict[str, float]
         self._channels: dict[str, int]
         self._qdac: QDevilQDac2
 
@@ -120,6 +120,7 @@ class QdacCompiler:
         qprogram: QProgram,
         qdac: QDevilQDac2,
         qdac_buses: list["Bus"],
+        qdac_offsets: list[float],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         crosstalk: CrosstalkMatrix | None = None,
@@ -161,6 +162,9 @@ class QdacCompiler:
                 flux_vector = FluxVector()
                 flux_vector.set_crosstalk(crosstalk)  # type: ignore
 
+                for bus in crosstalk.matrix.keys():
+                    flux_vector[bus] = self._qdac_buses_offset[bus]
+
                 for i, element in enumerate(block.elements):
                     if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():  # type: ignore
                         element_list.append(i)
@@ -172,6 +176,7 @@ class QdacCompiler:
                 block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
 
             def handle_flux_vector(flux_vector: FluxVector, element: Play | SetOffset):
+
                 if isinstance(element, Play):
                     if isinstance(element.waveform, Waveform):
                         envelope = element.waveform.envelope()
@@ -228,6 +233,8 @@ class QdacCompiler:
         self._qprogram = qprogram
         self._qdac = qdac
         self._qdac_buses = qdac_buses
+        self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
+        self._qdac_buses_offset = dict(zip(self._qdac_buses_alias, qdac_offsets))
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
@@ -254,7 +261,6 @@ class QdacCompiler:
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
 
-        self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
         self._buses = {bus: QdacBusCompilationInfo() for bus in self._qdac_buses if bus in self._qdac_buses_alias}
         self._loop_repetitions.update(dict.fromkeys(self._qdac_buses_alias, 1))
 
