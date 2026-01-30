@@ -73,7 +73,6 @@ class CrosstalkElements:
     """_summary_"""
 
     def __init__(self, crosstalk: CrosstalkMatrix):
-
         self.crosstalk = crosstalk
 
         self.element_list: dict[int, tuple[FluxVector, list[int]]] = {}

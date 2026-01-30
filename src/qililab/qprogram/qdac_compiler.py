@@ -176,7 +176,6 @@ class QdacCompiler:
                 block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
 
             def handle_flux_vector(flux_vector: FluxVector, element: Play | SetOffset):
-
                 if isinstance(element, Play):
                     if isinstance(element.waveform, Waveform):
                         envelope = element.waveform.envelope()
