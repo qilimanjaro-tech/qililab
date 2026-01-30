@@ -46,7 +46,7 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram, VariableInfo
-from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
+from qililab.waveforms import Arbitrary, FlatTop, IQPair, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
@@ -526,7 +526,7 @@ class QProgram(StructuredProgram):
             """
             if isinstance(element, Play):
                 if isinstance(element.waveform, Waveform):
-                    waveform = element.waveform.I if isinstance(element.waveform, IQWaveform) else element.waveform
+                    waveform = element.waveform.I if isinstance(element.waveform, IQPair) else element.waveform
                     envelope = waveform.envelope()
             elif isinstance(element, SetOffset):
                 envelope = element.offset_path0  # type: ignore [assignment]
