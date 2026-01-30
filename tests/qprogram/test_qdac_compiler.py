@@ -13,7 +13,7 @@ from qililab.qprogram.blocks.loop import Loop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.operations.play import Play
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
-from qililab.qprogram.variable import Domain
+from qililab.core.variables import Domain
 from qililab.waveforms import Square
 from qililab.waveforms.arbitrary import Arbitrary
 from qililab.waveforms.iq_pair import IQPair

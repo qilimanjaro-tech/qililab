@@ -8,8 +8,9 @@ import pytest
 import qpysequence as QPy
 
 from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, QProgram, Square
-from qililab.qprogram.qblox_compiler import QbloxCompilationOutput, QbloxCompiler
+from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.qprogram.blocks import ForLoop
+from qililab.qprogram import QbloxCompiler
 from tests.test_utils import is_q1asm_equal
 from qililab.config import logger
 import logging
@@ -36,7 +37,7 @@ def fixture_calibration() -> Calibration:
 
 @pytest.fixture(name="play_named_operation")
 def fixture_play_named_operation() -> QProgram:
-    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     qp = QProgram()
     qp.play(bus="drive", waveform="Xpi")
     qp.play(bus="drive", waveform=drag_wf)
@@ -78,7 +79,7 @@ def fixture_run_qdac_sync() -> QProgram:
 
 @pytest.fixture(name="measurement_blocked_operation")
 def fixture_measurement_blocked_operation() -> QProgram:
-    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
@@ -91,7 +92,7 @@ def fixture_measurement_blocked_operation() -> QProgram:
 
 @pytest.fixture(name="no_loops_all_operations")
 def fixture_no_loops_all_operations() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
@@ -112,7 +113,7 @@ def fixture_no_loops_all_operations() -> QProgram:
 
 @pytest.fixture(name="offset_no_path1")
 def fixture_offset_no_path1() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     qp.set_offset(bus="drive", offset_path0=0.5)
     qp.play(bus="drive", waveform=drag_pair)
@@ -121,7 +122,7 @@ def fixture_offset_no_path1() -> QProgram:
 
 @pytest.fixture(name="dynamic_wait")
 def fixture_dynamic_wait() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     duration = qp.variable(label="time", domain=Domain.Time)
     with qp.for_loop(variable=duration, start=100, stop=200, step=10):
@@ -130,9 +131,21 @@ def fixture_dynamic_wait() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="dynamic_wait_multiple_buses")
+def fixture_dynamic_wait_multiple_buses() -> QProgram:
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    duration = qp.variable(label="time", domain=Domain.Time)
+    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.wait(bus="readout", duration=duration)
+        qp.play(bus="readout", waveform=drag_pair)
+    return qp
+
+
 @pytest.fixture(name="dynamic_wait_multiple_buses_with_disable_autosync")
 def fixture_dynamic_wait_multiple_buses_with_disable_autosync() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     qp.qblox.disable_autosync = True
     duration = qp.variable(label="time", domain=Domain.Time)
@@ -143,9 +156,22 @@ def fixture_dynamic_wait_multiple_buses_with_disable_autosync() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="sync_with_dynamic_wait")
+def fixture_sync_with_dynamic_wait() -> QProgram:
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp = QProgram()
+    duration = qp.variable(label="time", domain=Domain.Time)
+    with qp.for_loop(variable=duration, start=100, stop=200, step=10):
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.wait(bus="drive", duration=duration)
+        qp.sync()
+        qp.play(bus="readout", waveform=drag_pair)
+    return qp
+
+
 @pytest.fixture(name="infinite_loop")
 def fixture_infinite_loop() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     with qp.infinite_loop():
         qp.play(bus="drive", waveform=drag_pair)
@@ -154,7 +180,7 @@ def fixture_infinite_loop() -> QProgram:
 
 @pytest.fixture(name="average_loop")
 def fixture_average_loop() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights = IQPair(
         I=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
@@ -172,7 +198,7 @@ def fixture_average_loop() -> QProgram:
 
 @pytest.fixture(name="average_loop_long_wait")
 def fixture_average_loop_long_wait() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights = IQPair(
         I=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
@@ -190,7 +216,7 @@ def fixture_average_loop_long_wait() -> QProgram:
 
 @pytest.fixture(name="acquire_with_weights_of_different_length")
 def fixture_acquire_with_weights_of_different_lengths() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights = IQPair(
         I=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
@@ -208,7 +234,7 @@ def fixture_acquire_with_weights_of_different_lengths() -> QProgram:
 
 @pytest.fixture(name="average_with_for_loop")
 def fixture_average_with_for_loop() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
@@ -224,7 +250,7 @@ def fixture_average_with_for_loop() -> QProgram:
 
 @pytest.fixture(name="average_with_for_loop_nshots")
 def fixture_average_with_for_loop_nshots() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
@@ -239,7 +265,7 @@ def fixture_average_with_for_loop_nshots() -> QProgram:
 
 @pytest.fixture(name="acquire_loop_with_for_loop_with_weights_of_same_waveform")
 def fixture_acquire_loop_with_for_loop_with_weights_of_same_waveform() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights = IQPair(
         I=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
@@ -280,7 +306,7 @@ def fixture_average_with_multiple_for_loops_and_acquires() -> QProgram:
 
 @pytest.fixture(name="average_with_nested_for_loops")
 def fixture_average_with_nested_for_loops() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
@@ -309,7 +335,7 @@ def fixture_measure_program() -> QProgram:
 
 @pytest.fixture(name="average_with_parallel_for_loops")
 def fixture_average_with_parallel_for_loops() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
@@ -353,10 +379,10 @@ def fixture_play_operation_with_waveforms_of_different_length() -> QProgram:
 @pytest.fixture(name="multiple_play_operations_with_same_waveform")
 def fixture_multiple_play_operations_with_same_waveform() -> QProgram:
     qp = QProgram()
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp.play(bus="drive", waveform=drag_pair)
     qp.play(bus="drive", waveform=drag_pair)
-    qp.play(bus="drive", waveform=IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2))
+    qp.play(bus="drive", waveform=IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2))
     return qp
 
 
@@ -487,7 +513,7 @@ def update_latched_param() -> QProgram:
 
 @pytest.fixture(name="dynamic_sync")
 def fixture_dynamic_sync() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
@@ -502,7 +528,7 @@ def fixture_dynamic_sync() -> QProgram:
 
 @pytest.fixture(name="dynamic_sync_long_wait")
 def fixture_dynamic_sync_long_wait() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
@@ -517,7 +543,7 @@ def fixture_dynamic_sync_long_wait() -> QProgram:
 
 @pytest.fixture(name="dynamic_sync_variable_expression_difference")
 def fixture_dynamic_sync_variable_expression_difference() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
@@ -534,7 +560,7 @@ def fixture_dynamic_sync_variable_expression_difference() -> QProgram:
 
 @pytest.fixture(name="dynamic_sync_variable_expression_sum")
 def fixture_dynamic_sync_variable_expression_sum() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
@@ -551,7 +577,7 @@ def fixture_dynamic_sync_variable_expression_sum() -> QProgram:
 
 @pytest.fixture(name="dynamic_sync_delay")
 def fixture_dynamic_sync_delay() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
@@ -568,7 +594,7 @@ def fixture_measure_reset_program() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
-    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+    drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
     qp.qblox.measure_reset(bus="readout", waveform=readout_pair, weights=weights_pair, control_bus="drive", reset_pulse=drag_wf)
     return qp
 
@@ -636,7 +662,7 @@ def fixture_bus_mappping_acquire() -> QProgram:
 
 @pytest.fixture(name="calibration_reset")
 def fixture_calibration_reset() -> Calibration:
-    drag_reset = IQPair.DRAG(amplitude=0.5, duration=100, num_sigmas=4.5, drag_coefficient=-4.5)
+    drag_reset = IQDrag(amplitude=0.5, duration=100, num_sigmas=4.5, drag_coefficient=-4.5)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     calibration_reset = Calibration()
@@ -664,7 +690,7 @@ def fixture_cryoscope_qprogram() -> QProgram:
     DURATION_VALUES = np.arange(80, 160, step=1)
     T_SEP = np.max(DURATION_VALUES) + 100 
     flux_wf = Square(amplitude = 1, duration = 500)
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     flux_amplitude = qp.variable(label='flux_amplitude', domain = Domain.Voltage)
     square_wf = Square(amplitude=1, duration=1385)
     square_iq = IQPair(I=square_wf, Q=square_wf)
@@ -720,7 +746,7 @@ def fixture_cryoscope_qprogram() -> QProgram:
 
 @pytest.fixture(name="dynamic_wait_three_buses_dynamic_static")
 def fixture_dynamic_wait_three_buses_dynamic_static() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     duration = qp.variable(label="time", domain=Domain.Time)
     with qp.for_loop(variable=duration, start=100, stop=200, step=10):
@@ -736,7 +762,7 @@ def fixture_dynamic_wait_three_buses_dynamic_static() -> QProgram:
 
 @pytest.fixture(name="dynamic_wait_three_buses_static_static")
 def fixture_dynamic_wait_three_buses_static_static() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     duration = qp.variable(label="time", domain=Domain.Time)
     with qp.for_loop(variable=duration, start=100, stop=200, step=10):
@@ -1043,7 +1069,7 @@ class TestQBloxCompiler:
             compiler.compile(qprogram=qp, ext_trigger=True)
 
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
-        drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
+        drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
         readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
         weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
         qp_no_block = QProgram()
@@ -3357,96 +3383,6 @@ set_freq         R5
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
-
-
-    def test_wait_comprised_between_65532_65535(self, wait_comprised_between_65532_65535: QProgram):
-        compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=wait_comprised_between_65532_65535)
-
-        assert "drive" in sequences
-
-        drive_str = """
-            setup:
-                            wait_sync        4              
-                            set_mrk          0              
-                            upd_param        4              
-            main:
-                            wait             65532          
-                            wait             65532          
-                            play             0, 1, 20       
-                            wait             65532          
-                            play             0, 1, 20       
-                            wait             65530          
-                            wait             4              
-                            set_mrk          0              
-                            upd_param        4              
-                            stop
-        """
-
-        assert is_q1asm_equal(sequences["drive"], drive_str)
-
-    def test_32_acquisiton_raise_error(self, error_acquisition_index: QProgram):
-        "Check that having acquisitions in 31+ nested level raises a Value error"
-        compiler = QbloxCompiler()
-        with pytest.raises(ValueError, match="Acquisition index 32 exceeds maximum of 31."):
-            _ = compiler.compile(error_acquisition_index)
-
-
-    def test_acquire_single_bin_different_nested_level(self, single_bin_different_depth_qp: QProgram):
-        "Check that having single binned acquisitions at different nested level resets the bin index counter to 0"
-        compiler = QbloxCompiler()
-        sequences,_ = compiler.compile(single_bin_different_depth_qp)
-        readout_str = """ 
-        setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
-        main:
-                move             100, R0        
-        avg_0:
-                play             0, 1, 4        
-                acquire_weighed  0, 0, 0, 1, 10 
-                play             0, 1, 4        
-                acquire_weighed  0, 1, 0, 1, 10 
-                loop             R0, @avg_0     
-                play             0, 1, 4        
-                acquire_weighed  1, 0, 0, 1, 10 
-                play             0, 1, 4        
-                acquire_weighed  1, 1, 0, 1, 10 
-                set_mrk          0              
-                upd_param        4              
-                stop
-        """
-        assert is_q1asm_equal(sequences["readout"], readout_str)
-
-
-    def test_bus_mapping_and_acquire(self, bus_mappping_acquire):
-        """Test bus mapping and ascquisition together"""
-        compiler = QbloxCompiler()
-        sequences = compiler.compile(bus_mappping_acquire)
-        acquisition_dict = sequences.sequences["readout"]._acquisitions.to_dict()
-        readout_str = """setup:
-                wait_sync        4              
-                set_mrk          0              
-                upd_param        4              
-        main:
-                move             10, R0         
-        avg_0:
-                play             0, 1, 4        
-                acquire_weighed  0, 0, 0, 1, 10 
-                play             0, 1, 4        
-                acquire_weighed  0, 1, 0, 1, 10 
-                wait             100            
-                loop             R0, @avg_0     
-                play             0, 1, 4        
-                acquire_weighed  1, 0, 0, 1, 10 
-                set_mrk          0              
-                upd_param        4              
-                stop"""
-
-        assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
-        assert acquisition_dict == {'Acquisition 0': {'num_bins': 2, 'index': 0}, 'Acquisition 1': {'num_bins': 1, 'index': 1}}
-
 
     def test_cryoscope(self, cryoscope_qprogram):
         compiler = QbloxCompiler()

@@ -15,7 +15,7 @@
 """Qblox module class"""
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Iterable, Sequence, cast
+from typing import Iterable, Sequence, cast
 
 from qpysequence import Sequence as QpySequence
 
@@ -24,7 +24,6 @@ from qililab.instruments.decorators import check_device_initialized, log_set_par
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_filters import QbloxFilter
 from qililab.instruments.qblox.qblox_sequencer import QbloxSequencer
-from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.typings import ChannelID, DistortionState, OutputID, Parameter, ParameterValue
 from qililab.typings.instruments import QcmQrm
 
@@ -78,8 +77,6 @@ class QbloxModule(Instrument):
 
     settings: QbloxModuleSettings
     device: QcmQrm
-    # Cache containing the last compiled pulse schedule for each sequencer
-    cache: ClassVar[dict[int, PulseBusSchedule]] = {}
 
     def __init__(self, settings: dict):
         # The sequences dictionary contains all the compiled sequences for each sequencer. Sequences are saved and handled at the compiler
@@ -156,15 +153,21 @@ class QbloxModule(Instrument):
 
             if module.exponential_amplitude:
                 for idx, exponential_amplitude in enumerate(module.exponential_amplitude):
-                    self._set_exponential_filter_amplitude(output_id=output_id, exponential_idx=idx, value=exponential_amplitude)
+                    self._set_exponential_filter_amplitude(
+                        output_id=output_id, exponential_idx=idx, value=exponential_amplitude
+                    )
 
             if module.exponential_time_constant:
                 for idx, exponential_time_constant in enumerate(module.exponential_time_constant):
-                    self._set_exponential_filter_time_constant(output_id=output_id, exponential_idx=idx, value=exponential_time_constant)
+                    self._set_exponential_filter_time_constant(
+                        output_id=output_id, exponential_idx=idx, value=exponential_time_constant
+                    )
 
             if module.exponential_state:
                 for idx, exponential_state in enumerate(module.exponential_state):
-                    self._set_exponential_filter_state(output_id=output_id, exponential_idx=idx, value=exponential_state)
+                    self._set_exponential_filter_state(
+                        output_id=output_id, exponential_idx=idx, value=exponential_state
+                    )
 
             self._set_fir_filter_coeff(output_id=output_id, value=module.fir_coeff)
             self._set_fir_filter_state(output_id=output_id, value=module.fir_state)
@@ -219,32 +222,42 @@ class QbloxModule(Instrument):
             self._set_out_offset(output=output, value=value)
             return
 
-        if parameter in {Parameter.EXPONENTIAL_AMPLITUDE_0,
-                        Parameter.EXPONENTIAL_AMPLITUDE_1,
-                        Parameter.EXPONENTIAL_AMPLITUDE_2,
-                        Parameter.EXPONENTIAL_AMPLITUDE_3}:
+        if parameter in {
+            Parameter.EXPONENTIAL_AMPLITUDE_0,
+            Parameter.EXPONENTIAL_AMPLITUDE_1,
+            Parameter.EXPONENTIAL_AMPLITUDE_2,
+            Parameter.EXPONENTIAL_AMPLITUDE_3,
+        }:
             if output_id is None:
                 raise Exception(f"Cannot update parameter {parameter.value} without specifying an output_id.")
             output_id = int(output_id)
             exponential_idx = int(parameter.value[-1])
-            self._set_exponential_filter_amplitude(output_id=output_id, exponential_idx=exponential_idx, value=float(value))
+            self._set_exponential_filter_amplitude(
+                output_id=output_id, exponential_idx=exponential_idx, value=float(value)
+            )
             return
 
-        if parameter in {Parameter.EXPONENTIAL_TIME_CONSTANT_0,
-                        Parameter.EXPONENTIAL_TIME_CONSTANT_1,
-                        Parameter.EXPONENTIAL_TIME_CONSTANT_2,
-                        Parameter.EXPONENTIAL_TIME_CONSTANT_3}:
+        if parameter in {
+            Parameter.EXPONENTIAL_TIME_CONSTANT_0,
+            Parameter.EXPONENTIAL_TIME_CONSTANT_1,
+            Parameter.EXPONENTIAL_TIME_CONSTANT_2,
+            Parameter.EXPONENTIAL_TIME_CONSTANT_3,
+        }:
             if output_id is None:
                 raise Exception(f"Cannot update parameter {parameter.value} without specifying an output_id.")
             output_id = int(output_id)
             exponential_idx = int(parameter.value[-1])
-            self._set_exponential_filter_time_constant(output_id=output_id, exponential_idx=exponential_idx, value=float(value))
+            self._set_exponential_filter_time_constant(
+                output_id=output_id, exponential_idx=exponential_idx, value=float(value)
+            )
             return
 
-        if parameter in {Parameter.EXPONENTIAL_STATE_0,
-                        Parameter.EXPONENTIAL_STATE_1,
-                        Parameter.EXPONENTIAL_STATE_2,
-                        Parameter.EXPONENTIAL_STATE_3}:
+        if parameter in {
+            Parameter.EXPONENTIAL_STATE_0,
+            Parameter.EXPONENTIAL_STATE_1,
+            Parameter.EXPONENTIAL_STATE_2,
+            Parameter.EXPONENTIAL_STATE_3,
+        }:
             if output_id is None:
                 raise Exception(f"Cannot update parameter {parameter.value} without specifying an output_id.")
             output_id = int(output_id)
@@ -319,10 +332,12 @@ class QbloxModule(Instrument):
             output = int(parameter.value[-1])
             return self.out_offsets[output]
 
-        if parameter in {Parameter.EXPONENTIAL_AMPLITUDE_0,
-                        Parameter.EXPONENTIAL_AMPLITUDE_1,
-                        Parameter.EXPONENTIAL_AMPLITUDE_2,
-                        Parameter.EXPONENTIAL_AMPLITUDE_3}:
+        if parameter in {
+            Parameter.EXPONENTIAL_AMPLITUDE_0,
+            Parameter.EXPONENTIAL_AMPLITUDE_1,
+            Parameter.EXPONENTIAL_AMPLITUDE_2,
+            Parameter.EXPONENTIAL_AMPLITUDE_3,
+        }:
             if output_id is None:
                 raise Exception(f"Cannot retrieve parameter {parameter.value} without specifying an output_id.")
             filter = self.get_filter(output_id=int(output_id))
@@ -330,10 +345,12 @@ class QbloxModule(Instrument):
             exponential_amplitude = cast("list[float]", filter.exponential_amplitude)
             return exponential_amplitude[exponential_idx]
 
-        if parameter in {Parameter.EXPONENTIAL_TIME_CONSTANT_0,
-                        Parameter.EXPONENTIAL_TIME_CONSTANT_1,
-                        Parameter.EXPONENTIAL_TIME_CONSTANT_2,
-                        Parameter.EXPONENTIAL_TIME_CONSTANT_3}:
+        if parameter in {
+            Parameter.EXPONENTIAL_TIME_CONSTANT_0,
+            Parameter.EXPONENTIAL_TIME_CONSTANT_1,
+            Parameter.EXPONENTIAL_TIME_CONSTANT_2,
+            Parameter.EXPONENTIAL_TIME_CONSTANT_3,
+        }:
             if output_id is None:
                 raise Exception(f"Cannot retrieve parameter {parameter.value} without specifying an output_id.")
             filter = self.get_filter(output_id=int(output_id))
@@ -341,10 +358,12 @@ class QbloxModule(Instrument):
             exponential_time_constant = cast("list[float]", filter.exponential_time_constant)
             return exponential_time_constant[exponential_idx]
 
-        if parameter in {Parameter.EXPONENTIAL_STATE_0,
-                        Parameter.EXPONENTIAL_STATE_1,
-                        Parameter.EXPONENTIAL_STATE_2,
-                        Parameter.EXPONENTIAL_STATE_3}:
+        if parameter in {
+            Parameter.EXPONENTIAL_STATE_0,
+            Parameter.EXPONENTIAL_STATE_1,
+            Parameter.EXPONENTIAL_STATE_2,
+            Parameter.EXPONENTIAL_STATE_3,
+        }:
             if output_id is None:
                 raise Exception(f"Cannot retrieve parameter {parameter.value} without specifying an output_id.")
             filter = self.get_filter(output_id=int(output_id))

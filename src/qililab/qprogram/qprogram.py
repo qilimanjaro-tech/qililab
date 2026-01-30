@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Sequence, overload
 
 import numpy as np
 
+from qililab.core.variables import Domain, requires_domain
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.blocks.for_loop import ForLoop
 from qililab.qprogram.blocks.parallel import Parallel
@@ -47,7 +48,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.structured_program import StructuredProgram, VariableInfo
 from qililab.qprogram.variable import Domain, Variable
-from qililab.waveforms import Arbitrary, FlatTop, IQPair, Square, Waveform
+from qililab.waveforms import Arbitrary, FlatTop, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
@@ -147,18 +148,18 @@ class QProgram(StructuredProgram):
 
         .. code-block:: python3
 
-            from qililab import QProgram, Domain, IQPair, Square
+            from qililab import QProgram, Domain, IQWaveform, Square
 
             qp = QProgram()
 
             # Pulse used for changing the state of qubit
-            control_wf = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4.0, drag_correction=-2.5)
+            control_wf = IQDRAG(amplitude=1.0, duration=40, num_sigmas=4.0, drag_correction=-2.5)
 
             # Pulse used for exciting the resonator for readout
-            readout_wf = IQPair(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
+            readout_wf = IQWaveform(I=Square(amplitude=1.0, duration=400), Q=Square(amplitude=0.0, duration=400))
 
             # Weights used during integration
-            weights = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
+            weights = IQWaveform(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=1.0, duration=2000))
 
             # Declare a variable
             gain = qp.variable(label="gain", domain=Domain.Voltage)
@@ -213,21 +214,27 @@ class QProgram(StructuredProgram):
                         [f"\tWaveform {type(element.waveform).__name__}:\n"]
                         + [f"\t\t{array_line}\n" for array_line in str(element.waveform.envelope()).split("\n")]
                         if isinstance(element.waveform, Waveform)
-                        else [f"\tWaveform I {type(element.waveform.I).__name__}:\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.I.envelope()).split("\n")]
-                        + [f"\tWaveform Q {type(element.waveform.Q).__name__}):\n"]
-                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.Q.envelope()).split("\n")]
+                        else [f"\tWaveform I {type(element.waveform.get_I()).__name__}:\n"]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.get_I().envelope()).split("\n")]
+                        + [f"\tWaveform Q {type(element.waveform.get_Q()).__name__}):\n"]
+                        + [f"\t\t{array_line}\n" for array_line in str(element.waveform.get_Q().envelope()).split("\n")]
                     )
                     string_elements.extend(waveform_string)
 
                 if hasattr(element, "weights"):
-                    string_elements.append(f"\tWeights I {type(element.weights.I).__name__}:\n")
+                    string_elements.append(f"\tWeights I {type(element.weights.get_I()).__name__}:\n")
                     string_elements.extend(
-                        [f"\t\t{array_element}\n" for array_element in str(element.weights.I.envelope()).split("\n")]
+                        [
+                            f"\t\t{array_element}\n"
+                            for array_element in str(element.weights.get_I().envelope()).split("\n")
+                        ]
                     )
-                    string_elements.append(f"\tWeights Q {type(element.weights.Q).__name__}:\n")
+                    string_elements.append(f"\tWeights Q {type(element.weights.get_Q()).__name__}:\n")
                     string_elements.extend(
-                        [f"\t\t{array_element}\n" for array_element in str(element.weights.Q.envelope()).split("\n")]
+                        [
+                            f"\t\t{array_element}\n"
+                            for array_element in str(element.weights.get_Q().envelope()).split("\n")
+                        ]
                     )
 
             return string_elements
@@ -522,7 +529,7 @@ class QProgram(StructuredProgram):
             """
             if isinstance(element, Play):
                 if isinstance(element.waveform, Waveform):
-                    waveform = element.waveform.I if isinstance(element.waveform, IQPair) else element.waveform
+                    waveform = element.waveform.I if isinstance(element.waveform, IQWaveform) else element.waveform
                     envelope = waveform.envelope()
             elif isinstance(element, SetOffset):
                 envelope = element.offset_path0  # type: ignore [assignment]
@@ -808,16 +815,12 @@ class QProgram(StructuredProgram):
         return copied_qprogram
 
     @overload
-    def play(
-        self,
-        bus: str,
-        waveform: Waveform | IQPair,
-    ) -> None:
+    def play(self, bus: str, waveform: Waveform | IQWaveform) -> None:
         """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
-            waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
+            waveform (Waveform | IQWaveform): A single waveform or an I/Q pair of waveforms
         """
 
     @overload
@@ -833,19 +836,15 @@ class QProgram(StructuredProgram):
             waveform (str): An identifier of a named waveform.
         """
 
-    def play(
-        self,
-        bus: str,
-        waveform: Waveform | IQPair | str,
-    ) -> None:
-        """Play a waveform, IQPair, or calibrated operation on the specified bus.
+    def play(self, bus: str, waveform: Waveform | IQWaveform | str) -> None:
+        """Play a waveform, IQWaveform, or calibrated operation on the specified bus.
 
-        This method handles both playing a waveform or IQPair, and playing a
+        This method handles both playing a waveform or IQWaveform, and playing a
         calibrated operation based on the type of the argument provided.
 
         Args:
             bus (str): Unique identifier of the bus.
-            waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
+            waveform (Waveform | IQWaveform | str): The waveform, IQWaveform, or alias of named waveform to play.
         """
         operation = (
             PlayWithCalibratedWaveform(bus=bus, waveform=waveform)
@@ -881,34 +880,34 @@ class QProgram(StructuredProgram):
         self._buses.add(bus)
 
     @overload
-    def measure(self, bus: str, waveform: IQPair, weights: IQPair, save_adc: bool = False):
+    def measure(self, bus: str, waveform: IQWaveform, weights: IQWaveform, save_adc: bool = False):
         """Play a pulse and acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
-            waveform (IQPair): Waveform played during measurement.
-            weights (IQPair): Weights used during demodulation/integration.
+            waveform (IQWaveform): Waveform played during measurement.
+            weights (IQWaveform): Weights used during demodulation/integration.
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
 
     @overload
-    def measure(self, bus: str, waveform: str, weights: IQPair, save_adc: bool = False):
+    def measure(self, bus: str, waveform: str, weights: IQWaveform, save_adc: bool = False):
         """Play a named pulse and acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
             waveform (str): Waveform played during measurement.
-            weights (IQPair): Weights used during demodulation/integration.
+            weights (IQWaveform): Weights used during demodulation/integration.
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
 
     @overload
-    def measure(self, bus: str, waveform: IQPair, weights: str, save_adc: bool = False):
+    def measure(self, bus: str, waveform: IQWaveform, weights: str, save_adc: bool = False):
         """Play a named pulse and acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
-            waveform (IQPair): Waveform played during measurement.
+            waveform (IQWaveform): Waveform played during measurement.
             weights (str): Weights used during demodulation/integration.
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
@@ -924,13 +923,13 @@ class QProgram(StructuredProgram):
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
 
-    def measure(self, bus: str, waveform: IQPair | str, weights: IQPair | str, save_adc: bool = False):
+    def measure(self, bus: str, waveform: IQWaveform | str, weights: IQWaveform | str, save_adc: bool = False):
         """Play a pulse and acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
-            waveform (IQPair): Waveform played during measurement.
-            weights (IQPair): Weights used during demodulation/integration.
+            waveform (IQWaveform): Waveform played during measurement.
+            weights (IQWaveform): Weights used during demodulation/integration.
             save_adc (bool, optional): If ADC data should be saved. Defaults to False.
         """
         operation: (
@@ -939,11 +938,11 @@ class QProgram(StructuredProgram):
             | MeasureWithCalibratedWeights
             | MeasureWithCalibratedWaveformWeights
         )
-        if isinstance(waveform, IQPair) and isinstance(weights, IQPair):
+        if isinstance(waveform, IQWaveform) and isinstance(weights, IQWaveform):
             operation = Measure(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
-        elif isinstance(waveform, str) and isinstance(weights, IQPair):
+        elif isinstance(waveform, str) and isinstance(weights, IQWaveform):
             operation = MeasureWithCalibratedWaveform(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
-        elif isinstance(waveform, IQPair) and isinstance(weights, str):
+        elif isinstance(waveform, IQWaveform) and isinstance(weights, str):
             operation = MeasureWithCalibratedWeights(bus=bus, waveform=waveform, weights=weights, save_adc=save_adc)
         elif isinstance(waveform, str) and isinstance(weights, str):
             operation = MeasureWithCalibratedWaveformWeights(
@@ -1047,12 +1046,12 @@ class QProgram(StructuredProgram):
             self.trigger_network_required: dict[str, int] = {}
 
         @overload
-        def acquire(self, bus: str, weights: IQPair, save_adc: bool = False):
+        def acquire(self, bus: str, weights: IQWaveform, save_adc: bool = False):
             """Acquire results based on the given weights.
 
             Args:
                 bus (str): Unique identifier of the bus.
-                weights (IQPair): Weights used during acquisition.
+                weights (IQWaveform): Weights used during acquisition.
             """
 
         @overload
@@ -1064,28 +1063,28 @@ class QProgram(StructuredProgram):
                 weights (str): Weights used during acquisition.
             """
 
-        def acquire(self, bus: str, weights: IQPair | str, save_adc: bool = False):
+        def acquire(self, bus: str, weights: IQWaveform | str, save_adc: bool = False):
             """Acquire results based on the given weights.
 
             Args:
                 bus (str): Unique identifier of the bus.
-                weights (IQPair | str): Weights used during acquisition.
+                weights (IQWaveform | str): Weights used during acquisition.
             """
             operation = (
                 Acquire(bus=bus, weights=weights, save_adc=save_adc)
-                if isinstance(weights, IQPair)
+                if isinstance(weights, IQWaveform)
                 else AcquireWithCalibratedWeights(bus=bus, weights=weights, save_adc=save_adc)
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
 
         @overload
-        def play(self, bus: str, waveform: Waveform | IQPair, wait_time: int) -> None:
+        def play(self, bus: str, waveform: Waveform | IQWaveform, wait_time: int) -> None:
             """Play a single waveform or an I/Q pair of waveforms on the bus.
 
             Args:
                 bus (str): Unique identifier of the bus.
-                waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
+                waveform (Waveform | IQWaveform): A single waveform or an I/Q pair of waveforms
             """
 
         @overload
@@ -1097,15 +1096,15 @@ class QProgram(StructuredProgram):
                 waveform (str): An identifier of a named waveform.
             """
 
-        def play(self, bus: str, waveform: Waveform | IQPair | str, wait_time: int) -> None:
-            """Play a waveform, IQPair, or calibrated operation on the specified bus.
+        def play(self, bus: str, waveform: Waveform | IQWaveform | str, wait_time: int) -> None:
+            """Play a waveform, IQWaveform, or calibrated operation on the specified bus.
 
-            This method handles both playing a waveform or IQPair, and playing a
+            This method handles both playing a waveform or IQWaveform, and playing a
             calibrated operation based on the type of the argument provided.
 
             Args:
                 bus (str): Unique identifier of the bus.
-                waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
+                waveform (Waveform | IQWaveform | str): The waveform, IQWaveform, or alias of named waveform to play.
                 wait_time (int): Overwrite the value of Q1ASM play instruction's wait_time parameter.
             """
             operation = (
@@ -1117,7 +1116,16 @@ class QProgram(StructuredProgram):
             self.qprogram._buses.add(bus)
 
         @overload
-        def measure_reset(self, bus: str, waveform: IQPair, weights: IQPair, control_bus: str, reset_pulse: IQPair, trigger_address: int = 1, save_adc: bool = False):
+        def measure_reset(
+            self,
+            bus: str,
+            waveform: IQWaveform,
+            weights: IQWaveform,
+            control_bus: str,
+            reset_pulse: IQWaveform,
+            trigger_address: int = 1,
+            save_adc: bool = False,
+        ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
@@ -1125,16 +1133,25 @@ class QProgram(StructuredProgram):
 
             Args:
                 bus (str): Identifier of the measurement bus.
-                waveform (IQPair): Waveform played during measurement.
-                weights (IQPair): Weights used for demodulation/integration.
+                waveform (IQWaveform): Waveform played during measurement.
+                weights (IQWaveform): Weights used for demodulation/integration.
                 control_bus (str): Identifier of the control/reset bus.
-                reset_pulse (IQPair): Pulse used for active reset.
+                reset_pulse (IQWaveform): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
             """
 
         @overload
-        def measure_reset(self, bus: str, waveform: str, weights: str, control_bus: str, reset_pulse: str, trigger_address: int = 1, save_adc: bool = False):
+        def measure_reset(
+            self,
+            bus: str,
+            waveform: str,
+            weights: str,
+            control_bus: str,
+            reset_pulse: str,
+            trigger_address: int = 1,
+            save_adc: bool = False,
+        ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
             If the thresholded measurement result is 1, a corrective pulse is applied on the control_bus.
@@ -1153,10 +1170,10 @@ class QProgram(StructuredProgram):
         def measure_reset(
             self,
             bus: str,
-            waveform: IQPair | str,
-            weights: IQPair | str,
+            waveform: IQWaveform | str,
+            weights: IQWaveform | str,
             control_bus: str,
-            reset_pulse: IQPair | str,
+            reset_pulse: IQWaveform | str,
             trigger_address: int = 1,
             save_adc: bool = False,
         ):
@@ -1167,18 +1184,19 @@ class QProgram(StructuredProgram):
 
             Args:
                 bus (str): Identifier of the measurement bus.
-                waveform (IQPair | str): Waveform played during measurement.
-                weights (IQPair | str): Weights used for demodulation/integration.
+                waveform (IQWaveform | str): Waveform played during measurement.
+                weights (IQWaveform | str): Weights used for demodulation/integration.
                 control_bus (str): Identifier of the control/reset bus.
-                reset_pulse (IQPair | str): Pulse used for active reset.
+                reset_pulse (IQWaveform | str): Pulse used for active reset.
                 trigger_address (int, optional): Trigger address for synchronization. Defaults to 1.
                 save_adc (bool, optional): Whether to save ADC data. Defaults to False.
             """
-            operation: (
-                MeasureReset
-                | MeasureResetCalibrated
-            )
-            if isinstance(waveform, IQPair) and isinstance(weights, IQPair) and isinstance(reset_pulse, IQPair):
+            operation: MeasureReset | MeasureResetCalibrated
+            if (
+                isinstance(waveform, IQWaveform)
+                and isinstance(weights, IQWaveform)
+                and isinstance(reset_pulse, IQWaveform)
+            ):
                 operation = MeasureReset(
                     bus=bus,
                     waveform=waveform,
@@ -1201,7 +1219,9 @@ class QProgram(StructuredProgram):
 
             #  Raise an error if a calibrated component has been used in conjunction with a non calibrated one
             elif any(isinstance(component, str) for component in (waveform, weights, reset_pulse)):
-                raise NotImplementedError("For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all.")
+                raise NotImplementedError(
+                    "For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all."
+                )
 
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
@@ -1229,8 +1249,8 @@ class QProgram(StructuredProgram):
         def measure(
             self,
             bus: str,
-            waveform: IQPair,
-            weights: IQPair,
+            waveform: IQWaveform,
+            weights: IQWaveform,
             save_adc: bool = False,
             rotation: float = 0.0,
             demodulation: bool = True,
@@ -1239,8 +1259,8 @@ class QProgram(StructuredProgram):
 
             Args:
                 bus (str): Unique identifier of the bus.
-                waveform (IQPair): Waveform played during measurement.
-                weights (IQPair): Weights used during demodulation/integration.
+                waveform (IQWaveform): Waveform played during measurement.
+                weights (IQWaveform): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
                 rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
@@ -1251,7 +1271,7 @@ class QProgram(StructuredProgram):
             self,
             bus: str,
             waveform: str,
-            weights: IQPair,
+            weights: IQWaveform,
             save_adc: bool = False,
             rotation: float = 0.0,
             demodulation: bool = True,
@@ -1261,7 +1281,7 @@ class QProgram(StructuredProgram):
             Args:
                 bus (str): Unique identifier of the bus.
                 waveform (str): Waveform played during measurement.
-                weights (IQPair): Weights used during demodulation/integration.
+                weights (IQWaveform): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
                 rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
@@ -1271,7 +1291,7 @@ class QProgram(StructuredProgram):
         def measure(
             self,
             bus: str,
-            waveform: IQPair,
+            waveform: IQWaveform,
             weights: str,
             save_adc: bool = False,
             rotation: float = 0.0,
@@ -1281,7 +1301,7 @@ class QProgram(StructuredProgram):
 
             Args:
                 bus (str): Unique identifier of the bus.
-                waveform (IQPair): Waveform played during measurement.
+                waveform (IQWaveform): Waveform played during measurement.
                 weights (str): Weights used during demodulation/integration.
                 save_adc (bool, optional): If ADC data should be saved. Defaults to False.
                 rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
@@ -1312,8 +1332,8 @@ class QProgram(StructuredProgram):
         def measure(
             self,
             bus: str,
-            waveform: IQPair | str,
-            weights: IQPair | str,
+            waveform: IQWaveform | str,
+            weights: IQWaveform | str,
             save_adc: bool = False,
             rotation: float = 0.0,
             demodulation: bool = True,
@@ -1322,8 +1342,8 @@ class QProgram(StructuredProgram):
 
             Args:
                 bus (str): Unique identifier of the bus.
-                waveform (IQPair): Waveform played during measurement.
-                weights (IQPair): Weights used during demodulation/integration.
+                waveform (IQWaveform): Waveform played during measurement.
+                weights (IQWaveform): Weights used during demodulation/integration.
                 save_adc (bool, optional): If raw ADC data should be saved. Defaults to False.
                 rotation (float, optional): Angle in radians to rotate the IQ plane during demodulation/integration. Defaults to 0.0
                 demodulation (bool, optional): If demodulation is enabled. Defaults to True.
@@ -1334,7 +1354,7 @@ class QProgram(StructuredProgram):
                 | MeasureWithCalibratedWeights
                 | MeasureWithCalibratedWaveformWeights
             )
-            if isinstance(waveform, IQPair) and isinstance(weights, IQPair):
+            if isinstance(waveform, IQWaveform) and isinstance(weights, IQWaveform):
                 operation = Measure(
                     bus=bus,
                     waveform=waveform,
@@ -1343,7 +1363,7 @@ class QProgram(StructuredProgram):
                     rotation=rotation,
                     demodulation=demodulation,
                 )
-            elif isinstance(waveform, str) and isinstance(weights, IQPair):
+            elif isinstance(waveform, str) and isinstance(weights, IQWaveform):
                 operation = MeasureWithCalibratedWaveform(
                     bus=bus,
                     waveform=waveform,
@@ -1352,7 +1372,7 @@ class QProgram(StructuredProgram):
                     rotation=rotation,
                     demodulation=demodulation,
                 )
-            elif isinstance(waveform, IQPair) and isinstance(weights, str):
+            elif isinstance(waveform, IQWaveform) and isinstance(weights, str):
                 operation = MeasureWithCalibratedWeights(
                     bus=bus,
                     waveform=waveform,
@@ -1382,7 +1402,7 @@ class QProgram(StructuredProgram):
         def play(
             self,
             bus: str,
-            waveform: Waveform | IQPair,
+            waveform: Waveform | IQWaveform,
             dwell: int | None = None,
             delay: int | None = None,
             repetitions: int | None = None,
@@ -1392,7 +1412,7 @@ class QProgram(StructuredProgram):
 
             Args:
                 bus (str): Unique identifier of the bus.
-                waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
+                waveform (Waveform | IQWaveform): A single waveform or an I/Q pair of waveforms
                 dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
                 delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
@@ -1423,20 +1443,20 @@ class QProgram(StructuredProgram):
         def play(
             self,
             bus: str,
-            waveform: Waveform | IQPair | str,
+            waveform: Waveform | IQWaveform | str,
             dwell: int | None = None,
             delay: int | None = None,
             repetitions: int | None = None,
             stepped: bool | None = None,
         ) -> None:
-            """Play a waveform, IQPair, or calibrated operation on the specified bus.
+            """Play a waveform, IQWaveform, or calibrated operation on the specified bus.
 
-            This method handles both playing a waveform or IQPair, and playing a
+            This method handles both playing a waveform or IQWaveform, and playing a
             calibrated operation based on the type of the argument provided.
 
             Args:
                 bus (str): Unique identifier of the bus.
-                waveform (Waveform | IQPair | str): The waveform, IQPair, or alias of named waveform to play.
+                waveform (Waveform | IQWaveform | str): The waveform, IQWaveform, or alias of named waveform to play.
                 dwell (int | None, optional): Resolution un us of the QDACII pulse with a minimum of 2 us. Defaults to 2 inside QDACII compiler.
                 delay (int | None, optional): Delay of the QDACII pulse. Defaults to 0 inside QDACII compiler.
                 repetitions (int | None, optional): Number of pulse repetitions. Defaults to the default repetitions inside QDACII compiler.
@@ -1445,7 +1465,8 @@ class QProgram(StructuredProgram):
 
             operation = (
                 PlayWithCalibratedWaveform(
-                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped
+                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, 
+                    =repetitions, stepped=stepped
                 )
                 if isinstance(waveform, str)
                 else Play(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped)
