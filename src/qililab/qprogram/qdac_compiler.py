@@ -414,7 +414,7 @@ class QdacCompiler:
             self._qdac.upload_voltage_list(
                 waveform=waveform,
                 channel_id=self._channels[element.bus],
-                dwell_us=convert(element.dwell),
+                dwell_us=element.dwell,
                 sync_delay_s=element.delay,
                 repetitions=element.repetitions,
                 stepped=element.stepped,
