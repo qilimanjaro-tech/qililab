@@ -1465,8 +1465,7 @@ class QProgram(StructuredProgram):
 
             operation = (
                 PlayWithCalibratedWaveform(
-                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, 
-                    =repetitions, stepped=stepped
+                    bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped
                 )
                 if isinstance(waveform, str)
                 else Play(bus=bus, waveform=waveform, dwell=dwell, delay=delay, repetitions=repetitions, stepped=stepped)
