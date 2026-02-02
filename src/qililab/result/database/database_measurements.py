@@ -96,6 +96,29 @@ class Sample(base):  # type: ignore
         return f"{self.sample_name} {self.manufacturer} {self.additional_info}"
 
 
+class SequenceRun(base):  # type: ignore
+    """Creates and manipulates a sequence of measurements run metadata database"""
+
+    __tablename__ = "sequence_run"
+
+    sequence_id: Column = Column("sequence_id", Integer, primary_key=True)
+    date: Column = Column("date", DateTime)
+    sequence_tree: Column = Column("sequence_tree", JSONB)
+    sequence_completed: Column = Column("sequence_completed", Boolean, nullable=False)
+    cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
+    sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
+
+    def __init__(self, date, sequence_tree, sequence_completed, sample_name, cooldown):
+        self.date = date
+        self.sequence_tree = sequence_tree
+        self.sequence_completed = sequence_completed
+        self.sample_name = sample_name
+        self.cooldown = cooldown
+        
+    def __repr__(self):
+        return f"{self.sequence_id} {self.date} {self.sequence_completed} {self.sample_name} {self.cooldown}"
+
+
 class Measurement(base):  # type: ignore
     """Creates and manipulates Measurement metadata database"""
 
@@ -108,8 +131,8 @@ class Measurement(base):  # type: ignore
     end_time: Column = Column("end_time", DateTime)
     run_length: Column = Column("run_length", Interval)
     experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
-    # TODO: add temperature = Column("temperature", ARRAY(Integer)) when available
     cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
+    sequence_id: Column = Column("sequence_id", Integer)
     sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
     result_path: Column = Column("result_path", String, unique=True, nullable=False)
     platform: Column = Column("platform", JSONB)
@@ -197,6 +220,7 @@ class Measurement(base):  # type: ignore
         experiment_completed,
         start_time,
         cooldown=None,
+        sequence_id=None,
         optional_identifier=None,
         end_time=None,
         run_length=None,
@@ -217,6 +241,7 @@ class Measurement(base):  # type: ignore
 
         # Optional fields
         self.cooldown = cooldown
+        self.sequence_id = sequence_id
         self.optional_identifier = optional_identifier
         self.end_time = end_time
         self.run_length = run_length
