@@ -119,7 +119,7 @@ QProgram's play method is a versatile function that allows you to play either a 
 
     square_wf = Square(amplitude=1.0, duration=40)
     gaussian_wf = Gaussian(amplitude=1.0, duration=100, num_sigmas=4.5)
-    drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
+    drag_wf = IQPair.DRAG(amplitude=1.0, duration=100, num_sigmas=4.5, drag_coefficient=-2.0)
 
     qp = QProgram()
     qp.play(bus="flux_bus", waveform=square_wf)

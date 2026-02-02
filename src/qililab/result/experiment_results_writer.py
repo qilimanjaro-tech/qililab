@@ -113,7 +113,7 @@ class ExperimentResultsWriter(ExperimentResults):
         path: str,
         metadata: ExperimentMetadata,
         db_metadata: ExperimentDataBaseMetadata | None,
-        db_manager: DatabaseManager | None,
+        db_manager: DatabaseManager | None
     ):
         """Initializes the ExperimentResultsWriter instance.
 

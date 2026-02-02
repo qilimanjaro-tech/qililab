@@ -40,7 +40,14 @@ class CalibrationRun(base):  # type: ignore
     cooldown: Column = Column("cooldown", String, index=True)
     sample_name: Column = Column("sample_name", String, nullable=False)
 
-    def __init__(self, date, calibration_tree, calibration_completed, sample_name, cooldown):
+    def __init__(
+        self,
+        date,
+        calibration_tree,
+        calibration_completed,
+        sample_name,
+        cooldown
+    ):
         self.date = date
         self.calibration_tree = calibration_tree
         self.calibration_completed = calibration_completed

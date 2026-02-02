@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Rohde & Schwarz SGS100A Instrument Controller"""
-
+""" Rohde & Schwarz SGS100A Instrument Controller """
 from dataclasses import dataclass
 from typing import Sequence
 

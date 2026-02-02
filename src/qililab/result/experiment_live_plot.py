@@ -90,8 +90,7 @@ class ExperimentLivePlot:
 
             elif n_dimensions == 2:
                 dims_1 = DimensionInfo(
-                    labels=dim[1].label.split(","),
-                    values=[values[()] for values in dim[1].values()],  # type: ignore[operator]
+                    labels=dim[1].label.split(","), values=[values[()] for values in dim[1].values()]  # type: ignore[operator]
                 )
                 y_labels, y_values = dims_1.labels, dims_1.values
                 y_edges = np.linspace(y_values[0].min(), y_values[0].max(), len(y_values[0]) + 1)

@@ -22,8 +22,9 @@ from qpysequence import Sequence as QpySequence
 from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, Instruments, ParameterNotFound
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
-from qililab.pulse_distortion.pulse_distortion import PulseDistortion
+from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.qprogram.qblox_compiler import AcquisitionData
+from qililab.result import Result
 from qililab.result.qprogram import MeasurementResult
 from qililab.settings import Settings
 from qililab.typings import FILTER_PARAMETERS, ChannelID, OutputID, Parameter, ParameterValue
@@ -159,13 +160,7 @@ class Bus:
                 return sequencer.outputs[0]
         raise Exception(f"No output_id was found to be associated with the bus with alias {self.alias}")
 
-    def set_parameter(
-        self,
-        parameter: Parameter,
-        value: ParameterValue,
-        channel_id: ChannelID | None = None,
-        output_id: OutputID | None = None,
-    ):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Set a parameter to the bus.
 
         Args:
@@ -198,9 +193,7 @@ class Bus:
                 return
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
-    def get_parameter(
-        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
-    ):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Gets a parameter of the bus.
 
         Args:
@@ -257,6 +250,30 @@ class Bus:
             if isinstance(instrument, (QbloxQCM, QbloxQRM)):
                 instrument.run(channel_id=instrument_channel)  # type: ignore
                 return
+
+    def acquire_result(self) -> Result:
+        """Read the result from the vector network analyzer instrument
+
+        Returns:
+            Result: Acquired result
+        """
+        # TODO: Support acquisition from multiple instruments
+        results: list[Result] = []
+        for instrument in self.instruments:
+            if isinstance(instrument, QbloxQRM):
+                result = instrument.acquire_result()
+                if result is not None:
+                    results.append(result)
+
+        if len(results) > 1:
+            raise ValueError(
+                f"Acquisition from multiple instruments is not supported. Obtained a total of {len(results)} results."
+            )
+
+        if len(results) == 0:
+            raise AttributeError(f"The bus {self.alias} cannot acquire results.")
+
+        return results[0]
 
     def acquire_qprogram_results(
         self, acquisitions: dict[str, AcquisitionData], channel_id: ChannelID | None = None

@@ -6,7 +6,6 @@
 Qililab is a generic and scalable quantum control library used for fast characterization and calibration of quantum chips. Qililab also offers the ability to execute high-level quantum algorithms with your quantum hardware.
 
 You can find Qililab's documentation [here](https://qaas.readthedocs.io/projects/qililab/en/latest/index.html)
-
 ## Contributions
 
 Thank you for your interest in our project. While we appreciate your enthusiasm and interest in contributing, we would like to clarify our policy regarding external contributions.
