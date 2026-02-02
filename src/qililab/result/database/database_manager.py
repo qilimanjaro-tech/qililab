@@ -226,13 +226,6 @@ class DatabaseManager:
                 running_session.query(AutocalMeasurement).where(AutocalMeasurement.measurement_id == id).one_or_none()
             )
 
-            if measurement_by_id is not None:
-                path = measurement_by_id.result_path
-                if not os.path.isfile(path):
-
-                    new_path = path.replace(self.base_path_local, self.base_path_share)
-                    measurement_by_id.result_path = new_path
-
             return measurement_by_id
 
     def load_experiment_by_id(self, id: int) -> QaaS_Experiment | None:

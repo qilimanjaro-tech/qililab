@@ -658,7 +658,7 @@ class Testdatabase:
             result = db_manager.load_calibration_by_id(123)
 
         db_manager._mock_session.query.assert_called
-        assert result.result_path == "/shared_test/results/file.h5"
+        assert result.result_path == "/local_test/results/file.h5"
 
     def test_load_calibration_by_id_path_not_found(self, db_manager: DatabaseManager):
         # Setup a mock measurement
