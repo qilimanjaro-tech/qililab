@@ -59,6 +59,7 @@ from qililab.qprogram import (
     Experiment,
     QbloxCompilationOutput,
     QbloxCompiler,
+    QdacCompilationOutput,
     QProgram,
     QProgramCompilationOutput,
 )
@@ -1348,6 +1349,14 @@ class Platform:
         output: QProgramCompilationOutput,
         debug: bool = False,
     ):
+        if isinstance(output.qdac, QdacCompilationOutput):
+            qdac_buses = [
+                bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
+            ]
+            qdac_instrument = next(
+                instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
+            )
+            qdac_instrument.remove_digital_trace()
         if isinstance(output.qblox, QbloxCompilationOutput):
             self.trigger_runs = 0
             return self._execute_qblox_compilation_output(output=output, debug=debug)

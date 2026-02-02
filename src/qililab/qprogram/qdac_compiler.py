@@ -27,7 +27,6 @@ from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
-    Operation,
     Play,
     ResetPhase,
     SetFrequency,
@@ -394,7 +393,6 @@ class QdacCompiler:
 
     def _handle_play(self, element: Play):
         if element.bus in self._qdac_buses_alias:
-            convert = QdacCompiler._convert_value(element)
             waveform, _ = element.get_waveforms()
             waveform_variables = element.get_waveform_variables()
             if waveform_variables:
@@ -459,10 +457,3 @@ class QdacCompiler:
     def _convert_for_loop_values(for_loop: ForLoop):
         iterations = QdacCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
         return iterations
-
-    @staticmethod
-    def _convert_value(operation: Operation) -> Callable[[Any], Any]:
-        conversion_map: dict[type[Operation], Callable[[Any], Any]] = {
-            Play: lambda x: float(x * 1e-6),
-        }
-        return conversion_map.get(type(operation), lambda x: x)

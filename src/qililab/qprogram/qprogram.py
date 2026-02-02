@@ -455,8 +455,8 @@ class QProgram(StructuredProgram):
         Returns:
             QProgram: A new instance of QProgram with calibrated crosstalk.
         """
-        self._bus_variable_map: dict[tuple[Variable, str], Variable] = {}
-        self._block_variables: dict[Variable, list[Variable]] = {}
+        self._bus_variable_map: dict[tuple[Variable | float | None, str], Variable] = {}
+        self._block_variables: dict[Variable | float | None, list[Variable]] = {}
         self._parallel_loops: dict[Variable, list[ForLoop]] = {}
         self._active_loops: list[ForLoop] = []
         self._loop_depths: list[int] = []
@@ -627,7 +627,7 @@ class QProgram(StructuredProgram):
 
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
-                        if var.label != variable.label:
+                        if isinstance(variable, Variable) and var.label != variable.label:
                             dict_variable += self._bus_variable_map[var, bus]
                             self._block_variables[var].append(self._bus_variable_map[var, bus])
 
@@ -666,7 +666,7 @@ class QProgram(StructuredProgram):
 
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
-                        if var.label != variable.label:
+                        if isinstance(variable, Variable) and var.label != variable.label:
                             dict_variable += self._bus_variable_map[var, bus]
                             self._block_variables[var].append(self._bus_variable_map[var, bus])
 
@@ -755,7 +755,7 @@ class QProgram(StructuredProgram):
                     else:
                         for bus in crosstalk.matrix.keys():
                             bias_vector = flux_vector.bias_vector[bus]
-                            for_loop_list.append(make_for_loop(variable, bus, bias_vector))
+                            for_loop_list.append(make_for_loop(variable, bus, bias_vector))  #type: ignore [arg-type]
 
                     self._parallel_loops[variable] = for_loop_list
 
