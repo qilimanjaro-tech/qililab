@@ -22,7 +22,7 @@ from qililab.instrument_controllers.single_instrument_controller import SingleIn
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.typings import QDevilQDac2 as QDevilQDac2Device
-from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName, ReferenceClock
 
 
 @InstrumentControllerFactory.register
@@ -43,6 +43,7 @@ class QDevilQDac2Controller(SingleInstrumentController):
     settings: QDevilQDac2ControllerSettings
     device: QDevilQDac2Device
     modules: Sequence[QDevilQDac2]
+    reference_clock: ReferenceClock
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
@@ -50,6 +51,7 @@ class QDevilQDac2Controller(SingleInstrumentController):
             self.device = QDevilQDac2Device(f"{self.name.value}_{self.alias}", f"TCPIP::{self.address}::5025::SOCKET")
         else:
             self.device = QDevilQDac2Device(f"{self.name.value}_{self.alias}", f"ASRL/dev/{self.address}::INSTR")
+        self._set_clock_source()
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
@@ -59,3 +61,10 @@ class QDevilQDac2Controller(SingleInstrumentController):
                     f"Instrument {type(module)} not supported."
                     + f"The only supported instrument is {InstrumentTypeName.QDEVIL_QDAC2}"
                 )
+
+    def _set_clock_source(self):
+        """Set the reference source ('internal' or 'external')."""
+        if self.reference_clock.value == "external":
+            self.device.write(':CLOCK:SOURCE EXT')
+        if self.reference_clock.value == "internal":
+            self.device.write(':CLOCK:SOURCE INT')
