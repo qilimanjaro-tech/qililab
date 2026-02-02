@@ -168,7 +168,7 @@ class DatabaseManager:
             running_session.add(sequence_obj)
             try:
                 running_session.commit()
-                self.current_sequence = sequence_obj.sequence_id
+                self.current_sequence = sequence_obj.sequence_id  # type: ignore[assignment]
                 return sequence_obj
 
             except Exception as e:

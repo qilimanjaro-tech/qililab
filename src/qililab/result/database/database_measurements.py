@@ -114,7 +114,7 @@ class SequenceRun(base):  # type: ignore
         self.sequence_completed = sequence_completed
         self.sample_name = sample_name
         self.cooldown = cooldown
-        
+
     def __repr__(self):
         return f"{self.sequence_id} {self.date} {self.sequence_completed} {self.sample_name} {self.cooldown}"
 
