@@ -755,7 +755,7 @@ class QProgram(StructuredProgram):
                     else:
                         for bus in crosstalk.matrix.keys():
                             bias_vector = flux_vector.bias_vector[bus]
-                            for_loop_list.append(make_for_loop(variable, bus, bias_vector))  #type: ignore [arg-type]
+                            for_loop_list.append(make_for_loop(variable, bus, bias_vector))  # type: ignore [arg-type]
 
                     self._parallel_loops[variable] = for_loop_list
 
