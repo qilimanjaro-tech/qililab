@@ -604,7 +604,7 @@ class DatabaseManager:
             experiment_completed=experiment_completed,
             start_time=start_time,
             cooldown=cooldown,
-            sequence_id = self.current_sequence,
+            sequence_id=self.current_sequence,
             optional_identifier=optional_identifier,
             end_time=end_time,
             run_length=run_length,

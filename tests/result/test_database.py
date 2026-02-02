@@ -484,6 +484,76 @@ class Testdatabase:
 
         mock_session.rollback.assert_called_once
 
+    def test_add_sequence_run(self, db_manager: DatabaseManager):
+        sequence_tree = {
+            "nodes": [
+                {
+                    "name": "TwoTone",
+                    "experiment": "two_tone",
+                    "parameters": {
+                        "qubit_idx": [11, 13],
+                        "hw_avg": 2000,
+                        "repetition_duration": 200000,
+                        "sweep_values": [-5e6, 5e6, 0.2e6],
+                    },
+                },
+                {
+                    "name": "Rabi",
+                    "experiment": "rabi",
+                    "parameters": {
+                        "qubit_idx": [11, 13],
+                        "hw_avg": 4000,
+                        "repetition_duration": 200000,
+                        "sweep_values": [0, 1, 61],
+                    },
+                },
+            ],
+            "dependencies": [["TwoTone", "Rabi"]],
+        }
+
+        db_manager.add_sequence_run(sequence_tree=sequence_tree, sample_name="sampleA", cooldown="CDX")
+
+        db_manager._mock_session.add.assert_called
+        db_manager._mock_session.commit.assert_called
+        
+    def test_add_sequence_run_raises_exception(self, db_manager: DatabaseManager):
+        sequence_tree = {
+            "nodes": [
+                {
+                    "name": "TwoTone",
+                    "experiment": "two_tone",
+                    "parameters": {
+                        "qubit_idx": [11, 13],
+                        "hw_avg": 2000,
+                        "repetition_duration": 200000,
+                        "sweep_values": [-5e6, 5e6, 0.2e6],
+                    },
+                },
+                {
+                    "name": "Rabi",
+                    "experiment": "rabi",
+                    "parameters": {
+                        "qubit_idx": [11, 13],
+                        "hw_avg": 4000,
+                        "repetition_duration": 200000,
+                        "sweep_values": [0, 1, 61],
+                    },
+                },
+            ],
+            "dependencies": [["TwoTone", "Rabi"]],
+        }
+
+        mock_session = MagicMock()
+        mock_session.__enter__.return_value = mock_session
+        mock_session.commit.side_effect = Exception("DB error")
+
+        db_manager.session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(Exception, match="DB error"):
+            db_manager.add_sequence_run(sequence_tree=sequence_tree, sample_name="sampleA", cooldown="CDX")
+
+        mock_session.rollback.assert_called_once
+
     def test_add_calibration_run(self, db_manager: DatabaseManager):
         calibration_tree = {
             "nodes": [
