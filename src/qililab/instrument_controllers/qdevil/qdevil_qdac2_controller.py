@@ -39,11 +39,11 @@ class QDevilQDac2Controller(SingleInstrumentController):
     @dataclass
     class QDevilQDac2ControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific GS200 Controller."""
+        reference_clock: ReferenceClock
 
     settings: QDevilQDac2ControllerSettings
     device: QDevilQDac2Device
     modules: Sequence[QDevilQDac2]
-    reference_clock: ReferenceClock
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
@@ -68,3 +68,8 @@ class QDevilQDac2Controller(SingleInstrumentController):
             self.device.write(':CLOCK:SOURCE EXT')
         if self.reference_clock.value == "internal":
             self.device.write(':CLOCK:SOURCE INT')
+
+    @property
+    def reference_clock(self):
+        """Get the reference clock setting."""
+        return self.settings.reference_clock
