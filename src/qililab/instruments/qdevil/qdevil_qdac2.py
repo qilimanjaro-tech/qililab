@@ -442,7 +442,6 @@ class QDevilQDac2(VoltageSource):
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(self.voltage[index])
         self.remove_digital_trace()
-        self.device.reset()
 
     @check_device_initialized
     def turn_off(self):

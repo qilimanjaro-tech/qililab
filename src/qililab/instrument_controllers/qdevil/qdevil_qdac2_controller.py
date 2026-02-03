@@ -65,9 +65,9 @@ class QDevilQDac2Controller(SingleInstrumentController):
     def _set_clock_source(self):
         """Set the reference source ('internal' or 'external')."""
         if self.reference_clock.value == "external":
-            self.device.write(':CLOCK:SOURCE EXT')
+            self.device.write('SYST:CLOCK:SOURCE EXT')
         if self.reference_clock.value == "internal":
-            self.device.write(':CLOCK:SOURCE INT')
+            self.device.write('SYST:CLOCK:SOURCE INT')
 
     @property
     def reference_clock(self):
