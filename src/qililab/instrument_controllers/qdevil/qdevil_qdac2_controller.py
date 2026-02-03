@@ -22,7 +22,7 @@ from qililab.instrument_controllers.single_instrument_controller import SingleIn
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.typings import QDevilQDac2 as QDevilQDac2Device
-from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName, ReferenceClock
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName
 
 
 @InstrumentControllerFactory.register
@@ -37,9 +37,7 @@ class QDevilQDac2Controller(SingleInstrumentController):
     name = InstrumentControllerName.QDEVIL_QDAC2
 
     @dataclass
-    class QDevilQDac2ControllerSettings(InstrumentControllerSettings):
-        """Contains the settings of a specific GS200 Controller."""
-        reference_clock: ReferenceClock
+    class QDevilQDac2ControllerSettings(InstrumentControllerSettings):        """Contains the settings of a specific GS200 Controller."""
 
     settings: QDevilQDac2ControllerSettings
     device: QDevilQDac2Device
@@ -64,12 +62,7 @@ class QDevilQDac2Controller(SingleInstrumentController):
 
     def _set_clock_source(self):
         """Set the reference source ('internal' or 'external')."""
-        if self.reference_clock.value == "external":
+        if self.settings.reference_clock.value == "external":
             self.device.write('SYST:CLOCK:SOURCE EXT')
-        if self.reference_clock.value == "internal":
+        if self.settings.reference_clock.value == "internal":
             self.device.write('SYST:CLOCK:SOURCE INT')
-
-    @property
-    def reference_clock(self):
-        """Get the reference clock setting."""
-        return self.settings.reference_clock
