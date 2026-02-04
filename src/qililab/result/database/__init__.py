@@ -52,6 +52,7 @@ __all__ = [
     "Measurement",
     "QaaS_Experiment",
     "Sample",
+    "SequenceRun",
     "get_db_manager",
     "load_by_id",
 ]
