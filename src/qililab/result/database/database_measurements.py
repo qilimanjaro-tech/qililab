@@ -143,7 +143,7 @@ class SequenceRun(base):  # type: ignore
                 raise e
 
     def __repr__(self):
-        return f"{self.sequence_id} {self.date} {self.sequence_completed} {self.sample_name} {self.cooldown}"
+        return f"{self.sequence_id} {self.start_time} {self.sequence_completed} {self.sample_name} {self.cooldown}"
 
 
 class Measurement(base):  # type: ignore

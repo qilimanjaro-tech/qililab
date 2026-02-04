@@ -41,7 +41,7 @@ Functions
 
 from .database_autocal import AutocalMeasurement, CalibrationRun
 from .database_manager import DatabaseManager, get_db_manager, load_by_id
-from .database_measurements import Cooldown, Measurement, Sample
+from .database_measurements import Cooldown, Measurement, Sample, SequenceRun
 from .database_qaas import QaaS_Experiment
 
 __all__ = [
