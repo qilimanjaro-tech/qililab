@@ -158,7 +158,7 @@ class DatabaseManager:
             sequence_tree (dict): Full experiment sequence tree of the run.
         """
         sequence_obj = SequenceRun(
-            date=datetime.datetime.now(),
+            start_time=datetime.datetime.now(),
             sequence_tree=sequence_tree,
             sequence_completed=False,
             sample_name=sample_name,

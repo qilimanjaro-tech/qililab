@@ -22,7 +22,7 @@ from qililab.result.database.database_manager import (
     get_engine,
     load_by_id,
 )
-from qililab.result.database.database_measurements import Measurement
+from qililab.result.database.database_measurements import Measurement, SequenceRun
 
 mpl.use("Agg")  # Use non-interactive backend for testing
 
@@ -69,6 +69,17 @@ def fixture_measurement():
         experiment_completed=False,
         start_time=datetime.datetime(2023, 1, 1, 12, 0, 0),
         cooldown="CDX",
+    )
+
+
+@pytest.fixture(name="sequence_run")
+def fixture_sequence_run():
+    return SequenceRun(
+        sequence_tree={"test_run":"test_experiment"},
+        sample_name="sampleA",
+        cooldown="CDX",
+        sequence_completed=False,
+        start_time=datetime.datetime(2023, 1, 1, 12, 0, 0),
     )
 
 
@@ -553,6 +564,37 @@ class Testdatabase:
             db_manager.add_sequence_run(sequence_tree=sequence_tree, sample_name="sampleA", cooldown="CDX")
 
         mock_session.rollback.assert_called_once
+    
+    @patch("qililab.result.database.database_measurements.datetime")
+    def test_end_sequence(self, mock_datetime, sequence_run):
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.end_sequence = mock_session
+        mock_session.merge.return_value = sequence_run
+
+        result = sequence_run.end_sequence(lambda: mock_session_context)
+
+        assert result.end_time == fixed_now
+        assert result.sequence_completed is True
+
+    @patch("qililab.result.database.database_measurements.datetime")
+    def test_end_sequence_raises_exception(self, mock_datetime, sequence_run):
+        fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_now
+
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = sequence_run
+        mock_session.commit.side_effect = Exception("Measurement error")
+
+        with pytest.raises(Exception, match="Measurement error"):
+            result = sequence_run.end_sequence(lambda: mock_session_context)
+
+        mock_session.rollback.assert_called_once()
 
     def test_add_calibration_run(self, db_manager: DatabaseManager):
         calibration_tree = {
