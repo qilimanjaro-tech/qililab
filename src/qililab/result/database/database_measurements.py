@@ -102,18 +102,45 @@ class SequenceRun(base):  # type: ignore
     __tablename__ = "sequence_run"
 
     sequence_id: Column = Column("sequence_id", Integer, primary_key=True)
-    date: Column = Column("date", DateTime)
+    start_time: Column = Column("start_time", DateTime, nullable=False)
+    end_time: Column = Column("end_time", DateTime)
+    run_length: Column = Column("run_length", Interval)
     sequence_tree: Column = Column("sequence_tree", JSONB)
     sequence_completed: Column = Column("sequence_completed", Boolean, nullable=False)
     cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
     sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
 
-    def __init__(self, date, sequence_tree, sequence_completed, sample_name, cooldown):
-        self.date = date
+    def __init__(
+        self, start_time, sequence_tree, sequence_completed, sample_name, end_time=None, run_length=None, cooldown=None
+    ):
+        self.start_time = start_time
+        self.end_time = end_time
+        self.run_length = run_length
         self.sequence_tree = sequence_tree
         self.sequence_completed = sequence_completed
         self.sample_name = sample_name
         self.cooldown = cooldown
+
+    def end_sequence(self, session: sessionmaker[Session], traceback: str | None = None):
+        """Function to end sequence of experiments. The function sets inside the database information
+        about the end of the sequence: the finishing time, completeness status and sequence length."""
+
+        with session() as running_session:
+            # Merge the detached instance into the current session
+            persistent_instance = running_session.merge(self)
+            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
+            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
+            self.end_time = persistent_instance.end_time
+            self.run_length = persistent_instance.run_length
+            try:
+                if traceback is None:
+                    persistent_instance.sequence_completed = True  # type: ignore[assignment]
+                    self.sequence_completed = True  # type: ignore[assignment]
+                running_session.commit()
+                return persistent_instance
+            except Exception as e:
+                running_session.rollback()
+                raise e
 
     def __repr__(self):
         return f"{self.sequence_id} {self.date} {self.sequence_completed} {self.sample_name} {self.cooldown}"
