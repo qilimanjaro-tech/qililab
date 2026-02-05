@@ -24,6 +24,9 @@
   Finally, the `Drag` gate has been renamed to `Rmw` to better reflect standard terminology in the literature and to avoid confusion with pulse-level DRAG correction schemes, which are now explicitly implemented via **IQDrag**.
   [#991](https://github.com/qilimanjaro-tech/qililab/pull/991)
 
+- Added drivers to operate the Keithley 2400 through the runcard and run a measurement. Through the runcard the user can set the mode and a respective voltage or current. alternatively the user can sweep either current or voltage and retrieve the data of the other component.
+[#1065](https://github.com/qilimanjaro-tech/qililab/pull/1065)
+
 ### Improvements
 
 - Implemented a new driver for the Becker Nachrichtentechnik RSWU-SP16TR
