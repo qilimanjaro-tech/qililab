@@ -130,6 +130,7 @@ class QProgram(SdkQProgram, StructuredProgram):
         Raises:
             TypeError: If the provided program is not an instance of SdkQProgram.
         """
+
         def traverse(block: Block) -> None:
             for index, element in enumerate(block.elements):
                 if isinstance(element, Block):
@@ -140,7 +141,6 @@ class QProgram(SdkQProgram, StructuredProgram):
                 elif isinstance(element, SdkMeasure):
                     measure_operation = Measure(bus=element.bus, waveform=element.waveform, weights=element.weights)
                     block.elements[index] = measure_operation
-
 
         if isinstance(program, cls):
             return deepcopy(program)
