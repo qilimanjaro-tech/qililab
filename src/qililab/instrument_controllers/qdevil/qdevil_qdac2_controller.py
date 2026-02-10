@@ -37,7 +37,8 @@ class QDevilQDac2Controller(SingleInstrumentController):
     name = InstrumentControllerName.QDEVIL_QDAC2
 
     @dataclass
-    class QDevilQDac2ControllerSettings(InstrumentControllerSettings):        """Contains the settings of a specific GS200 Controller."""
+    class QDevilQDac2ControllerSettings(InstrumentControllerSettings):
+        """Contains the settings of a specific GS200 Controller."""
 
     settings: QDevilQDac2ControllerSettings
     device: QDevilQDac2Device
