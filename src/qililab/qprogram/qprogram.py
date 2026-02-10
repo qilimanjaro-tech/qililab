@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, overload, Self
+from typing import TYPE_CHECKING, Self, overload
 
 from qililab.core import Domain, requires_domain
 from qililab.qprogram.blocks import Block
@@ -29,11 +29,13 @@ from qililab.qprogram.operations import (
     MeasureWithCalibratedWeights,
     Play,
     PlayWithCalibratedWaveform,
+    SdkMeasure,
+    SdkPlay,
     SetGain,
     SetMarkers,
     SetOffset,
     SetTrigger,
-    WaitTrigger, SdkPlay, SdkMeasure,
+    WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram
 from qililab.waveforms import IQWaveform, Waveform

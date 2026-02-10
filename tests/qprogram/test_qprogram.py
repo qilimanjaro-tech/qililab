@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from qililab import Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square, IQDrag
+from qililab.qprogram import SdkQProgram
 from qililab.qprogram.blocks import Average
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
@@ -248,6 +249,20 @@ class TestQProgram(TestStructuredProgram):
 
         assert isinstance(new_qp.body.elements[0].elements[0], MeasureReset)
 
+    def test_from_sdk_class_method(self):
+        sdk_qp = SdkQProgram()
+        duration = sdk_qp.variable("Wait Duration (ns)", Domain.Time)
+        with sdk_qp.average(1000):
+            with sdk_qp.for_loop(duration, 100, 10000, 100):
+                sdk_qp.play("drive_q0_bus", IQDrag(0.188, 40, 4, -0.5))
+                sdk_qp.sync()
+                sdk_qp.wait("readout_q0_bus", duration)
+                sdk_qp.measure("readout_q0_bus", IQPair(Square(0.14, 1000), Square(0.0, 1000)), IQPair(Square(1.0, 1000), Square(0.0, 1000)))
+                sdk_qp.wait("readout_q0_bus", 10_000)
+
+        qp = QProgram.from_sdk(sdk_qp)
+
+        assert isinstance(qp, QProgram)
 
     def test_average_method(self):
         """Test acquire_loop method"""
