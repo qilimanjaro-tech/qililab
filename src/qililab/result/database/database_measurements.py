@@ -96,6 +96,56 @@ class Sample(base):  # type: ignore
         return f"{self.sample_name} {self.manufacturer} {self.additional_info}"
 
 
+class SequenceRun(base):  # type: ignore
+    """Creates and manipulates a sequence of measurements run metadata database"""
+
+    __tablename__ = "sequence_run"
+
+    sequence_id: Column = Column("sequence_id", Integer, primary_key=True)
+    start_time: Column = Column("start_time", DateTime, nullable=False)
+    end_time: Column = Column("end_time", DateTime)
+    run_length: Column = Column("run_length", Interval)
+    sequence_tree: Column = Column("sequence_tree", JSONB)
+    sequence_completed: Column = Column("sequence_completed", Boolean, nullable=False)
+    cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
+    sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
+
+    def __init__(
+        self, start_time, sequence_tree, sequence_completed, sample_name, end_time=None, run_length=None, cooldown=None
+    ):
+        self.start_time = start_time
+        self.end_time = end_time
+        self.run_length = run_length
+        self.sequence_tree = sequence_tree
+        self.sequence_completed = sequence_completed
+        self.sample_name = sample_name
+        self.cooldown = cooldown
+
+    def end_sequence(self, session: sessionmaker[Session], traceback: str | None = None):
+        """Function to end sequence of experiments. The function sets inside the database information
+        about the end of the sequence: the finishing time, completeness status and sequence length."""
+
+        with session() as running_session:
+            # Merge the detached instance into the current session
+            persistent_instance = running_session.merge(self)
+            persistent_instance.end_time = datetime.datetime.now()  # type: ignore[assignment]
+            persistent_instance.run_length = persistent_instance.end_time - persistent_instance.start_time  # type: ignore[assignment]
+            self.end_time = persistent_instance.end_time
+            self.run_length = persistent_instance.run_length
+            try:
+                if traceback is None:
+                    persistent_instance.sequence_completed = True  # type: ignore[assignment]
+                    self.sequence_completed = True  # type: ignore[assignment]
+                running_session.commit()
+                return persistent_instance
+            except Exception as e:
+                running_session.rollback()
+                raise e
+
+    def __repr__(self):
+        return f"{self.sequence_id} {self.start_time} {self.sequence_completed} {self.sample_name} {self.cooldown}"
+
+
 class Measurement(base):  # type: ignore
     """Creates and manipulates Measurement metadata database"""
 
@@ -108,8 +158,8 @@ class Measurement(base):  # type: ignore
     end_time: Column = Column("end_time", DateTime)
     run_length: Column = Column("run_length", Interval)
     experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
-    # TODO: add temperature = Column("temperature", ARRAY(Integer)) when available
     cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
+    sequence_id: Column = Column("sequence_id", Integer)
     sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
     result_path: Column = Column("result_path", String, unique=True, nullable=False)
     platform: Column = Column("platform", JSONB)
@@ -197,6 +247,7 @@ class Measurement(base):  # type: ignore
         experiment_completed,
         start_time,
         cooldown=None,
+        sequence_id=None,
         optional_identifier=None,
         end_time=None,
         run_length=None,
@@ -217,6 +268,7 @@ class Measurement(base):  # type: ignore
 
         # Optional fields
         self.cooldown = cooldown
+        self.sequence_id = sequence_id
         self.optional_identifier = optional_identifier
         self.end_time = end_time
         self.run_length = run_length
