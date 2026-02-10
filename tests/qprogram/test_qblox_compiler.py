@@ -7,7 +7,7 @@ from qililab.waveforms.arbitrary import Arbitrary
 import pytest
 import qpysequence as QPy
 
-from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, QProgram, Square
+from qililab import Calibration, Domain, FlatTop, Gaussian, IQDrag, IQPair, QProgram, Square
 from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram import QbloxCompiler
