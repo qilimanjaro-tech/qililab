@@ -131,7 +131,7 @@ class StructuredProgram(SdkStructuredProgram):
             if self.program._variables[self.block.variable].is_allocated:
                 raise VariableAllocated(self.block.variable)
             self.program._variables[self.block.variable].allocate(self.block)
-            return super().__enter__()
+            return super().__enter__()  # type: ignore[return-value]
 
         def __exit__(self, exc_type, exc_value, exc_tb):
             self.program._variables[self.block.variable].free()
@@ -152,7 +152,7 @@ class StructuredProgram(SdkStructuredProgram):
                 if self.program._variables[loop.variable].is_allocated:
                     raise VariableAllocated(loop.variable)
                 self.program._variables[loop.variable].allocate(loop)
-            return super().__enter__()
+            return super().__enter__()  # type: ignore[return-value]
 
         def __exit__(self, exc_type, exc_value, exc_tb):
             for loop in self.block.loops:

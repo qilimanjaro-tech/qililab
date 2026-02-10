@@ -163,13 +163,13 @@ class QProgram(SdkQProgram, StructuredProgram):
             qprogram = cls.__new__(cls)
             qprogram.__dict__ = state
 
-        qprogram.qblox = cls._QbloxInterface(qprogram)
-        qprogram.quantum_machines = cls._QuantumMachinesInterface(qprogram)
-        qprogram.qdac = cls._QdacInterface(qprogram)
+        qprogram.qblox = cls._QbloxInterface(qprogram)  # type: ignore[attr-defined, arg-type]
+        qprogram.quantum_machines = cls._QuantumMachinesInterface(qprogram)  # type: ignore[attr-defined, arg-type]
+        qprogram.qdac = cls._QdacInterface(qprogram)  # type: ignore[attr-defined, arg-type]
 
         traverse(qprogram.body)
 
-        return qprogram
+        return qprogram  # type: ignore[return-value]
 
     def with_bus_mapping(self, bus_mapping: dict[str, str]) -> Self:
         """Returns a copy of the QProgram with bus mappings applied.
