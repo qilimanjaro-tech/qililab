@@ -14,6 +14,10 @@
 
 """Tools for building and manipulating :class:`~qililab.qprogram.qprogram.QProgram` instances."""
 
+from qilisdk.qprogram import QProgram as SdkQProgram
+from qilisdk.qprogram.structured_program import StructuredProgram as SdkStructuredProgram
+from qilisdk.qprogram.structured_program import VariableInfo
+
 from .calibration import Calibration
 from .crosstalk_matrix import CrosstalkMatrix, FluxVector
 from .experiment import Experiment
@@ -32,4 +36,7 @@ __all__ = [
     "QbloxCompiler",
     "QdacCompilationOutput",
     "QdacCompiler",
+    "SdkQProgram",
+    "SdkStructuredProgram",
+    "VariableInfo",
 ]

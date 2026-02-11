@@ -14,8 +14,9 @@
 
 """__init__.py"""
 
+from qilisdk.qprogram.exceptions import VariableAllocated
+
 from .data_unavailable import DataUnavailable
 from .exception_group import ExceptionGroup
-from .variable_allocated import VariableAllocated
 
 __all__ = ["DataUnavailable", "ExceptionGroup", "VariableAllocated"]
