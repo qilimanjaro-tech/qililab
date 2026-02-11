@@ -4063,6 +4063,7 @@ other_max_duration_0:
                 move             0, R1          
                 move             0, R2          
         loop_0:
+                nop
                 set_awg_offs     R1, R1         
                 upd_param        4              
                 wait             6              
@@ -4088,6 +4089,7 @@ other_max_duration_0:
                 move             0, R1          
                 move             0, R2          
         loop_0:
+                nop
                 set_awg_offs     R2, R2         
                 upd_param        4              
                 wait             6              
@@ -4098,7 +4100,6 @@ other_max_duration_0:
                 add              R1, 327, R1    
                 add              R2, 163, R2    
                 loop             R0, @loop_0    
-                nop                             
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4158,9 +4159,10 @@ other_max_duration_0:
 
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        qblox_buses = ["flux1", "flux2", "drive", "readout"]
 
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=crosstalk_qprogram_gain_loop, crosstalk=crosstalk)
+        sequences, _ = compiler.compile(qprogram=crosstalk_qprogram_gain_loop, crosstalk=crosstalk, qblox_buses=qblox_buses)
 
         for bus in sequences:
             assert isinstance(sequences[bus], QPy.Sequence)
@@ -4176,6 +4178,7 @@ other_max_duration_0:
                 move             0, R1          
                 move             0, R2          
         loop_0:
+                nop
                 set_awg_offs     1638, 1638     
                 upd_param        4              
                 wait             6              
@@ -4201,6 +4204,7 @@ other_max_duration_0:
                 move             0, R1          
                 move             0, R2          
         loop_0:
+                nop
                 set_awg_offs     819, 819       
                 upd_param        4              
                 wait             6              
@@ -4369,6 +4373,7 @@ other_max_duration_0:
                 move             1638, R4       
                 move             3276, R5       
         loop_1:
+                nop
                 set_awg_offs     R4, R4         
                 upd_param        4              
                 wait             6              
@@ -4400,8 +4405,8 @@ other_max_duration_0:
                 move             10, R3         
                 move             1638, R4       
                 move             3276, R5       
-                nop                             
         loop_1:
+                nop
                 set_awg_offs     R5, R5         
                 upd_param        4              
                 wait             6              

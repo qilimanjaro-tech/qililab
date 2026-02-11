@@ -1226,7 +1226,7 @@ class Platform:
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
         qdac_buses = [
-            bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
+            bus for bus in buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
         qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in qdac_buses]
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):

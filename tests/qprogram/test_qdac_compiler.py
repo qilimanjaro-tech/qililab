@@ -167,7 +167,9 @@ class TestQdacCompiler:
                 qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0], crosstalk=crosstalk)
+        output = compiler.compile(
+            qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
+        )
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qdac == qdac
@@ -280,7 +282,7 @@ class TestQdacCompiler:
         qdac.upload_voltage_list.assert_called_with(
             waveform=calibration.get_waveform(bus="flux1", name="Xpi"),
             channel_id=1,
-            dwell_us=2 * 1e-6,
+            dwell_us=2,
             sync_delay_s=0,
             repetitions=1,
             stepped=False,
@@ -351,7 +353,7 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         with pytest.raises(
-            NotImplementedError, match=f"position must be set as 'end' or 'start', {wrong_position} is not recognized"
+            NotImplementedError, match=f"position must be set as 'end', 'start', 'step' or 'end_step'. {wrong_position} is not recognized"
         ):
             compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
 
@@ -454,7 +456,7 @@ class TestQdacCompiler:
 
         assert isinstance(output, QdacCompilationOutput)
         qdac.upload_voltage_list.assert_called_with(
-            waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=288
+            waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=288, stepped=False
         )
 
         # Infinite loop

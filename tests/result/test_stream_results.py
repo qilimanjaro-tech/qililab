@@ -32,8 +32,8 @@ def fixture_stream_array():
     db_manager = mock_database
 
     qprogram = QProgram()
-    qprogram.play("readout_q0", Square(1.0, 100))
-    qprogram.wait("readout_q0", 100)
+    qprogram.play("feedline_input_output_bus", Square(1.0, 100))
+    qprogram.wait("feedline_input_output_bus", 100)
 
     return StreamArray(
         shape=shape,
@@ -94,6 +94,8 @@ def fixture_stream_array_not_in_platform():
     qprogram.play("bus_not_in_runcard", Square(1.0, 100))
     qprogram.wait("bus_not_in_runcard", 100)
 
+    bus_mapping = {"bus_not_in_runcard": "feedline_input_output_bus"}
+
     return StreamArray(
         shape=shape,
         loops=loops,
@@ -101,6 +103,7 @@ def fixture_stream_array_not_in_platform():
         experiment_name=experiment_name,
         db_manager=db_manager,
         qprogram=qprogram,
+        bus_mapping=bus_mapping
     )
 
 
@@ -119,8 +122,8 @@ def fixture_stream_array_qm():
     db_manager = mock_database
 
     qprogram = QProgram()
-    qprogram.play("readout_q0", Square(1.0, 100))
-    qprogram.wait("readout_q0", 100)
+    qprogram.play("feedline_input_output_bus", Square(1.0, 100))
+    qprogram.wait("feedline_input_output_bus", 100)
 
     return StreamArray(
         shape=shape,
@@ -219,7 +222,7 @@ class TestStreamArray:
     def test_stream_array_instantiation(self, stream_array: StreamArray):
         """Tests the instantiation of a StreamArray object."""
         # Create mock for the file context
-        debug_q1asm = "Bus readout_q0:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
+        debug_q1asm = "Bus feedline_input_output_bus:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
         with patch("h5py.File") as mock_h5file:
             mock_file = MagicMock()
             mock_dataset = MagicMock()
@@ -249,7 +252,7 @@ class TestStreamArray:
     def test_stream_array_instantiation_for_bus_not_in_platform(self, stream_array_bus_not_in_platform: StreamArray):
         """Tests the instantiation of a StreamArray object with a bus outside of the runcard to emulate bus mapping."""
         # Create mock for the file context
-        debug_q1asm = "Bus bus_not_in_runcard:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
+        debug_q1asm = "Bus feedline_input_output_bus:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
         with patch("h5py.File") as mock_h5file:
             mock_file = MagicMock()
             mock_dataset = MagicMock()
