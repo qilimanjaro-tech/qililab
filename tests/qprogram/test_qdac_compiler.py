@@ -111,6 +111,9 @@ class TestQdacCompiler:
         assert compiler._qdac == qdac
         assert compiler._trigger_position == "front"
 
+        qdac.set_end_marker_external_trigger.assert_called_once()
+        assert qdac.upload_voltage_list.call_count == 4
+
         # Setting external trigger at the beginning of each step
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
@@ -124,9 +127,8 @@ class TestQdacCompiler:
         assert compiler._qprogram == qp
         assert compiler._qdac == qdac
         assert compiler._trigger_position == "front"
-
-        qdac.set_start_marker_external_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 2
+        
+        assert qdac.upload_voltage_list.call_count == 6
 
         # Setting external trigger at the end of each step
         qp = QProgram()
@@ -141,9 +143,8 @@ class TestQdacCompiler:
         assert compiler._qprogram == qp
         assert compiler._qdac == qdac
         assert compiler._trigger_position == "front"
-
-        qdac.set_end_marker_external_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 4
+        
+        assert qdac.upload_voltage_list.call_count == 8
 
         # Setting internal trigger at the beginning of the iteration
         qp = QProgram()
@@ -160,7 +161,7 @@ class TestQdacCompiler:
         assert compiler._trigger_position == None
 
         qdac.set_start_marker_internal_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 6
+        assert qdac.upload_voltage_list.call_count == 10
 
         # Setting internal trigger at the end of the iteration
         qp = QProgram()
@@ -177,7 +178,7 @@ class TestQdacCompiler:
         assert compiler._trigger_position == None
 
         qdac.set_end_marker_internal_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 8  # accumulative with last calls
+        assert qdac.upload_voltage_list.call_count == 12  # accumulative with last calls
 
         # Setting internal trigger at the beginning of each step
         qp = QProgram()
@@ -193,8 +194,7 @@ class TestQdacCompiler:
         assert compiler._qdac == qdac
         assert compiler._trigger_position == None
 
-        qdac.set_start_marker_internal_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 6
+        assert qdac.upload_voltage_list.call_count == 14
 
         # Setting internal trigger at the end of each step
         qp = QProgram()
@@ -210,8 +210,7 @@ class TestQdacCompiler:
         assert compiler._qdac == qdac
         assert compiler._trigger_position == None
 
-        qdac.set_end_marker_internal_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 8  # accumulative with last calls
+        assert qdac.upload_voltage_list.call_count == 16
 
     def test_crosstalk_compensation(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""

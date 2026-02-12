@@ -186,7 +186,6 @@ class INSTRUMENTCONTROLLER:
     REFERENCE_CLOCK = "reference_clock"
 
 
-
 class CONNECTION:
     """Connection attribute names."""
 
