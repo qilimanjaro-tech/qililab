@@ -50,6 +50,7 @@ class QDevilQDac2Controller(SingleInstrumentController):
             self.device = QDevilQDac2Device(f"{self.name.value}_{self.alias}", f"TCPIP::{self.address}::5025::SOCKET")
         else:
             self.device = QDevilQDac2Device(f"{self.name.value}_{self.alias}", f"ASRL/dev/{self.address}::INSTR")
+        self._set_clock_source()
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
@@ -59,3 +60,10 @@ class QDevilQDac2Controller(SingleInstrumentController):
                     f"Instrument {type(module)} not supported."
                     + f"The only supported instrument is {InstrumentTypeName.QDEVIL_QDAC2}"
                 )
+
+    def _set_clock_source(self):
+        """Set the reference source ('internal' or 'external')."""
+        if self.settings.reference_clock.value == "external":
+            self.device.write("SYST:CLOCK:SOURCE EXT")
+        if self.settings.reference_clock.value == "internal":
+            self.device.write("SYST:CLOCK:SOURCE INT")

@@ -59,6 +59,7 @@ from qililab.qprogram import (
     Experiment,
     QbloxCompilationOutput,
     QbloxCompiler,
+    QdacCompilationOutput,
     QProgram,
     QProgramCompilationOutput,
 )
@@ -1227,6 +1228,7 @@ class Platform:
         qdac_buses = [
             bus for bus in buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
+        qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in qdac_buses]
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             # Retrieve the time of flight parameter from settings
             instrument_controllers = [
@@ -1267,8 +1269,10 @@ class Platform:
                     qprogram=qprogram,
                     qdac=qdac_instrument,
                     qdac_buses=qdac_buses,
+                    qdac_offsets=qdac_offsets,
                     bus_mapping=bus_mapping,
                     calibration=calibration,
+                    crosstalk=self.crosstalk,
                 )
 
             qblox_compiler = QbloxCompiler()
@@ -1315,8 +1319,10 @@ class Platform:
                     qprogram=qprogram,
                     qdac=qdac_instrument,
                     qdac_buses=qdac_buses,
+                    qdac_offsets=qdac_offsets,
                     bus_mapping=bus_mapping,
                     calibration=calibration,
+                    crosstalk=self.crosstalk,
                 )
 
             compiler = QuantumMachinesCompiler()
@@ -1343,6 +1349,14 @@ class Platform:
         output: QProgramCompilationOutput,
         debug: bool = False,
     ):
+        if isinstance(output.qdac, QdacCompilationOutput):
+            qdac_buses = [
+                bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
+            ]
+            qdac_instrument = next(
+                instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
+            )
+            qdac_instrument.remove_digital_trace()
         if isinstance(output.qblox, QbloxCompilationOutput):
             self.trigger_runs = 0
             return self._execute_qblox_compilation_output(output=output, debug=debug)
@@ -1391,11 +1405,11 @@ class Platform:
 
             # Execute sequences
             if output.qdac:
-                if output.qdac.trigger_position == "front":
+                if output.qdac.trigger_position == "back":
                     output.qdac.qdac.start()
                 for bus_alias in sequences:
                     buses[bus_alias].run()
-                if output.qdac.trigger_position == "back":
+                if output.qdac.trigger_position == "front":
                     output.qdac.qdac.start()
             else:
                 for bus_alias in sequences:
@@ -1508,7 +1522,7 @@ class Platform:
             compiled_program_id = cluster.compile(program=qua)
 
             if output.qdac:
-                if output.qdac.trigger_position == "front":
+                if output.qdac.trigger_position == "back":
                     output.qdac.qdac.start()
 
                 job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)

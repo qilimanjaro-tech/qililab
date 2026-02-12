@@ -172,6 +172,7 @@ class QDevilQDac2(VoltageSource):
         dwell_us: int = 1,
         sync_delay_s: float = 0,
         repetitions: int = 1,
+        stepped: bool = False,
     ):
         """Uploads an arbitrary voltage list to the instrument and saves it to _cache_dc.
 
@@ -191,7 +192,11 @@ class QDevilQDac2(VoltageSource):
             self.device.remove_traces()
 
         dc_list = channel.dc_list(
-            voltages=list(envelope), dwell_s=dwell_us * 1e-6, delay_s=sync_delay_s, repetitions=repetitions
+            voltages=list(envelope),
+            dwell_s=dwell_us * 1e-6,
+            delay_s=sync_delay_s,
+            repetitions=repetitions,
+            stepped=stepped,
         )
         self._cache_dc[channel_id] = dc_list
 
@@ -230,7 +235,12 @@ class QDevilQDac2(VoltageSource):
         self._cache_dc[channel_id].start_on(self._triggers[str(trigger)])
 
     def set_end_marker_external_trigger(
-        self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6
+        self,
+        channel_id: ChannelID,
+        out_port: int,
+        trigger: str,
+        width_s: float = 1e-6,
+        step: bool = False,
     ):
         """Method to create an external trigger at the end of every dc_list period.
 
@@ -239,6 +249,7 @@ class QDevilQDac2(VoltageSource):
             out_port (int): Trigger output port.
             trigger (str): Name of the trigger.
             width_s (float, optional): duration in seconds of the trigger pulse. Defaults to 1e-6.
+            step (bool, optional): sends a trigger every step. Defaults to False
         """
         self._validate_channel(channel_id=channel_id)
 
@@ -252,12 +263,20 @@ class QDevilQDac2(VoltageSource):
         self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
 
         channel = self.device.channel(channel_id)
-        channel.write_channel(f"sour{'{0}'}:dc:mark:pend {self._triggers[str(trigger)].value}")
+        if not step:
+            channel.write_channel(f"sour{'{0}'}:dc:mark:pend {self._triggers[str(trigger)].value}")
+        else:
+            channel.write_channel(f"sour{'{0}'}:dc:mark:send {self._triggers[str(trigger)].value}")
 
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
     def set_start_marker_external_trigger(
-        self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6
+        self,
+        channel_id: ChannelID,
+        out_port: int,
+        trigger: str,
+        width_s: float = 1e-6,
+        step: bool = False,
     ):
         """Method to create an external trigger at the start of every dc_list period.
 
@@ -266,6 +285,7 @@ class QDevilQDac2(VoltageSource):
             out_port (int): Trigger output port.
             trigger (str): Name of the trigger.
             width_s (float, optional): duration in seconds of the trigger pulse. Defaults to 1e-6.
+            step (bool, optional): sends a trigger every step. Defaults to False
         """
         self._validate_channel(channel_id=channel_id)
 
@@ -279,16 +299,20 @@ class QDevilQDac2(VoltageSource):
         self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
 
         channel = self.device.channel(channel_id)
-        channel.write_channel(f"sour{'{0}'}:dc:mark:pstart {self._triggers[str(trigger)].value}")
+        if not step:
+            channel.write_channel(f"sour{'{0}'}:dc:mark:pstart {self._triggers[str(trigger)].value}")
+        else:
+            channel.write_channel(f"sour{'{0}'}:dc:mark:sstart {self._triggers[str(trigger)].value}")
 
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
-    def set_start_marker_internal_trigger(self, channel_id: ChannelID, trigger: str):
+    def set_start_marker_internal_trigger(self, channel_id: ChannelID, trigger: str, step: bool = False):
         """Method to create an internal trigger at the start of every dc_list period.
 
         Args:
             channel_id (ChannelID): Channel id of the qdac
             trigger (str): Name of the trigger.
+            step (bool, optional): sends a trigger every step. Defaults to False
         """
         self._validate_channel(channel_id=channel_id)
 
@@ -302,14 +326,18 @@ class QDevilQDac2(VoltageSource):
         self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
 
         channel = self.device.channel(channel_id)
-        channel.write_channel(f"sour{'{0}'}:dc:mark:pstart {self._triggers[str(trigger)].value}")
+        if not step:
+            channel.write_channel(f"sour{'{0}'}:dc:mark:pstart {self._triggers[str(trigger)].value}")
+        else:
+            channel.write_channel(f"sour{'{0}'}:dc:mark:sstart {self._triggers[str(trigger)].value}")
 
-    def set_end_marker_internal_trigger(self, channel_id: ChannelID, trigger: str):
+    def set_end_marker_internal_trigger(self, channel_id: ChannelID, trigger: str, step: bool = False):
         """Method to create an internal trigger at the start of every dc_list period.
 
         Args:
             channel_id (ChannelID): Channel id of the qdac
             trigger (str): Name of the trigger.
+            step (bool, optional): sends a trigger every step. Defaults to False
         """
         self._validate_channel(channel_id=channel_id)
 
@@ -323,7 +351,10 @@ class QDevilQDac2(VoltageSource):
         self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
 
         channel = self.device.channel(channel_id)
-        channel.write_channel(f"sour{'{0}'}:dc:mark:pend {self._triggers[str(trigger)].value}")
+        if not step:
+            channel.write_channel(f"sour{'{0}'}:dc:mark:pend {self._triggers[str(trigger)].value}")
+        else:
+            channel.write_channel(f"sour{'{0}'}:dc:mark:send {self._triggers[str(trigger)].value}")
 
     def play_awg(self, channel_id: ChannelID | None = None, clear_after: bool = True):
         """Plays a waveform for a given channel id. If no channel id is given, plays all waveforms stored in the cache.
@@ -410,6 +441,7 @@ class QDevilQDac2(VoltageSource):
             index = self.dacs.index(channel_id)
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(self.voltage[index])
+        self.remove_digital_trace()
 
     @check_device_initialized
     def turn_off(self):
@@ -417,10 +449,8 @@ class QDevilQDac2(VoltageSource):
         for channel_id in self.dacs:
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(0.0)
-        if self._triggers:
-            for trigger_name in self._triggers.keys():
-                self._triggers[trigger_name].close()
-        self.device.remove_traces()
+        self.remove_digital_trace()
+        self.device.reset()
         self._cache_awg = {}
         self._cache_dc = {}
 
@@ -437,6 +467,12 @@ class QDevilQDac2(VoltageSource):
             for trigger_name in self._triggers.keys():
                 self.clear_trigger(trigger_name)
         self.device.reset()
+
+    def remove_digital_trace(self):
+        if self._triggers:
+            self.clear_trigger()
+            self._triggers = {}
+        self.device.remove_traces()
 
     def _validate_channel(self, channel_id: ChannelID | None):
         """Check if channel identifier is valid and in the allowed range."""

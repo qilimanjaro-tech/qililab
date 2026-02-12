@@ -58,6 +58,22 @@ class TestQDevilQDac2Controller:
         )
         device_mock.assert_called_once_with(name, address)
 
+    @patch("qililab.instrument_controllers.qdevil.qdevil_qdac2_controller.QDevilQDac2Device", autospec=True)
+    @pytest.mark.parametrize("controller_alias", ["qdac_controller_external_clock"])
+    def test_initialize_device_external_clock(self, device_mock: MagicMock, platform: Platform, controller_alias: str):
+        """Test QDAC-II controller initializes device correctly."""
+        controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
+
+        controller_instance._initialize_device()
+
+        name = f"{controller_instance.name.value}_{controller_instance.alias}"
+        address = (
+            f"TCPIP::{controller_instance.address}::5025::SOCKET"
+            if controller_instance.connection.name == ConnectionName.TCP_IP
+            else f"ASRL/dev/{controller_instance.address}::INSTR"
+        )
+        device_mock.assert_called_once_with(name, address)
+
     def test_check_supported_modules_raises_exception(
         self, qdevil_qdac2_controller_wrong_module: QDevilQDac2Controller
     ):

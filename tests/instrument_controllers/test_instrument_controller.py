@@ -9,7 +9,7 @@ from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.rohde_schwarz import SGS100AController
 from qililab.platform import Platform
 from qililab.typings.enums import ConnectionName, InstrumentControllerName, Parameter
-from tests.data import Galadriel
+from tests.data import Galadriel, SauronQDevil
 from qililab.data_management import build_platform
 # from tests.test_utils import build_platform
 
@@ -18,6 +18,11 @@ from qililab.data_management import build_platform
 def fixture_platform() -> Platform:
     """Return Platform object."""
     return build_platform(runcard=Galadriel.runcard)
+
+@pytest.fixture(name="qdac_platform")
+def fixture_qdac_platform() -> Platform:
+    """Return Platform object."""
+    return build_platform(runcard=SauronQDevil.runcard)
 
 
 @pytest.fixture(name="rs_settings")
@@ -98,3 +103,13 @@ class TestConnection:
 
         with pytest.raises(ValueError):
             _ = platform.set_parameter(alias="rohde_schwarz_controller_0", parameter=Parameter.BUS_FREQUENCY, value=1e9)
+
+    def test_set_get_reference_clock(self, platform: Platform):
+        assert platform.get_parameter(alias="qblox_qblox_cluster_controller", parameter=Parameter.REFERENCE_CLOCK) == "internal"
+        platform.set_parameter(alias="qblox_qblox_cluster_controller", parameter=Parameter.REFERENCE_CLOCK, value="external")
+        assert platform.get_parameter(alias="qblox_qblox_cluster_controller", parameter=Parameter.REFERENCE_CLOCK) == "external"
+        
+    def test_set_get_qdac_reference_clock(self, qdac_platform: Platform):
+        assert qdac_platform.get_parameter(alias="qdac_controller_external_clock", parameter=Parameter.REFERENCE_CLOCK) == "external"
+        qdac_platform.set_parameter(alias="qdac_controller_external_clock", parameter=Parameter.REFERENCE_CLOCK, value="internal")
+        assert qdac_platform.get_parameter(alias="qdac_controller_external_clock", parameter=Parameter.REFERENCE_CLOCK) == "internal"

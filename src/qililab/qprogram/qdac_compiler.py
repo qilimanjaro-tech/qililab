@@ -14,16 +14,19 @@
 
 import math
 from collections import deque
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Callable
+
+import numpy as np
 
 from qililab.config import logger
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
-    Operation,
     Play,
     ResetPhase,
     SetFrequency,
@@ -38,6 +41,9 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
+from qililab.waveforms.arbitrary import Arbitrary
+from qililab.waveforms.iq_pair import IQPair
+from qililab.waveforms.waveform import Waveform
 
 if TYPE_CHECKING:
     from qililab.platform.components.bus import Bus
@@ -93,24 +99,30 @@ class QdacCompiler:
         self._buses: dict[str, QdacBusCompilationInfo]
         self._qdac_buses: list["Bus"]
         self._qdac_buses_alias: list[str]
+        self._qdac_buses_offset: dict[str, float]
         self._channels: dict[str, int]
         self._qdac: QDevilQDac2
 
         self._dc_dwell: int = 2
         self._dc_delay: int = 0
+        self._dc_stepped: bool = False
         self._loop_repetitions: dict[str, int] = {}
         self._infinite_loop: bool = False
 
         self._trigger_hashes: dict[str, str] = {}
         self._trigger_position: str | None = None
 
+        self._element_popped: dict | None = None
+
     def compile(
         self,
         qprogram: QProgram,
         qdac: QDevilQDac2,
         qdac_buses: list["Bus"],
+        qdac_offsets: list[float],
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
+        crosstalk: CrosstalkMatrix | None = None,
     ) -> QdacCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
         Args:
@@ -133,13 +145,103 @@ class QdacCompiler:
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.pop()
 
+        def with_crosstalk(qprogram: QProgram, crosstalk: CrosstalkMatrix):
+            """Apply crosstalk compensation to the qprogram flux buses.
+            This method traverses the elements of the QProgram, replacing any
+            Play or Offset instances by the compensated envelope or offset for
+            all flux buses.
+            Args:
+                crosstalk (CrosstalkMatrix): Crosstalk matrix class.
+            Returns:
+                QProgram: A new instance of QProgram with calibrated crosstalk.
+            """
+
+            def traverse(block: Block):
+                element_list = []
+                flux_vector = FluxVector()
+                flux_vector.set_crosstalk(crosstalk)  # type: ignore
+
+                for bus in crosstalk.matrix.keys():
+                    flux_vector[bus] = self._qdac_buses_offset[bus]
+
+                for i, element in enumerate(block.elements):
+                    if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():  # type: ignore
+                        element_list.append(i)
+                        flux_vector = handle_flux_vector(flux_vector=flux_vector, element=element)
+
+                    if isinstance(element, Block):
+                        traverse(element)
+
+                block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
+
+            def handle_flux_vector(flux_vector: FluxVector, element: Play | SetOffset):
+                if isinstance(element, Play):
+                    if isinstance(element.waveform, Waveform):
+                        envelope = element.waveform.envelope()
+                    elif isinstance(element.waveform, IQPair):
+                        envelope = element.waveform.I.envelope()
+                elif isinstance(element, SetOffset):  # square with same dimension as play
+                    envelope = element.offset_path0  # type: ignore
+
+                if (
+                    isinstance(envelope, np.ndarray)
+                    and isinstance(flux_vector[element.bus], np.ndarray)
+                    and flux_vector[element.bus].shape != envelope.shape  # type: ignore
+                ):
+                    raise ValueError("qp.play elements must have the same size.")
+                flux_vector[element.bus] = envelope
+                return flux_vector
+
+            def handle_crosstalk_element(block: Block, element_list: list[int], flux_vector: FluxVector):
+                if element_list:
+                    elements = []
+                    for ii, element_idx in enumerate(element_list):
+                        elements.append(block.elements.pop(element_idx - ii))
+
+                    play_elements = [element for element in elements if isinstance(element, Play)]
+                    if play_elements:
+                        dwell, delay, repetitions, stepped = (
+                            play_elements[0].dwell,
+                            play_elements[0].delay,
+                            play_elements[0].repetitions,
+                            play_elements[0].stepped,
+                        )
+
+                    for bus in flux_vector.bias_vector.keys():
+                        if isinstance(flux_vector.bias_vector[bus], float):
+                            offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
+                            block.elements.insert(element_list[0], offset)
+                        elif isinstance(flux_vector.bias_vector[bus], np.ndarray) or isinstance(
+                            flux_vector.bias_vector[bus], list
+                        ):
+                            play = Play(
+                                bus,
+                                Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
+                                dwell=dwell,
+                                delay=delay,
+                                repetitions=repetitions,
+                                stepped=stepped,
+                            )
+                            block.elements.insert(element_list[0], play)
+
+            copied_qprogram = deepcopy(qprogram)
+            traverse(copied_qprogram.body)
+            return copied_qprogram
+
         self._qprogram = qprogram
         self._qdac = qdac
         self._qdac_buses = qdac_buses
+        self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
+        self._qdac_buses_offset = dict(zip(self._qdac_buses_alias, qdac_offsets))
         if bus_mapping is not None:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
+            if calibration.crosstalk_matrix and crosstalk is None:
+                crosstalk = calibration.crosstalk_matrix
+        if crosstalk is not None:
+            self._qprogram = with_crosstalk(qprogram=self._qprogram, crosstalk=crosstalk)
+
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
@@ -157,8 +259,7 @@ class QdacCompiler:
             A dictionary where the keys are bus names and the values are BusCompilationInfo objects.
         """
 
-        self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
-        self._buses = {bus: QdacBusCompilationInfo() for bus in self._qprogram.buses if bus in self._qdac_buses_alias}
+        self._buses = {bus: QdacBusCompilationInfo() for bus in self._qdac_buses_alias}
         self._loop_repetitions.update(dict.fromkeys(self._qdac_buses_alias, 1))
 
         self._channels = {bus.alias: bus.channels[0] for bus in self._qdac_buses if bus.alias in self._qdac_buses_alias}
@@ -220,9 +321,9 @@ class QdacCompiler:
     def _handle_set_trigger(self, element: SetTrigger):
         if element.bus in self._qdac_buses_alias:
             # Condition to check if positions are properly set.
-            if element.position not in {"end", "start"}:
+            if element.position not in {"end", "start", "step", "end_step"}:
                 raise NotImplementedError(
-                    f"position must be set as 'end' or 'start', {element.position} is not recognized"
+                    f"position must be set as 'end', 'start', 'step' or 'end_step'. {element.position} is not recognized"
                 )
 
             if element.outputs:
@@ -236,12 +337,28 @@ class QdacCompiler:
                             trigger=trigger,
                             width_s=element.duration,
                         )
-                    else:
+                    elif element.position == "start":
                         self._qdac.set_start_marker_external_trigger(
                             channel_id=self._channels[element.bus],
                             out_port=output,
                             trigger=trigger,
                             width_s=element.duration,
+                        )
+                    elif element.position == "step":
+                        self._qdac.set_start_marker_external_trigger(
+                            channel_id=self._channels[element.bus],
+                            out_port=output,
+                            trigger=trigger,
+                            width_s=element.duration,
+                            step=True,
+                        )
+                    elif element.position == "end_step":
+                        self._qdac.set_end_marker_external_trigger(
+                            channel_id=self._channels[element.bus],
+                            out_port=output,
+                            trigger=trigger,
+                            width_s=element.duration,
+                            step=True,
                         )
                 if not self._trigger_position:
                     self._trigger_position = "front"
@@ -249,9 +366,17 @@ class QdacCompiler:
                 trigger = self._hash_trigger(element, None)
                 if element.position == "end":
                     self._qdac.set_end_marker_internal_trigger(channel_id=self._channels[element.bus], trigger=trigger)
-                else:
+                elif element.position == "start":
                     self._qdac.set_start_marker_internal_trigger(
                         channel_id=self._channels[element.bus], trigger=trigger
+                    )
+                elif element.position == "step":
+                    self._qdac.set_start_marker_internal_trigger(
+                        channel_id=self._channels[element.bus], trigger=trigger, step=True
+                    )
+                elif element.position == "end_step":
+                    self._qdac.set_end_marker_internal_trigger(
+                        channel_id=self._channels[element.bus], trigger=trigger, step=True
                     )
 
     def _handle_wait_trigger(self, element: WaitTrigger):
@@ -268,7 +393,6 @@ class QdacCompiler:
 
     def _handle_play(self, element: Play):
         if element.bus in self._qdac_buses_alias:
-            convert = QdacCompiler._convert_value(element)
             waveform, _ = element.get_waveforms()
             waveform_variables = element.get_waveform_variables()
             if waveform_variables:
@@ -278,6 +402,8 @@ class QdacCompiler:
                 element.dwell = self._dc_dwell
             if not element.delay:
                 element.delay = self._dc_delay
+            if not element.stepped:
+                element.stepped = self._dc_stepped
             if not element.repetitions:
                 element.repetitions = self._loop_repetitions[element.bus]
             if self._infinite_loop:
@@ -286,9 +412,10 @@ class QdacCompiler:
             self._qdac.upload_voltage_list(
                 waveform=waveform,
                 channel_id=self._channels[element.bus],
-                dwell_us=convert(element.dwell),
+                dwell_us=element.dwell,
                 sync_delay_s=element.delay,
                 repetitions=element.repetitions,
+                stepped=element.stepped,
             )
 
             self._loop_repetitions[element.bus] = 1
@@ -330,10 +457,3 @@ class QdacCompiler:
     def _convert_for_loop_values(for_loop: ForLoop):
         iterations = QdacCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
         return iterations
-
-    @staticmethod
-    def _convert_value(operation: Operation) -> Callable[[Any], Any]:
-        conversion_map: dict[type[Operation], Callable[[Any], Any]] = {
-            Play: lambda x: float(x * 1e-6),
-        }
-        return conversion_map.get(type(operation), lambda x: x)

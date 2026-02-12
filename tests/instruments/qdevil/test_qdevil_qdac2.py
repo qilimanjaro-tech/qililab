@@ -228,11 +228,12 @@ class TestQDevilQDac2:
         trigger = "trigger_test"
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_end_marker_external_trigger(channel_id, out_port, trigger)
-
         qdac.device.connect_external_trigger.assert_called_once()
 
-        qdac.set_end_marker_external_trigger(channel_id, out_port, trigger)
+        # Same test for stepped functions
+        qdac.set_end_marker_external_trigger(channel_id, out_port, trigger, step=True)
         qdac.device.free_trigger.assert_called_once()
+
 
     def test_set_end_marker_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
@@ -258,7 +259,7 @@ class TestQDevilQDac2:
 
         qdac.device.connect_external_trigger.assert_called_once()
 
-        qdac.set_start_marker_external_trigger(channel_id, out_port, trigger)
+        qdac.set_start_marker_external_trigger(channel_id, out_port, trigger, step=True)
         qdac.device.free_trigger.assert_called_once()
 
     def test_set_start_marker_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
@@ -284,7 +285,7 @@ class TestQDevilQDac2:
 
         qdac.device.channel(channel_id).write_channel.assert_called_once()
 
-        qdac.set_end_marker_internal_trigger(channel_id, trigger)
+        qdac.set_end_marker_internal_trigger(channel_id, trigger, step=True)
         qdac.device.free_trigger.assert_called_once()
 
     def test_set_end_marker_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
@@ -309,7 +310,7 @@ class TestQDevilQDac2:
 
         qdac.device.channel(channel_id).write_channel.assert_called_once()
 
-        qdac.set_start_marker_internal_trigger(channel_id, trigger)
+        qdac.set_start_marker_internal_trigger(channel_id, trigger, step=True)
         qdac.device.free_trigger.assert_called_once()
 
     def test_set_start_marker_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):

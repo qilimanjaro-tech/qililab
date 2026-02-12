@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from uuid import UUID
+
 import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
@@ -30,6 +31,7 @@ from qililab.config import logger
 from qililab.core.variables import Domain, Variable, VariableExpression
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
@@ -231,6 +233,7 @@ class QbloxCompiler:
         self._max_wait_dynamic: int = 0
         self._markers: dict[str, str] | None
         self._qblox_buses: list[str]
+        self._crosstalk: CrosstalkMatrix | None = None
         self._acquisition_metadata: dict[str, dict[UUID, int]] = {}
 
     def traverse_qprogram_acquire(self, block: Block):
@@ -252,6 +255,7 @@ class QbloxCompiler:
         markers: dict[str, str] | None = None,
         ext_trigger: bool = False,
         qblox_buses: list[str] | None = None,
+        crosstalk: CrosstalkMatrix | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -313,10 +317,14 @@ class QbloxCompiler:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
+            if calibration.crosstalk_matrix and crosstalk is None:
+                crosstalk = calibration.crosstalk_matrix
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
+        if crosstalk is not None:
+            self._qprogram = self._qprogram.with_crosstalk(crosstalk=crosstalk)
 
         self._qblox_buses = qblox_buses if qblox_buses else []
 

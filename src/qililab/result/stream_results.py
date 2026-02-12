@@ -19,7 +19,6 @@ import h5py
 import numpy as np
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
@@ -202,14 +201,9 @@ class StreamArray:
             for bus in self.platform.buses.elements
             for instrument in bus.instruments
         ):
-            if self.bus_mapping is not None:
-                compiled = self.platform.compile_qprogram(
-                    qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration
-                ).qblox
-            else:
-                qblox_compiler = QbloxCompiler()
-                compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)
-
+            compiled = self.platform.compile_qprogram(
+                qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration
+            ).qblox
             sequences = compiled.sequences
             lines = []
             for bus_alias, seq in sequences.items():
