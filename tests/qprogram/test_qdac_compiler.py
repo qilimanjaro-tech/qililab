@@ -111,6 +111,37 @@ class TestQdacCompiler:
         assert compiler._qdac == qdac
         assert compiler._trigger_position == "front"
 
+        # Setting external trigger at the beginning of each step
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="step")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._qprogram == qp
+        assert compiler._qdac == qdac
+        assert compiler._trigger_position == "front"
+
+        qdac.set_start_marker_external_trigger.assert_called_once()
+        assert qdac.upload_voltage_list.call_count == 2
+
+        # Setting external trigger at the end of each step
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="end_step")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._qprogram == qp
+        assert compiler._qdac == qdac
+        assert compiler._trigger_position == "front"
+
         qdac.set_end_marker_external_trigger.assert_called_once()
         assert qdac.upload_voltage_list.call_count == 4
 
@@ -136,6 +167,40 @@ class TestQdacCompiler:
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
         qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
         qp.set_trigger(bus="flux1", duration=10e-6, position="end")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._qprogram == qp
+        assert compiler._qdac == qdac
+        assert compiler._trigger_position == None
+
+        qdac.set_end_marker_internal_trigger.assert_called_once()
+        assert qdac.upload_voltage_list.call_count == 8  # accumulative with last calls
+
+        # Setting internal trigger at the beginning of each step
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.set_trigger(bus="flux1", duration=10e-6, position="step")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._qprogram == qp
+        assert compiler._qdac == qdac
+        assert compiler._trigger_position == None
+
+        qdac.set_start_marker_internal_trigger.assert_called_once()
+        assert qdac.upload_voltage_list.call_count == 6
+
+        # Setting internal trigger at the end of each step
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
+        qp.set_trigger(bus="flux1", duration=10e-6, position="end_step")
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
