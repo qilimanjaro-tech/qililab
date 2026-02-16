@@ -362,13 +362,13 @@ class E5080B(Instrument):
 
         if parameter == Parameter.SWEEP_TYPE:
             self.settings.sweep_type = VNASweepTypes(value)
-            if self.is_device_active() and self.sweep_type.value is not None:
+            if self.is_device_active() and self.sweep_type is not None:
                 self.device.sweep_type(self.sweep_type.value)
             return
 
         if parameter == Parameter.SWEEP_MODE:
             self.settings.sweep_mode = VNASweepModes(value)
-            if self.is_device_active() and self.sweep_mode.value is not None:
+            if self.is_device_active() and self.sweep_mode is not None:
                 self.device.sweep_mode(self.sweep_mode.value)
             return
 
