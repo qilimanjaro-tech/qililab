@@ -413,7 +413,7 @@ class DatabaseManager:
         with self.session() as running_session:
             calibration_id = running_session.query(CalibrationRun).order_by(CalibrationRun.calibration_id.desc()).first().calibration_id  # type: ignore
 
-        base_path = calibration.parameters["base_path"]
+        base_path = calibration.parameters["file_path"]
 
         result_path = os.path.join(base_path, f"{experiment_name}.h5")
 
