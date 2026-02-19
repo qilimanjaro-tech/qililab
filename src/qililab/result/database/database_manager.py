@@ -454,7 +454,7 @@ class DatabaseManager:
                 .calibration_id
             )
 
-        base_path = calibration.parameters["file_path"]
+        base_path = calibration.parameters["data_folder"]
 
         result_path = os.path.join(base_path, f"{experiment_name}.h5")
 
