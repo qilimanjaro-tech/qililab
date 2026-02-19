@@ -151,13 +151,14 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
-    def add_sequence_run(self, sequence_tree: dict, sample_name: str, cooldown: str | None = None) -> SequenceRun:
+    def add_sequence_run(self, sequence_name: str, sequence_tree: dict, sample_name: str, cooldown: str | None = None) -> SequenceRun:
         """Add sequence of experiments metadata.
 
         Args:
             sequence_tree (dict): Full experiment sequence tree of the run.
         """
         sequence_obj = SequenceRun(
+            sequence_name=sequence_name,
             start_time=datetime.datetime.now(),
             sequence_tree=sequence_tree,
             sequence_completed=False,
@@ -453,7 +454,7 @@ class DatabaseManager:
                 .calibration_id
             )
 
-        base_path = calibration.parameters["base_path"]
+        base_path = calibration.parameters["file_path"]
 
         result_path = os.path.join(base_path, f"{experiment_name}.h5")
 
@@ -546,6 +547,9 @@ class DatabaseManager:
         debug_file: str | None = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
+        dc_offsets: dict[str, float] | None = None,
+        target: list[str] | None = None,
+        secondary_source: list[str] | None = None,
     ):
         """Add measurement metadata and data path
 
@@ -609,6 +613,9 @@ class DatabaseManager:
             debug_file=debug_file,
             parameters=parameters,
             data_shape=data_shape,
+            dc_offsets = dc_offsets,
+            target = target,
+            secondary_source = secondary_source,
         )
         with self.session() as running_session:
             running_session.add(measurement)

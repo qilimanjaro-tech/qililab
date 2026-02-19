@@ -22,6 +22,8 @@ class AnalogCompilationSettings:
     """Dataclass with all the settings and gates definitions needed to decompose gates into pulses."""
 
     flux_control_topology: list[FluxControlTopology] = field(default_factory=list)
+    topology: list[tuple[int, int]] = field(default_factory=list)
+    qubits: list[int] = field(default_factory=list)
 
     def __post_init__(self):
         """Build the Gates Settings based on the master settings."""
