@@ -431,7 +431,7 @@ class DatabaseManager:
         with self.session() as running_session:
             calibration_id = running_session.query(CalibrationRun).order_by(CalibrationRun.calibration_id.desc()).first().calibration_id  # type: ignore
 
-        base_path = calibration.parameters["base_path"]
+        base_path = calibration.parameters["data_folder"]
 
         result_path = os.path.join(base_path, f"{experiment_name}.h5")
 
@@ -524,6 +524,7 @@ class DatabaseManager:
         debug_file: str | None = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
+        target: str | int | None = None,
     ):
         """Add measurement metadata and data path
 
@@ -562,10 +563,12 @@ class DatabaseManager:
             if base_path[-1] == "/"
             else f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         )
+        if target is not None:
+            dir_path = f"{dir_path}/{target}" if isinstance(target, str) else f"{dir_path}/q_{target}"
         result_path = f"{dir_path}/{experiment_name}.h5"
 
         folder = dir_path
-        if not os.path.isfile(folder):
+        if not os.path.isdir(folder):
             os.makedirs(folder)
             warnings.warn(f"Data folder did not exist. Created one at {folder}")
 
