@@ -589,7 +589,7 @@ class Testdatabase:
             result = db_manager.load_calibration_by_id(123)
 
         db_manager._mock_session.query.assert_called
-        assert result.result_path == "/shared_test/results/file.h5"
+        assert result.result_path == "/local_test/results/file.h5"
 
     def test_load_calibration_by_id_path_not_found(self, db_manager: DatabaseManager):
         # Setup a mock measurement
@@ -763,7 +763,7 @@ class Testdatabase:
         mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
 
         calibration = Calibration()
-        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
         # Act
         measurement = db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
@@ -787,7 +787,7 @@ class Testdatabase:
         mock_session.commit.side_effect = Exception("DB error")
 
         calibration = Calibration()
-        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
 
         db_manager.session = MagicMock(return_value=mock_session)
 
@@ -812,7 +812,7 @@ class Testdatabase:
         mock_session_instance.query.return_value = mock_query
 
         calibration = Calibration()
-        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
         # Act
         db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
@@ -1030,7 +1030,7 @@ def test_load_config_missing_section(mock_config_parser):
 def test_get_db_manager(mock_db_manager):
     filename = os.path.expanduser("~/database.ini")
     get_db_manager()
-    mock_db_manager.assert_called_once_with(filename, "postgresql")
+    mock_db_manager.assert_called_once_with(filename, "postgresql", None)
 
 
 @patch("qililab.result.database.database_manager.create_engine")
