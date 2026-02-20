@@ -25,7 +25,7 @@ from sqlalchemy import create_engine, exists
 from sqlalchemy.orm import Session, sessionmaker
 
 from qililab.result.database.database_autocal import AutocalMeasurement, CalibrationRun
-from qililab.result.database.database_measurements import Cooldown, Measurement, Sample, SequenceRun
+from qililab.result.database.database_measurements import Cooldown, Measurement, Sample
 from qililab.result.database.database_qaas import QaaS_Experiment
 from qililab.utils.serialization import serialize
 
@@ -52,7 +52,6 @@ class DatabaseManager:
         self.session: sessionmaker[Session] = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.current_cd: str | None = None
         self.current_sample: str | None = None
-        self.current_sequence: int | None = None
 
         self.base_path_local: str | None = None
         self.base_path_share: str | None = None
@@ -150,30 +149,6 @@ class DatabaseManager:
             running_session.add(sample_obj)
             try:
                 running_session.commit()
-            except Exception as e:
-                running_session.rollback()
-                raise e
-
-    def add_sequence_run(self, sequence_tree: dict, sample_name: str, cooldown: str | None = None) -> SequenceRun:
-        """Add sequence of experiments metadata.
-
-        Args:
-            sequence_tree (dict): Full experiment sequence tree of the run.
-        """
-        sequence_obj = SequenceRun(
-            start_time=datetime.datetime.now(),
-            sequence_tree=sequence_tree,
-            sequence_completed=False,
-            sample_name=sample_name,
-            cooldown=cooldown,
-        )
-        with self.session() as running_session:
-            running_session.add(sequence_obj)
-            try:
-                running_session.commit()
-                self.current_sequence = sequence_obj.sequence_id  # type: ignore[assignment]
-                return sequence_obj
-
             except Exception as e:
                 running_session.rollback()
                 raise e
@@ -560,7 +535,7 @@ class DatabaseManager:
 
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
-        
+
         if self.data_folder is not None:
             base_path = self.data_folder
         else:
@@ -588,7 +563,6 @@ class DatabaseManager:
             experiment_completed=experiment_completed,
             start_time=start_time,
             cooldown=cooldown,
-            sequence_id=self.current_sequence,
             optional_identifier=optional_identifier,
             end_time=end_time,
             run_length=run_length,
