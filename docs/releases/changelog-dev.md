@@ -21,8 +21,8 @@
 - For Autocalibration database, moved `sample_name` and `cooldown` from `AutocalMeasurement` (independent experiment) to `CalibrationRun` (full calibration tree). This way the database does not include redundant information, as these variables do not change from one measurement to another, only in different calibration runs.
   [#1053](https://github.com/qilimanjaro-tech/qililab/pull/1053)
 
-- Added sequence run table to measurements database. This table works similar to calibration run and is intended to store a series of experiment runs one after the other. Added `add_sequence_run` to database manager to operate it. Also modified the quibit index on the autocalibration database from integer to string to take into account two qubit gate experiments.
-  [#1070](https://github.com/qilimanjaro-tech/qililab/pull/1070)
+- Added a `data_folder` option to `get_db_manager` to overwrite other base paths generated.
+  [#1074](https://github.com/qilimanjaro-tech/qililab/pull/1074)
 
 ### Breaking changes
 
@@ -31,3 +31,6 @@
 ### Documentation
 
 ### Bug fixes
+
+- Fixed conflict with base path not being unique for parallel qprogram executions in StreamArray. To fix it, the path now includes the target index whenever there is one, which is the case for parallel executions. For any other existing case the behavior remains the same.
+  [#1074](https://github.com/qilimanjaro-tech/qililab/pull/1074)

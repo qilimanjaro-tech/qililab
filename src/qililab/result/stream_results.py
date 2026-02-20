@@ -63,7 +63,7 @@ class StreamArray:
         bus_mapping: dict[str, str] | None = None,
         optional_identifier: str | None = None,
         autocalibration: bool = False,
-        qubit_idx: int | None = None,
+        qubit_idx: str | int | None = None,
     ):
         self.results: np.ndarray
         self.shape = [shape] if isinstance(shape, int) else shape
@@ -107,6 +107,7 @@ class StreamArray:
                     qprogram=serialize(self.qprogram) if self.qprogram else None,
                     calibration=serialize(self.calibration) if self.calibration else None,
                     debug_file=self._get_debug() if self.platform and self.qprogram else None,
+                    target=self.qubit_idx,
                 )
             self.path = self.measurement.result_path
 
