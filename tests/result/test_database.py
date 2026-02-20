@@ -776,6 +776,42 @@ class Testdatabase:
 
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.datetime")
+    def test_add_autocal_measurement_data_folder(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
+        # Setup
+        mock_session_instance = MagicMock()
+        mock_session_context = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session_instance
+        db_manager.session = MagicMock(return_value=mock_session_context)
+
+        mock_calibration_id = MagicMock()
+        mock_query = MagicMock()
+        mock_order_by = MagicMock()
+        mock_calibration_id.calibration_id = 1  
+        mock_order_by.first.return_value = mock_calibration_id
+        mock_query.order_by.return_value = mock_order_by
+        mock_session_instance.query.return_value = mock_query
+
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+
+        calibration = Calibration()
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
+
+        db_manager.data_folder = "/shared_test/"
+
+        # Act
+        measurement = db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
+
+        # Assert
+        expected_path = "/shared_test/exp1.h5"
+        assert measurement.result_path == expected_path
+        db_manager._mock_session.add.assert_called_once
+        db_manager._mock_session.commit.assert_called_once
+        mock_makedirs.assert_called_once_with("/shared_test/")
+
+    @patch("qililab.result.database.database_manager.os.makedirs")
+    @patch("qililab.result.database.database_manager.datetime")
     def test_add_autocal_measurement_raises_exception(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
@@ -873,6 +909,28 @@ class Testdatabase:
         # Setup
         db_manager.current_sample = "sampleA"
         db_manager.current_cd = "cdX"
+
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+
+        # Act
+        measurement = db_manager.add_measurement("exp1", experiment_completed=True)
+
+        # Assert
+        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+        assert measurement.result_path == expected_path
+        db_manager._mock_session.add.assert_called_once
+        db_manager._mock_session.commit.assert_called_once
+        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00")
+
+    @patch("qililab.result.database.database_manager.os.makedirs")
+    @patch("qililab.result.database.database_manager.datetime")
+    def test_add_measurement_data_folder(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
+        # Setup
+        db_manager.current_sample = "sampleA"
+        db_manager.current_cd = "cdX"
+        db_manager.data_folder = "/shared_test/measurement_folder"
 
         fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_time
