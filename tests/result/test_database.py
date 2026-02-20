@@ -939,7 +939,7 @@ class Testdatabase:
         measurement = db_manager.add_measurement("exp1", experiment_completed=True, target=1)
 
         # Assert
-        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/q_1/exp1.h5"
         assert measurement.result_path == expected_path
         db_manager._mock_session.add.assert_called_once
         db_manager._mock_session.commit.assert_called_once
