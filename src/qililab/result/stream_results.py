@@ -201,17 +201,20 @@ class StreamArray:
             for bus in self.platform.buses.elements
             for instrument in bus.instruments
         ):
-            compiled = self.platform.compile_qprogram(
-                qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration
-            ).qblox
-            sequences = compiled.sequences
-            lines = []
-            for bus_alias, seq in sequences.items():
-                lines.append(f"Bus {bus_alias}:")
-                lines.append(str(seq._program))
-                lines.append("")
-
-            return "\n".join(lines)
+            try:
+                compiled = self.platform.compile_qprogram(
+                    qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration
+                ).qblox
+                sequences = compiled.sequences
+                lines = []
+                for bus_alias, seq in sequences.items():
+                    lines.append(f"Bus {bus_alias}:")
+                    lines.append(str(seq._program))
+                    lines.append("")
+                return "\n".join(lines)
+            except:
+                debug_exception = "Incorrect bus mapping for debug."
+                return debug_exception
         debug_exception = "Non Qblox machine."
         return debug_exception
 
