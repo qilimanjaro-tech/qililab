@@ -362,32 +362,32 @@ class E5080B(Instrument):
 
         if parameter == Parameter.SWEEP_TYPE:
             self.settings.sweep_type = VNASweepTypes(value)
-            if self.is_device_active():
-                self.device.sweep_type(self.sweep_type)
+            if self.is_device_active() and self.sweep_type is not None:
+                self.device.sweep_type(self.sweep_type.value)
             return
 
         if parameter == Parameter.SWEEP_MODE:
             self.settings.sweep_mode = VNASweepModes(value)
-            if self.is_device_active():
-                self.device.sweep_mode(self.sweep_mode)
+            if self.is_device_active() and self.sweep_mode is not None:
+                self.device.sweep_mode(self.sweep_mode.value)
             return
 
         if parameter == Parameter.TRIGGER_SLOPE:
             self.settings.trigger_slope = VNATriggerSlope(value)
-            if self.is_device_active():
-                self.device.trigger_slope(self.trigger_slope)
+            if self.is_device_active() and self.trigger_slope is not None:
+                self.device.trigger_slope(self.trigger_slope.value)
             return
 
         if parameter == Parameter.TRIGGER_SOURCE:
             self.settings.trigger_source = VNATriggerSource(value)
-            if self.is_device_active():
-                self.device.trigger_source(self.trigger_source)
+            if self.is_device_active() and self.trigger_source is not None:
+                self.device.trigger_source(self.trigger_source.value)
             return
 
         if parameter == Parameter.TRIGGER_TYPE:
             self.settings.trigger_type = VNATriggerType(value)
-            if self.is_device_active():
-                self.device.trigger_type(self.trigger_type)
+            if self.is_device_active() and self.trigger_type is not None:
+                self.device.trigger_type(self.trigger_type.value)
             return
 
         if parameter == Parameter.SWEEP_GROUP_COUNT:
@@ -410,8 +410,8 @@ class E5080B(Instrument):
 
         if parameter == Parameter.SCATTERING_PARAMETER:
             self.settings.scattering_parameter = VNAScatteringParameters(value)
-            if self.is_device_active():
-                self.device.scattering_parameter(self.scattering_parameter)
+            if self.is_device_active() and self.scattering_parameter is not None:
+                self.device.scattering_parameter(self.scattering_parameter.value)
             return
 
         if parameter == Parameter.AVERAGES_ENABLED:
@@ -428,8 +428,8 @@ class E5080B(Instrument):
 
         if parameter == Parameter.AVERAGES_MODE:
             self.settings.averages_mode = VNAAverageModes(value)
-            if self.is_device_active():
-                self.device.averages_mode(self.averages_mode)
+            if self.is_device_active() and self.averages_mode is not None:
+                self.device.averages_mode(self.averages_mode.value)
             return
 
         if parameter == Parameter.RF_ON:
@@ -440,8 +440,8 @@ class E5080B(Instrument):
 
         if parameter == Parameter.FORMAT_BORDER:
             self.settings.format_border = VNAFormatBorder(value)
-            if self.is_device_active():
-                self.device.format_border(self.format_border)
+            if self.is_device_active() and self.format_border is not None:
+                self.device.format_border(self.format_border.value)
             return
 
         if parameter == Parameter.ELECTRICAL_DELAY:
