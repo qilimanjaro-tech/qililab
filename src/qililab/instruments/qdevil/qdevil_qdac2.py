@@ -234,6 +234,46 @@ class QDevilQDac2(VoltageSource):
             )
         self._cache_dc[channel_id].start_on(self._triggers[str(trigger)])
 
+    def set_out_external_trigger(self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6):
+        """Method to send an external trigger at the start of a sequence.
+
+        Args:
+            channel_id (ChannelID): Channel id of the qdac
+            in_port (int): Trigger input port.
+        """
+
+        self._validate_channel(channel_id=channel_id)
+
+        if channel_id not in self._cache_dc.keys():
+            raise ValueError(
+                f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
+            )
+        if str(trigger) in self._triggers.keys():
+            self.clear_trigger(trigger)
+
+        self._triggers[str(trigger)] = self._cache_dc[channel_id].start_marker()
+
+        self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
+
+    def set_out_internal_trigger(self, channel_id: ChannelID, trigger: str):
+        """Method to send an internal trigger at the start of a sequence.
+
+        Args:
+            channel_id (ChannelID): Channel id of the qdac
+            trigger (str): Name of the internal trigger.
+        """
+
+        self._validate_channel(channel_id=channel_id)
+
+        if channel_id not in self._cache_dc.keys():
+            raise ValueError(
+                f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
+            )
+        if str(trigger) in self._triggers.keys():
+            self.clear_trigger(trigger)
+
+        self._triggers[str(trigger)] = self._cache_dc[channel_id].start_marker()
+
     def set_end_marker_external_trigger(
         self,
         channel_id: ChannelID,
