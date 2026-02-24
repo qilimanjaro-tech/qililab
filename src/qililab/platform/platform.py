@@ -1264,13 +1264,16 @@ class Platform:
 
             compiled_qdac = None
             if qdac_qprogram_buses:
-                qdac_instrument = next(
-                    instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
-                )
+                qdac_instruments = list({
+                    instrument
+                    for bus in qdac_buses
+                    for instrument in bus.instruments
+                    if isinstance(instrument, QDevilQDac2)
+                })
                 qdac_compiler = QdacCompiler()
                 compiled_qdac = qdac_compiler.compile(
                     qprogram=qprogram,
-                    qdac=qdac_instrument,
+                    qdacs=qdac_instruments,
                     qdac_buses=qdac_buses,
                     qdac_offsets=qdac_offsets,
                     bus_mapping=bus_mapping,
@@ -1314,13 +1317,16 @@ class Platform:
 
             compiled_qdac = None
             if qdac_qprogram_buses:
-                qdac_instrument = next(
-                    instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
-                )
+                qdac_instruments = list({
+                    instrument
+                    for bus in qdac_buses
+                    for instrument in bus.instruments
+                    if isinstance(instrument, QDevilQDac2)
+                })
                 qdac_compiler = QdacCompiler()
                 compiled_qdac = qdac_compiler.compile(
                     qprogram=qprogram,
-                    qdac=qdac_instrument,
+                    qdacs=qdac_instruments,
                     qdac_buses=qdac_buses,
                     qdac_offsets=qdac_offsets,
                     bus_mapping=bus_mapping,
@@ -1356,10 +1362,14 @@ class Platform:
             qdac_buses = [
                 bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
             ]
-            qdac_instrument = next(
-                instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
-            )
-            qdac_instrument.remove_digital_trace()
+            qdac_instruments = list({
+                instrument
+                for bus in qdac_buses
+                for instrument in bus.instruments
+                if isinstance(instrument, QDevilQDac2)
+            })
+            for qdac_instrument in qdac_instruments:
+                qdac_instrument.remove_digital_trace()
         if isinstance(output.qblox, QbloxCompilationOutput):
             self.trigger_runs = 0
             return self._execute_qblox_compilation_output(output=output, debug=debug)
@@ -1409,11 +1419,13 @@ class Platform:
             # Execute sequences
             if output.qdac:
                 if output.qdac.trigger_position == "back":
-                    output.qdac.qdac.start()
+                    for qdac in output.qdac.qdacs:
+                        qdac.start()
                 for bus_alias in sequences:
                     buses[bus_alias].run()
                 if output.qdac.trigger_position == "front":
-                    output.qdac.qdac.start()
+                    for qdac in output.qdac.qdacs:
+                        qdac.start()
             else:
                 for bus_alias in sequences:
                     buses[bus_alias].run()
@@ -1526,7 +1538,8 @@ class Platform:
 
             if output.qdac:
                 if output.qdac.trigger_position == "back":
-                    output.qdac.qdac.start()
+                    for qdac in output.qdac.qdacs:
+                        qdac.start()
 
                 job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 

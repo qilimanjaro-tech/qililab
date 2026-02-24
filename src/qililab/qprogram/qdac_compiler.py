@@ -57,9 +57,9 @@ class QdacCompilationOutput:
         acquisitions (Acquisitions): A dictionary with the buses participating in the acquisitions as keys and the corresponding Acquisitions as values.
     """
 
-    def __init__(self, qprogram: QProgram, qdac: QDevilQDac2, trigger_position: str | None):
+    def __init__(self, qprogram: QProgram, qdacs: list[QDevilQDac2], trigger_position: str | None):
         self.qprogram = qprogram
-        self.qdac = qdac
+        self.qdacs = qdacs
         self.trigger_position = trigger_position
 
 
@@ -118,7 +118,7 @@ class QdacCompiler:
     def compile(
         self,
         qprogram: QProgram,
-        qdac: QDevilQDac2,
+        qdacs: list[QDevilQDac2],
         qdac_buses: list["Bus"],
         qdac_offsets: list[float],
         bus_mapping: dict[str, str] | None = None,
@@ -230,7 +230,7 @@ class QdacCompiler:
             return copied_qprogram
 
         self._qprogram = qprogram
-        self._qdac = qdac
+        self._qdacs = qdacs
         self._qdac_buses = qdac_buses
         self._qdac_buses_by_alias = {bus.alias: bus for bus in self._qdac_buses}
         self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
@@ -253,7 +253,7 @@ class QdacCompiler:
 
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
-        return QdacCompilationOutput(qprogram=self._qprogram, qdac=self._qdac, trigger_position=self._trigger_position)
+        return QdacCompilationOutput(qprogram=self._qprogram, qdacs=self._qdacs, trigger_position=self._trigger_position)
 
     def _populate_qdac_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance.
