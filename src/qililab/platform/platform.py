@@ -1225,8 +1225,11 @@ class Platform:
             for instrument in bus.instruments
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
-        qdac_buses = [
+        qdac_qprogram_buses = [
             bus for bus in buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
+        ]
+        qdac_buses = [
+            bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
         qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in qdac_buses]
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
@@ -1260,7 +1263,7 @@ class Platform:
                             markers[bus.alias] = "0000"
 
             compiled_qdac = None
-            if qdac_buses:
+            if qdac_qprogram_buses:
                 qdac_instrument = next(
                     instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
                 )
@@ -1310,7 +1313,7 @@ class Platform:
             }
 
             compiled_qdac = None
-            if qdac_buses:
+            if qdac_qprogram_buses:
                 qdac_instrument = next(
                     instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
                 )
