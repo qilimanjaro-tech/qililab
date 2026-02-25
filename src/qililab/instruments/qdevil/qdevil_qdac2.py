@@ -45,6 +45,8 @@ class QDevilQDac2(VoltageSource):
         """Contains the settings of a specific signal generator."""
 
         low_pass_filter: list[str]
+        out_trigger: int | None = None
+        in_trigger: int | None = None
         mode: str = "offset"
 
     settings: QDevilQDac2Settings
@@ -61,6 +63,24 @@ class QDevilQDac2(VoltageSource):
             list[str]: A list of the low pass filter setting of each DACs.
         """
         return self.settings.low_pass_filter
+
+    @property
+    def out_trigger(self):
+        """QDAC-II `out_trigger` property.
+
+        Returns:
+            int | None: External trigger output for qdac-to-qdac communication. Defaults to None
+        """
+        return self.settings.out_trigger
+
+    @property
+    def in_trigger(self):
+        """QDAC-II `in_trigger` property.
+
+        Returns:
+            int | None: External trigger input for qdac-to-qdac communication. Defaults to None
+        """
+        return self.settings.in_trigger
 
     @log_set_parameter
     def set_parameter(
@@ -418,6 +438,7 @@ class QDevilQDac2(VoltageSource):
     def start(self):
         """All generators, that have not been explicitly set to trigger on an internal or external trigger, will be started."""
         self.device.start_all()
+        # TODO: add synchronous multiple qdac interaction using QDAC2_Array and qdacs.sync (https://qcodes.github.io/Qcodes_contrib_drivers/examples/QDevil/QDAC2/SyncMultipleQDACs.html)
 
     def clear_cache(self):
         """Clears the cache of the instrument"""

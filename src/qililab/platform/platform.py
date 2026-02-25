@@ -1225,6 +1225,7 @@ class Platform:
             for instrument in bus.instruments
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
+
         qdac_qprogram_buses = [
             bus for bus in buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
@@ -1232,6 +1233,33 @@ class Platform:
             bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
         qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in qdac_buses]
+
+        compiled_qdac = None
+        if qdac_qprogram_buses:
+            qdac_instruments = list({
+                instrument
+                for bus in qdac_buses
+                for instrument in bus.instruments
+                if isinstance(instrument, QDevilQDac2)
+            })
+            out_trigger_qdac = None
+            if len(qdac_instruments) > 1:
+                out_trigger_qdac = next((instrument for instrument in qdac_instruments if instrument.out_trigger is not None), None)
+                if out_trigger_qdac is None:
+                    raise ValueError("Multiple QDAC-II instruments used but no Output trigger instrument given.")
+
+            qdac_compiler = QdacCompiler()
+            compiled_qdac = qdac_compiler.compile(
+                qprogram=qprogram,
+                qdacs=qdac_instruments,
+                qdac_buses=qdac_buses,
+                qdac_offsets=qdac_offsets,
+                bus_mapping=bus_mapping,
+                calibration=calibration,
+                crosstalk=self.crosstalk,
+                out_instrument = out_trigger_qdac,
+            )
+
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             # Retrieve the time of flight parameter from settings
             instrument_controllers = [
@@ -1261,25 +1289,6 @@ class Platform:
                             )[::-1]
                         else:
                             markers[bus.alias] = "0000"
-
-            compiled_qdac = None
-            if qdac_qprogram_buses:
-                qdac_instruments = list({
-                    instrument
-                    for bus in qdac_buses
-                    for instrument in bus.instruments
-                    if isinstance(instrument, QDevilQDac2)
-                })
-                qdac_compiler = QdacCompiler()
-                compiled_qdac = qdac_compiler.compile(
-                    qprogram=qprogram,
-                    qdacs=qdac_instruments,
-                    qdac_buses=qdac_buses,
-                    qdac_offsets=qdac_offsets,
-                    bus_mapping=bus_mapping,
-                    calibration=calibration,
-                    crosstalk=self.crosstalk,
-                )
 
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
@@ -1314,25 +1323,6 @@ class Platform:
                 for bus in buses
                 if bus.has_adc()
             }
-
-            compiled_qdac = None
-            if qdac_qprogram_buses:
-                qdac_instruments = list({
-                    instrument
-                    for bus in qdac_buses
-                    for instrument in bus.instruments
-                    if isinstance(instrument, QDevilQDac2)
-                })
-                qdac_compiler = QdacCompiler()
-                compiled_qdac = qdac_compiler.compile(
-                    qprogram=qprogram,
-                    qdacs=qdac_instruments,
-                    qdac_buses=qdac_buses,
-                    qdac_offsets=qdac_offsets,
-                    bus_mapping=bus_mapping,
-                    calibration=calibration,
-                    crosstalk=self.crosstalk,
-                )
 
             compiler = QuantumMachinesCompiler()
             qm_buses = [

@@ -102,7 +102,8 @@ class QdacCompiler:
         self._qdac_buses_alias: list[str]
         self._qdac_buses_offset: dict[str, float]
         self._channels: dict[str, int]
-        self._qdac: QDevilQDac2
+        self._qdacs: list[QDevilQDac2]
+        self._out_instrument: QDevilQDac2 | None
 
         self._dc_dwell: int = 2
         self._dc_delay: int = 0
@@ -124,12 +125,18 @@ class QdacCompiler:
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
         crosstalk: CrosstalkMatrix | None = None,
+        out_instrument: QDevilQDac2 | None = None,
     ) -> QdacCompilationOutput:
-        """Compile QProgram to qpysequence.Sequence
+        """Compile QProgram to qdac execution schedule
         Args:
             qprogram (QProgram): The QProgram to be compiled
+            qdacs (list[QDevilQDac2]): List of qdac instruments.
+            qdac_buses (list["Bus"]): List of buses that have a qdac channel.
+            qdac_offsets (list[float]): Offset voltage of each qdac_buses bus.
             bus_mapping (dict[str, str], optional): Optional mapping of bus names. Defaults to None.
-            times_of_flight (dict[str, int], optional): Optional time of flight of bus. Defaults to None.
+            calibration (Calibration | None, optional): Optional calibration file. Defaults to None.
+            crosstalk (CrosstalkMatrix | None, optional): Optional Crosstalk matrix. Defaults to None.
+            out_instrument (QDevilQDac2 | None, optional): Output trigger in case there is more than one qdac instruments. Defaults to None.
         """
 
         def traverse(block: Block):
@@ -146,7 +153,7 @@ class QdacCompiler:
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.pop()
 
-        def with_crosstalk(qprogram: QProgram, crosstalk: CrosstalkMatrix):
+        def with_crosstalk(qprogram: QProgram, crosstalk: CrosstalkMatrix) -> QProgram:
             """Apply crosstalk compensation to the qprogram flux buses.
             This method traverses the elements of the QProgram, replacing any
             Play or Offset instances by the compensated envelope or offset for
@@ -231,6 +238,7 @@ class QdacCompiler:
 
         self._qprogram = qprogram
         self._qdacs = qdacs
+        self._out_instrument = out_instrument
         self._qdac_buses = qdac_buses
         self._qdac_buses_by_alias = {bus.alias: bus for bus in self._qdac_buses}
         self._qdac_buses_alias = [bus.alias for bus in self._qdac_buses]
@@ -253,6 +261,10 @@ class QdacCompiler:
 
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
+        
+        if len(self._qdacs) > 1:
+            self._handle_simultaneous_qdacs()
+
         return QdacCompilationOutput(qprogram=self._qprogram, qdacs=self._qdacs, trigger_position=self._trigger_position)
 
     def _populate_qdac_buses(self):
@@ -450,6 +462,17 @@ class QdacCompiler:
         hash = f"trigger_{element.bus}_{output}_{element.position}"
         self._trigger_hashes[element.bus] = hash
         return hash
+
+    def _handle_simultaneous_qdacs(self):
+        out_bus = next((bus.alias for bus in self._qdac_buses if self._out_instrument in bus.instruments), None)
+        self._out_instrument.set_out_external_trigger(self, channel_id=self._channels[out_bus], out_port=self._out_instrument.out_trigger, trigger="qdac_external_trigger")
+
+        for in_instrument in self._qdacs:
+            if in_instrument is not self._out_instrument:
+                bus_list = [bus.alias for bus in self._qdac_buses if in_instrument in bus.instruments]
+                for bus in bus_list:
+                    in_instrument.set_in_external_trigger(self, channel_id=self._channels[bus], in_port=in_instrument.in_trigger)
+        self._qdacs = [qdac for qdac in self._qdacs if qdac != self._out_instrument] + [self._out_instrument]
 
     @staticmethod
     def _calculate_iterations(start: int | float, stop: int | float, step: int | float):
