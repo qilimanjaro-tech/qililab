@@ -17,9 +17,7 @@ from typing import TYPE_CHECKING, Sequence, overload
 import numpy as np
 
 from qililab.core.variables import Domain, Variable, requires_domain
-from qililab.qprogram.blocks.block import Block
-from qililab.qprogram.blocks.for_loop import ForLoop
-from qililab.qprogram.blocks.parallel import Parallel
+from qililab.qprogram.blocks import Block, ForLoop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.operations import (
@@ -70,7 +68,13 @@ class QProgramCompilationOutput:
 
 
 class CrosstalkElements:
-    """_summary_"""
+    """Supporting class for `QProgram.with_crosstalk`.
+    The elements are classified by type (Play, Offset and Gain) to organize the values of flux vectors, 
+    location in the block and related buses.
+
+    Args:
+        crosstalk (CrosstalkMatrix): Crosstalk to be applied over the elements.
+    """
 
     def __init__(self, crosstalk: CrosstalkMatrix):
         self.crosstalk = crosstalk
@@ -83,11 +87,11 @@ class CrosstalkElements:
         self.flux_vector_bus: dict[str, list[str]] = {}
 
     def add_element(self, element: Play | SetOffset | SetGain, iteration: int):
-        """Restart flux vector if the bus already has been used for the specific operation_class
+        """Adds an element and its iteration inside the block to the dictionary and organizes them in groups.
 
         Args:
-            operation_class (_type_): _description_
-            bus (_type_): _description_
+            element (Play | SetOffset | SetGain): Qprogram `play`, `set_offset` or `set_gain` elements.
+            iteration (int): location of the element inside the block list.
         """
 
         operation = str(element.__class__)
@@ -99,20 +103,24 @@ class CrosstalkElements:
             self.element_list[ii] = (self.flux_vector[operation], self.element_group[operation])
 
     def check_flux_vector(self, element: Play | SetOffset | SetGain):
-        """_summary_
+        """Function to verify the flux vectors of each element and in case they don't exist, 
+        create empty dictionary entries.
 
         Args:
-            element (Play | SetOffset | SetGain): _description_
+            element (Play | SetOffset | SetGain): Qprogram `play`, `set_offset` or `set_gain` elements.
         """
         operation = str(element.__class__)
         if operation not in self.flux_vector_bus.keys() or element.bus in self.flux_vector_bus[operation]:
             self.restart_flux_vector(operation, check_after_loop=True)
 
     def restart_flux_vector(self, operation: str | None = None, check_after_loop: bool = False):
-        """_summary_
+        """ Function create or overwrite empty dictionary entries for each operation given. 
+        If no operations given it does it for every element in those dictionaries.
 
         Args:
-            element (Play | SetOffset | SetGain): _description_
+            operation (str | None, optional): Class of the element to be restarted. 
+                                                Defaults to None implying restarting all operations in the dictionaries.
+            check_after_loop (bool, optional): Trigger to avoid restarting the flux vector after starting a new loop. Defaults to False.
         """
 
         if operation is not None:

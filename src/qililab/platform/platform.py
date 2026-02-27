@@ -339,6 +339,12 @@ class Platform:
 
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
+        
+        self.qdac_buses: list[Bus] = []
+        """List of buses that use the instrument `QDevilQDac2`, defaults to an empty list for no qdac buses."""
+
+        self.qdac_instruments: list[QDevilQDac2] = []
+        """List of `QDevilQDac2` instruments inside the runcard, defaults to an empty list for no qdac instruments."""
 
         self.flux_vector: FluxVector | None = None
         """Flux vector information, defaults to None (only used on FLUX parameters)"""
@@ -1229,30 +1235,30 @@ class Platform:
         qdac_qprogram_buses = [
             bus for bus in buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
-        qdac_buses = [
+        self.qdac_buses = [
             bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
-        qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in qdac_buses]
+        qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in self.qdac_buses]
 
         compiled_qdac = None
         if qdac_qprogram_buses:
-            qdac_instruments = list({
+            self.qdac_instruments = list({
                 instrument
-                for bus in qdac_buses
+                for bus in self.qdac_buses
                 for instrument in bus.instruments
                 if isinstance(instrument, QDevilQDac2)
             })
             out_trigger_qdac = None
-            if len(qdac_instruments) > 1:
-                out_trigger_qdac = next((instrument for instrument in qdac_instruments if instrument.out_trigger is not None), None)
+            if len(self.qdac_instruments) > 1:
+                out_trigger_qdac = next((instrument for instrument in self.qdac_instruments if instrument.out_trigger is not None), None)
                 if out_trigger_qdac is None:
                     raise ValueError("Multiple QDAC-II instruments used but no Output trigger instrument given.")
 
             qdac_compiler = QdacCompiler()
             compiled_qdac = qdac_compiler.compile(
                 qprogram=qprogram,
-                qdacs=qdac_instruments,
-                qdac_buses=qdac_buses,
+                qdacs=self.qdac_instruments,
+                qdac_buses=self.qdac_buses,
                 qdac_offsets=qdac_offsets,
                 bus_mapping=bus_mapping,
                 calibration=calibration,
@@ -1349,16 +1355,7 @@ class Platform:
         debug: bool = False,
     ):
         if isinstance(output.qdac, QdacCompilationOutput):
-            qdac_buses = [
-                bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
-            ]
-            qdac_instruments = list({
-                instrument
-                for bus in qdac_buses
-                for instrument in bus.instruments
-                if isinstance(instrument, QDevilQDac2)
-            })
-            for qdac_instrument in qdac_instruments:
+            for qdac_instrument in self.qdac_instruments:
                 qdac_instrument.remove_digital_trace()
         if isinstance(output.qblox, QbloxCompilationOutput):
             self.trigger_runs = 0

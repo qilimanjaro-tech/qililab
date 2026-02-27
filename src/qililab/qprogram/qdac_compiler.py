@@ -41,9 +41,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
-from qililab.waveforms.arbitrary import Arbitrary
-from qililab.waveforms.iq_pair import IQPair
-from qililab.waveforms.waveform import Waveform
+from qililab.waveforms import Arbitrary, IQPair, Waveform
 
 if TYPE_CHECKING:
     from qililab.platform.components.bus import Bus
@@ -175,14 +173,14 @@ class QdacCompiler:
                     flux_vector[bus] = self._qdac_buses_offset[bus]
 
                 for i, element in enumerate(block.elements):
-                    if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():  # type: ignore
+                    if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():
                         element_list.append(i)
-                        flux_vector = handle_flux_vector(flux_vector=flux_vector, element=element)
+                        flux_vector = handle_flux_vector(flux_vector=flux_vector, element=element)  # type: ignore [arg-type]
 
                     if isinstance(element, Block):
                         traverse(element, flux_vector)
 
-                block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
+                block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)  # type: ignore [arg-type]
 
             def handle_flux_vector(flux_vector: FluxVector, element: Play | SetOffset):
                 if isinstance(element, Play):

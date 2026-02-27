@@ -202,6 +202,8 @@ class QDevilQDac2(VoltageSource):
             dwell_us (int, optional): Dwell of the pulse. Defaults to 1.
             sync_delay_s (float, optional): Delay of each pulse repetition. Defaults to 0.
             repetitions (int, optional): Number of pulse repetitions. Defaults to 1.
+            stepped (bool, optional): Trigger defining pulse shape, 
+                                        if True, instead of a ramp the qdac will show a staircase. Defaults to False.
         """
         self._validate_channel(channel_id=channel_id)
 

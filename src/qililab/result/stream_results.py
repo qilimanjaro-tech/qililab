@@ -212,8 +212,8 @@ class StreamArray:
                     lines.append(str(seq._program))
                     lines.append("")
                 return "\n".join(lines)
-            except:
-                debug_exception = "Incorrect bus mapping for debug."
+            except Exception as e:
+                debug_exception = f"Compilation of the debug has failed with the following error:\n{str(e)}"
                 return debug_exception
         debug_exception = "Non Qblox machine."
         return debug_exception
