@@ -164,10 +164,12 @@ class QdacCompiler:
                 QProgram: A new instance of QProgram with calibrated crosstalk.
             """
 
-            def traverse(block: Block):
+            def traverse(block: Block, flux_vector: FluxVector | None = None):
                 element_list = []
-                flux_vector = FluxVector()
-                flux_vector.set_crosstalk(crosstalk)  # type: ignore
+
+                if flux_vector is None:
+                    flux_vector = FluxVector()
+                    flux_vector.set_crosstalk(crosstalk)  # type: ignore
 
                 for bus in crosstalk.matrix.keys():
                     flux_vector[bus] = self._qdac_buses_offset[bus]
@@ -178,7 +180,7 @@ class QdacCompiler:
                         flux_vector = handle_flux_vector(flux_vector=flux_vector, element=element)
 
                     if isinstance(element, Block):
-                        traverse(element)
+                        traverse(element, flux_vector)
 
                 block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)
 

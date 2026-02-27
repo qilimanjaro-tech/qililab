@@ -208,7 +208,7 @@ class FluxVector:
         if self.crosstalk:
             self.set_crosstalk(self.crosstalk)
 
-    def set_crosstalk(self, crosstalk: CrosstalkMatrix):
+    def set_crosstalk(self, crosstalk: CrosstalkMatrix) -> dict[str, float | list[float] | np.ndarray]:
         """Set the crosstalk compensation on the existing flux vector. This function does the matrix product to calculate the correct flux
 
         Args:
@@ -238,11 +238,11 @@ class FluxVector:
 
     def set_crosstalk_from_bias(
         self, crosstalk: CrosstalkMatrix, bias_vector: dict[str, float | list[float] | np.ndarray] | None = None
-    ):
+    ) -> dict[str, float | list[float] | np.ndarray]:
         """Set the crosstalk compensation on the existing flux vector. This function does the matrix product to calculate the correct flux
 
         Args:
-            crosstalk (CrosstalkMatrix): _description_
+            crosstalk (CrosstalkMatrix): crosstalk matrix to be apply
 
         """
         self.crosstalk = crosstalk
@@ -252,7 +252,6 @@ class FluxVector:
         if not self.bias_vector:
             self.bias_vector = self.flux_vector.copy()
 
-        # Add duration logic!!!!!
         for bus_1 in self.crosstalk.matrix.keys():
             self.flux_vector[bus_1] = (
                 sum(
@@ -264,7 +263,7 @@ class FluxVector:
 
         return self.flux_vector
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, float | list[float] | np.ndarray]:
         """To dictionary method, returns the vector's dictionary
 
         Returns:
@@ -274,7 +273,7 @@ class FluxVector:
             return self.bias_vector
         return self.flux_vector
 
-    def get_decomposed_vector(self, bus_list: list[str] | None = None):
+    def get_decomposed_vector(self, bus_list: list[str] | None = None) -> dict[str, "FluxVector"]:
         """Return dictionary with flux vector decomposed by variables, for each flux return a flux vector considering
         the rest of fluxes (or the rest of the fluxes from the bus_list if given) as 0.
         This is typically used to sum variables in flux vs flux Qprogram.
@@ -283,7 +282,7 @@ class FluxVector:
             flux_dict (optional, list[str] | None): List of fluxes to be decomposed. Defaults to None
 
         Returns:
-            dict[str, float]: Dictionary containing different flux vectors for each bus.
+            dict[str, FluxVector]: Dictionary containing different flux vectors for each bus.
         """
         list_fluxes = {}
         if self.crosstalk:

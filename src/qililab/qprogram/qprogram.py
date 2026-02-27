@@ -106,9 +106,9 @@ class CrosstalkElements:
         """
         operation = str(element.__class__)
         if operation not in self.flux_vector_bus.keys() or element.bus in self.flux_vector_bus[operation]:
-            self.restart_flux_vector(operation)
+            self.restart_flux_vector(operation, check_after_loop=True)
 
-    def restart_flux_vector(self, operation: str | None = None):
+    def restart_flux_vector(self, operation: str | None = None, check_after_loop: bool = False):
         """_summary_
 
         Args:
@@ -119,15 +119,17 @@ class CrosstalkElements:
             self.element[operation] = []
             self.element_group[operation] = []
             self.flux_vector_bus[operation] = []
-            self.flux_vector[operation] = FluxVector()
-            self.flux_vector[operation].set_crosstalk(self.crosstalk)
+            if operation not in self.flux_vector or not check_after_loop:
+                self.flux_vector[operation] = FluxVector()
+                self.flux_vector[operation].set_crosstalk(self.crosstalk)
         else:
             for operation in self.element_group.keys():
                 self.element[operation] = []
                 self.element_group[operation] = []
                 self.flux_vector_bus[operation] = []
-                self.flux_vector[operation] = FluxVector()
-                self.flux_vector[operation].set_crosstalk(self.crosstalk)
+                if operation not in self.flux_vector or not check_after_loop:
+                    self.flux_vector[operation] = FluxVector()
+                    self.flux_vector[operation].set_crosstalk(self.crosstalk)
 
 
 @yaml.register_class
@@ -461,14 +463,17 @@ class QProgram(StructuredProgram):
         self._active_loops: list[ForLoop] = []
         self._loop_depths: list[int] = []
 
-        def traverse(block: Block, variables: dict[Variable, VariableInfo]):
+        def traverse(block: Block, variables: dict[Variable, VariableInfo], flux_vector: dict[str, FluxVector] | None = None):
             """
             Traverse through all block elements and modify ForLoop, Parallel, Play, SetOffset and SetGain.
             """
             crosstalk_elements = CrosstalkElements(crosstalk)
+            crosstalk_elements.flux_vector = flux_vector if flux_vector is not None else {}
             loop_idx = self._loop_depths[-1] + 1 if self._loop_depths else 0
 
             for i, element in enumerate(block.elements):
+                if isinstance(element, MeasureReset):
+                    raise TypeError("qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation.")
                 if isinstance(element, (Play, SetOffset, SetGain)) and element.bus in crosstalk.matrix.keys():
                     crosstalk_elements.check_flux_vector(element)
 
@@ -477,13 +482,13 @@ class QProgram(StructuredProgram):
                         element=element,
                     )
                     crosstalk_elements.add_element(element, i)
-                if isinstance(element, (Wait, Acquire, Measure, MeasureReset)) or (
+                if isinstance(element, (Wait, Acquire, Measure)) or (
                     isinstance(element, Play) and element.bus not in crosstalk.matrix.keys()
                 ):
                     crosstalk_elements.restart_flux_vector()
 
                 if isinstance(element, Block):
-                    crosstalk_elements.restart_flux_vector()
+                    crosstalk_elements.restart_flux_vector(str(Play.__class__))
                     variable_list = None
                     if isinstance(element, ForLoop):
                         variable_list = [element.variable]
@@ -495,7 +500,7 @@ class QProgram(StructuredProgram):
                             self._active_loops.append(loop)  # type: ignore [arg-type]
                             self._loop_depths.append(loop_idx)
 
-                    traverse(element, variables)
+                    traverse(element, variables, deepcopy(crosstalk_elements.flux_vector))
 
                     if variable_list is not None and any(
                         variable in self._parallel_loops for variable in variable_list
@@ -700,14 +705,14 @@ class QProgram(StructuredProgram):
             waveforms: Sequence[Square | FlatTop] = [elements[element].waveform for element in element_group]  # type: ignore [misc]
             if any(isinstance(element, SetGain) for element in elements.values()):
                 # Normalizes every time gain is used
-                bias_vector = bias_vector / np.max(bias_vector)
+                bias_vector = bias_vector / np.max(np.abs(bias_vector))*np.sign(bias_vector)
             if all(isinstance(wf, Square) for wf in waveforms):
                 waveform = Square(amplitude=np.max(bias_vector), duration=waveforms[0].duration)
             elif all(isinstance(wf, FlatTop) for wf in waveforms):
                 if len({(wf.duration, wf.smooth_duration, wf.buffer) for wf in waveforms}) > 1:  # type: ignore [union-attr]
                     raise ValueError("FlatTop parameters must be the same for all compensated pulses.")
                 waveform = FlatTop(
-                    amplitude=np.max(bias_vector),
+                    amplitude=np.max(np.abs(bias_vector))*np.sign(bias_vector),
                     duration=waveforms[0].duration,
                     smooth_duration=waveforms[0].smooth_duration,  # type: ignore [union-attr]
                     buffer=waveforms[0].buffer,  # type: ignore [union-attr]
