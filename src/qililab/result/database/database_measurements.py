@@ -102,7 +102,7 @@ class SequenceRun(base):  # type: ignore
     __tablename__ = "sequence_run"
 
     sequence_id: Column = Column("sequence_id", Integer, primary_key=True)
-    sequence_name: Column = Column("sequence_name", Integer, nullable=False)
+    sequence_name: Column = Column("sequence_name", String, nullable=False)
     start_time: Column = Column("start_time", DateTime, nullable=False)
     end_time: Column = Column("end_time", DateTime)
     run_length: Column = Column("run_length", Interval)
