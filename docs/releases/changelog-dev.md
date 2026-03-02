@@ -38,8 +38,8 @@
 - Changed internal structure of waveform generation on the qblox compiler.
 Added a check in the platform for QCM and QRM modules with only one channel.
 Now whenever a single waveform is given instead of giving this waveform to I and creating an empty Q, it checks first how many channels does it have based on platform:
-- If it has 2 channels the behavior is the same (waveform to I and an empty Q)
-- If it has 1 channel, I and Q are identical waveforms and register as one single waveform (effectively doubling the Q1ASM waveform compilation available size and setting the correct amplitude).
+  - If it has 2 channels the behavior is the same (waveform to I and an empty Q)
+  - If it has 1 channel, I and Q are identical waveforms and register as one single waveform (effectively doubling the Q1ASM waveform compilation available size and setting the correct amplitude).
 
 This check is automatic and requires no input from the user aside from setting the runcard correctly.
   [#1076](https://github.com/qilimanjaro-tech/qililab/pull/1076)
