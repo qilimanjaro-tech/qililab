@@ -1242,6 +1242,7 @@ class Platform:
             # Determine what should be the initial value of the markers for each bus.
             # This depends on the model of the associated Qblox module and the `output` setting of the associated sequencer.
             markers = {}
+            single_channel = {}
             for bus in buses:
                 for instrument, channel in zip(bus.instruments, bus.channels):
                     if isinstance(instrument, QbloxModule):
@@ -1256,6 +1257,7 @@ class Platform:
                             )[::-1]
                         else:
                             markers[bus.alias] = "0000"
+                            single_channel[bus.alias] = False if len(sequencer.outputs) > 1 else True
 
             compiled_qdac = None
             if qdac_buses:
@@ -1286,6 +1288,7 @@ class Platform:
                     markers=markers,
                     ext_trigger=ext_trigger,
                     qblox_buses=qblox_buses,
+                    single_channel=single_channel,
                 ),
                 qdac=compiled_qdac,
             )
