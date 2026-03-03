@@ -24,6 +24,7 @@ release = qililab.__version__
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "sphinx_design",
     "sphinx.ext.autodoc",
     "sphinx_mdinclude",  # allows the mdinclude directive to add Markdown files
     "sphinx.ext.napoleon",  # converts Google docstrings into rst
@@ -35,7 +36,7 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*"]
 source_suffix = [".rst", ".md"]
 pygments_style = "default"
-language = "en"
+language = 'en'
 
 # Napoleon settings
 napoleon_google_docstring = True

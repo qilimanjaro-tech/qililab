@@ -16,7 +16,8 @@
 
 import numpy as np
 
-from qililab.core.variables import Domain, requires_domain
+from qililab.qprogram.decorators import requires_domain
+from qililab.qprogram.variable import Domain
 from qililab.yaml import yaml
 
 from .waveform import Waveform
@@ -36,8 +37,7 @@ class Square(Waveform):
         .. code-block:: python
 
             import qililab as ql
-
-            square_envelope = ql.Square(amplitude=X, duration=50).envelope()
+            square_envelope = ql.Square( amplitude=X, duration=50).envelope()
 
         which for ``X`` being ``1.`` and ``0.75``, look respectively like:
 

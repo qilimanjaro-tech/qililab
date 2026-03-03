@@ -42,9 +42,12 @@ Runcard YAML file example:
     name: galadriel_soprano_master
 
     gates_settings:
+        delay_between_pulses: 0
+        delay_before_readout: 4
         timings_calculation_method: as_soon_as_possible
         reset_method: passive
         passive_reset_duration: 100
+        minimum_clock_time: 4
         operations: []
         gates:
             M(0):

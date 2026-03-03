@@ -27,8 +27,16 @@ import contextlib
 from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
-from .core.variables import Domain
-from .qprogram import Calibration, CrosstalkMatrix, QProgram, Experiment, QbloxCompiler, QdacCompiler
+from .execute_circuit import execute
+from .qprogram import (
+    Calibration,
+    CrosstalkMatrix,
+    Domain,
+    QbloxCompiler,
+    QdacCompiler,
+    QProgram,
+    Experiment,
+)
 from .platform import Platform
 from .result import ExperimentResults, load_by_id, stream_results
 from .typings import Parameter
@@ -38,17 +46,16 @@ from .waveforms import (
     SuddenNetZero,
     Square,
     Gaussian,
-    GaussianDragCorrection,
     FlatTop,
     Arbitrary,
-    IQDrag,
+    DragCorrection,
     Waveform,
     Ramp,
     Chained,
 )
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
-from .digital import Rmw
+from .digital import Drag, Wait
 from .analog import AnnealingProgram  # same as circuit transpiler, top modules should be imported at top
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
 from .qililab_settings import get_settings
@@ -62,12 +69,12 @@ __all__ = [
     "CrosstalkMatrix",
     "DatabaseManager",
     "Domain",
+    "Drag",
+    "DragCorrection",
     "Experiment",
     "ExperimentResults",
     "FlatTop",
     "Gaussian",
-    "GaussianDragCorrection",
-    "IQDrag",
     "IQPair",
     "Measurement",
     "Parameter",
@@ -76,16 +83,17 @@ __all__ = [
     "QbloxCompiler",
     "QdacCompiler",
     "Ramp",
-    "Rmw",
     "Sample",
     "Square",
     "SuddenNetZero",
+    "Wait",
     "Waveform",
     "__version__",
     "about",
     "build_platform",
     "deserialize",
     "deserialize_from",
+    "execute",
     "get_db_manager",
     "get_settings",
     "load_by_id",

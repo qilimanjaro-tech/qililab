@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from qililab.qprogram.operations.operation import Operation
-from qililab.waveforms import IQWaveform
+from qililab.waveforms import IQPair
 from qililab.yaml import yaml
 
 
@@ -22,19 +22,19 @@ class MeasureReset(Operation):
     def __init__(
         self,
         bus: str,
-        waveform: IQWaveform,
-        weights: IQWaveform,
+        waveform: IQPair,
+        weights: IQPair,
         control_bus: str,
-        reset_pulse: IQWaveform,
+        reset_pulse: IQPair,
         trigger_address: int = 1,
         save_adc: bool = False,
     ) -> None:
         super().__init__()
         self.bus: str = bus
-        self.waveform: IQWaveform = waveform
-        self.weights: IQWaveform = weights
+        self.waveform: IQPair = waveform
+        self.weights: IQPair = weights
         self.control_bus: str = control_bus
-        self.reset_pulse: IQWaveform = reset_pulse
+        self.reset_pulse: IQPair = reset_pulse
         self.trigger_address: int = trigger_address
         self.save_adc: bool = save_adc
 

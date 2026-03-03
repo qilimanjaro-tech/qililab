@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Class Qblox D5a"""
-
 from qblox_instruments.qcodes_drivers.spi_rack_modules import D5aModule as Driver_D5aModule
 
 from qililab.typings.instruments.device import Device

@@ -330,6 +330,69 @@ class TestQbloxQRM:
 
         qrm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
 
+    def test_acquire_results(self, qrm: QbloxQRM):
+        """Test uploading a QpySequence to the QCM module."""
+        acquisitions_q0 = Acquisitions()
+        acquisitions_q0.add(name="acquisition_q0_0")
+        acquisitions_q0.add(name="acquisition_q0_1")
+
+        acquisitions_q1 = Acquisitions()
+        acquisitions_q1.add(name="acquisition_q1_0")
+        acquisitions_q1.add(name="acquisition_q1_1")
+
+        sequence_q0 = Sequence(
+            program=Program(), waveforms=Waveforms(), acquisitions=acquisitions_q0, weights=Weights()
+        )
+        sequence_q1 = Sequence(
+            program=Program(), waveforms=Waveforms(), acquisitions=acquisitions_q1, weights=Weights()
+        )
+
+        qrm.upload_qpysequence(qpysequence=sequence_q0, channel_id=0)
+        qrm.upload_qpysequence(qpysequence=sequence_q1, channel_id=1)
+
+        qrm.device.get_acquisitions.return_value = {
+            "acquisition_q0_0": {
+                "acquisition": {
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [1], "path1": [1]},
+                        "threshold": [0],
+                        "avg_cnt": [1],
+                    },
+                    "qubit": 0,
+                    "measurement": 0,
+                }
+            },
+            "acquisition_q0_1": {
+                "acquisition": {
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [1], "path1": [1]},
+                        "threshold": [0],
+                        "avg_cnt": [1],
+                    },
+                    "qubit": 0,
+                    "measurement": 0,
+                }
+            },
+        }
+
+        qrm.acquire_result()
+
+        assert qrm.device.get_sequencer_status.call_count == 2
+        assert qrm.device.get_acquisition_status.call_count == 2
+        assert qrm.device.store_scope_acquisition.call_count == 1
+        assert qrm.device.get_acquisitions.call_count == 2
+        assert qrm.device.sequencers[0].sync_en.call_count == 1
+        assert qrm.device.sequencers[1].sync_en.call_count == 1
+        assert qrm.device.delete_acquisition_data.call_count == 2
+
     def test_acquire_qprogram_results(self, qrm: QbloxQRM):
         """Test uploading a QpySequence to the QCM module."""
         acquisitions = Acquisitions()

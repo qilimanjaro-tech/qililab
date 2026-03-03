@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """dict_factory used for dataclass' asdict method."""
-
 from enum import Enum
 
 

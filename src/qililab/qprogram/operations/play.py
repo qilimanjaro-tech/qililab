@@ -13,9 +13,9 @@
 # limitations under the License.
 
 
-from qililab.core.variables import Variable
 from qililab.qprogram.operations.operation import Operation
-from qililab.waveforms import IQWaveform, Waveform
+from qililab.qprogram.variable import Variable
+from qililab.waveforms import IQPair, Waveform
 from qililab.yaml import yaml
 
 
@@ -24,7 +24,7 @@ class Play(Operation):
     def __init__(
         self,
         bus: str,
-        waveform: Waveform | IQWaveform,
+        waveform: Waveform | IQPair,
         wait_time: int | None = None,
         dwell: int | None = None,
         delay: int | None = None,
@@ -32,7 +32,7 @@ class Play(Operation):
     ) -> None:
         super().__init__()
         self.bus: str = bus
-        self.waveform: Waveform | IQWaveform = waveform
+        self.waveform: Waveform | IQPair = waveform
         self.wait_time: int | None = wait_time
         self.dwell: int | None = dwell
         self.delay: int | None = delay
@@ -44,8 +44,8 @@ class Play(Operation):
         Returns:
             tuple[Waveform, Waveform | None]: The waveforms as tuple. The second waveform can be None.
         """
-        wf_I: Waveform = self.waveform.get_I() if isinstance(self.waveform, IQWaveform) else self.waveform
-        wf_Q: Waveform | None = self.waveform.get_Q() if isinstance(self.waveform, IQWaveform) else None
+        wf_I: Waveform = self.waveform.I if isinstance(self.waveform, IQPair) else self.waveform
+        wf_Q: Waveform | None = self.waveform.Q if isinstance(self.waveform, IQPair) else None
         return wf_I, wf_Q
 
     def get_waveform_variables(self) -> set[Variable]:

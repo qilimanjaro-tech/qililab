@@ -54,5 +54,5 @@ class Runcard:
 
     def __post_init__(self):
         self.buses = [BusSettings(**bus) for bus in self.buses]
+        self.digital = DigitalCompilationSettings(**self.digital) if self.digital is not None else None
         self.analog = AnalogCompilationSettings(**self.analog) if self.analog is not None else None
-        self.digital = DigitalCompilationSettings.model_validate(self.digital) if self.digital is not None else None

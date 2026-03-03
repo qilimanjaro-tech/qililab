@@ -26,12 +26,12 @@ from uuid import UUID
 import numpy as np
 from rich.progress import BarColumn, Progress, TaskID, TextColumn, TimeElapsedColumn
 
-from qililab.core.variables import Variable
 from qililab.qililab_settings import get_settings
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
 from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
+from qililab.qprogram.variable import Variable
 from qililab.result.experiment_results_writer import (
     ExperimentDataBaseMetadata,
     ExperimentMetadata,
@@ -111,6 +111,9 @@ class ExperimentExecutor:
         self,
         platform: "Platform",
         experiment: Experiment,
+        live_plot: bool = False,
+        slurm_execution: bool = True,
+        port_number: int | None = None,
         job_id: int | None = None,
         sample: str | None = None,
         cooldown: str | None = None,
@@ -380,8 +383,9 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element,
-                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
+                                lambda operation=element, value=current_value_of_variable[
+                                    element.value.uuid
+                                ]: self.platform.set_parameter(
                                     alias=operation.alias,
                                     parameter=operation.parameter,
                                     value=value,
@@ -423,9 +427,7 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element,
-                            call_parameters=call_parameters,
-                            qprogram_index=qprogram_index: store_results(
+                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: store_results(
                                 self.platform.execute_qprogram(
                                     qprogram=operation.qprogram(
                                         **{

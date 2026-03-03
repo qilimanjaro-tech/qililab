@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Yokogawa GS200 GInstrument Controller"""
-
 from dataclasses import dataclass
 from typing import Sequence
 

@@ -45,13 +45,7 @@ class Attenuator(Instrument):
     device: MiniCircuitsDriver
 
     @log_set_parameter
-    def set_parameter(
-        self,
-        parameter: Parameter,
-        value: ParameterValue,
-        channel_id: ChannelID | None = None,
-        output_id: OutputID | None = None,
-    ):
+    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:
             self.settings.attenuation = float(value)
@@ -60,9 +54,7 @@ class Attenuator(Instrument):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(
-        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
-    ):
+    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
         """Set instrument settings."""
         if parameter == Parameter.ATTENUATION:
             return self.attenuation

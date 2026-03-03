@@ -160,7 +160,7 @@ def _cleanup_submitit_folder(folder: Path, max_groups_to_keep: int) -> None:
 
     # Keep the most recent groups (by job_id), remove the rest.
     job_ids_sorted = sorted(groups.keys())
-    to_remove_ids = job_ids_sorted[: -max(1, max_groups_to_keep)]
+    to_remove_ids = job_ids_sorted[:-max(1, max_groups_to_keep)]
     for jid in to_remove_ids:
         for p in groups[jid]:
             try:
@@ -176,61 +176,42 @@ def _cleanup_submitit_folder(folder: Path, max_groups_to_keep: int) -> None:
 # Magic
 # ---------------------------
 
-
 @magic_arguments()
 @argument(
-    "-o",
-    "--output",
+    "-o", "--output",
     required=True,
-    help=(
-        "Name of the variable defined in the cell whose value you want to retrieve. "
-        "After queuing, this variable becomes a `Job`. Call `variable.result()` to get the result."
-    ),
+    help=("Name of the variable defined in the cell whose value you want to retrieve. "
+          "After queuing, this variable becomes a `Job`. Call `variable.result()` to get the result."),
 )
 @argument("-p", "--partition", help="Slurm partition to run on (optional).")
 @argument("-g", "--gres", default=None, help="Value for `--gres` (e.g. 'gpu:2' or 'gpu:a100:2').")
 @argument("-n", "--name", default="submitit", help="Slurm job name.")
 @argument("-t", "--time", type=int, default=120, help="Time limit in minutes.")
 @argument(
-    "-b",
-    "--begin",
-    default="now",
-    help=("Defer the allocation until the given time, e.g. 'HH:MM:SS', 'now+1hour', '2010-01-20T12:34:00'."),
+    "-b", "--begin", default="now",
+    help=("Defer the allocation until the given time, e.g. 'HH:MM:SS', 'now+1hour', "
+          "'2010-01-20T12:34:00'.")
 )
 @argument(
-    "-l",
-    "--logs",
-    default=".slurm_job_data",
-    help=(
-        "Directory where submitit will store job artefacts and logs. "
-        f"We keep files of the last {max_job_groups_to_keep} job groups."
-    ),
+    "-l", "--logs", default=".slurm_job_data",
+    help=("Directory where submitit will store job artefacts and logs. "
+          f"We keep files of the last {max_job_groups_to_keep} job groups."),
 )
 @argument(
-    "-e",
-    "--execution-environment",
-    "--execution_environment",
-    dest="execution_environment",
+    "-e", "--execution-environment", "--execution_environment", dest="execution_environment",
     default=None,
     help="Execution backend (e.g. 'slurm' or 'local'). Defaults to submitit's auto-detection.",
 )
 @argument(
-    "-lp",
-    "--low-priority",
-    "--low_priority",
-    dest="low_priority",
-    action="store_true",
-    default=False,
+    "-lp", "--low-priority", "--low_priority", dest="low_priority",
+    action="store_true", default=False,
     help=("Queue with lower priority (we set a positive Slurm NICE value so Lab jobs yield to others)."),
 )
 @argument(
-    "-c",
-    "--chdir",
+    "-c", "--chdir",
     default=None,
-    help=(
-        "Working directory for the job (`sbatch --chdir`). "
-        "Also applied inside the job so it works for the local backend."
-    ),
+    help=("Working directory for the job (`sbatch --chdir`). "
+          "Also applied inside the job so it works for the local backend."),
 )
 @needs_local_scope
 @register_cell_magic
@@ -301,7 +282,6 @@ def submit_job(line: str, cell: str, local_ns: dict) -> None:
         if chdir_path:
             try:
                 import os as _os
-
                 _os.chdir(chdir_path)
             except Exception as e:  # noqa: BLE001
                 # Don't fail the job just because chdir failed; user can inspect logs.

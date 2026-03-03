@@ -4,6 +4,7 @@
 
 - Previously, `QProgram.set_offset` required both I and Q offsets (`offset_path0` and `offset_path1`) to be of the same type (either both constants or both variables).
  This restriction has been removed: it is now possible to mix constants and variables between I and Q.
+
   ```
   qp = ql.QProgram()
   offset = qp.variable(label="offset", domain=ql.Domain.Voltage)
@@ -11,6 +12,7 @@
       qp.set_offset(bus="drive", offset_path0= offset, offset_path1=0.5)
       qp.set_offset(bus="drive", offset_path0=0.1, offset_path1=offset)
   ```
+
   [#1024](https://github.com/qilimanjaro-tech/qililab/pull/1024)
 
 - This release introduces a significant architectural refactor of the digital and pulse-related layers, removes legacy dependencies, and aligns naming and abstractions with established superconducting-qubit literature.
@@ -49,21 +51,6 @@ This check is automatic and requires no input from the user aside from setting t
   [#1076](https://github.com/qilimanjaro-tech/qililab/pull/1076)
 
 ### Breaking changes
-
-- All references to **Qibo** have been removed, and any functionality relying on Qibo-based components has been eliminated.
-  [#991](https://github.com/qilimanjaro-tech/qililab/pull/991)
-
-- The **pulse** module has been removed entirely.
-  [#991](https://github.com/qilimanjaro-tech/qililab/pull/991)
-
-- The **digital** module has been restructured, replacing the previous Router, Placer, and Optimizer with a new **CircuitTranspiler** pipeline and **CircuitToQProgramCompiler**, which may require updates to downstream integrations.
-  [#991](https://github.com/qilimanjaro-tech/qililab/pull/991)
-
-- The IQ waveform hierarchy has changed: **IQWaveform** is now the abstract base class, the `DRAG` method has been removed from **IQPair**, and users must migrate to **IQDrag** where applicable.
-  [#991](https://github.com/qilimanjaro-tech/qililab/pull/991)
-
-- The `Drag` gate has been renamed to `Rmw`, requiring updates to any code referencing the old gate name.
-  [#991](https://github.com/qilimanjaro-tech/qililab/pull/991)
 
 ### Deprecations / Removals
 

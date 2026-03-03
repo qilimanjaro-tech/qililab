@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """SignalGenerator class."""
-
 from dataclasses import dataclass
 
 from qililab.instruments.instrument import Instrument

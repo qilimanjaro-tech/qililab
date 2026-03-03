@@ -20,10 +20,12 @@ if TYPE_CHECKING:
     from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
     from .qdac_compiler import QdacCompilationOutput, QdacCompiler
     from .qprogram import QProgram, QProgramCompilationOutput
+    from .variable import Domain
 
 __all__ = [
     "Calibration",
     "CrosstalkMatrix",
+    "Domain",
     "Experiment",
     "FluxVector",
     "QProgram",

@@ -7,7 +7,6 @@ import numpy as np
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 from qpysequence import Sequence as QPySequence
 from qpysequence.program import Program as QPyProgram
-from ruamel.yaml import YAML
 
 import qililab as ql
 from qililab.platform import Platform
@@ -131,16 +130,8 @@ dummy_qcm_name_generator = name_generator("dummy_qcm")
 
 def build_platform(runcard: dict) -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
-    runcard_copy = copy.deepcopy(runcard)
-    real_yaml_load = YAML.load
-
-    def patched_yaml_load(self, stream):
-        # Only intercept the runcard file load; let other YAML deserializations run normally
-        if isinstance(stream, MagicMock):
-            return runcard_copy
-        return real_yaml_load(self, stream)
-
-    with patch("ruamel.yaml.YAML.load", side_effect=patched_yaml_load, autospec=True) as mock_load:
+    runcard = copy.deepcopy(runcard)
+    with patch("ruamel.yaml.YAML.load", return_value=runcard) as mock_load:
         with patch("qililab.data_management.open") as mock_open:
             pl = ql.build_platform(runcard="_")
             mock_load.assert_called()

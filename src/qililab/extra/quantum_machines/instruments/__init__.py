@@ -32,7 +32,7 @@ QuantumMachinesCluster = None  # type: ignore[assignment]
 _OPTIONAL_FEATURES: list[OptionalFeature] = [
     OptionalFeature(
         name="quantum-machines",
-        dependencies=["qm-qua"],
+        dependencies=["qm-qua", "qualang-tools"],
         symbols=[
             Symbol(
                 path="qililab.extra.quantum_machines.instruments.quantum_machines_cluster",

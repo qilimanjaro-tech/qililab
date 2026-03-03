@@ -12,6 +12,7 @@ from qililab.qililab_settings import get_settings
 def _has_qm():
     try:
         im.version("qm-qua")
+        im.version("qualang-tools")
         return True
     except im.PackageNotFoundError:
         return False
@@ -26,7 +27,7 @@ def pytest_collection_modifyitems(config, items):
             if not run_qm:
                 item.add_marker(pytest.mark.skip(reason="qm tests are optional; use --run-qm"))
             elif not _has_qm():
-                item.add_marker(pytest.mark.skip(reason="missing 'qm-qua'"))
+                item.add_marker(pytest.mark.skip(reason="missing 'qm-qua'/'qualang-tools'"))
 
 
 @pytest.fixture
