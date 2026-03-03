@@ -1257,7 +1257,7 @@ class Platform:
                             )[::-1]
                         else:
                             markers[bus.alias] = "0000"
-                            if len(sequencer.outputs)==1:
+                            if len(sequencer.outputs) == 1:
                                 single_channel.append(bus.alias)
 
             compiled_qdac = None
