@@ -19,7 +19,6 @@ import h5py
 import numpy as np
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
@@ -202,22 +201,20 @@ class StreamArray:
             for bus in self.platform.buses.elements
             for instrument in bus.instruments
         ):
-            if self.bus_mapping is not None:
+            try:
                 compiled = self.platform.compile_qprogram(
                     qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration
                 ).qblox
-            else:
-                qblox_compiler = QbloxCompiler()
-                compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)
-
-            sequences = compiled.sequences
-            lines = []
-            for bus_alias, seq in sequences.items():
-                lines.append(f"Bus {bus_alias}:")
-                lines.append(str(seq._program))
-                lines.append("")
-
-            return "\n".join(lines)
+                sequences = compiled.sequences
+                lines = []
+                for bus_alias, seq in sequences.items():
+                    lines.append(f"Bus {bus_alias}:")
+                    lines.append(str(seq._program))
+                    lines.append("")
+                return "\n".join(lines)
+            except Exception as e:
+                debug_exception = f"Compilation of the debug has failed with the following error:\n{str(e)}"
+                return debug_exception
         debug_exception = "Non Qblox machine."
         return debug_exception
 

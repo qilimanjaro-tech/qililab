@@ -59,6 +59,7 @@ from qililab.qprogram import (
     Experiment,
     QbloxCompilationOutput,
     QbloxCompiler,
+    QdacCompilationOutput,
     QProgram,
     QProgramCompilationOutput,
 )
@@ -338,6 +339,12 @@ class Platform:
 
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
+        
+        self.qdac_buses: list[Bus] = []
+        """List of buses that use the instrument `QDevilQDac2`, defaults to an empty list for no qdac buses."""
+
+        self.qdac_instruments: list[QDevilQDac2] = []
+        """List of `QDevilQDac2` instruments inside the runcard, defaults to an empty list for no qdac instruments."""
 
         self.flux_vector: FluxVector | None = None
         """Flux vector information, defaults to None (only used on FLUX parameters)"""
@@ -1224,9 +1231,41 @@ class Platform:
             for instrument in bus.instruments
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
-        qdac_buses = [
+
+        qdac_qprogram_buses = [
             bus for bus in buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
+        self.qdac_buses = [
+            bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
+        ]
+        qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in self.qdac_buses]
+
+        compiled_qdac = None
+        if qdac_qprogram_buses:
+            self.qdac_instruments = list({
+                instrument
+                for bus in self.qdac_buses
+                for instrument in bus.instruments
+                if isinstance(instrument, QDevilQDac2)
+            })
+            out_trigger_qdac = None
+            if len(self.qdac_instruments) > 1:
+                out_trigger_qdac = next((instrument for instrument in self.qdac_instruments if instrument.out_trigger is not None), None)
+                if out_trigger_qdac is None:
+                    raise ValueError("Multiple QDAC-II instruments used but no Output trigger instrument given.")
+
+            qdac_compiler = QdacCompiler()
+            compiled_qdac = qdac_compiler.compile(
+                qprogram=qprogram,
+                qdacs=self.qdac_instruments,
+                qdac_buses=self.qdac_buses,
+                qdac_offsets=qdac_offsets,
+                bus_mapping=bus_mapping,
+                calibration=calibration,
+                crosstalk=self.crosstalk,
+                out_instrument = out_trigger_qdac,
+            )
+
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             # Retrieve the time of flight parameter from settings
             instrument_controllers = [
@@ -1256,20 +1295,6 @@ class Platform:
                             )[::-1]
                         else:
                             markers[bus.alias] = "0000"
-
-            compiled_qdac = None
-            if qdac_buses:
-                qdac_instrument = next(
-                    instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
-                )
-                qdac_compiler = QdacCompiler()
-                compiled_qdac = qdac_compiler.compile(
-                    qprogram=qprogram,
-                    qdac=qdac_instrument,
-                    qdac_buses=qdac_buses,
-                    bus_mapping=bus_mapping,
-                    calibration=calibration,
-                )
 
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
@@ -1305,20 +1330,6 @@ class Platform:
                 if bus.has_adc()
             }
 
-            compiled_qdac = None
-            if qdac_buses:
-                qdac_instrument = next(
-                    instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
-                )
-                qdac_compiler = QdacCompiler()
-                compiled_qdac = qdac_compiler.compile(
-                    qprogram=qprogram,
-                    qdac=qdac_instrument,
-                    qdac_buses=qdac_buses,
-                    bus_mapping=bus_mapping,
-                    calibration=calibration,
-                )
-
             compiler = QuantumMachinesCompiler()
             qm_buses = [
                 bus
@@ -1343,6 +1354,9 @@ class Platform:
         output: QProgramCompilationOutput,
         debug: bool = False,
     ):
+        if isinstance(output.qdac, QdacCompilationOutput):
+            for qdac_instrument in self.qdac_instruments:
+                qdac_instrument.remove_digital_trace()
         if isinstance(output.qblox, QbloxCompilationOutput):
             self.trigger_runs = 0
             return self._execute_qblox_compilation_output(output=output, debug=debug)
@@ -1391,12 +1405,14 @@ class Platform:
 
             # Execute sequences
             if output.qdac:
-                if output.qdac.trigger_position == "front":
-                    output.qdac.qdac.start()
+                if output.qdac.trigger_position == "back":
+                    for qdac in output.qdac.qdacs:
+                        qdac.start()
                 for bus_alias in sequences:
                     buses[bus_alias].run()
-                if output.qdac.trigger_position == "back":
-                    output.qdac.qdac.start()
+                if output.qdac.trigger_position == "front":
+                    for qdac in output.qdac.qdacs:
+                        qdac.start()
             else:
                 for bus_alias in sequences:
                     buses[bus_alias].run()
@@ -1508,8 +1524,9 @@ class Platform:
             compiled_program_id = cluster.compile(program=qua)
 
             if output.qdac:
-                if output.qdac.trigger_position == "front":
-                    output.qdac.qdac.start()
+                if output.qdac.trigger_position == "back":
+                    for qdac in output.qdac.qdacs:
+                        qdac.start()
 
                 job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
