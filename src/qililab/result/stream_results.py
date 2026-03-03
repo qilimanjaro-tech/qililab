@@ -112,10 +112,8 @@ class StreamArray:
                     calibration=serialize(self.calibration) if self.calibration else None,
                     debug_file=self._get_debug() if self.platform and self.qprogram else None,
                     dc_offsets=self._get_offsets() if self.platform else None,
-                    target=self.qubit_idx if isinstance(self.qubit_idx, (list, None)) else list([self.qubit_idx]),
-                    secondary_source=(
-                        self.second_idx if isinstance(self.second_idx, (list, None)) else list([self.second_idx])
-                    ),
+                    target=self._get_index_list(self.qubit_idx),
+                    secondary_source=self._get_index_list(self.second_idx),
                 )
             self.path = self.measurement.result_path
 
@@ -233,13 +231,17 @@ class StreamArray:
     def _get_offsets(self) -> dict[str, float] | None:
         qdac_buses = {
             bus.alias: bus.get_parameter(Parameter.VOLTAGE)
-            for bus in self.platform.buses.elements
+            for bus in self.platform.buses.elements  # type: ignore [union-attr]
             for instrument in bus.instruments
             if isinstance(instrument, QDevilQDac2)
         }
-
         return qdac_buses if qdac_buses else None
 
+    def _get_index_list(self, qubit: int | str | list[str] | None) -> list[str] | None:
+        if qubit is None:
+            return None
+        qubit_list = qubit if isinstance(qubit, list) else [str(qubit)]
+        return qubit_list
 
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
     """Constructs a StreamArray instance.
