@@ -4,6 +4,7 @@
 
 - Previously, `QProgram.set_offset` required both I and Q offsets (`offset_path0` and `offset_path1`) to be of the same type (either both constants or both variables).
  This restriction has been removed: it is now possible to mix constants and variables between I and Q.
+
   ```
   qp = ql.QProgram()
   offset = qp.variable(label="offset", domain=ql.Domain.Voltage)
@@ -11,6 +12,7 @@
       qp.set_offset(bus="drive", offset_path0= offset, offset_path1=0.5)
       qp.set_offset(bus="drive", offset_path0=0.1, offset_path1=offset)
   ```
+
   [#1024](https://github.com/qilimanjaro-tech/qililab/pull/1024)
 
 - This release introduces a significant architectural refactor of the digital and pulse-related layers, removes legacy dependencies, and aligns naming and abstractions with established superconducting-qubit literature.
@@ -23,6 +25,9 @@
 
   Finally, the `Drag` gate has been renamed to `Rmw` to better reflect standard terminology in the literature and to avoid confusion with pulse-level DRAG correction schemes, which are now explicitly implemented via **IQDrag**.
   [#991](https://github.com/qilimanjaro-tech/qililab/pull/991)
+
+- Added resistances inside `CrosstalkMatrix()` they can be set by `crosstalk.set_resistances()` in the same way as `crosstalk.set_offset`. Also they can be set inside the calibration file as resistances.
+  [#1077](https://github.com/qilimanjaro-tech/qililab/pull/1077)
 
 ### Improvements
 
