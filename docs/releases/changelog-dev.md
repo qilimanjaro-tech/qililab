@@ -26,6 +26,10 @@
 
 ### Improvements
 
+- Previously, the software filters in the `PulseDistortion` module were normalised by default.
+This PR changes the default value of `auto_norm` to False, as the previous behaviour was considered counterintuitive.
+  [#1075](https://github.com/qilimanjaro-tech/qililab/pull/1075)
+
 - Implemented a new driver for the Becker Nachrichtentechnik RSWU-SP16TR
   [#1020](https://github.com/qilimanjaro-tech/qililab/pull/1020)
 
