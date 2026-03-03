@@ -425,7 +425,7 @@ class DatabaseManager:
     def add_autocal_measurement(
         self,
         experiment_name: str,
-        qubit_idx: int,
+        qubit_idx: int | str,
         calibration: "Calibration",  # type: ignore
         platform: "Platform" = None,  # type: ignore
         qprogram: "QProgram" = None,  # type: ignore
