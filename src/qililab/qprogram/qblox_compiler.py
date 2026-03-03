@@ -502,9 +502,7 @@ class QbloxCompiler:
             waveform_Q (Waveform | None): Q waveform.
         """
 
-        def handle_waveform(waveform: Waveform | None, default_length: int = 0, waveform_I: Waveform | None = None):
-            if waveform is None and bus in self._single_channel and self._single_channel[bus]:
-                waveform = waveform_I
+        def handle_waveform(waveform: Waveform | None, default_length: int = 0):
             _hash = QbloxCompiler._hash_waveform(waveform) if waveform else f"zeros {default_length}"
 
             if _hash in self._buses[bus].waveform_to_index:
@@ -522,7 +520,10 @@ class QbloxCompiler:
             return index, len(envelope)
 
         index_I, length_I = handle_waveform(waveform_I, 0)
-        index_Q, _ = handle_waveform(waveform_Q, len(waveform_I.envelope()), waveform_I)
+        if waveform_Q is None and bus in self._single_channel and self._single_channel[bus]:
+            index_Q, _ = handle_waveform(waveform_I, 0)
+        else:
+            index_Q, _ = handle_waveform(waveform_Q, len(waveform_I.envelope()))
         return index_I, index_Q, length_I
 
     def _append_to_weights_of_bus(self, bus: str, weights: IQWaveform):
