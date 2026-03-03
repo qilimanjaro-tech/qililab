@@ -17,7 +17,7 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
+from qililab.instrument_controllers.instrument_controller import InstrumentController, InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
@@ -50,7 +50,20 @@ class QDevilQDac2Controller(SingleInstrumentController):
             self.device = QDevilQDac2Device(f"{self.name.value}_{self.alias}", f"TCPIP::{self.address}::5025::SOCKET")
         else:
             self.device = QDevilQDac2Device(f"{self.name.value}_{self.alias}", f"ASRL/dev/{self.address}::INSTR")
+
+    @InstrumentController.CheckConnected
+    def initial_setup(self):
+        """Initial setup of the QDAC Controller."""
         self._set_clock_source()
+        super().initial_setup()
+
+    @InstrumentController.CheckConnected
+    def _set_clock_source(self):
+        """Set the reference source ('internal' or 'external')."""
+        if self.reference_clock == "external":
+            self.device.write("SYST:CLOCK:SOURCE EXT")
+        if self.reference_clock == "internal":
+            self.device.write("SYST:CLOCK:SOURCE INT")
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
@@ -61,9 +74,7 @@ class QDevilQDac2Controller(SingleInstrumentController):
                     + f"The only supported instrument is {InstrumentTypeName.QDEVIL_QDAC2}"
                 )
 
-    def _set_clock_source(self):
-        """Set the reference source ('internal' or 'external')."""
-        if self.settings.reference_clock == "external":
-            self.device.write("SYST:CLOCK:SOURCE EXT")
-        if self.settings.reference_clock == "internal":
-            self.device.write("SYST:CLOCK:SOURCE INT")
+    @property
+    def reference_clock(self):
+        """Get the reference clock setting."""
+        return self.settings.reference_clock
