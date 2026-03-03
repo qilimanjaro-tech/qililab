@@ -12,25 +12,9 @@
       qp.set_offset(bus="drive", offset_path0= offset, offset_path1=0.5)
       qp.set_offset(bus="drive", offset_path0=0.1, offset_path1=offset)
   ```
-
   [#1024](https://github.com/qilimanjaro-tech/qililab/pull/1024)
 
-- This release introduces a significant architectural refactor of the digital and pulse-related layers, removes legacy dependencies, and aligns naming and abstractions with established superconducting-qubit literature.
-
-  All references to **Qibo** have been removed from the codebase, along with the complete removal of the **pulse** module. The **digital** module has been fully restructured around a new, self-contained compilation and transpilation pipeline. This includes the introduction of a native **CircuitTranspiler** and **CircuitToQProgramCompiler**. The new **CircuitTranspiler** is responsible for decomposing circuits into the native gate set, managing logical and physical qubit layouts, and applying optimizations. It is implemented as a linear pipeline of `CircuitTranspilerPass` objects, replacing the previous Router, Placer, and Optimizer components that depended on Qibo-based implementations. Each transpiler pass now has a concrete, narrowly defined responsibility.
-
-  The following transpiler passes are now implemented and available: `CancelIdentityPairsPass`, `CircuitToCanonicalBasisPass`, `FuseSingleQubitGatesPass`, `CustomLayoutPass`, `SabreLayoutPass`, `SabreSwapPass`, `CanonicalBasisToNativeSetPass`, and `AddPhasesToDragsFromRZAndCZPass`.
-
-  The IQ waveform class hierarchy has been refactored and unified. A new abstract base class, **IQWaveform**, has been introduced, from which **IQPair** now inherits. The `DRAG` class method has been removed from **IQPair** and replaced by a dedicated **IQDrag** class. This change ensures consistent handling of all IQ waveforms and enables correct and robust serialization.
-
-  Finally, the `Drag` gate has been renamed to `Rmw` to better reflect standard terminology in the literature and to avoid confusion with pulse-level DRAG correction schemes, which are now explicitly implemented via **IQDrag**.
-  [#991](https://github.com/qilimanjaro-tech/qililab/pull/991)
-
 ### Improvements
-
-- Previously, the software filters in the `PulseDistortion` module were normalised by default.
-This PR changes the default value of `auto_norm` to False, as the previous behaviour was considered counterintuitive.
-  [#1075](https://github.com/qilimanjaro-tech/qililab/pull/1075)
 
 - Implemented a new driver for the Becker Nachrichtentechnik RSWU-SP16TR
   [#1020](https://github.com/qilimanjaro-tech/qililab/pull/1020)
@@ -46,6 +30,8 @@ Now whenever a single waveform is given instead of giving this waveform to I and
 
 This check is automatic and requires no input from the user aside from setting the runcard correctly.
   [#1076](https://github.com/qilimanjaro-tech/qililab/pull/1076)
+
+- Added a `data_folder` option to `get_db_manager` to overwrite other base paths generated.
 
 ### Breaking changes
 
@@ -73,3 +59,6 @@ This check is automatic and requires no input from the user aside from setting t
 
 - Removed threading for `ExperimentExecutor()`. This feature caused a deadlock on the execution if any error is raised inside it (mainly involving the ExperimentsResultsWriter). The threading has been removed as it was only necessary for parallel time tracking.
 [#1055](https://github.com/qilimanjaro-tech/qililab/pull/1055)
+
+- Fixed conflict with base path not being unique for parallel qprogram executions in StreamArray. To fix it, the path now includes the target index whenever there is one, which is the case for parallel executions. For any other existing case the behavior remains the same.
+  [#1074](https://github.com/qilimanjaro-tech/qililab/pull/1074)

@@ -41,7 +41,7 @@ class DatabaseManager:
 
     calibration_measurement: AutocalMeasurement
 
-    def __init__(self, filename: str, database_name: str):
+    def __init__(self, filename: str, database_name: str, data_folder: str | None = None):
         """
         Args:
             filename (str): location of the database `.ini`.
@@ -56,10 +56,13 @@ class DatabaseManager:
         self.base_path_local: str | None = None
         self.base_path_share: str | None = None
         self.folder_path: str | None = None
+        self.data_folder: str | None = data_folder
 
         if "base_path_local" in config:
             self.base_path_local = config["base_path_local"]
+        if "base_path_shared" in config:
             self.base_path_share = config["base_path_shared"]
+        if "data_write_folder" in config:
             self.folder_path = config["data_write_folder"]
 
     def set_sample_and_cooldown(self, sample: str, cooldown: str | None = None):
@@ -200,12 +203,6 @@ class DatabaseManager:
             measurement_by_id = (
                 running_session.query(AutocalMeasurement).where(AutocalMeasurement.measurement_id == id).one_or_none()
             )
-
-            if measurement_by_id is not None:
-                path = measurement_by_id.result_path
-                if not os.path.isfile(path):
-                    new_path = path.replace(self.base_path_local, self.base_path_share)
-                    measurement_by_id.result_path = new_path
 
             return measurement_by_id
 
@@ -412,7 +409,10 @@ class DatabaseManager:
         with self.session() as running_session:
             calibration_id = running_session.query(CalibrationRun).order_by(CalibrationRun.calibration_id.desc()).first().calibration_id  # type: ignore
 
-        base_path = calibration.parameters["base_path"]
+        if self.data_folder is not None:
+            base_path = self.data_folder
+        else:
+            base_path = calibration.parameters["data_folder"]
 
         result_path = os.path.join(base_path, f"{experiment_name}.h5")
 
@@ -505,6 +505,7 @@ class DatabaseManager:
         debug_file: str | None = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
+        target: str | int | None = None,
     ):
         """Add measurement metadata and data path
 
@@ -535,18 +536,23 @@ class DatabaseManager:
         start_time = datetime.datetime.now()
         formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
 
-        base_path = f"{self.base_path_local}{self.folder_path}"
-        if not os.path.isdir(base_path):
-            base_path = f"{self.base_path_share}{self.folder_path}"
+        if self.data_folder is not None:
+            base_path = self.data_folder
+        else:
+            base_path = f"{self.base_path_local}{self.folder_path}"
+            if not os.path.isdir(base_path):
+                base_path = f"{self.base_path_share}{self.folder_path}"
         dir_path = (
             f"{base_path}{self.current_sample}/{self.current_cd}/{formatted_time}"
             if base_path[-1] == "/"
             else f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         )
+        if target is not None:
+            dir_path = f"{dir_path}/{target}" if isinstance(target, str) else f"{dir_path}/q_{target}"
         result_path = f"{dir_path}/{experiment_name}.h5"
 
         folder = dir_path
-        if not os.path.isfile(folder):
+        if not os.path.isdir(folder):
             os.makedirs(folder)
             warnings.warn(f"Data folder did not exist. Created one at {folder}")
 
@@ -678,10 +684,10 @@ def _load_config(filename, section):
     raise ReferenceError("Section {0} not found in the {1} file".format(section, filename))
 
 
-def get_db_manager(path: str = "~/database.ini", database_name: str = "postgresql") -> DatabaseManager:
+def get_db_manager(path: str = "~/database.ini", database_name: str = "postgresql", data_folder: str | None = None) -> DatabaseManager:
     """Automatic DatabaseManager generator based on default load_config"""
     filename = os.path.expanduser(path)
-    return DatabaseManager(filename, database_name)
+    return DatabaseManager(filename, database_name, data_folder)
 
 
 def get_engine(user: str, passwd: str, host: str, port: str, database: str):

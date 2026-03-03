@@ -108,7 +108,6 @@ class Measurement(base):  # type: ignore
     end_time: Column = Column("end_time", DateTime)
     run_length: Column = Column("run_length", Interval)
     experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
-    # TODO: add temperature = Column("temperature", ARRAY(Integer)) when available
     cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
     sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
     result_path: Column = Column("result_path", String, unique=True, nullable=False)
