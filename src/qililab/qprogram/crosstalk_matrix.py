@@ -25,6 +25,7 @@ class CrosstalkMatrix:
         """Initializes an empty crosstalk matrix."""
         self.matrix: dict[str, dict[str, float]] = {}
         self.flux_offsets: dict[str, float] = {}
+        self.resistances: dict[str, float | None] = {}
 
     def to_array(self) -> np.ndarray:
         """Returns the np.array representation of the crosstalk matrix.
@@ -82,6 +83,9 @@ class CrosstalkMatrix:
         if key not in self.flux_offsets:
             self.flux_offsets[key] = 0.0
 
+        if key not in self.resistances:
+            self.resistances[key] = None
+
     def __repr__(self) -> str:
         """Returns a string representation of the CrosstalkMatrix.
 
@@ -121,6 +125,15 @@ class CrosstalkMatrix:
         for bus in offset:
             self.flux_offsets[bus] = offset[bus]
 
+    def set_resistances(self, resistances: dict[str, float]):
+        """Modifies the resistances dictionary based on the given bus and resistance value.
+
+        Args:
+            resistances (dict[str, float]): dictionary containing the resistances for each bus to be added or modified and the value of said resistance
+        """
+        for bus in resistances:
+            self.resistances[bus] = resistances[bus]
+
     @classmethod
     def from_array(cls, buses: list[str], matrix_array: np.ndarray) -> "CrosstalkMatrix":
         """Creates crosstalk matrix from an array and corresponding set of buses. For a set of buses
@@ -147,6 +160,10 @@ class CrosstalkMatrix:
         if not instance.flux_offsets:
             for bus in buses:
                 instance.flux_offsets[bus] = 0.0
+
+        if not instance.resistances:
+            for bus in buses:
+                instance.resistances[bus] = None
         return instance
 
     @classmethod
@@ -167,6 +184,10 @@ class CrosstalkMatrix:
         if not instance.flux_offsets:
             for bus in buses:
                 instance.flux_offsets[bus] = 0.0
+
+        if not instance.resistances:
+            for bus in buses:
+                instance.resistances[bus] = None
         return instance
 
 
