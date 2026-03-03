@@ -243,6 +243,7 @@ class StreamArray:
         qubit_list = qubit if isinstance(qubit, list) else [str(qubit)]
         return qubit_list
 
+
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
     """Constructs a StreamArray instance.
 

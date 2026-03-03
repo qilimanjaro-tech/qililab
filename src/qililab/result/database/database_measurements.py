@@ -112,7 +112,15 @@ class SequenceRun(base):  # type: ignore
     sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
 
     def __init__(
-        self, sequence_name, start_time, sequence_tree, sequence_completed, sample_name, end_time=None, run_length=None, cooldown=None
+        self,
+        sequence_name,
+        start_time,
+        sequence_tree,
+        sequence_completed,
+        sample_name,
+        end_time=None,
+        run_length=None,
+        cooldown=None,
     ):
         self.sequence_name = sequence_name
         self.start_time = start_time

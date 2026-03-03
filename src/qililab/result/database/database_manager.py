@@ -151,7 +151,9 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
-    def add_sequence_run(self, sequence_name: str, sequence_tree: dict, sample_name: str, cooldown: str | None = None) -> SequenceRun:
+    def add_sequence_run(
+        self, sequence_name: str, sequence_tree: dict, sample_name: str, cooldown: str | None = None
+    ) -> SequenceRun:
         """Add sequence of experiments metadata.
 
         Args:
@@ -613,9 +615,9 @@ class DatabaseManager:
             debug_file=debug_file,
             parameters=parameters,
             data_shape=data_shape,
-            dc_offsets = dc_offsets,
-            target = target,
-            secondary_source = secondary_source,
+            dc_offsets=dc_offsets,
+            target=target,
+            secondary_source=secondary_source,
         )
         with self.session() as running_session:
             running_session.add(measurement)
