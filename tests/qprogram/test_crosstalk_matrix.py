@@ -141,6 +141,21 @@ class TestCrosstalkMatrix:
         assert isinstance(crosstalk_matrix.flux_offsets, dict)
         assert crosstalk_matrix.flux_offsets == {"bus1": -1.0, "bus2": 0.5}
 
+    def test_set_resistances(self):
+        """Test set_resistances function"""
+        crosstalk_matrix = CrosstalkMatrix()
+        crosstalk_matrix["bus1"] = {"bus1": 1, "bus2": 0.5}
+        crosstalk_matrix["bus2"]["bus1"] = 0.7
+        crosstalk_matrix["bus2"]["bus2"] = 1
+
+        # Before setting the resistance but after doing a set for bus_1 and bus_2
+        assert crosstalk_matrix.resistances == {"bus1": None}
+
+        crosstalk_matrix.set_resistances(resistances={"bus1": 1000, "bus2": 1005})
+
+        assert isinstance(crosstalk_matrix.resistances, dict)
+        assert crosstalk_matrix.resistances == {"bus1": 1000, "bus2": 1005}
+
     def test_str_method(self):
         """Test __str__ method"""
         crosstalk_matrix = CrosstalkMatrix()
