@@ -570,6 +570,9 @@ class DatabaseManager:
             calibration (Calibration | None, optional): Calibration used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
             data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
+            dc_offsets (np.ndarray | None, optional): Instruments offsets. Defaults to None.
+            target (np.ndarray | None, optional): Target qubits list. Defaults to None.
+            secondary_source (np.ndarray | None, optional): Secondary source buses list. Defaults to None.
         """
         if sample_name is None:
             if self.current_sample:
