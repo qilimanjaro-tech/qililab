@@ -24,6 +24,8 @@ class AnalogCompilationSettings:
     flux_control_topology: list[FluxControlTopology] = field(default_factory=list)
     topology: list[tuple[int, int]] = field(default_factory=list)
     qubits: list[int] = field(default_factory=list)
+    qubit_loops: int = field(default_factory=int)
+    coupler_loops: int = field(default_factory=int)
 
     def __post_init__(self):
         """Build the Gates Settings based on the master settings."""
