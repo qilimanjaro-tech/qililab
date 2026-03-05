@@ -76,6 +76,7 @@ def fixture_measurement():
 def fixture_sequence_run():
     return SequenceRun(
         sequence_tree={"test_run":"test_experiment"},
+        sequence_name="sequence",
         sample_name="sampleA",
         cooldown="CDX",
         sequence_completed=False,
@@ -522,7 +523,9 @@ class Testdatabase:
             "dependencies": [["TwoTone", "Rabi"]],
         }
 
-        db_manager.add_sequence_run(sequence_tree=sequence_tree, sample_name="sampleA", cooldown="CDX")
+        db_manager.add_sequence_run(
+            sequence_tree=sequence_tree, sequence_name="Sequence", sample_name="sampleA", cooldown="CDX"
+        )
 
         db_manager._mock_session.add.assert_called
         db_manager._mock_session.commit.assert_called
@@ -561,7 +564,9 @@ class Testdatabase:
         db_manager.session = MagicMock(return_value=mock_session)
 
         with pytest.raises(Exception, match="DB error"):
-            db_manager.add_sequence_run(sequence_tree=sequence_tree, sample_name="sampleA", cooldown="CDX")
+            db_manager.add_sequence_run(
+                sequence_tree=sequence_tree, sequence_name="Sequence", sample_name="sampleA", cooldown="CDX"
+            )
 
         mock_session.rollback.assert_called_once
     
@@ -874,7 +879,7 @@ class Testdatabase:
         mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
 
         calibration = Calibration()
-        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
         # Act
         measurement = db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
@@ -898,7 +903,7 @@ class Testdatabase:
         mock_session.commit.side_effect = Exception("DB error")
 
         calibration = Calibration()
-        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
 
         db_manager.session = MagicMock(return_value=mock_session)
 
@@ -923,7 +928,7 @@ class Testdatabase:
         mock_session_instance.query.return_value = mock_query
 
         calibration = Calibration()
-        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "data_folder": "/shared_test/"}
         # Act
         db_manager.add_autocal_measurement(experiment_name="exp1", qubit_idx=0, calibration=calibration)
 
