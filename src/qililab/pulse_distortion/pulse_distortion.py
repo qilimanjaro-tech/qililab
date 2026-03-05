@@ -39,7 +39,7 @@ class PulseDistortion(FactoryElement):
     Whenever you call a `PulseDistortion` interface child, apart than their respective arguments you can also pass the `norm_factor` & `auto_norm` arguments, to
     modify how such normalization is done.
 
-    If `self.auto_norm` is True (default) normalizes the resulting envelope to have the same real max height than the starting one. (the max height is the furthest number
+    If `self.auto_norm` is True (defaults to False.) normalizes the resulting envelope to have the same real max height than the starting one. (the max height is the furthest number
     from 0, only checking the real axis/part).
 
     .. code-block:: python3
@@ -69,7 +69,7 @@ class PulseDistortion(FactoryElement):
     Args:
         norm_factor (float): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
         auto_norm (bool): Whether to automatically normalize the corrected envelope with the original max height in the apply() method.
-            (the max height is the furthest number from 0 in the envelope, only checking the real axis/part). Default to True.
+            (the max height is the furthest number from 0 in the envelope, only checking the real axis/part). Default to False.
 
     Examples:
 
@@ -106,7 +106,7 @@ class PulseDistortion(FactoryElement):
     """
 
     norm_factor: float = 1.0  #: Normalization factor.
-    auto_norm: bool = True  #: Auto-normalization flag. Defaults to True.
+    auto_norm: bool = False  #: Auto-normalization flag. Defaults to False.
 
     @abstractmethod
     def apply(self, envelope: np.ndarray) -> np.ndarray:
@@ -155,8 +155,8 @@ class PulseDistortion(FactoryElement):
     def normalize_envelope(self, envelope: np.ndarray, corr_envelope: np.ndarray) -> np.ndarray:
         """Normalizes the envelope depending on the `norm_factor` and `auto_norm` attributes.
 
-        If `self.auto_norm` is `True` (default) normalizes the resulting envelope to have the same real max height than the starting one.
-        (the max height is the furthest number from 0, only checking the real axis/part)
+        If `self.auto_norm` is `True` (default is False) normalizes the resulting envelope to have the same real max height than the starting one.
+        (the max height is the furthest number from 0, only checking the real axis/part).
         If the corrected envelope is zero everywhere or doesn't have a real part this process is skipped.
 
         Finally it applies the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude.

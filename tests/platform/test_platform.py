@@ -1220,6 +1220,39 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
 
+    def test_execute_qprogram_single_baseband_channel(self, platform: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = Square(amplitude=1.0, duration=40)
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus_baseband", waveform=drive_wf)
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            platform.execute_qprogram(qprogram=qprogram)
+
+            acquire_qprogram_results.return_value = [456]
+            platform.execute_qprogram(qprogram=qprogram)
+
+            _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed only once (4 because there are 4 buses)
+        assert upload.call_count == 1
+
+        # assert run executed all three times (12 because there are 4 buses)
+        assert run.call_count == 3
+        assert sync_sequencer.call_count == 3  # called as many times as run
+        assert desync_sequencer.call_count == 3
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+
     def test_execute_qprogram_with_qblox_and_qdac_timeout_error(self, platform_qblox_qdac: Platform):
         """Test that the execute_qprogram method raises the exception if the qprogram failes"""
 
