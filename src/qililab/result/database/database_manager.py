@@ -157,7 +157,10 @@ class DatabaseManager:
         """Add sequence of experiments metadata.
 
         Args:
+            sequence_name (str): Experiment sequence name.
             sequence_tree (dict): Full experiment sequence tree of the run.
+            sample_name (str): Sample id.
+            cooldown (str | None, optional): Cooldown id. Defaults to None.
         """
         sequence_obj = SequenceRun(
             sequence_name=sequence_name,
