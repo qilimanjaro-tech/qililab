@@ -180,12 +180,12 @@ class Calibration:
             crosstalk (CrosstalkMatrix | None, optional): Crosstalk to be added in history. Defaults to `Calibration.crosstalk`.
 
         Raises:
-            ValueError: If no crosstalk is given to Calibration
+            ValueError: If no crosstalk history has been created.
         """
+        if not self.crosstalk_history:
+            raise ValueError("Crosstalk History is empty. First run `Calibration.add_crosstalk_history`")
         if crosstalk is None:
             crosstalk = deepcopy(self.crosstalk_matrix)
-            if not self.crosstalk_matrix:
-                raise ValueError("No crosstalk has been given to the Calibration file")
 
         self.crosstalk_history[-1]["history"][experiment_name] = {}
         self.crosstalk_history[-1]["history"][experiment_name]["flux_offsets"] = crosstalk.flux_offsets  # type: ignore [union-attr]
@@ -202,12 +202,12 @@ class Calibration:
             crosstalk (CrosstalkMatrix | None, optional): Crosstalk to be added in history. Defaults to `Calibration.crosstalk`.
 
         Raises:
-            ValueError: If no crosstalk is given to Calibration
+            ValueError: If no crosstalk history has been created.
         """
+        if not self.crosstalk_history:
+            raise ValueError("Crosstalk History is empty. First run `Calibration.add_crosstalk_history`")
         if crosstalk is None:
             crosstalk = deepcopy(self.crosstalk_matrix)
-            if not self.crosstalk_matrix:
-                raise ValueError("No crosstalk has been given to the Calibration file")
 
         self.crosstalk_history[-1]["flux_offsets"] = crosstalk.flux_offsets  # type: ignore [union-attr]
         self.crosstalk_history[-1]["full_matrix"] = crosstalk.matrix  # type: ignore [union-attr]
@@ -217,5 +217,11 @@ class Calibration:
 
         Args:
             idx (int, optional): Index number. Defaults to the last value of the list.
+
+        Raises:
+            ValueError: If no crosstalk history has been created.
         """
+        if not self.crosstalk_history:
+            raise ValueError("Crosstalk History is empty. First run `Calibration.add_crosstalk_history`")
+
         self.crosstalk_history.pop(idx)
