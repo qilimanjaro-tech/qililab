@@ -15,11 +15,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
-from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
+from . import Operation
+
 if TYPE_CHECKING:
-    from qililab.core.variables import Variable
+    from qililab.core import Variable
     from qililab.qprogram.calibration import Calibration
     from qililab.qprogram.qprogram import QProgram
 

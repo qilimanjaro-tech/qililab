@@ -99,7 +99,7 @@ def compiler_settings() -> DigitalCompilationSettings:
 
 
 def flatten_operations(block):
-    from qililab.qprogram.blocks.block import Block
+    from qililab.qprogram.blocks import Block
 
     ops = []
     for element in block.elements:

@@ -18,7 +18,7 @@ import numpy as np
 import plotly.colors as pc
 import plotly.graph_objects as go
 
-from qililab.core.variables import Domain
+from qililab.core import Domain
 
 
 class QbloxDraw:

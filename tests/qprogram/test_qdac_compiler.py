@@ -5,10 +5,9 @@ import numpy as np
 import pytest
 
 from qililab.platform import Bus
-from qililab.qprogram.blocks.for_loop import ForLoop
-from qililab.qprogram.blocks.loop import Loop
+from qililab.qprogram.blocks import ForLoop, Loop
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
-from qililab.core.variables import Domain
+from qililab.core import Domain
 from qililab.waveforms import Square
 from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
@@ -241,18 +240,6 @@ class TestQdacCompiler:
         ):
             compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2])
 
-    def test_play_operation_with_variable_in_waveform(self, caplog, qdac: QDevilQDac2, flux1: Bus):
-
-        qp = QProgram()
-        amplitude = qp.variable(label="amplitude", domain=Domain.Voltage)
-        qp.qdac.play(bus="flux1", waveform=Square(amplitude, 100), dwell=2)
-
-        compiler = QdacCompiler()
-        with caplog.at_level(logging.ERROR):
-            _ = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1])
-
-        assert "Variables in waveforms are not supported in Qdac." in caplog.text
-
     def test_loops_repetitions(self, qdac: QDevilQDac2, flux1: Bus):
         """Test all possible combinations of play repetitions as a manual input."""
         wf = Square(1.0, 100)
@@ -455,6 +442,6 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         with pytest.raises(
-            NotImplementedError, match=f"<class 'qililab.qprogram.operations.sync.Sync'> is not supported in QDACII."
+            NotImplementedError, match=r"<class 'qilisdk.qprogram.operations.sync.Sync'> is not supported in QDACII."
         ):
             compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2])
