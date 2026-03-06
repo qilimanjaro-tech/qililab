@@ -4,6 +4,7 @@
 
 - Previously, `QProgram.set_offset` required both I and Q offsets (`offset_path0` and `offset_path1`) to be of the same type (either both constants or both variables).
  This restriction has been removed: it is now possible to mix constants and variables between I and Q.
+
   ```
   qp = ql.QProgram()
   offset = qp.variable(label="offset", domain=ql.Domain.Voltage)
@@ -11,6 +12,7 @@
       qp.set_offset(bus="drive", offset_path0= offset, offset_path1=0.5)
       qp.set_offset(bus="drive", offset_path0=0.1, offset_path1=offset)
   ```
+
   [#1024](https://github.com/qilimanjaro-tech/qililab/pull/1024)
 
 - This release introduces a significant architectural refactor of the digital and pulse-related layers, removes legacy dependencies, and aligns naming and abstractions with established superconducting-qubit literature.
@@ -24,7 +26,14 @@
   Finally, the `Drag` gate has been renamed to `Rmw` to better reflect standard terminology in the literature and to avoid confusion with pulse-level DRAG correction schemes, which are now explicitly implemented via **IQDrag**.
   [#991](https://github.com/qilimanjaro-tech/qililab/pull/991)
 
+- Added resistances inside `CrosstalkMatrix()` they can be set by `crosstalk.set_resistances()` in the same way as `crosstalk.set_offset`. Also they can be set inside the calibration file as resistances.
+  [#1077](https://github.com/qilimanjaro-tech/qililab/pull/1077)
+
 ### Improvements
+
+- Previously, the software filters in the `PulseDistortion` module were normalised by default.
+This PR changes the default value of `auto_norm` to False, as the previous behaviour was considered counterintuitive.
+  [#1075](https://github.com/qilimanjaro-tech/qililab/pull/1075)
 
 - Implemented a new driver for the Becker Nachrichtentechnik RSWU-SP16TR
   [#1020](https://github.com/qilimanjaro-tech/qililab/pull/1020)
@@ -34,6 +43,15 @@
 
 - Added sequence run table to measurements database. This table works similar to calibration run and is intended to store a series of experiment runs one after the other. Added `add_sequence_run` to database manager to operate it. Also modified the quibit index on the autocalibration database from integer to string to take into account two qubit gate experiments.
   [#1070](https://github.com/qilimanjaro-tech/qililab/pull/1070)
+
+- Changed internal structure of waveform generation on the qblox compiler.
+Added a check in the platform for QCM and QRM modules with only one channel.
+Now whenever a single waveform is given instead of giving this waveform to I and creating an empty Q, it checks first how many channels does it have based on platform:
+  - If it has 2 channels the behavior is the same (waveform to I and an empty Q)
+  - If it has 1 channel, I and Q are identical waveforms and register as one single waveform (effectively doubling the Q1ASM waveform compilation available size and setting the correct amplitude). If the user gives an IQPair regardless, the behavior remains unchanged and a Q wave will be saved in memory but never sent through the machine.
+
+This check is automatic and requires no input from the user aside from setting the runcard correctly.
+  [#1076](https://github.com/qilimanjaro-tech/qililab/pull/1076)
 
 ### Breaking changes
 

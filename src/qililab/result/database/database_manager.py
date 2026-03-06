@@ -151,13 +151,19 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
-    def add_sequence_run(self, sequence_tree: dict, sample_name: str, cooldown: str | None = None) -> SequenceRun:
+    def add_sequence_run(
+        self, sequence_name: str, sequence_tree: dict, sample_name: str, cooldown: str | None = None
+    ) -> SequenceRun:
         """Add sequence of experiments metadata.
 
         Args:
+            sequence_name (str): Experiment sequence name.
             sequence_tree (dict): Full experiment sequence tree of the run.
+            sample_name (str): Sample id.
+            cooldown (str | None, optional): Cooldown id. Defaults to None.
         """
         sequence_obj = SequenceRun(
+            sequence_name=sequence_name,
             start_time=datetime.datetime.now(),
             sequence_tree=sequence_tree,
             sequence_completed=False,
@@ -424,7 +430,7 @@ class DatabaseManager:
     def add_autocal_measurement(
         self,
         experiment_name: str,
-        qubit_idx: int,
+        qubit_idx: int | str,
         calibration: "Calibration",  # type: ignore
         platform: "Platform" = None,  # type: ignore
         qprogram: "QProgram" = None,  # type: ignore
@@ -453,7 +459,7 @@ class DatabaseManager:
                 .calibration_id
             )
 
-        base_path = calibration.parameters["base_path"]
+        base_path = calibration.parameters["data_folder"]
 
         result_path = os.path.join(base_path, f"{experiment_name}.h5")
 
@@ -546,6 +552,9 @@ class DatabaseManager:
         debug_file: str | None = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
+        dc_offsets: dict[str, float] | None = None,
+        target: list[str] | None = None,
+        secondary_source: list[str] | None = None,
     ):
         """Add measurement metadata and data path
 
@@ -564,6 +573,9 @@ class DatabaseManager:
             calibration (Calibration | None, optional): Calibration used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
             data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
+            dc_offsets (np.ndarray | None, optional): Instruments offsets. Defaults to None.
+            target (np.ndarray | None, optional): Target qubits list. Defaults to None.
+            secondary_source (np.ndarray | None, optional): Secondary source buses list. Defaults to None.
         """
         if sample_name is None:
             if self.current_sample:
@@ -609,6 +621,9 @@ class DatabaseManager:
             debug_file=debug_file,
             parameters=parameters,
             data_shape=data_shape,
+            dc_offsets=dc_offsets,
+            target=target,
+            secondary_source=secondary_source,
         )
         with self.session() as running_session:
             running_session.add(measurement)

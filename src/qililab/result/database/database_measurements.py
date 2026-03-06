@@ -102,6 +102,7 @@ class SequenceRun(base):  # type: ignore
     __tablename__ = "sequence_run"
 
     sequence_id: Column = Column("sequence_id", Integer, primary_key=True)
+    sequence_name: Column = Column("sequence_name", String, nullable=False)
     start_time: Column = Column("start_time", DateTime, nullable=False)
     end_time: Column = Column("end_time", DateTime)
     run_length: Column = Column("run_length", Interval)
@@ -111,8 +112,17 @@ class SequenceRun(base):  # type: ignore
     sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
 
     def __init__(
-        self, start_time, sequence_tree, sequence_completed, sample_name, end_time=None, run_length=None, cooldown=None
+        self,
+        sequence_name,
+        start_time,
+        sequence_tree,
+        sequence_completed,
+        sample_name,
+        end_time=None,
+        run_length=None,
+        cooldown=None,
     ):
+        self.sequence_name = sequence_name
         self.start_time = start_time
         self.end_time = end_time
         self.run_length = run_length
@@ -143,7 +153,7 @@ class SequenceRun(base):  # type: ignore
                 raise e
 
     def __repr__(self):
-        return f"{self.sequence_id} {self.start_time} {self.sequence_completed} {self.sample_name} {self.cooldown}"
+        return f"{self.sequence_id} {self.sequence_name} {self.start_time} {self.sequence_completed} {self.sample_name} {self.cooldown}"
 
 
 class Measurement(base):  # type: ignore
@@ -158,9 +168,12 @@ class Measurement(base):  # type: ignore
     end_time: Column = Column("end_time", DateTime)
     run_length: Column = Column("run_length", Interval)
     experiment_completed: Column = Column("experiment_completed", Boolean, nullable=False)
+    sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
     cooldown: Column = Column("cooldown", ForeignKey(Cooldown.cooldown), index=True)
     sequence_id: Column = Column("sequence_id", Integer)
-    sample_name: Column = Column("sample_name", ForeignKey(Sample.sample_name), nullable=False)
+    dc_offsets: Column = Column("dc_offsets", JSONB)
+    target: Column = Column("target", ARRAY(String))
+    secondary_source: Column = Column("secondary_source", ARRAY(String))
     result_path: Column = Column("result_path", String, unique=True, nullable=False)
     platform: Column = Column("platform", JSONB)
     experiment: Column = Column("experiment", JSONB)
@@ -258,6 +271,9 @@ class Measurement(base):  # type: ignore
         parameters=None,
         data_shape=None,
         debug_file=None,
+        dc_offsets=None,
+        target=None,
+        secondary_source=None,
     ):
         # Required fields
         self.experiment_name = experiment_name
@@ -279,6 +295,9 @@ class Measurement(base):  # type: ignore
         self.parameters = parameters
         self.data_shape = data_shape
         self.debug_file = debug_file
+        self.dc_offsets = dc_offsets
+        self.target = target
+        self.secondary_source = secondary_source
 
     def __repr__(self):
         return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.sample_name} {self.cooldown}"
