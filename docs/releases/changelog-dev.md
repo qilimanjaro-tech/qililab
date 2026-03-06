@@ -29,6 +29,27 @@
 - Added resistances inside `CrosstalkMatrix()` they can be set by `crosstalk.set_resistances()` in the same way as `crosstalk.set_offset`. Also they can be set inside the calibration file as resistances.
   [#1077](https://github.com/qilimanjaro-tech/qililab/pull/1077)
 
+- Added crosstalk history element within Calibration. The crosstalk history describes the state of the crosstalk at each iteration of the crosstalk calibration, each time a crosstalk calibration is done the user can add an element to the list with `add_crosstalk_history` and use `save_crosstalk(experiment_name)` at every step of the calibration to update the `crosstalk_history["history"]`. The user can then save the final crosstalk information through `save_history` and remove any element on the history that was not correctly implemented with `remove_history_step`.
+
+As an example of the code the user might run:
+
+```
+calibration = Calibration()
+calibration.crosstalk_matrix = crosstalk_matrix
+
+calibration.add_crosstalk_history()
+
+# Intra qubit experiments
+   calibration.save_crosstalk(experiment_name_1)
+
+# Inter qubit experiments
+   calibration.save_crosstalk(experiment_name_2)
+
+calibration.save_history()
+```
+
+  [#1079](https://github.com/qilimanjaro-tech/qililab/pull/1079)
+
 ### Improvements
 
 - Previously, the software filters in the `PulseDistortion` module were normalised by default.

@@ -253,3 +253,103 @@ class TestCalibration:
         assert calibration.crosstalk_matrix["flux_1"]["flux_1"] == crosstalk_matrix["flux_1"]["flux_1"]
 
         os.remove(path="calibration.yml")
+
+    def test_adding_crosstalk_history(self):
+        """Test adding a crosstalk matrix to the crosstalk history"""
+        buses = {
+            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
+            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+        }
+        crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+        calibration = Calibration()
+        calibration.crosstalk_matrix = crosstalk_matrix
+
+        calibration.add_crosstalk_history()
+
+        assert calibration.crosstalk_history[-1]["idx"] == 0
+        assert calibration.crosstalk_history[-1]["history"] == {}
+        assert calibration.crosstalk_history[-1]["flux_offsets"] == crosstalk_matrix.flux_offsets
+        assert calibration.crosstalk_history[-1]["full_matrix"] == crosstalk_matrix.matrix
+        
+    def test_adding_crosstalk_history_raises_error_no_crosstalk(self):
+        """Test adding a crosstalk matrix to the calibration object"""
+        calibration = Calibration()
+
+        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file"):
+            calibration.add_crosstalk_history()
+            
+    def test_save_crosstalk(self):
+        """Test adding a crosstalk history element"""
+        buses = {
+            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
+            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+        }
+        crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+        calibration = Calibration()
+        calibration.crosstalk_matrix = crosstalk_matrix
+
+        calibration.add_crosstalk_history()
+        experiment_name = "test_name"
+        calibration.save_crosstalk(experiment_name)
+
+        assert calibration.crosstalk_history[-1]["idx"] == 0
+        assert calibration.crosstalk_history[-1]["history"][experiment_name]["flux_offsets"] == crosstalk_matrix.flux_offsets
+        assert calibration.crosstalk_history[-1]["history"][experiment_name]["resistances"] == crosstalk_matrix.resistances
+        assert calibration.crosstalk_history[-1]["history"][experiment_name]["crosstalk_matrix"] == crosstalk_matrix.matrix
+        assert calibration.crosstalk_history[-1]["flux_offsets"] == crosstalk_matrix.flux_offsets
+        assert calibration.crosstalk_history[-1]["full_matrix"] == crosstalk_matrix.matrix
+        
+    def test_save_crosstalk_no_crosstalk_history(self):
+        """Test adding a crosstalk history element without creating"""
+        calibration = Calibration()
+
+        with pytest.raises(ValueError, match="Crosstalk History is empty. First run `Calibration.add_crosstalk_history`"):
+            calibration.save_crosstalk("test_name")
+            
+    def test_save_history(self):
+        """Test saving a crosstalk matrix to the crosstalk history"""
+        buses = {
+            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
+            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+        }
+        crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+        calibration = Calibration()
+        calibration.crosstalk_matrix = crosstalk_matrix
+
+        calibration.add_crosstalk_history()
+        calibration.save_history()
+
+        assert calibration.crosstalk_history[-1]["idx"] == 0
+        assert calibration.crosstalk_history[-1]["flux_offsets"] == crosstalk_matrix.flux_offsets
+        assert calibration.crosstalk_history[-1]["full_matrix"] == crosstalk_matrix.matrix
+        
+    def test_save_history_no_crosstalk_history(self):
+        """Test saving a crosstalk matrix to the crosstalk history without creating one"""
+        calibration = Calibration()
+
+        with pytest.raises(ValueError, match="Crosstalk History is empty. First run `Calibration.add_crosstalk_history`"):
+            calibration.save_history()
+
+    def test_remove_history_step(self):
+        """Test saving a crosstalk matrix to the crosstalk history"""
+        buses = {
+            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
+            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+        }
+        crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+        calibration = Calibration()
+        calibration.crosstalk_matrix = crosstalk_matrix
+
+        calibration.add_crosstalk_history()
+        calibration.add_crosstalk_history()
+        assert len(calibration.crosstalk_history) == 2
+        
+        calibration.remove_history_step(-1)
+        assert len(calibration.crosstalk_history) == 1
+        
+    def test_remove_history_step_no_crosstalk_history(self):
+        """Test saving a crosstalk matrix to the crosstalk history without creating one"""
+        calibration = Calibration()
+
+        with pytest.raises(ValueError, match="Crosstalk History is empty. First run `Calibration.add_crosstalk_history`"):
+            calibration.remove_history_step()
