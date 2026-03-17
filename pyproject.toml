@@ -36,7 +36,7 @@ dependencies = [
     "qpysequence>=0.10.8",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.10",
-    "sqlalchemy>=2.0.40",
+    "sqlalchemy<2.1",
     "submitit>=1.5.2",
     "urllib3>=2.3.0",
     "xarray>=2025.11.0",
