@@ -1556,6 +1556,7 @@ class Platform:
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
+        crosstalk: bool = True,
         debug: bool = False,
     ) -> QProgramResults:
         """Execute a :class:`.QProgram` using the platform instruments.
@@ -1587,6 +1588,8 @@ class Platform:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
+        if not crosstalk:
+            self.crosstalk = None
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
         return self.execute_compilation_output(output=output, debug=debug)
 
@@ -1650,6 +1653,7 @@ class Platform:
         qprograms: list[QProgram],
         bus_mappings: list[dict[str, str] | None] | dict[str, str] | None = None,
         calibrations: list[Calibration | None] | Calibration | None = None,
+        crosstalk: bool = True,
         debug: bool = False,
     ) -> list[QProgramResults]:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
@@ -1680,6 +1684,9 @@ class Platform:
         """
         if not qprograms:
             return []
+
+        if not crosstalk:
+            self.crosstalk = None
 
         # Normalize mappings and calibrations to one-per-qprogram
         bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))
