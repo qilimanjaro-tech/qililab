@@ -1590,6 +1590,8 @@ class Platform:
         """
         if not crosstalk:
             self.crosstalk = None
+            if calibration is not None:
+                calibration.crosstalk_matrix = None
         output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
         return self.execute_compilation_output(output=output, debug=debug)
 
@@ -1687,6 +1689,8 @@ class Platform:
 
         if not crosstalk:
             self.crosstalk = None
+            for calibration in calibrations_list:
+                calibration.crosstalk_matrix = None
 
         # Normalize mappings and calibrations to one-per-qprogram
         bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))
