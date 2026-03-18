@@ -220,7 +220,7 @@ class QDevilQDac2(VoltageSource):
             repetitions=repetitions,
             stepped=stepped,
         )
-        self._cache_dc[channel_id] = dc_list
+        self._cache_dc[f"{self.device.name}_{str(channel_id)}"] = dc_list
 
     def set_in_external_trigger(self, channel_id: ChannelID, in_port: int):
         """Method to read an external trigger and start a dc list when the Qdac reads this trigger.
@@ -232,11 +232,11 @@ class QDevilQDac2(VoltageSource):
 
         self._validate_channel(channel_id=channel_id)
 
-        if channel_id not in self._cache_dc.keys():
+        if f"{self.device.name}_{str(channel_id)}" not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
             )
-        self._cache_dc[channel_id].start_on_external(in_port)
+        self._cache_dc[f"{self.device.name}_{str(channel_id)}"].start_on_external(in_port)
 
     def set_in_internal_trigger(self, channel_id: ChannelID, trigger: str):
         """Method to read an external trigger and start a dc list when the Qdac reads this trigger.
@@ -250,11 +250,11 @@ class QDevilQDac2(VoltageSource):
 
         if str(trigger) not in self._triggers.keys():
             raise ValueError(f"Trigger with name {trigger} not created.")
-        if channel_id not in self._cache_dc.keys():
+        if f"{self.device.name}_{str(channel_id)}" not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
             )
-        self._cache_dc[channel_id].start_on(self._triggers[str(trigger)])
+        self._cache_dc[f"{self.device.name}_{str(channel_id)}"].start_on(self._triggers[str(trigger)])
 
     def set_out_external_trigger(self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6):
         """Method to send an external trigger at the start of a sequence.
@@ -266,14 +266,14 @@ class QDevilQDac2(VoltageSource):
 
         self._validate_channel(channel_id=channel_id)
 
-        if channel_id not in self._cache_dc.keys():
+        if f"{self.device.name}_{str(channel_id)}" not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
             )
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[channel_id].start_marker()
+        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{str(channel_id)}"].start_marker()
 
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
@@ -287,14 +287,14 @@ class QDevilQDac2(VoltageSource):
 
         self._validate_channel(channel_id=channel_id)
 
-        if channel_id not in self._cache_dc.keys():
+        if f"{self.device.name}_{str(channel_id)}" not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
             )
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[channel_id].start_marker()
+        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{str(channel_id)}"].start_marker()
 
     def set_end_marker_external_trigger(
         self,
@@ -315,14 +315,14 @@ class QDevilQDac2(VoltageSource):
         """
         self._validate_channel(channel_id=channel_id)
 
-        if channel_id not in self._cache_dc.keys():
+        if f"{self.device.name}_{str(channel_id)}" not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
             )
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
+        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{str(channel_id)}"].allocate_trigger()
 
         channel = self.device.channel(channel_id)
         if not step:
@@ -351,14 +351,14 @@ class QDevilQDac2(VoltageSource):
         """
         self._validate_channel(channel_id=channel_id)
 
-        if channel_id not in self._cache_dc.keys():
+        if f"{self.device.name}_{str(channel_id)}" not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
             )
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
+        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{str(channel_id)}"].allocate_trigger()
 
         channel = self.device.channel(channel_id)
         if not step:
@@ -378,14 +378,14 @@ class QDevilQDac2(VoltageSource):
         """
         self._validate_channel(channel_id=channel_id)
 
-        if channel_id not in self._cache_dc.keys():
+        if f"{self.device.name}_{str(channel_id)}" not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
             )
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
+        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{str(channel_id)}"].allocate_trigger()
 
         channel = self.device.channel(channel_id)
         if not step:
@@ -403,14 +403,14 @@ class QDevilQDac2(VoltageSource):
         """
         self._validate_channel(channel_id=channel_id)
 
-        if channel_id not in self._cache_dc.keys():
+        if f"{self.device.name}_{str(channel_id)}" not in self._cache_dc.keys():
             raise ValueError(
                 f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}"
             )
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[channel_id].allocate_trigger()
+        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{str(channel_id)}"].allocate_trigger()
 
         channel = self.device.channel(channel_id)
         if not step:
@@ -532,9 +532,8 @@ class QDevilQDac2(VoltageSource):
         self.device.reset()
 
     def remove_digital_trace(self):
-        if self._triggers:
-            self.clear_trigger()
-            self._triggers = {}
+        self.clear_trigger()
+        self._triggers = {}
         self.device.remove_traces()
 
     def _validate_channel(self, channel_id: ChannelID | None):
