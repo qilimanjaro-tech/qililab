@@ -14,12 +14,12 @@
 
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
+
 from qililab.qprogram.blocks import Block
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
-
-if TYPE_CHECKING:
-    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 
 
 @yaml.register_class
@@ -172,6 +172,7 @@ class Calibration:
             self.crosstalk_history[-1]["flux_offsets"] = self.crosstalk_matrix.flux_offsets
             self.crosstalk_history[-1]["block_diag_matrix"] = self.crosstalk_matrix.matrix
             self.crosstalk_history[-1]["full_matrix"] = self.crosstalk_matrix.matrix
+            self.crosstalk_history[-1]["previous_matrix"] = self.crosstalk_matrix.matrix
 
         iteration_idx = len(self.crosstalk_history)
         self.crosstalk_history.append({})
@@ -180,56 +181,71 @@ class Calibration:
         self.crosstalk_history[-1]["flux_offsets"] = None
         self.crosstalk_history[-1]["block_diag_matrix"] = None
         self.crosstalk_history[-1]["full_matrix"] = None
+        self.crosstalk_history[-1]["previous_matrix"] = self.crosstalk_matrix.matrix
 
-    def add_intra_q_crosstalk_results(
+    def add_intra_crosstalk(
         self,
-        flux_offsets: dict,
-        block_diag_xt_matrix: dict,
-        new_matrix: dict[str, dict[str, float]],
-        new_offsets: dict[str, float],
+        flux_offsets: dict[str, float],
+        block_diag_xt_matrix: dict[str, dict[str, float]],
     ):
-        """Function to save the full crosstalk information after every step of the calibration.
+        """Function to save the intra qubit crosstalk results iteration.
+        The offsets is stored inside crosstalk_history and crosstalk_matrix.flux_offsets after a transformation.
+        The Diagonal matrix is stored raw inside crosstalk_history and crosstalk_matrix.matrix after a transformation.
 
         Args:
-            experiment_name (str): Name of the specific experiment. E.i., "Intra_qubit_coupler", "Inter_qubit"...
-            crosstalk (CrosstalkMatrix | None, optional): Crosstalk to be added in history. Defaults to `Calibration.crosstalk`.
+            flux_offsets (dict[str, float]): Crosstalk offsets fitted with intra qubit data.
+            block_diag_xt_matrix (dict[str, dict[str, float]]): Diagonal crosstalk matrix result from intra qubit fitting.
 
         Raises:
-            ValueError: If no crosstalk history has been created.
+            ValueError: If no crosstalk has been given to calibration file.
         """
-        if not isinstance(flux_offsets, dict):  # TODO add stronger checking, check that buses are correct etc
-            raise TypeError("Flux offsets need to be dict")
         if not self.crosstalk_matrix:
             raise ValueError("No crosstalk has been given to the Calibration file")
+
+        bus_list = list(self.crosstalk_matrix.matrix.keys())
+        if set(bus_list) != set(block_diag_xt_matrix.keys()):
+            raise ValueError("Block diagonal crosstalk doesn't contain the same buses as saved crosstalk.")
 
         self._add_crosstalk_history_iteration()
 
         self.crosstalk_history[-1]["flux_offsets"] = flux_offsets
         self.crosstalk_history[-1]["block_diag_matrix"] = block_diag_xt_matrix
 
-        self.crosstalk_matrix.matrix = new_matrix
-        self.crosstalk_matrix.flux_offsets = new_offsets
+        diag_crosstalk = CrosstalkMatrix().from_buses(block_diag_xt_matrix)
+        old_offsets = np.array([self.crosstalk_matrix.flux_offsets[bus] for bus in bus_list])
+        result_offsets = np.array([flux_offsets[bus] for bus in bus_list])
 
-    def add_inter_q_crosstalk_results(self, full_crosstalk_matrix_i: dict, new_matrix: dict):
-        """Function to save the full crosstalk information after every step of the calibration.
+        new_matrix = diag_crosstalk.to_array() @ self.crosstalk_matrix.to_array()
+        new_offsets = diag_crosstalk.to_array() @ old_offsets + result_offsets
+
+        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
+        self.crosstalk_matrix.flux_offsets = dict(zip(bus_list, new_offsets))
+
+    def add_inter_crosstalk(self, full_crosstalk_matrix: dict[str, dict[str, float]]):
+        """Function to save the inter qubit crosstalk results iteration.
+        The full crosstalk matrix is stored raw inside crosstalk_history and crosstalk_matrix.matrix after a transformation.
 
         Args:
-            experiment_name (str): Name of the specific experiment. E.i., "Intra_qubit_coupler", "Inter_qubit"...
-            crosstalk (CrosstalkMatrix | None, optional): Crosstalk to be added in history. Defaults to `Calibration.crosstalk`.
+            full_crosstalk_matrix (dict[str, dict[str, float]]): Full crosstalk matrix result from inter qubit fitting.
 
         Raises:
-            ValueError: If no crosstalk history has been created.
+            ValueError: If no crosstalk has been given to calibration file.
         """
-        if not isinstance(full_crosstalk_matrix_i, dict):
-            raise TypeError("Flux offsets need to be dict")
         if not self.crosstalk_matrix:
             raise ValueError("No crosstalk has been given to the Calibration file")
 
-        if self.crosstalk_history[-1]["block_diag_matrix"] is not None:
+        bus_list = list(self.crosstalk_matrix.matrix.keys())
+        if set(bus_list) != set(full_crosstalk_matrix.keys()):
+            raise ValueError("Full crosstalk doesn't contain the same buses as saved crosstalk.")
+
+        if not self.crosstalk_history or self.crosstalk_history[-1]["full_matrix"] is not None:
             self._add_crosstalk_history_iteration()
 
-        self.crosstalk_history[-1]["full_matrix"] = full_crosstalk_matrix_i
-        self.crosstalk_matrix.matrix = new_matrix
+        self.crosstalk_history[-1]["full_matrix"] = full_crosstalk_matrix
+        full_crosstalk = CrosstalkMatrix().from_buses(full_crosstalk_matrix)
+
+        new_matrix = full_crosstalk.to_array() @ self.crosstalk_matrix.to_array()
+        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
 
     def remove_history_step(self, idx: int = -1):
         """Function to remove an iteration inside the crosstalk history in case the user wants to remove a specific faulty calibration.
@@ -241,6 +257,8 @@ class Calibration:
             ValueError: If no crosstalk history has been created.
         """
         if not self.crosstalk_history:
-            raise ValueError("Crosstalk History is empty. First run `Calibration.add_crosstalk_history`")
+            raise ValueError(
+                "Crosstalk History is empty. First run `Calibration.add_intra_crosstalk` and `Calibration.add_inter_crosstalk`"
+            )
 
         self.crosstalk_history.pop(idx)

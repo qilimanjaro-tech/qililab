@@ -254,32 +254,105 @@ class TestCalibration:
 
         os.remove(path="calibration.yml")
 
-    def test_adding_crosstalk_history(self):
-        """Test adding a crosstalk matrix to the crosstalk history"""
+    def test_add_intra_crosstalk(self):
+        """Test adding an intra qubit crosstalk matrix to the crosstalk history"""
         buses = {
-            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
-            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+            "flux_0": {"flux_0": 1., "flux_1": 0.3},
+            "flux_1": {"flux_0": 0.3, "flux_1": 1.},
         }
+        diag_buses = {
+            "flux_0": {"flux_0": 2, "flux_1": 0},
+            "flux_1": {"flux_0": 0, "flux_1": 2},
+        }
+        offsets_buses = {"flux_0": 1., "flux_1": 0.}
+        new_buses = {
+            "flux_0": {"flux_0": 2.0, "flux_1": 0.6},
+            "flux_1": {"flux_0": 0.6, "flux_1": 2.0},
+        }
+        new_offsets = {"flux_0": 1.0, "flux_1": 0.0}
+
         crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
         calibration = Calibration()
         calibration.crosstalk_matrix = crosstalk_matrix
 
-        calibration.add_crosstalk_history()
+        calibration.add_intra_crosstalk(block_diag_xt_matrix = diag_buses, flux_offsets = offsets_buses)
 
-        assert calibration.crosstalk_history[-1]["idx"] == 0
-        assert calibration.crosstalk_history[-1]["history"] == {}
-        assert calibration.crosstalk_history[-1]["flux_offsets"] == crosstalk_matrix.flux_offsets
-        assert calibration.crosstalk_history[-1]["full_matrix"] == crosstalk_matrix.matrix
+        assert calibration.crosstalk_history[-1]["idx"] == 1
+        assert calibration.crosstalk_history[-1]["flux_offsets"] == offsets_buses
+        assert calibration.crosstalk_history[-1]["block_diag_matrix"] == diag_buses
+        assert calibration.crosstalk_matrix.matrix == new_buses
+        assert calibration.crosstalk_matrix.flux_offsets == new_offsets
         
-    def test_adding_crosstalk_history_raises_error_no_crosstalk(self):
-        """Test adding a crosstalk matrix to the calibration object"""
+    def test_add_intra_crosstalk_raises_error_no_crosstalk(self):
+        """Test adding an intra qubit crosstalk matrix to the crosstalk history raises error when no crosstalk is given"""
         calibration = Calibration()
+        diag_buses = {
+            "flux_0": {"flux_0": 2, "flux_1": 0},
+            "flux_1": {"flux_0": 0, "flux_1": 2},
+        }
+        offsets_buses = {"flux_0": 1., "flux_1": 0.}
 
         with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file"):
-            calibration.add_crosstalk_history()
+            calibration.add_intra_crosstalk(block_diag_xt_matrix = diag_buses, flux_offsets = offsets_buses)
+
+    def test_add_intra_crosstalk_raises_error_wrong_buses(self):
+        """Test adding an intra qubit crosstalk matrix to the crosstalk history raises error the buses don't match"""
+        buses = {
+            "flux_0": {"flux_0": 1., "flux_1": 0.3},
+            "flux_1": {"flux_0": 0.3, "flux_1": 1.},
+        }
+        crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+        calibration = Calibration()
+        calibration.crosstalk_matrix = crosstalk_matrix
+
+        diag_buses = {
+            "flux_0": {"flux_0": 2, "flux_3": 0},
+            "flux_3": {"flux_0": 0, "flux_3": 2},
+        }
+        offsets_buses = {"flux_0": 1., "flux_3": 0.}
+
+        with pytest.raises(ValueError, match="Block diagonal crosstalk doesn't contain the same buses as saved crosstalk."):
+            calibration.add_intra_crosstalk(block_diag_xt_matrix = diag_buses, flux_offsets = offsets_buses)
             
-    def test_save_crosstalk(self):
-        """Test adding a crosstalk history element"""
+    def test_add_inter_crosstalk(self):
+        """Test adding an intra qubit crosstalk matrix to the crosstalk history"""
+        buses = {
+            "flux_0": {"flux_0": 1., "flux_1": 0.3},
+            "flux_1": {"flux_0": 0.3, "flux_1": 1.},
+        }
+        matrix_buses = {
+            "flux_0": {"flux_0": 2.0, "flux_1": 0.5},
+            "flux_1": {"flux_0": 0.5, "flux_1": 2.0},
+        }
+        new_buses = {
+            "flux_0": {"flux_0": 2.15, "flux_1": 1.1},
+            "flux_1": {"flux_0": 1.1, "flux_1": 2.15},
+        }
+
+        crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
+        calibration = Calibration()
+        calibration.crosstalk_matrix = crosstalk_matrix
+
+        calibration.add_inter_crosstalk(full_crosstalk_matrix = matrix_buses)
+
+        assert calibration.crosstalk_history[-1]["idx"] == 1
+        assert calibration.crosstalk_history[-1]["full_matrix"] == matrix_buses
+        assert calibration.crosstalk_matrix.matrix == new_buses
+        
+    def test_add_inter_crosstalk_raises_error_no_crosstalk(self):
+        """Test adding an intra qubit crosstalk matrix to the crosstalk history raises error when no crosstalk is given"""
+        calibration = Calibration()
+        diag_buses = {
+            "flux_0": {"flux_0": 1.47046905, "flux_1": 0},
+            "flux_1": {"flux_0": 0, "flux_1": 1.58247856},
+        }
+        offsets_buses = {"flux_0": 1., "flux_1": 0.}
+
+        with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file"):
+            calibration.add_intra_crosstalk(block_diag_xt_matrix = diag_buses, flux_offsets = offsets_buses)
+
+    def test_add_inter_crosstalk_raises_error_wrong_buses(self):
+        """Test adding an intra qubit crosstalk matrix to the crosstalk history raises error the buses don't match"""
         buses = {
             "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
             "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
@@ -288,60 +361,33 @@ class TestCalibration:
         calibration = Calibration()
         calibration.crosstalk_matrix = crosstalk_matrix
 
-        calibration.add_crosstalk_history()
-        experiment_name = "test_name"
-        calibration.save_crosstalk(experiment_name)
-
-        assert calibration.crosstalk_history[-1]["idx"] == 0
-        assert calibration.crosstalk_history[-1]["history"][experiment_name]["flux_offsets"] == crosstalk_matrix.flux_offsets
-        assert calibration.crosstalk_history[-1]["history"][experiment_name]["resistances"] == crosstalk_matrix.resistances
-        assert calibration.crosstalk_history[-1]["history"][experiment_name]["crosstalk_matrix"] == crosstalk_matrix.matrix
-        assert calibration.crosstalk_history[-1]["flux_offsets"] == crosstalk_matrix.flux_offsets
-        assert calibration.crosstalk_history[-1]["full_matrix"] == crosstalk_matrix.matrix
-        
-    def test_save_crosstalk_no_crosstalk_history(self):
-        """Test adding a crosstalk history element without creating"""
-        calibration = Calibration()
-
-        with pytest.raises(ValueError, match="Crosstalk History is empty. First run `Calibration.add_crosstalk_history`"):
-            calibration.save_crosstalk("test_name")
-            
-    def test_save_history(self):
-        """Test saving a crosstalk matrix to the crosstalk history"""
-        buses = {
-            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
-            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+        diag_buses = {
+            "flux_0": {"flux_0": 1.47046905, "flux_3": 0},
+            "flux_3": {"flux_0": 0, "flux_3": 1.58247856},
         }
-        crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
-        calibration = Calibration()
-        calibration.crosstalk_matrix = crosstalk_matrix
+        offsets_buses = {"flux_0": 1., "flux_3": 0.}
 
-        calibration.add_crosstalk_history()
-        calibration.save_history()
-
-        assert calibration.crosstalk_history[-1]["idx"] == 0
-        assert calibration.crosstalk_history[-1]["flux_offsets"] == crosstalk_matrix.flux_offsets
-        assert calibration.crosstalk_history[-1]["full_matrix"] == crosstalk_matrix.matrix
-        
-    def test_save_history_no_crosstalk_history(self):
-        """Test saving a crosstalk matrix to the crosstalk history without creating one"""
-        calibration = Calibration()
-
-        with pytest.raises(ValueError, match="Crosstalk History is empty. First run `Calibration.add_crosstalk_history`"):
-            calibration.save_history()
+        with pytest.raises(ValueError, match="Block diagonal crosstalk doesn't contain the same buses as saved crosstalk."):
+            calibration.add_intra_crosstalk(block_diag_xt_matrix = diag_buses, flux_offsets = offsets_buses)
 
     def test_remove_history_step(self):
         """Test saving a crosstalk matrix to the crosstalk history"""
         buses = {
-            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
-            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+            "flux_0": {"flux_0": 1., "flux_1": 0.3},
+            "flux_1": {"flux_0": 0.3, "flux_1": 1.},
         }
+        diag_buses = {
+            "flux_0": {"flux_0": 2, "flux_1": 0},
+            "flux_1": {"flux_0": 0, "flux_1": 2},
+        }
+        offsets_buses = {"flux_0": 1., "flux_1": 0.}
+
         crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
         calibration = Calibration()
         calibration.crosstalk_matrix = crosstalk_matrix
 
-        calibration.add_crosstalk_history()
-        calibration.add_crosstalk_history()
+        calibration.add_intra_crosstalk(block_diag_xt_matrix = diag_buses, flux_offsets = offsets_buses)
+
         assert len(calibration.crosstalk_history) == 2
         
         calibration.remove_history_step(-1)
@@ -351,5 +397,7 @@ class TestCalibration:
         """Test saving a crosstalk matrix to the crosstalk history without creating one"""
         calibration = Calibration()
 
-        with pytest.raises(ValueError, match="Crosstalk History is empty. First run `Calibration.add_crosstalk_history`"):
+        with pytest.raises(ValueError, match=
+            "Crosstalk History is empty. First run `Calibration.add_intra_crosstalk` and `Calibration.add_inter_crosstalk`"
+        ):
             calibration.remove_history_step()
