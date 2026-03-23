@@ -342,33 +342,31 @@ class TestCalibration:
     def test_add_inter_crosstalk_raises_error_no_crosstalk(self):
         """Test adding an intra qubit crosstalk matrix to the crosstalk history raises error when no crosstalk is given"""
         calibration = Calibration()
-        diag_buses = {
-            "flux_0": {"flux_0": 1.47046905, "flux_1": 0},
-            "flux_1": {"flux_0": 0, "flux_1": 1.58247856},
+        matrix_buses = {
+            "flux_0": {"flux_0": 2.0, "flux_1": 0.5},
+            "flux_1": {"flux_0": 0.5, "flux_1": 2.0},
         }
-        offsets_buses = {"flux_0": 1., "flux_1": 0.}
 
         with pytest.raises(ValueError, match="No crosstalk has been given to the Calibration file"):
-            calibration.add_intra_crosstalk(block_diag_xt_matrix = diag_buses, flux_offsets = offsets_buses)
+            calibration.add_inter_crosstalk(full_crosstalk_matrix = matrix_buses)
 
     def test_add_inter_crosstalk_raises_error_wrong_buses(self):
         """Test adding an intra qubit crosstalk matrix to the crosstalk history raises error the buses don't match"""
         buses = {
-            "flux_0": {"flux_0": 1.47046905, "flux_1": 0.12276261},
-            "flux_1": {"flux_0": -0.55322207, "flux_1": 1.58247856},
+            "flux_0": {"flux_0": 1., "flux_1": 0.3},
+            "flux_1": {"flux_0": 0.3, "flux_1": 1.},
         }
         crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
         calibration = Calibration()
         calibration.crosstalk_matrix = crosstalk_matrix
 
-        diag_buses = {
-            "flux_0": {"flux_0": 1.47046905, "flux_3": 0},
-            "flux_3": {"flux_0": 0, "flux_3": 1.58247856},
+        matrix_buses = {
+            "flux_0": {"flux_0": 2.0, "flux_3": 0.5},
+            "flux_3": {"flux_0": 0.5, "flux_3": 2.0},
         }
-        offsets_buses = {"flux_0": 1., "flux_3": 0.}
 
-        with pytest.raises(ValueError, match="Block diagonal crosstalk doesn't contain the same buses as saved crosstalk."):
-            calibration.add_intra_crosstalk(block_diag_xt_matrix = diag_buses, flux_offsets = offsets_buses)
+        with pytest.raises(ValueError, match="Full crosstalk doesn't contain the same buses as saved crosstalk."):
+            calibration.add_inter_crosstalk(full_crosstalk_matrix = matrix_buses)
 
     def test_remove_history_step(self):
         """Test saving a crosstalk matrix to the crosstalk history"""
