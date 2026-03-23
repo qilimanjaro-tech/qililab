@@ -158,8 +158,7 @@ class Calibration:
         return self.blocks[name]
 
     def _add_crosstalk_history_iteration(self):
-        """Creates a new empty iteration on the crosstalk history tuple.
-        """
+        """Creates a new empty iteration on the crosstalk history tuple."""
 
         if not self.crosstalk_history:  # If first calibration run, add the initial crosstalk matrix as iteration 0
             self.crosstalk_history.append({})
