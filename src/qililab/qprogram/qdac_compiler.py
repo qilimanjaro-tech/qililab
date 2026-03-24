@@ -470,7 +470,7 @@ class QdacCompiler:
             if in_instrument is not self._out_instrument:
                 bus_list = [bus.alias for bus in self._qdac_buses if in_instrument in bus.instruments]
                 for bus in bus_list:
-                    if self._channels[bus] in in_instrument._cache_dc:
+                    if f"{in_instrument.device.name}_{str(self._channels[bus])}" in in_instrument._cache_dc:
                         in_instrument.set_in_external_trigger(channel_id=self._channels[bus], in_port=in_instrument.in_trigger)
         self._qdacs = [qdac for qdac in self._qdacs if qdac != self._out_instrument] + [self._out_instrument]
 
