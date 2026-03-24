@@ -45,6 +45,38 @@ def fixture_stream_array():
     )
 
 
+@pytest.fixture(name="stream_array_qubit_idx")
+def fixture_stream_array_qubit_idx():
+    """fixture_stream_array
+
+    Returns:
+        stream_array: StreamArray
+    """
+    shape = (2, 2, 1)
+    loops = {"test_amp_loop": AMP_VALUES}
+    platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
+    experiment_name = "test_stream_array"
+    mock_database = MagicMock()
+    db_manager = mock_database
+    qubit_idx = 1
+    secondary_idx = ["1", "2"]
+
+    qprogram = QProgram()
+    qprogram.play("readout_q0", Square(1.0, 100))
+    qprogram.wait("readout_q0", 100)
+
+    return StreamArray(
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        qprogram=qprogram,
+        qubit_idx=qubit_idx,
+        secondary_idx=secondary_idx,
+    )
+
+
 @pytest.fixture(name="stream_array_bus_map")
 def fixture_stream_array_bus_map():
     """fixture_stream_array
@@ -62,8 +94,8 @@ def fixture_stream_array_bus_map():
     qprogram = QProgram()
     qprogram.play("readout", Square(1.0, 100))
     qprogram.wait("readout", 100)
-    
-    bus_mapping={"readout": "feedline_input_output_bus"}
+
+    bus_mapping = {"readout": "feedline_input_output_bus"}
 
     return StreamArray(
         shape=shape,
@@ -72,7 +104,7 @@ def fixture_stream_array_bus_map():
         experiment_name=experiment_name,
         db_manager=db_manager,
         qprogram=qprogram,
-        bus_mapping=bus_mapping
+        bus_mapping=bus_mapping,
     )
 
 
@@ -252,6 +284,23 @@ class TestStreamArray:
                 assert stream_array_bus_map.loops == {"test_amp_loop": np.arange(0, 1, 2)}
                 assert stream_array_bus_map._get_debug() == debug_q1asm
 
+    def test_stream_array_instantiation_qubit_idx(self, stream_array_qubit_idx: StreamArray):
+        """Tests the instantiation of a StreamArray object with target and secondary indexes."""
+        # Create mock for the file context
+        debug_q1asm = "Bus readout_q0:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
+
+            with stream_array_qubit_idx:
+                assert (stream_array_qubit_idx.results == np.zeros(shape=stream_array_qubit_idx.shape)).all
+                assert stream_array_qubit_idx.loops == {"test_amp_loop": np.arange(0, 1, 2)}
+                assert stream_array_qubit_idx._get_debug() == debug_q1asm
+                assert stream_array_qubit_idx._get_index_list(stream_array_qubit_idx.qubit_idx) == ["1"]
+                assert stream_array_qubit_idx._get_index_list(stream_array_qubit_idx.second_idx) == ["1", "2"]
+
     def test_stream_array_instantiation_for_bus_not_in_platform(self, stream_array_bus_not_in_platform: StreamArray):
         """Tests the instantiation of a StreamArray object with a bus outside of the runcard to emulate bus mapping."""
         # Create mock for the file context
@@ -263,7 +312,9 @@ class TestStreamArray:
             mock_h5file.return_value = mock_file
 
             with stream_array_bus_not_in_platform:
-                assert (stream_array_bus_not_in_platform.results == np.zeros(shape=stream_array_bus_not_in_platform.shape)).all
+                assert (
+                    stream_array_bus_not_in_platform.results == np.zeros(shape=stream_array_bus_not_in_platform.shape)
+                ).all
                 assert stream_array_bus_not_in_platform.loops == {"test_amp_loop": np.arange(0, 1, 2)}
                 assert stream_array_bus_not_in_platform._get_debug() == debug_q1asm
 

@@ -235,6 +235,7 @@ class QbloxCompiler:
         self._qblox_buses: list[str]
         self._crosstalk: CrosstalkMatrix | None = None
         self._acquisition_metadata: dict[str, dict[UUID, int]] = {}
+        self._single_channel: list[str] = []
 
     def traverse_qprogram_acquire(self, block: Block):
         """Traverses a QProgram to gather information on the acquisition."""
@@ -256,6 +257,7 @@ class QbloxCompiler:
         ext_trigger: bool = False,
         qblox_buses: list[str] | None = None,
         crosstalk: CrosstalkMatrix | None = None,
+        single_channel: list[str] | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -331,6 +333,7 @@ class QbloxCompiler:
         self._sync_counter = 0
         self._buses = self._populate_buses()
         self._ext_trigger = ext_trigger
+        self._single_channel = single_channel if single_channel is not None else []
 
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
@@ -525,7 +528,10 @@ class QbloxCompiler:
             return index, len(envelope)
 
         index_I, length_I = handle_waveform(waveform_I, 0)
-        index_Q, _ = handle_waveform(waveform_Q, len(waveform_I.envelope()))
+        if waveform_Q is None and bus in self._single_channel:
+            index_Q, _ = handle_waveform(waveform_I, 0)
+        else:
+            index_Q, _ = handle_waveform(waveform_Q, len(waveform_I.envelope()))
         return index_I, index_Q, length_I
 
     def _append_to_weights_of_bus(self, bus: str, weights: IQWaveform):

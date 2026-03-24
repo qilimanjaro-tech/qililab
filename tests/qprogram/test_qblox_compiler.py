@@ -2026,6 +2026,39 @@ set_freq         R5
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
+    def test_no_Q_waveform_single_channel(self, multiple_play_operations_with_no_Q_waveform: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(
+            qprogram=multiple_play_operations_with_no_Q_waveform, single_channel={"drive": True}
+        )
+
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        assert len(sequences["drive"]._waveforms._waveforms) == 1
+        assert len(sequences["drive"]._acquisitions._acquisitions) == 0
+        assert len(sequences["drive"]._weights._weights) == 0
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 0, 40
+                            play             0, 0, 40
+                            play             0, 0, 40
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
     def test_play_square_waveforms_with_optimization(self, play_square_waveforms_with_optimization: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=play_square_waveforms_with_optimization)

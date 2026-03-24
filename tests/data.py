@@ -358,6 +358,18 @@ class Galadriel:
                 Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
             },
+            {
+                "identifier": 5,
+                "outputs": [0],
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: True,
+            },
         ],
     }
 
@@ -706,6 +718,11 @@ class Galadriel:
             RUNCARD.ALIAS: "flux_line_q3_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             RUNCARD.CHANNELS: [4, None],
+        },
+        {
+            RUNCARD.ALIAS: "drive_line_q0_bus_baseband",
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value],
+            RUNCARD.CHANNELS: [5],
         },
         {
             RUNCARD.ALIAS: "flux_line_too_many_instr",
