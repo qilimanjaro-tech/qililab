@@ -472,7 +472,7 @@ class QdacCompiler:
                 for bus in bus_list:
                     if self._channels[bus] in in_instrument._cache_dc:
                         in_instrument.set_in_external_trigger(channel_id=self._channels[bus], in_port=in_instrument.in_trigger)
-        self._qdacs = [qdac for qdac in self._qdacs if qdac != self._out_instrument] + [self._out_instrument]
+        self._qdacs = [self._out_instrument]
 
     @staticmethod
     def _calculate_iterations(start: int | float, stop: int | float, step: int | float):
