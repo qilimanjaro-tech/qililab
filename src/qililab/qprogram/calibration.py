@@ -233,13 +233,10 @@ class Calibration:
         if set(bus_list) != set(full_crosstalk_matrix.keys()):
             raise ValueError("Full crosstalk doesn't contain the same buses as saved crosstalk.")
 
-        if not self.crosstalk_history or self.crosstalk_history[-1]["full_matrix"] is not None:
-            raise ValueError("This would overwrite previous full matrix, execute add_intra_crosstalk first.")
-
         self.crosstalk_history[-1]["full_matrix"] = full_crosstalk_matrix
 
-        new_matrix = self.crosstalk_history[0]["previous_matrix"]
-        for i in range(self.crosstalk_history):
+        new_matrix = CrosstalkMatrix().from_buses(self.crosstalk_history[0]["previous_matrix"]).to_array()
+        for i in range(len(self.crosstalk_history)):
             full_crosstalk = CrosstalkMatrix().from_buses(self.crosstalk_history[i]["full_matrix"])
             new_matrix @= full_crosstalk.to_array()
             self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
