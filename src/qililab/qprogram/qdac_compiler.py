@@ -463,7 +463,7 @@ class QdacCompiler:
         return hash
 
     def _handle_simultaneous_qdacs(self):
-        out_bus = next((bus.alias for bus in self._qdac_buses if self._out_instrument in bus.instruments), None)
+        out_bus = next((bus.alias for bus in self._qdac_buses if self._out_instrument in bus.instruments and bus.alias in self._qprogram.buses), None)
         self._out_instrument.set_out_external_trigger(channel_id=self._channels[out_bus], out_port=self._out_instrument.out_trigger, trigger="qdac_external_trigger")
 
         for in_instrument in self._qdacs:
