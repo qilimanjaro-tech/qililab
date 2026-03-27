@@ -31,6 +31,19 @@
 
 ### Improvements
 
+- For Qblox, the acquisition matrix needs to be reset at each `initial_setup` and `acquire_qprogram_results` call for QRM and QRM-RF instruments. The reset is performed by uploading an empty sequence. This ensures that users do not encounter limitations on the number of available bins due to previously run experiments.
+
+  The empty sequence uploaded is:
+  ```
+  empty_sequence = {
+              "waveforms": {},
+                  "weights": {},
+                  "acquisitions": {},
+                  "program": "",
+          }
+  ```
+  [#1082](https://github.com/qilimanjaro-tech/qililab/pull/1082)
+
 - Previously, the software filters in the `PulseDistortion` module were normalised by default.
 This PR changes the default value of `auto_norm` to False, as the previous behaviour was considered counterintuitive.
   [#1075](https://github.com/qilimanjaro-tech/qililab/pull/1075)
