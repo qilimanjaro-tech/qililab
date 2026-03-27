@@ -15,6 +15,19 @@
 
 ### Improvements
 
+- For Qblox, the acquisition matrix needs to be reset at each `initial_setup` and `acquire_qprogram_results` call for QRM and QRM-RF instruments. The reset is performed by uploading an empty sequence. This ensures that users do not encounter limitations on the number of available bins due to previously run experiments.
+
+  The empty sequence uploaded is:
+  ```
+  empty_sequence = {
+              "waveforms": {},
+                  "weights": {},
+                  "acquisitions": {},
+                  "program": "",
+          }
+  ```
+  [#1334](https://github.com/qilimanjaro-tech/qililab/pull/1334)
+
 - Implemented a new driver for the Becker Nachrichtentechnik RSWU-SP16TR
   [#1020](https://github.com/qilimanjaro-tech/qililab/pull/1020)
 
