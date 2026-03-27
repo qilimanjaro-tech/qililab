@@ -86,10 +86,10 @@ class QbloxQRM(QbloxModule):
             self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
             empty_sequence = {
                 "waveforms": {},
-                    "weights": {},
-                    "acquisitions": {},
-                    "program": "",
-                    }
+                "weights": {},
+                "acquisitions": {},
+                "program": "",
+            }
             self.device.sequencers[sequencer_id].sequence(empty_sequence)
             self._set_integration_length(
                 value=cast("QbloxADCSequencer", sequencer).integration_length, sequencer_id=sequencer_id
@@ -174,11 +174,11 @@ class QbloxQRM(QbloxModule):
                 # always deleting acquisitions without checking save_adc flag
                 self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
                 empty_sequence = {
-                "waveforms": {},
+                    "waveforms": {},
                     "weights": {},
                     "acquisitions": {},
                     "program": "",
-                    }
+                }
                 self.device.sequencers[sequencer.identifier].sequence(empty_sequence)
         return results
 
