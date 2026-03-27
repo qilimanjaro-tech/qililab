@@ -392,6 +392,7 @@ class TestQbloxQRM:
         assert qrm.device.sequencers[0].sync_en.call_count == 1
         assert qrm.device.sequencers[1].sync_en.call_count == 1
         assert qrm.device.delete_acquisition_data.call_count == 2
+        assert qrm.device.sequencers.call_count == 2
 
     def test_acquire_qprogram_results(self, qrm: QbloxQRM):
         """Test uploading a QpySequence to the QCM module."""
@@ -413,6 +414,7 @@ class TestQbloxQRM:
         assert qrm.device.store_scope_acquisition.call_count == 1
         assert qrm.device.get_acquisitions.call_count == 2
         assert qrm.device.delete_acquisition_data.call_count == 2
+        assert qrm.device.sequencers.call_count == 2
 
     def test_clear_cache(self, qrm: QbloxQRM):
         """Test clearing the cache of the QCM module."""
