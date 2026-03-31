@@ -686,6 +686,7 @@ class QProgram(StructuredProgram):
             reset_pulse: IQWaveform,
             trigger_address: int = 1,
             save_adc: bool = False,
+            wait_before_pi_pulse: int = 0,
         ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
@@ -737,6 +738,7 @@ class QProgram(StructuredProgram):
             reset_pulse: IQWaveform | str,
             trigger_address: int = 1,
             save_adc: bool = False,
+            wait_before_pi_pulse: int = 0,
         ):
             """Play a measurement and conditionally apply a reset pulse based on the result. This enables active reset for transmon qubits.
 
@@ -766,6 +768,7 @@ class QProgram(StructuredProgram):
                     reset_pulse=reset_pulse,
                     trigger_address=trigger_address,
                     save_adc=save_adc,
+                    wait_before_pi_pulse=wait_before_pi_pulse,
                 )
             elif isinstance(waveform, str) and isinstance(weights, str) and isinstance(reset_pulse, str):
                 operation = MeasureResetCalibrated(

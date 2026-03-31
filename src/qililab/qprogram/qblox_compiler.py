@@ -1508,7 +1508,8 @@ class QbloxCompiler:
         Args:
             element (MeasureReset): measure operation and perform active reset
         """
-        wait_trigger_network = 400  # this is the time required by qblox trigger network to send a trigger;
+        #temporary fix giving control over the wait time before the pi pulse
+        wait_trigger_network = 400 + element.wait_before_pi_pulse # this is the time required by qblox trigger network to send a trigger;
         # 400ns is conservative - the official guideline is 388ns between 2 modules
 
         time_of_flight = self._buses[element.bus].time_of_flight

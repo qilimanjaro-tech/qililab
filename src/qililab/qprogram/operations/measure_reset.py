@@ -28,6 +28,7 @@ class MeasureReset(Operation):
         reset_pulse: IQWaveform,
         trigger_address: int = 1,
         save_adc: bool = False,
+        wait_before_pi_pulse: int = 0,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -37,6 +38,7 @@ class MeasureReset(Operation):
         self.reset_pulse: IQWaveform = reset_pulse
         self.trigger_address: int = trigger_address
         self.save_adc: bool = save_adc
+        self.wait_before_pi_pulse: int = wait_before_pi_pulse
 
 
 @yaml.register_class
