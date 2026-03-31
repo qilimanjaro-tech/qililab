@@ -47,6 +47,7 @@ class QDevilQDac2(VoltageSource):
         low_pass_filter: list[str]
         out_trigger: int | None = None
         in_trigger: int | None = None
+        trigger_sync: bool = False
         mode: str = "offset"
 
     settings: QDevilQDac2Settings
@@ -81,6 +82,15 @@ class QDevilQDac2(VoltageSource):
             int | None: External trigger input for qdac-to-qdac communication. Defaults to None
         """
         return self.settings.in_trigger
+
+    @property
+    def trigger_sync(self):
+        """QDAC-II `trigger_sync` property.
+
+        Returns:
+            bool: Flag to define if the QDAC instrument has a trigger output connecting to other machines. Defaults to False
+        """
+        return self.settings.trigger_sync
 
     @log_set_parameter
     def set_parameter(
@@ -202,7 +212,7 @@ class QDevilQDac2(VoltageSource):
             dwell_us (int, optional): Dwell of the pulse. Defaults to 1.
             sync_delay_s (float, optional): Delay of each pulse repetition. Defaults to 0.
             repetitions (int, optional): Number of pulse repetitions. Defaults to 1.
-            stepped (bool, optional): Trigger defining pulse shape, 
+            stepped (bool, optional): Trigger defining pulse shape,
                                         if True, instead of a ramp the qdac will show a staircase. Defaults to False.
         """
         self._validate_channel(channel_id=channel_id)

@@ -260,11 +260,13 @@ class QdacCompiler:
 
         # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._body)
-        
+
         if len(self._qdacs) > 1:
             self._handle_simultaneous_qdacs()
 
-        return QdacCompilationOutput(qprogram=self._qprogram, qdacs=self._qdacs, trigger_position=self._trigger_position)
+        return QdacCompilationOutput(
+            qprogram=self._qprogram, qdacs=self._qdacs, trigger_position=self._trigger_position
+        )
 
     def _populate_qdac_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance.
@@ -327,7 +329,9 @@ class QdacCompiler:
     def _handle_set_offset(self, element: SetOffset):
         if element.bus in self._qdac_buses_alias:
             instrument = next(
-                instrument for instrument in self._qdac_buses_by_alias[element.bus].instruments if isinstance(instrument, QDevilQDac2)
+                instrument
+                for instrument in self._qdac_buses_by_alias[element.bus].instruments
+                if isinstance(instrument, QDevilQDac2)
             )
             instrument.set_parameter(
                 parameter=Parameter.VOLTAGE, value=element.offset_path0, channel_id=self._channels[element.bus]
@@ -336,14 +340,54 @@ class QdacCompiler:
 
     def _handle_set_trigger(self, element: SetTrigger):
         if element.bus in self._qdac_buses_alias:
-            instrument = next(
-                instrument for instrument in self._qdac_buses_by_alias[element.bus].instruments if isinstance(instrument, QDevilQDac2)
-            )
             # Condition to check if positions are properly set.
             if element.position not in {"end", "start", "step", "end_step"}:
                 raise NotImplementedError(
                     f"position must be set as 'end', 'start', 'step' or 'end_step'. {element.position} is not recognized"
                 )
+
+            trigger_buses = [
+                bus.alias for bus in self._qdac_buses if any(instrument.trigger_sync for instrument in bus.instruments)
+            ]
+            if not trigger_buses:
+                raise ValueError(
+                    "Cannot set Trigger without instrument set as trigger_sync = True. Modify the runcard and add trigger_sync to a QDAC II instrument."
+                )
+            instrument = next(
+                instrument
+                for instrument in self._qdac_buses_by_alias[trigger_buses[0]].instruments
+                if isinstance(instrument, QDevilQDac2)
+            )
+
+            # Select bus from the right qdac instrument. If no dc_list is created there, add an empty one.
+            if element.bus not in trigger_buses:
+                trigger_bus = next(
+                    (
+                        trigger_bus
+                        for trigger_bus in trigger_buses
+                        if f"{instrument.device.name}_{str(self._channels[trigger_bus])}" in instrument._cache_dc
+                    ),
+                    None,
+                )
+                if trigger_bus is None:
+                    if not self._play_params:
+                        raise ValueError(
+                            f"No DC list with the given channel ID, first create a DC list using qprogram.play."
+                        )
+                    trigger_bus = trigger_buses[0]
+                    voltage = instrument.settings.voltage[self._channels[trigger_bus]]
+                    self._handle_play(
+                        Play(
+                            bus=trigger_bus,
+                            waveform=Arbitrary(np.ones(len(self._play_params["waveform"])) * voltage),
+                            dwell=self._play_params["dwell"],
+                            delay=self._play_params["delay"],
+                            repetitions=self._play_params["repetitions"],
+                            stepped=self._play_params["stepped"],
+                        )
+                    )
+            else:
+                trigger_bus = element.bus
 
             if element.outputs:
                 for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
@@ -351,21 +395,21 @@ class QdacCompiler:
 
                     if element.position == "end":
                         instrument.set_end_marker_external_trigger(
-                            channel_id=self._channels[element.bus],
+                            channel_id=self._channels[trigger_bus],
                             out_port=output,
                             trigger=trigger,
                             width_s=element.duration,
                         )
                     elif element.position == "start":
                         instrument.set_start_marker_external_trigger(
-                            channel_id=self._channels[element.bus],
+                            channel_id=self._channels[trigger_bus],
                             out_port=output,
                             trigger=trigger,
                             width_s=element.duration,
                         )
                     elif element.position == "step":
                         instrument.set_start_marker_external_trigger(
-                            channel_id=self._channels[element.bus],
+                            channel_id=self._channels[trigger_bus],
                             out_port=output,
                             trigger=trigger,
                             width_s=element.duration,
@@ -373,7 +417,7 @@ class QdacCompiler:
                         )
                     elif element.position == "end_step":
                         instrument.set_end_marker_external_trigger(
-                            channel_id=self._channels[element.bus],
+                            channel_id=self._channels[trigger_bus],
                             out_port=output,
                             trigger=trigger,
                             width_s=element.duration,
@@ -384,24 +428,26 @@ class QdacCompiler:
             else:
                 trigger = self._hash_trigger(element, None)
                 if element.position == "end":
-                    instrument.set_end_marker_internal_trigger(channel_id=self._channels[element.bus], trigger=trigger)
+                    instrument.set_end_marker_internal_trigger(channel_id=self._channels[trigger_bus], trigger=trigger)
                 elif element.position == "start":
                     instrument.set_start_marker_internal_trigger(
-                        channel_id=self._channels[element.bus], trigger=trigger
+                        channel_id=self._channels[trigger_bus], trigger=trigger
                     )
                 elif element.position == "step":
                     instrument.set_start_marker_internal_trigger(
-                        channel_id=self._channels[element.bus], trigger=trigger, step=True
+                        channel_id=self._channels[trigger_bus], trigger=trigger, step=True
                     )
                 elif element.position == "end_step":
                     instrument.set_end_marker_internal_trigger(
-                        channel_id=self._channels[element.bus], trigger=trigger, step=True
+                        channel_id=self._channels[trigger_bus], trigger=trigger, step=True
                     )
 
     def _handle_wait_trigger(self, element: WaitTrigger):
         if element.bus in self._qdac_buses_alias:
             instrument = next(
-                instrument for instrument in self._qdac_buses_by_alias[element.bus].instruments if isinstance(instrument, QDevilQDac2)
+                instrument
+                for instrument in self._qdac_buses_by_alias[element.bus].instruments
+                if isinstance(instrument, QDevilQDac2)
             )
             if element.port:
                 instrument.set_in_external_trigger(channel_id=self._channels[element.bus], in_port=element.port)
@@ -416,7 +462,9 @@ class QdacCompiler:
     def _handle_play(self, element: Play):
         if element.bus in self._qdac_buses_alias:
             instrument = next(
-                instrument for instrument in self._qdac_buses_by_alias[element.bus].instruments if isinstance(instrument, QDevilQDac2)
+                instrument
+                for instrument in self._qdac_buses_by_alias[element.bus].instruments
+                if isinstance(instrument, QDevilQDac2)
             )
             waveform, _ = element.get_waveforms()
             waveform_variables = element.get_waveform_variables()
@@ -433,6 +481,15 @@ class QdacCompiler:
                 element.repetitions = self._loop_repetitions[element.bus]
             if self._infinite_loop:
                 element.repetitions = -1
+
+            # For QDAC execution with crosstalk all these parameters must be the same for any Play.
+            self._play_params = {
+                "waveform": waveform,
+                "dwell": element.dwell,
+                "delay": element.delay,
+                "stepped": element.stepped,
+                "repetitions": element.repetitions,
+            }
 
             instrument.upload_voltage_list(
                 waveform=waveform,
@@ -463,15 +520,28 @@ class QdacCompiler:
         return hash
 
     def _handle_simultaneous_qdacs(self):
-        out_bus = next((bus.alias for bus in self._qdac_buses if self._out_instrument in bus.instruments and bus.alias in self._qprogram.buses), None)
-        self._out_instrument.set_out_external_trigger(channel_id=self._channels[out_bus], out_port=self._out_instrument.out_trigger, trigger="qdac_external_trigger")
+        out_bus = next(
+            (
+                bus.alias
+                for bus in self._qdac_buses
+                if self._out_instrument in bus.instruments and bus.alias in self._qprogram.buses
+            ),
+            None,
+        )
+        self._out_instrument.set_out_external_trigger(
+            channel_id=self._channels[out_bus],
+            out_port=self._out_instrument.out_trigger,
+            trigger="qdac_external_trigger",
+        )
 
         for in_instrument in self._qdacs:
             if in_instrument is not self._out_instrument:
                 bus_list = [bus.alias for bus in self._qdac_buses if in_instrument in bus.instruments]
                 for bus in bus_list:
                     if f"{in_instrument.device.name}_{str(self._channels[bus])}" in in_instrument._cache_dc:
-                        in_instrument.set_in_external_trigger(channel_id=self._channels[bus], in_port=in_instrument.in_trigger)
+                        in_instrument.set_in_external_trigger(
+                            channel_id=self._channels[bus], in_port=in_instrument.in_trigger
+                        )
         self._qdacs = [qdac for qdac in self._qdacs if qdac != self._out_instrument] + [self._out_instrument]
 
     @staticmethod
