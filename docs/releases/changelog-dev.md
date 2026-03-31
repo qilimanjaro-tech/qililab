@@ -31,6 +31,7 @@
   - For QDAC-II:
     The crosstalk modifies the internal structure of the `QProgram`, it changes any play or set offset into a set of plays and offsets of each bus of the crosstalk. It also takes into account different loops.
     With crosstalk, this example qprogram:
+
     ```
     r_wf = ql.Square(amplitude=1.0, duration=1000)
     flux_wf = ql.Arbitrary(
@@ -62,7 +63,9 @@
 
             qp_qdac.wait(bus="readout", duration=100)
     ```
+
     Turns internally into this (for a crosstalk matrix only including `qdac_flux1` and `qdac_flux2`):
+
     ```
     ...
 
@@ -89,9 +92,10 @@
 
             qp_qdac.wait(bus="readout", duration=100)
     ```
+
   - For QBlox:
     The `QProgram` structures affected by the crosstalk are `qp.set_offset(...)`, `qp.set_gain(...)` and `qp.play(...)` for flux buses. The behavior is similar to the `QdacCompiler` but accounting for the complexity of Qblox compilation.
-    With crosstalk, the qprogram structure will look the same as usual, but for each bus inside the crosstalk matrix, the machine will send a flux pulse / offset to compensate the crosstalk. The Qprogram is now able to sum variables so this implementation allows for a whole flux vs flux run in a single `Q1ASM`. 
+    With crosstalk, the qprogram structure will look the same as usual, but for each bus inside the crosstalk matrix, the machine will send a flux pulse / offset to compensate the crosstalk. The Qprogram is now able to sum variables so this implementation allows for a whole flux vs flux run in a single `Q1ASM`.
     Parallel loops are also available .
 
     IMPORTANT: there is a limitation when trying to use a combination of play with different amplitudes and different `set_gain`. Since the output is a combination of $amplitude*gain$, the crosstalk would be incorrectly applied if we translate directly. Therefore the gain takes priority when applying the crosstalk.
