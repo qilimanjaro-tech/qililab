@@ -13,13 +13,13 @@
 # limitations under the License.
 
 
-from qililab.qprogram.operations.operation import Operation, Variable
+from qililab.qprogram.operations.operation import Operation
 from qililab.yaml import yaml
 
 
 @yaml.register_class
 class SetGain(Operation):
-    def __init__(self, bus: str, gain: float | Variable) -> None:
+    def __init__(self, bus: str, gain: float) -> None:
         super().__init__()
         self.bus: str = bus
-        self.gain: float | Variable = gain
+        self.gain: float = gain

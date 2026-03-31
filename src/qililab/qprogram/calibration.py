@@ -160,11 +160,15 @@ class Calibration:
     def _add_crosstalk_history_iteration(self):
         """Creates a new empty iteration on the crosstalk history tuple."""
 
-        if not self.crosstalk_history:
-            iteration_idx = 0
-        else:
-            iteration_idx = len(self.crosstalk_history)
+        if not self.crosstalk_history:  # If first calibration run, add the initial crosstalk matrix as iteration 0
+            self.crosstalk_history.append({})
+            self.crosstalk_history[-1]["idx"] = 0
+            self.crosstalk_history[-1]["flux_offsets"] = self.crosstalk_matrix.flux_offsets
+            self.crosstalk_history[-1]["block_diag_matrix"] = self.crosstalk_matrix.matrix
+            self.crosstalk_history[-1]["full_matrix"] = self.crosstalk_matrix.matrix
+            self.crosstalk_history[-1]["previous_matrix"] = self.crosstalk_matrix.matrix
 
+        iteration_idx = len(self.crosstalk_history)
         self.crosstalk_history.append({})
 
         self.crosstalk_history[-1]["idx"] = iteration_idx
@@ -172,9 +176,6 @@ class Calibration:
         self.crosstalk_history[-1]["block_diag_matrix"] = None
         self.crosstalk_history[-1]["full_matrix"] = None
         self.crosstalk_history[-1]["previous_matrix"] = self.crosstalk_matrix.matrix
-        self.crosstalk_history[-1]["previous_offsets"] = self.crosstalk_matrix.flux_offsets
-        self.crosstalk_history[-1]["result_intra"] = None
-        self.crosstalk_history[-1]["result_inter"] = None
 
     def add_intra_crosstalk(
         self,
@@ -214,8 +215,6 @@ class Calibration:
         self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
         self.crosstalk_matrix.flux_offsets = dict(zip(bus_list, new_offsets))
 
-        self.crosstalk_history[-1]["result_intra"] = self.crosstalk_matrix.matrix
-
     def add_inter_crosstalk(self, full_crosstalk_matrix: dict[str, dict[str, float]]):
         """Function to save the inter qubit crosstalk results iteration.
         The full crosstalk matrix is stored raw inside crosstalk_history and crosstalk_matrix.matrix after a transformation.
@@ -233,15 +232,14 @@ class Calibration:
         if set(bus_list) != set(full_crosstalk_matrix.keys()):
             raise ValueError("Full crosstalk doesn't contain the same buses as saved crosstalk.")
 
+        if not self.crosstalk_history or self.crosstalk_history[-1]["full_matrix"] is not None:
+            self._add_crosstalk_history_iteration()
+
         self.crosstalk_history[-1]["full_matrix"] = full_crosstalk_matrix
+        full_crosstalk = CrosstalkMatrix().from_buses(full_crosstalk_matrix)
 
-        new_matrix = CrosstalkMatrix().from_buses(self.crosstalk_history[0]["previous_matrix"]).to_array()
-        for i in range(len(self.crosstalk_history)):
-            full_crosstalk = CrosstalkMatrix().from_buses(self.crosstalk_history[i]["full_matrix"])
-            new_matrix @= full_crosstalk.to_array()
-            self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
-
-        self.crosstalk_history[-1]["result_inter"] = self.crosstalk_matrix.matrix
+        new_matrix = full_crosstalk.to_array() @ self.crosstalk_matrix.to_array()
+        self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
 
     def remove_history_step(self, idx: int = -1):
         """Function to remove an iteration inside the crosstalk history in case the user wants to remove a specific faulty calibration.

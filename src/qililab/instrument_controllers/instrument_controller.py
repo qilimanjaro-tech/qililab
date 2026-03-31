@@ -15,7 +15,7 @@
 """Instrument Controller class"""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Sequence, get_type_hints
 
@@ -28,15 +28,7 @@ from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.instruments.utils.loader import Loader
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import Settings
-from qililab.typings import (
-    ChannelID,
-    Device,
-    InstrumentControllerName,
-    OutputID,
-    Parameter,
-    ParameterValue,
-    ReferenceClock,
-)
+from qililab.typings import ChannelID, Device, InstrumentControllerName, OutputID, Parameter, ParameterValue
 from qililab.utils import Factory
 
 
@@ -54,7 +46,6 @@ class InstrumentControllerSettings(Settings):
     alias: str
     connection: Connection
     modules: list[InstrumentReference]
-    reference_clock: str = field(default_factory=lambda: ReferenceClock("internal"))
     ext_trigger: bool = False
     reset: bool = True
 
@@ -177,26 +168,15 @@ class InstrumentController(BusElement, ABC):
         if parameter == Parameter.RESET:
             self.settings.reset = bool(value)
             return
-        """Updates the reference clock settings for the controller."""
-        if parameter == Parameter.REFERENCE_CLOCK:
-            self.settings.reference_clock = ReferenceClock(value)
-            return
-        raise ValueError(
-            "Reset and reference clock are the only properties that can be set for an Instrument Controller."
-        )
+        raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
 
     def get_parameter(
         self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
     ):
-        """Gets the reset settings for the controller."""
+        """Updates the reset settings for the controller."""
         if parameter == Parameter.RESET:
             return self.settings.reset
-        """Gets the reference clock settings for the controller."""
-        if parameter == Parameter.REFERENCE_CLOCK:
-            return self.settings.reference_clock
-        raise ValueError(
-            "Reset and reference clock are the only properties that can be get for an Instrument Controller."
-        )
+        raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
 
     @CheckConnected
     def turn_on(self):
@@ -248,15 +228,6 @@ class InstrumentController(BusElement, ABC):
             str: settings.alias.
         """
         return self.settings.alias
-
-    @property
-    def reference_clock(self):
-        """Instrument Controller 'reference_clock' property.
-
-        Returns:
-            str: settings.reference_clock.
-        """
-        return self.settings.reference_clock
 
     @property
     def ext_trigger(self):
