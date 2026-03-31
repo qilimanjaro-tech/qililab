@@ -228,7 +228,7 @@ class Calibration:
         self.crosstalk_history[-1]["result_intra"] = self.crosstalk_matrix.matrix
 
     def add_inter_crosstalk(self, full_crosstalk_matrix: dict[str, dict[str, float]]):
-        """Function to save the inter qubit crosstalk results iteration.
+        r"""Function to save the inter qubit crosstalk results iteration.
         The full crosstalk matrix is stored raw inside crosstalk_history and crosstalk_matrix.matrix after a transformation.
 
         The transformation used for crosstalk_matrix.matrix is the following:
