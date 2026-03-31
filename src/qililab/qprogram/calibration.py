@@ -185,6 +185,17 @@ class Calibration:
         The offsets is stored inside crosstalk_history and crosstalk_matrix.flux_offsets after a transformation.
         The Diagonal matrix is stored raw inside crosstalk_history and crosstalk_matrix.matrix after a transformation.
 
+        The transformations that are used to update crosstalk_matrix.flux_offsets and crosstalk_matrix.matrix are the following:
+
+        .. math:: offset_{new} = M_{diag block} · offset_{old} + offset_{result}
+
+        and
+
+        .. math:: M_{updated} = M_{diag block} · M_{old}
+
+        given the Diagonal Block Matrix and Offset Result as inputs.
+        The updated crosstalk matrix will be a diagonal block until the inter-qubit crosstalk is added.
+
         Args:
             flux_offsets (dict[str, float]): Crosstalk offsets fitted with intra qubit data.
             block_diag_xt_matrix (dict[str, dict[str, float]]): Diagonal crosstalk matrix result from intra qubit fitting.
@@ -219,6 +230,13 @@ class Calibration:
     def add_inter_crosstalk(self, full_crosstalk_matrix: dict[str, dict[str, float]]):
         """Function to save the inter qubit crosstalk results iteration.
         The full crosstalk matrix is stored raw inside crosstalk_history and crosstalk_matrix.matrix after a transformation.
+
+        The transformation used for crosstalk_matrix.matrix is the following:
+
+        .. math:: offset_{new} = \prod_{i=n}^{0} M_{i} · M_{old}
+
+        where n is the number of iterations registered and M_i is the Full Matrix for the given i iteration.
+        The resulting crosstalk matrix will be the matrix product of all registered full matrices and the original crosstalk matrix.
 
         Args:
             full_crosstalk_matrix (dict[str, dict[str, float]]): Full crosstalk matrix result from inter qubit fitting.
