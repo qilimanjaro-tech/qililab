@@ -141,6 +141,17 @@ class TestCrosstalkMatrix:
         assert isinstance(crosstalk_matrix.flux_offsets, dict)
         assert crosstalk_matrix.flux_offsets == {"bus1": -1.0, "bus2": 0.5}
 
+    def test_set_offset_raises_error_bus_not_in_matrix(self):
+        """Test set_offset function"""
+        crosstalk_matrix = CrosstalkMatrix()
+        crosstalk_matrix["bus1"]["bus1"] = 1
+        crosstalk_matrix["bus1"]["bus2"] = 0.5
+        crosstalk_matrix["bus2"]["bus1"] = 0.7
+        crosstalk_matrix["bus2"]["bus2"] = 1
+
+        with pytest.raises(ValueError, match="Bus bus3 not included inside matrix."):
+            crosstalk_matrix.set_offset(offset={"bus1": -1.0, "bus3": 0.5})
+
     def test_set_resistances(self):
         """Test set_resistances function"""
         crosstalk_matrix = CrosstalkMatrix()
