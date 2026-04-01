@@ -837,7 +837,7 @@ class TestQBloxCompiler:
                                 upd_param        4
                                 stop
             """
-        assert is_q1asm_equal(sequences["drive"]._program, drive_str)
+        assert is_q1asm_equal(str(sequences["drive"]._program), drive_str)
 
         # RF example with the right markers
         sequences, _ = compiler.compile(qprogram=set_trigger, markers={"drive": "1100"})
