@@ -26,7 +26,6 @@ from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 from qililab.settings.digital.gate_event_settings import GateEventSettings
-from qililab.typings.enums import Line
 from qililab.utils import Factory
 
 from .native_gates import Drag, Wait

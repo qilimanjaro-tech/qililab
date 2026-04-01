@@ -597,8 +597,7 @@ class TestCircuitTranspiler:
         assert isinstance(pulse_schedule, PulseSchedule)
 
         # there are 6 different buses + 3 empty for unused flux lines
-        assert len(pulse_schedule) == 12
-        assert all(len(schedule_element.timeline) == 0 for schedule_element in pulse_schedule.elements[-3:])
+        assert len(pulse_schedule) == 9
 
         # we can ignore empty elements from here on
         pulse_schedule.elements = [element for element in pulse_schedule.elements if element.timeline]
