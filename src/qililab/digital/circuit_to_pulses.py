@@ -99,13 +99,6 @@ class CircuitToPulses:
                 delay = self.settings.buses[gate_event.bus].delay
                 pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=gate_event.bus, delay=delay)  # type: ignore
 
-        for bus_alias in self.settings.buses:
-            # If we find a flux port, create empty schedule for that port.
-            # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
-            # add an empty schedule its offsets won't be activated and the results will be misleading.
-            if self.settings.buses[bus_alias].line == Line.FLUX:
-                pulse_schedule.create_schedule(bus_alias=bus_alias)
-
         return pulse_schedule
 
     def _gate_schedule_from_settings(self, gate: gates.Gate) -> list[GateEventSettings]:
