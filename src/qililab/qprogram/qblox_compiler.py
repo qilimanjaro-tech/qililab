@@ -565,7 +565,7 @@ class QbloxCompiler:
         iterations = []
         for loop in element.loops:
             operation = QbloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
-            start, step, iters = QbloxCompiler._convert_for_loop_values(loop, operation)  # type: ignore[arg-type]
+            start, step, iters = QbloxCompiler._compute_loop_sweep(loop, operation)  # type: ignore[arg-type]
             loops.append((start, step))
             iterations.append(iters)
         iterations = min(iterations)
@@ -599,14 +599,14 @@ class QbloxCompiler:
 
     def _handle_for_loop(self, element: ForLoop):
         operation = QbloxCompiler._get_reference_operation_of_loop(element)
-        start, step, iterations = QbloxCompiler._convert_for_loop_values(element, operation)
+        start, step, iterations = QbloxCompiler._compute_loop_sweep(element)
         if element.variable.domain == Domain.Time and element.stop > INST_MAX_WAIT:
             self._long_wait_dynamic = True
         self._max_wait_dynamic = int(element.stop)
 
         for bus in self._buses:
             qpy_loop = QPyProgram.IterativeLoop(
-                name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=[(start, step)]
+                name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=[(start, step, operation)]
             )
             self._buses[bus].qpy_block_stack[-1].add(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
@@ -1658,7 +1658,7 @@ class QbloxCompiler:
             return None
         if isinstance(operations[0], Play) and operations[0].get_waveform_variables():
             raise NotImplementedError("TODO: Variables referenced in a loop cannot be used in Play operation.")
-        return operations[0]
+        return QbloxCompiler._get_qpysequence_conversion_instructions(operations[0])
 
     @staticmethod
     def _calculate_iterations(start: int | float, stop: int | float, step: int | float):
@@ -1677,12 +1677,20 @@ class QbloxCompiler:
         return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
 
     @staticmethod
-    def _convert_for_loop_values(for_loop: ForLoop, operation: Operation):
+    def _get_qpysequence_conversion_instructions(operation: Operation) -> type:
+        instruction_map: dict[type[Operation], type] = {
+            SetFrequency: QPyInstructions.SetFrequencyHz,
+            SetPhase:     QPyInstructions.SetPhaseRad,
+            SetGain:      QPyInstructions.SetNormalisedGain,
+            SetOffset:    QPyInstructions.SetNormalisedOffs,
+    }
+        return instruction_map[type(operation)]
+
+    @staticmethod
+    def _compute_loop_sweep(for_loop: ForLoop):
         iterations = QbloxCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
-        qblox_start = for_loop.start
-        qblox_stop = for_loop.stop
-        qblox_step = (qblox_stop - qblox_start) // (iterations - 1)
-        return (qblox_start, qblox_step, iterations)
+        qblox_step = (for_loop.stop - for_loop.start) // (iterations - 1)
+        return (for_loop.start, qblox_step, iterations)
 
     @staticmethod
     def _convert_value(operation: Operation) -> Callable[[Any], int]:
