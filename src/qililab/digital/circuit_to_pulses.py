@@ -26,7 +26,6 @@ from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings.digital.digital_compilation_settings import DigitalCompilationSettings
 from qililab.settings.digital.gate_event_settings import GateEventSettings
-from qililab.typings.enums import Line
 from qililab.utils import Factory
 
 from .native_gates import Drag, Wait
@@ -98,13 +97,6 @@ class CircuitToPulses:
                 # add event
                 delay = self.settings.buses[gate_event.bus].delay
                 pulse_schedule.add_event(pulse_event=pulse_event, bus_alias=gate_event.bus, delay=delay)  # type: ignore
-
-        for bus_alias in self.settings.buses:
-            # If we find a flux port, create empty schedule for that port.
-            # This is needed because for Qblox instrument working in flux buses as DC sources, if we don't
-            # add an empty schedule its offsets won't be activated and the results will be misleading.
-            if self.settings.buses[bus_alias].line == Line.FLUX:
-                pulse_schedule.create_schedule(bus_alias=bus_alias)
 
         return pulse_schedule
 
