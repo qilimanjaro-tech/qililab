@@ -347,7 +347,9 @@ class QdacCompiler:
                 )
 
             trigger_buses = [
-                bus.alias for bus in self._qdac_buses if any(instrument.trigger_sync for instrument in bus.instruments)
+                bus.alias
+                for bus in self._qdac_buses
+                if any(instrument.trigger_sync for instrument in bus.instruments if isinstance(instrument, QDevilQDac2))
             ]
             if not trigger_buses:
                 raise ValueError(
@@ -365,25 +367,25 @@ class QdacCompiler:
                     (
                         trigger_bus
                         for trigger_bus in trigger_buses
-                        if f"{instrument.device.name}_{str(self._channels[trigger_bus])}" in instrument._cache_dc
+                        if f"{instrument.device.name}_{self._channels[trigger_bus]}" in instrument._cache_dc
                     ),
                     None,
                 )
                 if trigger_bus is None:
                     if not self._play_params:
                         raise ValueError(
-                            f"No DC list with the given channel ID, first create a DC list using qprogram.play."
+                            "No DC list with the given channel ID, first create a DC list using qprogram.play."
                         )
                     trigger_bus = trigger_buses[0]
                     voltage = instrument.settings.voltage[self._channels[trigger_bus]]
                     self._handle_play(
                         Play(
                             bus=trigger_bus,
-                            waveform=Arbitrary(np.ones(len(self._play_params["waveform"])) * voltage),
-                            dwell=self._play_params["dwell"],
-                            delay=self._play_params["delay"],
-                            repetitions=self._play_params["repetitions"],
-                            stepped=self._play_params["stepped"],
+                            waveform=Arbitrary(np.ones(self._play_params["waveform"].shape) * voltage),  # type: ignore [attr-defined]
+                            dwell=self._play_params["dwell"],  # type: ignore [arg-type]
+                            delay=self._play_params["delay"],  # type: ignore [arg-type]
+                            repetitions=self._play_params["repetitions"],  # type: ignore [arg-type]
+                            stepped=self._play_params["stepped"],  # type: ignore [arg-type]
                         )
                     )
             else:
@@ -484,7 +486,7 @@ class QdacCompiler:
 
             # For QDAC execution with crosstalk all these parameters must be the same for any Play.
             self._play_params = {
-                "waveform": waveform,
+                "waveform": waveform.envelope(),
                 "dwell": element.dwell,
                 "delay": element.delay,
                 "stepped": element.stepped,
@@ -538,7 +540,7 @@ class QdacCompiler:
             if in_instrument is not self._out_instrument:
                 bus_list = [bus.alias for bus in self._qdac_buses if in_instrument in bus.instruments]
                 for bus in bus_list:
-                    if f"{in_instrument.device.name}_{str(self._channels[bus])}" in in_instrument._cache_dc:
+                    if f"{in_instrument.device.name}_{self._channels[bus]}" in in_instrument._cache_dc:
                         in_instrument.set_in_external_trigger(
                             channel_id=self._channels[bus], in_port=in_instrument.in_trigger
                         )

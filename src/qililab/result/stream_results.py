@@ -219,8 +219,8 @@ class StreamArray:
                     lines.append(str(seq._program))
                     lines.append("")
                 return "\n".join(lines)
-            except Exception as e:
-                debug_exception = f"Compilation of the debug has failed with the following error:\n{str(e)}"
+            except Exception as e:  # noqa: BLE001
+                debug_exception = f"Compilation of the debug has failed with the following error:\n{e}"
                 return debug_exception
         debug_exception = "Non Qblox machine."
         return debug_exception

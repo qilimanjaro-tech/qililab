@@ -69,7 +69,7 @@ class QProgramCompilationOutput:
 
 class CrosstalkElements:
     """Supporting class for `QProgram.with_crosstalk`.
-    The elements are classified by type (Play, Offset and Gain) to organize the values of flux vectors, 
+    The elements are classified by type (Play, Offset and Gain) to organize the values of flux vectors,
     location in the block and related buses.
 
     Args:
@@ -103,7 +103,7 @@ class CrosstalkElements:
             self.element_list[ii] = (self.flux_vector[operation], self.element_group[operation])
 
     def check_flux_vector(self, element: Play | SetOffset | SetGain):
-        """Function to verify the flux vectors of each element and in case they don't exist, 
+        """Function to verify the flux vectors of each element and in case they don't exist,
         create empty dictionary entries.
 
         Args:
@@ -114,11 +114,11 @@ class CrosstalkElements:
             self.restart_flux_vector(operation, check_after_loop=True)
 
     def restart_flux_vector(self, operation: str | None = None, check_after_loop: bool = False):
-        """ Function create or overwrite empty dictionary entries for each operation given. 
+        """Function create or overwrite empty dictionary entries for each operation given.
         If no operations given it does it for every element in those dictionaries.
 
         Args:
-            operation (str | None, optional): Class of the element to be restarted. 
+            operation (str | None, optional): Class of the element to be restarted.
                                                 Defaults to None implying restarting all operations in the dictionaries.
             check_after_loop (bool, optional): Trigger to avoid restarting the flux vector after starting a new loop. Defaults to False.
         """
@@ -471,7 +471,9 @@ class QProgram(StructuredProgram):
         self._active_loops: list[ForLoop] = []
         self._loop_depths: list[int] = []
 
-        def traverse(block: Block, variables: dict[Variable, VariableInfo], flux_vector: dict[str, FluxVector] | None = None):
+        def traverse(
+            block: Block, variables: dict[Variable, VariableInfo], flux_vector: dict[str, FluxVector] | None = None
+        ):
             """
             Traverse through all block elements and modify ForLoop, Parallel, Play, SetOffset and SetGain.
             """
@@ -481,7 +483,9 @@ class QProgram(StructuredProgram):
 
             for i, element in enumerate(block.elements):
                 if isinstance(element, MeasureReset):
-                    raise TypeError("qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation.")
+                    raise TypeError(
+                        "qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation."
+                    )
                 if isinstance(element, (Play, SetOffset, SetGain)) and element.bus in crosstalk.matrix.keys():
                     crosstalk_elements.check_flux_vector(element)
 
@@ -713,14 +717,14 @@ class QProgram(StructuredProgram):
             waveforms: Sequence[Square | FlatTop] = [elements[element].waveform for element in element_group]  # type: ignore [misc]
             if any(isinstance(element, SetGain) for element in elements.values()):
                 # Normalizes every time gain is used
-                bias_vector = bias_vector / np.max(np.abs(bias_vector))*np.sign(bias_vector)
+                bias_vector = bias_vector / np.max(np.abs(bias_vector)) * np.sign(bias_vector)
             if all(isinstance(wf, Square) for wf in waveforms):
                 waveform = Square(amplitude=np.max(bias_vector), duration=waveforms[0].duration)
             elif all(isinstance(wf, FlatTop) for wf in waveforms):
                 if len({(wf.duration, wf.smooth_duration, wf.buffer) for wf in waveforms}) > 1:  # type: ignore [union-attr]
                     raise ValueError("FlatTop parameters must be the same for all compensated pulses.")
                 waveform = FlatTop(
-                    amplitude=np.max(np.abs(bias_vector))*np.sign(bias_vector),
+                    amplitude=np.max(np.abs(bias_vector)) * np.sign(bias_vector),
                     duration=waveforms[0].duration,
                     smooth_duration=waveforms[0].smooth_duration,  # type: ignore [union-attr]
                     buffer=waveforms[0].buffer,  # type: ignore [union-attr]

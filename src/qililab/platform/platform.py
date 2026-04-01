@@ -339,7 +339,7 @@ class Platform:
 
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
-        
+
         self.qdac_buses: list[Bus] = []
         """List of buses that use the instrument `QDevilQDac2`, defaults to an empty list for no qdac buses."""
 
@@ -1242,15 +1242,19 @@ class Platform:
 
         compiled_qdac = None
         if qdac_qprogram_buses:
-            self.qdac_instruments = list({
-                instrument
-                for bus in self.qdac_buses
-                for instrument in bus.instruments
-                if isinstance(instrument, QDevilQDac2)
-            })
+            self.qdac_instruments = list(
+                {
+                    instrument
+                    for bus in self.qdac_buses
+                    for instrument in bus.instruments
+                    if isinstance(instrument, QDevilQDac2)
+                }
+            )
             out_trigger_qdac = None
             if len(self.qdac_instruments) > 1:
-                out_trigger_qdac = next((instrument for instrument in self.qdac_instruments if instrument.out_trigger is not None), None)
+                out_trigger_qdac = next(
+                    (instrument for instrument in self.qdac_instruments if instrument.out_trigger is not None), None
+                )
                 if out_trigger_qdac is None:
                     raise ValueError("Multiple QDAC-II instruments used but no Output trigger instrument given.")
 
@@ -1263,7 +1267,7 @@ class Platform:
                 bus_mapping=bus_mapping,
                 calibration=calibration,
                 crosstalk=self.crosstalk,
-                out_instrument = out_trigger_qdac,
+                out_instrument=out_trigger_qdac,
             )
 
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
@@ -1691,14 +1695,15 @@ class Platform:
         if not qprograms:
             return []
 
-        if not crosstalk:
-            self.crosstalk = None
-            for calibration in calibrations_list:
-                calibration.crosstalk_matrix = None
-
         # Normalize mappings and calibrations to one-per-qprogram
         bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))
         calibrations_list = self._normalize_calibrations(calibrations=calibrations, n=len(qprograms))
+
+        if not crosstalk:
+            self.crosstalk = None
+            for calibration in calibrations_list:
+                if calibration is not None:
+                    calibration.crosstalk_matrix = None
 
         # Validate: no shared *physical* buses after applying each mapping
         all_physical: set[str] = set()
