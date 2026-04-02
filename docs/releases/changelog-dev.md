@@ -64,8 +64,10 @@ calibration.save_history()
                   "program": "",
           }
   ```
+  Previously, the upload cache compared sequence hashes and skipped re-uploading if no changes were detected. However, since the acquisition portion of the sequence is now consistently removed the cache has been removed to ensure the sequence is always re-uploaded.
 
   [#1082](https://github.com/qilimanjaro-tech/qililab/pull/1082)
+  [#1088](https://github.com/qilimanjaro-tech/qililab/pull/1088)
 
 - Previously, the software filters in the `PulseDistortion` module were normalised by default.
 This PR changes the default value of `auto_norm` to False, as the previous behaviour was considered counterintuitive.
