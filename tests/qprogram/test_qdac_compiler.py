@@ -76,6 +76,8 @@ def fixture_qdac() -> QDevilQDac2:
 class TestQdacCompiler:
     def test_play_and_set_trigger(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
+        qdac_bus = flux1.instruments[0]
+
         pulse_wf = Square(1.0, 100)
         dwell_us = 2
         out_port = 1
@@ -87,15 +89,15 @@ class TestQdacCompiler:
         qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="start")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
-        assert compiler._qdac == qdac
+        assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == "front"
 
-        qdac.set_start_marker_external_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 2
+        assert qdac_bus.set_start_marker_external_trigger.call_count == 1
+        assert qdac_bus.upload_voltage_list.call_count == 2
 
         # Setting external trigger at the end of the iteration
         qp = QProgram()
@@ -104,15 +106,15 @@ class TestQdacCompiler:
         qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="end")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
-        assert compiler._qdac == qdac
+        assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == "front"
 
-        qdac.set_end_marker_external_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 4
+        assert qdac_bus.set_end_marker_external_trigger.call_count == 1
+        assert qdac_bus.upload_voltage_list.call_count == 4
 
         # Setting external trigger at the beginning of each step
         qp = QProgram()
@@ -121,14 +123,15 @@ class TestQdacCompiler:
         qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="step")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
-        assert compiler._qdac == qdac
+        assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == "front"
-        
-        assert qdac.upload_voltage_list.call_count == 6
+
+        assert qdac_bus.set_start_marker_external_trigger.call_count == 2
+        assert qdac_bus.upload_voltage_list.call_count == 6
 
         # Setting external trigger at the end of each step
         qp = QProgram()
@@ -137,14 +140,15 @@ class TestQdacCompiler:
         qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="end_step")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
-        assert compiler._qdac == qdac
+        assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == "front"
-        
-        assert qdac.upload_voltage_list.call_count == 8
+
+        assert qdac_bus.set_end_marker_external_trigger.call_count == 2
+        assert qdac_bus.upload_voltage_list.call_count == 8
 
         # Setting internal trigger at the beginning of the iteration
         qp = QProgram()
@@ -153,15 +157,15 @@ class TestQdacCompiler:
         qp.set_trigger(bus="flux1", duration=10e-6, position="start")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
-        assert compiler._qdac == qdac
+        assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == None
 
-        qdac.set_start_marker_internal_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 10
+        assert qdac_bus.set_start_marker_internal_trigger.call_count == 1
+        assert qdac_bus.upload_voltage_list.call_count == 10
 
         # Setting internal trigger at the end of the iteration
         qp = QProgram()
@@ -170,15 +174,15 @@ class TestQdacCompiler:
         qp.set_trigger(bus="flux1", duration=10e-6, position="end")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
-        assert compiler._qdac == qdac
+        assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == None
 
-        qdac.set_end_marker_internal_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 12  # accumulative with last calls
+        assert qdac_bus.set_end_marker_internal_trigger.call_count == 1
+        assert qdac_bus.upload_voltage_list.call_count == 12  # accumulative with last calls
 
         # Setting internal trigger at the beginning of each step
         qp = QProgram()
@@ -187,14 +191,15 @@ class TestQdacCompiler:
         qp.set_trigger(bus="flux1", duration=10e-6, position="step")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
-        assert compiler._qdac == qdac
+        assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == None
 
-        assert qdac.upload_voltage_list.call_count == 14
+        assert qdac_bus.upload_voltage_list.call_count == 14
+        assert qdac_bus.set_start_marker_internal_trigger.call_count == 2
 
         # Setting internal trigger at the end of each step
         qp = QProgram()
@@ -203,22 +208,24 @@ class TestQdacCompiler:
         qp.set_trigger(bus="flux1", duration=10e-6, position="end_step")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
-        assert compiler._qdac == qdac
+        assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == None
 
-        assert qdac.upload_voltage_list.call_count == 16
+        assert qdac_bus.upload_voltage_list.call_count == 16
+        assert qdac_bus.set_end_marker_internal_trigger.call_count == 2
 
     def test_crosstalk_compensation(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
+        qdac_bus = flux1.instruments[0]
 
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
         )
-        flux_wf = Arbitrary(samples=np.array([0,  0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
+        flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
         qp = QProgram()
 
         freq = qp.variable(label="frequency", domain=Domain.Frequency)
@@ -232,17 +239,18 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         output = compiler.compile(
-            qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
+            qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
         )
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qdac == qdac
-        
-        assert qdac.upload_voltage_list.call_count == 2
-        assert qdac.set_parameter.call_count == 2
+        assert compiler._qdacs == [qdac]
+
+        assert qdac_bus.upload_voltage_list.call_count == 2
+        assert qdac_bus.set_parameter.call_count == 0
 
     def test_crosstalk_compensation_calibration(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
+        qdac_bus = flux1.instruments[0]
 
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
@@ -250,7 +258,7 @@ class TestQdacCompiler:
         calibration = Calibration()
         calibration.crosstalk_matrix = crosstalk
 
-        flux_wf = Arbitrary(samples=np.array([0,  0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
+        flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
         qp = QProgram()
 
         freq = qp.variable(label="frequency", domain=Domain.Frequency)
@@ -263,22 +271,27 @@ class TestQdacCompiler:
                 qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0], calibration=calibration)
+        output = compiler.compile(
+            qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], calibration=calibration
+        )
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qdac == qdac
-        
-        assert qdac.upload_voltage_list.call_count == 2
-        assert qdac.set_parameter.call_count == 2
+        assert compiler._qdacs == [qdac]
+
+        assert qdac_bus.upload_voltage_list.call_count == 2
+        assert qdac_bus.set_parameter.call_count == 0
 
     def test_crosstalk_compensation_IQPair(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
+        qdac_bus = flux1.instruments[0]
 
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
         )
-        flux_wf = IQPair(Arbitrary(samples=np.array([0,  0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0])), 
-                         Arbitrary(samples=np.array([0,  0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0])),)
+        flux_wf = IQPair(
+            Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0])),
+            Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0])),
+        )
         qp = QProgram()
 
         freq = qp.variable(label="frequency", domain=Domain.Frequency)
@@ -291,21 +304,23 @@ class TestQdacCompiler:
                 qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0], crosstalk=crosstalk)
+        output = compiler.compile(
+            qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
+        )
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qdac == qdac
-        
-        assert qdac.upload_voltage_list.call_count == 2
-        assert qdac.set_parameter.call_count == 2
-    
+        assert compiler._qdacs == [qdac]
+
+        assert qdac_bus.upload_voltage_list.call_count == 2
+        assert qdac_bus.set_parameter.call_count == 0
+
     def test_different_size_plays_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
 
         crosstalk = CrosstalkMatrix.from_buses(
             buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
         )
-        flux_wf = Arbitrary(samples=np.array([0,  0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
+        flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
         flux_wf_wrong = Arbitrary(samples=np.array([0.1, 0]))
         qp = QProgram()
 
@@ -314,16 +329,19 @@ class TestQdacCompiler:
         qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
 
         compiler = QdacCompiler()
-        
 
         with pytest.raises(
-            ValueError, 
+            ValueError,
             match=f"qp.play elements must have the same size.",
         ):
-            compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0], crosstalk=crosstalk)
+            compiler.compile(
+                qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
+            )
 
     def test_play_bus_map(self, qdac: QDevilQDac2, flux1: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
+        qdac_bus = flux1.instruments[0]
+
         pulse_wf = Square(1.0, 100)
         dwell_us = 2
 
@@ -332,18 +350,22 @@ class TestQdacCompiler:
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
 
         compiler = QdacCompiler()
-        compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0], bus_mapping={"flux1": "flux1"})
+        compiler.compile(
+            qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0], bus_mapping={"flux1": "flux1"}
+        )
 
-        assert qdac.upload_voltage_list.call_count == 1
+        assert qdac_bus.upload_voltage_list.call_count == 1
 
     def test_play_named_operation_in_calibration(self, calibration: Calibration, qdac: QDevilQDac2, flux1: Bus):
+        qdac_bus = flux1.instruments[0]
+
         qp = QProgram()
         qp.play(bus="flux1", waveform="Xpi")
 
         compiler = QdacCompiler()
-        compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], calibration=calibration, qdac_offsets = [0])
+        compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], calibration=calibration, qdac_offsets=[0])
 
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=calibration.get_waveform(bus="flux1", name="Xpi"),
             channel_id=1,
             dwell_us=2,
@@ -359,10 +381,14 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         with pytest.raises(RuntimeError):
-            _ = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0], calibration=calibration)
+            _ = compiler.compile(
+                qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0], calibration=calibration
+            )
 
     def test_play_repetitions(self, qdac: QDevilQDac2, flux1: Bus):
         """Test all possible combinations of play repetitions as a manual input."""
+        qdac_bus = flux1.instruments[0]
+
         wf = Square(1.0, 100)
         dwell = 2
         # default repetitions, without loops is 1
@@ -370,10 +396,10 @@ class TestQdacCompiler:
         qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=1, stepped=False
         )
 
@@ -382,10 +408,10 @@ class TestQdacCompiler:
         qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell, repetitions=100)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=100, stepped=False
         )
 
@@ -394,10 +420,10 @@ class TestQdacCompiler:
         qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell, repetitions=-1)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=-1, stepped=False
         )
 
@@ -417,9 +443,10 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         with pytest.raises(
-            NotImplementedError, match=f"position must be set as 'end', 'start', 'step' or 'end_step'. {wrong_position} is not recognized"
+            NotImplementedError,
+            match=f"position must be set as 'end', 'start', 'step' or 'end_step'. {wrong_position} is not recognized",
         ):
-            compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
     def test_play_operation_with_variable_in_waveform(self, caplog, qdac: QDevilQDac2, flux1: Bus):
 
@@ -429,12 +456,14 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         with caplog.at_level(logging.ERROR):
-            _ = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+            _ = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert "Variables in waveforms are not supported in Qdac." in caplog.text
 
     def test_loops_repetitions(self, qdac: QDevilQDac2, flux1: Bus):
         """Test all possible combinations of play repetitions as a manual input."""
+        qdac_bus = flux1.instruments[0]
+
         wf = Square(1.0, 100)
         dwell = 2
 
@@ -444,10 +473,10 @@ class TestQdacCompiler:
             qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=6, stepped=False
         )
 
@@ -458,7 +487,7 @@ class TestQdacCompiler:
             qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         # For loop decimals
         qp = QProgram()
@@ -467,10 +496,10 @@ class TestQdacCompiler:
             qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=11, stepped=False
         )
 
@@ -481,10 +510,10 @@ class TestQdacCompiler:
             qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=4, stepped=False
         )
 
@@ -496,10 +525,10 @@ class TestQdacCompiler:
             qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=3, stepped=False
         )
 
@@ -516,10 +545,10 @@ class TestQdacCompiler:
                     qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=288, stepped=False
         )
 
@@ -529,10 +558,10 @@ class TestQdacCompiler:
             qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=-1, stepped=False
         )
 
@@ -544,10 +573,10 @@ class TestQdacCompiler:
                 qp.qdac.play(bus="flux1", waveform=wf, dwell=dwell)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
         assert isinstance(output, QdacCompilationOutput)
-        qdac.upload_voltage_list.assert_called_with(
+        qdac_bus.upload_voltage_list.assert_called_with(
             waveform=wf, channel_id=1, dwell_us=dwell, sync_delay_s=0, repetitions=-1, stepped=False
         )
 
@@ -563,10 +592,12 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         with pytest.raises(ValueError, match="Step value cannot be zero"):
-            compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
     def test_play_wait_trigger(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
+        qdac_bus = flux1.instruments[0]
+
         pulse_wf = Square(1.0, 100)
         dwell_us = 2
         in_port = 1
@@ -578,15 +609,15 @@ class TestQdacCompiler:
         qp.wait_trigger(bus="flux1", duration=10e-6, port=in_port)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
-        assert compiler._qdac == qdac
+        assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == "back"
 
-        qdac.set_in_external_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 2
+        qdac_bus.set_in_external_trigger.assert_called_once()
+        assert qdac_bus.upload_voltage_list.call_count == 2
 
         # Setting external trigger at the end of the iteration
         qp = QProgram()
@@ -596,19 +627,21 @@ class TestQdacCompiler:
         qp.wait_trigger(bus="flux1", duration=10e-6)
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
-        assert compiler._qdac == qdac
+        assert compiler._qdacs == [qdac]
         assert compiler._trigger_position == None
 
-        qdac.set_in_internal_trigger.assert_called_once()
-        qdac.set_start_marker_internal_trigger.assert_called_once()
-        assert qdac.upload_voltage_list.call_count == 4
+        qdac_bus.set_in_internal_trigger.assert_called_once()
+        qdac_bus.set_start_marker_internal_trigger.assert_called_once()
+        assert qdac_bus.upload_voltage_list.call_count == 4
 
     def test_block_operation(self, qdac: QDevilQDac2, flux1: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
+        qdac_bus = flux1.instruments[0]
+
         pulse_wf = Square(1.0, 100)
         dwell_us = 2
 
@@ -618,9 +651,9 @@ class TestQdacCompiler:
             qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
 
         compiler = QdacCompiler()
-        compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1], qdac_offsets = [0])
+        compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1], qdac_offsets=[0])
 
-        assert qdac.upload_voltage_list.call_count == 1
+        assert qdac_bus.upload_voltage_list.call_count == 1
 
     def test_sync_raises_error(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
@@ -637,8 +670,8 @@ class TestQdacCompiler:
         with pytest.raises(
             NotImplementedError, match=f"<class 'qililab.qprogram.operations.sync.Sync'> is not supported in QDACII."
         ):
-            compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets = [0, 0])
-            
+            compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+
     def test_handle_unknown_crosstalk(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
         pulse_wf = Square(1.0, 100)
@@ -657,4 +690,6 @@ class TestQdacCompiler:
         with pytest.raises(
             NotImplementedError, match=f"<class 'qililab.qprogram.operations.sync.Sync'> is not supported in QDACII."
         ):
-            compiler.compile(qprogram=qp, qdac=qdac, qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk)
+            compiler.compile(
+                qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
+            )

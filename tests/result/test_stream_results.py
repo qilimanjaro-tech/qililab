@@ -135,7 +135,7 @@ def fixture_stream_array_not_in_platform():
         experiment_name=experiment_name,
         db_manager=db_manager,
         qprogram=qprogram,
-        bus_mapping=bus_mapping
+        bus_mapping=bus_mapping,
     )
 
 
@@ -287,7 +287,7 @@ class TestStreamArray:
     def test_stream_array_instantiation_qubit_idx(self, stream_array_qubit_idx: StreamArray):
         """Tests the instantiation of a StreamArray object with target and secondary indexes."""
         # Create mock for the file context
-        debug_q1asm = "Bus readout_q0:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
+        debug_q1asm = "Compilation of the debug has failed with the following error:\n'NoneType' object has no attribute 'instruments'"
         with patch("h5py.File") as mock_h5file:
             mock_file = MagicMock()
             mock_dataset = MagicMock()

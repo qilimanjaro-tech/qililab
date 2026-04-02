@@ -219,7 +219,7 @@ class QDevilQDac2(VoltageSource):
 
         envelope = waveform.envelope()
         channel = self.device.channel(channel_id)
-        if channel_id in self._cache_dc:
+        if f"{self.device.name}_{channel_id}" in self._cache_dc:
             channel.dc_abort()
             self.device.remove_traces()
 

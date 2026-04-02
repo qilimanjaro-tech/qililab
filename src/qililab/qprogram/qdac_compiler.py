@@ -218,9 +218,10 @@ class QdacCompiler:
                         if isinstance(flux_vector.bias_vector[bus], float):
                             offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
                             block.elements.insert(element_list[0], offset)
-                        elif isinstance(flux_vector.bias_vector[bus], np.ndarray) or isinstance(
-                            flux_vector.bias_vector[bus], list
-                        ):
+                        elif (
+                            isinstance(flux_vector.bias_vector[bus], np.ndarray)
+                            or isinstance(flux_vector.bias_vector[bus], list)
+                        ) and play_elements:
                             play = Play(
                                 bus,
                                 Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
@@ -259,6 +260,17 @@ class QdacCompiler:
         self._populate_qdac_buses()
 
         # Recursive traversal to convert QProgram blocks to Sequence
+        def print_qprogram_tree(block, indent=0):
+            prefix = "  " * indent
+            print(f"{prefix}{type(block).__name__}")
+            for el in block.elements:
+                if hasattr(el, "elements"):
+                    print_qprogram_tree(el, indent + 1)
+                else:
+                    extra = f" bus={el.bus}" if hasattr(el, "bus") else ""
+                    print(f"{prefix}  {type(el).__name__}{extra}")
+
+        print_qprogram_tree(self._qprogram._body)
         traverse(self._qprogram._body)
 
         if len(self._qdacs) > 1:
@@ -390,7 +402,6 @@ class QdacCompiler:
                     )
             else:
                 trigger_bus = element.bus
-
             if element.outputs:
                 for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
                     trigger = self._hash_trigger(element, output)
