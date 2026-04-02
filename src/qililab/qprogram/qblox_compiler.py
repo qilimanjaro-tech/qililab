@@ -622,14 +622,12 @@ class QbloxCompiler:
             return
 
         if isinstance(element.frequency, Variable):
-            frequency_variable = self._buses[element.bus].variable_to_register[element.frequency]
-            self._buses[element.bus].qpy_block_stack[-1].add(
-            component=QPyInstructions.SetFreq(value=frequency_variable)
-        )
+            freq = self._buses[element.bus].variable_to_register[element.frequency]
+            instruction = QPyInstructions.SetFreq(value=freq)
         else:
-            self._buses[element.bus].qpy_block_stack[-1].add(
-                component=QPyInstructions.SetFrequencyHz(frequency_hz=element.frequency)
-            )
+            instruction = QPyInstructions.SetFrequencyHz(frequency_hz=element.frequency)
+
+        self._buses[element.bus].qpy_block_stack[-1].add(component=instruction)
 
         self._buses[element.bus].upd_param_instruction_pending = True
 
@@ -637,13 +635,13 @@ class QbloxCompiler:
         if element.bus not in self._qblox_buses:
             return
 
-        convert = QbloxCompiler._convert_value(element)
-        phase = (
-            self._buses[element.bus].variable_to_register[element.phase]
-            if isinstance(element.phase, Variable)
-            else convert(element.phase)
-        )
-        self._buses[element.bus].qpy_block_stack[-1].add(component=QPyInstructions.SetPh(value=phase))
+        if isinstance(element.phase, Variable):
+            phase = self._buses[element.bus].variable_to_register[element.phase]
+            instruction = QPyInstructions.SetPh(value=phase)
+        else:
+            instruction = QPyInstructions.SetPhaseRad(phase=element.phase)
+
+        self._buses[element.bus].qpy_block_stack[-1].add(component=instruction)
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_reset_phase(self, element: ResetPhase):
@@ -663,19 +661,13 @@ class QbloxCompiler:
         if element.bus not in self._qblox_buses:
             return
 
-        convert = QbloxCompiler._convert_value(element)
-        gain = (
-            self._buses[element.bus].variable_to_register[element.gain]
-            if isinstance(element.gain, Variable)
-            else convert(element.gain)
-        )
-        self._buses[element.bus].qpy_block_stack[-1].add(
-            component=QPyInstructions.SetAwgGain(value_0=gain, value_1=gain)
-        )
-        # set the gain a second time - because of a qblox bug where the first gain in a hardware loop is false (same is done for the frequency).
-        self._buses[element.bus].qpy_block_stack[-1].add(
-            component=QPyInstructions.SetAwgGain(value_0=gain, value_1=gain)
-        )
+        if isinstance(element.gain, Variable):
+            gain = self._buses[element.bus].variable_to_register[element.gain]
+            instruction = QPyInstructions.SetAwgGain(value_0=gain, value_1=gain)
+        else:
+            instruction = QPyInstructions.SetNormalisedGain(gain_i=element.gain, gain_q=element.gain)
+
+        self._buses[element.bus].qpy_block_stack[-1].add(component=instruction)
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset):
@@ -974,8 +966,8 @@ class QbloxCompiler:
 
     def _handle_add_waits(self, bus: str, duration: int):
         """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
-        If the previous instruction was a wait and the current one as well and the sum of both wait is below INST_MAX_WAIT they get combined into one in order to reduce the number of Q1ASM lines.
-
+       
+            OUPS DO THE DOSCTRING HERE!!
         Args:
             element (Wait): wait element
             duration (int): duration to wait in ns
