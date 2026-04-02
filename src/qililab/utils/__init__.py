@@ -32,7 +32,6 @@ __all__ = [
     "coordinate_decompose",
     "demodulate",
     "dict_factory",
-    "hash_qpy_sequence",
     "merge_dictionaries",
     "nested_dataclass",
     "nested_dict_to_pandas_dataframe",
