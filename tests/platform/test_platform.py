@@ -1059,8 +1059,8 @@ class TestMethods:
 
             _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assert upload executed only once (4 because there are 4 buses)
-        assert upload.call_count == 4
+        # assert upload executed at each call (4 because there are 4 buses)
+        assert upload.call_count == 12
 
         # assert run executed all three times (12 because there are 4 buses)
         assert run.call_count == 12
@@ -1108,8 +1108,8 @@ class TestMethods:
 
             _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assert upload executed only once (2 because there are 2 buses)
-        assert upload.call_count == 2
+        # assert upload executed each time (6 because there are 2 buses)
+        assert upload.call_count == 6
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
@@ -1158,8 +1158,8 @@ class TestMethods:
 
             _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assert upload executed only once (2 because there are 2 buses)
-        assert upload.call_count == 2
+        # assert upload executed each time (6 because there are 2 buses)
+        assert upload.call_count == 6
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6

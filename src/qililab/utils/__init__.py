@@ -18,7 +18,6 @@ from .asdict_factory import dict_factory
 from .coordinate_decomposition import coordinate_decompose
 from .dictionaries import merge_dictionaries
 from .factory import Factory
-from .hashing import hash_qpy_sequence
 from .nested_data_class import nested_dataclass
 from .nested_dict_iterator import nested_dict_to_pandas_dataframe
 from .signal_processing import demodulate
