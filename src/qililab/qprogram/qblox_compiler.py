@@ -671,26 +671,26 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset):
+        #TEST. tets the four cases, var&var, imm&imm, var&imm, imm&var
         if element.bus not in self._qblox_buses:
             return
 
-        convert = QbloxCompiler._convert_value(element)
-        offset_0 = (
-            self._buses[element.bus].variable_to_register[element.offset_path0]
-            if isinstance(element.offset_path0, Variable)
-            else convert(element.offset_path0)
-        )
+        if isinstance(element.offset_path0, Variable):
+            offset_0 = self._buses[element.bus].variable_to_register[element.offset_path0]
+        else:
+            offset_0 = element.offset_path0
+
         if element.offset_path1 is None:
             offset_1 = offset_0
             logger.warning(
                 "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
             )
         else:
-            offset_1 = (
-                self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
-                if isinstance(element.offset_path1, Variable)
-                else convert(element.offset_path1)
-            )
+            if isinstance(element.offset_path1, Variable):
+                offset_1 = self._buses[element.bus].variable_to_register[element.offset_path1]
+            else:
+                offset_1 = element.offset_path1
+                
         if (isinstance(offset_0, QPyProgram.Register) and not isinstance(offset_1, QPyProgram.Register)) or (
             isinstance(offset_1, QPyProgram.Register) and not isinstance(offset_0, QPyProgram.Register)
         ):
@@ -700,21 +700,29 @@ class QbloxCompiler:
                 if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
             ]
             block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
+            print(block_index_for_move_instruction)
             register = QPyProgram.Register()
             if isinstance(offset_0, QPyProgram.Register):
-                value = offset_1
+                qpysequence_operation = self._get_qpysequence_conversion_instructions(element)
+                value = offset_1 * qpysequence_operation.scale_factor
                 offset_1 = register
             else:
-                value = offset_0
+                qpysequence_operation = self._get_qpysequence_conversion_instructions(element)
+                value = offset_0 * qpysequence_operation.scale_factor
                 offset_0 = register
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].add(
+            self._buses[element.bus].qpy_block_stack[-1]._add_structure(
                 component=QPyInstructions.Move(source=value, destination=register),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+                insert_idx = 0
             )
-        self._buses[element.bus].qpy_block_stack[-1].add(component=QPyInstructions.Nop())
-        self._buses[element.bus].qpy_block_stack[-1].add(
-            component=QPyInstructions.SetAwgOffs(value_0=offset_0, value_1=offset_1)
-        )
+        
+        if isinstance(offset_0, Variable) or isinstance(offset_1, Variable):
+            self._buses[element.bus].qpy_block_stack[-1].add(
+                component=QPyInstructions.SetAwgOffs(value_0=offset_0, value_1=offset_1)
+            )
+        else:
+            self._buses[element.bus].qpy_block_stack[-1].add(
+                component=QPyInstructions.SetNormalisedOffs(offset_i=offset_0, offset_q=offset_1)
+            )
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_markers(self, element: SetMarkers):
@@ -1681,7 +1689,7 @@ class QbloxCompiler:
     @staticmethod
     def _compute_loop_sweep(for_loop: ForLoop):
         iterations = QbloxCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
-        qblox_step = (for_loop.stop - for_loop.start) // (iterations - 1)
+        qblox_step = (for_loop.stop - for_loop.start) / (iterations - 1)
         return (for_loop.start, qblox_step, iterations)
 
     @staticmethod
