@@ -1227,7 +1227,6 @@ class Platform:
         crosstalk: bool = True,
     ) -> QProgramCompilationOutput:
         if not crosstalk and calibration is not None and calibration.crosstalk_matrix is not None:
-            calibration_crosstalk = deepcopy(calibration.crosstalk_matrix)
             calibration.crosstalk_matrix = None
 
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
@@ -1314,7 +1313,7 @@ class Platform:
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
             ]
-            qblox_output = QProgramCompilationOutput(
+            return QProgramCompilationOutput(
                 qblox=qblox_compiler.compile(
                     qprogram=qprogram,
                     bus_mapping=bus_mapping,
@@ -1329,11 +1328,6 @@ class Platform:
                 ),
                 qdac=compiled_qdac,
             )
-
-            # Recover calibration crosstalk
-            if not crosstalk and calibration is not None and calibration.crosstalk_matrix is not None:
-                calibration.crosstalk_matrix = calibration_crosstalk
-            return qblox_output
 
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
             if len(instruments) != 1:
@@ -1541,15 +1535,7 @@ class Platform:
 
             compiled_program_id = cluster.compile(program=qua)
 
-            if output.qdac:
-                if output.qdac.trigger_position == "back":
-                    for qdac in output.qdac.qdacs:
-                        qdac.start()
-
-                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
-
-            else:
-                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+            job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
             acquisitions = cluster.get_acquisitions(job=job)
 
