@@ -77,6 +77,7 @@ def fixture_qdac() -> QDevilQDac2:
             "dacs": [1, 2, 3, 4],
             "low_pass_filter": ["dc", "dc", "dc", "dc"],
             "out_trigger": 1,
+            "trigger_sync": True,
         }
     )
     qdac.device = MagicMock()
@@ -136,6 +137,7 @@ def fixture_second_qdac() -> QDevilQDac2:
             "dacs": [1, 2, 3, 4],
             "low_pass_filter": ["dc", "dc", "dc", "dc"],
             "in_trigger": 1,
+            "trigger_sync": False,
         }
     )
     qdac_2.device = MagicMock()
@@ -298,6 +300,77 @@ class TestQdacCompiler:
 
         assert qdac_bus.upload_voltage_list.call_count == 16
         assert qdac_bus.set_end_marker_internal_trigger.call_count == 2
+
+    def test_set_trigger_on_non_trigger_bus_with_existing_dc_list(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
+        """Test set_trigger on a non-trigger bus when a DC list already exists on the trigger bus."""
+        qdac_bus = flux1.instruments[0]
+
+        pulse_wf = Square(1.0, 100)
+        dwell_us = 2
+        out_port = 1
+
+        # Simulate that flux1 (channel 1) already has a cached DC list on the instrument
+        qdac.device.name = "qdac"
+        qdac._cache_dc = {"qdac_1": MagicMock()}  # "qdac_1" = device.name + "_" + channel of flux1
+
+        qp = QProgram()
+        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
+        # set_trigger on flux2, which is NOT a trigger_sync bus
+        qp.set_trigger(bus="flux2", duration=10e-6, outputs=out_port, position="start")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._trigger_position == "front"
+        assert qdac_bus.set_start_marker_external_trigger.call_count == 1
+
+    def test_set_trigger_on_non_trigger_bus_no_dc_list_uses_play_params(self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac1: Bus, flux_qdac2: Bus):
+        """Test set_trigger on a non-trigger bus when no DC list exists; falls back to _play_params
+        to synthesise a constant waveform on the trigger bus."""
+        qdac_bus = flux_qdac1.instruments[0]
+
+        pulse_wf = Square(1.0, 100)
+        dwell_us = 2
+        out_port = 1
+
+        # No cached DC list — forces the fallback path
+        qdac.device.name = "qdac"
+        qdac._cache_dc = {}
+
+        qp = QProgram()
+        qp.qdac.play(bus="flux_qdac1", waveform=pulse_wf, dwell=dwell_us)
+        # set_trigger on flux2, which is NOT a trigger_sync bus, and no DC list exists
+        qp.set_trigger(bus="flux_qdac2", duration=10e-6, outputs=out_port, position="start")
+
+        compiler = QdacCompiler()
+        output = compiler.compile(qprogram=qp, qdacs=[qdac, qdac_2], qdac_buses=[flux_qdac1, flux_qdac2], qdac_offsets=[0, 0], out_instrument=qdac)
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert compiler._trigger_position == "front"
+        # Once for the original play on flux1 + once for the synthetic constant waveform created by the fallback
+        assert qdac_bus.upload_voltage_list.call_count == 2
+        assert qdac_bus.set_start_marker_external_trigger.call_count == 1
+
+    def test_set_trigger_on_non_trigger_bus_no_dc_list_no_play_raises_error(
+        self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac1: Bus, flux_qdac2: Bus
+    ):
+        """Test set_trigger on a non-trigger bus with no DC list and no prior play raises ValueError."""
+        qdac.device.name = "qdac"
+        qdac._cache_dc = {}
+
+        out_port = 1
+
+        # No play at all before set_trigger, so _play_params is never populated
+        qp = QProgram()
+        qp.set_trigger(bus="flux_qdac2", duration=10e-6, outputs=out_port, position="start")
+
+        compiler = QdacCompiler()
+        with pytest.raises(
+            ValueError,
+            match="No DC list with the given channel ID, first create a DC list using qprogram.play.",
+        ):
+            compiler.compile(qprogram=qp, qdacs=[qdac, qdac_2], qdac_buses=[flux_qdac1, flux_qdac2], qdac_offsets=[0, 0])
 
     def test_simultaneous_qdacs(self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac1: Bus, flux_qdac2: Bus):
         """test the behavior of _handle_simultaneous_qdacs for 2 different QDACII."""

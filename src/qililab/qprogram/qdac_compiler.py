@@ -108,6 +108,7 @@ class QdacCompiler:
         self._dc_stepped: bool = False
         self._loop_repetitions: dict[str, int] = {}
         self._infinite_loop: bool = False
+        self._play_params: dict[str, Any] = {}
 
         self._trigger_hashes: dict[str, str] = {}
         self._trigger_position: str | None = None

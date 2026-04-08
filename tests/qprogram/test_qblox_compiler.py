@@ -4541,3 +4541,26 @@ other_max_duration_0:
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="Parameters of the ForLoop not assigned correctly. Please check start, stop and step values."):
             compiler.compile(qprogram=qp, crosstalk=crosstalk)
+
+    def test_crosstalk_compensation_measure_reset_raise_errors(self):
+        """Test the error that raises when the for loop parameter are incorrectly introduced."""
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+
+        qp = QProgram()
+        square_wf = IQPair(Square(amplitude=0.1, duration=50), Square(amplitude=0.1, duration=50))
+        weights_wf = IQPair(Square(amplitude=1, duration=50), Square(amplitude=1, duration=50))
+        # This for loop is empty as the steps point to the wrong direction
+        qp.qblox.measure_reset(
+            bus="flux1",
+            waveform=square_wf,
+            weights=weights_wf,
+            control_bus="flux2",
+            reset_pulse=square_wf,
+            trigger_address=1,
+        )
+        
+        compiler = QbloxCompiler()
+        with pytest.raises(TypeError, match=re.escape("qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation.")):
+            compiler.compile(qprogram=qp, crosstalk=crosstalk)

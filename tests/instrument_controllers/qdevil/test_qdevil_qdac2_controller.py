@@ -60,6 +60,41 @@ class TestQDevilQDac2Controller:
 
     @patch("qililab.instrument_controllers.qdevil.qdevil_qdac2_controller.QDevilQDac2Device", autospec=True)
     @pytest.mark.parametrize("controller_alias", ["qdac_controller_external_clock"])
+    def test_initial_setup(self, device_mock: MagicMock, platform: Platform, controller_alias: str):
+        """Test QDAC-II controller sets initial_setup."""
+        controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
+        controller_instance.connect()
+        with patch.object(controller_instance, "_set_clock_source") as mock_set_clock:
+            controller_instance.initial_setup()
+            mock_set_clock.assert_called_once()
+
+    @patch("qililab.instrument_controllers.qdevil.qdevil_qdac2_controller.QDevilQDac2Device", autospec=True)
+    @pytest.mark.parametrize("controller_alias", ["qdac_controller_external_clock"])
+    def test_set_clock_source(self, device_mock: MagicMock, platform: Platform, controller_alias: str):
+        """Test QDAC-II controller sets clock source correctly."""
+        controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
+
+        # Test external clock
+        controller_instance.connect()
+        controller_instance._set_clock_source()
+        controller_instance.device.write.assert_called_once_with("SYST:CLOCK:SOURCE EXT")
+        controller_instance.disconnect()
+
+        # Test internal clock
+        controller_instance.settings.reference_clock = "internal"
+        controller_instance.connect()
+        controller_instance._set_clock_source()
+        controller_instance.device.write.assert_called_with("SYST:CLOCK:SOURCE INT")
+
+    @pytest.mark.parametrize("controller_alias", ["qdac_controller_external_clock"])
+    def test_reference_clock(self, platform: Platform, controller_alias: str):
+        """Test reference_clock property returns the correct value from settings."""
+        controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
+        
+        assert controller_instance.reference_clock == controller_instance.settings.reference_clock
+
+    @patch("qililab.instrument_controllers.qdevil.qdevil_qdac2_controller.QDevilQDac2Device", autospec=True)
+    @pytest.mark.parametrize("controller_alias", ["qdac_controller_external_clock"])
     def test_initialize_device_external_clock(self, device_mock: MagicMock, platform: Platform, controller_alias: str):
         """Test QDAC-II controller initializes device correctly."""
         controller_instance = platform.instrument_controllers.get_instrument_controller(alias=controller_alias)
