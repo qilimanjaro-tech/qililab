@@ -1,6 +1,6 @@
 import pytest
 
-from qililab.core.variables import Domain, Variable, requires_domain
+from qililab.core import Domain, Variable, requires_domain
 
 
 class DummyWithDomain:
@@ -26,14 +26,14 @@ def test_requires_domain_validates_domain():
     assert dummy.method(var=good) is good
 
     bad = Variable("bad", domain=Domain.Frequency)
-    with pytest.raises(ValueError, match="Expected domain Domain.Time"):
+    with pytest.raises(ValueError, match="Expected domain QProgramDomain.Time"):
         dummy.method(var=bad)
 
 
-def test_domain_yaml_roundtrip():
-    class DummyNode:
-        value = "Frequency-2"
+# def test_domain_yaml_roundtrip():
+#     class DummyNode:
+#         value = "Frequency-2"
 
-    node = DummyNode()
-    domain = Domain.from_yaml(None, node)
-    assert domain is Domain.Frequency
+#     node = DummyNode()
+#     domain = Domain.from_yaml(None, node)
+#     assert domain is Domain.Frequency

@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qililab.qprogram.operations.operation import Operation
-from qililab.waveforms import IQWaveform, Waveform
+from qililab.waveforms import IQWaveform
 from qililab.yaml import yaml
+
+from . import Operation, SdkMeasure
 
 
 @yaml.register_class
-class Measure(Operation):
+class Measure(SdkMeasure):
     def __init__(
         self,
         bus: str,
@@ -28,23 +29,10 @@ class Measure(Operation):
         rotation: float | None = None,
         demodulation: bool = True,
     ) -> None:
-        super().__init__()
-        self.bus: str = bus
-        self.waveform: IQWaveform = waveform
-        self.weights: IQWaveform = weights
+        super().__init__(bus=bus, waveform=waveform, weights=weights)
         self.save_adc: bool = save_adc
         self.rotation: float | None = rotation
         self.demodulation: bool = demodulation
-
-    def get_waveforms(self) -> tuple[Waveform, Waveform]:
-        """Get the waveforms.
-
-        Returns:
-            tuple[Waveform, Waveform | None]: The waveforms as tuple.
-        """
-        wf_I: Waveform = self.waveform.get_I()
-        wf_Q: Waveform = self.waveform.get_Q()
-        return wf_I, wf_Q
 
 
 @yaml.register_class

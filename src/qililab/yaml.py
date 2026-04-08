@@ -11,8 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from uuid import UUID
 
-from qilisdk.yaml import yaml
-
-yaml.register_class(UUID)
+from qilisdk.yaml import yaml  # noqa: F401
