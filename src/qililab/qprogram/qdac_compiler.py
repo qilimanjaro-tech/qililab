@@ -14,7 +14,6 @@
 
 import math
 from collections import deque
-from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
@@ -23,7 +22,7 @@ from qililab.config import logger
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
@@ -41,7 +40,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.typings.enums import Parameter
-from qililab.waveforms import Arbitrary, IQPair, Waveform
+from qililab.waveforms import Arbitrary
 
 if TYPE_CHECKING:
     from qililab.platform.components.bus import Bus
@@ -152,93 +151,6 @@ class QdacCompiler:
             for bus in self._buses and self._qdac_buses_alias:
                 self._buses[bus].qprogram_block_stack.pop()
 
-        def with_crosstalk(qprogram: QProgram, crosstalk: CrosstalkMatrix) -> QProgram:
-            """Apply crosstalk compensation to the qprogram flux buses.
-            This method traverses the elements of the QProgram, replacing any
-            Play or Offset instances by the compensated envelope or offset for
-            all flux buses.
-            Args:
-                crosstalk (CrosstalkMatrix): Crosstalk matrix class.
-            Returns:
-                QProgram: A new instance of QProgram with calibrated crosstalk.
-            """
-
-            def traverse(block: Block, flux_vector: FluxVector | None = None):
-                element_list = []
-
-                if flux_vector is None:
-                    flux_vector = FluxVector()
-                    flux_vector.set_crosstalk(crosstalk)  # type: ignore
-                    for bus in crosstalk.matrix.keys():
-                        flux_vector[bus] = self._qdac_buses_offset[bus]
-
-                for i, element in enumerate(block.elements):
-                    if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():
-                        element_list.append(i)
-                        flux_vector = handle_flux_vector(flux_vector=flux_vector, element=element)  # type: ignore [arg-type]
-
-                    if isinstance(element, Block):
-                        traverse(element, flux_vector)
-
-                block = handle_crosstalk_element(block=block, element_list=element_list, flux_vector=flux_vector)  # type: ignore [arg-type]
-
-            def handle_flux_vector(flux_vector: FluxVector, element: Play | SetOffset):
-                if isinstance(element, Play):
-                    if isinstance(element.waveform, Waveform):
-                        envelope = element.waveform.envelope()
-                    elif isinstance(element.waveform, IQPair):
-                        envelope = element.waveform.I.envelope()
-                elif isinstance(element, SetOffset):  # square with same dimension as play
-                    envelope = element.offset_path0  # type: ignore
-
-                if (
-                    isinstance(envelope, np.ndarray)
-                    and isinstance(flux_vector[element.bus], np.ndarray)
-                    and flux_vector[element.bus].shape != envelope.shape  # type: ignore
-                ):
-                    raise ValueError("qp.play elements must have the same size.")
-                flux_vector[element.bus] = envelope
-                return flux_vector
-
-            def handle_crosstalk_element(block: Block, element_list: list[int], flux_vector: FluxVector):
-                if element_list:
-                    elements = []
-                    for ii, element_idx in enumerate(element_list):
-                        elements.append(block.elements.pop(element_idx - ii))
-
-                    play_elements = [element for element in elements if isinstance(element, Play)]
-                    if play_elements:
-                        dwell, delay, repetitions, stepped = (
-                            play_elements[0].dwell,
-                            play_elements[0].delay,
-                            play_elements[0].repetitions,
-                            play_elements[0].stepped,
-                        )
-
-                    for bus in flux_vector.bias_vector.keys():
-                        if isinstance(flux_vector.bias_vector[bus], float):
-                            offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
-                            block.elements.insert(element_list[0], offset)
-                            copied_qprogram.buses.add(bus)
-                        elif (
-                            isinstance(flux_vector.bias_vector[bus], np.ndarray)
-                            or isinstance(flux_vector.bias_vector[bus], list)
-                        ) and play_elements:
-                            play = Play(
-                                bus,
-                                Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore
-                                dwell=dwell,
-                                delay=delay,
-                                repetitions=repetitions,
-                                stepped=stepped,
-                            )
-                            block.elements.insert(element_list[0], play)
-                            copied_qprogram.buses.add(bus)
-
-            copied_qprogram = deepcopy(qprogram)
-            traverse(copied_qprogram.body)
-            return copied_qprogram
-
         self._qprogram = qprogram
         self._qdacs = qdacs
         self._out_instrument = out_instrument
@@ -253,7 +165,9 @@ class QdacCompiler:
             if calibration.crosstalk_matrix and crosstalk is None:
                 crosstalk = calibration.crosstalk_matrix
         if crosstalk is not None:
-            self._qprogram = with_crosstalk(qprogram=self._qprogram, crosstalk=crosstalk)
+            self._qprogram = self._qprogram.with_crosstalk_qdac(
+                crosstalk=crosstalk, qdac_buses_offset=self._qdac_buses_offset
+            )
 
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
