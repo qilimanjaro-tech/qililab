@@ -71,7 +71,6 @@ from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementRes
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
-from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
     import numpy as np
@@ -1402,10 +1401,7 @@ class Platform:
 
             # Upload sequences
             for bus_alias in sequences:
-                sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
-                if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
-                    buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
-                    self._qpy_sequence_cache[bus_alias] = sequence_hash
+                buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
                 # sync all relevant sequences
                 for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                     if isinstance(instrument, QbloxModule):
@@ -1824,10 +1820,7 @@ class Platform:
     ) -> None:
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
             for bus_alias in sequences:
-                sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
-                if bus_alias not in self._qpy_sequence_cache or self._qpy_sequence_cache[bus_alias] != sequence_hash:
-                    buses_per_qprogram[qprogram_idx][bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
-                    self._qpy_sequence_cache[bus_alias] = sequence_hash
+                buses_per_qprogram[qprogram_idx][bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
                 # sync all relevant sequences
                 for instrument, channel in zip(
                     buses_per_qprogram[qprogram_idx][bus_alias].instruments,
