@@ -219,6 +219,7 @@ class QdacCompiler:
                         if isinstance(flux_vector.bias_vector[bus], float):
                             offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
                             block.elements.insert(element_list[0], offset)
+                            copied_qprogram.buses.add(bus)
                         elif (
                             isinstance(flux_vector.bias_vector[bus], np.ndarray)
                             or isinstance(flux_vector.bias_vector[bus], list)
@@ -232,6 +233,7 @@ class QdacCompiler:
                                 stepped=stepped,
                             )
                             block.elements.insert(element_list[0], play)
+                            copied_qprogram.buses.add(bus)
 
             copied_qprogram = deepcopy(qprogram)
             traverse(copied_qprogram.body)
@@ -388,6 +390,7 @@ class QdacCompiler:
                             stepped=self._play_params["stepped"],  # type: ignore [arg-type]
                         )
                     )
+                    self._qprogram.buses.add(trigger_bus)
             else:
                 trigger_bus = element.bus
             if element.outputs:
