@@ -7,6 +7,7 @@ import pytest
 from qililab import Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square, IQDrag
 from qililab.qprogram.blocks import Average
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
@@ -397,6 +398,40 @@ class TestQProgram(TestStructuredProgram):
         assert qp._body.elements[0].bus == "drive"
         assert qp._body.elements[0].offset_path0 == 1.0
         assert qp._body.elements[0].offset_path1 == 0.0
+        
+    def test_with_crosstalk_multi_variable_offset(self):
+        """Test with_crosstalk covers the multi-variable branch in handle_offset
+        and handle_gain when len(variable_list) > 1."""
+        # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+
+        # Test handle_offset
+        qp = QProgram()
+        offset_0 = qp.variable(label="offset_0", domain=Domain.Voltage)
+        offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+
+        # Nested loops
+        with qp.for_loop(variable=offset_0, start=0.0, stop=0.5, step=0.1):
+            with qp.for_loop(variable=offset_1, start=0.0, stop=0.5, step=0.1):
+                qp.set_offset(bus="flux_bus_0", offset_path0=offset_0, offset_path1=0.0)
+                qp.set_offset(bus="flux_bus_1", offset_path0=offset_1, offset_path1=0.0)
+
+        new_qp = qp.with_crosstalk(crosstalk)
+        assert new_qp is not None
+
+        # Test handle_gain
+        qp2 = QProgram()
+        gain_0 = qp2.variable(label="gain_0", domain=Domain.Voltage)
+        gain_1 = qp2.variable(label="gain_1", domain=Domain.Voltage)
+
+        with qp2.for_loop(variable=gain_0, start=0.0, stop=0.5, step=0.1):
+            with qp2.for_loop(variable=gain_1, start=0.0, stop=0.5, step=0.1):
+                qp2.set_gain(bus="flux_bus_0", gain=gain_0)
+                qp2.set_gain(bus="flux_bus_1", gain=gain_1)
+
+        new_qp2 = qp2.with_crosstalk(crosstalk)
+        assert new_qp2 is not None
 
     def test_set_markers(self):
         qp = QProgram()
