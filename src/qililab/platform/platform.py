@@ -1220,8 +1220,16 @@ class Platform:
         return executor.execute()
 
     def compile_qprogram(
-        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
+        self,
+        qprogram: QProgram,
+        bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None,
+        crosstalk: bool = True,
     ) -> QProgramCompilationOutput:
+        if not crosstalk and calibration is not None and calibration.crosstalk_matrix is not None:
+            calibration_crosstalk = deepcopy(calibration.crosstalk_matrix)
+            calibration.crosstalk_matrix = None
+
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]
         instruments = {
@@ -1265,7 +1273,7 @@ class Platform:
                 qdac_offsets=qdac_offsets,
                 bus_mapping=bus_mapping,
                 calibration=calibration,
-                crosstalk=self.crosstalk,
+                crosstalk=self.crosstalk if crosstalk else None,
                 out_instrument=out_trigger_qdac,
             )
 
@@ -1306,8 +1314,7 @@ class Platform:
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
             ]
-
-            return QProgramCompilationOutput(
+            qblox_output = QProgramCompilationOutput(
                 qblox=qblox_compiler.compile(
                     qprogram=qprogram,
                     bus_mapping=bus_mapping,
@@ -1318,9 +1325,16 @@ class Platform:
                     ext_trigger=ext_trigger,
                     qblox_buses=qblox_buses,
                     single_channel=single_channel,
+                    crosstalk=self.crosstalk if crosstalk else None,
                 ),
                 qdac=compiled_qdac,
             )
+
+            # Recover calibration crosstalk
+            if not crosstalk and calibration is not None and calibration.crosstalk_matrix is not None:
+                calibration.crosstalk_matrix = calibration_crosstalk
+            return qblox_output
+
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
             if len(instruments) != 1:
                 raise NotImplementedError(
@@ -1592,11 +1606,9 @@ class Platform:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
-        if not crosstalk:
-            self.crosstalk = None
-            if calibration is not None:
-                calibration.crosstalk_matrix = None
-        output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+        output = self.compile_qprogram(
+            qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, crosstalk=crosstalk
+        )
         return self.execute_compilation_output(output=output, debug=debug)
 
     def _normalize_bus_mappings(
@@ -1695,12 +1707,6 @@ class Platform:
         bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))
         calibrations_list = self._normalize_calibrations(calibrations=calibrations, n=len(qprograms))
 
-        if not crosstalk:
-            self.crosstalk = None
-            for calibration in calibrations_list:
-                if calibration is not None:
-                    calibration.crosstalk_matrix = None
-
         # Validate: no shared *physical* buses after applying each mapping
         all_physical: set[str] = set()
         if bus_mapping_list:
@@ -1713,7 +1719,9 @@ class Platform:
                 all_physical |= phys
 
             outputs = [
-                self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
+                self.compile_qprogram(
+                    qprogram=qp, bus_mapping=bus_mapping, calibration=calibration, crosstalk=crosstalk
+                )
                 for qp, bus_mapping, calibration in zip(qprograms, bus_mapping_list, calibrations_list)
             ]
 
