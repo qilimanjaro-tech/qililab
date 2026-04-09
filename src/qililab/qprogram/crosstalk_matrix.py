@@ -123,6 +123,8 @@ class CrosstalkMatrix:
             offset (dict[str, float]): dictionary containing the buses of the offsets to be added or modified and the value of said offsets
         """
         for bus in offset:
+            if self.matrix and bus not in self.matrix:
+                raise ValueError(f"Bus {bus} not included inside matrix.")
             self.flux_offsets[bus] = offset[bus]
 
     def set_resistances(self, resistances: dict[str, float]):

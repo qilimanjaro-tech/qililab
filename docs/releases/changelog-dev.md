@@ -29,11 +29,33 @@
 - Added resistances inside `CrosstalkMatrix()` they can be set by `crosstalk.set_resistances()` in the same way as `crosstalk.set_offset`. Also they can be set inside the calibration file as resistances.
   [#1077](https://github.com/qilimanjaro-tech/qililab/pull/1077)
 
+- Added crosstalk history element within Calibration. The crosstalk history describes the state of the crosstalk at each iteration of the crosstalk calibration, each time a crosstalk calibration is done the user can add an element to the list with `add_intra_crosstalk(flux_offsets, block_diag_xt_matrix)` and `add_inter_crosstalk(full_crosstalk_matrix)` at every step of the calibration to update the `crosstalk_history["history"]`. The user can remove any element on the history that was not correctly implemented with `remove_history_step`.
+
+The crosstalk history contains the index, the previous matrix and offsets, the updated offsets, block diagonal matrix and full matrix, and the results from intra and inter crosstalk calibration.
+
+As an example of the code the user might run:
+
+```
+calibration = Calibration()
+calibration.crosstalk_matrix = crosstalk_matrix
+
+# Intra qubit experiments
+   calibration.add_intra_crosstalk(flux_offsets, block_diag_xt_matrix)
+
+# Inter qubit experiments
+   calibration.add_inter_crosstalk(full_crosstalk_matrix)
+
+calibration.save_history()
+```
+
+  [#1079](https://github.com/qilimanjaro-tech/qililab/pull/1079)
+
 ### Improvements
 
 - For Qblox, the acquisition matrix needs to be reset at each `initial_setup` and `acquire_qprogram_results` call for QRM and QRM-RF instruments. The reset is performed by uploading an empty sequence. This ensures that users do not encounter limitations on the number of available bins due to previously run experiments.
 
   The empty sequence uploaded is:
+
   ```
   empty_sequence = {
               "waveforms": {},
@@ -42,7 +64,10 @@
                   "program": "",
           }
   ```
+  Previously, the upload cache compared sequence hashes and skipped re-uploading if no changes were detected. However, since the acquisition portion of the sequence is now consistently removed the cache has been removed to ensure the sequence is always re-uploaded.
+
   [#1082](https://github.com/qilimanjaro-tech/qililab/pull/1082)
+  [#1088](https://github.com/qilimanjaro-tech/qililab/pull/1088)
 
 - Previously, the software filters in the `PulseDistortion` module were normalised by default.
 This PR changes the default value of `auto_norm` to False, as the previous behaviour was considered counterintuitive.
