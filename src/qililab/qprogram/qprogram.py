@@ -39,7 +39,7 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.structured_program import StructuredProgram
+from qililab.qprogram.structured_program import StructuredProgram, _to_scalar
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
@@ -423,7 +423,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             time (int): Duration of the delay.
         """
-        operation = Wait(bus=bus, duration=duration)
+        operation = Wait(bus=bus, duration=_to_scalar(duration))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -436,7 +436,7 @@ class QProgram(StructuredProgram):
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
             port (optional, int | None): Port channel of the trigger input. Defaults to None.
         """
-        operation = WaitTrigger(bus=bus, duration=duration, port=port)
+        operation = WaitTrigger(bus=bus, duration=_to_scalar(duration), port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -543,7 +543,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             phase (float): The new absolute phase of the NCO.
         """
-        operation = SetPhase(bus=bus, phase=phase)
+        operation = SetPhase(bus=bus, phase=_to_scalar(phase))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -555,7 +555,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             frequency (float): The new frequency of the NCO.
         """
-        operation = SetFrequency(bus=bus, frequency=frequency)
+        operation = SetFrequency(bus=bus, frequency=_to_scalar(frequency))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -567,7 +567,7 @@ class QProgram(StructuredProgram):
             bus (str): Unique identifier of the bus.
             gain (float): The new gain of the AWG.
         """
-        operation = SetGain(bus=bus, gain=gain)
+        operation = SetGain(bus=bus, gain=_to_scalar(gain))
         self._active_block.append(operation)
         self._buses.add(bus)
 
@@ -581,7 +581,11 @@ class QProgram(StructuredProgram):
             offset_path0 (float): The new offset of the AWG for path0.
             offset_path1 (float): The new offset of the AWG for path1.
         """
-        operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
+        operation = SetOffset(
+            bus=bus,
+            offset_path0=_to_scalar(offset_path0),
+            offset_path1=_to_scalar(offset_path1) if offset_path1 is not None else None,
+        )
         self._active_block.append(operation)
         self._buses.add(bus)
 

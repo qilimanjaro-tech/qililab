@@ -3474,7 +3474,7 @@ wheels = [
 
 [[package]]
 name = "qililab"
-version = "0.30.0"
+version = "0.31.0"
 source = { editable = "." }
 dependencies = [
     { name = "dash" },
@@ -3539,11 +3539,11 @@ requires-dist = [
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qilisdk", git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.4" },
-    { name = "qpysequence", specifier = ">=0.10.8" },
+    { name = "qpysequence", editable = "../qpysequence" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
     { name = "rustworkx", specifier = ">=0.17.1" },
-    { name = "sqlalchemy", specifier = ">=2.0.40" },
+    { name = "sqlalchemy", specifier = "<2.1" },
     { name = "submitit", specifier = ">=1.5.2" },
     { name = "urllib3", specifier = ">=2.3.0" },
     { name = "xarray", specifier = ">=2025.11.0" },
@@ -3631,17 +3631,34 @@ wheels = [
 
 [[package]]
 name = "qpysequence"
-version = "0.10.8"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.0"
+source = { editable = "../qpysequence" }
 dependencies = [
     { name = "loguru" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://urob.github.io/numpy-mkl" }, marker = "sys_platform != 'darwin'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dd/38/910cdfaf3ce7cffb37235cbfef84ed2c7adf9bc8260a1cb5479e78c591aa/qpysequence-0.10.8.tar.gz", hash = "sha256:d47aff11f14905b443013e7b1385a021da86da37f3ae56df086dccb730d838c9", size = 77883, upload-time = "2025-12-05T11:18:55.528Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/ac/657bd7e88e8d5bb84c73f683662bcae90791e4bc141bb7de1cb6a07d9fd2/qpysequence-0.10.8-py3-none-any.whl", hash = "sha256:ccf0cf66d41cc1bbc79b341375728e09f655b049cfc9ee88cbb8be15cde5d834", size = 79524, upload-time = "2025-12-05T11:18:56.53Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "loguru", specifier = ">=0.7.3" },
+    { name = "numpy" },
 ]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mdformat", specifier = ">=0.7.22" },
+    { name = "mdformat-ruff", specifier = ">=0.1.3" },
+    { name = "mypy", specifier = ">=1.15.0" },
+    { name = "nbqa", specifier = ">=1.9.1" },
+    { name = "pre-commit", specifier = ">=4.0.1" },
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "pytest-sugar", specifier = ">=1.0.0" },
+    { name = "pytest-xdist", specifier = ">=3.6.1" },
+    { name = "ruff", specifier = ">=0.14.6" },
+]
+docs = []
 
 [[package]]
 name = "referencing"
