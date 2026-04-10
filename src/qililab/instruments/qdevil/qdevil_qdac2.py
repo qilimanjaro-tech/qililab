@@ -52,9 +52,12 @@ class QDevilQDac2(VoltageSource):
 
     settings: QDevilQDac2Settings
     device: QDevilQDac2Driver
-    _cache_awg: dict[int | str, bool] = {}  # noqa: RUF012
-    _cache_dc: dict[int | str, List_Context] = {}  # noqa: RUF012
-    _triggers: dict[str, QDac2Trigger_Context] = {}  # noqa: RUF012
+
+    def __init__(self, settings: dict) -> None:
+        super().__init__(settings=settings)
+        self._cache_awg: dict[int | str, bool] = {}  # noqa: RUF012
+        self._cache_dc: dict[int | str, List_Context] = {}  # noqa: RUF012
+        self._triggers: dict[str, QDac2Trigger_Context] = {}  # noqa: RUF012
 
     @property
     def low_pass_filter(self):
@@ -450,6 +453,8 @@ class QDevilQDac2(VoltageSource):
     def start(self):
         """All generators, that have not been explicitly set to trigger on an internal or external trigger, will be started."""
         self.device.start_all()
+        self._cache_awg = {}
+        self._cache_dc = {}
         # TODO: add synchronous multiple qdac interaction using QDAC2_Array and qdacs.sync (https://qcodes.github.io/Qcodes_contrib_drivers/examples/QDevil/QDAC2/SyncMultipleQDACs.html)
 
     def clear_cache(self):
@@ -515,6 +520,8 @@ class QDevilQDac2(VoltageSource):
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(self.voltage[index])
         self.remove_digital_trace()
+        self._cache_awg = {}
+        self._cache_dc = {}
 
     @check_device_initialized
     def turn_off(self):
