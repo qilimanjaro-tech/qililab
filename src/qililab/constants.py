@@ -183,6 +183,7 @@ class INSTRUMENTCONTROLLER:
     CONNECTION = "connection"
     MODULES = "modules"
     RESET = "reset"
+    REFERENCE_CLOCK = "reference_clock"
 
 
 class CONNECTION:

@@ -59,6 +59,7 @@ from qililab.qprogram import (
     Experiment,
     QbloxCompilationOutput,
     QbloxCompiler,
+    QdacCompilationOutput,
     QProgram,
     QProgramCompilationOutput,
 )
@@ -337,6 +338,12 @@ class Platform:
 
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
+
+        self.qdac_buses: list[Bus] = []
+        """List of buses that use the instrument `QDevilQDac2`, defaults to an empty list for no qdac buses."""
+
+        self.qdac_instruments: list[QDevilQDac2] = []
+        """List of `QDevilQDac2` instruments inside the runcard, defaults to an empty list for no qdac instruments."""
 
         self.flux_vector: FluxVector | None = None
         """Flux vector information, defaults to None (only used on FLUX parameters)"""
@@ -885,7 +892,7 @@ class Platform:
             if flux not in self.flux_vector.flux_vector.keys():
                 self.flux_vector[flux] = 0
             self.flux_vector.bias_vector[flux] = 0
-            self.flux_vector.set_crosstalk_from_bias(self.crosstalk)
+        self.flux_vector.set_crosstalk_from_bias(self.crosstalk)
 
         for flux_alias in bus_list:
             element = self.get_element(alias=flux_alias)
@@ -1213,8 +1220,15 @@ class Platform:
         return executor.execute()
 
     def compile_qprogram(
-        self, qprogram: QProgram, bus_mapping: dict[str, str] | None = None, calibration: Calibration | None = None
+        self,
+        qprogram: QProgram,
+        bus_mapping: dict[str, str] | None = None,
+        calibration: Calibration | None = None,
+        crosstalk: bool = True,
     ) -> QProgramCompilationOutput:
+        if not crosstalk and calibration is not None and calibration.crosstalk_matrix is not None:
+            calibration.crosstalk_matrix = None
+
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
         buses = [self.buses.get(alias=bus_alias) for bus_alias in bus_aliases]
         instruments = {
@@ -1223,9 +1237,45 @@ class Platform:
             for instrument in bus.instruments
             if isinstance(instrument, (QbloxModule, QuantumMachinesCluster))
         }
-        qdac_buses = [
+
+        qdac_qprogram_buses = [
             bus for bus in buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
         ]
+        self.qdac_buses = [
+            bus for bus in self.buses if any(isinstance(instrument, QDevilQDac2) for instrument in bus.instruments)
+        ]
+        qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in self.qdac_buses]
+
+        compiled_qdac = None
+        if qdac_qprogram_buses:
+            self.qdac_instruments = list(
+                {
+                    instrument
+                    for bus in self.qdac_buses
+                    for instrument in bus.instruments
+                    if isinstance(instrument, QDevilQDac2)
+                }
+            )
+            out_trigger_qdac = None
+            if len(self.qdac_instruments) > 1:
+                out_trigger_qdac = next(
+                    (instrument for instrument in self.qdac_instruments if instrument.out_trigger is not None), None
+                )
+                if out_trigger_qdac is None:
+                    raise ValueError("Multiple QDAC-II instruments used but no Output trigger instrument given.")
+
+            qdac_compiler = QdacCompiler()
+            compiled_qdac = qdac_compiler.compile(
+                qprogram=qprogram,
+                qdacs=self.qdac_instruments,
+                qdac_buses=self.qdac_buses,
+                qdac_offsets=qdac_offsets,
+                bus_mapping=bus_mapping,
+                calibration=calibration,
+                crosstalk=self.crosstalk if crosstalk else None,
+                out_instrument=out_trigger_qdac,
+            )
+
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             # Retrieve the time of flight parameter from settings
             instrument_controllers = [
@@ -1259,25 +1309,10 @@ class Platform:
                             if len(sequencer.outputs) == 1:
                                 single_channel.append(bus.alias)
 
-            compiled_qdac = None
-            if qdac_buses:
-                qdac_instrument = next(
-                    instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
-                )
-                qdac_compiler = QdacCompiler()
-                compiled_qdac = qdac_compiler.compile(
-                    qprogram=qprogram,
-                    qdac=qdac_instrument,
-                    qdac_buses=qdac_buses,
-                    bus_mapping=bus_mapping,
-                    calibration=calibration,
-                )
-
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
             ]
-
             return QProgramCompilationOutput(
                 qblox=qblox_compiler.compile(
                     qprogram=qprogram,
@@ -1289,9 +1324,11 @@ class Platform:
                     ext_trigger=ext_trigger,
                     qblox_buses=qblox_buses,
                     single_channel=single_channel,
+                    crosstalk=self.crosstalk if crosstalk else None,
                 ),
                 qdac=compiled_qdac,
             )
+
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
             if len(instruments) != 1:
                 raise NotImplementedError(
@@ -1307,20 +1344,6 @@ class Platform:
                 for bus in buses
                 if bus.has_adc()
             }
-
-            compiled_qdac = None
-            if qdac_buses:
-                qdac_instrument = next(
-                    instrument for instrument in qdac_buses[0].instruments if isinstance(instrument, QDevilQDac2)
-                )
-                qdac_compiler = QdacCompiler()
-                compiled_qdac = qdac_compiler.compile(
-                    qprogram=qprogram,
-                    qdac=qdac_instrument,
-                    qdac_buses=qdac_buses,
-                    bus_mapping=bus_mapping,
-                    calibration=calibration,
-                )
 
             compiler = QuantumMachinesCompiler()
             qm_buses = [
@@ -1346,6 +1369,9 @@ class Platform:
         output: QProgramCompilationOutput,
         debug: bool = False,
     ):
+        if isinstance(output.qdac, QdacCompilationOutput):
+            for qdac_instrument in self.qdac_instruments:
+                qdac_instrument.remove_digital_trace()
         if isinstance(output.qblox, QbloxCompilationOutput):
             self.trigger_runs = 0
             return self._execute_qblox_compilation_output(output=output, debug=debug)
@@ -1391,12 +1417,14 @@ class Platform:
 
             # Execute sequences
             if output.qdac:
-                if output.qdac.trigger_position == "front":
-                    output.qdac.qdac.start()
+                if output.qdac.trigger_position == "back":
+                    for qdac in output.qdac.qdacs:
+                        qdac.start()
                 for bus_alias in sequences:
                     buses[bus_alias].run()
-                if output.qdac.trigger_position == "back":
-                    output.qdac.qdac.start()
+                if output.qdac.trigger_position == "front":
+                    for qdac in output.qdac.qdacs:
+                        qdac.start()
             else:
                 for bus_alias in sequences:
                     buses[bus_alias].run()
@@ -1507,14 +1535,7 @@ class Platform:
 
             compiled_program_id = cluster.compile(program=qua)
 
-            if output.qdac:
-                if output.qdac.trigger_position == "front":
-                    output.qdac.qdac.start()
-
-                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
-
-            else:
-                job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
+            job = cluster.run_compiled_program(compiled_program_id=compiled_program_id)
 
             acquisitions = cluster.get_acquisitions(job=job)
 
@@ -1539,6 +1560,7 @@ class Platform:
         qprogram: QProgram,
         bus_mapping: dict[str, str] | None = None,
         calibration: Calibration | None = None,
+        crosstalk: bool = True,
         debug: bool = False,
     ) -> QProgramResults:
         """Execute a :class:`.QProgram` using the platform instruments.
@@ -1570,7 +1592,9 @@ class Platform:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
             The keys correspond to the buses a measurement were performed upon, and the values are the list of measurement results in chronological order.
         """
-        output = self.compile_qprogram(qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration)
+        output = self.compile_qprogram(
+            qprogram=qprogram, bus_mapping=bus_mapping, calibration=calibration, crosstalk=crosstalk
+        )
         return self.execute_compilation_output(output=output, debug=debug)
 
     def _normalize_bus_mappings(
@@ -1633,6 +1657,7 @@ class Platform:
         qprograms: list[QProgram],
         bus_mappings: list[dict[str, str] | None] | dict[str, str] | None = None,
         calibrations: list[Calibration | None] | Calibration | None = None,
+        crosstalk: bool = True,
         debug: bool = False,
     ) -> list[QProgramResults]:
         """Compiles a list of qprograms to be executed in parallel. Then it calls the execute_compilation_outputs_parallel method to execute the compiled qprograms.
@@ -1680,7 +1705,9 @@ class Platform:
                 all_physical |= phys
 
             outputs = [
-                self.compile_qprogram(qprogram=qp, bus_mapping=bus_mapping, calibration=calibration)
+                self.compile_qprogram(
+                    qprogram=qp, bus_mapping=bus_mapping, calibration=calibration, crosstalk=crosstalk
+                )
                 for qp, bus_mapping, calibration in zip(qprograms, bus_mapping_list, calibrations_list)
             ]
 

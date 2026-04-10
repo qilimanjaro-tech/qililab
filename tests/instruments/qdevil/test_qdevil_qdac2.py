@@ -207,7 +207,7 @@ class TestQDevilQDac2:
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_in_external_trigger(channel_id, in_port)
 
-        qdac._cache_dc[channel_id].start_on_external.assert_called_once()
+        qdac._cache_dc[f"{qdac.device.name}_{channel_id}"].start_on_external.assert_called_once()
 
     def test_set_in_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
@@ -221,6 +221,52 @@ class TestQDevilQDac2:
         ):
             qdac.set_in_external_trigger(channel_id, in_port)
 
+    def test_set_out_external_trigger(self, qdac: QDevilQDac2, waveform: Square):
+        """Test set_out_external_trigger method"""
+        channel_id = 4
+        out_port = 1
+        trigger = "trigger_test"
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_out_external_trigger(channel_id, out_port, trigger)
+        qdac.device.connect_external_trigger.assert_called_once()
+
+        # Same test for reset trigger
+        qdac.set_out_external_trigger(channel_id, out_port, trigger)
+        qdac.device.free_trigger.assert_called_once()
+
+    def test_set_out_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
+        """Test set_out_external_trigger method raises error when no DC list is created"""
+        channel_id = 4
+        out_port = 1
+        trigger = "trigger_test"
+        qdac._cache_dc = {}
+
+        with pytest.raises(
+            ValueError,
+            match=f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}",
+        ):
+            qdac.set_out_external_trigger(channel_id, out_port, trigger)
+
+    def test_set_out_internal_trigger(self, qdac: QDevilQDac2, waveform: Square):
+        """Test set_out_internal_trigger method"""
+        channel_id = 4
+        trigger = "trigger_test"
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_out_internal_trigger(channel_id, trigger)
+        qdac.device.free_trigger.assert_called_once()
+
+    def test_set_out_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
+        """Test set_out_internal_trigger method raises error when no DC list is created"""
+        channel_id = 4
+        trigger = "trigger_test"
+        qdac._cache_dc = {}
+
+        with pytest.raises(
+            ValueError,
+            match=f"No DC list with the given channel ID, first create a DC list with channel ID: {channel_id}",
+        ):
+            qdac.set_out_internal_trigger(channel_id, trigger)
+
     def test_set_end_marker_external_trigger(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
         channel_id = 4
@@ -228,10 +274,17 @@ class TestQDevilQDac2:
         trigger = "trigger_test"
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_end_marker_external_trigger(channel_id, out_port, trigger)
-
         qdac.device.connect_external_trigger.assert_called_once()
+        qdac.device.free_trigger.assert_called_once()
 
-        qdac.set_end_marker_external_trigger(channel_id, out_port, trigger)
+    def test_set_end_marker_external_trigger_stepped(self, qdac: QDevilQDac2, waveform: Square):
+        """Test upload_waveform method"""
+        channel_id = 4
+        out_port = 1
+        trigger = "trigger_test"
+        qdac.upload_voltage_list(waveform, channel_id)
+        qdac.set_end_marker_external_trigger(channel_id, out_port, trigger, step=True)
+        qdac.device.connect_external_trigger.assert_called_once()
         qdac.device.free_trigger.assert_called_once()
 
     def test_set_end_marker_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
@@ -258,7 +311,7 @@ class TestQDevilQDac2:
 
         qdac.device.connect_external_trigger.assert_called_once()
 
-        qdac.set_start_marker_external_trigger(channel_id, out_port, trigger)
+        qdac.set_start_marker_external_trigger(channel_id, out_port, trigger, step=True)
         qdac.device.free_trigger.assert_called_once()
 
     def test_set_start_marker_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
@@ -284,7 +337,7 @@ class TestQDevilQDac2:
 
         qdac.device.channel(channel_id).write_channel.assert_called_once()
 
-        qdac.set_end_marker_internal_trigger(channel_id, trigger)
+        qdac.set_end_marker_internal_trigger(channel_id, trigger, step=True)
         qdac.device.free_trigger.assert_called_once()
 
     def test_set_end_marker_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
@@ -309,7 +362,7 @@ class TestQDevilQDac2:
 
         qdac.device.channel(channel_id).write_channel.assert_called_once()
 
-        qdac.set_start_marker_internal_trigger(channel_id, trigger)
+        qdac.set_start_marker_internal_trigger(channel_id, trigger, step=True)
         qdac.device.free_trigger.assert_called_once()
 
     def test_set_start_marker_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
@@ -332,7 +385,7 @@ class TestQDevilQDac2:
         qdac.set_start_marker_internal_trigger(channel_id, trigger)
         qdac.set_in_internal_trigger(channel_id, trigger)
 
-        qdac._cache_dc[channel_id].start_on.assert_called_once()
+        qdac._cache_dc[f"{qdac.device.name}_{channel_id}"].start_on.assert_called_once()
 
     def test_set_in_internal_trigger_no_trigger_raises_error(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""

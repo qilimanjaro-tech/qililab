@@ -53,6 +53,16 @@ instruments:
     dacs: [1, 2]
     trigger_sync: True
 
+  - name: qdevil_qdac2
+    alias: qdac_2
+    voltage: [0.0, 0.0]
+    span: ["low", "low"]
+    ramping_enabled: [True, True]
+    ramp_rate: [0.01, 0.01]
+    low_pass_filter: ["dc", "dc"]
+    dacs: [1, 2]
+    trigger_sync: True
+
 
 instrument_controllers:
   - name: qblox_cluster
@@ -77,6 +87,15 @@ instrument_controllers:
       - alias: qdac
         slot_id: 0
 
+  - name: qdevil_qdac2
+    alias: qdac_controller_ip_2
+    connection:
+      name: tcp_ip
+      address: 192.168.1.12
+    modules:
+      - alias: qdac
+        slot_id: 0
+
 buses:
   - alias: drive
     instruments: [QCM]
@@ -89,4 +108,10 @@ buses:
     channels: [1]
   - alias: qdac_bus_2
     instruments: [qdac]
+    channels: [2]
+  - alias: qdac2_bus_1
+    instruments: [qdac_2]
+    channels: [1]
+  - alias: qdac2_bus_2
+    instruments: [qdac_2]
     channels: [2]
