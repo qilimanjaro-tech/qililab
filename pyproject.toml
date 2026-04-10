@@ -78,7 +78,7 @@ prerelease = "if-necessary"
 
 [tool.uv.sources]
 qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
-qpysequence = { path = "../qpysequence", editable = true }
+qpysequence = { git = "https://github.com/qilimanjaro-tech/qpysequence.git", branch = "qhc-1267-qpysequence-redesign" }
 
 [tool.ruff]
 line-length = 120
