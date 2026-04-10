@@ -846,9 +846,7 @@ class QProgram(StructuredProgram):
 
             if flux_vector is None:
                 flux_vector = FluxVector()
-                flux_vector.set_crosstalk(crosstalk)  # type: ignore
-                for bus in crosstalk.matrix.keys():
-                    flux_vector[bus] = qdac_buses_offset[bus]
+                flux_vector.set_crosstalk_from_bias(crosstalk, qdac_buses_offset)  # type: ignore
 
             for i, element in enumerate(block.elements):
                 if isinstance(element, (Play, SetOffset)) and element.bus in crosstalk.matrix.keys():
