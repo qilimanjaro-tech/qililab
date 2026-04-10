@@ -546,23 +546,24 @@ class QbloxDraw:
             register["avg_no_loop"] = 1
             loop_info = {}
 
-            for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
-                if Q1ASM_line[0] == "move":
-                    reg = Q1ASM_line[1].split(",")[1].strip()
-                    value = Q1ASM_line[1].split(",")[0].strip()
-                    register[reg] = int(value)
+            for block in Q1ASM_ordered[bus]["program"].values():
+                for Q1ASM_line in block:
+                    if Q1ASM_line[0] == "move":
+                        reg = Q1ASM_line[1].split(",")[1].strip()
+                        value = Q1ASM_line[1].split(",")[0].strip()
+                        register[reg] = int(value)
 
-                # sorted labels (label, [start index, end index, register key])
-                _, value, label, index = Q1ASM_line
-                for l in label:
-                    if l not in loop_info:
-                        loop_info[l] = [index, index, None]
-                    else:
-                        loop_info[l][1] = index
-                        loop_info[l][2] = value.split(",")[0]
-                        if l.startswith("avg") and not averages_displayed:
-                            loop_info[l][2] = "avg_no_loop"
-                sorted_labels = sorted(loop_info.items(), key=lambda x: x[1][0])
+                    # sorted labels (label, [start index, end index, register key])
+                    _, value, label, index = Q1ASM_line
+                    for l in label:
+                        if l not in loop_info:
+                            loop_info[l] = [index, index, None]
+                        else:
+                            loop_info[l][1] = index
+                            loop_info[l][2] = value.split(",")[0]
+                            if l.startswith("avg") and not averages_displayed:
+                                loop_info[l][2] = "avg_no_loop"
+                    sorted_labels = sorted(loop_info.items(), key=lambda x: x[1][0])
 
             def process_loop(recursive_input, i):
                 if not parameters[bus]["time_reached"]:

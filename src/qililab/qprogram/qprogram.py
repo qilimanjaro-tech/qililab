@@ -14,8 +14,6 @@
 from copy import deepcopy
 from typing import TYPE_CHECKING, overload
 
-from qililab.qprogram.structured_program import _to_scalar
-
 from qililab.core.variables import Domain, requires_domain
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.calibration import Calibration
@@ -41,7 +39,7 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.structured_program import StructuredProgram
+from qililab.qprogram.structured_program import StructuredProgram, _to_scalar
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
@@ -583,7 +581,11 @@ class QProgram(StructuredProgram):
             offset_path0 (float): The new offset of the AWG for path0.
             offset_path1 (float): The new offset of the AWG for path1.
         """
-        operation = SetOffset(bus=bus, offset_path0=_to_scalar(offset_path0), offset_path1=_to_scalar(offset_path1) if offset_path1 is not None else None)
+        operation = SetOffset(
+            bus=bus,
+            offset_path0=_to_scalar(offset_path0),
+            offset_path1=_to_scalar(offset_path1) if offset_path1 is not None else None,
+        )
         self._active_block.append(operation)
         self._buses.add(bus)
 

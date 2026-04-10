@@ -3631,7 +3631,7 @@ wheels = [
 
 [[package]]
 name = "qpysequence"
-version = "0.10.8"
+version = "1.0.0"
 source = { editable = "../qpysequence" }
 dependencies = [
     { name = "loguru" },

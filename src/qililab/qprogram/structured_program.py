@@ -16,21 +16,21 @@ from collections import deque
 
 import numpy as np
 
+from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
+from qililab.exceptions.variable_allocated import VariableAllocated
+from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
+from qililab.yaml import yaml
+
 
 def _to_scalar(value):
     """Convert any numeric value to a Python int or float. Passthrough for all other types."""
     if isinstance(value, Variable):
         return value
-    elif isinstance(value, numbers.Integral):
+    if isinstance(value, numbers.Integral):
         return int(value)
-    elif isinstance(value, numbers.Real):
+    if isinstance(value, numbers.Real):
         return float(value)
     return value
-
-from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
-from qililab.exceptions.variable_allocated import VariableAllocated
-from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
-from qililab.yaml import yaml
 
 
 @yaml.register_class
@@ -152,8 +152,7 @@ class StructuredProgram:
         """
 
         return StructuredProgram._ForLoopContext(
-            program=self, variable=variable,
-            start=_to_scalar(start), stop=_to_scalar(stop), step=_to_scalar(step)
+            program=self, variable=variable, start=_to_scalar(start), stop=_to_scalar(stop), step=_to_scalar(step)
         )
 
     def loop(self, variable: Variable, values: np.ndarray):

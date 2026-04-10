@@ -4,7 +4,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 import qpysequence as QPy
-
+import qpysequence.program.instructions as QPyInstructions
+from qililab.qprogram.operations import SetFrequency, SetPhase, SetGain, SetOffset, Wait, ResetPhase
 from qililab import Calibration, Domain, FlatTop, Gaussian, IQPair, IQDrag, QProgram, Square
 from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram import QbloxCompiler
@@ -2408,7 +2409,6 @@ class TestQBloxCompiler:
                 upd_param        4              
                 stop                            
         """
-        print(sequences["drive"]._program)
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
@@ -2449,8 +2449,7 @@ class TestQBloxCompiler:
                             move             0, R2          
                             add              R0, 40, R3     
                             nop                             
-                            sub              R2, R3, R4     
-                            nop                             
+                            sub              R2, R3, R4                     
                             jlt              R4, 2147483648, @dynamic_sync_0
                             jge              R4, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
@@ -2476,8 +2475,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
                             wait             65535          
-                            sub              R4, 65535, R4  
-                            nop                             
+                            sub              R4, 65535, R4                           
                             jge              R4, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
         """
@@ -2498,15 +2496,13 @@ class TestQBloxCompiler:
                             move             40, R5         
                             add              R3, 40, R6     
                             nop                             
-                            sub              R5, R6, R7     
-                            nop                             
+                            sub              R5, R6, R7                  
                             jlt              R7, 2147483648, @other_max_duration_0
                             move             R6, R7         
             after_other_max_duration_0:
                             move             0, R8          
                             nop                             
-                            sub              R7, R8, R9     
-                            nop                             
+                            sub              R7, R8, R9                              
                             jlt              R9, 2147483648, @dynamic_sync_0
                             jge              R9, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
@@ -2534,8 +2530,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
                             wait             65535          
-                            sub              R9, 65535, R9  
-                            nop                             
+                            sub              R9, 65535, R9                             
                             jge              R9, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             other_max_duration_0:
@@ -2575,18 +2570,15 @@ class TestQBloxCompiler:
                             move             4, R0      
                             move             20000, R1          
             loop_0:
-                            play             0, 1, 40       
-                            nop                             
-                            move             R0, R2         
-                            nop                             
+                            play             0, 1, 40                                   
+                            move             R0, R2                               
                             jge              R0, 65535, @long_wait_0
                             wait             R0            
             continue_after_long_wait_0:
                             move             0, R3          
                             add              R0, 40, R4     
                             nop                             
-                            sub              R3, R4, R5     
-                            nop                             
+                            sub              R3, R4, R5                                  
                             jlt              R5, 2147483648, @dynamic_sync_0
                             jge              R5, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
@@ -2598,8 +2590,7 @@ class TestQBloxCompiler:
                             stop                            
             long_wait_0:
                             wait             65535          
-                            sub              R2, 65535, R2  
-                            nop                             
+                            sub              R2, 65535, R2                              
                             jge              R2, 65535, @long_wait_0
                             wait             R2             
                             jmp              @continue_after_long_wait_0
@@ -2619,8 +2610,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
                             wait             65535          
-                            sub              R5, 65535, R5  
-                            nop                             
+                            sub              R5, 65535, R5                            
                             jge              R5, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
                 """
@@ -2641,15 +2631,13 @@ class TestQBloxCompiler:
                             move             40, R5         
                             add              R3, 40, R6     
                             nop                             
-                            sub              R5, R6, R7     
-                            nop                             
+                            sub              R5, R6, R7                                
                             jlt              R7, 2147483648, @other_max_duration_0
                             move             R6, R7         
             after_other_max_duration_0:
                             move             0, R8          
                             nop                             
-                            sub              R7, R8, R9     
-                            nop                             
+                            sub              R7, R8, R9                                
                             jlt              R9, 2147483648, @dynamic_sync_0
                             jge              R9, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
@@ -2677,8 +2665,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
                             wait             65535          
-                            sub              R9, 65535, R9  
-                            nop                             
+                            sub              R9, 65535, R9                             
                             jge              R9, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             other_max_duration_0:
@@ -2719,17 +2706,14 @@ class TestQBloxCompiler:
                             move             100, R0         
                             move             11, R1        
             loop_0:
-                            play             0, 1, 40       
-                            nop                             
+                            play             0, 1, 40                                   
                             sub              R0, 50, R2     
                             nop                             
                             wait             R2             
-                            move             0, R3          
-                            nop                             
+                            move             0, R3                                     
                             add              R2, 40, R4     
                             nop                             
-                            sub              R3, R4, R5     
-                            nop                             
+                            sub              R3, R4, R5                                
                             jlt              R5, 2147483648, @dynamic_sync_0
                             jge              R5, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
@@ -2738,12 +2722,10 @@ class TestQBloxCompiler:
                             sub              R6, R0, R7     
                             nop                             
                             wait             R7             
-                            move             0, R3          
-                            nop                             
+                            move             0, R3                                
                             add              R7, 0, R4      
                             nop                             
-                            sub              R3, R4, R5     
-                            nop                             
+                            sub              R3, R4, R5                              
                             jlt              R5, 2147483648, @dynamic_sync_1
                             jge              R5, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
@@ -2769,8 +2751,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
                             wait             65535          
-                            sub              R5, 65535, R5  
-                            nop                             
+                            sub              R5, 65535, R5                             
                             jge              R5, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             dynamic_sync_1:
@@ -2789,8 +2770,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
                             wait             65535          
-                            sub              R5, 65535, R5  
-                            nop                             
+                            sub              R5, 65535, R5                             
                             jge              R5, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
                 """
@@ -2807,41 +2787,34 @@ class TestQBloxCompiler:
             main:          
                             move             100, R3         
                             move             11, R4        
-            loop_0:
-                            nop                             
-                            sub              R3, 50, R5     
-                            nop                             
+            loop_0:                           
+                            sub              R3, 50, R5                             
                             move             40, R6         
                             add              R5, 40, R7     
                             nop                             
-                            sub              R6, R7, R8     
-                            nop                             
+                            sub              R6, R7, R8                                
                             jlt              R8, 2147483648, @other_max_duration_0
                             move             R7, R8         
             after_other_max_duration_0:
                             move             0, R9          
                             nop                             
-                            sub              R8, R9, R10    
-                            nop                             
+                            sub              R8, R9, R10                                
                             jlt              R10, 2147483648, @dynamic_sync_0
                             jge              R10, 4294967293, @negative_one_two_three_0
             after_dynamic_sync_0:
                             move             50, R11        
                             nop                             
-                            sub              R11, R3, R5    
-                            nop                             
+                            sub              R11, R3, R5                                 
                             move             0, R6          
                             add              R5, 0, R7      
                             nop                             
-                            sub              R6, R7, R8     
-                            nop                             
+                            sub              R6, R7, R8                                
                             jlt              R8, 2147483648, @other_max_duration_1
                             move             R7, R8         
             after_other_max_duration_1:
                             move             0, R12         
                             nop                             
-                            sub              R8, R12, R10   
-                            nop                             
+                            sub              R8, R12, R10                               
                             jlt              R10, 2147483648, @dynamic_sync_1
                             jge              R10, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
@@ -2869,8 +2842,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
                             wait             65535          
-                            sub              R10, 65535, R10
-                            nop                             
+                            sub              R10, 65535, R10                          
                             jge              R10, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             other_max_duration_0:
@@ -2892,8 +2864,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
                             wait             65535          
-                            sub              R10, 65535, R10
-                            nop                             
+                            sub              R10, 65535, R10                             
                             jge              R10, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
             other_max_duration_1:
@@ -2934,35 +2905,27 @@ class TestQBloxCompiler:
                             move             100, R0       
                             move             4991, R1        
             loop_0:
-                            play             0, 1, 40       
-                            nop                             
+                            play             0, 1, 40                                   
                             add              R0, 500, R2    
                             nop                             
                             wait             R2             
-                            move             0, R3          
-                            nop                             
+                            move             0, R3                                     
                             add              R2, 40, R4     
                             nop                             
-                            sub              R3, R4, R5     
-                            nop                             
+                            sub              R3, R4, R5                                 
                             jlt              R5, 2147483648, @dynamic_sync_0
                             jge              R5, 4294967293, @negative_one_two_three_0
-            after_dynamic_sync_0:
+            after_dynamic_sync_0:                           
+                            add              R0, 20000, R6                          
                             nop                             
-                            add              R0, 20000, R6  
-                            nop                             
-                            nop                             
-                            move             R6, R7         
-                            nop                             
+                            move             R6, R7                                     
                             jge              R6, 65535, @long_wait_0
                             wait             R6             
             continue_after_long_wait_0:
-                            move             0, R3          
-                            nop                             
+                            move             0, R3                             
                             add              R6, 0, R4      
                             nop                             
-                            sub              R3, R4, R5     
-                            nop                             
+                            sub              R3, R4, R5                                
                             jlt              R5, 2147483648, @dynamic_sync_1
                             jge              R5, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
@@ -2974,8 +2937,7 @@ class TestQBloxCompiler:
                             stop                            
             long_wait_0:
                             wait             65535          
-                            sub              R7, 65535, R7  
-                            nop                             
+                            sub              R7, 65535, R7                              
                             jge              R7, 65535, @long_wait_0
                             wait             R7             
                             jmp              @continue_after_long_wait_0
@@ -2995,8 +2957,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
                             wait             65535          
-                            sub              R5, 65535, R5  
-                            nop                             
+                            sub              R5, 65535, R5                            
                             jge              R5, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             dynamic_sync_1:
@@ -3015,8 +2976,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
                             wait             65535          
-                            sub              R5, 65535, R5  
-                            nop                             
+                            sub              R5, 65535, R5                             
                             jge              R5, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
                 """
@@ -3033,40 +2993,32 @@ class TestQBloxCompiler:
             main:
                             move             100, R3       
                             move             4991, R4        
-            loop_0:
-                            nop                             
-                            add              R3, 500, R5    
-                            nop                             
+            loop_0:                         
+                            add              R3, 500, R5                         
                             move             40, R6         
                             add              R5, 40, R7     
                             nop                             
-                            sub              R6, R7, R8     
-                            nop                             
+                            sub              R6, R7, R8                                 
                             jlt              R8, 2147483648, @other_max_duration_0
                             move             R7, R8         
             after_other_max_duration_0:
                             move             0, R9          
                             nop                             
-                            sub              R8, R9, R10    
-                            nop                             
+                            sub              R8, R9, R10                              
                             jlt              R10, 2147483648, @dynamic_sync_0
                             jge              R10, 4294967293, @negative_one_two_three_0
-            after_dynamic_sync_0:
-                            nop                             
-                            add              R3, 20000, R5  
-                            nop                             
+            after_dynamic_sync_0:                      
+                            add              R3, 20000, R5                           
                             move             0, R6          
                             add              R5, 0, R7      
                             nop                             
-                            sub              R6, R7, R8     
-                            nop                             
+                            sub              R6, R7, R8                                
                             jlt              R8, 2147483648, @other_max_duration_1
                             move             R7, R8         
             after_other_max_duration_1:
                             move             0, R11         
                             nop                             
-                            sub              R8, R11, R10   
-                            nop                             
+                            sub              R8, R11, R10                               
                             jlt              R10, 2147483648, @dynamic_sync_1
                             jge              R10, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
@@ -3094,8 +3046,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
                             wait             65535          
-                            sub              R10, 65535, R10
-                            nop                             
+                            sub              R10, 65535, R10                         
                             jge              R10, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             other_max_duration_0:
@@ -3117,8 +3068,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
                             wait             65535          
-                            sub              R10, 65535, R10
-                            nop                             
+                            sub              R10, 65535, R10                         
                             jge              R10, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
             other_max_duration_1:
@@ -3152,21 +3102,17 @@ class TestQBloxCompiler:
                             move             0, R2          
                             add              R0, 40, R3     
                             nop                             
-                            sub              R2, R3, R4     
-                            nop                             
+                            sub              R2, R3, R4                                
                             jlt              R4, 2147483648, @dynamic_sync_0
                             jge              R4, 4294967293, @negative_one_two_three_0
-            after_dynamic_sync_0:
-                            nop                             
+            after_dynamic_sync_0:                          
                             sub              R0, 30, R5     
                             nop                             
                             wait             R5             
-                            move             2024, R2       
-                            nop                             
+                            move             2024, R2                                    
                             add              R5, 0, R3      
                             nop                             
-                            sub              R2, R3, R4     
-                            nop                             
+                            sub              R2, R3, R4                                
                             jlt              R4, 2147483648, @dynamic_sync_1
                             jge              R4, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
@@ -3191,8 +3137,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
                             wait             65535          
-                            sub              R4, 65535, R4  
-                            nop                             
+                            sub              R4, 65535, R4                              
                             jge              R4, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             dynamic_sync_1:
@@ -3211,8 +3156,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
                             wait             65535          
-                            sub              R4, 65535, R4  
-                            nop                             
+                            sub              R4, 65535, R4                              
                             jge              R4, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
         """
@@ -3233,21 +3177,17 @@ class TestQBloxCompiler:
                             move             40, R5         
                             add              R3, 40, R6     
                             nop                             
-                            sub              R5, R6, R7     
-                            nop                             
+                            sub              R5, R6, R7                                  
                             jlt              R7, 2147483648, @other_max_duration_0
                             move             R6, R7         
             after_other_max_duration_0:
                             move             0, R8          
                             nop                             
-                            sub              R7, R8, R9     
-                            nop                             
+                            sub              R7, R8, R9                                 
                             jlt              R9, 2147483648, @dynamic_sync_0
                             jge              R9, 4294967293, @negative_one_two_three_0
-            after_dynamic_sync_0:
-                            nop                             
-                            sub              R3, 30, R10    
-                            nop                             
+            after_dynamic_sync_0:                          
+                            sub              R3, 30, R10                               
                             play             0, 1, 4        
                             acquire_weighed  0, R2, R1, R0, 2000
                             add              R2, 1, R2      
@@ -3255,15 +3195,13 @@ class TestQBloxCompiler:
                             move             0, R5          
                             add              R10, 0, R6     
                             nop                             
-                            sub              R5, R6, R7     
-                            nop                             
+                            sub              R5, R6, R7                              
                             jlt              R7, 2147483648, @other_max_duration_1
                             move             R6, R7         
             after_other_max_duration_1:
                             move             2024, R11      
                             nop                             
-                            sub              R7, R11, R9    
-                            nop                             
+                            sub              R7, R11, R9           
                             jlt              R9, 2147483648, @dynamic_sync_1
                             jge              R9, 4294967293, @negative_one_two_three_1
             after_dynamic_sync_1:
@@ -3288,8 +3226,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_0
             long_wait_sync_0:
                             wait             65535          
-                            sub              R9, 65535, R9  
-                            nop                             
+                            sub              R9, 65535, R9                             
                             jge              R9, 65535, @long_wait_sync_0
                             jmp              @dynamic_sync_0
             other_max_duration_0:
@@ -3311,8 +3248,7 @@ class TestQBloxCompiler:
                             jmp              @after_dynamic_sync_1
             long_wait_sync_1:
                             wait             65535          
-                            sub              R9, 65535, R9  
-                            nop                             
+                            sub              R9, 65535, R9       
                             jge              R9, 65535, @long_wait_sync_1
                             jmp              @dynamic_sync_1
             other_max_duration_1:
@@ -3349,8 +3285,7 @@ class TestQBloxCompiler:
                                 move             4, R5          
                                 add              R3, 0, R6      
                                 nop                             
-                                sub              R5, R6, R7     
-                                nop                             
+                                sub              R5, R6, R7                               
                                 jlt              R7, 2147483648, @dynamic_sync_0
                                 jge              R7, 4294967293, @negative_one_two_three_0
                         after_dynamic_sync_0:
@@ -3367,8 +3302,7 @@ class TestQBloxCompiler:
                                 move             4, R5          
                                 add              R3, 0, R6      
                                 nop                             
-                                sub              R5, R6, R7     
-                                nop                             
+                                sub              R5, R6, R7                               
                                 jlt              R7, 2147483648, @dynamic_sync_1
                                 jge              R7, 4294967293, @negative_one_two_three_1
                         after_dynamic_sync_1:
@@ -3403,8 +3337,7 @@ class TestQBloxCompiler:
                                 jmp              @after_dynamic_sync_0
                         long_wait_sync_0:
                                 wait             65535          
-                                sub              R7, 65535, R7  
-                                nop                             
+                                sub              R7, 65535, R7                              
                                 jge              R7, 65535, @long_wait_sync_0
                                 jmp              @dynamic_sync_0
                         dynamic_sync_1:
@@ -3423,8 +3356,7 @@ class TestQBloxCompiler:
                                 jmp              @after_dynamic_sync_1
                         long_wait_sync_1:
                                 wait             65535          
-                                sub              R7, 65535, R7  
-                                nop                             
+                                sub              R7, 65535, R7                              
                                 jge              R7, 65535, @long_wait_sync_1
                                 jmp              @dynamic_sync_1"""
 
@@ -3453,15 +3385,13 @@ class TestQBloxCompiler:
                                 move             4, R7          
                                 add              R5, 0, R8      
                                 nop                             
-                                sub              R7, R8, R9     
-                                nop                             
+                                sub              R7, R8, R9                                
                                 jlt              R9, 2147483648, @other_max_duration_0
                                 move             R8, R9         
                 after_other_max_duration_0:
                                 move             0, R10         
                                 nop                             
-                                sub              R9, R10, R11   
-                                nop                             
+                                sub              R9, R10, R11                        
                                 jlt              R11, 2147483648, @dynamic_sync_0
                                 jge              R11, 4294967293, @negative_one_two_three_0
                 after_dynamic_sync_0:
@@ -3476,15 +3406,13 @@ class TestQBloxCompiler:
                                 move             4, R7          
                                 add              R5, 0, R8      
                                 nop                             
-                                sub              R7, R8, R9     
-                                nop                             
+                                sub              R7, R8, R9                               
                                 jlt              R9, 2147483648, @other_max_duration_1
                                 move             R8, R9         
                 after_other_max_duration_1:
                                 move             0, R12         
                                 nop                             
-                                sub              R9, R12, R11   
-                                nop                             
+                                sub              R9, R12, R11                             
                                 jlt              R11, 2147483648, @dynamic_sync_1
                                 jge              R11, 4294967293, @negative_one_two_three_1
                 after_dynamic_sync_1:
@@ -3520,8 +3448,7 @@ class TestQBloxCompiler:
                                 jmp              @after_dynamic_sync_0
                 long_wait_sync_0:
                                 wait             65535          
-                                sub              R11, 65535, R11
-                                nop                             
+                                sub              R11, 65535, R11                           
                                 jge              R11, 65535, @long_wait_sync_0
                                 jmp              @dynamic_sync_0
                 other_max_duration_0:
@@ -3543,8 +3470,7 @@ class TestQBloxCompiler:
                                 jmp              @after_dynamic_sync_1
                 long_wait_sync_1:
                                 wait             65535          
-                                sub              R11, 65535, R11
-                                nop                             
+                                sub              R11, 65535, R11                            
                                 jge              R11, 65535, @long_wait_sync_1
                                 jmp              @dynamic_sync_1
                 other_max_duration_1:
@@ -3575,15 +3501,13 @@ class TestQBloxCompiler:
                                 move             0, R5          
                                 add              R3, 0, R6      
                                 nop                             
-                                sub              R5, R6, R7     
-                                nop                             
+                                sub              R5, R6, R7                                
                                 jlt              R7, 2147483648, @other_max_duration_0
                                 move             R6, R7         
                 after_other_max_duration_0:
                                 move             4, R8          
                                 nop                             
-                                sub              R7, R8, R9     
-                                nop                             
+                                sub              R7, R8, R9                                 
                                 jlt              R9, 2147483648, @dynamic_sync_0
                                 jge              R9, 4294967293, @negative_one_two_three_0
                 after_dynamic_sync_0:
@@ -3597,15 +3521,13 @@ class TestQBloxCompiler:
                                 move             0, R5          
                                 add              R3, 0, R6      
                                 nop                             
-                                sub              R5, R6, R7     
-                                nop                             
+                                sub              R5, R6, R7                                
                                 jlt              R7, 2147483648, @other_max_duration_1
                                 move             R6, R7         
                 after_other_max_duration_1:
                                 move             4, R10         
                                 nop                             
-                                sub              R7, R10, R9    
-                                nop                             
+                                sub              R7, R10, R9                              
                                 jlt              R9, 2147483648, @dynamic_sync_1
                                 jge              R9, 4294967293, @negative_one_two_three_1
                 after_dynamic_sync_1:
@@ -3639,8 +3561,7 @@ class TestQBloxCompiler:
                                 jmp              @after_dynamic_sync_0
                 long_wait_sync_0:
                                 wait             65535          
-                                sub              R9, 65535, R9  
-                                nop                             
+                                sub              R9, 65535, R9                             
                                 jge              R9, 65535, @long_wait_sync_0
                                 jmp              @dynamic_sync_0
                 other_max_duration_0:
@@ -3662,8 +3583,7 @@ class TestQBloxCompiler:
                                 jmp              @after_dynamic_sync_1
                 long_wait_sync_1:
                                 wait             65535          
-                                sub              R9, 65535, R9  
-                                nop                             
+                                sub              R9, 65535, R9                              
                                 jge              R9, 65535, @long_wait_sync_1
                                 jmp              @dynamic_sync_1
                 other_max_duration_1:
@@ -3693,8 +3613,7 @@ loop_0:
                 move             0, R2          
                 add              R0, 0, R3      
                 nop                             
-                sub              R2, R3, R4     
-                nop                             
+                sub              R2, R3, R4                                
                 jlt              R4, 2147483648, @other_max_duration_0
                 move             R3, R4         
 after_other_max_duration_0:
@@ -3702,8 +3621,7 @@ after_other_max_duration_0:
 
                 move             0, R5          
                 nop                             
-                sub              R4, R5, R6     
-                nop                             
+                sub              R4, R5, R6                             
                 jlt              R6, 2147483648, @dynamic_sync_0
                 jge              R6, 4294967293, @negative_one_two_three_0
 after_dynamic_sync_0:
@@ -3713,8 +3631,7 @@ after_dynamic_sync_0:
                 move             0, R2          
                 add              R0, 0, R3      
                 nop                             
-                sub              R2, R3, R4     
-                nop                             
+                sub              R2, R3, R4                               
                 jlt              R4, 2147483648, @other_max_duration_1
                 move             R3, R4         
 after_other_max_duration_1:
@@ -3722,8 +3639,7 @@ after_other_max_duration_1:
 
                 move             0, R7          
                 nop                             
-                sub              R4, R7, R6     
-                nop                             
+                sub              R4, R7, R6                                
                 jlt              R6, 2147483648, @dynamic_sync_1
                 jge              R6, 4294967293, @negative_one_two_three_1
 after_dynamic_sync_1:
@@ -3759,8 +3675,7 @@ long_wait_sync_0:
 
 
                 wait             65535          
-                sub              R6, 65535, R6  
-                nop                             
+                sub              R6, 65535, R6                              
                 jge              R6, 65535, @long_wait_sync_0
                 jmp              @dynamic_sync_0
 other_max_duration_0:
@@ -3792,8 +3707,7 @@ long_wait_sync_1:
 
 
                 wait             65535          
-                sub              R6, 65535, R6  
-                nop                             
+                sub              R6, 65535, R6                              
                 jge              R6, 65535, @long_wait_sync_1
                 jmp              @dynamic_sync_1
 other_max_duration_1:
@@ -3820,15 +3734,13 @@ other_max_duration_1:
                                     move             0, R2          
                                     add              R0, 0, R3      
                                     nop                             
-                                    sub              R2, R3, R4     
-                                    nop                             
+                                    sub              R2, R3, R4                                
                                     jlt              R4, 2147483648, @other_max_duration_0
                                     move             R3, R4         
                     after_other_max_duration_0:
                                     move             0, R5          
                                     nop                             
-                                    sub              R4, R5, R6     
-                                    nop                             
+                                    sub              R4, R5, R6                                
                                     jlt              R6, 2147483648, @dynamic_sync_0
                                     jge              R6, 4294967293, @negative_one_two_three_0
                     after_dynamic_sync_0:
@@ -3865,8 +3777,7 @@ other_max_duration_1:
 
 
                                     wait             65535          
-                                    sub              R6, 65535, R6  
-                                    nop                             
+                                    sub              R6, 65535, R6                              
                                     jge              R6, 65535, @long_wait_sync_0
                                     jmp              @dynamic_sync_0
                     other_max_duration_0:
@@ -3921,3 +3832,153 @@ other_max_duration_1:
         """
         assert is_q1asm_equal(sequences["drive_q0_bus"], drive_str)
         assert is_q1asm_equal(sequences["readout_q0_bus"], readout_str)
+
+    def test_clamp_duration_zero_returns_none_with_warning(self):
+        with pytest.warns(UserWarning, match="Ignoring wait instruction: duration is 0 ns."):
+            result = QbloxCompiler._clamp_duration(0, label="wait")
+        assert result is None
+
+    def test_clamp_duration_below_minimum_returns_4_with_warning(self):
+        with pytest.warns(UserWarning, match=r"wait duration 2 ns is below the Q1ASM minimum \(4 ns\), clamping to 4 ns\."):
+            result = QbloxCompiler._clamp_duration(2, label="wait")
+        assert result == 4
+
+    def test_clamp_duration_at_minimum_returns_unchanged(self):
+        result = QbloxCompiler._clamp_duration(4, label="wait")
+        assert result == 4
+
+    def test_clamp_duration_above_minimum_returns_unchanged(self):
+        result = QbloxCompiler._clamp_duration(100, label="wait")
+        assert result == 100
+
+    def test_wait_duration_zero_is_skipped(self):
+        qp = QProgram()
+        qp.wait(bus="drive", duration=0)
+        compiler = QbloxCompiler()
+        with pytest.warns(UserWarning, match="Ignoring wait instruction"):
+            sequences, _ = compiler.compile(qprogram=qp)
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_wait_duration_below_minimum_is_clamped(self):
+        qp = QProgram()
+        qp.wait(bus="drive", duration=2)
+        compiler = QbloxCompiler()
+        with pytest.warns(UserWarning, match=re.escape("wait duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")):
+            sequences, _ = compiler.compile(qprogram=qp)
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                wait             4
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"]._program, expected)
+
+    def test_wait_trigger_duration_zero_is_skipped(self):
+        qp = QProgram()
+        qp.wait_trigger(bus="drive", duration=0)
+        compiler = QbloxCompiler()
+        with pytest.warns(UserWarning, match="Ignoring wait_trigger instruction: duration is 0 ns."):
+            sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_wait_trigger_duration_below_minimum_is_clamped(self):
+        qp = QProgram()
+        qp.wait_trigger(bus="drive", duration=2)
+        compiler = QbloxCompiler()
+        with pytest.warns(UserWarning, match=re.escape("wait_trigger duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")):
+            sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                wait_trigger     15, 4
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"]._program, expected)
+
+    def test_play_wait_time_zero_is_skipped(self):
+        wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qp = QProgram()
+        qp.qblox.play(bus="drive", waveform=wf, wait_time=0)
+        compiler = QbloxCompiler()
+        with pytest.warns(UserWarning, match="Ignoring play instruction: duration is 0 ns."):
+            sequences, _ = compiler.compile(qprogram=qp)
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_play_wait_time_below_minimum_is_clamped(self):
+        wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qp = QProgram()
+        qp.qblox.play(bus="drive", waveform=wf, wait_time=2)
+        compiler = QbloxCompiler()
+        with pytest.warns(UserWarning, match=re.escape("play duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")):
+            sequences, _ = compiler.compile(qprogram=qp)
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                play             0, 1, 4
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+
+    def test_get_conversion_instructions_none_returns_none(self):
+        result = QbloxCompiler._get_qpysequence_conversion_instructions(None)
+        assert result is None
+
+    def test_get_conversion_instructions_known_operations(self):
+        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetFrequency("drive", 1e6)) is QPyInstructions.SetFrequencyHz
+        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetPhase("drive", 0.5)) is QPyInstructions.SetPhaseRad
+        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetGain("drive", 0.5)) is QPyInstructions.SetNormalisedGain
+        assert QbloxCompiler._get_qpysequence_conversion_instructions(SetOffset("drive", 0.5)) is QPyInstructions.SetNormalisedOffs
+        assert QbloxCompiler._get_qpysequence_conversion_instructions(Wait("drive", 100)) is None
+
+    def test_get_conversion_instructions_unknown_raises_value_error(self):
+        with pytest.raises(ValueError, match="ResetPhase does not support variable sweep in a loop."):
+            QbloxCompiler._get_qpysequence_conversion_instructions(ResetPhase("drive"))
+
+    
