@@ -20,7 +20,7 @@ from importlib.metadata import PackageNotFoundError, version
 try:
     __version__ = version("qililab")
 except PackageNotFoundError:
-    __version__ = "0.31.3"
+    __version__ = "0.32.0"
 
 import contextlib
 
