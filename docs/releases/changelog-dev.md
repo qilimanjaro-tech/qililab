@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Fix `qcodes` version to `0.54.3` to avoid breaking changes introduced in later releases.
+  [#1091](https://github.com/qilimanjaro-tech/qililab/pull/1091)
+
 - Previously, `QProgram.set_offset` required both I and Q offsets (`offset_path0` and `offset_path1`) to be of the same type (either both constants or both variables).
  This restriction has been removed: it is now possible to mix constants and variables between I and Q.
 
