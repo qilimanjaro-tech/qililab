@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.31.1
+## 0.31.3
 
 ### New features since last release
 
