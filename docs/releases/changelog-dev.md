@@ -67,6 +67,7 @@ calibration.save_history()
                   "program": "",
           }
   ```
+
   Previously, the upload cache compared sequence hashes and skipped re-uploading if no changes were detected. However, since the acquisition portion of the sequence is now consistently removed the cache has been removed to ensure the sequence is always re-uploaded.
 
   [#1082](https://github.com/qilimanjaro-tech/qililab/pull/1082)
@@ -93,6 +94,9 @@ Now whenever a single waveform is given instead of giving this waveform to I and
 
 This check is automatic and requires no input from the user aside from setting the runcard correctly.
   [#1076](https://github.com/qilimanjaro-tech/qililab/pull/1076)
+
+- Modified database manager's `load_by_id` to allow a list of ids to return a list of the measurements with said ids. Also added function `db_manager.get_dc_offsets(id)`, for recent addition to the measurements database, `dc_offsets`.
+  [#1097](https://github.com/qilimanjaro-tech/qililab/pull/1097)
 
 ### Breaking changes
 
