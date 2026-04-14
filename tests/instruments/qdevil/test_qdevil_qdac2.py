@@ -251,6 +251,7 @@ class TestQDevilQDac2:
         """Test set_out_internal_trigger method"""
         channel_id = 4
         trigger = "trigger_test"
+        qdac._triggers = {"trigger_test": "test_free_trigger"}
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_out_internal_trigger(channel_id, trigger)
         qdac.device.free_trigger.assert_called_once()
@@ -272,6 +273,7 @@ class TestQDevilQDac2:
         channel_id = 4
         out_port = 1
         trigger = "trigger_test"
+        qdac._triggers = {"trigger_test": "test_free_trigger"}
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_end_marker_external_trigger(channel_id, out_port, trigger)
         qdac.device.connect_external_trigger.assert_called_once()
@@ -282,6 +284,7 @@ class TestQDevilQDac2:
         channel_id = 4
         out_port = 1
         trigger = "trigger_test"
+        qdac._triggers = {"trigger_test": "test_free_trigger"}
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_end_marker_external_trigger(channel_id, out_port, trigger, step=True)
         qdac.device.connect_external_trigger.assert_called_once()
@@ -404,6 +407,7 @@ class TestQDevilQDac2:
         channel_id = 4
         trigger = "trigger_test"
         qdac._cache_dc = {}
+        qdac._triggers = {"trigger_test": "test_free_trigger"}
 
         with pytest.raises(
             ValueError,
@@ -447,7 +451,7 @@ class TestQDevilQDac2:
         qdac.start()
 
         qdac.stop()
-        qdac.device.channel(channel_id).dc_abort.assert_called_once()
+        qdac.device.channel(channel_id).dc_abort.assert_called()
 
     def test_input_range_runcard(self, qdac_out_range: QDevilQDac2):
         # Test that an error is raised when the input value on the runcard for the qdac are out of bound

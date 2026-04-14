@@ -15,15 +15,18 @@
 """QDevil QDAC-II Instrument"""
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
-from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import List_Context, QDac2Trigger_Context
 
 from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import ChannelID, InstrumentName, OutputID, Parameter, ParameterValue
 from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
 from qililab.waveforms import Waveform
+
+if TYPE_CHECKING:
+    from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import List_Context, QDac2Trigger_Context
 
 
 @InstrumentFactory.register
@@ -55,9 +58,9 @@ class QDevilQDac2(VoltageSource):
 
     def __init__(self, settings: dict) -> None:
         super().__init__(settings=settings)
-        self._cache_awg: dict[int | str, bool] = {}  # noqa: RUF012
-        self._cache_dc: dict[int | str, List_Context] = {}  # noqa: RUF012
-        self._triggers: dict[str, QDac2Trigger_Context] = {}  # noqa: RUF012
+        self._cache_awg: dict[int | str, bool] = {}
+        self._cache_dc: dict[int | str, List_Context] = {}
+        self._triggers: dict[str, QDac2Trigger_Context] = {}
 
     @property
     def low_pass_filter(self):
@@ -536,7 +539,7 @@ class QDevilQDac2(VoltageSource):
 
     def stop(self):
         """Stop pulse execution"""
-        for channel_id in self._cache_dc.keys():
+        for channel_id in self.dacs:
             channel = self.device.channel(channel_id)
             channel.dc_abort()
 
