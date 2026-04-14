@@ -75,7 +75,7 @@ def fixture_measurement():
 @pytest.fixture(name="sequence_run")
 def fixture_sequence_run():
     return SequenceRun(
-        sequence_tree={"test_run":"test_experiment"},
+        sequence_tree={"test_run": "test_experiment"},
         sequence_name="sequence",
         sample_name="sampleA",
         cooldown="CDX",
@@ -529,7 +529,7 @@ class Testdatabase:
 
         db_manager._mock_session.add.assert_called
         db_manager._mock_session.commit.assert_called
-        
+
     def test_add_sequence_run_raises_exception(self, db_manager: DatabaseManager):
         sequence_tree = {
             "nodes": [
@@ -569,7 +569,7 @@ class Testdatabase:
             )
 
         mock_session.rollback.assert_called_once
-    
+
     @patch("qililab.result.database.database_measurements.datetime")
     def test_end_sequence(self, mock_datetime, sequence_run):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
@@ -676,7 +676,7 @@ class Testdatabase:
         mock_measurement.result_path = "/local_test/results/file.h5"
         mock_measurement.measurement_id = 123
 
-        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [mock_measurement]
 
         with patch("os.path.isfile", return_value=False):
             result = db_manager.load_by_id(123)
@@ -684,11 +684,32 @@ class Testdatabase:
         db_manager._mock_session.query.assert_called
         assert result.result_path == "/shared_test/results/file.h5"
 
+    def test_load_by_id_list(self, db_manager: DatabaseManager):
+        mock_measurement = MagicMock(spec=Measurement)
+        mock_measurement.result_path = "/local_test/results/file.h5"
+        mock_measurement.measurement_id = 123
+
+        mock_measurement_2 = MagicMock(spec=Measurement)
+        mock_measurement_2.result_path = "/local_test/results_2/file.h5"
+        mock_measurement_2.measurement_id = 456
+
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [
+            mock_measurement,
+            mock_measurement_2,
+        ]
+
+        with patch("os.path.isfile", return_value=False):
+            result = db_manager.load_by_id([123, 456])
+
+        db_manager._mock_session.query.assert_called
+        assert result[0].result_path == "/shared_test/results/file.h5"
+        assert result[1].result_path == "/shared_test/results_2/file.h5"
+
     def test_load_by_id_path_not_found(self, db_manager: DatabaseManager):
         # Setup a mock measurement
         mock_measurement = MagicMock(spec=Measurement)
         mock_measurement.result_path = "/local_test/results/file.h5"
-        db_manager._mock_session.query.return_value.where.return_value.one_or_none.return_value = mock_measurement
+        db_manager._mock_session.query.return_value.filter.return_value.all.return_value = [mock_measurement]
 
         # Patch os.path.isfile to return False to simulate missing file
         with patch("os.path.isfile", return_value=False):
@@ -857,6 +878,16 @@ class Testdatabase:
 
         assert qprogram == mock_session.query(Measurement.debug_file).filter(Measurement.measurement_id == 123).scalar()
 
+    def test_dc_offsets(self, db_manager: DatabaseManager):
+        """Test get qprogram function from the database manager"""
+        mock_session = db_manager.session()
+        mock_session.__enter__.return_value = mock_session
+
+        with patch("os.path.isfile", return_value=False):
+            qprogram = db_manager.get_dc_offsets(123)
+
+        assert qprogram == mock_session.query(Measurement.dc_offsets).filter(Measurement.measurement_id == 123).scalar()
+
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.datetime")
     def test_add_autocal_measurement(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
@@ -869,7 +900,7 @@ class Testdatabase:
         mock_calibration_id = MagicMock()
         mock_query = MagicMock()
         mock_order_by = MagicMock()
-        mock_calibration_id.calibration_id = 1  
+        mock_calibration_id.calibration_id = 1
         mock_order_by.first.return_value = mock_calibration_id
         mock_query.order_by.return_value = mock_order_by
         mock_session_instance.query.return_value = mock_query

@@ -777,7 +777,7 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
     return create_engine(url)
 
 
-def load_by_id(id: int, path: str = "~/database.ini") -> Measurement | None:
+def load_by_id(id: int | list[int], path: str = "~/database.ini") -> list[Measurement] | Measurement | None:
     """Function to get the database ID without loading the Database Manager"""
 
     db = get_db_manager(path)
