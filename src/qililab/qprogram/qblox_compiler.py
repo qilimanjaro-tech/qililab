@@ -1385,7 +1385,7 @@ class QbloxCompiler:
             if self._buses[element.bus].num_bins_per_acquire > 1:
                 self._buses[element.bus].bin_register = QPyProgram.Register()
 
-                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction]._add_structure(
+                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].add(
                     component=QPyInstructions.Move(source=0, destination=self._buses[element.bus].bin_register),
                     insert_idx=0,
                 )
