@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import numbers
 from collections import deque
 
 import numpy as np
@@ -19,6 +20,17 @@ from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
 from qililab.exceptions.variable_allocated import VariableAllocated
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.yaml import yaml
+
+
+def _to_scalar(value):
+    """Convert any numeric value to a Python int or float. Passthrough for all other types."""
+    if isinstance(value, Variable):
+        return value
+    if isinstance(value, numbers.Integral):
+        return int(value)
+    if isinstance(value, numbers.Real):
+        return float(value)
+    return value
 
 
 @yaml.register_class
@@ -139,7 +151,9 @@ class StructuredProgram:
             >>> # operations that shall be executed in the for_loop block
         """
 
-        return StructuredProgram._ForLoopContext(program=self, variable=variable, start=start, stop=stop, step=step)
+        return StructuredProgram._ForLoopContext(
+            program=self, variable=variable, start=_to_scalar(start), stop=_to_scalar(stop), step=_to_scalar(step)
+        )
 
     def loop(self, variable: Variable, values: np.ndarray):
         """Define a loop block to iterate values over a variable.
