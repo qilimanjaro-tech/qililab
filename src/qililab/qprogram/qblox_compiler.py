@@ -1406,7 +1406,6 @@ class QbloxCompiler:
             if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
 
-        block_index_for_add_instruction = loops[-1][0] if loops else -1
         block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
 
         if self._buses[element.bus].count_nested_level_acquire > MAX_ACQUISITION_INDEX:
@@ -1462,7 +1461,7 @@ class QbloxCompiler:
                     wait_time=integration_length,
                 )
             )
-            self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.Add(
                     origin=self._buses[element.bus].bin_register,
                     var=1,
