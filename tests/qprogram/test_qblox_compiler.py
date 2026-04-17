@@ -410,13 +410,29 @@ def fixture_wait_trigger() -> QProgram:
     qp.set_frequency(bus="readout", frequency=1e6)
     qp.wait_trigger(bus="drive", duration=4)
     qp.set_frequency(bus="drive", frequency=1e6)
-    qp.wait_trigger(bus="drive", duration=1000, port=1)
+    qp.wait_trigger(bus="drive", duration=1_000, port=1)
     qp.set_frequency(bus="drive", frequency=1e6)
-    qp.wait_trigger(bus="drive", duration=70000, port=1)
+    qp.wait_trigger(bus="drive", duration=70_000, port=1)
 
     # No instructions pending
-    qp.wait_trigger(bus="drive", duration=1000, port=1)
-    qp.wait_trigger(bus="drive", duration=70000, port=1)
+    qp.wait_trigger(bus="drive", duration=4, port=1)
+    qp.wait_trigger(bus="drive", duration=70_000, port=1)
+    return qp
+
+@pytest.fixture(name="wait_trigger_single_bus")
+def fixture_wait_trigger_single_bus() -> QProgram:
+    qp = QProgram()
+    # With update parameter pending
+    qp.set_frequency(bus="drive", frequency=1e6)
+    qp.wait_trigger(bus="drive", duration=4)
+    qp.set_frequency(bus="drive", frequency=1e6)
+    qp.wait_trigger(bus="drive", duration=1_000, port=1)
+    qp.set_frequency(bus="drive", frequency=1e6)
+    qp.wait_trigger(bus="drive", duration=70_000, port=1)
+
+    # No instructions pending
+    qp.wait_trigger(bus="drive", duration=4, port=1)
+    qp.wait_trigger(bus="drive", duration=70_000, port=1)
     return qp
 
 
@@ -895,59 +911,98 @@ class TestQBloxCompiler:
 
         drive_str = """
             setup:
-                            wait_sync        4
-                            set_mrk          0
-                            upd_param        4
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
 
             main:
-                            set_freq         4000000
-                            set_freq         4000000
-                            upd_param        4
-                            wait_trigger     15, 4
-                            wait_sync        4
-                            set_freq         4000000
-                            set_freq         4000000
-                            upd_param        4
-                            wait_trigger     1, 996
-                            wait_sync        4
-                            set_freq         4000000
-                            set_freq         4000000
-                            upd_param        4
-                            wait_trigger     1, 4
-                            wait             65532
-                            wait             65532
-                            wait_sync        4
-                            wait_trigger     1, 1000
-                            wait_sync        4
-                            wait_trigger     1, 4
-                            wait             65532
-                            wait             65532
-                            wait_sync        4
-                            set_mrk          0
-                            upd_param        4
-                            stop
+                            set_freq         4000000        
+                            set_freq         4000000        
+                            upd_param        4              
+                            wait_trigger     15, 4          
+                            wait_sync        4              
+                            set_freq         4000000        
+                            set_freq         4000000        
+                            upd_param        4              
+                            wait_trigger     1, 4           
+                            wait             988            
+                            wait_sync        4              
+                            set_freq         4000000        
+                            set_freq         4000000        
+                            upd_param        4              
+                            wait_trigger     1, 4           
+                            wait             65532          
+                            wait             4456           
+                            wait_sync        4              
+                            wait_trigger     1, 4           
+                            wait_sync        4              
+                            wait_trigger     1, 4           
+                            wait             65532          
+                            wait             4460           
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                            
         """
 
         readout_str = """
             setup:
-                            wait_sync        4
-                            set_mrk          0
-                            upd_param        4
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
 
             main:
-                            set_freq         4000000
-                            set_freq         4000000
-                            wait_sync        4
-                            wait_sync        4
-                            wait_sync        4
-                            wait_sync        4
-                            wait_sync        4
-                            set_mrk          0
-                            upd_param        4
-                            stop
+                            set_freq         4000000        
+                            set_freq         4000000        
+                            wait_sync        4              
+                            wait_sync        4              
+                            wait_sync        4              
+                            wait_sync        4              
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+                            stop 
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
+        
+    def test_wait_trigger_single_bus(self, wait_trigger_single_bus: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=wait_trigger_single_bus, ext_trigger=True)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            set_freq         4000000        
+                            set_freq         4000000        
+                            upd_param        4              
+                            wait_trigger     15, 4          
+                            set_freq         4000000        
+                            set_freq         4000000        
+                            upd_param        4              
+                            wait_trigger     1, 4           
+                            wait             992            
+                            set_freq         4000000        
+                            set_freq         4000000        
+                            upd_param        4              
+                            wait_trigger     1, 4           
+                            wait             65532          
+                            wait             4460           
+                            wait_trigger     1, 4           
+                            wait_trigger     1, 4           
+                            wait             65532          
+                            wait             4464           
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                            
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_wait_trigger_no_ext_trigger_raises_error(self, wait_trigger: QProgram):
 
@@ -957,7 +1012,7 @@ class TestQBloxCompiler:
         ):
             compiler.compile(qprogram=wait_trigger, ext_trigger=False)
 
-    def test_wait_trigger_var_durationraises_error(self):
+    def test_wait_trigger_var_duration_raises_error(self):
 
         qp = QProgram()
         duration = qp.variable(label="duration", domain=Domain.Time)
