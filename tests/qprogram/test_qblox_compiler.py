@@ -814,7 +814,7 @@ def fixture_crosstalk_qprogram() -> QProgram:
         qp.play(bus="flux1", waveform=square_wf)
         qp.play(bus="drive", waveform=square_iq)
         qp.sync(["drive","readout"])
-        qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq)
+        qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
     return qp
 
 @pytest.fixture(name="crosstalk_qprogram_gain_loop")
@@ -832,7 +832,7 @@ def fixture_crosstalk_qprogram_gain_loop() -> QProgram:
         qp.play(bus="flux1", waveform=square_wf)
         qp.play(bus="drive", waveform=square_iq)
         qp.sync(["drive","readout"])
-        qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq)
+        qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
     return qp
 
 @pytest.fixture(name="crosstalk_qprogram_parallel")

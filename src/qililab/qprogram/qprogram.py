@@ -68,7 +68,7 @@ class QProgramCompilationOutput:
 
 
 class CrosstalkElements:
-    """Supporting class for `QProgram.with_crosstalk`.
+    """Supporting class for `QProgram.with_crosstalk_`.
     The elements are classified by type (Play, Offset and Gain) to organize the values of flux vectors,
     location in the block and related buses.
 
@@ -452,7 +452,7 @@ class QProgram(StructuredProgram):
 
         return copied_qprogram
 
-    def with_crosstalk(self, crosstalk: CrosstalkMatrix):
+    def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix):
         """Apply crosstalk compensation to the qprogram flux buses.
 
         This method traverses the elements of the QProgram, replacing any

@@ -1587,6 +1587,8 @@ class Platform:
             calibration (Calibration, optional): :class:`.Calibration` instance containing information of previously calibrated values, like waveforms, weights and crosstalk matrix. Defaults to None.
             debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
                 For ``Quantum Machines`` clusters a ``.py`` file is created containing the ``QUA`` and config compilation. Defaults to False.
+            crosstalk (bool, optional): Trigger that allows crosstalk compensation, if false it ignores all existing crosstalk matrices added to execute with bias.
+                If no crosstalk has been added inside platform or the calibration file, this trigger will not apply the crosstalk. Defaults to None.
 
         Returns:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a dictionary (``dict[str, list[Result]]``) of measurement results.
@@ -1680,6 +1682,8 @@ class Platform:
                 Defaults to None.
             debug (bool, optional): Whether to create debug information. For ``Qblox`` clusters all the program information is printed on screen.
                 Defaults to False.
+            crosstalk (bool, optional): Trigger that allows crosstalk compensation, if false it ignores all existing crosstalk matrices added to execute with bias.
+                If no crosstalk has been added inside platform or the calibration file, this trigger will not apply the crosstalk. Defaults to None.
 
         Returns:
             QProgramResults: The results of the execution. ``QProgramResults.results()`` returns a list of dictionary (``dict[str, list[Result]]``) of measurement results.

@@ -144,7 +144,13 @@ class TestQProgram(TestStructuredProgram):
             qp.quantum_machines.measure(bus="readout_q0_bus", waveform="readout", weights=weights, rotation=np.pi)
             qp.quantum_machines.measure(bus="readout_q0_bus", waveform=readout, weights="weights", rotation=np.pi)
             qp.quantum_machines.measure(bus="readout_q0_bus", waveform="readout", weights="weights", rotation=np.pi)
-            qp.qblox.measure_reset(bus="readout_q0_bus", waveform="readout", weights="weights", control_bus="drive_q0_bus", reset_pulse="drag_reset")
+            qp.qblox.measure_reset(
+                bus="readout_q0_bus",
+                waveform="readout",
+                weights="weights",
+                control_bus="drive_q0_bus",
+                reset_pulse="drag_reset",
+            )
 
         # Check that qp has named operations
         assert qp.has_calibrated_waveforms_or_weights() is True
@@ -229,10 +235,11 @@ class TestQProgram(TestStructuredProgram):
         calibration.add_waveform(bus="drive", name="drag_reset", waveform=drag_reset)
 
         measure_qp_block = QProgram()
-        measure_qp_block.qblox.measure_reset(bus='readout',waveform="readout", weights="weights", control_bus='drive',reset_pulse="drag_reset")
-        calibration.add_block("reset",measure_qp_block.body)
+        measure_qp_block.qblox.measure_reset(
+            bus="readout", waveform="readout", weights="weights", control_bus="drive", reset_pulse="drag_reset"
+        )
+        calibration.add_block("reset", measure_qp_block.body)
         reset_block = calibration.get_block(name="reset")
-
 
         qp = QProgram()
         with qp.average(1000):
@@ -248,7 +255,6 @@ class TestQProgram(TestStructuredProgram):
         new_qp = qp.with_calibration(calibration=calibration)
 
         assert isinstance(new_qp.body.elements[0].elements[0], MeasureReset)
-
 
     def test_average_method(self):
         """Test acquire_loop method"""
@@ -398,9 +404,9 @@ class TestQProgram(TestStructuredProgram):
         assert qp._body.elements[0].bus == "drive"
         assert qp._body.elements[0].offset_path0 == 1.0
         assert qp._body.elements[0].offset_path1 == 0.0
-        
+
     def test_with_crosstalk_multi_variable_offset(self):
-        """Test with_crosstalk covers the multi-variable branch in handle_offset
+        """Test with_crosstalk_qblox covers the multi-variable branch in handle_offset
         and handle_gain when len(variable_list) > 1."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
@@ -417,7 +423,7 @@ class TestQProgram(TestStructuredProgram):
                 qp.set_offset(bus="flux_bus_0", offset_path0=offset_0, offset_path1=0.0)
                 qp.set_offset(bus="flux_bus_1", offset_path0=offset_1, offset_path1=0.0)
 
-        new_qp = qp.with_crosstalk(crosstalk)
+        new_qp = qp.with_crosstalk_qblox(crosstalk)
         assert new_qp is not None
 
         # Test handle_gain
@@ -430,7 +436,7 @@ class TestQProgram(TestStructuredProgram):
                 qp2.set_gain(bus="flux_bus_0", gain=gain_0)
                 qp2.set_gain(bus="flux_bus_1", gain=gain_1)
 
-        new_qp2 = qp2.with_crosstalk(crosstalk)
+        new_qp2 = qp2.with_crosstalk_qblox(crosstalk)
         assert new_qp2 is not None
 
     def test_set_markers(self):
@@ -504,7 +510,7 @@ class TestQProgram(TestStructuredProgram):
                     num_sigmas=num_sigmas_var,
                     drag_coefficient=drag_coefficient_var,
                 )
-    
+
     # TODO: qililab.utils.serialization.DeserializationError: Failed to deserialize YAML string: 'Voltage-4' is not a valid Domain
     # def test_serialization_deserialization(self):
     #     """Test serialization and deserialization works."""
@@ -539,7 +545,7 @@ class TestQProgram(TestStructuredProgram):
             waveform=IQPair(one_wf, zero_wf),
             weights=IQPair(one_wf, zero_wf),
             control_bus="control",
-            reset_pulse=IQPair(one_wf, zero_wf)
+            reset_pulse=IQPair(one_wf, zero_wf),
         )
 
         # Should append a single MeasureReset operation
@@ -572,13 +578,13 @@ class TestQProgram(TestStructuredProgram):
         square_wf = Square(1, 200)
         drag = IQDrag(1, 40, 2, 2)
         with qp.average(1000):
-                qp.qblox.measure_reset(
-                    bus="readout_bus",
-                    waveform=IQPair(square_wf,square_wf),
-                    weights=IQPair(I=square_wf, Q=square_wf),
-                    control_bus="drive_bus",
-                    reset_pulse=drag,
-                )
+            qp.qblox.measure_reset(
+                bus="readout_bus",
+                waveform=IQPair(square_wf, square_wf),
+                weights=IQPair(I=square_wf, Q=square_wf),
+                control_bus="drive_bus",
+                reset_pulse=drag,
+            )
 
         new_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"})
         assert len(new_qp.buses) == 2
@@ -620,7 +626,16 @@ class TestQProgram(TestStructuredProgram):
         calibration.add_waveform(bus="readout_q0_bus", name="readout", waveform=readout)
         calibration.add_weights(bus="readout_q0_bus", name="weights", weights=weights)
 
-        with pytest.raises(NotImplementedError, match="For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all."):
+        with pytest.raises(
+            NotImplementedError,
+            match="For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all.",
+        ):
             qp = QProgram()
             with qp.average(1000):
-                qp.qblox.measure_reset(bus="readout_q0_bus", waveform="readout", weights="weights", control_bus="drive_q0_bus", reset_pulse=drag_reset)
+                qp.qblox.measure_reset(
+                    bus="readout_q0_bus",
+                    waveform="readout",
+                    weights="weights",
+                    control_bus="drive_q0_bus",
+                    reset_pulse=drag_reset,
+                )
