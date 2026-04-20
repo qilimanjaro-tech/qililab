@@ -1695,7 +1695,7 @@ class QbloxCompiler:
     @staticmethod
     def _compute_loop_sweep(for_loop: ForLoop):
         iterations = QbloxCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
-        qblox_step = (for_loop.stop - for_loop.start) // (iterations - 1)
+        qblox_step = (for_loop.stop - for_loop.start) / (iterations - 1)
         return (for_loop.start, qblox_step, iterations)
 
     @staticmethod
