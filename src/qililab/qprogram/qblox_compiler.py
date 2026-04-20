@@ -960,24 +960,26 @@ class QbloxCompiler:
 
     @staticmethod
     def _clamp_duration(duration: int, label: str = "duration") -> int | None:
-        """Return None if duration is 0 (caller should skip), or clamp to 4 if below minimum.
+        """Return None if duration is 0 (caller should skip), or clamp to INST_MIN_WAIT if below INST_MIN_WAIT.
+        The returned duration is rounded.
 
         Args:
             duration: The requested duration in ns.
             label: Name used in warning messages to identify the instruction.
 
         Returns:
-            None if duration is 0, otherwise the clamped duration (minimum 4 ns).
+            None if duration is 0 (caller should skip), or clamp to INST_MIN_WAIT if below INST_MIN_WAIT.
+            Otherwise the given duration is returned rounded.
         """
         if duration == 0:
             warnings.warn(f"Ignoring {label} instruction: duration is 0 ns.")
             logger.warning(f"Ignoring {label} instruction: duration is 0 ns.")
             return None
-        if duration < 4:
-            warnings.warn(f"{label} duration {duration} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
-            logger.warning(f"{label} duration {duration} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
-            return 4
-        return duration
+        if duration < INST_MIN_WAIT:
+            warnings.warn(f"{label} duration {duration} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns.")
+            logger.warning(f"{label} duration {duration} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns.")
+            return INST_MIN_WAIT
+        return round(duration)
 
     def _handle_add_waits(self, bus: str, duration: int):
         """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
@@ -1462,7 +1464,7 @@ class QbloxCompiler:
         play_reset_pulse = Play(bus=element.control_bus, waveform=element.reset_pulse)
         mask = 2 ** (element.trigger_address - 1)
 
-        self._handle_latch_rst(bus=element.control_bus, duration=4)
+        self._handle_latch_rst(bus=element.control_bus, duration=INST_MIN_WAIT)
         self._handle_play(play)
         self._handle_acquire(acquire)
         self._handle_sync(sync)
@@ -1476,7 +1478,7 @@ class QbloxCompiler:
         )
         self._handle_play(play_reset_pulse)
         self._handle_conditional(
-            bus=element.control_bus, enable=DISABLE_CONDITIONAL, mask=0, operator=0, else_duration=4
+            bus=element.control_bus, enable=DISABLE_CONDITIONAL, mask=0, operator=0, else_duration=INST_MIN_WAIT
         )
 
     def _handle_play(self, element: Play):
@@ -1693,7 +1695,7 @@ class QbloxCompiler:
     @staticmethod
     def _compute_loop_sweep(for_loop: ForLoop):
         iterations = QbloxCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
-        qblox_step = (for_loop.stop - for_loop.start) / (iterations - 1)
+        qblox_step = (for_loop.stop - for_loop.start) // (iterations - 1)
         return (for_loop.start, qblox_step, iterations)
 
     @staticmethod
@@ -1707,7 +1709,7 @@ class QbloxCompiler:
     def calculate_square_waveform_optimization_values(duration: int):
         def remainder_conditions(chunk_duration):
             remainder = duration % chunk_duration
-            return remainder, (chunk_duration >= 4 and (remainder == 0 or remainder >= 4))
+            return remainder, (chunk_duration >= INST_MIN_WAIT and (remainder == 0 or remainder >= INST_MIN_WAIT))
 
         def find_chunk_duration(condition_func):
             for chunk_duration in range(100, 501):
@@ -1725,8 +1727,8 @@ class QbloxCompiler:
         if final_chunk_duration is not None:
             return final_chunk_duration, duration // final_chunk_duration, duration % final_chunk_duration
 
-        # If not found, try for remainder ≥ 4
-        final_chunk_duration = find_chunk_duration(lambda rem: rem >= 4)
+        # If not found, try for remainder ≥ INST_MIN_WAIT
+        final_chunk_duration = find_chunk_duration(lambda rem: rem >= INST_MIN_WAIT)
         if final_chunk_duration is not None:
             return final_chunk_duration, duration // final_chunk_duration, duration % final_chunk_duration
 
