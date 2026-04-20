@@ -4,7 +4,6 @@
 from qililab.instruments.keysight.driver_keysight_e5080b import Driver_KeySight_E5080B
 import pytest
 import numpy as np
-import pyvisa
 
 @pytest.fixture(scope="function", name="vnaks")
 def _make_vnaks():
@@ -93,6 +92,9 @@ def test_rf_on(vnaks):
 def test_format_border(vnaks):
     # Valid enum values: "NORM", "SWAP"
     verify_property(vnaks, "format_border", ["NORM", "SWAP"])
+
+def test_electrical_delay(vnaks):
+    verify_property(vnaks, "electrical_delay", [1e-9, 2e-4, -5e-2, 9.9])
 
 
 def test_get_data(vnaks, monkeypatch):

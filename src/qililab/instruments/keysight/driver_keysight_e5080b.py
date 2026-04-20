@@ -309,6 +309,19 @@ class Driver_KeySight_E5080B(VisaInstrument):
         )
         """Status Operation"""
 
+        # The more intuitive unit for this parameter is nanosecoonds, even the instrument documentation uses nanoseconds to exemplify, that's why this unit was chosen.
+        self.electrical_delay: Parameter = self.add_parameter(
+            "electrical_delay",
+            label="Electrical Delay",
+            set_cmd="CALC:MEAS:CORR:EDEL:TIME {}",
+            get_cmd="CALC:MEAS:CORR:EDEL:TIME?",
+            set_parser=lambda v: float(v) * 1e9,
+            get_parser=lambda v: float(v) / 1e9,
+            unit="NS",
+            vals=Numbers(min_value=-1e10, max_value=1e10),
+        )
+        """Electrical Delay in nanoseconds"""
+
         # Clear averages
         # Clears and restarts averaging of the measurement data. Does NOT apply to point averaging.
         self.add_function("clear_averages", call_cmd="SENS:AVER:CLE")
