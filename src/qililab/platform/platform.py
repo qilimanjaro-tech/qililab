@@ -1227,6 +1227,7 @@ class Platform:
         crosstalk: bool = True,
     ) -> QProgramCompilationOutput:
         if not crosstalk and calibration is not None and calibration.crosstalk_matrix is not None:
+            calibration = deepcopy(calibration)
             calibration.crosstalk_matrix = None
 
         bus_aliases = {bus_mapping[bus] if bus_mapping and bus in bus_mapping else bus for bus in qprogram.buses}
@@ -1313,7 +1314,7 @@ class Platform:
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
             ]
-            return QProgramCompilationOutput(
+            output = QProgramCompilationOutput(
                 qblox=qblox_compiler.compile(
                     qprogram=qprogram,
                     bus_mapping=bus_mapping,
@@ -1328,6 +1329,7 @@ class Platform:
                 ),
                 qdac=compiled_qdac,
             )
+            return output
 
         if all(isinstance(instrument, QuantumMachinesCluster) for instrument in instruments):
             if len(instruments) != 1:

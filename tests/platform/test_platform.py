@@ -1348,7 +1348,7 @@ class TestMethods:
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
-            first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, crosstalk=False)
+            first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
 
             acquire_qprogram_results.return_value = [456]
             second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, crosstalk=False)
