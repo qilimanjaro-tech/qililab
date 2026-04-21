@@ -62,6 +62,14 @@ def fixture_platform():
 def fixture_platform_qblox_qdac():
     return platform_build_platform(runcard="tests/runcards/qblox_and_qdac.yml")
 
+@pytest.fixture(name="platform_qblox_qdacs")
+def fixture_platform_qblox_qdacs():
+    return platform_build_platform(runcard="tests/runcards/qblox_and_qdacs.yml")
+
+@pytest.fixture(name="platform_qblox_qdacs_no_trigger")
+def fixture_platform_qblox_qdacs_no_trigger():
+    return platform_build_platform(runcard="tests/runcards/qblox_and_qdacs_no_trigger.yml")
+
 
 @pytest.fixture(name="platform_qm_qdac")
 def fixture_platform_qm_qdac():
@@ -1143,6 +1151,7 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1165,10 +1174,96 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
+        
+    def test_execute_qprogram_with_qblox_and_multiple_qdacs(self, platform_qblox_qdacs: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac2_bus_1", offset_path0=1)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        # Retrieve the qdac_2 instrument instance from the platform to patch it directly
+        qdac_2_instrument = next(
+            instrument
+            for instrument in platform_qblox_qdacs.instruments.elements
+            if isinstance(instrument, QDevilQDac2) and instrument.alias == "qdac_2"
+        )
+        mock_device = MagicMock()
+        mock_device.name = "qdac_2"
+        qdac_2_instrument.device = mock_device
+        # Simulate that channel 1 of qdac_2 already has a dc list uploaded
+        qdac_2_instrument._cache_dc = {"qdac_2_1": True}
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+            # Mock Qdac functions without connecting
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_out_external_trigger") as set_out_external_trigger,
+            patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
+            patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
+            patch.object(QDevilQDac2, "start") as start,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            first_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
+
+            acquire_qprogram_results.return_value = [456]
+            second_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
+
+            _ = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed each time (6 because there are 2 buses)
+        assert upload.call_count == 6
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert sync_sequencer.call_count == 6  # called as many times as run
+        assert desync_sequencer.call_count == 6
+        assert first_execution_results.results["resonator"] == [123]
+        assert second_execution_results.results["resonator"] == [456]
+        assert upload_voltage_list.call_count == 3  # called as many times as executes
+        assert set_out_external_trigger.call_count == 3  # called as many times as executes
+        assert set_in_external_trigger.call_count == 3  # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 6  # called as many times as executes
+        assert start.call_count == 6  # called as many times as executes
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_and_multiple_qdacs_raises_error(self, platform_qblox_qdacs_no_trigger: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac2_bus_1", offset_path0=1)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        error_text = "Multiple QDAC-II instruments used but no Output trigger instrument given."
+        with pytest.raises(ValueError, match=error_text):
+            platform_qblox_qdacs_no_trigger.execute_qprogram(qprogram=qprogram)
 
     def test_execute_qprogram_with_qblox_and_qdac_back(self, platform_qblox_qdac: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -1193,6 +1288,7 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1215,10 +1311,69 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_and_qdac_no_crosstalk(self, platform_qblox_qdac: Platform, calibration:Calibration):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
+        qprogram.wait_trigger(bus="qdac_bus_1", duration=10e-6, port=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        expected_crosstalk = CrosstalkMatrix.from_buses(buses={"qdac_bus": {"qdac_bus": 0.1}})
+        platform_qblox_qdac.set_crosstalk(expected_crosstalk)
+        calibration.crosstalk_matrix = platform_qblox_qdac.crosstalk
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+            # Mock Qdac functions without connecting
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
+            patch.object(QDevilQDac2, "start") as start,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
+
+            acquire_qprogram_results.return_value = [456]
+            second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, crosstalk=False)
+
+            _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True, crosstalk=False)
+
+        # assert upload executed each time (6 because there are 2 buses)
+        assert upload.call_count == 6
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert sync_sequencer.call_count == 6  # called as many times as run
+        assert desync_sequencer.call_count == 6
+        assert first_execution_results.results["resonator"] == [123]
+        assert second_execution_results.results["resonator"] == [456]
+        assert upload_voltage_list.call_count == 3  # called as many times as executes
+        assert set_in_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 3  # called as many times as executes
+        assert start.call_count == 3  # called as many times as executes
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+        
+        assert calibration.crosstalk_matrix == expected_crosstalk
 
     def test_execute_qprogram_single_baseband_channel(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
