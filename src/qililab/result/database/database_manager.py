@@ -212,9 +212,13 @@ class DatabaseManager:
         """
         with self.session() as running_session:
             if not isinstance(id, list):
-                id = [id]
+                measurement_id = [id]
+            else:
+                measurement_id = id
 
-            measurement_by_id_list = running_session.query(Measurement).filter(Measurement.measurement_id.in_(id)).all()
+            measurement_by_id_list = (
+                running_session.query(Measurement).filter(Measurement.measurement_id.in_(measurement_id)).all()
+            )
             if measurement_by_id_list is not None:
                 for meas in measurement_by_id_list:
                     path = meas.result_path
