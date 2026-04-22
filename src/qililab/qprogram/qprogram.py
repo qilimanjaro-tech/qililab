@@ -68,7 +68,7 @@ class QProgramCompilationOutput:
 
 
 class CrosstalkElements:
-    """Supporting class for `QProgram.with_crosstalk`.
+    """Supporting class for `QProgram.with_crosstalk_`.
     The elements are classified by type (Play, Offset and Gain) to organize the values of flux vectors,
     location in the block and related buses.
 
@@ -452,7 +452,7 @@ class QProgram(StructuredProgram):
 
         return copied_qprogram
 
-    def with_crosstalk(self, crosstalk: CrosstalkMatrix):
+    def with_crosstalk_qblox(self, crosstalk: CrosstalkMatrix):
         """Apply crosstalk compensation to the qprogram flux buses.
 
         This method traverses the elements of the QProgram, replacing any
@@ -646,7 +646,8 @@ class QProgram(StructuredProgram):
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
                             dict_variable += self._bus_variable_map[var, bus]
-                            self._block_variables[var].append(self._bus_variable_map[var, bus])
+                            # TODO: Add this line once variable addition is implemented for non-Time Domains.
+                            # self._block_variables[var].append(self._bus_variable_map[var, bus])
 
                 offset = SetOffset(bus, dict_variable)
                 self._block_variables[variable].append(dict_variable)
@@ -685,7 +686,8 @@ class QProgram(StructuredProgram):
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
                             dict_variable += self._bus_variable_map[var, bus]
-                            self._block_variables[var].append(self._bus_variable_map[var, bus])
+                            # TODO: Add this line once variable addition is implemented for non-Time Domains.
+                            # self._block_variables[var].append(self._bus_variable_map[var, bus])
 
                 gain = SetGain(bus, dict_variable)
                 self._block_variables[variable].append(dict_variable)
@@ -704,7 +706,12 @@ class QProgram(StructuredProgram):
             For Square and FlatTop pulses uses the same type instead of an Arbitrary pulse.
             """
             play_elements = [elements[element] for element in element_group if isinstance(elements[element], Play)]
-            if len({(play.dwell, play.delay, play.repetitions, play.wait_time) for play in play_elements}) > 1:
+            if (
+                len(
+                    {(play.dwell, play.delay, play.repetitions, play.wait_time, play.stepped) for play in play_elements}
+                )
+                > 1
+            ):
                 raise ValueError("Play elements must be the same for the same play pulse.")
             dwell, delay, repetitions, stepped, wait_time = (
                 play_elements[0].dwell,

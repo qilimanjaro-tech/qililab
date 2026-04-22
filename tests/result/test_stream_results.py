@@ -77,6 +77,41 @@ def fixture_stream_array_qubit_idx():
     )
 
 
+@pytest.fixture(name="stream_array_qubit_idx_bus_map")
+def fixture_stream_array_qubit_idx_bus_map():
+    """fixture_stream_array
+
+    Returns:
+        stream_array: StreamArray
+    """
+    shape = (2, 2, 1)
+    loops = {"test_amp_loop": AMP_VALUES}
+    platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
+    experiment_name = "test_stream_array"
+    mock_database = MagicMock()
+    db_manager = mock_database
+    qubit_idx = 1
+    secondary_idx = ["1", "2"]
+
+    qprogram = QProgram()
+    qprogram.play("readout_q0", Square(1.0, 100))
+    qprogram.wait("readout_q0", 100)
+
+    bus_mapping = {"readout_q0": "feedline_input_output_bus"}
+
+    return StreamArray(
+        shape=shape,
+        loops=loops,
+        platform=platform,
+        experiment_name=experiment_name,
+        db_manager=db_manager,
+        qprogram=qprogram,
+        qubit_idx=qubit_idx,
+        secondary_idx=secondary_idx,
+        bus_mapping=bus_mapping,
+    )
+
+
 @pytest.fixture(name="stream_array_bus_map")
 def fixture_stream_array_bus_map():
     """fixture_stream_array
@@ -284,7 +319,24 @@ class TestStreamArray:
                 assert stream_array_bus_map.loops == {"test_amp_loop": np.arange(0, 1, 2)}
                 assert stream_array_bus_map._get_debug() == debug_q1asm
 
-    def test_stream_array_instantiation_qubit_idx(self, stream_array_qubit_idx: StreamArray):
+    def test_stream_array_instantiation_qubit_idx(self, stream_array_qubit_idx_bus_map: StreamArray):
+        """Tests the instantiation of a StreamArray object with target and secondary indexes."""
+        # Create mock for the file context
+        debug_q1asm = "Bus feedline_input_output_bus:\nsetup:\n                wait_sync        4              \n                set_mrk          0              \n                upd_param        4              \n\nmain:\n                move             1, R0          \nsquare_0:\n                play             0, 1, 100      \n                loop             R0, @square_0  \n                wait             100            \n                set_mrk          0              \n                upd_param        4              \n                stop                            \n\n\n"
+        with patch("h5py.File") as mock_h5file:
+            mock_file = MagicMock()
+            mock_dataset = MagicMock()
+            mock_file.create_dataset.return_value = mock_dataset
+            mock_h5file.return_value = mock_file
+
+            with stream_array_qubit_idx_bus_map:
+                assert (stream_array_qubit_idx_bus_map.results == np.zeros(shape=stream_array_qubit_idx_bus_map.shape)).all
+                assert stream_array_qubit_idx_bus_map.loops == {"test_amp_loop": np.arange(0, 1, 2)}
+                assert stream_array_qubit_idx_bus_map._get_debug() == debug_q1asm
+                assert stream_array_qubit_idx_bus_map._get_index_list(stream_array_qubit_idx_bus_map.qubit_idx) == ["1"]
+                assert stream_array_qubit_idx_bus_map._get_index_list(stream_array_qubit_idx_bus_map.second_idx) == ["1", "2"]
+    
+    def test_stream_array_instantiation_qubit_idx_raises_debug_error(self, stream_array_qubit_idx: StreamArray):
         """Tests the instantiation of a StreamArray object with target and secondary indexes."""
         # Create mock for the file context
         debug_q1asm = "Compilation of the debug has failed with the following error:\n'NoneType' object has no attribute 'instruments'"

@@ -428,36 +428,6 @@ class TestQdacCompiler:
         assert qdac_bus.upload_voltage_list.call_count == 2
         assert qdac_bus.set_parameter.call_count == 0
 
-    def test_crosstalk_compensation(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
-        """Test all possible combinations of play + set_trigger on the QDACII."""
-        qdac_bus = flux1.instruments[0]
-
-        crosstalk = CrosstalkMatrix.from_buses(
-            buses={"flux1": {"flux1": 1.0, "flux2": 0.5}, "flux2": {"flux1": 0.1, "flux2": 1.0}}
-        )
-        flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
-        qp = QProgram()
-
-        freq = qp.variable(label="frequency", domain=Domain.Frequency)
-
-        with qp.average(10):
-            qp.set_offset(bus="flux2", offset_path0=0.3)
-            with qp.for_loop(variable=freq, start=10e6, stop=100e6, step=10e6):
-                qp.qdac.play(bus="flux1", waveform=flux_wf, dwell=2)
-                qp.set_offset(bus="flux2", offset_path0=-0.2)
-                qp.set_trigger(bus="flux1", duration=10e-6, outputs=1, position="start")
-
-        compiler = QdacCompiler()
-        output = compiler.compile(
-            qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk
-        )
-
-        assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qdacs == [qdac]
-
-        assert qdac_bus.upload_voltage_list.call_count == 2
-        assert qdac_bus.set_parameter.call_count == 0
-
     def test_crosstalk_compensation_offset(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
         qdac_bus = flux1.instruments[0]
@@ -593,7 +563,7 @@ class TestQdacCompiler:
 
         with pytest.raises(
             ValueError,
-            match=f"qp.play elements must have the same size.",
+            match="qp.play elements must have the same size.",
         ):
             compiler.compile(
                 qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk

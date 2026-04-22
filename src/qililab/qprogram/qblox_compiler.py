@@ -326,7 +326,7 @@ class QbloxCompiler:
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
         if crosstalk is not None:
-            self._qprogram = self._qprogram.with_crosstalk(crosstalk=crosstalk)
+            self._qprogram = self._qprogram.with_crosstalk_qblox(crosstalk=crosstalk)
 
         self._qblox_buses = qblox_buses if qblox_buses else []
 

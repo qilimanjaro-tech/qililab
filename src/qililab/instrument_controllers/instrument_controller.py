@@ -195,7 +195,7 @@ class InstrumentController(BusElement, ABC):
         if parameter == Parameter.REFERENCE_CLOCK:
             return self.settings.reference_clock
         raise ValueError(
-            "Reset and reference clock are the only properties that can be get for an Instrument Controller."
+            "Reset and reference clock are the only properties that can be retrieved for an Instrument Controller."
         )
 
     @CheckConnected
