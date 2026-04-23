@@ -138,6 +138,9 @@ This check is automatic and requires no input from the user aside from setting t
 - Removed threading for `ExperimentExecutor()`. This feature caused a deadlock on the execution if any error is raised inside it (mainly involving the ExperimentsResultsWriter). The threading has been removed as it was only necessary for parallel time tracking.
 [#1055](https://github.com/qilimanjaro-tech/qililab/pull/1055)
 
+- The save_platform function was not saving bus distortions because it wasn't added to the Bus.to_dict after the refactor. The property has been added.
+[#1100](https://github.com/qilimanjaro-tech/qililab/pull/1100)
+
 
 ## BSC-15
 
