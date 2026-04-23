@@ -895,6 +895,43 @@ def fixture_crosstalk_qprogram_double_offset_loop() -> QProgram:
             qp.play(bus="flux1", waveform=square_wf)
     return qp
 
+@pytest.fixture(name="inner_average_outer_sweep")
+def inner_average_outer_sweep() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
+        with qp.average(shots=100):
+            qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+    return qp
+
+@pytest.fixture(name="inner_average_outer_sweep_two_measures")
+def inner_average_outer_sweep_two_measures() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
+        with qp.average(shots=100):
+            qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+            qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+    return qp
+
+@pytest.fixture(name="inner_average_outer_sweep_three_measures")
+def inner_average_outer_sweep_three_measures() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
+        with qp.average(shots=100):
+            qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+            qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+            qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+    return qp
+
+
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
@@ -4564,3 +4601,111 @@ other_max_duration_0:
         compiler = QbloxCompiler()
         with pytest.raises(TypeError, match=re.escape("qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation.")):
             compiler.compile(qprogram=qp, crosstalk=crosstalk)
+
+    def test_inner_average_outer_sweep(self, inner_average_outer_sweep: QProgram):
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=inner_average_outer_sweep)
+        expected_q1asm =    """setup:
+                                            wait_sync        4              
+                                            set_mrk          0              
+                                            upd_param        4              
+
+                            main:
+                                            move             1, R0          
+                                            move             0, R1          
+                                            move             0, R2          
+                                            move             11, R3         
+                                            move             100, R4        
+                            loop_0:
+                                            move             100, R5        
+                            avg_0:
+                                            play             0, 1, 4        
+                                            acquire_weighed  0, R2, R1, R0, 2000
+                                            loop             R5, @avg_0     
+                                            add              R2, 1, R2      
+                                            add              R4, 10, R4     
+                                            loop             R3, @loop_0    
+                                            set_mrk          0              
+                                            upd_param        4              
+                                            stop                       """
+
+
+        assert is_q1asm_equal(sequences["readout"], expected_q1asm)
+
+    
+    
+    def test_inner_average_outer_sweep_two_measures(self, inner_average_outer_sweep_two_measures: QProgram):
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=inner_average_outer_sweep_two_measures)
+        expected_q1asm =    """setup:
+                                                wait_sync        4              
+                                                set_mrk          0              
+                                                upd_param        4              
+
+                                main:
+                                                move             1, R0          
+                                                move             1, R1          
+                                                move             0, R2          
+                                                move             0, R3          
+                                                move             11, R4         
+                                                move             100, R5        
+                                loop_0:
+                                                move             100, R6        
+                                avg_0:
+                                                play             0, 1, 4        
+                                                acquire_weighed  0, R3, R2, R1, 2000
+                                                play             0, 1, 4        
+                                                acquire_weighed  0, R0, R2, R1, 2000
+                                                loop             R6, @avg_0     
+                                                add              R3, 2, R3      
+                                                add              R0, 2, R0      
+                                                add              R5, 10, R5     
+                                                loop             R4, @loop_0    
+                                                set_mrk          0              
+                                                upd_param        4              
+                                                stop  """
+
+
+        assert is_q1asm_equal(sequences["readout"], expected_q1asm)
+
+
+    def test_inner_average_outer_sweep_three_measures(self, inner_average_outer_sweep_three_measures: QProgram):
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=inner_average_outer_sweep_three_measures)
+        expected_q1asm =    """setup:
+                                                wait_sync        4              
+                                                set_mrk          0              
+                                                upd_param        4              
+
+                                main:
+                                                move             2, R0
+                                                move             1, R1          
+                                                move             1, R2          
+                                                move             0, R3          
+                                                move             0, R4          
+                                                move             11, R5         
+                                                move             100, R6        
+                                loop_0:
+                                                move             100, R7        
+                                avg_0:
+                                                play             0, 1, 4        
+                                                acquire_weighed  0, R4, R3, R2, 2000
+                                                play             0, 1, 4        
+                                                acquire_weighed  0, R1, R3, R2, 2000
+                                                play             0, 1, 4        
+                                                acquire_weighed  0, R0, R3, R2, 2000
+                                                loop             R7, @avg_0     
+                                                add              R4, 3, R4      
+                                                add              R1, 3, R1   
+                                                add              R0, 3, R0    
+                                                add              R6, 10, R6     
+                                                loop             R5, @loop_0    
+                                                set_mrk          0              
+                                                upd_param        4              
+                                                stop  """
+
+
+        assert is_q1asm_equal(sequences["readout"], expected_q1asm)
