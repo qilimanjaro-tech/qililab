@@ -142,6 +142,8 @@ class Bus:
             RUNCARD.ALIAS: self.alias,
             RUNCARD.INSTRUMENTS: [instrument.alias for instrument in self.instruments],
             "channels": self.settings.channels,
+            "distortions": [distortion.to_dict() for distortion in self.settings.distortions],
+
         }
 
     def has_awg(self) -> bool:
