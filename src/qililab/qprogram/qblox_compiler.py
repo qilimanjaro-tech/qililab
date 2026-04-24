@@ -927,8 +927,7 @@ class QbloxCompiler:
             return
 
         duration: QPyProgram.Register | int
-        if isinstance(element.duration, 
-                     ):
+        if isinstance(element.duration, Variable):
             if self._buses[element.bus].marked_for_dynamic_sync is True:
                 raise NotImplementedError(
                     "It is not currently not possible to have two dynamic wait without a sync in between them."

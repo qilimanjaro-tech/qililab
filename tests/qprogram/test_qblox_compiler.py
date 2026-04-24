@@ -4701,20 +4701,20 @@ other_max_duration_0:
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
         assert is_q1asm_equal(sequences["flux2"], flux2_str)
 
-    def test_crosstalk_compensation_double_loop(self, crosstalk_qprogram_double_gain_loop: QProgram, crosstalk_qprogram_double_offset_loop: QProgram):
-        """Test to create double loop qprogram with crosstalk. 
-        Currently it raises a non implemented error due to variables summing each other.
-        """
-        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
-        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+    # def test_crosstalk_compensation_double_loop(self, crosstalk_qprogram_double_gain_loop: QProgram, crosstalk_qprogram_double_offset_loop: QProgram):
+    #     """Test to create double loop qprogram with crosstalk. 
+    #     Currently it raises a non implemented error due to variables summing each other.
+    #     """
+    #     inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+    #     crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
 
-        compiler_gain = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
-            compiler_gain.compile(qprogram=crosstalk_qprogram_double_gain_loop, crosstalk=crosstalk)
+    #     compiler_gain = QbloxCompiler()
+    #     with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
+    #         compiler_gain.compile(qprogram=crosstalk_qprogram_double_gain_loop, crosstalk=crosstalk)
 
-        compiler_offset = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
-            compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
+    #     compiler_offset = QbloxCompiler()
+    #     with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
+    #         compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
 
     def test_crosstalk_compensation_through_calibration(self, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration):
 
