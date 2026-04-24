@@ -11,14 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Utiliy class for hashing common classes."""
 
-import hashlib
+"""keithley Instrument Controllers."""
 
-from qpysequence import Sequence
+from .rswu_sp16tr_controller import RSWUSP16TRController
 
-
-def hash_qpy_sequence(sequence: Sequence):
-    """Hash a QPy Sequence"""
-    sequence_str = repr(sequence)
-    return hashlib.md5(sequence_str.encode("utf-8"), usedforsecurity=False).hexdigest()
+__all__ = ["RSWUSP16TRController"]

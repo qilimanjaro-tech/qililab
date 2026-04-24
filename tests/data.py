@@ -14,6 +14,8 @@ from qililab.typings.enums import (
     VNASweepTypes,
 )
 
+from qililab.typings.enums import ReferenceClock
+
 
 class Galadriel:
     """Test data of the galadriel platform."""
@@ -355,6 +357,18 @@ class Galadriel:
                 Parameter.OFFSET_I.value: 0,
                 Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
+            },
+            {
+                "identifier": 5,
+                "outputs": [0],
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: True,
             },
         ],
     }
@@ -706,6 +720,11 @@ class Galadriel:
             RUNCARD.CHANNELS: [4, None],
         },
         {
+            RUNCARD.ALIAS: "drive_line_q0_bus_baseband",
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value],
+            RUNCARD.CHANNELS: [5],
+        },
+        {
             RUNCARD.ALIAS: "flux_line_too_many_instr",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, InstrumentName.QBLOX_QCM.value],
             RUNCARD.CHANNELS: [1, 4],
@@ -962,11 +981,28 @@ class SauronQDevil:
         ],
     }
 
+    qdevil_qdac2_controller_external_clock = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_external_clock",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qdac",
+                "slot_id": 0,
+            }
+        ],
+        INSTRUMENTCONTROLLER.REFERENCE_CLOCK: ReferenceClock("external"),
+    }
+
     instruments = [qdevil_qdac2, rohde_schwarz]
     instrument_controllers = [
         qdevil_qdac2_controller_ip,
         qdevil_qdac2_controller_usb,
         qdevil_qdac2_controller_wrong_module,
+        qdevil_qdac2_controller_external_clock,
     ]
 
     buses: list[dict[str, Any]] = [{RUNCARD.ALIAS: "qdac_bus", RUNCARD.INSTRUMENTS: ["qdac"], RUNCARD.CHANNELS: [1]}]
@@ -1013,6 +1049,70 @@ class SauronVNA:
         {
             RUNCARD.ALIAS: "keysight_e5080b_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
+            RUNCARD.CHANNELS: [0],
+        },
+    ]
+
+    runcard = {
+        RUNCARD.NAME: name,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+        RUNCARD.BUSES: buses,
+    }
+
+class SauronRSWUSP16TR:
+    """Test data of the sauron platform."""
+
+    name = "sauron_rswu_sp16tr"
+
+    rswu_sp16tr_controller: dict[str, Any] = {
+        "name": InstrumentControllerName.RSWU_SP16TR,
+        "alias": InstrumentControllerName.RSWU_SP16TR.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP,
+            CONNECTION.ADDRESS: "169.254.6.210",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": InstrumentName.RSWU_SP16TR.value,
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    rswu_sp16tr_controller_wrong_module = {
+        "name": InstrumentControllerName.RSWU_SP16TR,
+        "alias": "wrong_rswu_sp16tr",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP,
+            CONNECTION.ADDRESS: "169.254.6.210",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": InstrumentName.KEYSIGHT_E5080B.value,
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    rswu_sp16tr: dict[str, Any] = {
+        "name": InstrumentName.RSWU_SP16TR,
+        "alias": InstrumentName.RSWU_SP16TR.value,
+    }
+    keysight_e5080b: dict[str, Any] = {
+        "name": InstrumentName.KEYSIGHT_E5080B,
+        "alias": InstrumentName.KEYSIGHT_E5080B.value,
+    }
+
+    instruments = [rswu_sp16tr, keysight_e5080b]
+    instrument_controllers = [
+        rswu_sp16tr_controller, rswu_sp16tr_controller_wrong_module
+    ]
+
+    buses: list[dict[str, Any]] = [
+        {
+            RUNCARD.ALIAS: "rswu_sp16tr_bus",
+            RUNCARD.INSTRUMENTS: [InstrumentName.RSWU_SP16TR.value],
             RUNCARD.CHANNELS: [0],
         },
     ]

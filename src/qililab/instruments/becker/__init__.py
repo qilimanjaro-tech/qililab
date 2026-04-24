@@ -12,21 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""__init__.py"""
+"""Becker module."""
 
-from .asdict_factory import dict_factory
-from .coordinate_decomposition import coordinate_decompose
-from .dictionaries import merge_dictionaries
-from .factory import Factory
-from .nested_dict_iterator import nested_dict_to_pandas_dataframe
-from .singleton import Singleton, SingletonABC
+from .rswu_sp16tr import RSWUSP16TR
 
-__all__ = [
-    "Factory",
-    "Singleton",
-    "SingletonABC",
-    "coordinate_decompose",
-    "dict_factory",
-    "merge_dictionaries",
-    "nested_dict_to_pandas_dataframe",
-]
+__all__ = ["RSWUSP16TR"]

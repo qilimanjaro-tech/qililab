@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
+
 import numpy as np
 
 from qililab.yaml import yaml
@@ -25,6 +27,7 @@ class CrosstalkMatrix:
         """Initializes an empty crosstalk matrix."""
         self.matrix: dict[str, dict[str, float]] = {}
         self.flux_offsets: dict[str, float] = {}
+        self.resistances: dict[str, float | None] = {}
 
     def to_array(self) -> np.ndarray:
         """Returns the np.array representation of the crosstalk matrix.
@@ -82,6 +85,9 @@ class CrosstalkMatrix:
         if key not in self.flux_offsets:
             self.flux_offsets[key] = 0.0
 
+        if key not in self.resistances:
+            self.resistances[key] = None
+
     def __repr__(self) -> str:
         """Returns a string representation of the CrosstalkMatrix.
 
@@ -119,7 +125,18 @@ class CrosstalkMatrix:
             offset (dict[str, float]): dictionary containing the buses of the offsets to be added or modified and the value of said offsets
         """
         for bus in offset:
+            if self.matrix and bus not in self.matrix:
+                raise ValueError(f"Bus {bus} not included inside matrix.")
             self.flux_offsets[bus] = offset[bus]
+
+    def set_resistances(self, resistances: dict[str, float]):
+        """Modifies the resistances dictionary based on the given bus and resistance value.
+
+        Args:
+            resistances (dict[str, float]): dictionary containing the resistances for each bus to be added or modified and the value of said resistance
+        """
+        for bus in resistances:
+            self.resistances[bus] = resistances[bus]
 
     @classmethod
     def from_array(cls, buses: list[str], matrix_array: np.ndarray) -> "CrosstalkMatrix":
@@ -147,6 +164,10 @@ class CrosstalkMatrix:
         if not instance.flux_offsets:
             for bus in buses:
                 instance.flux_offsets[bus] = 0.0
+
+        if not instance.resistances:
+            for bus in buses:
+                instance.resistances[bus] = None
         return instance
 
     @classmethod
@@ -167,6 +188,10 @@ class CrosstalkMatrix:
         if not instance.flux_offsets:
             for bus in buses:
                 instance.flux_offsets[bus] = 0.0
+
+        if not instance.resistances:
+            for bus in buses:
+                instance.resistances[bus] = None
         return instance
 
 
@@ -175,12 +200,12 @@ class FluxVector:
     """Class to represent a flux vector. This is a dictionary of bus[flux] values"""
 
     def __init__(self) -> None:
-        self.flux_vector: dict[str, float] = {}
-        self.bias_vector: dict[str, float] = {}
+        self.flux_vector: dict[str, float | list[float] | np.ndarray] = {}
+        self.bias_vector: dict[str, float | list[float] | np.ndarray] = {}
         self.crosstalk: CrosstalkMatrix | None = None
         self.crosstalk_inverse: CrosstalkMatrix | None = None
 
-    def __getitem__(self, bus: str) -> float:
+    def __getitem__(self, bus: str) -> float | list[float] | np.ndarray:
         """Given a bus, returns its corresponding flux
 
         Args:
@@ -193,7 +218,7 @@ class FluxVector:
             return self.bias_vector[bus]
         return self.flux_vector[bus]
 
-    def __setitem__(self, key: str, flux: float) -> None:
+    def __setitem__(self, key: str, flux: float | list[float] | np.ndarray) -> None:
         """Given a bus, sets a new flux
 
         Args:
@@ -206,35 +231,41 @@ class FluxVector:
         if self.crosstalk:
             self.set_crosstalk(self.crosstalk)
 
-    def set_crosstalk(self, crosstalk: CrosstalkMatrix):
+    def set_crosstalk(self, crosstalk: CrosstalkMatrix) -> dict[str, float | list[float] | np.ndarray]:
         """Set the crosstalk compensation on the existing flux vector. This function does the matrix product to calculate the correct flux
 
         Args:
             crosstalk (CrosstalkMatrix): _description_
-
-        Returns:
-            _type_: _description_
         """
         self.crosstalk = crosstalk
         self.crosstalk_inverse = crosstalk.inverse()
         self.crosstalk_inverse.flux_offsets = self.crosstalk.flux_offsets
 
+        for bus in self.crosstalk_inverse.matrix.keys():
+            if bus not in self.flux_vector:
+                self.flux_vector[bus] = 0
+
+            if isinstance(self.flux_vector[bus], list):
+                self.flux_vector[bus] = np.array(self.flux_vector[bus])
+
         self.bias_vector = self.flux_vector.copy()
 
         for bus_1 in self.crosstalk_inverse.matrix.keys():
             self.bias_vector[bus_1] = sum(
-                (self.flux_vector[bus_2] - self.crosstalk_inverse.flux_offsets[bus_2])
+                (self.flux_vector[bus_2] - self.crosstalk_inverse.flux_offsets[bus_2])  # type: ignore
                 * self.crosstalk_inverse.matrix[bus_1][bus_2]
                 for bus_2 in self.crosstalk_inverse.matrix[bus_1].keys()
             )
 
         return self.bias_vector
 
-    def set_crosstalk_from_bias(self, crosstalk: CrosstalkMatrix, bias_vector: dict[str, float] | None = None):
+    def set_crosstalk_from_bias(
+        self, crosstalk: CrosstalkMatrix, bias_vector: dict[str, float | list[float] | np.ndarray] | None = None
+    ) -> dict[str, float | list[float] | np.ndarray]:
         """Set the crosstalk compensation on the existing flux vector. This function does the matrix product to calculate the correct flux
 
         Args:
-            crosstalk (CrosstalkMatrix): _description_
+            crosstalk (CrosstalkMatrix): crosstalk matrix to be applied
 
         """
         self.crosstalk = crosstalk
@@ -247,7 +278,7 @@ class FluxVector:
         for bus_1 in self.crosstalk.matrix.keys():
             self.flux_vector[bus_1] = (
                 sum(
-                    (self.bias_vector[bus_2] * self.crosstalk.matrix[bus_1][bus_2])
+                    (self.bias_vector[bus_2] * self.crosstalk.matrix[bus_1][bus_2])  # type: ignore
                     for bus_2 in self.crosstalk.matrix[bus_1].keys()
                 )
                 + self.crosstalk.flux_offsets[bus_1]
@@ -255,7 +286,7 @@ class FluxVector:
 
         return self.flux_vector
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, float | list[float] | np.ndarray]:
         """To dictionary method, returns the vector's dictionary
 
         Returns:
@@ -265,8 +296,32 @@ class FluxVector:
             return self.bias_vector
         return self.flux_vector
 
+    def get_decomposed_vector(self, bus_list: list[str] | None = None) -> dict[str, "FluxVector"]:
+        """Return dictionary with flux vector decomposed by variables, for each flux return a flux vector considering
+        the rest of fluxes (or the rest of the fluxes from the bus_list if given) as 0.
+        This is typically used to sum variables in flux vs flux Qprogram.
+
+        Args:
+            flux_dict (optional, list[str] | None): List of fluxes to be decomposed. Defaults to None
+
+        Returns:
+            dict[str, FluxVector]: Dictionary containing different flux vectors for each bus.
+        """
+        list_fluxes = {}
+        if self.crosstalk:
+            for bus in self.crosstalk.matrix.keys():
+                flux_vector_copy = deepcopy(self)
+                for zero_flux in self.crosstalk.matrix.keys():
+                    if bus_list is not None and bus in bus_list and zero_flux in bus_list and zero_flux != bus:
+                        flux_vector_copy[zero_flux] = 0
+                    elif bus_list is None and zero_flux != bus:
+                        flux_vector_copy[zero_flux] = 0
+                if (bus_list is not None and bus in bus_list) or bus_list is None:
+                    list_fluxes[bus] = flux_vector_copy
+        return list_fluxes
+
     @classmethod
-    def from_dict(cls, flux_dict: dict[str, float]) -> "FluxVector":
+    def from_dict(cls, flux_dict: dict[str, float | list[float] | np.ndarray]) -> "FluxVector":
         """Creates a FluxVector instance from a dictionary of bus[flux]
 
         Args:

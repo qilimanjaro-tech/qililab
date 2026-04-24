@@ -12,21 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""__init__.py"""
+"""Class Becker RSWU-SP16TR"""
 
-from .asdict_factory import dict_factory
-from .coordinate_decomposition import coordinate_decompose
-from .dictionaries import merge_dictionaries
-from .factory import Factory
-from .nested_dict_iterator import nested_dict_to_pandas_dataframe
-from .singleton import Singleton, SingletonABC
+from qililab.instruments.becker.driver_rswu_sp16tr import DriverRSWUSP16TR
+from qililab.typings.instruments.device import Device
 
-__all__ = [
-    "Factory",
-    "Singleton",
-    "SingletonABC",
-    "coordinate_decompose",
-    "dict_factory",
-    "merge_dictionaries",
-    "nested_dict_to_pandas_dataframe",
-]
+
+class BeckerRSWUSP16TR(DriverRSWUSP16TR, Device):
+    """Typing class of the QCoDeS driver for the Becker RSWU-SP16TR."""

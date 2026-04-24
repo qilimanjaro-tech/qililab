@@ -29,6 +29,7 @@ class Play(Operation):
         dwell: int | None = None,
         delay: int | None = None,
         repetitions: int | None = None,
+        stepped: bool | None = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -37,6 +38,7 @@ class Play(Operation):
         self.dwell: int | None = dwell
         self.delay: int | None = delay
         self.repetitions: int | None = repetitions
+        self.stepped: bool | None = stepped
 
     def get_waveforms(self) -> tuple[Waveform, Waveform | None]:
         """Get the waveforms.
@@ -80,6 +82,7 @@ class PlayWithCalibratedWaveform(Operation):
         dwell: int | None = None,
         delay: int | None = None,
         repetitions: int | None = None,
+        stepped: bool | None = None,
     ) -> None:
         super().__init__()
         self.bus: str = bus
@@ -88,3 +91,4 @@ class PlayWithCalibratedWaveform(Operation):
         self.dwell: int | None = dwell
         self.delay: int | None = delay
         self.repetitions: int | None = repetitions
+        self.stepped: bool | None = stepped

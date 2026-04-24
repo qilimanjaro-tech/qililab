@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from uuid import UUID
+
 import numpy as np
 import qpysequence as QPy
 import qpysequence.program as QPyProgram
@@ -30,6 +31,7 @@ from qililab.config import logger
 from qililab.core.variables import Domain, Variable, VariableExpression
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
     Measure,
@@ -231,7 +233,9 @@ class QbloxCompiler:
         self._max_wait_dynamic: int = 0
         self._markers: dict[str, str] | None
         self._qblox_buses: list[str]
+        self._crosstalk: CrosstalkMatrix | None = None
         self._acquisition_metadata: dict[str, dict[UUID, int]] = {}
+        self._single_channel: list[str] = []
 
     def traverse_qprogram_acquire(self, block: Block):
         """Traverses a QProgram to gather information on the acquisition."""
@@ -252,6 +256,8 @@ class QbloxCompiler:
         markers: dict[str, str] | None = None,
         ext_trigger: bool = False,
         qblox_buses: list[str] | None = None,
+        single_channel: list[str] | None = None,
+        crosstalk: CrosstalkMatrix | None = None,
     ) -> QbloxCompilationOutput:
         """Compile QProgram to qpysequence.Sequence
 
@@ -313,16 +319,21 @@ class QbloxCompiler:
             self._qprogram = self._qprogram.with_bus_mapping(bus_mapping=bus_mapping)
         if calibration is not None:
             self._qprogram = self._qprogram.with_calibration(calibration=calibration)
+            if calibration.crosstalk_matrix and crosstalk is None:
+                crosstalk = calibration.crosstalk_matrix
         if self._qprogram.has_calibrated_waveforms_or_weights():
             raise RuntimeError(
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
+        if crosstalk is not None:
+            self._qprogram = self._qprogram.with_crosstalk_qblox(crosstalk=crosstalk)
 
         self._qblox_buses = qblox_buses if qblox_buses else []
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
         self._ext_trigger = ext_trigger
+        self._single_channel = single_channel if single_channel is not None else []
 
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
@@ -517,7 +528,10 @@ class QbloxCompiler:
             return index, len(envelope)
 
         index_I, length_I = handle_waveform(waveform_I, 0)
-        index_Q, _ = handle_waveform(waveform_Q, len(waveform_I.envelope()))
+        if waveform_Q is None and bus in self._single_channel:
+            index_Q, _ = handle_waveform(waveform_I, 0)
+        else:
+            index_Q, _ = handle_waveform(waveform_Q, len(waveform_I.envelope()))
         return index_I, index_Q, length_I
 
     def _append_to_weights_of_bus(self, bus: str, weights: IQWaveform):
@@ -822,6 +836,7 @@ class QbloxCompiler:
                 if isinstance(element.offset_path0, Variable)
                 else convert(element.offset_path0)
             )
+
             if element.offset_path1 is None:
                 offset_1 = offset_0
                 logger.warning(
@@ -912,7 +927,8 @@ class QbloxCompiler:
             return
 
         duration: QPyProgram.Register | int
-        if isinstance(element.duration, Variable):
+        if isinstance(element.duration, 
+                     ):
             if self._buses[element.bus].marked_for_dynamic_sync is True:
                 raise NotImplementedError(
                     "It is not currently not possible to have two dynamic wait without a sync in between them."
