@@ -370,7 +370,7 @@ def compare_platforms(obj1, obj2, path="root", depth=0, max_depth=10):
             differences.append(f"{path}: length mismatch ({len(obj1)} vs {len(obj2)})")
             # Still compare up to the shorter length
         for i, (a, b) in enumerate(zip(obj1, obj2)):
-            eq, diffs = compare_platforms(a, b, path=f"{path}[{i}]", depth=depth + 1, max_depth=max_depth)
+            _, diffs = compare_platforms(a, b, path=f"{path}[{i}]", depth=depth + 1, max_depth=max_depth)
             differences.extend(diffs)
         return len(differences) == 0, differences
 
