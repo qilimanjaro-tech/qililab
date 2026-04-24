@@ -392,8 +392,10 @@ def compare_platforms(obj1, obj2, path="root", depth=0, max_depth=10):
         attrs2 = set(vars(obj2).keys())
         for attr in attrs1 - attrs2:
             differences.append(f"{path}.{attr}: attribute only in first object")
+
         for attr in attrs2 - attrs1:
             differences.append(f"{path}.{attr}: attribute only in second object")
+
         for attr in attrs1 & attrs2:
             _, diffs = compare_platforms(
                 getattr(obj1, attr), getattr(obj2, attr),
