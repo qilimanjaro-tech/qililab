@@ -382,7 +382,7 @@ def compare_platforms(obj1, obj2, path="root", depth=0, max_depth=10):
         for k in keys2 - keys1:
             differences.append(f"{path}[{k!r}]: key only in second object")
         for k in keys1 & keys2:
-            eq, diffs = compare_platforms(obj1[k], obj2[k], path=f"{path}[{k!r}]", depth=depth + 1, max_depth=max_depth)
+            _, diffs = compare_platforms(obj1[k], obj2[k], path=f"{path}[{k!r}]", depth=depth + 1, max_depth=max_depth)
             differences.extend(diffs)
         return len(differences) == 0, differences
 
