@@ -124,6 +124,9 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 ### Bug fixes
 
+- The save_platform function was not saving bus distortions because it wasn't added to the Bus.to_dict after the refactor. The property has been added.
+  [#1100](https://github.com/qilimanjaro-tech/qililab/pull/1100)
+
 - Fixed a bug for function Platform.set_bias_to_zero(bus_list) where the flux vector was not updated correctly from bias.
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
 
