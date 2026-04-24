@@ -97,3 +97,6 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 - Fixed a bug at the QdacCompiler where the dwell time was converted to us twice turning any value to the minimum dwell possible.
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
+
+- The save_platform function was not saving bus distortions because it wasn't added to the Bus.to_dict after the refactor. The property has been added.
+  [#1100](https://github.com/qilimanjaro-tech/qililab/pull/1100)
