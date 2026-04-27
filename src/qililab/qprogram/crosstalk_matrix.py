@@ -195,6 +195,7 @@ class CrosstalkMatrix:
                 instance.resistances[bus] = None
         return instance
 
+
 @yaml.register_class
 class NonLinearCrosstalkMatrix(CrosstalkMatrix):
     """Extends CrosstalkMatrix with nonlinear crosstalk correction terms.
@@ -317,14 +318,10 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
                     continue
                 amp = self.non_lin_amp_matrix.get(bus_i, {}).get(bus_j)
                 if amp is None:
-                    raise ValueError(
-                        f"beta_c is set for ({bus_i}, {bus_j}) but non_lin_amp is None."
-                    )
+                    raise ValueError(f"beta_c is set for ({bus_i}, {bus_j}) but non_lin_amp is None.")
                 if bus_j not in flux:
                     raise ValueError(f"Bus '{bus_j}' not found in provided flux dict.")
-                corrections[bus_i] += float(
-                    self.sin_beta_scaled(flux=flux[bus_j], beta=beta, amp=amp)
-                )
+                corrections[bus_i] += float(self.sin_beta_scaled(flux=flux[bus_j], beta=beta, amp=amp))
 
         return corrections
 
@@ -340,9 +337,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         sorted_buses = sorted(self.matrix.keys())
 
         corrections = self.get_non_linear_flux_terms(flux)
-        corrected_flux = np.array(
-            [flux[bus] + corrections[bus] for bus in sorted_buses], dtype=float
-        )
+        corrected_flux = np.array([flux[bus] + corrections[bus] for bus in sorted_buses], dtype=float)
         offsets = np.array([self.flux_offsets.get(bus, 0.0) for bus in sorted_buses])
 
         inverse_matrix = self.inverse().to_array()
@@ -362,17 +357,11 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             NonLinearCrosstalkMatrix: A new instance with linear parameters copied.
         """
         instance = cls()
-        instance.matrix = {
-            bus: dict(row) for bus, row in linear.matrix.items()
-        }
+        instance.matrix = {bus: dict(row) for bus, row in linear.matrix.items()}
         instance.flux_offsets = dict(linear.flux_offsets)
         instance.resistances = dict(linear.resistances)
-        instance.beta_c_matrix = {
-            bus: dict.fromkeys(row) for bus, row in linear.matrix.items()
-        }
-        instance.non_lin_amp_matrix = {
-            bus: dict.fromkeys(row) for bus, row in linear.matrix.items()
-        }
+        instance.beta_c_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
+        instance.non_lin_amp_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
         return instance
 
     def __repr__(self) -> str:
