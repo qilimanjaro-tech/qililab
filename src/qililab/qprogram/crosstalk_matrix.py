@@ -194,7 +194,7 @@ class CrosstalkMatrix:
             for bus in buses:
                 instance.resistances[bus] = None
         return instance
-    
+
 @yaml.register_class
 class NonLinearCrosstalkMatrix(CrosstalkMatrix):
     """Extends CrosstalkMatrix with nonlinear crosstalk correction terms.
@@ -224,14 +224,14 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         super().__setitem__(key, value)
 
         if key not in self.beta_c_matrix:
-            self.beta_c_matrix[key] = {bus: None for bus in value}
+            self.beta_c_matrix[key] = dict.fromkeys(value)
         else:
             for bus in value:
                 if bus not in self.beta_c_matrix[key]:
                     self.beta_c_matrix[key][bus] = None
 
         if key not in self.non_lin_amp_matrix:
-            self.non_lin_amp_matrix[key] = {bus: None for bus in value}
+            self.non_lin_amp_matrix[key] = dict.fromkeys(value)
         else:
             for bus in value:
                 if bus not in self.non_lin_amp_matrix[key]:
@@ -309,7 +309,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         Returns:
             dict[str, float]: Nonlinear correction terms keyed by bus name.
         """
-        corrections: dict[str, float] = {bus: 0.0 for bus in flux}
+        corrections: dict[str, float] = dict.fromkeys(flux, 0.0)
 
         for bus_i, row in self.beta_c_matrix.items():
             for bus_j, beta in row.items():
@@ -368,10 +368,10 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         instance.flux_offsets = dict(linear.flux_offsets)
         instance.resistances = dict(linear.resistances)
         instance.beta_c_matrix = {
-            bus: {b: None for b in row} for bus, row in linear.matrix.items()
+            bus: dict.fromkeys(row) for bus, row in linear.matrix.items()
         }
         instance.non_lin_amp_matrix = {
-            bus: {b: None for b in row} for bus, row in linear.matrix.items()
+            bus: dict.fromkeys(row) for bus, row in linear.matrix.items()
         }
         return instance
 
