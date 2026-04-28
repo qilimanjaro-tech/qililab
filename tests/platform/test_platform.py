@@ -62,6 +62,14 @@ def fixture_platform():
 def fixture_platform_qblox_qdac():
     return platform_build_platform(runcard="tests/runcards/qblox_and_qdac.yml")
 
+@pytest.fixture(name="platform_qblox_qdacs")
+def fixture_platform_qblox_qdacs():
+    return platform_build_platform(runcard="tests/runcards/qblox_and_qdacs.yml")
+
+@pytest.fixture(name="platform_qblox_qdacs_no_trigger")
+def fixture_platform_qblox_qdacs_no_trigger():
+    return platform_build_platform(runcard="tests/runcards/qblox_and_qdacs_no_trigger.yml")
+
 
 @pytest.fixture(name="platform_qm_qdac")
 def fixture_platform_qm_qdac():
@@ -335,6 +343,71 @@ def fixture_qp_quantum_machine() -> QProgram:
     qp.play(bus="drive_q0", waveform=Square(amplitude=1, duration=10))
     qp.wait("drive_q0", 10)
     return qp
+
+def compare_platforms(obj1, obj2, path="root", depth=0, max_depth=10):
+    """
+    Recursively compare two objects' properties up to max_depth.
+    """
+    differences = []
+
+    if depth > max_depth:
+        return True, []
+
+    # Different types: report and stop recursing this branch
+    if type(obj1) is not type(obj2):
+        differences.append(f"{path}: type mismatch ({type(obj1).__name__} vs {type(obj2).__name__})")
+        return False, differences
+
+    # Primitives and non-inspectable types
+    if isinstance(obj1, (int, float, complex, str, bool, bytes, type(None))):
+        if obj1 != obj2:
+            differences.append(f"{path}: {obj1!r} != {obj2!r}")
+        return obj1 == obj2, differences
+
+    # Lists and tuples
+    if isinstance(obj1, (list, tuple)):
+        if len(obj1) != len(obj2):
+            differences.append(f"{path}: length mismatch ({len(obj1)} vs {len(obj2)})")
+            # Still compare up to the shorter length
+        for i, (a, b) in enumerate(zip(obj1, obj2)):
+            _, diffs = compare_platforms(a, b, path=f"{path}[{i}]", depth=depth + 1, max_depth=max_depth)
+            differences.extend(diffs)
+        return len(differences) == 0, differences
+
+    # Dicts
+    if isinstance(obj1, dict):
+        keys1, keys2 = set(obj1.keys()), set(obj2.keys())
+        for k in keys1 - keys2:
+            differences.append(f"{path}[{k!r}]: key only in first object")
+        for k in keys2 - keys1:
+            differences.append(f"{path}[{k!r}]: key only in second object")
+        for k in keys1 & keys2:
+            _, diffs = compare_platforms(obj1[k], obj2[k], path=f"{path}[{k!r}]", depth=depth + 1, max_depth=max_depth)
+            differences.extend(diffs)
+        return len(differences) == 0, differences
+
+    # Objects with __dict__ (dataclasses, custom classes, etc.)
+    if hasattr(obj1, "__dict__"):
+        attrs1 = set(vars(obj1).keys())
+        attrs2 = set(vars(obj2).keys())
+        for attr in attrs1 - attrs2:
+            differences.append(f"{path}.{attr}: attribute only in first object")
+
+        for attr in attrs2 - attrs1:
+            differences.append(f"{path}.{attr}: attribute only in second object")
+
+        for attr in attrs1 & attrs2:
+            _, diffs = compare_platforms(
+                getattr(obj1, attr), getattr(obj2, attr),
+                path=f"{path}.{attr}", depth=depth + 1, max_depth=max_depth
+            )
+            differences.extend(diffs)
+        return len(differences) == 0, differences
+
+    # Fallback: direct equality
+    if obj1 != obj2:
+        differences.append(f"{path}: {obj1!r} != {obj2!r}")
+    return obj1 == obj2, differences
 
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
@@ -798,24 +871,13 @@ class TestPlatform:
         assert isinstance(runcard_dict, dict)
 
         new_platform = Platform(runcard=Runcard(**runcard_dict))
-        assert isinstance(new_platform, Platform)
-        assert str(new_platform) == str(platform)
-        assert str(new_platform.name) == str(platform.name)
-        assert str(new_platform.buses) == str(platform.buses)
-        assert str(new_platform.instruments) == str(platform.instruments)
-        assert str(new_platform.instrument_controllers) == str(platform.instrument_controllers)
 
-        new_runcard_dict = new_platform.to_dict()
-        assert isinstance(new_runcard_dict, dict)
-        assert new_runcard_dict == runcard_dict
-
-        newest_platform = Platform(runcard=Runcard(**new_runcard_dict))
-        assert isinstance(newest_platform, Platform)
-        assert str(newest_platform) == str(new_platform)
-        assert str(newest_platform.name) == str(new_platform.name)
-        assert str(newest_platform.buses) == str(new_platform.buses)
-        assert str(newest_platform.instruments) == str(new_platform.instruments)
-        assert str(newest_platform.instrument_controllers) == str(new_platform.instrument_controllers)
+        is_equal, diffs = compare_platforms(platform, new_platform)
+        error_message = f"Platforms differ in {len(diffs)} place(s):\n"
+        if not is_equal:
+            for d in diffs:
+                error_message += "-" + d + "\n"
+            pytest.fail(error_message, is_equal)
 
 
 class TestMethods:
@@ -1143,6 +1205,7 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1165,10 +1228,96 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
+        
+    def test_execute_qprogram_with_qblox_and_multiple_qdacs(self, platform_qblox_qdacs: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac2_bus_1", offset_path0=1)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        # Retrieve the qdac_2 instrument instance from the platform to patch it directly
+        qdac_2_instrument = next(
+            instrument
+            for instrument in platform_qblox_qdacs.instruments.elements
+            if isinstance(instrument, QDevilQDac2) and instrument.alias == "qdac_2"
+        )
+        mock_device = MagicMock()
+        mock_device.name = "qdac_2"
+        qdac_2_instrument.device = mock_device
+        # Simulate that channel 1 of qdac_2 already has a dc list uploaded
+        qdac_2_instrument._cache_dc = {"qdac_2_1": True}
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+            # Mock Qdac functions without connecting
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_out_external_trigger") as set_out_external_trigger,
+            patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
+            patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
+            patch.object(QDevilQDac2, "start") as start,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            first_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
+
+            acquire_qprogram_results.return_value = [456]
+            second_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
+
+            _ = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed each time (6 because there are 2 buses)
+        assert upload.call_count == 6
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert sync_sequencer.call_count == 6  # called as many times as run
+        assert desync_sequencer.call_count == 6
+        assert first_execution_results.results["resonator"] == [123]
+        assert second_execution_results.results["resonator"] == [456]
+        assert upload_voltage_list.call_count == 3  # called as many times as executes
+        assert set_out_external_trigger.call_count == 3  # called as many times as executes
+        assert set_in_external_trigger.call_count == 3  # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 6  # called as many times as executes
+        assert start.call_count == 6  # called as many times as executes
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_and_multiple_qdacs_raises_error(self, platform_qblox_qdacs_no_trigger: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac2_bus_1", offset_path0=1)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        error_text = "Multiple QDAC-II instruments used but no Output trigger instrument given."
+        with pytest.raises(ValueError, match=error_text):
+            platform_qblox_qdacs_no_trigger.execute_qprogram(qprogram=qprogram)
 
     def test_execute_qprogram_with_qblox_and_qdac_back(self, platform_qblox_qdac: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -1193,6 +1342,7 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1215,10 +1365,69 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_and_qdac_no_crosstalk(self, platform_qblox_qdac: Platform, calibration:Calibration):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
+        qprogram.wait_trigger(bus="qdac_bus_1", duration=10e-6, port=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        expected_crosstalk = CrosstalkMatrix.from_buses(buses={"qdac_bus": {"qdac_bus": 0.1}})
+        platform_qblox_qdac.set_crosstalk(expected_crosstalk)
+        calibration.crosstalk_matrix = platform_qblox_qdac.crosstalk
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+            # Mock Qdac functions without connecting
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
+            patch.object(QDevilQDac2, "start") as start,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
+
+            acquire_qprogram_results.return_value = [456]
+            second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, crosstalk=False)
+
+            _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True, crosstalk=False)
+
+        # assert upload executed each time (6 because there are 2 buses)
+        assert upload.call_count == 6
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert sync_sequencer.call_count == 6  # called as many times as run
+        assert desync_sequencer.call_count == 6
+        assert first_execution_results.results["resonator"] == [123]
+        assert second_execution_results.results["resonator"] == [456]
+        assert upload_voltage_list.call_count == 3  # called as many times as executes
+        assert set_in_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 3  # called as many times as executes
+        assert start.call_count == 3  # called as many times as executes
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+        
+        assert calibration.crosstalk_matrix == expected_crosstalk
 
     def test_execute_qprogram_single_baseband_channel(self, platform: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
