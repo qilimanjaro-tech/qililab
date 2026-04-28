@@ -1057,7 +1057,9 @@ class QbloxCompiler:
 
         duration: QPyProgram.Register | int
         convert = QbloxCompiler._convert_value(element)
-        duration = convert(element.duration if len(self._buses) == 1 else element.duration - 4)
+        if isinstance(element.duration, Variable):
+            raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
+        duration = convert(element.duration)
 
         port = element.port
         if not port:
@@ -1069,36 +1071,51 @@ class QbloxCompiler:
         if not self._ext_trigger:
             raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
-        if self._buses[element.bus].upd_param_instruction_pending:
+        if self._buses[element.bus].upd_param_instruction_pending and len(self._buses) == 1:
             self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.UpdParam(duration if 4 < duration < 8 else 4)
+                component=QPyInstructions.UpdParam(duration if INST_MIN_WAIT < duration < 8 else INST_MIN_WAIT)
             )
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.WaitTrigger(
-                    address=port, wait_time=duration - 4 if 4 < duration - 4 < 8 else 4
+                    address=port,
+                    wait_time=(
+                        duration - INST_MIN_WAIT
+                        if INST_MIN_WAIT < duration - INST_MIN_WAIT < INST_MIN_WAIT * 2
+                        else INST_MIN_WAIT
+                    ),
                 )
             )
-            wait_trigger_duration = 8
+            wait_trigger_duration = INST_MIN_WAIT * 2
             self._buses[element.bus].upd_param_instruction_pending = False
         else:  # no instructions pending
             self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.WaitTrigger(address=port, wait_time=duration if 4 < duration < 8 else 4)
+                component=QPyInstructions.WaitTrigger(
+                    address=port, wait_time=duration if INST_MIN_WAIT < duration < INST_MIN_WAIT * 2 else INST_MIN_WAIT
+                )
             )
-            wait_trigger_duration = 4
-        if duration >= wait_trigger_duration + 4:
-            # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
-            self._handle_add_waits(bus=element.bus, duration=duration - wait_trigger_duration)
+            wait_trigger_duration = INST_MIN_WAIT
 
         # Sync all other buses with WaitSync
         if len(self._buses) > 1:
             for sync_bus in self._buses:
                 self._buses[sync_bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.WaitSync(wait_time=4)
+                    component=QPyInstructions.WaitSync(wait_time=INST_MIN_WAIT)
                 )
 
                 # After wait sync reset static duration
                 self._buses[sync_bus].marked_for_sync = False
                 self._buses[sync_bus].static_duration = 0
+
+        if duration >= INST_MIN_WAIT * 2:
+            # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
+            self._handle_add_waits(
+                bus=element.bus, duration=duration if len(self._buses) > 1 else duration - wait_trigger_duration
+            )
+        elif self._buses[element.bus].upd_param_instruction_pending:
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.UpdParam(INST_MIN_WAIT)
+            )
+            self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_sync(self, element: Sync, delay: bool = False):
         if element.buses and any(bus not in self._qblox_buses for bus in element.buses):

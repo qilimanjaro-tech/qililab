@@ -419,6 +419,7 @@ def fixture_wait_trigger() -> QProgram:
     qp.wait_trigger(bus="drive", duration=70_000, port=1)
     return qp
 
+
 @pytest.fixture(name="wait_trigger_single_bus")
 def fixture_wait_trigger_single_bus() -> QProgram:
     qp = QProgram()
@@ -535,6 +536,7 @@ def update_latched_param() -> QProgram:
     qp.wait(bus="drive", duration=6)
     return qp
 
+
 @pytest.fixture(name="dynamic_sync")
 def fixture_dynamic_sync() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -546,9 +548,10 @@ def fixture_dynamic_sync() -> QProgram:
         qp.play(bus="drive", waveform=drag_pair)
         qp.wait(bus="drive", duration=duration)
         qp.sync()
-        qp.wait(bus="drive", duration=duration-30)
+        qp.wait(bus="drive", duration=duration - 30)
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
+
 
 @pytest.fixture(name="dynamic_sync_long_wait")
 def fixture_dynamic_sync_long_wait() -> QProgram:
@@ -565,6 +568,7 @@ def fixture_dynamic_sync_long_wait() -> QProgram:
         qp.sync()
     return qp
 
+
 @pytest.fixture(name="dynamic_sync_variable_expression_difference")
 def fixture_dynamic_sync_variable_expression_difference() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -574,13 +578,14 @@ def fixture_dynamic_sync_variable_expression_difference() -> QProgram:
     duration = qp.variable(label="time", domain=Domain.Time)
     with qp.for_loop(variable=duration, start=100, stop=200, step=10):
         qp.play(bus="drive", waveform=drag_pair)
-        qp.wait(bus="drive", duration=duration-50)
+        qp.wait(bus="drive", duration=duration - 50)
         qp.sync()
-        qp.wait(bus="drive", duration=50-duration)
-        qp.sync() 
+        qp.wait(bus="drive", duration=50 - duration)
+        qp.sync()
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
         qp.sync()
     return qp
+
 
 @pytest.fixture(name="dynamic_sync_variable_expression_sum")
 def fixture_dynamic_sync_variable_expression_sum() -> QProgram:
@@ -591,13 +596,14 @@ def fixture_dynamic_sync_variable_expression_sum() -> QProgram:
     duration = qp.variable(label="time", domain=Domain.Time)
     with qp.for_loop(variable=duration, start=100, stop=50_000, step=10):
         qp.play(bus="drive", waveform=drag_pair)
-        qp.wait(bus="drive", duration=duration+500)
+        qp.wait(bus="drive", duration=duration + 500)
         qp.sync()
-        qp.wait(bus="drive", duration=duration+20_000)
+        qp.wait(bus="drive", duration=duration + 20_000)
         qp.sync()
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
         qp.sync()
     return qp
+
 
 @pytest.fixture(name="dynamic_sync_delay")
 def fixture_dynamic_sync_delay() -> QProgram:
@@ -613,35 +619,40 @@ def fixture_dynamic_sync_delay() -> QProgram:
         qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
 
+
 @pytest.fixture(name="measure_reset_program")
 def fixture_measure_reset_program() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
     qp = QProgram()
     drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)
-    qp.qblox.measure_reset(bus="readout", waveform=readout_pair, weights=weights_pair, control_bus="drive", reset_pulse=drag_wf)
+    qp.qblox.measure_reset(
+        bus="readout", waveform=readout_pair, weights=weights_pair, control_bus="drive", reset_pulse=drag_wf
+    )
     return qp
 
 
 @pytest.fixture(name="wait_comprised_between_65532_65535")
 def fixture_wait_comprised_between_65532_65535() -> QProgram:
     qp = QProgram()
-    qp.wait("drive",duration=65532*2)
-    qp.play("drive", Square(1,20))
+    qp.wait("drive", duration=65532 * 2)
+    qp.play("drive", Square(1, 20))
     qp.wait(bus="drive", duration=65532)
-    qp.play("drive", Square(1,20))
+    qp.play("drive", Square(1, 20))
     qp.wait(bus="drive", duration=65534)
     return qp
+
 
 @pytest.fixture(name="error_acquisition_index")
 def fixture_error_acquisition_index() -> QProgram:
     qp = QProgram()
     weights_shape = Square(amplitude=1, duration=20)
     bins = qp.variable("bins", Domain.Scalar, int)
-    for _ in range (40):
+    for _ in range(40):
         with qp.for_loop(bins, 0, 100, 1):
             qp.qblox.acquire("readout", IQPair(I=weights_shape, Q=weights_shape))
     return qp
+
 
 @pytest.fixture(name="single_bin_different_depth_qp")
 def fixture_single_bin_different_depth_qp() -> QProgram:
@@ -651,20 +662,13 @@ def fixture_single_bin_different_depth_qp() -> QProgram:
     square_wf = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
 
     with qp.average(100):
-        qp.measure(bus=f"readout",
-            waveform=square_wf,
-            weights=weights_shape)
-        qp.measure(bus=f"readout",
-            waveform=square_wf,
-            weights=weights_shape)
+        qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
+        qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
 
-    qp.measure(bus=f"readout",
-                waveform=square_wf,
-                weights=weights_shape)
-    qp.measure(bus=f"readout",
-                waveform=square_wf,
-                weights=weights_shape)
+    qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
+    qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
     return qp
+
 
 @pytest.fixture(name="bus_mappping_acquire")
 def fixture_bus_mappping_acquire() -> QProgram:
@@ -672,17 +676,24 @@ def fixture_bus_mappping_acquire() -> QProgram:
     square_wf = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
     with qp.average(10):
         qp.play("drive", square_wf)
-        qp.measure(bus=f"readout",
-                    waveform=square_wf,
-                    weights=square_wf,)
-        qp.measure(bus=f"readout",
-                waveform=square_wf,
-                weights=square_wf,)
-        qp.wait("readout",100)
-    qp.measure(bus=f"readout",
-                waveform=square_wf,
-                weights=square_wf,)
+        qp.measure(
+            bus=f"readout",
+            waveform=square_wf,
+            weights=square_wf,
+        )
+        qp.measure(
+            bus=f"readout",
+            waveform=square_wf,
+            weights=square_wf,
+        )
+        qp.wait("readout", 100)
+    qp.measure(
+        bus=f"readout",
+        waveform=square_wf,
+        weights=square_wf,
+    )
     return qp
+
 
 @pytest.fixture(name="calibration_reset")
 def fixture_calibration_reset() -> Calibration:
@@ -695,12 +706,14 @@ def fixture_calibration_reset() -> Calibration:
     calibration_reset.add_waveform(bus="drive_q0_bus", name="drag_reset", waveform=drag_reset)
     return calibration_reset
 
+
 @pytest.fixture(name="measure_reset_calibrated_bus_mapping")
 def fixture_measure_reset_calibrated_bus_mapping() -> QProgram:
     qp = QProgram()
-    qp.qblox.measure_reset(bus="readout_bus", waveform="readout", weights="weights", control_bus="drive_bus", reset_pulse="drag_reset")
+    qp.qblox.measure_reset(
+        bus="readout_bus", waveform="readout", weights="weights", control_bus="drive_bus", reset_pulse="drag_reset"
+    )
     return qp
-
 
 
 @pytest.fixture(name="cryoscope_qprogram")
@@ -710,63 +723,74 @@ def fixture_cryoscope_qprogram() -> QProgram:
     REPETITION_DURATION = 200_000
     POST_DRIVE_BUFFER = 30
     POST_FLUX_BUFFER = 30
-    AMPLITUDE_VALUES = np.linspace(-.3, .3, num=21)
+    AMPLITUDE_VALUES = np.linspace(-0.3, 0.3, num=21)
     DURATION_VALUES = np.arange(80, 160, step=1)
-    T_SEP = np.max(DURATION_VALUES) + 100 
-    flux_wf = Square(amplitude = 1, duration = 500)
+    T_SEP = np.max(DURATION_VALUES) + 100
+    flux_wf = Square(amplitude=1, duration=500)
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
-    flux_amplitude = qp.variable(label='flux_amplitude', domain = Domain.Voltage)
+    flux_amplitude = qp.variable(label="flux_amplitude", domain=Domain.Voltage)
     square_wf = Square(amplitude=1, duration=1385)
     square_iq = IQPair(I=square_wf, Q=square_wf)
-    time = qp.variable(label='time', domain = Domain.Time)
+    time = qp.variable(label="time", domain=Domain.Time)
     qp.set_gain(bus=f"drive", gain=1)
     qp.set_gain(bus=f"readout", gain=1)
     with qp.average(HW_AVG):
-        with qp.for_loop(variable = flux_amplitude, start=AMPLITUDE_VALUES[0], stop=AMPLITUDE_VALUES[-1], step=AMPLITUDE_VALUES[1]-AMPLITUDE_VALUES[0]):
-            with qp.for_loop(variable = time, start=DURATION_VALUES[0], stop=DURATION_VALUES[-1], step=DURATION_VALUES[1]-DURATION_VALUES[0]):
-            
-                qp.set_gain(bus=f'flux', gain=flux_amplitude)
+        with qp.for_loop(
+            variable=flux_amplitude,
+            start=AMPLITUDE_VALUES[0],
+            stop=AMPLITUDE_VALUES[-1],
+            step=AMPLITUDE_VALUES[1] - AMPLITUDE_VALUES[0],
+        ):
+            with qp.for_loop(
+                variable=time,
+                start=DURATION_VALUES[0],
+                stop=DURATION_VALUES[-1],
+                step=DURATION_VALUES[1] - DURATION_VALUES[0],
+            ):
+
+                qp.set_gain(bus=f"flux", gain=flux_amplitude)
                 qp.sync()
                 qp.play(bus=f"drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus=f"flux",duration=POST_DRIVE_BUFFER)
+                qp.wait(bus=f"flux", duration=POST_DRIVE_BUFFER)
                 qp.sync()
 
                 # play a flux pulse of varying duration
-                qp.qblox.play(bus=f'flux', waveform=flux_wf,wait_time=4)
-                qp.wait(bus=f"drive",duration=time)
+                qp.qblox.play(bus=f"flux", waveform=flux_wf, wait_time=4)
+                qp.wait(bus=f"drive", duration=time)
                 qp.sync()
-                qp.qblox.play(bus=f'flux', waveform=Square(0,500),wait_time=4)
+                qp.qblox.play(bus=f"flux", waveform=Square(0, 500), wait_time=4)
 
-                qp.wait(bus=f"drive",duration=POST_FLUX_BUFFER+ T_SEP-time)
+                qp.wait(bus=f"drive", duration=POST_FLUX_BUFFER + T_SEP - time)
                 qp.play(bus=f"drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus=f"readout",duration=POST_DRIVE_BUFFER)
-                qp.measure(bus=f"readout", waveform=square_iq , weights=square_iq )
+                qp.wait(bus=f"readout", duration=POST_DRIVE_BUFFER)
+                qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq)
                 qp.sync()
-                qp.wait(bus=f"drive",duration=REPETITION_DURATION)
+                qp.wait(bus=f"drive", duration=REPETITION_DURATION)
 
                 qp.sync()
                 qp.play(bus=f"drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus=f"flux",duration=POST_DRIVE_BUFFER)
+                qp.wait(bus=f"flux", duration=POST_DRIVE_BUFFER)
                 qp.sync()
 
                 # play a flux pulse of varying duration
-                qp.qblox.play(bus=f'flux', waveform=flux_wf,wait_time=4)
-                qp.wait(bus=f"drive",duration=time)
+                qp.qblox.play(bus=f"flux", waveform=flux_wf, wait_time=4)
+                qp.wait(bus=f"drive", duration=time)
                 qp.sync()
-                qp.qblox.play(bus=f'flux', waveform=Square(0,500),wait_time=4)
-                
-                qp.wait(bus=f"drive",duration=POST_FLUX_BUFFER+ T_SEP-time)
+                qp.qblox.play(bus=f"flux", waveform=Square(0, 500), wait_time=4)
+
+                qp.wait(bus=f"drive", duration=POST_FLUX_BUFFER + T_SEP - time)
                 qp.play(bus=f"drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus=f"readout",duration=POST_DRIVE_BUFFER)
-                qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq )
+                qp.wait(bus=f"readout", duration=POST_DRIVE_BUFFER)
+                qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq)
                 qp.sync()
-                qp.wait(bus=f"drive",duration=REPETITION_DURATION)
+                qp.wait(bus=f"drive", duration=REPETITION_DURATION)
                 qp.sync()
     return qp
+
 
 @pytest.fixture(name="dynamic_wait_three_buses_dynamic_static")
 def fixture_dynamic_wait_three_buses_dynamic_static() -> QProgram:
@@ -777,12 +801,13 @@ def fixture_dynamic_wait_three_buses_dynamic_static() -> QProgram:
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.play(bus="drive", waveform=drag_pair)
-        qp.sync(["drive","readout"])
+        qp.sync(["drive", "readout"])
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.play(bus="flux", waveform=drag_pair)
         qp.sync()
     return qp
+
 
 @pytest.fixture(name="dynamic_wait_three_buses_static_static")
 def fixture_dynamic_wait_three_buses_static_static() -> QProgram:
@@ -793,12 +818,13 @@ def fixture_dynamic_wait_three_buses_static_static() -> QProgram:
         qp.wait(bus="drive", duration=duration)
         qp.sync()
         qp.play(bus="drive", waveform=drag_pair)
-        qp.sync(["drive","readout"])
+        qp.sync(["drive", "readout"])
         qp.wait(bus="drive", duration=10)
         qp.sync()
         qp.play(bus="flux", waveform=drag_pair)
         qp.sync()
     return qp
+
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -814,9 +840,7 @@ class TestQBloxCompiler:
     def test_qdac_bus_ignored(self, run_qdac_buses: QProgram):
 
         compiler = QbloxCompiler()
-        output = compiler.compile(
-            qprogram=run_qdac_buses, bus_mapping={"drive": "drive_q0"}, qblox_buses=["drive_q0"]
-        )
+        output = compiler.compile(qprogram=run_qdac_buses, bus_mapping={"drive": "drive_q0"}, qblox_buses=["drive_q0"])
 
         assert len(output.sequences) == 1
         assert "drive_q0" in output.sequences
@@ -918,31 +942,32 @@ class TestQBloxCompiler:
             main:
                             set_freq         4000000        
                             set_freq         4000000        
-                            upd_param        4              
                             wait_trigger     15, 4          
                             wait_sync        4              
-                            set_freq         4000000        
-                            set_freq         4000000        
                             upd_param        4              
+                            set_freq         4000000        
+                            set_freq         4000000        
                             wait_trigger     1, 4           
-                            wait             988            
                             wait_sync        4              
-                            set_freq         4000000        
-                            set_freq         4000000        
                             upd_param        4              
+                            wait             996            
+                            set_freq         4000000        
+                            set_freq         4000000        
                             wait_trigger     1, 4           
+                            wait_sync        4              
+                            upd_param        4              
                             wait             65532          
-                            wait             4456           
-                            wait_sync        4              
+                            wait             4464           
                             wait_trigger     1, 4           
                             wait_sync        4              
                             wait_trigger     1, 4           
+                            wait_sync        4              
                             wait             65532          
-                            wait             4460           
-                            wait_sync        4              
+                            wait             4468           
                             set_mrk          0              
                             upd_param        4              
                             stop                            
+
         """
 
         readout_str = """
@@ -965,7 +990,7 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
-        
+
     def test_wait_trigger_single_bus(self, wait_trigger_single_bus: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=wait_trigger_single_bus, ext_trigger=True)
@@ -1134,9 +1159,7 @@ class TestQBloxCompiler:
             in caplog.text
         )
 
-    def test_set_offset_with_loop(
-        self, offset_loop: QProgram
-    ):
+    def test_set_offset_with_loop(self, offset_loop: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=offset_loop)
 
@@ -2382,11 +2405,10 @@ set_freq         R5
         with pytest.raises(ValueError, match="Acquisition index 32 exceeds maximum of 31."):
             _ = compiler.compile(error_acquisition_index)
 
-
     def test_acquire_single_bin_different_nested_level(self, single_bin_different_depth_qp: QProgram):
         "Check that having single binned acquisitions at different nested level resets the bin index counter to 0"
         compiler = QbloxCompiler()
-        sequences,_ = compiler.compile(single_bin_different_depth_qp)
+        sequences, _ = compiler.compile(single_bin_different_depth_qp)
         readout_str = """ 
         setup:
                 wait_sync        4              
@@ -2411,7 +2433,6 @@ set_freq         R5
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    
     def test_bus_mapping_and_acquire(self, bus_mappping_acquire):
         """Test bus mapping and acquisition together"""
         compiler = QbloxCompiler()
@@ -2438,7 +2459,10 @@ set_freq         R5
                 stop"""
 
         assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
-        assert acquisition_dict == {'Acquisition 0': {'num_bins': 2, 'index': 0}, 'Acquisition 1': {'num_bins': 1, 'index': 1}}
+        assert acquisition_dict == {
+            "Acquisition 0": {"num_bins": 2, "index": 0},
+            "Acquisition 1": {"num_bins": 1, "index": 1},
+        }
 
     def test_measure_reset(self, measure_reset_program: QProgram):
         compiler = QbloxCompiler()
@@ -2483,7 +2507,7 @@ set_freq         R5
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
-        
+
     def test_dynamic_sync(self, dynamic_sync_delay: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=dynamic_sync_delay)
@@ -2562,7 +2586,7 @@ set_freq         R5
                             jge              R4, 65532, @long_wait_sync_0
                             jmp              @dynamic_sync_0
         """
-        
+
         readout_str = """
             setup:
                             wait_sync        4              
@@ -2782,7 +2806,6 @@ set_freq         R5
         assert is_q1asm_equal(sequences["readout"], readout_str)
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-
     def test_dynamic_sync_variable_expression_difference(self, dynamic_sync_variable_expression_difference: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=dynamic_sync_variable_expression_difference)
@@ -2995,7 +3018,6 @@ set_freq         R5
         """
         assert is_q1asm_equal(sequences["readout"], readout_str)
         assert is_q1asm_equal(sequences["drive"], drive_str)
-
 
     def test_dynamic_sync_variable_expression_sum(self, dynamic_sync_variable_expression_sum: QProgram):
         compiler = QbloxCompiler()
@@ -3520,7 +3542,7 @@ set_freq         R5
                                 jge              R7, 65532, @long_wait_sync_1
                                 jmp              @dynamic_sync_1"""
 
-        readout_str="""setup:
+        readout_str = """setup:
                 wait_sync        4              
                 set_mrk          0              
                 upd_param        4              
@@ -3644,7 +3666,7 @@ set_freq         R5
                                 move             R7, R9         
                                 jmp              @after_other_max_duration_1"""
 
-        flux_str="""setup:
+        flux_str = """setup:
                 wait_sync        4              
                 set_mrk          0              
                 upd_param        4              
@@ -3770,7 +3792,6 @@ set_freq         R5
         assert is_q1asm_equal(sequences.sequences["readout"], readout_str)
         assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
 
-
     def test_dynamic_wait_three_buses_dynamic_static(self, dynamic_wait_three_buses_dynamic_static):
         compiler = QbloxCompiler()
         sequences = compiler.compile(dynamic_wait_three_buses_dynamic_static)
@@ -3894,7 +3915,7 @@ other_max_duration_1:
 
                 move             R2, R4         
                 jmp              @after_other_max_duration_1"""
-        
+
         assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
 
     def test_dynamic_wait_three_buses_static_static(self, dynamic_wait_three_buses_static_static):
@@ -3968,16 +3989,19 @@ other_max_duration_0:
 
                 move             R2, R4         
                 jmp              @after_other_max_duration_0"""
-        
+
         assert is_q1asm_equal(sequences.sequences["flux"], flux_str)
 
-    def test_measure_reset_calibration_and_mapping(self, measure_reset_calibrated_bus_mapping: QProgram, calibration_reset: Calibration):
+    def test_measure_reset_calibration_and_mapping(
+        self, measure_reset_calibrated_bus_mapping: QProgram, calibration_reset: Calibration
+    ):
         compiler = QbloxCompiler()
 
         bus_mapping = {"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"}
 
-
-        sequences, _ = compiler.compile(qprogram=measure_reset_calibrated_bus_mapping, bus_mapping=bus_mapping, calibration=calibration_reset)
+        sequences, _ = compiler.compile(
+            qprogram=measure_reset_calibrated_bus_mapping, bus_mapping=bus_mapping, calibration=calibration_reset
+        )
 
         assert len(sequences) == 2
         assert "drive_q0_bus" in sequences
@@ -4017,4 +4041,3 @@ other_max_duration_0:
         print(sequences["readout_q0_bus"]._program)
         assert is_q1asm_equal(sequences["drive_q0_bus"], drive_str)
         assert is_q1asm_equal(sequences["readout_q0_bus"], readout_str)
-
