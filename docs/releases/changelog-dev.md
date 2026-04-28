@@ -24,6 +24,7 @@
 
   bias = xtalk.flux_to_bias({"qubit_flux_0": 0.1, "qubit_flux_3": 0.2, "coupler_flux_2": 0.05})
 ```
+[#1102](https://github.com/qilimanjaro-tech/qililab/pull/1102)
 
 - Implemented QBlox and QDAC-II automatic crosstalk compensation for `Qprogram`. The compiler automatically detects if there is a crosstalk matrix inside platform and implements the crosstalk for any bus inside the `Crosstalk` class. To do so, either use `platform.set_crosstalk(crosstalk)` or define a crosstalk inside `calibration` and use it through `execute_qprogram(..., calibration)`.
 With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced is a trigger that activates the crosstalk, the user can deactivate crosstalk compensation by setting this flag as False. The flag is True by default but if no crosstalk has been introduce through `platform.set_crosstalk(crosstalk)` or `execute_qprogram(..., calibration)` no crosstalk will be applied as none exists.
