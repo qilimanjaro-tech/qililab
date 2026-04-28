@@ -99,7 +99,7 @@ class TestNonLinearCrosstalkMatrixInit:
         assert xtalk.non_lin_amp_matrix["flux_0"]["flux_2"] is None
         assert xtalk.beta_c_matrix["flux_0"]["flux_1"] == -0.23
         assert xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] == -0.02
-        
+
     def test_raises_on_missing_bus_i_in_flux(self, nonlinear_crosstalk_matrix):
         """Covers bus_i has nonlinear params set but is missing from the flux dict."""
         with pytest.raises(ValueError, match="Bus 'flux_0' has nonlinear parameters set"):
@@ -191,10 +191,7 @@ class TestSinBetaScaled:
         amp = -0.021
         phi = flux * 2 * np.pi
 
-        expected = 2 * amp * sum(
-            (jv(k, k * beta) / (k * beta)) * np.sin(k * phi)
-            for k in range(1, 51)
-        )
+        expected = 2 * amp * sum((jv(k, k * beta) / (k * beta)) * np.sin(k * phi) for k in range(1, 51))
         result = xtalk.sin_beta_scaled(flux=flux, beta=beta, amp=amp)
         assert result == pytest.approx(expected, rel=1e-6)
 
@@ -237,12 +234,8 @@ class TestGetNonLinearFluxTerms:
     def test_correction_matches_manual_calculation(self, nonlinear_crosstalk_matrix, flux_dict):
         corrections = nonlinear_crosstalk_matrix.get_non_linear_flux_terms(flux_dict)
 
-        expected_flux_0 = nonlinear_crosstalk_matrix.sin_beta_scaled(
-            flux=flux_dict["flux_2"], beta=-0.234, amp=-0.021
-        )
-        expected_flux_1 = nonlinear_crosstalk_matrix.sin_beta_scaled(
-            flux=flux_dict["flux_2"], beta=-0.253, amp=-0.021
-        )
+        expected_flux_0 = nonlinear_crosstalk_matrix.sin_beta_scaled(flux=flux_dict["flux_2"], beta=-0.234, amp=-0.021)
+        expected_flux_1 = nonlinear_crosstalk_matrix.sin_beta_scaled(flux=flux_dict["flux_2"], beta=-0.253, amp=-0.021)
         assert corrections["flux_0"] == pytest.approx(float(expected_flux_0), rel=1e-6)
         assert corrections["flux_1"] == pytest.approx(float(expected_flux_1), rel=1e-6)
 
@@ -286,10 +279,7 @@ class TestFluxToBias:
         bias_linear = linear_xtalk.flux_to_bias(flux_dict)
         bias_nonlinear = nonlinear_crosstalk_matrix.flux_to_bias(flux_dict)
 
-        assert any(
-            bias_nonlinear[bus] != pytest.approx(bias_linear[bus], rel=1e-6)
-            for bus in flux_dict
-        )
+        assert any(bias_nonlinear[bus] != pytest.approx(bias_linear[bus], rel=1e-6) for bus in flux_dict)
 
     def test_flux_to_bias_with_offsets(self, nonlinear_crosstalk_matrix, flux_dict):
         nonlinear_crosstalk_matrix.set_offset({"flux_0": 0.05, "flux_1": -0.05, "flux_2": 0.0})
@@ -298,10 +288,7 @@ class TestFluxToBias:
         nonlinear_crosstalk_matrix.set_offset({"flux_0": 0.0, "flux_1": 0.0, "flux_2": 0.0})
         bias_no_offset = nonlinear_crosstalk_matrix.flux_to_bias(flux_dict)
 
-        assert any(
-            bias_with_offset[bus] != pytest.approx(bias_no_offset[bus], rel=1e-6)
-            for bus in flux_dict
-        )
+        assert any(bias_with_offset[bus] != pytest.approx(bias_no_offset[bus], rel=1e-6) for bus in flux_dict)
 
 
 class TestReprAndInheritedMethods:

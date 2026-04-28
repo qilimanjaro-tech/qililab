@@ -152,13 +152,15 @@ class CrosstalkMatrix:
         inverse = self.inverse()
         inverse.flux_offsets = self.flux_offsets
 
-        bias_array = np.array([
-            sum(
-                (flux[bus_2] - inverse.flux_offsets[bus_2]) * inverse.matrix[bus_1][bus_2]
-                for bus_2 in inverse.matrix[bus_1].keys()
-            )
-            for bus_1 in sorted_buses
-        ])
+        bias_array = np.array(
+            [
+                sum(
+                    (flux[bus_2] - inverse.flux_offsets[bus_2]) * inverse.matrix[bus_1][bus_2]
+                    for bus_2 in inverse.matrix[bus_1].keys()
+                )
+                for bus_1 in sorted_buses
+            ]
+        )
 
         return dict(zip(sorted_buses, bias_array))
 
@@ -286,9 +288,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
                 raise ValueError(f"Bus '{bus}' not present in the crosstalk matrix.")
 
         if beta_c == 0:
-            raise ValueError(
-                "beta_c cannot be zero: it appears as a divisor in the Bessel expansion "
-            )
+            raise ValueError("beta_c cannot be zero: it appears as a divisor in the Bessel expansion ")
 
         if bus_i not in self.beta_c_matrix:
             self.beta_c_matrix[bus_i] = {}
