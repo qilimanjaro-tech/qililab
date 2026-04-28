@@ -327,7 +327,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         for k in range(1, k_max + 1):
             result += (jv(k, k * beta) / (k * beta)) * np.sin(k * phi)
         return 2 * result * amp
-
+    
     def get_non_linear_flux_terms(
         self,
         flux: dict[str, float],
@@ -339,6 +339,9 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
         Returns:
             dict[str, float]: Nonlinear correction terms keyed by bus name.
+
+        Raises:
+            ValueError: If a bus with nonlinear params set is not found in the provided flux dict.
         """
         corrections: dict[str, float] = dict.fromkeys(flux, 0.0)
 
@@ -346,6 +349,12 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             for bus_j, beta in row.items():
                 if beta is None:
                     continue
+                if bus_i not in flux:
+                    raise ValueError(
+                        f"Bus '{bus_i}' has nonlinear parameters set but was not found "
+                        f"in the provided flux dict. All buses with nonlinear corrections "
+                        f"must be included."
+                    )
                 amp = self.non_lin_amp_matrix.get(bus_i, {}).get(bus_j)
                 if amp is None:
                     raise ValueError(f"beta_c is set for ({bus_i}, {bus_j}) but non_lin_amp is None.")

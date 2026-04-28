@@ -99,6 +99,11 @@ class TestNonLinearCrosstalkMatrixInit:
         assert xtalk.non_lin_amp_matrix["flux_0"]["flux_2"] is None
         assert xtalk.beta_c_matrix["flux_0"]["flux_1"] == -0.23
         assert xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] == -0.02
+        
+    def test_raises_on_missing_bus_i_in_flux(self, nonlinear_crosstalk_matrix):
+        """Covers bus_i has nonlinear params set but is missing from the flux dict."""
+        with pytest.raises(ValueError, match="Bus 'flux_0' has nonlinear parameters set"):
+            nonlinear_crosstalk_matrix.get_non_linear_flux_terms({"flux_1": 0.2, "flux_2": 0.05})
 
 
 class TestFromLinear:
