@@ -273,15 +273,22 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         Args:
             bus_i (str): The bus that receives the nonlinear flux correction.
             bus_j (str): The bus whose flux drives the nonlinear term.
-            beta_c (float): Bessel modulation parameter beta_c.
+            beta_c (float): Bessel modulation parameter beta_c. Must be non-zero.
             amplitude (float): Amplitude of the nonlinear correction in flux units.
 
         Raises:
             ValueError: If either bus is not present in the matrix.
+            ValueError: If beta_c is zero, which would cause a division by zero in the
+                Bessel expansion.
         """
         for bus in (bus_i, bus_j):
             if bus not in self.matrix:
                 raise ValueError(f"Bus '{bus}' not present in the crosstalk matrix.")
+
+        if beta_c == 0:
+            raise ValueError(
+                "beta_c cannot be zero: it appears as a divisor in the Bessel expansion "
+            )
 
         if bus_i not in self.beta_c_matrix:
             self.beta_c_matrix[bus_i] = {}
