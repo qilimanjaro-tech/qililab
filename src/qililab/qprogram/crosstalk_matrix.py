@@ -138,6 +138,29 @@ class CrosstalkMatrix:
         """
         for bus in resistances:
             self.resistances[bus] = resistances[bus]
+            
+    def flux_to_bias(self, flux: dict[str, float]) -> dict[str, float]:
+        """Converts target flux values to hardware bias values using linear inversion.
+
+        Args:
+            flux (dict[str, float]): Target flux values keyed by bus name.
+
+        Returns:
+            dict[str, float]: Hardware bias values keyed by bus name.
+        """
+        sorted_buses = sorted(self.matrix.keys())
+        inverse = self.inverse()
+        inverse.flux_offsets = self.flux_offsets
+
+        bias_array = np.array([
+            sum(
+                (flux[bus_2] - inverse.flux_offsets[bus_2]) * inverse.matrix[bus_1][bus_2]
+                for bus_2 in inverse.matrix[bus_1].keys()
+            )
+            for bus_1 in sorted_buses
+        ])
+
+        return dict(zip(sorted_buses, bias_array))
 
     @classmethod
     def from_array(cls, buses: list[str], matrix_array: np.ndarray) -> "CrosstalkMatrix":
@@ -414,21 +437,24 @@ class FluxVector:
         self.crosstalk_inverse = crosstalk.inverse()
         self.crosstalk_inverse.flux_offsets = self.crosstalk.flux_offsets
 
-        for bus in self.crosstalk_inverse.matrix.keys():
+        for bus in self.crosstalk.matrix.keys():
             if bus not in self.flux_vector:
                 self.flux_vector[bus] = 0
-
             if isinstance(self.flux_vector[bus], list):
                 self.flux_vector[bus] = np.array(self.flux_vector[bus])
 
-        self.bias_vector = self.flux_vector.copy()
-
-        for bus_1 in self.crosstalk_inverse.matrix.keys():
-            self.bias_vector[bus_1] = sum(
-                (self.flux_vector[bus_2] - self.crosstalk_inverse.flux_offsets[bus_2])  # type: ignore
-                * self.crosstalk_inverse.matrix[bus_1][bus_2]
-                for bus_2 in self.crosstalk_inverse.matrix[bus_1].keys()
-            )
+        if all(np.ndim(self.flux_vector[bus]) == 0 for bus in self.crosstalk.matrix.keys()):
+            flux_dict = {bus: float(self.flux_vector[bus]) for bus in self.crosstalk.matrix.keys()}
+            self.bias_vector = self.flux_vector.copy()
+            self.bias_vector.update(crosstalk.flux_to_bias(flux_dict))
+        else:
+            self.bias_vector = self.flux_vector.copy()
+            for bus_1 in self.crosstalk_inverse.matrix.keys():
+                self.bias_vector[bus_1] = sum(
+                    (self.flux_vector[bus_2] - self.crosstalk_inverse.flux_offsets[bus_2])
+                    * self.crosstalk_inverse.matrix[bus_1][bus_2]
+                    for bus_2 in self.crosstalk_inverse.matrix[bus_1].keys()
+                )
 
         return self.bias_vector
 

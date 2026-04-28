@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector, NonLinearCrosstalkMatrix
 
 
 @pytest.fixture(name="crosstalk_array_buses")
@@ -98,6 +98,45 @@ class TestFluxVector:
         assert flux_bus_list["flux_0"].bias_vector == pytest.approx({'flux_0': 13 / 30, 'flux_1': 0.2, 'flux_2': -73 / 90})
         assert flux_bus_list["flux_1"].flux_vector == pytest.approx({'flux_0': 0, 'flux_1': 0.3, 'flux_2': 0.2})
         assert flux_bus_list["flux_1"].bias_vector == pytest.approx({'flux_0': -7 / 45, 'flux_1': 0.2, 'flux_2': 52  / 135})
+
+    def test_set_crosstalk_applies_nonlinear_corrections(self, crosstalk_matrix):
+        """Regression test for the bug reported: FluxVector.set_crosstalk must apply
+        nonlinear corrections when given a NonLinearCrosstalkMatrix, not silently
+        fall back to the linear path."""
+        nonlinear = NonLinearCrosstalkMatrix.from_linear(crosstalk_matrix)
+        nonlinear.set_non_linear_params("flux_0", "flux_2", beta_c=-0.234, amplitude=-0.021)
+        nonlinear.set_non_linear_params("flux_1", "flux_2", beta_c=-0.253, amplitude=-0.021)
+
+        flux_dict = {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05}
+
+        fv_linear = FluxVector.from_dict(flux_dict.copy())
+        fv_linear.set_crosstalk(NonLinearCrosstalkMatrix.from_linear(crosstalk_matrix))
+
+        fv_nonlinear = FluxVector.from_dict(flux_dict.copy())
+        fv_nonlinear.set_crosstalk(nonlinear)
+
+        # if nonlinear corrections were silently ignored the two bias vectors
+        # would be equal — the original bug
+        assert any(
+            fv_nonlinear.bias_vector[bus] != pytest.approx(fv_linear.bias_vector[bus], rel=1e-6)
+            for bus in flux_dict
+        )
+
+    def test_set_crosstalk_nonlinear_matches_flux_to_bias(self, crosstalk_matrix):
+        """FluxVector.set_crosstalk with NonLinearCrosstalkMatrix must produce
+        the same result as calling flux_to_bias directly."""
+        nonlinear = NonLinearCrosstalkMatrix.from_linear(crosstalk_matrix)
+        nonlinear.set_non_linear_params("flux_0", "flux_2", beta_c=-0.234, amplitude=-0.021)
+        nonlinear.set_non_linear_params("flux_1", "flux_2", beta_c=-0.253, amplitude=-0.021)
+
+        flux_dict = {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05}
+
+        fv = FluxVector.from_dict(flux_dict.copy())
+        fv.set_crosstalk(nonlinear)
+
+        expected = nonlinear.flux_to_bias(flux_dict)
+        for bus in flux_dict:
+            assert fv.bias_vector[bus] == pytest.approx(expected[bus], rel=1e-6)
 
 
 class TestCrosstalkMatrix:
@@ -257,3 +296,16 @@ bus2          0.7     -0.5"""
         assert "bus2" in crosstalk_matrix.matrix["bus3"]
         assert crosstalk_matrix["bus3"]["bus1"] == 1.0
         assert crosstalk_matrix["bus3"]["bus2"] == 1.0
+
+    def test_flux_to_bias(self, crosstalk_matrix):
+        """Test CrosstalkMatrix.flux_to_bias matches manual linear inversion."""
+        flux_dict = {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05}
+        bias = crosstalk_matrix.flux_to_bias(flux_dict)
+
+        sorted_buses = sorted(flux_dict.keys())
+        flux_arr = np.array([flux_dict[b] for b in sorted_buses])
+        offsets = np.array([crosstalk_matrix.flux_offsets.get(b, 0.0) for b in sorted_buses])
+        expected = np.linalg.inv(crosstalk_matrix.to_array()) @ (flux_arr - offsets)
+
+        for i, bus in enumerate(sorted_buses):
+            assert bias[bus] == pytest.approx(expected[i], rel=1e-6)

@@ -70,6 +70,36 @@ class TestNonLinearCrosstalkMatrixInit:
         assert xtalk.beta_c_matrix["flux_0"]["flux_1"] == -0.23
         assert xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] == -0.02
 
+    def test_setitem_adds_new_bus_to_existing_nonlinear_entries(self):
+        """Covers the 'bus not in beta_c_matrix[key]' branch in __setitem__."""
+        xtalk = NonLinearCrosstalkMatrix()
+        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2}
+
+        # Now add a new bus to the same key — should initialise new entry to None
+        # without touching the existing ones
+        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2, "flux_2": 0.3}
+
+        assert xtalk.beta_c_matrix["flux_0"]["flux_2"] is None
+        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_2"] is None
+        # existing entries untouched
+        assert xtalk.beta_c_matrix["flux_0"]["flux_0"] is None
+        assert xtalk.beta_c_matrix["flux_0"]["flux_1"] is None
+
+    def test_setitem_adds_new_bus_preserves_existing_nonlinear_params(self):
+        """Covers the 'bus not in beta_c_matrix[key]' branch when existing params are set."""
+        xtalk = NonLinearCrosstalkMatrix()
+        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2}
+        xtalk.beta_c_matrix["flux_0"]["flux_1"] = -0.23
+        xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] = -0.02
+
+        # Add a new bus — should only initialise the new one, not overwrite existing
+        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2, "flux_2": 0.3}
+
+        assert xtalk.beta_c_matrix["flux_0"]["flux_2"] is None
+        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_2"] is None
+        assert xtalk.beta_c_matrix["flux_0"]["flux_1"] == -0.23
+        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] == -0.02
+
 
 class TestFromLinear:
     """Tests for the from_linear classmethod."""
@@ -122,36 +152,6 @@ class TestSetNonLinearParams:
         nonlinear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_2", beta_c=-0.999, amplitude=-0.999)
         assert nonlinear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_2"] == pytest.approx(-0.999)
         assert nonlinear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_2"] == pytest.approx(-0.999)
-    
-    def test_setitem_adds_new_bus_to_existing_nonlinear_entries(self):
-        """Covers the 'bus not in beta_c_matrix[key]' branch in __setitem__."""
-        xtalk = NonLinearCrosstalkMatrix()
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2}
-
-        # Now add a new bus to the same key — should initialise new entry to None
-        # without touching the existing ones
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2, "flux_2": 0.3}
-
-        assert xtalk.beta_c_matrix["flux_0"]["flux_2"] is None
-        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_2"] is None
-        # existing entries untouched
-        assert xtalk.beta_c_matrix["flux_0"]["flux_0"] is None
-        assert xtalk.beta_c_matrix["flux_0"]["flux_1"] is None
-
-    def test_setitem_adds_new_bus_preserves_existing_nonlinear_params(self):
-        """Covers the 'bus not in beta_c_matrix[key]' branch when existing params are set."""
-        xtalk = NonLinearCrosstalkMatrix()
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2}
-        xtalk.beta_c_matrix["flux_0"]["flux_1"] = -0.23
-        xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] = -0.02
-
-        # Add a new bus — should only initialise the new one, not overwrite existing
-        xtalk["flux_0"] = {"flux_0": 1.0, "flux_1": 0.2, "flux_2": 0.3}
-
-        assert xtalk.beta_c_matrix["flux_0"]["flux_2"] is None
-        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_2"] is None
-        assert xtalk.beta_c_matrix["flux_0"]["flux_1"] == -0.23
-        assert xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] == -0.02
 
     def test_set_non_linear_params_creates_missing_bus_i_entry(self):
         """Covers the 'bus_i not in beta_c_matrix' branch in set_non_linear_params."""
