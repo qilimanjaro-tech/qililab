@@ -138,7 +138,7 @@ class CrosstalkMatrix:
         """
         for bus in resistances:
             self.resistances[bus] = resistances[bus]
-            
+
     def flux_to_bias(self, flux: dict[str, float]) -> dict[str, float]:
         """Converts target flux values to hardware bias values using linear inversion.
 
@@ -327,7 +327,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         for k in range(1, k_max + 1):
             result += (jv(k, k * beta) / (k * beta)) * np.sin(k * phi)
         return 2 * result * amp
-    
+
     def get_non_linear_flux_terms(
         self,
         flux: dict[str, float],
