@@ -103,12 +103,12 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
         qp.wait_trigger(bus="drive", duration=1_000, port=1)
       ---
       drive sequencer:
-        set_freq         4000000
-        set_freq         4000000
-        upd_param        4
-        wait_trigger     1, 4
-        wait             988
-        wait_sync        4
+        set_freq         4000000        
+        set_freq         4000000        
+        wait_trigger     1, 4           
+        wait_sync        4              
+        upd_param        4              
+        wait             996            
 
       readout sequencer:
         set_freq         4000000        
