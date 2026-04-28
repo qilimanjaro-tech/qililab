@@ -471,7 +471,7 @@ class FluxVector:
             self.bias_vector = self.flux_vector.copy()
             for bus_1 in self.crosstalk_inverse.matrix.keys():
                 self.bias_vector[bus_1] = sum(
-                    (self.flux_vector[bus_2] - self.crosstalk_inverse.flux_offsets[bus_2])
+                    (self.flux_vector[bus_2] - self.crosstalk_inverse.flux_offsets[bus_2])  # type: ignore[operator]
                     * self.crosstalk_inverse.matrix[bus_1][bus_2]
                     for bus_2 in self.crosstalk_inverse.matrix[bus_1].keys()
                 )
