@@ -1073,9 +1073,6 @@ class QbloxCompiler:
         if not port:
             port = EXT_TRIGGER_ADDRESS
 
-        if isinstance(element.duration, Variable):
-            raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
-
         if not self._ext_trigger:
             raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
