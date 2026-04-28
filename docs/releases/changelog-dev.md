@@ -2,6 +2,41 @@
 
 ### New features since last release
 
+
+- Extended `VariableExpression` capabilities (Qblox backend only)
+  The capabilities of `VariableExpression` have been extended, and remain exclusive to the Qblox backend. 
+
+  Previously, this type of expression was only supported in the Time Domain. It is now also available in the Voltage Domain, where it can be used to modify values in `qprogram` via the offset or the gain.
+  The Time Domain behavior is unchanged. The updates described below therefore apply only to Voltage Domain operations.
+
+  A combination of variables is now possible (Voltage Domain only), as shown below.
+    ```
+    qp = ql.Qprogram()
+    gain1 = qp.variable("gain1", ql.Domain.Voltage)
+    gain2 = qp.variable("gain2", ql.Domain.Voltage)
+    qp.set_gain("bus", gain1 + gain2)
+    
+    ```
+    These expressions are subject to some restrictions. A `NotImplementedError` is raised if any of these rules are violated:
+    - Expression chaining is not supported: at most two components (a variable and a constant, or two variables) are allowed. For example, the following code will raise a `NotImplementedError`:
+        ```
+      qp = ql.Qprogram(
+      gain1 = qp.variable("gain1", ql.Domain.Voltage)
+      qp.set_gain("bus", 10 + gain1 + 30)
+      )
+      ```
+    - Only addition and subtraction are supported. Any other type of operation will raise a `TypeError`.
+    - To facilitate the `Q1ASM` implementation, some expressions are internally reorganized in the `Variable` class without changing their semantics:
+      ```
+      gain + (-10) -> gain - abs(10)
+      - 10 + gain  -> gain - abs(10)
+      gain - (-10) -> gain + abs(10)
+      - gain       -> 0 - gain
+
+      ```
+  [#1057](https://github.com/qilimanjaro-tech/qililab/pull/1057)
+
+
 - Implemented QBlox and QDAC-II automatic crosstalk compensation for `Qprogram`. The compiler automatically detects if there is a crosstalk matrix inside platform and implements the crosstalk for any bus inside the `Crosstalk` class. To do so, either use `platform.set_crosstalk(crosstalk)` or define a crosstalk inside `calibration` and use it through `execute_qprogram(..., calibration)`.
 With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced is a trigger that activates the crosstalk, the user can deactivate crosstalk compensation by setting this flag as False. The flag is True by default but if no crosstalk has been introduce through `platform.set_crosstalk(crosstalk)` or `execute_qprogram(..., calibration)` no crosstalk will be applied as none exists.
 
