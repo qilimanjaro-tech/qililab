@@ -460,7 +460,11 @@ class FluxVector:
                 self.flux_vector[bus] = np.array(self.flux_vector[bus])
 
         if all(np.ndim(self.flux_vector[bus]) == 0 for bus in self.crosstalk.matrix.keys()):
-            flux_dict = {bus: float(self.flux_vector[bus]) for bus in self.crosstalk.matrix.keys()}
+            flux_dict = {
+                bus: float(self.flux_vector[bus])  # type: ignore[arg-type]
+                for bus in self.crosstalk.matrix.keys()
+                if np.ndim(self.flux_vector[bus]) == 0
+            }
             self.bias_vector = self.flux_vector.copy()
             self.bias_vector.update(crosstalk.flux_to_bias(flux_dict))
         else:
