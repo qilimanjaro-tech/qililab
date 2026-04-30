@@ -173,6 +173,10 @@ class TestSetNonLinearParams:
 
         assert xtalk.beta_c_matrix["flux_0"]["flux_1"] == pytest.approx(-0.234)
         assert xtalk.non_lin_amp_matrix["flux_0"]["flux_1"] == pytest.approx(-0.021)
+        
+    def test_set_non_linear_params_raises_on_zero_beta_c(self, nonlinear_crosstalk_matrix):
+        with pytest.raises(ValueError, match="beta_c cannot be zero"):
+            nonlinear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_2", beta_c=0, amplitude=-0.021)
 
 
 class TestSinBetaScaled:
