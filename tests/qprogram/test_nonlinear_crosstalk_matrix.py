@@ -245,7 +245,7 @@ class TestGetNonLinearFluxTerms:
         # Intentionally leave non_lin_amp_matrix["flux_0"]["flux_2"] as None
         with pytest.raises(ValueError, match="non_lin_amp is None"):
             xtalk.get_non_linear_flux_terms({"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05})
-
+            
     def test_raises_on_missing_bus_in_flux(self, nonlinear_crosstalk_matrix):
         with pytest.raises(ValueError, match="Bus 'flux_2' not found"):
             nonlinear_crosstalk_matrix.get_non_linear_flux_terms({"flux_0": 0.1, "flux_1": 0.2})
@@ -289,6 +289,23 @@ class TestFluxToBias:
         bias_no_offset = nonlinear_crosstalk_matrix.flux_to_bias(flux_dict)
 
         assert any(bias_with_offset[bus] != pytest.approx(bias_no_offset[bus], rel=1e-6) for bus in flux_dict)
+        
+    def test_flux_to_bias_with_array(self, nonlinear_crosstalk_matrix):
+        """NonLinearCrosstalkMatrix.flux_to_bias should apply nonlinear corrections
+        element-wise when flux values are numpy arrays."""
+        flux_dict = {
+            "flux_0": np.array([0.1, 0.2, 0.3]),
+            "flux_1": np.array([0.2, 0.3, 0.4]),
+            "flux_2": np.array([0.05, 0.1, 0.15]),
+        }
+        bias = nonlinear_crosstalk_matrix.flux_to_bias(flux_dict)
+
+        # each point must match the scalar result
+        for i in range(3):
+            scalar_flux = {bus: float(flux_dict[bus][i]) for bus in flux_dict}
+            scalar_bias = nonlinear_crosstalk_matrix.flux_to_bias(scalar_flux)
+            for bus in flux_dict:
+                assert float(bias[bus][i]) == pytest.approx(float(scalar_bias[bus]), rel=1e-6)
 
 
 class TestReprAndInheritedMethods:

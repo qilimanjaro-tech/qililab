@@ -144,6 +144,46 @@ class TestFluxVector:
         expected = nonlinear.flux_to_bias(flux_dict)
         for bus in flux_dict:
             assert fv.bias_vector[bus] == pytest.approx(expected[bus], rel=1e-6)
+            
+    def test_set_crosstalk_with_array_flux_linear(self, crosstalk_matrix):
+        """set_crosstalk with array flux values should apply linear corrections element-wise."""
+        flux_dict = {
+            "flux_0": np.array([0.1, 0.2, 0.3]),
+            "flux_1": np.array([0.2, 0.3, 0.4]),
+            "flux_2": np.array([0.05, 0.1, 0.15]),
+        }
+        fv = FluxVector.from_dict(flux_dict.copy())
+        fv.set_crosstalk(crosstalk_matrix)
+
+        # result should be arrays of the same length
+        for bus in flux_dict:
+            assert isinstance(fv.bias_vector[bus], np.ndarray)
+            assert len(fv.bias_vector[bus]) == 3
+            
+    def test_set_crosstalk_with_array_flux_nonlinear(self, crosstalk_matrix):
+        """set_crosstalk with array flux values and NonLinearCrosstalkMatrix must
+        apply nonlinear corrections element-wise, not fall back to linear path."""
+        nonlinear = NonLinearCrosstalkMatrix.from_linear(crosstalk_matrix)
+        nonlinear.set_non_linear_params("flux_0", "flux_2", beta_c=-0.234, amplitude=-0.021)
+        nonlinear.set_non_linear_params("flux_1", "flux_2", beta_c=-0.253, amplitude=-0.021)
+
+        flux_dict = {
+            "flux_0": np.array([0.1, 0.2, 0.3]),
+            "flux_1": np.array([0.2, 0.3, 0.4]),
+            "flux_2": np.array([0.05, 0.1, 0.15]),
+        }
+
+        fv_linear = FluxVector.from_dict({k: v.copy() for k, v in flux_dict.items()})
+        fv_linear.set_crosstalk(NonLinearCrosstalkMatrix.from_linear(crosstalk_matrix))
+
+        fv_nonlinear = FluxVector.from_dict({k: v.copy() for k, v in flux_dict.items()})
+        fv_nonlinear.set_crosstalk(nonlinear)
+
+        # nonlinear corrections must differ from linear for at least one bus and one point
+        assert any(
+            not np.allclose(fv_nonlinear.bias_vector[bus], fv_linear.bias_vector[bus])
+            for bus in flux_dict
+        )
 
 
 class TestCrosstalkMatrix:
@@ -316,3 +356,19 @@ bus2          0.7     -0.5"""
 
         for i, bus in enumerate(sorted_buses):
             assert bias[bus] == pytest.approx(expected[i], rel=1e-6)
+
+    def test_flux_to_bias_with_array(self, crosstalk_matrix):
+        """flux_to_bias should work element-wise when flux values are numpy arrays."""
+        flux_dict = {
+            "flux_0": np.array([0.1, 0.2, 0.3]),
+            "flux_1": np.array([0.2, 0.3, 0.4]),
+            "flux_2": np.array([0.05, 0.1, 0.15]),
+        }
+        bias = crosstalk_matrix.flux_to_bias(flux_dict)
+
+        # check each point matches the scalar result
+        for i in range(3):
+            scalar_flux = {bus: float(flux_dict[bus][i]) for bus in flux_dict}
+            scalar_bias = crosstalk_matrix.flux_to_bias(scalar_flux)
+            for bus in flux_dict:
+                assert float(bias[bus][i]) == pytest.approx(scalar_bias[bus], rel=1e-6)
