@@ -193,6 +193,9 @@ class BusCompilationInfo:
         # Used in instances where there are no loop on the bin
         self.single_bin_counter: int = 0
 
+        # Bin index used in the move instruction
+        self.start_bin_idx: int = 0
+
 
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
@@ -1417,6 +1420,10 @@ class QbloxCompiler:
         block_index_for_add_instruction = loops[-1][0] if loops else -1
         block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
 
+        # True when the innermost active block is an average loop.
+        in_avg_block = isinstance(self._buses[element.bus].qpy_block_stack[-1], QPyProgram.Loop)
+        is_avg_multi_acquire = in_avg_block and self._buses[element.bus].counter_acquire > 1
+
         if self._buses[element.bus].count_nested_level_acquire > MAX_ACQUISITION_INDEX:
             raise ValueError(
                 f"Acquisition index {self._buses[element.bus].count_nested_level_acquire} exceeds maximum of {MAX_ACQUISITION_INDEX}."
@@ -1424,6 +1431,7 @@ class QbloxCompiler:
 
         # if it is the first acquire at this nested level, set everything up
         if self._buses[element.bus].count_nested_level_acquire != self._buses[element.bus].prev_nested_level_acquire:
+            self._buses[element.bus].start_bin_idx = 0
             self._buses[element.bus].shape_acquire = tuple(loop[1].iterations for loop in loops)
             self._buses[element.bus].num_bins_per_acquire = math.prod(loop[1].iterations for loop in loops)
 
@@ -1454,6 +1462,21 @@ class QbloxCompiler:
                         self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
                     ),
                 )
+                self._buses[element.bus].start_bin_idx += 1
+
+        elif is_avg_multi_acquire and self._buses[element.bus].num_bins_per_acquire > 1:
+            # Each sequential acquire directly inside an average block gets its own register, initialised
+            # to the start_bin_idx so that consecutive acquires write to consecutive bins.
+            # The register is never modified inside the average, it is modified in the add outside the average.
+            start_bin_idx = self._buses[element.bus].start_bin_idx
+            self._buses[element.bus].bin_register = QPyProgram.Register()
+            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                component=QPyInstructions.Move(var=start_bin_idx, register=self._buses[element.bus].bin_register),
+                bot_position=len(
+                    self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
+                ),
+            )
+            self._buses[element.bus].start_bin_idx += 1
 
         index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, element.weights)
 
@@ -1470,10 +1493,12 @@ class QbloxCompiler:
                     wait_time=integration_length,
                 )
             )
+            # Advance by N bins per step, where N is the number of acquires sharing this avg block.
+            bins_per_step = self._buses[element.bus].counter_acquire if is_avg_multi_acquire else 1
             self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
                 component=QPyInstructions.Add(
                     origin=self._buses[element.bus].bin_register,
-                    var=1,
+                    var=bins_per_step,
                     destination=self._buses[element.bus].bin_register,
                 )
             )
