@@ -12,29 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module contains all the decomposition and transpilation methods used within qililab.
+"""Qililab-side digital helpers built on top of qilisdk."""
 
-Transpilation
-~~~~~~~~~~~~~
-
-.. currentmodule:: qililab.digital
-
-.. autosummary::
-    :toctree: api
-
-    ~CircuitTranspiler
-
-"""
+from qilisdk.digital import Rmw
 
 from .circuit_to_qprogram_compiler import CircuitToQProgramCompiler
-from .circuit_transpiler import CircuitTranspiler
-from .native_gates import Rmw
+from .phase_correction_provider import build_phase_correction_provider, extract_cz_phase_corrections
 from .utils import qprogram_results_to_samples
 
 __all__ = [
     "CircuitToQProgramCompiler",
-    "CircuitTranspiler",
     "Rmw",
+    "build_phase_correction_provider",
+    "extract_cz_phase_corrections",
     "qprogram_results_to_samples",
 ]

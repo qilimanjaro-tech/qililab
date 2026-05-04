@@ -77,7 +77,7 @@ build-backend = "hatchling.build"
 prerelease = "if-necessary"
 
 [tool.uv.sources]
-qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
+qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "sdk-272-move-native-gate-related-passes-from-qililab-to-qilisdk" }
 
 [tool.ruff]
 line-length = 120

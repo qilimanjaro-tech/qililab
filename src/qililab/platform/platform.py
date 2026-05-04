@@ -27,13 +27,25 @@ from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 import numpy as np
+from qilisdk.digital.circuit_transpiler import CircuitTranspiler
+from qilisdk.digital.circuit_transpiler_passes import (
+    AddPhasesToNativeFromRZAndCZPass,
+    CancelIdentityPairsPass,
+    CanonicalBasisToNativeSetPass,
+    CustomLayoutPass,
+    DecomposeMultiControlledGatesPass,
+    DecomposeToCanonicalBasisPass,
+    FuseSingleQubitGatesPass,
+    SabreLayoutPass,
+    SabreSwapPass,
+)
 from ruamel.yaml import YAML
 
 from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.core.variables import Domain
-from qililab.digital import CircuitToQProgramCompiler, CircuitTranspiler, qprogram_results_to_samples
+from qililab.digital import CircuitToQProgramCompiler, build_phase_correction_provider, qprogram_results_to_samples
 from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import (
     QuantumMachinesCluster,
@@ -1903,13 +1915,35 @@ class Platform:
         if self.digital_compilation_settings is None:
             raise ValueError("Cannot compile Circuit without defining DigitalCompilationSettings.")
 
-        transpiler = CircuitTranspiler(self.digital_compilation_settings, qubit_mapping=qubit_mapping)
-        transpiled_circuit = transpiler.run(circuit)
+        topology = self.digital_compilation_settings.topology
+        layout_routing_passes: list = (
+            [SabreLayoutPass(topology), SabreSwapPass(topology)]
+            if qubit_mapping is None
+            else [CustomLayoutPass(topology, qubit_mapping)]
+        )
+
+        pipeline = [
+            DecomposeMultiControlledGatesPass(),
+            CancelIdentityPairsPass(),
+            DecomposeToCanonicalBasisPass(),
+            FuseSingleQubitGatesPass(),
+            *layout_routing_passes,
+            DecomposeToCanonicalBasisPass(),
+            FuseSingleQubitGatesPass(),
+            CanonicalBasisToNativeSetPass(),
+            AddPhasesToNativeFromRZAndCZPass(
+                phase_correction_provider=build_phase_correction_provider(self.digital_compilation_settings)
+            ),
+        ]
+
+        transpiler = CircuitTranspiler(pipeline)
+        result = transpiler.transpile(circuit)
+        transpiled_circuit = result.circuit
 
         compiler = CircuitToQProgramCompiler(self.digital_compilation_settings)
         qprogram = compiler.compile(transpiled_circuit, nshots)
 
-        return qprogram, transpiler.context.final_layout
+        return qprogram, result.layout
 
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
         bus = self.get_element(alias=alias)

@@ -7,7 +7,6 @@ from qililab.digital.circuit_to_qprogram_compiler import (
     CircuitToQProgramCompiler,
     extract_qubit_index,
 )
-from qililab.digital.native_gates import Rmw
 from qililab.settings.digital import DigitalCompilationSettings
 from qililab.settings.digital.gate_event import GateEvent
 from qililab.waveforms import Arbitrary, IQDrag, IQPair, Square
@@ -111,6 +110,9 @@ def flatten_operations(block):
 
 
 def test_compile_generates_qprogram(compiler_settings):
+    from qilisdk.digital.native_gates import Rmw
+
+
     compiler = CircuitToQProgramCompiler(compiler_settings)
     circuit = Circuit(2)
     circuit.add(Rmw(0, theta=np.pi / 2, phase=np.pi / 3))

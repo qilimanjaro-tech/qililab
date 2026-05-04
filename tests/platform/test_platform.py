@@ -373,12 +373,9 @@ class TestPlatform:
         transpiled_circuit = object()
         compiled_qprogram = QProgram()
 
+        transpiler_result = SimpleNamespace(circuit=transpiled_circuit, layout={0: 1, 1: 0})
         transpiler_instance = MagicMock()
-        transpiler_instance.run.return_value = transpiled_circuit
-        transpiler_instance.context = SimpleNamespace(
-            initial_layout={0: 0, 1: 1},
-            final_layout={0: 1, 1: 0},
-        )
+        transpiler_instance.transpile.return_value = transpiler_result
 
         compiler_instance = MagicMock()
         compiler_instance.compile.return_value = compiled_qprogram
@@ -394,8 +391,12 @@ class TestPlatform:
 
         result = platform.compile_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
 
-        transpiler_cls.assert_called_once_with(platform.digital_compilation_settings, qubit_mapping=qubit_mapping)
-        transpiler_instance.run.assert_called_once_with(circuit)
+        # New API: transpiler is constructed with a pipeline list, then transpile() is called.
+        assert transpiler_cls.call_count == 1
+        (pipeline_arg,), _ = transpiler_cls.call_args
+        assert isinstance(pipeline_arg, list)
+        assert len(pipeline_arg) > 0  # we built a non-empty pipeline
+        transpiler_instance.transpile.assert_called_once_with(circuit)
         compiler_cls.assert_called_once_with(platform.digital_compilation_settings)
         compiler_instance.compile.assert_called_once_with(transpiled_circuit, nshots)
 
@@ -405,12 +406,12 @@ class TestPlatform:
     def test_compile_circuit_with_default_mapping(
         self, monkeypatch: pytest.MonkeyPatch, platform: Platform
     ):
-        """If no mapping is provided, the transpiler is invoked with qubit_mapping=None and may return None layout."""
+        """If no mapping is provided, the transpiler is invoked with the SABRE layout/swap passes and may return None layout."""
         circuit = Circuit(1)
 
+        transpiler_result = SimpleNamespace(circuit=circuit, layout=None)
         transpiler_instance = MagicMock()
-        transpiler_instance.run.return_value = circuit
-        transpiler_instance.context = SimpleNamespace(final_layout=None)
+        transpiler_instance.transpile.return_value = transpiler_result
 
         compiler_instance = MagicMock()
         compiler_instance.compile.return_value = QProgram()
@@ -423,8 +424,14 @@ class TestPlatform:
 
         qprogram, layout = platform.compile_circuit(circuit, nshots=5)
 
-        transpiler_cls.assert_called_once_with(platform.digital_compilation_settings, qubit_mapping=None)
-        transpiler_instance.run.assert_called_once_with(circuit)
+        assert transpiler_cls.call_count == 1
+        (pipeline_arg,), _ = transpiler_cls.call_args
+        # When qubit_mapping is None, the pipeline uses SabreLayoutPass + SabreSwapPass (not CustomLayoutPass).
+        pipeline_class_names = [type(p).__name__ for p in pipeline_arg]
+        assert "SabreLayoutPass" in pipeline_class_names
+        assert "SabreSwapPass" in pipeline_class_names
+        assert "CustomLayoutPass" not in pipeline_class_names
+        transpiler_instance.transpile.assert_called_once_with(circuit)
         compiler_instance.compile.assert_called_once_with(circuit, 5)
         assert isinstance(qprogram, QProgram)
         assert layout is None
