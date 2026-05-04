@@ -49,8 +49,17 @@ class QbloxDraw:
         elif action_type == "set_awg_gain":
             param = self._handle_gain_draw(program_line, param, register)
 
-        elif action_type == "wait" or action_type == "upd_param" or action_type == "latch_rst":
-            wait_duration = int(program_line[1])
+        elif (
+            action_type == "wait"
+            or action_type == "upd_param"
+            or action_type == "latch_rst"
+            or action_type == "wait_trigger"
+        ):
+            if action_type == "wait_trigger":
+                wait_duration = int(program_line[1].split(",")[1])
+            else:
+                wait_duration = int(program_line[1])
+
             param["classical_time_counter"] += int(wait_duration)
             real_wait = wait_duration - param["real_time_counter"]
             if real_wait <= 0:
@@ -450,11 +459,7 @@ class QbloxDraw:
                         if ("@" + la) in numerical_value:
                             loop_label = tuple(l for l in loop_label if l != la)
                 sequence["program"] = program_parsed
-            del sequence[
-                "program"
-            ][
-                "main"
-            ][
+            del sequence["program"]["main"][
                 -3:
             ]  # delete the last 3 lines of the Q1ASM that are always hardcoded - tempers with the _new flag later on if not removed here
             seq_parsed_program[bus] = sequence
@@ -566,7 +571,7 @@ class QbloxDraw:
 
             def process_loop(recursive_input, i):
                 if not parameters[bus]["time_reached"]:
-                    (label, [start, end, value]) = recursive_input
+                    label, [start, end, value] = recursive_input
                     if label not in label_done:
                         label_done.append(label)
                     for x in range(register[value], 0, -1):
