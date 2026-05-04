@@ -409,7 +409,7 @@ class QbloxDraw:
             Returns seq_parsed_program with each section (setup/main) as a list of tuple (instruction, numerical value, (tuple of loop label), index)
             Example: Q1ASM has play 0,1,30 -  the equivalent seq_parsed_program is (play,'0,1,30', (),1)
                 where 1 is the index and () is a tuple of the loop labels
-                ie: (avg_0, loop_0) meaning the current isntruction is part of 2 loops, avg_0 as top and loop_0 as nested.
+                ie: (avg_0, loop_0) meaning the current instruction is part of 2 loops, avg_0 as top and loop_0 as nested.
 
         """
 
@@ -459,9 +459,8 @@ class QbloxDraw:
                         if ("@" + la) in numerical_value:
                             loop_label = tuple(l for l in loop_label if l != la)
                 sequence["program"] = program_parsed
-            del sequence["program"]["main"][
-                -3:
-            ]  # delete the last 3 lines of the Q1ASM that are always hardcoded - tempers with the _new flag later on if not removed here
+            # delete the last 3 lines of the Q1ASM that are always hardcoded - tempers with the _new flag later on if not removed here
+            del sequence["program"]["main"][-3:]
             seq_parsed_program[bus] = sequence
         return seq_parsed_program
 
