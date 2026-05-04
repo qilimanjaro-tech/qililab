@@ -449,6 +449,11 @@ def fixture_digital_compilation_settings() -> DigitalCompilationSettings:
             "flux_c2": {
                 "line": "flux",
                 "qubits": [2]
+            },
+            "flux_c1": {
+                "pulse_compatible": False, 
+                "line": "flux",
+                "qubits": [2]
             }
         }
     }
@@ -596,8 +601,9 @@ class TestCircuitTranspiler:
         # test general properties of the pulse schedule
         assert isinstance(pulse_schedule, PulseSchedule)
 
-        # there are 6 different buses + 3 empty for unused flux lines
-        assert len(pulse_schedule) == 9
+        # there are 6 different buses + 3 empty for unused flux lines (1 of the lines is pulse incompatible)
+        assert len(pulse_schedule) == 12
+        assert all(len(schedule_element.timeline) == 0 for schedule_element in pulse_schedule.elements[-3:])
 
         # we can ignore empty elements from here on
         pulse_schedule.elements = [element for element in pulse_schedule.elements if element.timeline]
