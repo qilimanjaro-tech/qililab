@@ -39,7 +39,6 @@ class DigitalCompilationBusSettings:
     qubits: list[int]
     delay: int = 0
     distortions: list[PulseDistortion] = field(default_factory=list)
-    pulse_compatible: bool = field(default=True)
 
     def __post_init__(self):
         cast_enum_fields(obj=self)
@@ -54,7 +53,4 @@ class DigitalCompilationBusSettings:
         return self.line == Line.READOUT
 
     def to_dict(self):
-        bus_asdict = asdict(self) | {"distortions": [distortion.to_dict() for distortion in self.distortions]}
-        if bus_asdict["pulse_compatible"]:
-            del bus_asdict["pulse_compatible"]
-        return bus_asdict
+        return asdict(self) | {"distortions": [distortion.to_dict() for distortion in self.distortions]}
