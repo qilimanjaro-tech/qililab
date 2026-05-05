@@ -1419,7 +1419,7 @@ class QbloxCompiler:
                     component=QPyInstructions.Move(var=0, register=self._buses[element.bus].bin_register),
                     bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
                 )
-        
+
                 self._buses[element.bus].start_bin_idx += 1
 
         elif is_avg_multi_acquire and self._buses[element.bus].num_bins_per_acquire > 1:
