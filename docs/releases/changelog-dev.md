@@ -100,3 +100,6 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 - Fixed a bug at the QdacCompiler where the dwell time was converted to us twice turning any value to the minimum dwell possible.
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
+
+- Fixed a bug where the qblox instrument controller parameter `ext_trigger` and the qdac instrument controller parameter `reference_clock` where not correctly translated to dictionary from the runcard and therefore not saved with `ql.save_platform(platform)`.
+  [#1104](https://github.com/qilimanjaro-tech/qililab/pull/1104)
