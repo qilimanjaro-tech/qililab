@@ -931,6 +931,16 @@ def inner_average_outer_sweep_three_measures() -> QProgram:
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
 
+@pytest.fixture(name="average_only_two_measures")
+def average_only_two_measures() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights_pair = IQPair(I=Square(amplitude=1.0, duration=2000), Q=Square(amplitude=0.0, duration=2000))
+    qp = QProgram()
+    with qp.average(shots=100):
+        qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+        qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+    return qp
+
 
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
@@ -4700,12 +4710,34 @@ other_max_duration_0:
                                                 loop             R7, @avg_0     
                                                 add              R4, 3, R4      
                                                 add              R1, 3, R1   
-                                                add              R0, 3, R0    
-                                                add              R6, 10, R6     
-                                                loop             R5, @loop_0    
-                                                set_mrk          0              
-                                                upd_param        4              
+                                                add              R0, 3, R0
+                                                add              R6, 10, R6
+                                                loop             R5, @loop_0
+                                                set_mrk          0
+                                                upd_param        4
                                                 stop  """
 
+
+        assert is_q1asm_equal(sequences["readout"], expected_q1asm)
+
+    def test_average_only_two_measures(self, average_only_two_measures: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=average_only_two_measures)
+        expected_q1asm = """setup:
+                                wait_sync        4
+                                set_mrk          0
+                                upd_param        4
+
+                            main:
+                                move             100, R0
+                            avg_0:
+                                play             0, 1, 4
+                                acquire_weighed  0, 0, 0, 1, 2000
+                                play             0, 1, 4
+                                acquire_weighed  0, 1, 0, 1, 2000
+                                loop             R0, @avg_0
+                                set_mrk          0
+                                upd_param        4
+                                stop"""
 
         assert is_q1asm_equal(sequences["readout"], expected_q1asm)
