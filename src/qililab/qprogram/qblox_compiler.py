@@ -1472,9 +1472,7 @@ class QbloxCompiler:
             self._buses[element.bus].bin_register = QPyProgram.Register()
             self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
                 component=QPyInstructions.Move(var=start_bin_idx, register=self._buses[element.bus].bin_register),
-                bot_position=len(
-                    self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
-                ),
+                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
             self._buses[element.bus].start_bin_idx += 1
 
