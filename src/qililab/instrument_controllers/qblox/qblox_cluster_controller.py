@@ -52,8 +52,6 @@ class QbloxClusterController(InstrumentController):
     class QbloxClusterControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific Qblox Cluster Controller."""
 
-        reference_clock: ReferenceClock
-
         def __post_init__(self):
             super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
@@ -93,6 +91,11 @@ class QbloxClusterController(InstrumentController):
         """Get the reference clock setting."""
         return self.settings.reference_clock
 
+    @property
+    def ext_trigger(self):
+        """Get the external trigger setting."""
+        return self.settings.ext_trigger
+
     def _check_supported_modules(self):
         """Check if all loaded instrument modules are supported."""
         for module in self.modules:
@@ -114,5 +117,6 @@ class QbloxClusterController(InstrumentController):
     def to_dict(self):
         """Return a dictionary representation of the Qblox controller class."""
         return super().to_dict() | {
-            Parameter.REFERENCE_CLOCK.value: self.reference_clock.value,
+            Parameter.REFERENCE_CLOCK.value: self.settings.reference_clock,
+            Parameter.EXT_TRIGGER.value: self.settings.ext_trigger,
         }
