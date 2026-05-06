@@ -101,5 +101,8 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 - Fixed a bug at the QdacCompiler where the dwell time was converted to us twice turning any value to the minimum dwell possible.
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
 
+- Fixed a bug in the Qblox compiler where the bin acquisition index was not incrementing correctly when multiple `measure` calls are used sequentially inside an `average` block with an outer sweep loop.  Each sequential acquire now gets its own bin register initialised to its position offset, and the bin register is advanced by the total number of acquires per sweep step (instead of always 1), so that consecutive acquires write to consecutive bins and the full acquisition matrix is filled correctly.
+  [#1098](https://github.com/qilimanjaro-tech/qililab/pull/1098
+
 - Fixed a bug where the qblox instrument controller parameter `ext_trigger` and the qdac instrument controller parameter `reference_clock` where not correctly translated to dictionary from the runcard and therefore not saved with `ql.save_platform(platform)`.
   [#1104](https://github.com/qilimanjaro-tech/qililab/pull/1104)
