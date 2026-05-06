@@ -184,7 +184,7 @@ class TestBus:
         # The QCM should not receive the call
         mock_instruments[0].get_parameter.assert_not_called()
 
-    def test_check_recurrent_timeout(self, bus_no_qrm, mock_instruments):
+    def test_check_recurrent_timeout_no_qrm(self, bus_no_qrm, mock_instruments):
         """Test that get recurrent timeout is retrieved as None if there is no QRM"""
 
         # Call the helper under test
