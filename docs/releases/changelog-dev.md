@@ -21,3 +21,6 @@ The cache has now been removed so that the sequence is always re-uploaded, ensur
 
 - Transpilation: Walking back a previous bug change in [#1085] because it caused all flux buses that did not have a pulse schedule to not set the flux offset. Instead, we advise users to not add buses of pulse incompatible instruments to the digital field in the runcard (like S4g).
   [#1103](https://github.com/qilimanjaro-tech/qililab/pull/1103)
+
+- Fixed a bug in the Qblox compiler where the bin acquisition index was not incrementing correctly when multiple `measure` calls are used sequentially inside an `average` block with an outer sweep loop.  Each sequential acquire now gets its own bin register initialised to its position offset, and the bin register is advanced by the total number of acquires per sweep step (instead of always 1), so that consecutive acquires write to consecutive bins and the full acquisition matrix is filled correctly.
+  [#1101](https://github.com/qilimanjaro-tech/qililab/pull/1101)
