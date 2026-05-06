@@ -89,6 +89,9 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 ### Bug fixes
 
+- The save_platform function was not saving bus distortions because it wasn't added to the Bus.to_dict after the refactor. The property has been added.
+  [#1100](https://github.com/qilimanjaro-tech/qililab/pull/1100)
+
 - Fixed a bug for function Platform.set_bias_to_zero(bus_list) where the flux vector was not updated correctly from bias.
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
 
@@ -97,3 +100,6 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 - Fixed a bug at the QdacCompiler where the dwell time was converted to us twice turning any value to the minimum dwell possible.
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
+
+- Fixed a bug in the Qblox compiler where the bin acquisition index was not incrementing correctly when multiple `measure` calls are used sequentially inside an `average` block with an outer sweep loop.  Each sequential acquire now gets its own bin register initialised to its position offset, and the bin register is advanced by the total number of acquires per sweep step (instead of always 1), so that consecutive acquires write to consecutive bins and the full acquisition matrix is filled correctly.
+  [#1098](https://github.com/qilimanjaro-tech/qililab/pull/1098)
