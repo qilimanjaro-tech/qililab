@@ -1456,7 +1456,10 @@ class Platform:
             return results
         except TimeoutError as timeout:
             if output.qdac:
-                warnings.warn("Timeout reached for triggered measurement, trying again.")
+                warnings.simplefilter("always", UserWarning)
+                warnings.warn(
+                    "Timeout reached for triggered measurement, trying again.", category=UserWarning, stacklevel=2
+                )
 
                 # Reset instrument settings
                 for bus_alias in sequences:
@@ -1465,7 +1468,8 @@ class Platform:
                             instrument.desync_sequencer(sequencer_id=int(channel))
                 self.trigger_runs += 1
 
-                if self.trigger_runs <= 3:
+                timeout_repetitions = bus.check_recurrent_timeout()
+                if timeout_repetitions and self.trigger_runs <= timeout_repetitions:
                     return self._execute_qblox_compilation_output(output, debug)
 
             raise timeout

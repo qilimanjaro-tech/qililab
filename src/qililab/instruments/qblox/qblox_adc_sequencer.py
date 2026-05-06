@@ -33,6 +33,7 @@ class QbloxADCSequencer(QbloxSequencer):
     threshold: float
     threshold_rotation: float
     time_of_flight: int  # nanoseconds
+    timeout_repetitions: int | None = None
 
     def __post_init__(self):
         cast_enum_fields(obj=self)
