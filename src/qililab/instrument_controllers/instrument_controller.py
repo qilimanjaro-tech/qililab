@@ -15,7 +15,7 @@
 """Instrument Controller class"""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Sequence, get_type_hints
 

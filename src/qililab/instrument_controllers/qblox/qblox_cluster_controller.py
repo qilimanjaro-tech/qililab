@@ -26,7 +26,6 @@ from qililab.typings.enums import (
     InstrumentControllerName,
     InstrumentTypeName,
     Parameter,
-    ReferenceClock,
 )
 from qililab.typings.instruments.cluster import Cluster
 
@@ -76,7 +75,7 @@ class QbloxClusterController(InstrumentController):
     @InstrumentController.CheckConnected
     def _set_reference_source(self):
         """Set the reference source ('internal' or 'external')."""
-        self.device.reference_source(self.reference_clock.value)
+        self.device.reference_source(self.reference_clock)
 
     @InstrumentController.CheckConnected
     def _set_ext_trigger(self):
