@@ -90,11 +90,6 @@ class QbloxClusterController(InstrumentController):
         """Get the reference clock setting."""
         return self.settings.reference_clock
 
-    @property
-    def ext_trigger(self):
-        """Get the external trigger setting."""
-        return self.settings.ext_trigger
-
     def _check_supported_modules(self):
         """Check if all loaded instrument modules are supported."""
         for module in self.modules:
