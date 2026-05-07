@@ -1004,6 +1004,88 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
+    @pytest.mark.parametrize("optimize", [True, False])
+    def test_compile_circuit(self, optimize: bool, platform: Platform):
+        """Test the compilation of a qibo Circuit."""
+        circuit = Circuit(3)
+        circuit.add(gates.X(0))
+        circuit.add(gates.X(1))
+        circuit.add(gates.Y(0))
+        circuit.add(gates.Y(1))
+        circuit.add(gates.M(0, 1, 2))
+
+        self._compile_and_assert(platform, circuit, 5, optimize=optimize)
+
+    def test_compile_circuit_raises_error_if_digital_settings_missing(self, platform: Platform):
+        """Test the compilation of a qibo Circuit."""
+        circuit = Circuit(3)
+        circuit.add(gates.X(0))
+        circuit.add(gates.X(1))
+        circuit.add(gates.Y(0))
+        circuit.add(gates.Y(1))
+        circuit.add(gates.M(0, 1, 2))
+
+        platform.digital_compilation_settings = None
+
+        with pytest.raises(ValueError):
+            _ = platform.compile(program=circuit, num_avg=1000, repetition_duration=200_000, num_bins=1)
+
+    def test_compile_raises_error_if_digital_bus_not_in_main_buses(self, platform_with_orphan_digital_bus: Platform):
+        """
+        Test that platform.compile() raises a ValueError if a bus alias defined
+        in runcard.digital.buses is not present in the main runcard.buses list.
+        """
+        orphan_alias = "orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses"
+        pulse_schedule = PulseSchedule()
+        pulse_schedule.add_event(
+            PulseEvent(
+                pulse=Pulse(amplitude=1.0, phase=0.0, duration=40, frequency=0, pulse_shape=Rectangular()),
+                start_time=0,
+                qubit=2,
+            ),
+            bus_alias=orphan_alias,
+        delay=0,
+    )
+        expected_error_message = "Bus with alias 'orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses' defined in Digital/Buses section of the Runcard, not found in main Buses section of the same Runcard."
+
+        with pytest.raises(ValueError, match=re.escape(expected_error_message)):
+            platform_with_orphan_digital_bus.compile(program=pulse_schedule, num_avg=1000, repetition_duration=200_000, num_bins=1)
+
+    def test_compile_pulse_schedule(self, platform: Platform):
+        """Test the compilation of a qibo Circuit."""
+        pulse_schedule = PulseSchedule()
+        drag_pulse = Pulse(
+            amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
+        )
+        readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
+        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
+        pulse_schedule.add_event(
+            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
+        )
+
+        self._compile_and_assert(platform, pulse_schedule, 2)
+
+    def _compile_and_assert(
+        self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize: bool = False
+    ):
+        sequences_w_alias, _ = platform.compile(
+            program=program,
+            num_avg=1000,
+            repetition_duration=200_000,
+            num_bins=1,
+            transpilation_config=DigitalTranspilationConfig(optimize=optimize),
+        )
+        assert isinstance(sequences_w_alias, dict)
+        if not optimize:
+            assert len(sequences_w_alias) == len_sequences
+        else:
+            assert len(sequences_w_alias) < len_sequences
+        for alias, sequences in sequences_w_alias.items():
+            assert alias in {bus.alias for bus in platform.buses}
+            assert isinstance(sequences, list)
+            assert all(isinstance(sequence, Sequence) for sequence in sequences)
+            assert sequences[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
+
     @pytest.mark.parametrize(
         "qprogram_fixture, calibration_fixture",
         [

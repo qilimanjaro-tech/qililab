@@ -64,8 +64,7 @@ class StreamArray:
         bus_mapping: dict[str, str] | None = None,
         optional_identifier: str | None = None,
         autocalibration: bool = False,
-        qubit_idx: int | str | list[str] | None = None,
-        secondary_idx: int | str | list[str] | None = None,
+        qubit_idx: str | int | None = None,
     ):
         self.results: np.ndarray
         self.shape = [shape] if isinstance(shape, int) else shape
@@ -79,7 +78,6 @@ class StreamArray:
         self.bus_mapping = bus_mapping
         self.autocalibration = autocalibration
         self.qubit_idx = qubit_idx
-        self.second_idx = secondary_idx
         self._first_value = True
 
     def __enter__(self):
@@ -110,9 +108,7 @@ class StreamArray:
                     qprogram=serialize(self.qprogram) if self.qprogram else None,
                     calibration=serialize(self.calibration) if self.calibration else None,
                     debug_file=self._get_debug() if self.platform and self.qprogram else None,
-                    dc_offsets=self._get_offsets() if self.platform else None,
-                    target=self._get_index_list(self.qubit_idx),
-                    secondary_source=self._get_index_list(self.second_idx),
+                    target=self.qubit_idx,
                 )
             self.path = self.measurement.result_path
 
