@@ -20,7 +20,6 @@ from __future__ import annotations
 import ast
 import io
 import re
-import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -1456,8 +1455,6 @@ class Platform:
             return results
         except TimeoutError as timeout:
             if output.qdac:
-                logger.info("Timeout reached for triggered measurement, trying again.")
-
                 # Reset instrument settings
                 for bus_alias in sequences:
                     for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
@@ -1467,6 +1464,9 @@ class Platform:
 
                 timeout_repetitions = bus.check_recurrent_timeout()
                 if timeout_repetitions and self.trigger_runs <= timeout_repetitions:
+                    logger.info(
+                        f"Timeout reached for triggered measurement, trying again. {self.trigger_runs}/{timeout_repetitions}"
+                    )
                     return self._execute_qblox_compilation_output(output, debug)
 
             raise timeout
