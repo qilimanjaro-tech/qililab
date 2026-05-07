@@ -1,6 +1,7 @@
 
-from typing import Literal
 from dataclasses import dataclass, field
+from typing import Literal
+
 import numpy as np
 
 from qililab.waveforms.waveform import Waveform
@@ -31,8 +32,9 @@ class ComposedWaveform(Waveform):
                     self.move + self.waveform.get_duration() / 2,
                     self.move - self.waveform.get_duration() / 2
                 )
+            return None
 
-    def __init__(self, *wf: tuple[Waveform], order: Literal["centered", "left", "right"] = "left", duration: int | None = None):
+    def __init__(self, *wf: Waveform, order: Literal["centered", "left", "right"] = "left", duration: int | None = None):
         self.order = order
         self.duration = duration
         self.waveforms: list[ComposedWaveform.WaveformContext] = []
@@ -50,7 +52,7 @@ class ComposedWaveform(Waveform):
             lims = self._time_lims()
             self.duration = lims[0] - lims[1]
         return self.duration
-    
+
     def _time_lims(self):
         min_max_times = np.array([wf_context._get_time_lim for wf_context in self.waveforms])
         return np.max(min_max_times[:, 0]), np.min(min_max_times[:, 1])
@@ -65,16 +67,16 @@ class ComposedWaveform(Waveform):
 
         for wf_context in self.waveforms:
             array[_idx_from_time_lims] += wf_context.waveform.envelope(resolution=resolution)
-        
+
         array *= self._scaled
         return array
 
     def __sum__(self, other):
         self._added += other
-        
-    
+
     def __sub__(self, other):
         self._added -= other
 
     def __mul__(self, other):
-        self._scaled
+        self._scaled *= other
+
