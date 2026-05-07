@@ -1456,10 +1456,7 @@ class Platform:
             return results
         except TimeoutError as timeout:
             if output.qdac:
-                warnings.simplefilter("always", UserWarning)
-                warnings.warn(
-                    "Timeout reached for triggered measurement, trying again.", category=UserWarning, stacklevel=2
-                )
+                logger.info("Timeout reached for triggered measurement, trying again.")
 
                 # Reset instrument settings
                 for bus_alias in sequences:
