@@ -869,7 +869,7 @@ class QProgram(StructuredProgram):
             if isinstance(element, Play):
                 if isinstance(element.waveform, Waveform):
                     envelope = element.waveform.envelope()
-                elif isinstance(element.waveform, IQPair):
+                elif isinstance(element.waveform, IQWaveform):
                     envelope = element.waveform.I.envelope()
             elif isinstance(element, SetOffset):  # square with same dimension as play
                 envelope = element.offset_path0  # type: ignore
@@ -903,10 +903,7 @@ class QProgram(StructuredProgram):
                         offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
                         block.elements.insert(element_list[0], offset)
                         copied_qprogram.buses.add(bus)
-                    elif (
-                        isinstance(flux_vector.bias_vector[bus], np.ndarray)
-                        or isinstance(flux_vector.bias_vector[bus], list)
-                    ) and play_elements:
+                    elif isinstance(flux_vector.bias_vector[bus], (np.ndarray, list)) and play_elements:
                         play = Play(
                             bus,
                             Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore

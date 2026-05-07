@@ -388,7 +388,8 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         offsets = np.array([self.flux_offsets.get(bus, 0.0) for bus in sorted_buses])
 
         inverse_matrix = self.inverse().to_array()
-        bias_array = inverse_matrix @ (corrected_flux - offsets)
+        corr_m_off = corrected_flux.T - offsets
+        bias_array = inverse_matrix @ corr_m_off.T
 
         return dict(zip(sorted_buses, bias_array))
 
