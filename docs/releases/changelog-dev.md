@@ -17,15 +17,18 @@
     qp.set_gain("bus", gain1 + gain2)
     
     ```
-    These expressions are subject to some restrictions. A `NotImplementedError` is raised if any of these rules are violated:
-    - Expression chaining is not supported: at most two components (a variable and a constant, or two variables) are allowed. For example, the following code will raise a `NotImplementedError`:
+    These expressions are subject to some restrictions:
+    - Expression chaining is not supported: at most two components (a variable and a constant, or two variables) are allowed. Raises `NotImplementedError`. For example, the following code will raise a `NotImplementedError`:
         ```
       qp = ql.Qprogram(
       gain1 = qp.variable("gain1", ql.Domain.Voltage)
       qp.set_gain("bus", 10 + gain1 + 30)
       )
       ```
-    - Only addition and subtraction are supported. Any other type of operation will raise a `TypeError`.
+    - Only addition (`+`) and subtraction (`-`) are supported. The following raise a `TypeError`: `*`, `@`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`, `>`, `<`, `>=`, `<=`, `+=`, `-=`, `*=`, `/=`. Boolean constants also raise a `ValueError`. Taking `abs()` of a variable raises a `NotImplementedError`.
+    - Mixing variables of different domains (e.g. `gain + freq`) raises a `ValueError`.
+    - Using a `VariableExpression` in `set_offset` with independent I and Q paths raises a `NotImplementedError`.
+    - Using a `VariableExpression` with crosstalk compensation across multiple hardware loops raises a `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). This will be supported in a future PR.
     - To facilitate the `Q1ASM` implementation, some expressions are internally reorganized in the `Variable` class without changing their semantics:
       ```
       gain + (-10) -> gain - abs(10)
@@ -117,6 +120,9 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 ### Improvements
 
 ### Breaking changes
+
+- `VariableExpression.extract_variables()` and `VariableExpression.extract_constants()` have been removed. They are replaced by the private attributes `VariableExpression.variables` (list of all `Variable` instances in the expression) and `VariableExpression.constant` (the constant term, or `None`), both computed at construction time.
+  [#1057](https://github.com/qilimanjaro-tech/qililab/pull/1057)
 
 ### Deprecations / Removals
 
