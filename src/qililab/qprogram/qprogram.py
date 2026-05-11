@@ -645,8 +645,12 @@ class QProgram(StructuredProgram):
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
-                            dict_variable = dict_variable + self._bus_variable_map[var, bus]
-                            self._block_variables[var].append(self._bus_variable_map[var, bus])
+                            raise NotImplementedError(
+                                "Double Hardware loops are not yet implemented with the crosstalk."
+                            )
+                            # TODO: Add this line once variable addition is implemented for non-Time Domains.
+                            # dict_variable += self._bus_variable_map[var, bus]
+                            # self._block_variables[var].append(self._bus_variable_map[var, bus])
 
                 offset = SetOffset(bus, dict_variable)
                 self._block_variables[variable].append(dict_variable)
@@ -685,6 +689,9 @@ class QProgram(StructuredProgram):
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
                             dict_variable = dict_variable + self._bus_variable_map[var, bus]
+                            raise NotImplementedError(
+                                "Double Hardware loops are not yet implemented with the crosstalk."
+                            )
                             # TODO: Add this line once variable addition is implemented for non-Time Domains.
                             # self._block_variables[var].append(self._bus_variable_map[var, bus])
 

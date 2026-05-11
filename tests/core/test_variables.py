@@ -163,7 +163,7 @@ class TestVariables:
         assert expr7._extract_constant() == abs(-10)
 
     def test_variable_expression_unitary_operations(self, instance: StructuredProgram):
-        """Test unitary expression with Variables"""
+        """Test unary expression with Variables"""
         time_variable = instance.variable(label="time", domain=Domain.Time)  # IntVariable
         gain_variable = instance.variable(label="gain", domain=Domain.Voltage)  # FloatVariable
 
@@ -226,7 +226,6 @@ class TestVariables:
             time1 + time2
 
     def test_three_variable_raises_error(self, instance):
-        # Freqeuncy doe snot support Variable Expressions
         gain1 = instance.variable(label="gain1", domain=Domain.Voltage)
         gain2 = instance.variable(label="gain2", domain=Domain.Voltage)
         gain3 = instance.variable(label="gain3", domain=Domain.Voltage)
@@ -237,7 +236,6 @@ class TestVariables:
             gain1 + gain2 + gain3
 
     def test_frequency_domain_raises_error(self, instance):
-        # Substractions are not implemented for non time domains
         freq1 = instance.variable(label="freq1", domain=Domain.Frequency)
         freq2 = instance.variable(label="freq2", domain=Domain.Frequency)
         with pytest.raises(

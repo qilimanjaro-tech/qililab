@@ -668,77 +668,87 @@ class QbloxCompiler:
         self._buses[bus].duration_since_sync += duration
         self._buses[bus].static_duration += duration
 
+    def _resolve_binary_expression(
+        self, bus: str, expression: VariableExpression, convert: Callable
+    ) -> QPyProgram.Register:
+        """Emit Q1ASM instructions that evaluate a binary VariableExpression and return the result register.
+
+        Emits: a leading Nop, then Add or Sub, then a trailing Nop to guard
+        against a read-after-write hazard on the result register. The caller is
+        responsible for emitting only the final parameter instruction
+        (SetAwgGain, SetAwgOffs).
+
+        Q1ASM forbids an immediate as the first operand of Add and Sub. For
+        "+", QProgram's normalization in variables.py guarantees the constant
+        is always on the right, so Add(register, immediate, result) is always
+        valid here. For "-", the left operand may be an immediate (e.g.
+        ``cst - variable``), which is handled explicitly below.
+        """
+        # TODO: the flattening of all variable expressions will be moved to qpysequence
+
+        left_component, right_component = expression.components
+        left = (
+            self._buses[bus].variable_to_register[left_component]
+            if isinstance(left_component, Variable)
+            else convert(left_component)
+        )
+        right = (
+            self._buses[bus].variable_to_register[right_component]
+            if isinstance(right_component, Variable)
+            else convert(right_component)
+        )
+        result = QPyProgram.Register()
+        self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+
+        if expression.operator == "+":
+            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Add(left, right, result))
+        elif expression.operator == "-":
+            if isinstance(left, QPyProgram.Register):
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Sub(left, right, result)
+                )
+            else:  # Q1ASM forbids the first element of sub to be an immediate
+                constant_register = QPyProgram.Register()
+                if left < 0:
+                    loops = [
+                        (i, loop)
+                        for i, loop in enumerate(self._buses[bus].qpy_block_stack)
+                        if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
+                    ]
+                    block_idx = loops[0][0] - 1 if loops else -2
+                    zero_register = QPyProgram.Register()
+                    self._buses[bus].qpy_block_stack[block_idx].append_component(
+                        component=QPyInstructions.Move(var=0, register=zero_register),
+                        bot_position=len(self._buses[bus].qpy_block_stack[block_idx].components),
+                    )
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Sub(zero_register, abs(left), constant_register)
+                    )
+                    self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                else:
+                    # TODO: this move is done at every loop iteration; ideally it belongs outside the loop
+                    # where loop registers are initialised — requires a qpysequence change.
+                    self._buses[bus].qpy_block_stack[-1].append_component(
+                        component=QPyInstructions.Move(left, constant_register)
+                    )
+                    self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Sub(constant_register, right, result)
+                )
+
+        self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+        return result
+
     def _handle_set_gain(self, element: SetGain):
         if element.bus not in self._qblox_buses:
             return
 
         convert = QbloxCompiler._convert_value(element)
-
-        # TODO: the flattening of all variable expressions will be moved to qpysequence
         if isinstance(element.gain, VariableExpression):
-            left_component, right_component = element.gain.components
-            gain0 = (
-                self._buses[element.bus].variable_to_register[left_component]
-                if isinstance(left_component, Variable)
-                else convert(left_component)
+            result = self._resolve_binary_expression(element.bus, element.gain, convert)
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.SetAwgGain(gain_0=result, gain_1=result)
             )
-            gain1 = (
-                self._buses[element.bus].variable_to_register[right_component]
-                if isinstance(right_component, Variable)
-                else convert(right_component)
-            )
-            gain_result_register = QPyProgram.Register()
-            self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-
-            if element.gain.operator == "+":
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Add(gain0, gain1, gain_result_register)
-                )
-                self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.SetAwgGain(gain_0=gain_result_register, gain_1=gain_result_register)
-                )
-
-            elif element.gain.operator == "-":
-                if isinstance(gain0, QPyProgram.Register):
-                    self._buses[element.bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.Sub(gain0, gain1, gain_result_register)
-                    )
-                else:  # Q1ASM forbids the first element of the add to be an immediate
-                    constant_register = QPyProgram.Register()
-                    if gain0 < 0:
-                        loops = [
-                            (i, loop)
-                            for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
-                            if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
-                        ]
-                        block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
-                        zero_register = QPyProgram.Register()
-                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                            component=QPyInstructions.Move(var=0, register=zero_register),
-                            bot_position=len(
-                                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
-                            ),
-                        )
-                        self._buses[element.bus].qpy_block_stack[-1].append_component(
-                            component=QPyInstructions.Sub(zero_register, abs(gain0), constant_register)
-                        )
-                        self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-                    # TODO: this move is done at every iteration of the loop, ideally it will be done outside of the loop where the registers for the loop iteration are added - this will require a qpysequence modification
-                    else:
-                        self._buses[element.bus].qpy_block_stack[-1].append_component(
-                            component=QPyInstructions.Move(gain0, constant_register)
-                        )
-                        self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-                    self._buses[element.bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.Sub(constant_register, gain1, gain_result_register)
-                    )
-
-                self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.SetAwgGain(gain_0=gain_result_register, gain_1=gain_result_register)
-                )
-
         else:
             gain = (
                 self._buses[element.bus].variable_to_register[element.gain]
@@ -773,64 +783,9 @@ class QbloxCompiler:
                     "Having a different offset for I and Q whilst using VariableExpressions is not supported."
                 )
 
-            left_component, right_component = element.offset_path0.components
-            offset0 = (
-                self._buses[element.bus].variable_to_register[left_component]
-                if isinstance(left_component, Variable)
-                else convert(left_component)
-            )
-            offset1 = (
-                self._buses[element.bus].variable_to_register[right_component]
-                if isinstance(right_component, Variable)
-                else convert(right_component)
-            )
-            offset_result_register = QPyProgram.Register()
-            self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-
-            if element.offset_path0.operator == "+":
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.Add(offset0, offset1, offset_result_register)
-                )
-
-            elif element.offset_path0.operator == "-":
-                if isinstance(offset0, QPyProgram.Register):
-                    self._buses[element.bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.Sub(offset0, offset1, offset_result_register)
-                    )
-                else:  # Q1ASM forbids the first element of the sub to be an immediate
-                    constant_register = QPyProgram.Register()
-                    if offset0 < 0:
-                        loops = [
-                            (i, loop)
-                            for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
-                            if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
-                        ]
-                        block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
-
-                        zero_register = QPyProgram.Register()
-                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                            component=QPyInstructions.Move(var=0, register=zero_register),
-                            bot_position=len(
-                                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
-                            ),
-                        )
-                        self._buses[element.bus].qpy_block_stack[-1].append_component(
-                            component=QPyInstructions.Sub(zero_register, abs(offset0), constant_register)
-                        )
-                        self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-
-                    else:
-                        self._buses[element.bus].qpy_block_stack[-1].append_component(
-                            component=QPyInstructions.Move(offset0, constant_register)
-                        )
-                        self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-                    self._buses[element.bus].qpy_block_stack[-1].append_component(
-                        component=QPyInstructions.Sub(constant_register, offset1, offset_result_register)
-                    )
-
-            self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
+            result = self._resolve_binary_expression(element.bus, element.offset_path0, convert)
             self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.SetAwgOffs(offset_0=offset_result_register, offset_1=offset_result_register)
+                component=QPyInstructions.SetAwgOffs(offset_0=result, offset_1=result)
             )
 
         else:

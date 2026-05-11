@@ -839,7 +839,7 @@ def variable_expression_offset() -> QProgram:
         qp.play(bus="drive", waveform=drag_pair)
     return qp
 
-@pytest.fixture(name="variable_expression_two_offset")
+@pytest.fixture(name="variable_expression_two_offset_offseti_variable_expression")
 def variable_expression_two_offset() -> QProgram:
     qp = QProgram()
     offset = qp.variable(label="offset", domain=Domain.Voltage)
@@ -847,7 +847,7 @@ def variable_expression_two_offset() -> QProgram:
         qp.set_offset(bus="drive", offset_path0=offset+10, offset_path1=30)
     return qp
 
-@pytest.fixture(name="variable_expression_offsetq_variable_expression")
+@pytest.fixture(name="variable_expression_two_offset_offsetq_variable_expression")
 def variable_expression_offsetq_variable_expression() -> QProgram:
     qp = QProgram()
     offset = qp.variable(label="offset", domain=Domain.Voltage)
@@ -858,20 +858,17 @@ def variable_expression_offsetq_variable_expression() -> QProgram:
 
 @pytest.fixture(name="variable_expression_two_gains")
 def variable_expression_two_gains() -> QProgram:
-    drag_pair = IQPair.DRAG(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     qp = QProgram()
     gain1 = qp.variable(label="gain1", domain=Domain.Voltage)
     gain2 = qp.variable(label="gain2", domain=Domain.Voltage)
     with qp.for_loop(variable=gain1, start=0, stop=1, step=0.1):
         with qp.for_loop(variable=gain2, start=1, stop=0, step=-0.1):
-            qp.set_gain("drive",gain1 + gain2)
+            qp.set_gain("drive", gain1 + gain2)
             qp.play(bus="drive", waveform=drag_pair)
-            qp.set_gain("drive",gain1 - gain2)
+            qp.set_gain("drive", gain1 - gain2)
             qp.play(bus="drive", waveform=drag_pair)
-            qp.set_gain("drive",-gain1 - gain2)
-            qp.play(bus="drive", waveform=drag_pair)
-            qp.set_gain("drive",-gain1 + gain2)
-            qp.play(bus="drive", waveform=drag_pair)
+    return qp
 
 @pytest.fixture(name="calibration_crosstalk")
 def fixture_calibration_crosstalk() -> Calibration:
@@ -4358,15 +4355,54 @@ other_max_duration_0:
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-    def test_variable_expression_two_offset_raise_error_variable_expression(self, variable_expression_two_offset: QProgram):
+    def test_variable_expression_two_offset_raise_error_offseti_variable_expression(self, variable_expression_two_offset_offseti_variable_expression: QProgram):
         compiler = QbloxCompiler()
         with pytest.raises(NotImplementedError, match="Having a different offset for I and Q whilst using VariableExpressions is not supported."):
-            sequences, _ = compiler.compile(qprogram=variable_expression_two_offset)
+            sequences, _ = compiler.compile(qprogram=variable_expression_two_offset_offseti_variable_expression)
 
-    def test_variable_expression_two_offset_raise_error_variable_expression(self, variable_expression_offsetq_variable_expression: QProgram):
+    def test_variable_expression_two_offset_raise_error_offsetq_variable_expression(self, variable_expression_two_offset_offsetq_variable_expression: QProgram):
         compiler = QbloxCompiler()
         with pytest.raises(NotImplementedError, match="Having a different offset for I and Q whilst using VariableExpressions is not supported."):
-            sequences, _ = compiler.compile(qprogram=variable_expression_offsetq_variable_expression)
+            sequences, _ = compiler.compile(qprogram=variable_expression_two_offset_offsetq_variable_expression)
+
+    def test_variable_expression_two_gains(self, variable_expression_two_gains: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=variable_expression_two_gains)
+        assert len(sequences) == 1
+        assert "drive" in sequences
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             11, R0
+                            move             0, R1
+            loop_0:
+                            move             11, R2
+                            move             32767, R3
+            loop_1:
+                            nop
+                            add              R1, R3, R4
+                            nop
+                            set_awg_gain     R4, R4
+                            play             0, 1, 40
+                            nop
+                            sub              R1, R3, R5
+                            nop
+                            set_awg_gain     R5, R5
+                            play             0, 1, 40
+                            sub              R3, 3277, R3
+                            loop             R2, @loop_1
+                            add              R1, 3276, R1
+                            loop             R0, @loop_0
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_crosstalk_compensation(self, crosstalk_qprogram: QProgram):
 
@@ -4756,11 +4792,11 @@ other_max_duration_0:
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
 
         compiler_gain = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
+        with pytest.raises(NotImplementedError, match="Double Hardware loops are not yet implemented with the crosstalk."):
             compiler_gain.compile(qprogram=crosstalk_qprogram_double_gain_loop, crosstalk=crosstalk)
 
         compiler_offset = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Variable Expressions are only supported for Domain.Time."):
+        with pytest.raises(NotImplementedError, match="Double Hardware loops are not yet implemented with the crosstalk."):
             compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
 
     def test_crosstalk_compensation_through_calibration(self, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration):
