@@ -12,7 +12,6 @@ from qililab.qprogram.qblox_compiler import QbloxCompiler
 from qililab.qprogram.blocks import ForLoop
 from qililab.qprogram import QbloxCompiler
 from tests.test_utils import is_q1asm_equal
-from qililab.config import logger
 import logging
 
 
@@ -4358,12 +4357,12 @@ other_max_duration_0:
     def test_variable_expression_two_offset_raise_error_offseti_variable_expression(self, variable_expression_two_offset_offseti_variable_expression: QProgram):
         compiler = QbloxCompiler()
         with pytest.raises(NotImplementedError, match="Having a different offset for I and Q whilst using VariableExpressions is not supported."):
-            sequences, _ = compiler.compile(qprogram=variable_expression_two_offset_offseti_variable_expression)
+            _ = compiler.compile(qprogram=variable_expression_two_offset_offseti_variable_expression)
 
     def test_variable_expression_two_offset_raise_error_offsetq_variable_expression(self, variable_expression_two_offset_offsetq_variable_expression: QProgram):
         compiler = QbloxCompiler()
         with pytest.raises(NotImplementedError, match="Having a different offset for I and Q whilst using VariableExpressions is not supported."):
-            sequences, _ = compiler.compile(qprogram=variable_expression_two_offset_offsetq_variable_expression)
+            _ = compiler.compile(qprogram=variable_expression_two_offset_offsetq_variable_expression)
 
     def test_variable_expression_two_gains(self, variable_expression_two_gains: QProgram):
         compiler = QbloxCompiler()

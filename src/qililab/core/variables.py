@@ -116,11 +116,7 @@ class Variable:
         return VariableExpression(self, "+", other)
 
     def __radd__(self, other):
-        _validate_elements([self, other])
-        if not isinstance(other, Variable) and other < 0:
-            # deals with the case -cst + variable
-            return VariableExpression(self, "-", abs(other))
-        return VariableExpression(self, "+", other)
+        return self.__add__(other)
 
     def __sub__(self, other):
         _validate_elements([self, other])

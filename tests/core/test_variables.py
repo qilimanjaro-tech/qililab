@@ -1,3 +1,4 @@
+import math
 import operator
 import re
 
@@ -195,7 +196,7 @@ class TestVariables:
         with pytest.raises(
             NotImplementedError, match=r"Taking the absolute of a variable is not implemented in QProgram\."
         ):
-            abs(time_variable)
+            _ = abs(time_variable)
 
     def test_variable_expression_infer_domain_error(self):
         # Pure-constant expression should fail to infer a domain
@@ -223,7 +224,7 @@ class TestVariables:
             NotImplementedError,
             match=r"For the Time domain, combining several variables in one expression is not implemented\.",
         ):
-            time1 + time2
+            _ = time1 + time2
 
     def test_three_variable_raises_error(self, instance):
         gain1 = instance.variable(label="gain1", domain=Domain.Voltage)
@@ -233,7 +234,7 @@ class TestVariables:
             NotImplementedError,
             match=r"Chaining Variable expressions is not supported; use at most one binary operation\.",
         ):
-            gain1 + gain2 + gain3
+            _ = gain1 + gain2 + gain3
 
     def test_frequency_domain_raises_error(self, instance):
         freq1 = instance.variable(label="freq1", domain=Domain.Frequency)
@@ -242,7 +243,7 @@ class TestVariables:
             NotImplementedError,
             match=f"For the {Domain.Frequency.name} domain, VariableExpression is not supported yet.",
         ):
-            freq1 + freq2
+            _ = freq1 + freq2
 
     def test_forbidden_operation(self, instance):
         # Only addition and substraction are possible
@@ -251,14 +252,14 @@ class TestVariables:
         with pytest.raises(
             TypeError, match=r"'multiplication \(\*\)' is not a valid operation for QProgram variables."
         ):
-            freq1 * freq2
+            _ = freq1 * freq2
 
     def test_combine_domains_raises_error(self, instance):
         # Only one type of domain per expression is allowed
         gain = instance.variable(label="gain", domain=Domain.Voltage)
         freq = instance.variable(label="freq", domain=Domain.Frequency)
         with pytest.raises(ValueError, match=r"All variables should have the same domain\."):
-            gain + freq
+            _ = gain + freq
 
     @pytest.mark.parametrize(
         "op, operation_str",
@@ -302,30 +303,33 @@ class TestVariables:
             expr()
 
     def test_unsupported_inplace_operations(self, instance):
-        gain = instance.variable(label="gain", domain=Domain.Voltage)
         with pytest.raises(
             TypeError,
             match=re.escape("'in-place addition (+=)' is not a valid operation for QProgram variables."),
         ):
+            gain = instance.variable(label="gain", domain=Domain.Voltage)
             gain += 10
 
         with pytest.raises(
             TypeError,
             match=re.escape("'in-place subtraction (-=)' is not a valid operation for QProgram variables."),
         ):
-            gain -= 10
+            offset = instance.variable(label="offset", domain=Domain.Voltage)
+            offset -= 10
 
         with pytest.raises(
             TypeError,
             match=re.escape("'in-place multiplication (*=)' is not a valid operation for QProgram variables."),
         ):
-            gain *= 10
+            freq = instance.variable(label="freq", domain=Domain.Frequency)
+            freq *= 10
 
         with pytest.raises(
             TypeError,
             match=re.escape("'in-place division (/=)' is not a valid operation for QProgram variables."),
         ):
-            gain /= 10
+            phase = instance.variable(label="freq", domain=Domain.Phase)
+            phase /= 10
 
     def test_non_int_constant_raise_error(self, instance):
         gain = instance.variable(label="gain", domain=Domain.Voltage)
@@ -341,12 +345,12 @@ class TestVariables:
 
         expr1 = 10 + gain
         expr2 = gain + 10
-        expr3 = -10 + gain #gain - 10
+        expr3 = -10 + gain  # gain - 10
         expr4 = gain - 10
         expr5 = -10 - gain
         expr6 = 10.5 + gain
         expr7 = gain + 10.5
-        expr8 = -10.5 + gain #gain - 10.5
+        expr8 = -10.5 + gain  # gain - 10.5
         expr9 = gain - 10.5
         expr10 = -10.5 - gain
 
@@ -367,8 +371,8 @@ class TestVariables:
         assert expr3._extract_constant() == 10
         assert expr4._extract_constant() == 10
         assert expr5._extract_constant() == -10
-        assert expr6._extract_constant() == 10.5
-        assert expr7._extract_constant() == 10.5
-        assert expr8._extract_constant() == 10.5
-        assert expr9._extract_constant() == 10.5
-        assert expr10._extract_constant() == -10.5
+        assert math.isclose(expr6._extract_constant(), 10.5)
+        assert math.isclose(expr7._extract_constant(), 10.5)
+        assert math.isclose(expr8._extract_constant(), 10.5)
+        assert math.isclose(expr9._extract_constant(), 10.5)
+        assert math.isclose(expr10._extract_constant(), -10.5)

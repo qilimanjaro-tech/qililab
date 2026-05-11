@@ -648,7 +648,7 @@ class QProgram(StructuredProgram):
                             raise NotImplementedError(
                                 "Double Hardware loops are not yet implemented with the crosstalk."
                             )
-                            # TODO: Add this line once variable addition is implemented for non-Time Domains.
+                            # TODO: Voltage-domain VariableExpression is now supported (PR #1057).
                             # dict_variable += self._bus_variable_map[var, bus]
                             # self._block_variables[var].append(self._bus_variable_map[var, bus])
 
@@ -692,7 +692,7 @@ class QProgram(StructuredProgram):
                             raise NotImplementedError(
                                 "Double Hardware loops are not yet implemented with the crosstalk."
                             )
-                            # TODO: Add this line once variable addition is implemented for non-Time Domains.
+                            # TODO: Voltage-domain VariableExpression is now supported (PR #1057).
                             # self._block_variables[var].append(self._bus_variable_map[var, bus])
 
                 gain = SetGain(bus, dict_variable)
