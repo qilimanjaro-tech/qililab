@@ -870,7 +870,7 @@ class QProgram(StructuredProgram):
                 if isinstance(element.waveform, Waveform):
                     envelope = element.waveform.envelope()
                 elif isinstance(element.waveform, IQWaveform):
-                    envelope = element.waveform.I.envelope()
+                    envelope = element.waveform.get_I().envelope()
             elif isinstance(element, SetOffset):  # square with same dimension as play
                 envelope = element.offset_path0  # type: ignore
 
@@ -880,10 +880,11 @@ class QProgram(StructuredProgram):
                 and flux_vector[element.bus].shape != envelope.shape  # type: ignore
             ):
                 raise ValueError("qp.play elements must have the same size.")
-            flux_vector[element.bus] = envelope
+            flux_vector.flux_vector[element.bus] = envelope
             return flux_vector
 
         def handle_crosstalk_element(block: Block, element_list: list[int], flux_vector: FluxVector):
+            flux_vector.set_crosstalk(flux_vector.crosstalk)
             if element_list:
                 elements = []
                 for ii, element_idx in enumerate(element_list):
