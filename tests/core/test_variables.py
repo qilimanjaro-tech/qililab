@@ -307,37 +307,36 @@ class TestVariables:
             TypeError,
             match=re.escape("'in-place addition (+=)' is not a valid operation for QProgram variables."),
         ):
-            gain = instance.variable(label="gain", domain=Domain.Voltage)
-            gain += 10 # noqa: S1854
+            gain = instance.variable(label="gain", domain=Domain.Voltage) # NOSONAR
+            gain += 10
 
         with pytest.raises(
             TypeError,
             match=re.escape("'in-place subtraction (-=)' is not a valid operation for QProgram variables."),
         ):
-            gain = instance.variable(label="gain", domain=Domain.Voltage)
-            gain -= 10 # noqa: S1854
+            gain = instance.variable(label="gain", domain=Domain.Voltage) # NOSONAR
+            gain -= 10
 
         with pytest.raises(
             TypeError,
             match=re.escape("'in-place multiplication (*=)' is not a valid operation for QProgram variables."),
         ):
-            gain = instance.variable(label="gain", domain=Domain.Voltage)
-            gain *= 10 # noqa: S1854
+            gain = instance.variable(label="gain", domain=Domain.Voltage) # NOSONAR
+            gain *= 10
 
         with pytest.raises(
             TypeError,
             match=re.escape("'in-place division (/=)' is not a valid operation for QProgram variables."),
         ):
-            gain = instance.variable(label="gain", domain=Domain.Voltage)
-            gain /= 10 # noqa: S1854
+            gain = instance.variable(label="gain", domain=Domain.Voltage) # NOSONAR
+            gain /= 10
 
     def test_non_int_constant_raise_error(self, instance):
-        gain = instance.variable(label="gain", domain=Domain.Voltage)
         with pytest.raises(
             ValueError,
             match=re.escape("Constants cannot be a boolean."),
         ):
-            gain = instance.variable(label="gain", domain=Domain.Voltage)
+            gain = instance.variable(label="gain", domain=Domain.Voltage) # NOSONAR
             _ = gain + True
 
     def test_extract_constant(self, instance: StructuredProgram):
