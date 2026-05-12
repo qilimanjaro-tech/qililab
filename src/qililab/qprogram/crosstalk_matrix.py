@@ -436,13 +436,13 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         sorted_buses = sorted(self.matrix.keys())
 
         corrections = self.get_non_linear_flux_terms(flux)
-        if all(isinstance(f, float) for f in corrections.values()):
+        if all(isinstance(f, (float, int)) for f in flux.values()):
             corrected_flux = np.array(
                 [flux[bus] + corrections[bus]  for bus in sorted_buses],
                 dtype=float
             )
         else:
-            len_wf = max(len(flux[bus]) for bus in sorted_buses if not isinstance(flux[bus], float))
+            len_wf = max(len(flux[bus]) for bus in sorted_buses if not isinstance(flux[bus], (float, int)))
             corrected_flux = np.array(
                 [
                     flux[bus] + (corrections[bus] if isinstance(corrections[bus], np.ndarray)
