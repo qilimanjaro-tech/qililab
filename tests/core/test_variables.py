@@ -336,7 +336,7 @@ class TestVariables:
             ValueError,
             match=re.escape("Constants cannot be a boolean."),
         ):
-            gain = instance.variable(label="gain", domain=Domain.Voltage) # NOSONAR
+            gain = instance.variable(label="gain", domain=Domain.Voltage)
             _ = gain + True
 
     def test_extract_constant(self, instance: StructuredProgram):
