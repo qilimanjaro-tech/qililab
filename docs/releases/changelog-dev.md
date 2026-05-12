@@ -25,6 +25,7 @@
       qp.set_gain("bus", 10 + gain1 + 30)
       )
       ```
+      Note: unary negation of a variable (e.g. `- gain`) counts as two components (it is rewritten as `0 - gain`), so combining it with an additional term (e.g. `- gain - 10`) is also expression chaining and raises `NotImplementedError`.
     - Only addition (`+`) and subtraction (`-`) are supported. The following raise a `TypeError`: `*`, `@`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`, `>`, `<`, `>=`, `<=`, `+=`, `-=`, `*=`, `/=`. Boolean constants also raise a `ValueError`. Taking `abs()` of a variable raises a `NotImplementedError`.
     - Mixing variables of different domains (e.g. `gain + freq`) raises a `ValueError`.
     - Using a `VariableExpression` in `set_offset` with independent I and Q paths raises a `NotImplementedError`.
@@ -121,7 +122,7 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 ### Breaking changes
 
-- `VariableExpression.extract_variables()` and `VariableExpression.extract_constants()` have been removed. They are replaced by the private attributes `VariableExpression.variables` (list of all `Variable` instances in the expression) and `VariableExpression.constant` (the constant term, or `None`), both computed at construction time.
+- `VariableExpression.extract_variables()` and `VariableExpression.extract_constants()` have been removed. They are replaced by `VariableExpression.variables` (list of all `Variable` instances in the expression) and `VariableExpression.constant` (the constant term, or `None`), both computed at construction time.
   [#1057](https://github.com/qilimanjaro-tech/qililab/pull/1057)
 
 ### Deprecations / Removals

@@ -234,10 +234,6 @@ class VariableExpression(Variable):
 
     # TODO: The possible operations are very limited, they could be expanded with * or / if needed; and it could allow for parenthesis in the expression
     def __init__(self, left: Variable | int | float, operator: str, right: Variable | int | float):
-        if isinstance(left, VariableExpression) or isinstance(right, VariableExpression):
-            raise NotImplementedError(
-                "Chaining Variable expressions is not supported; use at most one binary operation."
-            )
         self.left = left
         self.operator = operator
         self.right = right
@@ -268,7 +264,7 @@ class VariableExpression(Variable):
             raise ValueError("Cannot infer domain from constants.")
 
         domain = domain_list[0]
-        if domain_list and not all(dom == domain_list[0] for dom in domain_list):
+        if not all(dom == domain_list[0] for dom in domain_list):
             raise ValueError("All variables should have the same domain.")
         if domain == Domain.Time and len(domain_list) > 1:
             raise NotImplementedError(

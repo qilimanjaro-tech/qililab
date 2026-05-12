@@ -688,10 +688,10 @@ class QProgram(StructuredProgram):
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
-                            dict_variable = dict_variable + self._bus_variable_map[var, bus]
                             raise NotImplementedError(
                                 "Double Hardware loops are not yet implemented with the crosstalk."
                             )
+                            # dict_variable = dict_variable + self._bus_variable_map[var, bus]
                             # TODO: Voltage-domain VariableExpression is now supported (PR #1057).
                             # self._block_variables[var].append(self._bus_variable_map[var, bus])
 
