@@ -119,6 +119,36 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 ### Improvements
 
+- `VariableExpression` with crosstalk compensation is now possible. Allowing for multiple loops for gain and offset. Removed raised `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). For example:
+
+    ```
+    ...
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
+    gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
+    with qp.for_loop(variable=gain_1, start=0, stop=0.1, step=0.01):
+        with qp.for_loop(variable=gain_2, start=0.1, stop=0, step=-0.01):
+            qp.set_gain(bus="flux1", gain=gain_1)
+            qp.set_gain(bus="flux2", gain=gain_2)
+            qp.play(bus="flux1", waveform=square_wf)
+    ```
+
+    ```
+    ...
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset_1, start=0, stop=0.1, step=0.01):
+        with qp.for_loop(variable=offset_2, start=0.1, stop=0, step=-0.01):
+            qp.set_offset(bus="flux1", offset_path0=offset_1)
+            qp.set_offset(bus="flux2", offset_path0=offset_2)
+            qp.play(bus="flux1", waveform=square_wf)
+    ```
+
+  [#1109](https://github.com/qilimanjaro-tech/qililab/pull/1109)
+
 ### Breaking changes
 
 - `VariableExpression.extract_variables()` and `VariableExpression.extract_constants()` have been removed. They are replaced by `VariableExpression.variables` (list of all `Variable` instances in the expression) and `VariableExpression.constant` (the constant term, or `None`).
