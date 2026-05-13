@@ -242,7 +242,6 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         self.non_lin_amp_matrix: dict[str, dict[str, float | None]] = {}
         self.junction_asym_matrix: dict[str, dict[str, float | None]] = {}
 
-
     def __setitem__(self, key: str, value: dict[str, float]) -> None:
         """Sets the crosstalk values for the given bus and initializes nonlinear entries.
 
@@ -272,14 +271,13 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
                 if bus not in self.junction_asym_matrix[key]:
                     self.junction_asym_matrix[key][bus] = None
 
-
     def set_non_linear_params(
         self,
         bus_i: str,
         bus_j: str,
         beta_c: float | None = None,
         amplitude: float | None = None,
-        junction_asym: float | None = None
+        junction_asym: float | None = None,
     ) -> None:
         """Sets the nonlinear coupling parameters between bus_i (target) and bus_j (source).
 
@@ -301,7 +299,9 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
         if beta_c is not None or amplitude is not None:
             if not beta_c is not None and amplitude is not None:
-                raise ValueError("Both 'amplitude' and 'beta_c' must be provided together — you cannot specify one without the other.")
+                raise ValueError(
+                    "Both 'amplitude' and 'beta_c' must be provided together — you cannot specify one without the other."
+                )
 
             if beta_c == 0:
                 raise ValueError("beta_c cannot be zero: it appears as a divisor in the Bessel expansion ")
@@ -414,7 +414,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
                 d = self.junction_asym_matrix[bus_i][bus_j]
                 if d is None:
                     continue
-                corrections[bus_i] += self.junction_asymmetry_correction(flux_x = flux[bus_j], d = d)
+                corrections[bus_i] += self.junction_asymmetry_correction(flux_x=flux[bus_j], d=d)
 
         return corrections
 
@@ -437,18 +437,20 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
         corrections = self.get_non_linear_flux_terms(flux)
         if all(isinstance(f, (float, int)) for f in flux.values()):
-            corrected_flux = np.array(
-                [flux[bus] + corrections[bus]  for bus in sorted_buses],
-                dtype=float
-            )
+            corrected_flux = np.array([flux[bus] + corrections[bus] for bus in sorted_buses], dtype=float)
         else:
-            len_wf = max(len(flux[bus]) for bus in sorted_buses if not isinstance(flux[bus], (float, int)))
+            len_wf = max(len(flux[bus]) for bus in sorted_buses if not isinstance(flux[bus], (float, int)))  # type: ignore[arg-type]
             corrected_flux = np.array(
                 [
-                    flux[bus] + (corrections[bus] if isinstance(corrections[bus], np.ndarray)
-                                else np.array([corrections[bus]] * len_wf)) for bus in sorted_buses
+                    flux[bus]
+                    + (
+                        corrections[bus]
+                        if isinstance(corrections[bus], np.ndarray)
+                        else np.array([corrections[bus]] * len_wf)
+                    )
+                    for bus in sorted_buses
                 ],
-                dtype=float
+                dtype=float,
             )
         offsets = np.array([self.flux_offsets.get(bus, 0.0) for bus in sorted_buses])
 
@@ -516,7 +518,7 @@ class FluxVector:
 
         self.flux_vector[key] = flux
         if self.crosstalk:
-            self.set_crosstalk(self.crosstalk)
+            self.update_bias_vector()
 
     def set_crosstalk(self, crosstalk: CrosstalkMatrix) -> dict[str, float | list[float] | np.ndarray]:
         """Set the crosstalk compensation on the existing flux vector.
@@ -550,11 +552,16 @@ class FluxVector:
             if isinstance(self.flux_vector[bus], list):
                 self.flux_vector[bus] = np.array(self.flux_vector[bus])
 
-        flux_dict = {bus: self.flux_vector[bus] for bus in self.crosstalk.matrix.keys()}  # type: ignore[assignment]
-        self.bias_vector = self.flux_vector.copy()
-        self.bias_vector.update(crosstalk.flux_to_bias(flux_dict))  # type: ignore[arg-type]
+        return self.update_bias_vector()
 
-        return self.bias_vector
+    def update_bias_vector(self):
+        if self.crosstalk:
+            flux_dict = {bus: self.flux_vector[bus] for bus in self.crosstalk.matrix.keys()}
+            self.bias_vector = self.flux_vector.copy()
+            self.bias_vector.update(self.crosstalk.flux_to_bias(flux_dict))
+
+            return self.bias_vector
+        raise AttributeError("Cannot calcualte effective bias if Crosstalk is not set")
 
     def set_crosstalk_from_bias(
         self, crosstalk: CrosstalkMatrix, bias_vector: dict[str, float | list[float] | np.ndarray] | None = None

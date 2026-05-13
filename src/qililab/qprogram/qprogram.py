@@ -884,7 +884,7 @@ class QProgram(StructuredProgram):
             return flux_vector
 
         def handle_crosstalk_element(block: Block, element_list: list[int], flux_vector: FluxVector):
-            flux_vector.set_crosstalk(flux_vector.crosstalk)
+            flux_vector.update_bias_vector()
             if element_list:
                 elements = []
                 for ii, element_idx in enumerate(element_list):
