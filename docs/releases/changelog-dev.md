@@ -18,7 +18,7 @@
     
     ```
     These expressions are subject to some restrictions:
-    - Expression chaining is not supported: at most two components (a variable and a constant, or two variables) are allowed. Raises `NotImplementedError`. For example, the following code will raise a `NotImplementedError`:
+    - Expression chaining is not supported: at most two components (a variable and a constant, or two variables) are allowed. For example, the following code will raise a `NotImplementedError`:
         ```
       qp = ql.Qprogram(
       gain1 = qp.variable("gain1", ql.Domain.Voltage)
@@ -122,7 +122,7 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 ### Breaking changes
 
-- `VariableExpression.extract_variables()` and `VariableExpression.extract_constants()` have been removed. They are replaced by `VariableExpression.variables` (list of all `Variable` instances in the expression) and `VariableExpression.constant` (the constant term, or `None`), both computed at construction time.
+- `VariableExpression.extract_variables()` and `VariableExpression.extract_constants()` have been removed. They are replaced by `VariableExpression.variables` (list of all `Variable` instances in the expression) and `VariableExpression.constant` (the constant term, or `None`).
   [#1057](https://github.com/qilimanjaro-tech/qililab/pull/1057)
 
 ### Deprecations / Removals
