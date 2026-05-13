@@ -4791,12 +4791,141 @@ other_max_duration_0:
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
 
         compiler_gain = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Double Hardware loops are not yet implemented with the crosstalk."):
-            compiler_gain.compile(qprogram=crosstalk_qprogram_double_gain_loop, crosstalk=crosstalk)
+        sequences, _ = compiler_gain.compile(qprogram=crosstalk_qprogram_double_gain_loop, crosstalk=crosstalk)
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        flux1_gain = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             10, R0         
+                        move             0, R1          
+                        move             0, R2          
+        loop_0:
+                        move             10, R3         
+                        move             1638, R4       
+                        move             3276, R5       
+        loop_1:
+                        nop                             
+                        add              R1, R4, R6     
+                        nop                             
+                        set_awg_gain     R6, R6         
+                        play             0, 1, 50       
+                        sub              R4, 164, R4    
+                        sub              R5, 328, R5    
+                        loop             R3, @loop_1    
+                        add              R1, 327, R1    
+                        add              R2, 163, R2    
+                        loop             R0, @loop_0    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        flux2_gain = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             10, R0         
+                        move             0, R1          
+                        move             0, R2          
+        loop_0:
+                        move             10, R3         
+                        move             1638, R4       
+                        move             3276, R5       
+        loop_1:
+                        nop                             
+                        add              R5, R2, R6     
+                        nop                             
+                        set_awg_gain     R6, R6         
+                        play             0, 1, 50       
+                        sub              R4, 164, R4    
+                        sub              R5, 328, R5    
+                        loop             R3, @loop_1    
+                        add              R1, 327, R1    
+                        add              R2, 163, R2    
+                        loop             R0, @loop_0    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_gain)
+        assert is_q1asm_equal(sequences["flux2"], flux2_gain)
 
         compiler_offset = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Double Hardware loops are not yet implemented with the crosstalk."):
-            compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
+        sequences, _ = compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
+
+        flux1_offset = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             10, R0         
+                        move             0, R1          
+                        move             0, R2          
+        loop_0:
+                        move             10, R3         
+                        move             1638, R4       
+                        move             3276, R5       
+        loop_1:
+                        nop                             
+                        add              R1, R4, R6     
+                        nop                             
+                        set_awg_offs     R6, R6         
+                        play             0, 1, 50       
+                        sub              R4, 164, R4    
+                        sub              R5, 328, R5    
+                        loop             R3, @loop_1    
+                        add              R1, 327, R1    
+                        add              R2, 163, R2    
+                        loop             R0, @loop_0    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        flux2_offset = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             10, R0         
+                        move             0, R1          
+                        move             0, R2          
+        loop_0:
+                        move             10, R3         
+                        move             1638, R4       
+                        move             3276, R5       
+        loop_1:
+                        nop                             
+                        add              R5, R2, R6     
+                        nop                             
+                        set_awg_offs     R6, R6         
+                        play             0, 1, 50       
+                        sub              R4, 164, R4    
+                        sub              R5, 328, R5    
+                        loop             R3, @loop_1    
+                        add              R1, 327, R1    
+                        add              R2, 163, R2    
+                        loop             R0, @loop_0    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_offset)
+        assert is_q1asm_equal(sequences["flux2"], flux2_offset)
 
     def test_crosstalk_compensation_through_calibration(self, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration):
 
