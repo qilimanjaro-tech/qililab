@@ -641,19 +641,15 @@ class QProgram(StructuredProgram):
                     )
                 )
                 dict_variable = self._bus_variable_map[variable, bus]
+                self._block_variables[variable].append(dict_variable)
 
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
-                            raise NotImplementedError(
-                                "Double Hardware loops are not yet implemented with the crosstalk."
-                            )
-                            # TODO: Voltage-domain VariableExpression is now supported (PR #1057).
-                            # dict_variable += self._bus_variable_map[var, bus]
-                            # self._block_variables[var].append(self._bus_variable_map[var, bus])
+                            dict_variable = dict_variable + self._bus_variable_map[var, bus]
+                            self._block_variables[var].append(self._bus_variable_map[var, bus])
 
                 offset = SetOffset(bus, dict_variable)
-                self._block_variables[variable].append(dict_variable)
             elif isinstance(bias_vector, float):
                 offset = SetOffset(bus, bias_vector)
 
@@ -684,19 +680,15 @@ class QProgram(StructuredProgram):
                     )
                 )
                 dict_variable = self._bus_variable_map[variable, bus]
+                self._block_variables[variable].append(dict_variable)
 
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
                             dict_variable = dict_variable + self._bus_variable_map[var, bus]
-                            raise NotImplementedError(
-                                "Double Hardware loops are not yet implemented with the crosstalk."
-                            )
-                            # TODO: Voltage-domain VariableExpression is now supported (PR #1057).
-                            # self._block_variables[var].append(self._bus_variable_map[var, bus])
+                            self._block_variables[var].append(self._bus_variable_map[var, bus])
 
                 gain = SetGain(bus, dict_variable)
-                self._block_variables[variable].append(dict_variable)
             elif isinstance(bias_vector, float):
                 gain = SetGain(bus, bias_vector)
             return gain
