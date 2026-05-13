@@ -2,6 +2,44 @@
 
 ### New features since last release
 
+- Extended `VariableExpression` capabilities (Qblox backend only)
+  The capabilities of `VariableExpression` have been extended, and remain exclusive to the Qblox backend. 
+
+  Previously, this type of expression was only supported in the Time Domain. It is now also available in the Voltage Domain, where it can be used to modify values in `qprogram` via the offset or the gain.
+  The Time Domain behavior is unchanged. The updates described below therefore apply only to Voltage Domain operations.
+
+  A combination of variables is now possible (Voltage Domain only), as shown below.
+    ```
+    qp = ql.Qprogram()
+    gain1 = qp.variable("gain1", ql.Domain.Voltage)
+    gain2 = qp.variable("gain2", ql.Domain.Voltage)
+    qp.set_gain("bus", gain1 + gain2)
+    
+    ```
+    These expressions are subject to some restrictions:
+    - Expression chaining is not supported: at most two components (a variable and a constant, or two variables) are allowed. For example, the following code will raise a `NotImplementedError`:
+        ```
+      qp = ql.Qprogram(
+      gain1 = qp.variable("gain1", ql.Domain.Voltage)
+      qp.set_gain("bus", 10 + gain1 + 30)
+      )
+      ```
+      Note: unary negation of a variable (e.g. `- gain`) counts as two components (it is rewritten as `0 - gain`), so combining it with an additional term (e.g. `- gain - 10`) is also expression chaining and raises `NotImplementedError`.
+    - Only addition (`+`) and subtraction (`-`) are supported. The following raise a `TypeError`: `*`, `@`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`, `>`, `<`, `>=`, `<=`, `+=`, `-=`, `*=`, `/=`. Boolean constants also raise a `ValueError`. Taking `abs()` of a variable raises a `NotImplementedError`.
+    - Mixing variables of different domains (e.g. `gain + freq`) raises a `ValueError`.
+    - Using a `VariableExpression` in `set_offset` with independent I and Q paths raises a `NotImplementedError`.
+    - Using a `VariableExpression` with crosstalk compensation across multiple hardware loops raises a `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). This will be supported in a future PR.
+    - To facilitate the `Q1ASM` implementation, some expressions are internally reorganized in the `Variable` class without changing their semantics:
+      ```
+      gain + (-10) -> gain - abs(10)
+      - 10 + gain  -> gain - abs(10)
+      gain - (-10) -> gain + abs(10)
+      - gain       -> 0 - gain
+
+      ```
+  [#1057](https://github.com/qilimanjaro-tech/qililab/pull/1057)
+
+
 - Implemented QBlox and QDAC-II automatic crosstalk compensation for `Qprogram`. The compiler automatically detects if there is a crosstalk matrix inside platform and implements the crosstalk for any bus inside the `Crosstalk` class. To do so, either use `platform.set_crosstalk(crosstalk)` or define a crosstalk inside `calibration` and use it through `execute_qprogram(..., calibration)`.
 With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced is a trigger that activates the crosstalk, the user can deactivate crosstalk compensation by setting this flag as False. The flag is True by default but if no crosstalk has been introduce through `platform.set_crosstalk(crosstalk)` or `execute_qprogram(..., calibration)` no crosstalk will be applied as none exists.
 
@@ -82,6 +120,9 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 ### Improvements
 
 ### Breaking changes
+
+- `VariableExpression.extract_variables()` and `VariableExpression.extract_constants()` have been removed. They are replaced by `VariableExpression.variables` (list of all `Variable` instances in the expression) and `VariableExpression.constant` (the constant term, or `None`).
+  [#1057](https://github.com/qilimanjaro-tech/qililab/pull/1057)
 
 ### Deprecations / Removals
 
