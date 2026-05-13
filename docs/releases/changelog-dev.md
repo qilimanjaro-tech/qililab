@@ -2,7 +2,6 @@
 
 ### New features since last release
 
-
 - Extended `VariableExpression` capabilities (Qblox backend only)
   The capabilities of `VariableExpression` have been extended, and remain exclusive to the Qblox backend. 
 
