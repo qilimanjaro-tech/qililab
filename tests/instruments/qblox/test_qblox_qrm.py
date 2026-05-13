@@ -149,7 +149,7 @@ class TestQbloxQRM:
             (Parameter.SAMPLING_RATE, 0.09),
             (Parameter.HARDWARE_DEMODULATION, True),
             (Parameter.HARDWARE_DEMODULATION, False),
-            (Parameter.INTEGRATION_LENGTH, 100),
+
             (Parameter.INTEGRATION_MODE, "ssb"),
             (Parameter.SEQUENCE_TIMEOUT, 2),
             (Parameter.ACQUISITION_TIMEOUT, 2),
@@ -186,8 +186,7 @@ class TestQbloxQRM:
             assert sequencer.phase_imbalance == value
         elif parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
             assert sequencer.scope_acquire_trigger_mode == AcquireTriggerMode(value)  # type: ignore[attr-defined]
-        elif parameter == Parameter.INTEGRATION_LENGTH:
-            assert sequencer.integration_length == value  # type: ignore[attr-defined]
+
         elif parameter == Parameter.SAMPLING_RATE:
             assert sequencer.sampling_rate == value  # type: ignore[attr-defined]
         elif parameter == Parameter.INTEGRATION_MODE:
@@ -259,7 +258,7 @@ class TestQbloxQRM:
             (Parameter.SCOPE_HARDWARE_AVERAGING, True),
             (Parameter.SAMPLING_RATE, 1.0e9),
             (Parameter.HARDWARE_DEMODULATION, True),
-            (Parameter.INTEGRATION_LENGTH, 1000),
+
             (Parameter.INTEGRATION_MODE, "ssb"),
             (Parameter.SEQUENCE_TIMEOUT, 5.0),
             (Parameter.ACQUISITION_TIMEOUT, 1.0),
