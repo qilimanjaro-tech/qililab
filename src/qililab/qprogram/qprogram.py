@@ -193,6 +193,12 @@ class QProgram(StructuredProgram):
         self.qblox = self._QbloxInterface(self)
         self.quantum_machines = self._QuantumMachinesInterface(self)
         self.qdac = self._QdacInterface(self)
+        self._weight_duration: list[int | str] = []
+
+    @property
+    def weight_duration(self) -> list[int | str]:
+        """Weight durations of all acquisitions: int (nanoseconds) for direct weights, str (calibrated weights name) for calibrated references."""
+        return self._weight_duration
 
     def __str__(self) -> str:
         def traverse(block: Block):
@@ -1267,6 +1273,7 @@ class QProgram(StructuredProgram):
             )
         self._active_block.append(operation)
         self._buses.add(bus)
+        self._weight_duration.append(weights.get_duration() if isinstance(weights, IQWaveform) else weights)
 
     def sync(self, buses: list[str] | None = None):
         """Synchronize operations between buses, so the operations following will start at the same time.
@@ -1394,6 +1401,7 @@ class QProgram(StructuredProgram):
             )
             self.qprogram._active_block.append(operation)
             self.qprogram._buses.add(bus)
+            self.qprogram._weight_duration.append(weights.get_duration() if isinstance(weights, IQWaveform) else weights)
 
         @overload
         def play(self, bus: str, waveform: Waveform | IQWaveform, wait_time: int) -> None:
@@ -1545,6 +1553,7 @@ class QProgram(StructuredProgram):
             self.qprogram._buses.add(control_bus)
             self.latch_enabled.append(control_bus)
             self.trigger_network_required[bus] = trigger_address
+            self.qprogram._weight_duration.append(weights.get_duration() if isinstance(weights, IQWaveform) else weights)
 
         def set_markers(self, bus: str, mask: str):
             """Set the markers based on a 4-bit binary mask.
