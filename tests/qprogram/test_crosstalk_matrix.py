@@ -33,6 +33,20 @@ def get_xtalk_matrix(crosstalk_array_buses):
     """
     return CrosstalkMatrix.from_array(buses=crosstalk_array_buses[1], matrix_array=crosstalk_array_buses[0])
 
+@pytest.fixture(name="non_linear_crosstalk_matrix")
+def get_nl_xtalk_matrix(crosstalk_matrix):
+    """Non Linear Crosstalk matrix for the following xtalk
+            flux_0  flux_1  flux_2
+    flux_0  1       0.2     0.3
+    flux_1  0.1     1       0.3
+    flux_2  0       1       0
+    With the non-linear parameters.
+    """
+    nl_xtalk = NonLinearCrosstalkMatrix.from_linear(crosstalk_matrix)
+    # nl_xtalk.set_non_linear_params("flux_2", "flux_1", beta_c=-0.3, amplitude=-0.08)
+    # nl_xtalk.set_non_linear_params("flux_0", "flux_1", junction_asym=0.02)
+    return nl_xtalk
+
 
 class TestFluxVector:
     """Unit test for the FluxVector class"""
@@ -54,6 +68,14 @@ class TestFluxVector:
         flux_vector.bias_vector = {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
         assert flux_vector["flux_0"] == 0.1
 
+    def test_update_bias_vector(self, flux_vector, crosstalk_matrix, crosstalk_array_buses):
+        pytest.raises(AttributeError, flux_vector.update_bias_vector)
+
+        bias = flux_vector.set_crosstalk(crosstalk_matrix)
+        bias_arr = np.array([b for b in bias.values()])
+        supposed_arr = np.linalg.inv(crosstalk_array_buses[0]) @ np.array([0.5, 1.0, 0.0])
+        assert np.array_equal(bias_arr, supposed_arr)
+            
     def test_set_crosstalk_from_bias(self, flux_vector, crosstalk_matrix):
         flux = flux_vector.set_crosstalk_from_bias(crosstalk_matrix)
         assert flux_vector.crosstalk == crosstalk_matrix
@@ -372,3 +394,94 @@ bus2          0.7     -0.5"""
             scalar_bias = crosstalk_matrix.flux_to_bias(scalar_flux)
             for bus in flux_dict:
                 assert float(bias[bus][i]) == pytest.approx(scalar_bias[bus], rel=1e-6)
+
+
+class TestNonLinearCrosstalkMatrix:
+    def test_from_linear_preserves_matrix(self, non_linear_crosstalk_matrix, crosstalk_matrix):
+        assert non_linear_crosstalk_matrix.matrix == crosstalk_matrix.matrix
+
+    def test_from_linear_initializes_nonlinear_to_none(self, non_linear_crosstalk_matrix):
+        for bus_i in non_linear_crosstalk_matrix.matrix:
+            for bus_j in non_linear_crosstalk_matrix.matrix[bus_i]:
+                assert non_linear_crosstalk_matrix.beta_c_matrix[bus_i][bus_j] is None
+                assert non_linear_crosstalk_matrix.non_lin_amp_matrix[bus_i][bus_j] is None
+
+    def test_set_non_linear_params(self, non_linear_crosstalk_matrix):
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3, amplitude=-0.08)
+        assert non_linear_crosstalk_matrix.beta_c_matrix["flux_0"]["flux_1"] == pytest.approx(-0.3)
+        assert non_linear_crosstalk_matrix.non_lin_amp_matrix["flux_0"]["flux_1"] == pytest.approx(-0.08)
+
+    def test_set_non_linear_params_raises_on_partial_params(self, non_linear_crosstalk_matrix):
+        with pytest.raises(ValueError, match="Both 'amplitude' and 'beta_c' must be provided together"):
+            non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=-0.3)
+        with pytest.raises(ValueError, match="Both 'amplitude' and 'beta_c' must be provided together"):
+            non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", amplitude=-0.08)
+
+    def test_set_non_linear_params_raises_on_zero_beta_c(self, non_linear_crosstalk_matrix):
+        with pytest.raises(ValueError, match="beta_c cannot be zero"):
+            non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", beta_c=0, amplitude=-0.08)
+
+    def test_set_non_linear_params_junction_asym_only(self, non_linear_crosstalk_matrix):
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_1", junction_asym=0.02)
+        assert non_linear_crosstalk_matrix.junction_asym_matrix["flux_0"]["flux_1"] == pytest.approx(0.02)
+
+    def test_set_non_linear_params_raises_on_missing_bus(self, non_linear_crosstalk_matrix):
+        with pytest.raises(ValueError, match="not present in the crosstalk matrix"):
+            non_linear_crosstalk_matrix.set_non_linear_params("nonexistent", "flux_1", beta_c=-0.3, amplitude=-0.08)
+
+    def test_sin_beta_scaled_zero_at_zero_flux(self, non_linear_crosstalk_matrix):
+        result = non_linear_crosstalk_matrix.sin_beta_scaled(flux=0.0, beta=-0.234, amp=-0.021)
+        assert result == pytest.approx(0.0, abs=1e-10)
+
+    def test_sin_beta_scaled_array_input(self, non_linear_crosstalk_matrix):
+        flux = np.array([0.0, 0.1, 0.5])
+        result = non_linear_crosstalk_matrix.sin_beta_scaled(flux=flux, beta=-0.234, amp=-0.021)
+        assert result.shape == flux.shape
+
+    def test_sin_beta_scaled_raises_on_nan_amplitude(self, non_linear_crosstalk_matrix):
+        with pytest.raises(ValueError, match="Amplitude cannot be NaN"):
+            non_linear_crosstalk_matrix.sin_beta_scaled(flux=0.1, beta=-0.234, amp=float("nan"))
+
+    def test_junction_asymmetry_correction_zero_for_symmetric_squid(self, non_linear_crosstalk_matrix):
+        result = non_linear_crosstalk_matrix.junction_asymmetry_correction(flux_x=0.25, d=0.0)
+        assert result == pytest.approx(0.0, abs=1e-10)
+
+    def test_junction_asymmetry_correction_known_value(self, non_linear_crosstalk_matrix):
+        flux_x = 0.25
+        d = 1.0
+        phi_d = np.arctan(d * np.tan(np.pi * flux_x))
+        expected = -phi_d / (2 * np.pi)
+        result = non_linear_crosstalk_matrix.junction_asymmetry_correction(flux_x=flux_x, d=d)
+        assert result == pytest.approx(expected, rel=1e-6)
+
+    def test_junction_asymmetry_correction_array_input(self, non_linear_crosstalk_matrix):
+        flux_x = np.array([0.0, 0.1, 0.25, 0.5])
+        result = non_linear_crosstalk_matrix.junction_asymmetry_correction(flux_x=flux_x, d=0.5)
+        assert isinstance(result, np.ndarray)
+        assert result.shape == flux_x.shape
+
+    def test_junction_asymmetry_correction_raises_on_nan_d(self, non_linear_crosstalk_matrix):
+        with pytest.raises(ValueError, match="Junction asymetry cannot be NaN"):
+            non_linear_crosstalk_matrix.junction_asymmetry_correction(flux_x=0.1, d=float("nan"))
+
+    def test_flux_to_bias_no_nonlinear_matches_linear_inversion(self, non_linear_crosstalk_matrix, flux_vector_dict):
+        bias = non_linear_crosstalk_matrix.flux_to_bias(flux_vector_dict)
+
+        sorted_buses = sorted(flux_vector_dict.keys())
+        flux_arr = np.array([flux_vector_dict[b] for b in sorted_buses])
+        offsets = np.array([non_linear_crosstalk_matrix.flux_offsets.get(b, 0.0) for b in sorted_buses])
+        expected = np.linalg.inv(non_linear_crosstalk_matrix.to_array()) @ (flux_arr - offsets)
+
+        for i, bus in enumerate(sorted_buses):
+            assert bias[bus] == pytest.approx(expected[i], rel=1e-6)
+
+    def test_flux_to_bias_with_nonlinear_differs_from_linear(self, non_linear_crosstalk_matrix, crosstalk_matrix):
+        non_linear_crosstalk_matrix.set_non_linear_params("flux_0", "flux_2", beta_c=-0.234, amplitude=-0.021)
+        flux = {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.05}
+        bias_nonlinear = non_linear_crosstalk_matrix.flux_to_bias(flux)
+
+        linear = NonLinearCrosstalkMatrix.from_linear(crosstalk_matrix)
+        bias_linear = linear.flux_to_bias(flux)
+
+        assert any(bias_nonlinear[bus] != pytest.approx(bias_linear[bus], rel=1e-6) for bus in flux)
+

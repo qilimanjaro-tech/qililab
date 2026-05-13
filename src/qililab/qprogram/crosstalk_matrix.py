@@ -298,7 +298,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
                 raise ValueError(f"Bus '{bus}' not present in the crosstalk matrix.")
 
         if beta_c is not None or amplitude is not None:
-            if not beta_c is not None and amplitude is not None:
+            if not (beta_c is not None and amplitude is not None):
                 raise ValueError(
                     "Both 'amplitude' and 'beta_c' must be provided together — you cannot specify one without the other."
                 )
@@ -518,7 +518,7 @@ class FluxVector:
 
         self.flux_vector[key] = flux
         if self.crosstalk:
-            self.update_bias_vector()
+            self.set_crosstalk(self.crosstalk)
 
     def set_crosstalk(self, crosstalk: CrosstalkMatrix) -> dict[str, float | list[float] | np.ndarray]:
         """Set the crosstalk compensation on the existing flux vector.
