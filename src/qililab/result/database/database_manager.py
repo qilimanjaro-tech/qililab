@@ -16,7 +16,7 @@ import datetime
 import os
 import warnings
 from configparser import ConfigParser
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 import h5py
 import numpy as np
@@ -203,6 +203,22 @@ class DatabaseManager:
             except Exception as e:
                 running_session.rollback()
                 raise e
+
+    @overload
+    def load_by_id(self, id: list[int]) -> list[Measurement] | None:
+        """Load list of measurements by their measurement_id.
+
+        Args:
+            id (list[int]): measurement_id list given by the database.
+        """
+
+    @overload
+    def load_by_id(self, id: int) -> Measurement | None:
+        """Load measurement by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+        """
 
     def load_by_id(self, id: int | list[int]) -> list[Measurement] | Measurement | None:
         """Load measurements by their measurement_id.
