@@ -229,6 +229,22 @@ class DatabaseManager:
                         measurement_by_id.result_path = new_path
 
                 return measurement_by_id
+            
+    def load_sequence_by_id(self, id: int | list[int]) -> Measurement | None:
+        """Load measurement by its measurement_id.
+
+        Args:
+            id (int | list[int]): measurement_id value given by the database.
+        """            
+        with self.session() as running_session:
+            measurement_by_id_list = running_session.query(Measurement).where(Measurement.sequence_id == id).all()
+            if measurement_by_id_list is not None:
+                for meas in measurement_by_id_list:
+                    path = meas.result_path
+                    if not os.path.isfile(path):
+                        new_path = path.replace(self.base_path_local, self.base_path_share)
+                        meas.result_path = new_path
+            return measurement_by_id_list
 
     def load_calibration_by_id(self, id: int) -> AutocalMeasurement | None:
         """Load autocalibration measurement by its measurement_id.
@@ -301,6 +317,7 @@ class DatabaseManager:
             if light_read:
                 query = query.with_entities(  # Note that some columns are missing that currently are not being used
                     Measurement.measurement_id,
+                    Measurement.sequence_id,
                     Measurement.experiment_name,
                     Measurement.optional_identifier,
                     Measurement.start_time,
@@ -363,6 +380,7 @@ class DatabaseManager:
             if light_read:
                 query = query.with_entities(  # Note that some columns are missing that currently are not being used
                     Measurement.measurement_id,
+                    Measurement.sequence_id,
                     Measurement.experiment_name,
                     Measurement.optional_identifier,
                     Measurement.start_time,
