@@ -406,7 +406,7 @@ class QbloxDraw:
 
         seq_parsed_program = {}
         for bus in sequences:  # Iterate through the bus of the sequences
-            sequence = sequences[bus].todict()
+            sequence = sequences[bus].to_dict()
             program_line = sequence["program"].split("\n")
             processed_lines = []
 
