@@ -25,7 +25,6 @@ from qililab.typings.enums import (
     ConnectionName,
     InstrumentControllerName,
     InstrumentTypeName,
-    Parameter,
 )
 from qililab.typings.instruments.cluster import Cluster
 
@@ -107,4 +106,3 @@ class QbloxClusterController(InstrumentController):
         """Set the initialized device to all attached modules."""
         for module, slot_id in zip(self.modules, self.connected_modules_slot_ids):
             module.device = self.device.modules[slot_id - 1]  # slot_id represents the number displayed in the cluster
-
