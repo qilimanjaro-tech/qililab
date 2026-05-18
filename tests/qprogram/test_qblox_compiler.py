@@ -664,11 +664,11 @@ def fixture_single_bin_different_depth_qp() -> QProgram:
     square_wf = IQPair(I=Square(amplitude=1, duration=10), Q=Square(amplitude=0, duration=10))
 
     with qp.average(100):
-        qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
-        qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
+        qp.measure(bus="readout", waveform=square_wf, weights=weights_shape)
+        qp.measure(bus="readout", waveform=square_wf, weights=weights_shape)
 
-    qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
-    qp.measure(bus=f"readout", waveform=square_wf, weights=weights_shape)
+    qp.measure(bus="readout", waveform=square_wf, weights=weights_shape)
+    qp.measure(bus="readout", waveform=square_wf, weights=weights_shape)
     return qp
 
 
@@ -679,18 +679,18 @@ def fixture_bus_mappping_acquire() -> QProgram:
     with qp.average(10):
         qp.play("drive", square_wf)
         qp.measure(
-            bus=f"readout",
+            bus="readout",
             waveform=square_wf,
             weights=square_wf,
         )
         qp.measure(
-            bus=f"readout",
+            bus="readout",
             waveform=square_wf,
             weights=square_wf,
         )
         qp.wait("readout", 100)
     qp.measure(
-        bus=f"readout",
+        bus="readout",
         waveform=square_wf,
         weights=square_wf,
     )
@@ -734,8 +734,8 @@ def fixture_cryoscope_qprogram() -> QProgram:
     square_wf = Square(amplitude=1, duration=1385)
     square_iq = IQPair(I=square_wf, Q=square_wf)
     time = qp.variable(label="time", domain=Domain.Time)
-    qp.set_gain(bus=f"drive", gain=1)
-    qp.set_gain(bus=f"readout", gain=1)
+    qp.set_gain(bus="drive", gain=1)
+    qp.set_gain(bus="readout", gain=1)
     with qp.average(HW_AVG):
         with qp.for_loop(
             variable=flux_amplitude,
@@ -750,46 +750,46 @@ def fixture_cryoscope_qprogram() -> QProgram:
                 step=DURATION_VALUES[1] - DURATION_VALUES[0],
             ):
 
-                qp.set_gain(bus=f"flux", gain=flux_amplitude)
+                qp.set_gain(bus="flux", gain=flux_amplitude)
                 qp.sync()
-                qp.play(bus=f"drive", waveform=drag_pair)
+                qp.play(bus="drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus=f"flux", duration=POST_DRIVE_BUFFER)
-                qp.sync()
-
-                # play a flux pulse of varying duration
-                qp.qblox.play(bus=f"flux", waveform=flux_wf, wait_time=4)
-                qp.wait(bus=f"drive", duration=time)
-                qp.sync()
-                qp.qblox.play(bus=f"flux", waveform=Square(0, 500), wait_time=4)
-
-                qp.wait(bus=f"drive", duration=POST_FLUX_BUFFER + T_SEP - time)
-                qp.play(bus=f"drive", waveform=drag_pair)
-                qp.sync()
-                qp.wait(bus=f"readout", duration=POST_DRIVE_BUFFER)
-                qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq)
-                qp.sync()
-                qp.wait(bus=f"drive", duration=REPETITION_DURATION)
-
-                qp.sync()
-                qp.play(bus=f"drive", waveform=drag_pair)
-                qp.sync()
-                qp.wait(bus=f"flux", duration=POST_DRIVE_BUFFER)
+                qp.wait(bus="flux", duration=POST_DRIVE_BUFFER)
                 qp.sync()
 
                 # play a flux pulse of varying duration
-                qp.qblox.play(bus=f"flux", waveform=flux_wf, wait_time=4)
-                qp.wait(bus=f"drive", duration=time)
+                qp.qblox.play(bus="flux", waveform=flux_wf, wait_time=4)
+                qp.wait(bus="drive", duration=time)
                 qp.sync()
-                qp.qblox.play(bus=f"flux", waveform=Square(0, 500), wait_time=4)
+                qp.qblox.play(bus="flux", waveform=Square(0, 500), wait_time=4)
 
-                qp.wait(bus=f"drive", duration=POST_FLUX_BUFFER + T_SEP - time)
-                qp.play(bus=f"drive", waveform=drag_pair)
+                qp.wait(bus="drive", duration=POST_FLUX_BUFFER + T_SEP - time)
+                qp.play(bus="drive", waveform=drag_pair)
                 qp.sync()
-                qp.wait(bus=f"readout", duration=POST_DRIVE_BUFFER)
-                qp.measure(bus=f"readout", waveform=square_iq, weights=square_iq)
+                qp.wait(bus="readout", duration=POST_DRIVE_BUFFER)
+                qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
                 qp.sync()
-                qp.wait(bus=f"drive", duration=REPETITION_DURATION)
+                qp.wait(bus="drive", duration=REPETITION_DURATION)
+
+                qp.sync()
+                qp.play(bus="drive", waveform=drag_pair)
+                qp.sync()
+                qp.wait(bus="flux", duration=POST_DRIVE_BUFFER)
+                qp.sync()
+
+                # play a flux pulse of varying duration
+                qp.qblox.play(bus="flux", waveform=flux_wf, wait_time=4)
+                qp.wait(bus="drive", duration=time)
+                qp.sync()
+                qp.qblox.play(bus="flux", waveform=Square(0, 500), wait_time=4)
+
+                qp.wait(bus="drive", duration=POST_FLUX_BUFFER + T_SEP - time)
+                qp.play(bus="drive", waveform=drag_pair)
+                qp.sync()
+                qp.wait(bus="readout", duration=POST_DRIVE_BUFFER)
+                qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+                qp.sync()
+                qp.wait(bus="drive", duration=REPETITION_DURATION)
                 qp.sync()
     return qp
 
