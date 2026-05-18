@@ -84,6 +84,13 @@ def fixture_qp_draw_with_timeout_no_loop() -> QProgram:
     qp.wait("drive", 10)
     return qp
 
+@pytest.fixture(name="qp_draw_with_wait_trigger")
+def fixture_qp_draw_with_wait_trigger() -> QProgram:
+    qp = QProgram()
+    qp.wait_trigger("drive", 100)
+    qp.play("drive", Square(amplitude=1, duration=20))
+    return qp
+
 
 @pytest.fixture(name="qp_plat_draw_qcmrf_offset")
 def fixture_qp_plat_draw_qcmrf_offset() -> QProgram:
@@ -303,6 +310,16 @@ class TestQBloxDraw:
 
         pio.renderers.default = "json"
         figure = qp_draw_with_timeout_no_loop.draw(time_window=10)
+        np.testing.assert_allclose(figure.data[0].y, np.array(expected_results[figure.data[0].name]), rtol=1e-2, atol=1e-12)
+        np.testing.assert_allclose(figure.data[1].y, np.array(expected_results[figure.data[1].name]), rtol=1e-2, atol=1e-12)
+
+    def test_qp_draw_with_wait_trigger(self, qp_draw_with_wait_trigger: QProgram):
+        expected_results = {
+        "drive I": [0.] * 100,
+        "drive Q": [0.] * 100}
+
+        pio.renderers.default = "json"
+        figure = qp_draw_with_wait_trigger.draw(time_window=10)
         np.testing.assert_allclose(figure.data[0].y, np.array(expected_results[figure.data[0].name]), rtol=1e-2, atol=1e-12)
         np.testing.assert_allclose(figure.data[1].y, np.array(expected_results[figure.data[1].name]), rtol=1e-2, atol=1e-12)
 
