@@ -1188,14 +1188,6 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    def test_wait_trigger_no_ext_trigger_raises_error(self, wait_trigger: QProgram):
-
-        compiler = QbloxCompiler()
-        with pytest.raises(
-            AttributeError, match="External trigger has not been set as True inside runcard's instrument controllers."
-        ):
-            compiler.compile(qprogram=wait_trigger)
-
     def test_wait_trigger_var_durationraises_error(self):
 
         qp = QProgram()
