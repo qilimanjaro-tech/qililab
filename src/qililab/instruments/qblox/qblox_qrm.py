@@ -303,7 +303,9 @@ class QbloxQRM(QbloxModule):
             self._set_acquisition_timeout(value=int(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.TIMEOUT_REPETITIONS:
-            self._set_timeout_repetitions(value=int(value), sequencer_id=channel_id)
+            self._set_timeout_repetitions(
+                value= value if isinstance(value, bool) else int(value), sequencer_id=channel_id
+            )
             return
         if parameter == Parameter.SCOPE_STORE_ENABLED:
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
@@ -449,7 +451,7 @@ class QbloxQRM(QbloxModule):
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).acquisition_timeout = int(value)
 
-    def _set_timeout_repetitions(self, value: int | float | str | bool, sequencer_id: int):
+    def _set_timeout_repetitions(self, value: int | bool, sequencer_id: int):
         """set timeout_repetitions for the specific channel
 
         Args:

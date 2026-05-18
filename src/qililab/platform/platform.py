@@ -1464,7 +1464,7 @@ class Platform:
 
                 timeout_repetitions = bus.check_recurrent_timeout()
                 if timeout_repetitions and self.trigger_runs <= timeout_repetitions:
-                    logger.info(
+                    logger.warning(
                         f"Timeout reached for triggered measurement, trying again. {self.trigger_runs}/{timeout_repetitions}"
                     )
                     return self._execute_qblox_compilation_output(output, debug)

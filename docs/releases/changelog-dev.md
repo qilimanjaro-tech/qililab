@@ -100,6 +100,9 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 
 ### Breaking changes
 
+- When Qblox raises a `TimeoutError`, platform no longer automatically retries 3 times in a row. Now it is required to set a `timeout_repetitions` higher than 0.
+  [#1106](https://github.com/qilimanjaro-tech/qililab/pull/1106)
+
 ### Deprecations / Removals
 
 ### Documentation
