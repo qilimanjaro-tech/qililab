@@ -1128,7 +1128,7 @@ class TestQBloxCompiler:
 
     def test_wait_trigger(self, wait_trigger: QProgram):
         compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=wait_trigger, ext_trigger=True)
+        sequences, _ = compiler.compile(qprogram=wait_trigger)
 
         assert sequences["drive"]._program._compiled
 
@@ -1194,7 +1194,7 @@ class TestQBloxCompiler:
         with pytest.raises(
             AttributeError, match="External trigger has not been set as True inside runcard's instrument controllers."
         ):
-            compiler.compile(qprogram=wait_trigger, ext_trigger=False)
+            compiler.compile(qprogram=wait_trigger)
 
     def test_wait_trigger_var_durationraises_error(self):
 
@@ -1205,7 +1205,7 @@ class TestQBloxCompiler:
 
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match="Wait trigger duration cannot be a Variable, it must be an int."):
-            compiler.compile(qprogram=qp, ext_trigger=True)
+            compiler.compile(qprogram=qp)
 
     def test_block_handlers(self, measurement_blocked_operation: QProgram, calibration: Calibration):
         drag_wf = IQDrag(amplitude=1.0, duration=100, num_sigmas=5, drag_coefficient=1.5)

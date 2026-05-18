@@ -356,7 +356,7 @@ class Platform:
 
         self.trigger_runs: int = 0
         """Number of tries after a timeout error."""
-        
+
         self.has_ext_trigger: bool = False
         """Condition for Qblox to set the external trigger flag and create appropriate channels for it."""
 
