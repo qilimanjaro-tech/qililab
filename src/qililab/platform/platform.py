@@ -1463,6 +1463,12 @@ class Platform:
                 self.trigger_runs += 1
 
                 timeout_repetitions = bus.check_recurrent_timeout()
+                if timeout_repetitions is None:
+                    # Double check timeout_repetitions in case bus is not right, while giving priority on the bus where it crashed.
+                    timeout_repetitions = next(
+                        (rep for bus in buses.values() if (rep := bus.check_recurrent_timeout()) is not None),
+                        None,
+                    )
                 if timeout_repetitions and self.trigger_runs <= timeout_repetitions:
                     logger.warning(
                         f"Timeout reached for triggered measurement, trying again. {self.trigger_runs}/{timeout_repetitions}"
