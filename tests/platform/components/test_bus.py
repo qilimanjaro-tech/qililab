@@ -6,6 +6,7 @@ from qililab.qprogram.qblox_compiler import AcquisitionData
 from qililab.typings import Parameter
 from qililab.result.qprogram import MeasurementResult
 from qililab.platform import Bus
+from qililab.pulse_distortion.lfilter_correction import LFilterCorrection
 
 @pytest.fixture
 def mock_instruments():
@@ -24,7 +25,14 @@ def bus(mock_instruments):
     settings = {
         "alias": "bus1",
         "instruments": ["qcm", "qrm"],
-        "channels": [0, 0]
+        "channels": [0, 0],
+        "distortions": [{
+            'name': 'lfilter',
+            'norm_factor': 1,
+            'auto_norm': True,
+            'a': [1],
+            'b': [3, 4]
+        }]
     }
     return Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
 
@@ -50,7 +58,7 @@ class TestBus:
 
     def test_bus_properties(self, bus):
         assert bus.delay == 0
-        assert bus.distortions == []
+        assert bus.distortions == [LFilterCorrection(a=[1], b=[3,4], auto_norm=True)]
 
     def test_bus_equality(self, bus):
         other_bus = MagicMock(spec=Bus)
@@ -66,7 +74,14 @@ class TestBus:
         expected_dict = {
             "alias": "bus1",
             "instruments": ["qcm", "qrm"],
-            "channels": [0, 0]
+            "channels": [0, 0],
+            "distortions": [{
+                'name': 'lfilter',
+                'norm_factor': 1,
+                'auto_norm': True,
+                'a': [1],
+                'b': [3, 4]
+            }]
         }
         assert bus.to_dict() == expected_dict
 
@@ -143,7 +158,7 @@ class TestBus:
             settings = {
                 "alias": "bus1",
                 "instruments": ["not_in_instruments"],
-                "channels": [None, None]
+                "channels": [None, None],
             }
             _ = Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
 
