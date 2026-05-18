@@ -156,6 +156,9 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
   [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
 
+- Modified database manager's `load_by_id` to allow a list of ids to return a list of the measurements with said ids. Also added function `db_manager.get_dc_offsets(id)`, for recent addition to the measurements database, `dc_offsets`.
+  [#1097](https://github.com/qilimanjaro-tech/qililab/pull/1097)
+
 ### Breaking changes
 
 - `VariableExpression.extract_variables()` and `VariableExpression.extract_constants()` have been removed. They are replaced by `VariableExpression.variables` (list of all `Variable` instances in the expression) and `VariableExpression.constant` (the constant term, or `None`).
@@ -213,4 +216,7 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
 
 - Fixed a bug in the Qblox compiler where the bin acquisition index was not incrementing correctly when multiple `measure` calls are used sequentially inside an `average` block with an outer sweep loop.  Each sequential acquire now gets its own bin register initialised to its position offset, and the bin register is advanced by the total number of acquires per sweep step (instead of always 1), so that consecutive acquires write to consecutive bins and the full acquisition matrix is filled correctly.
-  [#1098](https://github.com/qilimanjaro-tech/qililab/pull/1098)
+  [#1098](https://github.com/qilimanjaro-tech/qililab/pull/1098
+
+- Fixed a bug where the qblox instrument controller parameter `ext_trigger` and the qdac instrument controller parameter `reference_clock` where not correctly translated to dictionary from the runcard and therefore not saved with `ql.save_platform(platform)`.
+  [#1104](https://github.com/qilimanjaro-tech/qililab/pull/1104)
