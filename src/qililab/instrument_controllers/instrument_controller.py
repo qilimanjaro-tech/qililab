@@ -298,4 +298,5 @@ class InstrumentController(BusElement, ABC):
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
             INSTRUMENTCONTROLLER.RESET: self.settings.reset,
             INSTRUMENTCONTROLLER.REFERENCE_CLOCK: self.settings.reference_clock,
+            INSTRUMENTCONTROLLER.EXT_TRIGGER: self.settings.ext_trigger,
         }

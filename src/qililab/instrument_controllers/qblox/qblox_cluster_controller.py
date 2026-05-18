@@ -108,9 +108,3 @@ class QbloxClusterController(InstrumentController):
         for module, slot_id in zip(self.modules, self.connected_modules_slot_ids):
             module.device = self.device.modules[slot_id - 1]  # slot_id represents the number displayed in the cluster
 
-    def to_dict(self):
-        """Return a dictionary representation of the Qblox controller class."""
-        return super().to_dict() | {
-            Parameter.REFERENCE_CLOCK.value: self.settings.reference_clock,
-            Parameter.EXT_TRIGGER.value: self.settings.ext_trigger,
-        }
