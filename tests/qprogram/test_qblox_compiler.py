@@ -1033,7 +1033,7 @@ def fixture_qblox_play_zero_wait_time() -> QProgram:
 @pytest.fixture(name="qblox_play_none_wait_time")
 def fixture_qblox_play_none_wait_time() -> QProgram:
     qp = QProgram()
-    qp.qblox.play(bus="drive", waveform=Square(amplitude=1, duration=200), wait_time=None)
+    qp.qblox.play(bus="drive", waveform=Square(amplitude=1, duration=99), wait_time=None)
     return qp
 
 
@@ -5070,7 +5070,7 @@ other_max_duration_0:
                             upd_param        4
 
             main:
-                            play             0, 1, 4
+                            play             0, 1, 99
                             set_mrk          0
                             upd_param        4
                             stop
