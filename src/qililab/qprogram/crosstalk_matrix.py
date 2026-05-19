@@ -379,12 +379,12 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
     def get_non_linear_flux_terms(
         self,
-        flux: dict[str, float | np.ndarray],
+        flux: Mapping[str, float | np.ndarray],
     ) -> dict[str, float | np.ndarray]:
         """Computes the nonlinear flux correction for each bus.
 
         Args:
-            flux (dict[str, float]): Flux values keyed by bus name.
+            flux (Mapping[str, float]): Flux values keyed by bus name.
 
         Returns:
             dict[str, float]: Nonlinear correction terms keyed by bus name.
@@ -428,7 +428,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         obtain the final hardware bias values. Both scalar and array inputs are supported.
 
         Args:
-            flux (dict[str, float | np.ndarray]): Target flux values keyed by bus name.
+            flux (Mapping[str, float | np.ndarray]): Target flux values keyed by bus name.
                 Values can be scalars or numpy arrays of the same length.
 
         Returns:
