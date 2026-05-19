@@ -86,7 +86,6 @@ Qililab Documentation
    code/pulse
    code/qprogram
    code/result
-   code/digital
    code/waveforms
    extras/quantum_machines
 
