@@ -133,6 +133,12 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 ### Bug fixes
 
+- Fixed a bug in `set_offset` where using a `Variable` on one path and a negative static value on the other would generate a `move` instruction with a negative immediate, which is invalid Q1ASM.
+  [#1113](https://github.com/qilimanjaro-tech/qililab/pull/1113)
+
+- Fixed a bug where `qp.qblox.play` with `wait_time=0` was treated as no `wait_time` provided, producing incorrect Q1ASM. The wait time is now correctly clamped to the minimum valid value of 4 ns.
+  [#1114](https://github.com/qilimanjaro-tech/qililab/pull/1114)
+
 - The save_platform function was not saving bus distortions because it wasn't added to the Bus.to_dict after the refactor. The property has been added.
   [#1100](https://github.com/qilimanjaro-tech/qililab/pull/1100)
 
