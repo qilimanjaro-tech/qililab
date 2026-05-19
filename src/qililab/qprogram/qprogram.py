@@ -19,7 +19,7 @@ import numpy as np
 from qililab.core.variables import Domain, Variable, requires_domain
 from qililab.qprogram.blocks import Block, ForLoop, Parallel
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector, NonLinearCrosstalkMatrix, NonLinearFluxVector
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
@@ -44,6 +44,7 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram, VariableInfo
+from qililab.qprogram.blocks.unpack_loop import traverse_unpack_non_linear
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
 
@@ -487,12 +488,14 @@ class QProgram(StructuredProgram):
                         "qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation."
                     )
                 if isinstance(element, (Play, SetOffset, SetGain)) and element.bus in crosstalk.matrix.keys():
-                    crosstalk_elements.check_flux_vector(element)
-
-                    crosstalk_elements.flux_vector[str(element.__class__)] = handle_flux_vector(
-                        flux_vector=crosstalk_elements.flux_vector[str(element.__class__)],
-                        element=element,
-                    )
+                    if isinstance(flux_vector, NonLinearFluxVector):
+                        if isinstance(element, (SetOffset, SetGain)):
+                            flux_vector.set_element(element)
+                    else:
+                        crosstalk_elements.flux_vector[str(element.__class__)] = handle_flux_vector(
+                            flux_vector=crosstalk_elements.flux_vector[str(element.__class__)],
+                            element=element,
+                        )
                     crosstalk_elements.add_element(element, i)
                 if isinstance(element, (Wait, Acquire, Measure)) or (
                     isinstance(element, Play) and element.bus not in crosstalk.matrix.keys()
@@ -514,7 +517,9 @@ class QProgram(StructuredProgram):
 
                     traverse(element, variables, deepcopy(crosstalk_elements.flux_vector))
 
-                    if variable_list is not None and any(
+                    if variable_list is not None and isinstance(flux_vector, NonLinearFluxVector):
+                        flux_vector.set_loop(element)
+                    elif variable_list is not None and any(
                         variable in self._parallel_loops for variable in variable_list
                     ):
                         loop_list: list[ForLoop] = []
@@ -535,7 +540,10 @@ class QProgram(StructuredProgram):
                         self._active_loops = self._active_loops[:-1]
                         self._loop_depths = self._loop_depths[:-1]
 
-            block = handle_crosstalk_element(block=block, crosstalk_elements=crosstalk_elements)
+            if not isinstance(flux_vector, NonLinearFluxVector):
+                block = handle_crosstalk_element(block=block, crosstalk_elements=crosstalk_elements)
+            elif isinstance(element, ForLoop) or isinstance(element, Parallel) and all(isinstance(loop, ForLoop) for loop in element.loops):
+                flux_vector.exit_loop(element)
 
         def handle_flux_vector(flux_vector: FluxVector, element: Play | SetGain | SetOffset):
             """
@@ -840,7 +848,8 @@ class QProgram(StructuredProgram):
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body, copied_qprogram._variables)
-
+        if isinstance(crosstalk, NonLinearCrosstalkMatrix):
+            traverse_unpack_non_linear(copied_qprogram.body, flux_vector)
         return copied_qprogram
 
     def with_crosstalk_qdac(self, crosstalk: CrosstalkMatrix, qdac_buses_offset: dict[str, float]):
