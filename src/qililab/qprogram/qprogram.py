@@ -43,8 +43,8 @@ from qililab.qprogram.operations import (
     Wait,
     WaitTrigger,
 )
-from qililab.qprogram.structured_program import StructuredProgram, _to_scalar
-from qililab.waveforms import IQWaveform, Waveform
+from qililab.qprogram.structured_program import StructuredProgram, _to_scalar, VariableInfo
+from qililab.waveforms import IQWaveform, Waveform, Arbitrary, FlatTop, IQPair, Square
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:

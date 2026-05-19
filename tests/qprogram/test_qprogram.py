@@ -667,10 +667,3 @@ class TestQProgram(TestStructuredProgram):
         assert type(loop.start) is float
         assert type(loop.stop) is float
         assert type(loop.step) is float
-                qp.qblox.measure_reset(
-                    bus="readout_q0_bus",
-                    waveform="readout",
-                    weights="weights",
-                    control_bus="drive_q0_bus",
-                    reset_pulse=drag_reset,
-                )

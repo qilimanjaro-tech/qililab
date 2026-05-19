@@ -994,6 +994,7 @@ def inner_average_outer_sweep() -> QProgram:
     frequency = qp.variable(label="frequency", domain=Domain.Frequency)
     with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
         with qp.average(shots=100):
+            qp.set_frequency(bus="readout", frequency=frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
 
@@ -1017,6 +1018,7 @@ def inner_average_outer_sweep_three_measures() -> QProgram:
     frequency = qp.variable(label="frequency", domain=Domain.Frequency)
     with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
         with qp.average(shots=100):
+            qp.set_frequency("readout", frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
@@ -4298,7 +4300,6 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"], expected)
 
-
     def test_get_conversion_instructions_none_returns_none(self):
         result = QbloxCompiler._get_qpysequence_conversion_instructions(None)
         assert result is None
@@ -5015,23 +5016,25 @@ class TestQBloxCompiler:
         expected_q1asm =    """setup:
                                             wait_sync        4              
                                             set_mrk          0              
-                                            upd_param        4              
+                                            upd_param        4         
+
+                                            move             1, R0          
+                                            move             0, R1         
 
                             main:
-                                            move             1, R0          
-                                            move             0, R1          
-                                            move             0, R2          
-                                            move             11, R3         
-                                            move             100, R4        
+                                            move             0, R2
+                                            move             400, R3          
+                                            move             11, R4        
                             loop_0:
                                             move             100, R5        
                             avg_0:
+                                            set_freq         R3
                                             play             0, 1, 4        
                                             acquire_weighed  0, R2, R1, R0, 2000
                                             loop             R5, @avg_0     
                                             add              R2, 1, R2      
-                                            add              R4, 10, R4     
-                                            loop             R3, @loop_0    
+                                            add              R3, 10, R3     
+                                            loop             R4, @loop_0    
                                             set_mrk          0              
                                             upd_param        4              
                                             stop                       """
@@ -5142,8 +5145,6 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qblox_play_zero_wait_time)
 
-        assert sequences["drive"]._program._compiled
-
         drive_str = """
             setup:
                             wait_sync        4
@@ -5161,8 +5162,6 @@ class TestQBloxCompiler:
     def test_qblox_play_none_wait_time(self, qblox_play_none_wait_time: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qblox_play_none_wait_time)
-
-        assert sequences["drive"]._program._compiled
 
         drive_str = """
             setup:

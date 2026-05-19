@@ -698,13 +698,12 @@ class QbloxCompiler:
             else convert(right_component)
         )
         result = QPyProgram.Register()
-        self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
 
         if expression.operator == "+":
-            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Add(left, right, result))
+            self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.Add(left, right, result))
         elif expression.operator == "-":
             if isinstance(left, QPyProgram.Register):
-                self._buses[bus].qpy_block_stack[-1].append_component(
+                self._buses[bus].qpy_block_stack[-1].add(
                     component=QPyInstructions.Sub(left, right, result)
                 )
             else:  # Q1ASM forbids the first element of sub to be an immediate
@@ -717,44 +716,43 @@ class QbloxCompiler:
                     ]
                     block_idx = loops[0][0] - 1 if loops else -2
                     zero_register = QPyProgram.Register()
-                    self._buses[bus].qpy_block_stack[block_idx].append_component(
+                    self._buses[bus].qpy_block_stack[block_idx].add(
                         component=QPyInstructions.Move(var=0, register=zero_register),
-                        bot_position=len(self._buses[bus].qpy_block_stack[block_idx].components),
                     )
-                    self._buses[bus].qpy_block_stack[-1].append_component(
+                    self._buses[bus].qpy_block_stack[-1].add(
                         component=QPyInstructions.Sub(zero_register, abs(left), constant_register)
                     )
-                    self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
                 else:
                     # TODO: this move is done at every loop iteration; ideally it belongs outside the loop
                     # where loop registers are initialised — requires a qpysequence change.
-                    self._buses[bus].qpy_block_stack[-1].append_component(
+                    self._buses[bus].qpy_block_stack[-1].add(
                         component=QPyInstructions.Move(left, constant_register)
                     )
-                    self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
-                self._buses[bus].qpy_block_stack[-1].append_component(
+
+                self._buses[bus].qpy_block_stack[-1].add(
                     component=QPyInstructions.Sub(constant_register, right, result)
                 )
 
-        self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
         return result
 
     def _handle_set_gain(self, element: SetGain):
         if element.bus not in self._qblox_buses:
             return
 
-        convert = QbloxCompiler._convert_value(element)
+        convert = lambda x: int(x * QPyInstructions.SetNormalisedGain.scale_factor)
         if isinstance(element.gain, VariableExpression):
             result = self._resolve_binary_expression(element.bus, element.gain, convert)
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
+            self._buses[element.bus].qpy_block_stack[-1].add(
                 component=QPyInstructions.SetAwgGain(gain_0=result, gain_1=result)
             )
+            self._buses[element.bus].upd_param_instruction_pending = True
+            return
         elif isinstance(element.gain, Variable):
             gain = self._buses[element.bus].variable_to_register[element.gain]
             instruction = QPyInstructions.SetAwgGain(value_0=gain, value_1=gain)
         else:
             instruction = QPyInstructions.SetNormalisedGain(gain_i=element.gain, gain_q=element.gain)
-            
+
         self._buses[element.bus].qpy_block_stack[-1].add(component=instruction)
         self._buses[element.bus].upd_param_instruction_pending = True
 
@@ -762,7 +760,9 @@ class QbloxCompiler:
         # TEST the four cases, var&var, imm&imm, var&imm, imm&var
         if element.bus not in self._qblox_buses:
             return
-          
+
+        convert = lambda x: int(x * QPyInstructions.SetNormalisedOffs.scale_factor)
+
         if isinstance(element.offset_path1, VariableExpression):
             raise NotImplementedError(
                 "Having a different offset for I and Q whilst using VariableExpressions is not supported."
@@ -774,7 +774,7 @@ class QbloxCompiler:
                     "Having a different offset for I and Q whilst using VariableExpressions is not supported."
                 )
             result = self._resolve_binary_expression(element.bus, element.offset_path0, convert)
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
+            self._buses[element.bus].qpy_block_stack[-1].add(
                 component=QPyInstructions.SetAwgOffs(offset_0=result, offset_1=result)
             )
 
@@ -1512,9 +1512,9 @@ class QbloxCompiler:
             # The register is never modified inside the average, it is modified in the add outside the average.
             start_bin_idx = self._buses[element.bus].start_bin_idx
             self._buses[element.bus].bin_register = QPyProgram.Register()
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=start_bin_idx, register=self._buses[element.bus].bin_register),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction]._add_structure(
+                component=QPyInstructions.Move(source=start_bin_idx, destination=self._buses[element.bus].bin_register),
+                insert_idx=0
             )
             self._buses[element.bus].start_bin_idx += 1
 
@@ -1535,10 +1535,10 @@ class QbloxCompiler:
             )
             # Advance by N bins per step, where N is the number of acquires sharing this avg block.
             bins_per_step = self._buses[element.bus].counter_acquire if is_avg_multi_acquire else 1
-            self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
+            self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].add(
                 component=QPyInstructions.Add(
-                    origin=self._buses[element.bus].bin_register,
-                    var=bins_per_step,
+                    a=self._buses[element.bus].bin_register,
+                    b=bins_per_step,
                     destination=self._buses[element.bus].bin_register,
                 )
             )
