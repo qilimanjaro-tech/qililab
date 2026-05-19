@@ -81,7 +81,6 @@ Qililab Documentation
    :hidden:
 
    code/ql
-   code/calibration
    code/platform
    code/pulse
    code/qprogram

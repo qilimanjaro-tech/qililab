@@ -27,7 +27,7 @@ Waveforms
     ~Ramp
     ~Gaussian
     ~Arbitrary
-    ~DragCorrection
+    ~GaussianDragCorrection
     ~Chained
     ~IQPair
     ~FlatTop
