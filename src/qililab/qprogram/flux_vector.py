@@ -16,15 +16,18 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
 from qililab.core.variables import Variable, VariableExpression
 from qililab.qprogram.blocks import ForLoop, Loop, Parallel
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.qprogram.operations import SetGain, SetOffset
 from qililab.waveforms import Arbitrary, Square, Waveform
 from qililab.yaml import yaml
+
+if TYPE_CHECKING:
+    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 
 
 @yaml.register_class
@@ -372,6 +375,7 @@ class NonLinearFluxVector:
         """
         if self.crosstalk is None:
             raise AttributeError("No crosstalk has been set.\nYou can set it using set_crosstalk or set_crosstalk_from_bias")
+        crosstalk = cast("CrosstalkMatrix", self.crosstalk)
         durations = {bus: w.get_duration() for bus, w in waveforms.items()}
         if len(set(durations.values())) > 1:
             raise ValueError(f"All waveforms must have the same duration, got: {durations}")
@@ -380,7 +384,7 @@ class NonLinearFluxVector:
         gain_flat = self._generate_matrix_values(self.gain)
         offset_flat = self._generate_matrix_values(self.offset)
 
-        bias_offset: dict[str, np.ndarray] = self.crosstalk.flux_to_bias(offset_flat)
+        bias_offset: dict[str, np.ndarray] = crosstalk.flux_to_bias(offset_flat)
         unique_loop_refs, loop_lengths = self._loop_structure()
         shape = tuple(loop_lengths[lr] for lr in unique_loop_refs) if unique_loop_refs else (1,)
         total_length = int(np.prod(list(loop_lengths.values()))) if loop_lengths else 1
@@ -395,7 +399,7 @@ class NonLinearFluxVector:
                 ).reshape(-1)
             else:
                 combined_flux[bus] = np.repeat(offset_flat[bus], dur)
-        bias_combined: dict[str, np.ndarray] = self.crosstalk.flux_to_bias(combined_flux)
+        bias_combined: dict[str, np.ndarray] = crosstalk.flux_to_bias(combined_flux)
 
         result: dict[str, np.ndarray] = {}
         for bus in self.buses:
@@ -426,8 +430,9 @@ class NonLinearFluxVector:
 
         if self.crosstalk is None:
             raise AttributeError("No crosstalk has been set.\nYou can set it using set_crosstalk or set_crosstalk_from_bias")
+        crosstalk = cast("CrosstalkMatrix", self.crosstalk)
         flat = self._generate_matrix_values(self.offset)
-        biases: dict[str, np.ndarray] = self.crosstalk.flux_to_bias(flat)
+        biases: dict[str, np.ndarray] = crosstalk.flux_to_bias(flat)
         unique_loop_refs, loop_lengths = self._loop_structure()
         shape = tuple(loop_lengths[lr] for lr in unique_loop_refs) if unique_loop_refs else (1,)
         return {bus: arr.reshape(shape) for bus, arr in biases.items()}
@@ -443,7 +448,7 @@ class NonLinearFluxVector:
             for lr in unique_loop_refs
         }
         if not loop_lengths:
-            return {-1}, {-1:1}
+            return [-1], {-1:1}
         return unique_loop_refs, loop_lengths
 
     def _generate_matrix_values(
@@ -515,8 +520,8 @@ class NonLinearFluxVector:
                 self.gain[bus] = 1.0
 
     def set_crosstalk_from_bias(
-        self, crosstalk: CrosstalkMatrix, bias_vector: dict[str, float | Variable | VariableExpression]
-    ) -> dict[str, float | list[float] | np.ndarray]:
+        self, crosstalk: CrosstalkMatrix, bias_vector: dict[str, float | np.ndarray]
+    ) -> dict[str, float | Variable | VariableExpression]:
         """Computes per-bus flux values from hardware bias values using the linear crosstalk matrix.
 
         Calls set_crosstalk internally to attach the matrix and initialise the bus registry,
