@@ -125,16 +125,17 @@ class QdacCompiler:
         crosstalk: CrosstalkMatrix | None = None,
         out_instrument: QDevilQDac2 | None = None,
     ) -> QdacCompilationOutput:
-        """Compile QProgram to qdac execution schedule
+        """Compile QProgram to qdac execution schedule.
+
         Args:
             qprogram (QProgram): The QProgram to be compiled
             qdacs (list[QDevilQDac2]): List of qdac instruments.
-            qdac_buses (list["Bus"]): List of buses that have a qdac channel.
+            qdac_buses (list[Bus]): List of buses that have a qdac channel.
             qdac_offsets (list[float]): Offset voltage of each qdac_buses bus.
             bus_mapping (dict[str, str], optional): Optional mapping of bus names. Defaults to None.
-            calibration (Calibration | None, optional): Optional calibration file. Defaults to None.
-            crosstalk (CrosstalkMatrix | None, optional): Optional Crosstalk matrix. Defaults to None.
-            out_instrument (QDevilQDac2 | None, optional): Output trigger in case there is more than one qdac instruments. Defaults to None.
+            calibration (Calibration, optional): Optional calibration file. Defaults to None.
+            crosstalk (CrosstalkMatrix, optional): Optional Crosstalk matrix. Defaults to None.
+            out_instrument (QDevilQDac2, optional): Output trigger in case there is more than one qdac instruments. Defaults to None.
         """
 
         def traverse(block: Block):

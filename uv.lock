@@ -3661,6 +3661,7 @@ dev = [
 docs = [
     { name = "sphinx" },
     { name = "sphinx-automodapi" },
+    { name = "sphinx-design" },
     { name = "sphinx-mdinclude" },
     { name = "sphinxawesome-theme" },
 ]
@@ -3708,6 +3709,7 @@ dev = [
 docs = [
     { name = "sphinx", specifier = ">=8.2.3" },
     { name = "sphinx-automodapi", specifier = ">=0.22.0" },
+    { name = "sphinx-design", specifier = ">=0.7.0" },
     { name = "sphinx-mdinclude", specifier = ">=0.6.2" },
     { name = "sphinxawesome-theme", specifier = ">=5.3.2" },
 ]
@@ -4177,6 +4179,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3f/9f/16c79a06f4c6772124f03f1d69a0394bc1f52c154202db5d5905cb3579c7/sphinx_automodapi-0.22.0.tar.gz", hash = "sha256:9a6745d606eb948321f0bb7bd4511dc6d8481da8819caa1604d7138910173b38", size = 56683, upload-time = "2025-12-13T00:19:52.962Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d3/a0/1a0c44070d2f7e8761ca221d51e1ce8f959b2a0add4cab13de0a677f81bc/sphinx_automodapi-0.22.0-py3-none-any.whl", hash = "sha256:8ecbe8c8ba33a1e3dbe03aea06879062567d611b543da3f33367512d45118b01", size = 111939, upload-time = "2025-12-13T00:19:51.596Z" },
+]
+
+[[package]]
+name = "sphinx-design"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sphinx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/13/7b/804f311da4663a4aecc6cf7abd83443f3d4ded970826d0c958edc77d4527/sphinx_design-0.7.0.tar.gz", hash = "sha256:d2a3f5b19c24b916adb52f97c5f00efab4009ca337812001109084a740ec9b7a", size = 2203582, upload-time = "2026-01-19T13:12:53.297Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/30/cf/45dd359f6ca0c3762ce0490f681da242f0530c49c81050c035c016bfdd3a/sphinx_design-0.7.0-py3-none-any.whl", hash = "sha256:f82bf179951d58f55dca78ab3706aeafa496b741a91b1911d371441127d64282", size = 2220350, upload-time = "2026-01-19T13:12:51.077Z" },
 ]
 
 [[package]]
