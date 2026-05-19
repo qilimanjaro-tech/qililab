@@ -420,7 +420,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
         return corrections
 
-    def flux_to_bias(self, flux: dict[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
+    def flux_to_bias(self, flux: Mapping[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
         """Converts target flux values to hardware bias values, including nonlinear corrections.
 
         First computes the nonlinear flux corrections via the Bessel-series expansion and
