@@ -1695,7 +1695,7 @@ class QbloxCompiler:
         if waveform_variables:
             logger.error("Variables in waveforms are not supported in Qblox.")
             return
-        if element.wait_time:
+        if element.wait_time is not None:
             # The qp.qblox.play() was used. Don't apply optimizations
             index_I, index_Q, _ = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q

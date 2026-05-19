@@ -1034,6 +1034,20 @@ def average_only_two_measures() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="qblox_play_zero_wait_time")
+def fixture_qblox_play_zero_wait_time() -> QProgram:
+    qp = QProgram()
+    qp.qblox.play(bus="drive", waveform=Square(amplitude=1, duration=200), wait_time=0)
+    return qp
+
+
+@pytest.fixture(name="qblox_play_none_wait_time")
+def fixture_qblox_play_none_wait_time() -> QProgram:
+    qp = QProgram()
+    qp.qblox.play(bus="drive", waveform=Square(amplitude=1, duration=99), wait_time=None)
+    return qp
+
+
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
@@ -1328,7 +1342,6 @@ class TestQBloxCompiler:
             "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
             in caplog.text
         )
-
 
     def test_set_offset_with_loop(
         self, offset_loop: QProgram
@@ -5077,3 +5090,43 @@ other_max_duration_0:
                                 stop"""
 
         assert is_q1asm_equal(sequences["readout"], expected_q1asm)
+
+    def test_qblox_play_zero_wait_time(self, qblox_play_zero_wait_time: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qblox_play_zero_wait_time)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 4
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_qblox_play_none_wait_time(self, qblox_play_none_wait_time: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qblox_play_none_wait_time)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 99
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
