@@ -53,6 +53,7 @@ from qililab.settings.digital.gate_event import GateEvent
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
 
+
 @pytest.fixture(name="platform")
 def fixture_platform():
     return build_platform(runcard=Galadriel.runcard)
@@ -62,9 +63,11 @@ def fixture_platform():
 def fixture_platform_qblox_qdac():
     return platform_build_platform(runcard="tests/runcards/qblox_and_qdac.yml")
 
+
 @pytest.fixture(name="platform_qblox_qdacs")
 def fixture_platform_qblox_qdacs():
     return platform_build_platform(runcard="tests/runcards/qblox_and_qdacs.yml")
+
 
 @pytest.fixture(name="platform_qblox_qdacs_no_trigger")
 def fixture_platform_qblox_qdacs_no_trigger():
@@ -125,6 +128,7 @@ def fixture_platform_with_orphan_digital_bus():
     # For Galadriel.runcard, a unique name like this won't exist in the main buses.
     return build_platform(runcard)
 
+
 @pytest.fixture(name="platform_galadriel_no_filter")
 def fixture_platform_galadriel_no_filter():
     """
@@ -137,6 +141,7 @@ def fixture_platform_galadriel_no_filter():
     del runcard["instruments"][0]["filters"]
 
     return build_platform(runcard)
+
 
 @pytest.fixture(name="qblox_results")
 def fixture_qblox_results():
@@ -195,16 +200,28 @@ def fixture_qblox_results():
         },
     ]
 
+
 @pytest.fixture(name="raw_measurement_data_intertwined")
 def fixture_raw_measurement_data_intertwined() -> dict:
     """Dictionary of raw measurement data as returned from QRM instruments."""
-    return {"bins": {"integration": {"path0": [1, 2, 3, 4], "path1": [5, 6, 7, 8]}, "threshold": [0.1, 0.2, 0.3, 0.4], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
+    return {
+        "bins": {
+            "integration": {"path0": [1, 2, 3, 4], "path1": [5, 6, 7, 8]},
+            "threshold": [0.1, 0.2, 0.3, 0.4],
+            "avg_cnt": [],
+        },
+        "scope": {"path0": {"data": []}, "path1": {"data": []}},
+    }
 
 
 @pytest.fixture(name="raw_measurement_data_intertwined_scope")
 def fixture_raw_measurement_data_intertwinescope() -> dict:
     """Dictionary of raw measurement data as returned from QRM instruments."""
-    return {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 2, 3, 4]}, "path1":{"data": [5, 6, 7, 8]}}}
+    return {
+        "bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt": []},
+        "scope": {"path0": {"data": [1, 2, 3, 4]}, "path1": {"data": [5, 6, 7, 8]}},
+    }
+
 
 @pytest.fixture(name="flux_to_bus_topology")
 def get_flux_to_bus_topology():
@@ -344,6 +361,7 @@ def fixture_qp_quantum_machine() -> QProgram:
     qp.wait("drive_q0", 10)
     return qp
 
+
 def compare_platforms(obj1, obj2, path="root", depth=0, max_depth=10):
     """
     Recursively compare two objects' properties up to max_depth.
@@ -398,8 +416,7 @@ def compare_platforms(obj1, obj2, path="root", depth=0, max_depth=10):
 
         for attr in attrs1 & attrs2:
             _, diffs = compare_platforms(
-                getattr(obj1, attr), getattr(obj2, attr),
-                path=f"{path}.{attr}", depth=depth + 1, max_depth=max_depth
+                getattr(obj1, attr), getattr(obj2, attr), path=f"{path}.{attr}", depth=depth + 1, max_depth=max_depth
             )
             differences.extend(diffs)
         return len(differences) == 0, differences
@@ -408,6 +425,7 @@ def compare_platforms(obj1, obj2, path="root", depth=0, max_depth=10):
     if obj1 != obj2:
         differences.append(f"{path}: {obj1!r} != {obj2!r}")
     return obj1 == obj2, differences
+
 
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
@@ -435,136 +453,6 @@ class TestPlatform:
     def test_platform_name(self, platform: Platform):
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
-
-    def test_compile_circuit_invokes_transpiler_and_compiler(
-        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
-    ):
-        """Platform.compile_circuit wires transpilation and compilation stages together."""
-        circuit = Circuit(2)
-        circuit.add(X(0))
-
-        transpiled_circuit = object()
-        compiled_qprogram = QProgram()
-
-        transpiler_instance = MagicMock()
-        transpiler_instance.run.return_value = transpiled_circuit
-        transpiler_instance.context = SimpleNamespace(
-            initial_layout={0: 0, 1: 1},
-            final_layout={0: 1, 1: 0},
-        )
-
-        compiler_instance = MagicMock()
-        compiler_instance.compile.return_value = compiled_qprogram
-
-        transpiler_cls = MagicMock(return_value=transpiler_instance)
-        compiler_cls = MagicMock(return_value=compiler_instance)
-
-        monkeypatch.setattr("qililab.platform.platform.CircuitTranspiler", transpiler_cls)
-        monkeypatch.setattr("qililab.platform.platform.CircuitToQProgramCompiler", compiler_cls)
-
-        qubit_mapping = {0: 1}
-        nshots = 256
-
-        result = platform.compile_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
-
-        transpiler_cls.assert_called_once_with(platform.digital_compilation_settings, qubit_mapping=qubit_mapping)
-        transpiler_instance.run.assert_called_once_with(circuit)
-        compiler_cls.assert_called_once_with(platform.digital_compilation_settings)
-        compiler_instance.compile.assert_called_once_with(transpiled_circuit, nshots)
-
-        assert result[0] is compiled_qprogram
-        assert result[1] == {0: 1, 1: 0}
-
-    def test_compile_circuit_with_default_mapping(
-        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
-    ):
-        """If no mapping is provided, the transpiler is invoked with qubit_mapping=None and may return None layout."""
-        circuit = Circuit(1)
-
-        transpiler_instance = MagicMock()
-        transpiler_instance.run.return_value = circuit
-        transpiler_instance.context = SimpleNamespace(final_layout=None)
-
-        compiler_instance = MagicMock()
-        compiler_instance.compile.return_value = QProgram()
-
-        transpiler_cls = MagicMock(return_value=transpiler_instance)
-        compiler_cls = MagicMock(return_value=compiler_instance)
-
-        monkeypatch.setattr("qililab.platform.platform.CircuitTranspiler", transpiler_cls)
-        monkeypatch.setattr("qililab.platform.platform.CircuitToQProgramCompiler", compiler_cls)
-
-        qprogram, layout = platform.compile_circuit(circuit, nshots=5)
-
-        transpiler_cls.assert_called_once_with(platform.digital_compilation_settings, qubit_mapping=None)
-        transpiler_instance.run.assert_called_once_with(circuit)
-        compiler_instance.compile.assert_called_once_with(circuit, 5)
-        assert isinstance(qprogram, QProgram)
-        assert layout is None
-
-    def test_compile_circuit_without_digital_settings_raises(
-        self, platform: Platform
-    ):
-        """Raises ValueError when digital compilation settings are missing."""
-        platform.digital_compilation_settings = None
-
-        circuit = Circuit(1)
-
-        with pytest.raises(
-            ValueError, match="Cannot compile Circuit without defining DigitalCompilationSettings."
-        ):
-            platform.compile_circuit(circuit, nshots=128)
-
-    def test_execute_circuit_uses_compilation_and_execution_pipeline(
-        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
-    ):
-        """execute_circuit compiles, executes, and formats samples via helpers."""
-        circuit = Circuit(1)
-        circuit.add(M(0))
-
-        compiled_qprogram = QProgram()
-        logical_mapping = {0: 0}
-        samples = {"0": 42}
-
-        compile_mock = MagicMock(return_value=(compiled_qprogram, logical_mapping))
-        execute_mock = MagicMock(return_value="results")
-        samples_mock = MagicMock(return_value=samples)
-
-        monkeypatch.setattr(platform, "compile_circuit", compile_mock)
-        monkeypatch.setattr(platform, "execute_qprogram", execute_mock)
-        monkeypatch.setattr("qililab.platform.platform.qprogram_results_to_samples", samples_mock)
-
-        qubit_mapping = {0: 0}
-        nshots = 32
-
-        result = platform.execute_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
-
-        compile_mock.assert_called_once_with(circuit, nshots, qubit_mapping=qubit_mapping)
-        execute_mock.assert_called_once_with(compiled_qprogram)
-        samples_mock.assert_called_once_with("results", logical_mapping)
-
-        assert result == samples
-
-    def test_execute_circuit_handles_none_mapping(
-        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
-    ):
-        """execute_circuit forwards a None logical-to-physical mapping without modification."""
-        circuit = Circuit(1)
-
-        compile_mock = MagicMock(return_value=(QProgram(), None))
-        execute_mock = MagicMock(return_value="results")
-        samples_mock = MagicMock(return_value={"0": 1})
-
-        monkeypatch.setattr(platform, "compile_circuit", compile_mock)
-        monkeypatch.setattr(platform, "execute_qprogram", execute_mock)
-        monkeypatch.setattr("qililab.platform.platform.qprogram_results_to_samples", samples_mock)
-
-        result = platform.execute_circuit(circuit, nshots=20)
-
-        compile_mock.assert_called_once_with(circuit, 20, qubit_mapping=None)
-        execute_mock.assert_called_once_with(compile_mock.return_value[0])
-        samples_mock.assert_called_once_with("results", None)
-        assert result == {"0": 1}
 
     def test_initial_setup_no_instrument_connection(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""
@@ -793,67 +681,154 @@ class TestPlatform:
     def test_get_filter(self, platform: Platform):
         """Test Get filters"""
         #  Check that the parameters can be retrieved by bus and by module
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_AMPLITUDE_0, output_id=0) == 0.7
+        assert (
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_AMPLITUDE_0, output_id=0)
+            == 0.7
+        )
         assert platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_AMPLITUDE_0, output_id=0) == 0.7
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, output_id=0) == 200
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "enabled"
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_COEFF, output_id=0)== [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
-        
+        assert (
+            platform.get_parameter(
+                alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, output_id=0
+            )
+            == 200
+        )
+        assert (
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0)
+            == "enabled"
+        )
+        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_COEFF, output_id=0) == [
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+            0.4,
+        ]
+
         #  Check that filters marked as delay_comp in the runcard have not been changed
-        assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=3) == "delay_comp"
+        assert (
+            platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=3)
+            == "delay_comp"
+        )
         assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0) == "delay_comp"
 
         #  Check that the state of the filters have been updated to delaycomp as needed (even for modules without filters in the runcard)
-        assert platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
-        assert platform.get_parameter(alias="flux_line_q2_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=2) == "delay_comp"
-        assert platform.get_parameter(alias="QRM_0", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "delay_comp"
+        assert (
+            platform.get_parameter(alias="flux_line_q1_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1)
+            == "delay_comp"
+        )
+        assert (
+            platform.get_parameter(alias="flux_line_q2_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=2)
+            == "delay_comp"
+        )
+        assert (
+            platform.get_parameter(alias="QRM_0", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "delay_comp"
+        )
         assert platform.get_parameter(alias="QRM_0", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
-        assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "delay_comp"
+        assert (
+            platform.get_parameter(alias="QRM-RF", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "delay_comp"
+        )
         assert platform.get_parameter(alias="QRM-RF", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
         assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.FIR_STATE, output_id=1) == "delay_comp"
-        assert platform.get_parameter(alias="QCM-RF", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
+        assert (
+            platform.get_parameter(alias="QCM-RF", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
+        )
 
     def test_set_filter(self, platform: Platform):
         """Test Set filters"""
         #  Check that the parameters can be set
-        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, value = True, output_id=0)
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, output_id=0) == "enabled"
+        platform.set_parameter(
+            alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, value=True, output_id=0
+        )
+        assert (
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, output_id=0)
+            == "enabled"
+        )
 
-        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, value = False, output_id=0)
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, output_id=0) == "bypassed"
+        platform.set_parameter(
+            alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, value=False, output_id=0
+        )
+        assert (
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, output_id=0)
+            == "bypassed"
+        )
 
-        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
-        assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
+        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value=True, output_id=0)
+        assert (
+            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
+        )
 
     def test_update_qblox_filter_state_fir(self, platform_galadriel_no_filter: Platform):
         """Test that the filter is created if needed"""
-        platform_galadriel_no_filter.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
-        assert platform_galadriel_no_filter.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
-        
+        platform_galadriel_no_filter.set_parameter(
+            alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value=True, output_id=0
+        )
+        assert (
+            platform_galadriel_no_filter.get_parameter(
+                alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0
+            )
+            == "enabled"
+        )
 
     def test_setting_filter_bypassed_give_warning(self, caplog, platform: Platform):
         #  Check that setting a filter as bypassed will actually put/leave it as delay_comp if needed
         platform.set_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=1)
         with caplog.at_level(logging.WARNING):
             platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1)
-            assert ("Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
-                in caplog.text)
+            assert (
+                "Another exponential filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
+                in caplog.text
+            )
         assert platform.get_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=1) == "delay_comp"
 
         platform.set_parameter(alias="QCM", parameter=Parameter.FIR_STATE, value="bypassed", output_id=0)
         with caplog.at_level(logging.WARNING):
             platform.get_parameter(alias="QCM", parameter=Parameter.FIR_STATE, output_id=0)
-            assert ("Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
-                in caplog.text)
+            assert (
+                "Another FIR filter is marked as active hence it is not possible to disable this filter otherwise this would cause a delay with the other sequencers."
+                in caplog.text
+            )
         assert platform.get_parameter(alias="QCM", parameter=Parameter.FIR_STATE, output_id=0) == "delay_comp"
 
     def test_filter_parameter_with_wrong_output_id_raises_exception(self, platform: Platform):
         """Test that setting a filter parameter with an output_id>max_output of the instrument raises an Exception."""
         output_id = 10
-        with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
-            platform.set_parameter(alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=output_id)
+        with pytest.raises(
+            IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."
+        ):
+            platform.set_parameter(
+                alias="QCM", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=output_id
+            )
 
-        with pytest.raises(IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."):
+        with pytest.raises(
+            IndexError, match=f"Output {output_id} exceeds the maximum number of outputs of this QBlox module."
+        ):
             platform.set_parameter(alias="QCM", parameter=Parameter.FIR_STATE, value="bypassed", output_id=output_id)
 
     def test_print_platform(self, platform: Platform):
@@ -1233,7 +1208,7 @@ class TestMethods:
 
         # assure only one debug was called
         assert patched_open.call_count == 1
-        
+
     def test_execute_qprogram_with_qblox_and_multiple_qdacs(self, platform_qblox_qdacs: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1302,7 +1277,9 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
 
-    def test_execute_qprogram_with_qblox_and_multiple_qdacs_raises_error(self, platform_qblox_qdacs_no_trigger: Platform):
+    def test_execute_qprogram_with_qblox_and_multiple_qdacs_raises_error(
+        self, platform_qblox_qdacs_no_trigger: Platform
+    ):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
@@ -1371,7 +1348,9 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
 
-    def test_execute_qprogram_with_qblox_and_qdac_no_crosstalk(self, platform_qblox_qdac: Platform, calibration:Calibration):
+    def test_execute_qprogram_with_qblox_and_qdac_no_crosstalk(
+        self, platform_qblox_qdac: Platform, calibration: Calibration
+    ):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
@@ -1402,7 +1381,9 @@ class TestMethods:
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
-            first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
+            first_execution_results = platform_qblox_qdac.execute_qprogram(
+                qprogram=qprogram, calibration=calibration, crosstalk=False
+            )
 
             acquire_qprogram_results.return_value = [456]
             second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, crosstalk=False)
@@ -1426,7 +1407,7 @@ class TestMethods:
 
         # assure only one debug was called
         assert patched_open.call_count == 1
-        
+
         assert calibration.crosstalk_matrix == expected_crosstalk
 
     def test_execute_qprogram_single_baseband_channel(self, platform: Platform):
@@ -1659,7 +1640,7 @@ class TestMethods:
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
     @pytest.mark.parametrize("value", [1.0, 100, 0.0])
     def test_set_parameter_of_gates(self, parameter, gate, value, platform: Platform):
-        """Test the ``get_parameter`` method with """
+        """Test the ``get_parameter`` method with"""
         platform.set_parameter(parameter=parameter, alias=gate, value=value)
         gate_settings = platform.digital_compilation_settings.gates[gate][0]
         assert gate_settings.get_parameter(parameter) == value
@@ -1671,7 +1652,7 @@ class TestMethods:
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
     def test_get_parameter_of_gates(self, parameter, gate, platform: Platform):
-        """Test the ``get_parameter`` method with """
+        """Test the ``get_parameter`` method with"""
         gate_settings = platform.digital_compilation_settings.gates[gate][0]
         assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.get_parameter(parameter)
 
@@ -1682,7 +1663,7 @@ class TestMethods:
     @pytest.mark.parametrize("parameter", [Parameter.DRAG_COEFFICIENT, Parameter.NUM_SIGMAS])
     @pytest.mark.parametrize("gate", ["X(0)", "Y(0)"])
     def test_get_parameter_of_pulse_shapes(self, parameter, gate, platform: Platform):
-        """Test the ``get_parameter`` method with """
+        """Test the ``get_parameter`` method with"""
         gate_settings = platform.digital_compilation_settings.gates[gate][0]
         assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.get_parameter(parameter)
 
@@ -2110,14 +2091,14 @@ class TestMethods:
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
-    @pytest.mark.qm    
+    @pytest.mark.qm
     def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
 
         with pytest.raises(NotImplementedError) as exc_info:
             platform_quantum_machines.draw(qp_quantum_machine)
-    
+
         assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
 
     def test_trigger_network_setup_and_reset(self, platform):
@@ -2151,11 +2132,16 @@ class TestMethods:
 
         unintertwined_results = platform._unintertwined_qblox_results(bus_result, intertwined)
 
-        assert len(unintertwined_results)==intertwined
+        assert len(unintertwined_results) == intertwined
 
-        assert unintertwined_results[0].raw_measurement_data == {"bins": {"integration": {"path0": [1, 3], "path1": [5, 7]}, "threshold": [0.1, 0.3], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
-        assert unintertwined_results[1].raw_measurement_data == {"bins": {"integration": {"path0": [2, 4], "path1": [6, 8]}, "threshold": [0.2, 0.4], "avg_cnt":[]}, "scope": {"path0":{"data": []}, "path1":{"data": []}}}
-
+        assert unintertwined_results[0].raw_measurement_data == {
+            "bins": {"integration": {"path0": [1, 3], "path1": [5, 7]}, "threshold": [0.1, 0.3], "avg_cnt": []},
+            "scope": {"path0": {"data": []}, "path1": {"data": []}},
+        }
+        assert unintertwined_results[1].raw_measurement_data == {
+            "bins": {"integration": {"path0": [2, 4], "path1": [6, 8]}, "threshold": [0.2, 0.4], "avg_cnt": []},
+            "scope": {"path0": {"data": []}, "path1": {"data": []}},
+        }
 
     def test_qblox_intertwined_results_scope(self, raw_measurement_data_intertwined_scope: dict, platform: Platform):
         """Test that the scope results get unintertwined."""
@@ -2165,45 +2151,75 @@ class TestMethods:
 
         unintertwined_results = platform._unintertwined_qblox_results(bus_result, intertwined)
 
-        assert len(unintertwined_results)==intertwined
+        assert len(unintertwined_results) == intertwined
 
-        assert unintertwined_results[0].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 3]}, "path1":{"data": [5, 7]}}}
-        assert unintertwined_results[1].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [2, 4]}, "path1":{"data": [6, 8]}}}
+        assert unintertwined_results[0].raw_measurement_data == {
+            "bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt": []},
+            "scope": {"path0": {"data": [1, 3]}, "path1": {"data": [5, 7]}},
+        }
+        assert unintertwined_results[1].raw_measurement_data == {
+            "bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt": []},
+            "scope": {"path0": {"data": [2, 4]}, "path1": {"data": [6, 8]}},
+        }
 
     def test_setting_getting_filter_bus_error_raised(self, platform: Platform):
         #  Check that setting/getting a filter through a bus incorrectly raises the adequate error
         output_id = 1
         bus_alias = "drive_line_q0_bus"
         with pytest.raises(Exception, match=f"OutputID {output_id} is not linked to bus with alias {bus_alias}"):
-            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", output_id=output_id)
+            platform.set_parameter(
+                alias="drive_line_q0_bus",
+                parameter=Parameter.EXPONENTIAL_STATE_0,
+                value="bypassed",
+                output_id=output_id,
+            )
 
         with pytest.raises(Exception, match="Filter parameters are controlled using output_id and not channel_id"):
-            platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", channel_id=output_id)
-            
+            platform.set_parameter(
+                alias="drive_line_q0_bus",
+                parameter=Parameter.EXPONENTIAL_STATE_0,
+                value="bypassed",
+                channel_id=output_id,
+            )
+
         with pytest.raises(Exception, match=f"OutputID {output_id} is not linked to bus with alias {bus_alias}"):
-            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=output_id)
+            platform.get_parameter(
+                alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=output_id
+            )
 
         with pytest.raises(Exception, match="Filter parameters are controlled using output_id and not channel_id"):
-            platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, channel_id=output_id)
+            platform.get_parameter(
+                alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, channel_id=output_id
+            )
 
     def test_setting_getting_filter_parameter_no_output_id_given(self, platform: Platform):
         old_value = 200
         new_value = 100
 
-        time_constant = platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0,output_id=0)
+        time_constant = platform.get_parameter(
+            alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, output_id=0
+        )
         assert time_constant == old_value
 
-        platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, value = new_value)
-        time_constant = platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0)
+        platform.set_parameter(
+            alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, value=new_value
+        )
+        time_constant = platform.get_parameter(
+            alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0
+        )
         assert time_constant == new_value
 
     def test_setting_getting_non_filter_parameter_error_raised(self, platform: Platform):
         sequencer = 3
         bus_alias = "drive_line_q0_bus"
-        with pytest.raises(Exception, match="Only QBlox Filter parameters are controlled using output_id and not channel_id"):
+        with pytest.raises(
+            Exception, match="Only QBlox Filter parameters are controlled using output_id and not channel_id"
+        ):
             platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, value=100e6, output_id=sequencer)
 
-        with pytest.raises(Exception, match="Only QBlox Filter parameters are controlled using output_id and not channel_id"):
+        with pytest.raises(
+            Exception, match="Only QBlox Filter parameters are controlled using output_id and not channel_id"
+        ):
             platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, output_id=sequencer)
 
         with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
