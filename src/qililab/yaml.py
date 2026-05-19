@@ -17,7 +17,7 @@ from collections import deque
 from uuid import UUID
 
 import numpy as np
-from dill import dumps, loads  # noqa: S403
+from dill import dumps, loads
 from ruamel.yaml import YAML
 
 
