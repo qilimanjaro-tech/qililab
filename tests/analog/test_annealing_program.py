@@ -7,7 +7,7 @@ import pytest
 from tests.data import Galadriel
 
 from qililab import AnnealingProgram
-from qililab.qprogram.crosstalk_matrix import FluxVector
+from qililab.qprogram.flux_vector import FluxVector
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
 
 
