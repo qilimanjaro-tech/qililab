@@ -55,7 +55,7 @@ class TestQbloxClusterController:
         controller_instance.device.reference_source = MagicMock()
         controller_instance.initial_setup()
 
-        controller_instance.device.reference_source.assert_called_once_with(controller_instance.reference_clock.value)
+        controller_instance.device.reference_source.assert_called_once_with(controller_instance.reference_clock)
 
     @patch("qililab.instrument_controllers.qblox.qblox_cluster_controller.Cluster", autospec=True)
     def test_initial_setup_ext_trigger(self, device_mock: MagicMock, platform_ext_trigger: Platform):
@@ -75,6 +75,8 @@ class TestQbloxClusterController:
         controller_instance.device.ext_trigger_input_trigger_en.assert_called_once_with(True)
         controller_instance.device.ext_trigger_input_trigger_address.assert_called_once_with(15)
         controller_instance.device.ext_trigger_input_delay.assert_called_once_with(0)
+
+        assert controller_instance.ext_trigger == True
 
     @patch("qililab.instrument_controllers.qblox.qblox_cluster_controller.Cluster", autospec=True)
     def test_reset(self, device_mock: MagicMock, platform: Platform):

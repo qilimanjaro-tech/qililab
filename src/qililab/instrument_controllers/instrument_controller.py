@@ -15,7 +15,7 @@
 """Instrument Controller class"""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Sequence, get_type_hints
 
@@ -54,7 +54,7 @@ class InstrumentControllerSettings(Settings):
     alias: str
     connection: Connection
     modules: list[InstrumentReference]
-    reference_clock: str = field(default_factory=lambda: ReferenceClock("internal"))
+    reference_clock: str = "internal"
     ext_trigger: bool = False
     reset: bool = True
 
@@ -297,4 +297,6 @@ class InstrumentController(BusElement, ABC):
             INSTRUMENTCONTROLLER.CONNECTION: self.connection.to_dict(),
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
             INSTRUMENTCONTROLLER.RESET: self.settings.reset,
+            INSTRUMENTCONTROLLER.REFERENCE_CLOCK: self.settings.reference_clock,
+            INSTRUMENTCONTROLLER.EXT_TRIGGER: self.settings.ext_trigger,
         }

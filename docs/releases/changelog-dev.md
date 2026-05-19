@@ -141,7 +141,48 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
 
+- Added `NonLinearFluxVector` class for managing per-bus flux offsets and gain values with crosstalk compensation across multi-loop sweeps.
+
+  Unlike `FluxVector`, `NonLinearFluxVector` works directly with `Variable` and `VariableExpression` objects so that offsets and gains can sweep over loop dimensions without materialising large arrays up front. It is designed to be driven by a compiler that calls `set_loop` / `exit_loop` as it walks a `QProgram` block tree.
+
+  Usage example:
+
+  ```python
+  import numpy as np
+
+  from qililab.core.variables import Domain, Variable
+  from qililab.qprogram.blocks import ForLoop, Parallel
+  from qililab.qprogram.crosstalk_matrix import NonLinearCrosstalkMatrix
+  from qililab.qprogram.flux_vector import NonLinearFluxVector
+  from qililab.qprogram.operations import SetGain, SetOffset
+  from qililab.waveforms import Square
+
+  nlxtalk = NonLinearCrosstalkMatrix.from_array(...)
+  # (...set up xtalk...)
+
+  phi   = Variable("phi",   Domain.Voltage)
+  theta = Variable("theta", Domain.Voltage)
+
+  nlfv = NonLinearFluxVector()
+  nlfv.set_crosstalk_from_bias(nlxtalk, {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
+
+  nlfv.set_loop(ForLoop(variable=phi,   start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
+  nlfv.set_loop(ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0))  # 5 steps → loop_2
+
+  nlfv.set_element(SetOffset(bus="flux_0", offset_path0=phi))
+  nlfv.set_element(SetGain(bus="flux_1", gain=theta))
+
+  offsets = nlfv.get_corrected_offsets()   # shape (5, 3) per bus
+  plays   = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
+  ```
+
+  [#1115](https://github.com/qilimanjaro-tech/qililab/pull/1115)
+
+
 ### Improvements
+
+- Modified database manager's `load_by_id` to allow a list of ids to return a list of the measurements with said ids. Also added function `db_manager.get_dc_offsets(id)`, for recent addition to the measurements database, `dc_offsets`.
+  [#1097](https://github.com/qilimanjaro-tech/qililab/pull/1097)
 
 ### Breaking changes
 
@@ -153,6 +194,12 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 ### Documentation
 
 ### Bug fixes
+
+- Fixed a bug in `set_offset` where using a `Variable` on one path and a negative static value on the other would generate a `move` instruction with a negative immediate, which is invalid Q1ASM.
+  [#1113](https://github.com/qilimanjaro-tech/qililab/pull/1113)
+
+- Fixed a bug where `qp.qblox.play` with `wait_time=0` was treated as no `wait_time` provided, producing incorrect Q1ASM. The wait time is now correctly clamped to the minimum valid value of 4 ns.
+  [#1114](https://github.com/qilimanjaro-tech/qililab/pull/1114)
 
 - The save_platform function was not saving bus distortions because it wasn't added to the Bus.to_dict after the refactor. The property has been added.
   [#1100](https://github.com/qilimanjaro-tech/qililab/pull/1100)
@@ -167,4 +214,7 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
 
 - Fixed a bug in the Qblox compiler where the bin acquisition index was not incrementing correctly when multiple `measure` calls are used sequentially inside an `average` block with an outer sweep loop.  Each sequential acquire now gets its own bin register initialised to its position offset, and the bin register is advanced by the total number of acquires per sweep step (instead of always 1), so that consecutive acquires write to consecutive bins and the full acquisition matrix is filled correctly.
-  [#1098](https://github.com/qilimanjaro-tech/qililab/pull/1098)
+  [#1098](https://github.com/qilimanjaro-tech/qililab/pull/1098
+
+- Fixed a bug where the qblox instrument controller parameter `ext_trigger` and the qdac instrument controller parameter `reference_clock` where not correctly translated to dictionary from the runcard and therefore not saved with `ql.save_platform(platform)`.
+  [#1104](https://github.com/qilimanjaro-tech/qililab/pull/1104)

@@ -19,7 +19,8 @@ import numpy as np
 from qililab.core.variables import Domain, Variable, requires_domain
 from qililab.qprogram.blocks import Block, ForLoop, Parallel
 from qililab.qprogram.calibration import Calibration
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector, NonLinearCrosstalkMatrix, NonLinearFluxVector
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.flux_vector import FluxVector, NonLinearFluxVector
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,

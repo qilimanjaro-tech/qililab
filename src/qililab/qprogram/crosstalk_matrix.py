@@ -1,4 +1,4 @@
-# Copyright 2023 Qilimanjaro Quantum Tech
+# Copyright 2026 Qilimanjaro Quantum Tech
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
+from __future__ import annotations
+
+from typing import Mapping
 
 import numpy as np
 from scipy.special import jv
@@ -139,7 +141,7 @@ class CrosstalkMatrix:
         for bus in resistances:
             self.resistances[bus] = resistances[bus]
 
-    def flux_to_bias(self, flux: dict[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
+    def flux_to_bias(self, flux: Mapping[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
         """Converts target flux values to hardware bias values using linear inversion.
 
         Applies the inverse of the crosstalk matrix to the flux vector, accounting for
@@ -298,7 +300,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
                 raise ValueError(f"Bus '{bus}' not present in the crosstalk matrix.")
 
         if beta_c is not None or amplitude is not None:
-            if not beta_c is not None and amplitude is not None:
+            if not (beta_c is not None and amplitude is not None):
                 raise ValueError(
                     "Both 'amplitude' and 'beta_c' must be provided together — you cannot specify one without the other."
                 )
@@ -377,12 +379,12 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
     def get_non_linear_flux_terms(
         self,
-        flux: dict[str, float | np.ndarray],
+        flux: Mapping[str, float | np.ndarray],
     ) -> dict[str, float | np.ndarray]:
         """Computes the nonlinear flux correction for each bus.
 
         Args:
-            flux (dict[str, float]): Flux values keyed by bus name.
+            flux (Mapping[str, float]): Flux values keyed by bus name.
 
         Returns:
             dict[str, float]: Nonlinear correction terms keyed by bus name.
@@ -418,7 +420,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
         return corrections
 
-    def flux_to_bias(self, flux: dict[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
+    def flux_to_bias(self, flux: Mapping[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
         """Converts target flux values to hardware bias values, including nonlinear corrections.
 
         First computes the nonlinear flux corrections via the Bessel-series expansion and
@@ -426,7 +428,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
         obtain the final hardware bias values. Both scalar and array inputs are supported.
 
         Args:
-            flux (dict[str, float | np.ndarray]): Target flux values keyed by bus name.
+            flux (Mapping[str, float | np.ndarray]): Target flux values keyed by bus name.
                 Values can be scalars or numpy arrays of the same length.
 
         Returns:
@@ -482,158 +484,3 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
     def __repr__(self) -> str:
         return f"NonLinearCrosstalkMatrix({self.matrix}, beta_c={self.beta_c_matrix})"
-
-
-@yaml.register_class
-class FluxVector:
-    """Class to represent a flux vector. This is a dictionary of bus[flux] values"""
-
-    def __init__(self) -> None:
-        self.flux_vector: dict[str, float | list[float] | np.ndarray] = {}
-        self.bias_vector: dict[str, float | list[float] | np.ndarray] = {}
-        self.crosstalk: CrosstalkMatrix | None = None
-        self.crosstalk_inverse: CrosstalkMatrix | None = None
-
-    def __getitem__(self, bus: str) -> float | list[float] | np.ndarray:
-        """Given a bus, returns its corresponding flux
-
-        Args:
-            bus (str): The bus for which to get the flux values.
-
-        Returns:
-            float: Flux value for the given bus
-        """
-        if self.bias_vector:
-            return self.bias_vector[bus]
-        return self.flux_vector[bus]
-
-    def __setitem__(self, key: str, flux: float | list[float] | np.ndarray) -> None:
-        """Given a bus, sets a new flux
-
-        Args:
-            key (str): The bus for which to set the flux values.
-            flux (float): The new value for the given flux.
-
-        """
-
-        self.flux_vector[key] = flux
-        if self.crosstalk:
-            self.update_bias_vector()
-
-    def set_crosstalk(self, crosstalk: CrosstalkMatrix) -> dict[str, float | list[float] | np.ndarray]:
-        """Set the crosstalk compensation on the existing flux vector.
-
-        Applies the crosstalk matrix inversion to convert target flux values into
-        hardware bias values. Both scalar and array flux values are supported, allowing
-        this method to be used for single operating points as well as sweep-based
-        experiments. If a NonLinearCrosstalkMatrix is provided, nonlinear corrections
-        are applied via its overridden flux_to_bias method.
-
-        Any bus present in the crosstalk matrix but missing from the flux vector is
-        initialised to zero. List values are converted to numpy arrays before processing.
-
-        Args:
-            crosstalk (CrosstalkMatrix): The crosstalk matrix to apply. Can be a linear
-                CrosstalkMatrix or a NonLinearCrosstalkMatrix, in which case the nonlinear
-                Bessel-series corrections are included in the bias computation.
-
-        Returns:
-            dict[str, float | list[float] | np.ndarray]: The computed bias vector keyed
-                by bus name. Scalar flux inputs produce scalar bias outputs; array flux
-                inputs produce array bias outputs.
-        """
-        self.crosstalk = crosstalk
-        self.crosstalk_inverse = crosstalk.inverse()
-        self.crosstalk_inverse.flux_offsets = self.crosstalk.flux_offsets
-
-        for bus in self.crosstalk.matrix.keys():
-            if bus not in self.flux_vector:
-                self.flux_vector[bus] = 0
-            if isinstance(self.flux_vector[bus], list):
-                self.flux_vector[bus] = np.array(self.flux_vector[bus])
-
-        return self.update_bias_vector()
-
-    def update_bias_vector(self):
-        if self.crosstalk:
-            flux_dict = {bus: self.flux_vector[bus] for bus in self.crosstalk.matrix.keys()}
-            self.bias_vector = self.flux_vector.copy()
-            self.bias_vector.update(self.crosstalk.flux_to_bias(flux_dict))
-
-            return self.bias_vector
-        raise AttributeError("Cannot calcualte effective bias if Crosstalk is not set")
-
-    def set_crosstalk_from_bias(
-        self, crosstalk: CrosstalkMatrix, bias_vector: dict[str, float | list[float] | np.ndarray] | None = None
-    ) -> dict[str, float | list[float] | np.ndarray]:
-        """Set the crosstalk compensation on the existing flux vector. This function does the matrix product to calculate the correct flux
-
-        Args:
-            crosstalk (CrosstalkMatrix): crosstalk matrix to be applied
-
-        """
-        self.crosstalk = crosstalk
-
-        if bias_vector:
-            self.bias_vector = bias_vector.copy()
-        if not self.bias_vector:
-            self.bias_vector = self.flux_vector.copy()
-
-        for bus_1 in self.crosstalk.matrix.keys():
-            self.flux_vector[bus_1] = (
-                sum(
-                    (self.bias_vector[bus_2] * self.crosstalk.matrix[bus_1][bus_2])  # type: ignore
-                    for bus_2 in self.crosstalk.matrix[bus_1].keys()
-                )
-                + self.crosstalk.flux_offsets[bus_1]
-            )
-
-        return self.flux_vector
-
-    def to_dict(self) -> dict[str, float | list[float] | np.ndarray]:
-        """To dictionary method, returns the vector's dictionary
-
-        Returns:
-            dict[str, float]: Flux vector dictionary
-        """
-        if self.bias_vector:
-            return self.bias_vector
-        return self.flux_vector
-
-    def get_decomposed_vector(self, bus_list: list[str] | None = None) -> dict[str, "FluxVector"]:
-        """Return dictionary with flux vector decomposed by variables, for each flux return a flux vector considering
-        the rest of fluxes (or the rest of the fluxes from the bus_list if given) as 0.
-        This is typically used to sum variables in flux vs flux Qprogram.
-
-        Args:
-            flux_dict (optional, list[str] | None): List of fluxes to be decomposed. Defaults to None
-
-        Returns:
-            dict[str, FluxVector]: Dictionary containing different flux vectors for each bus.
-        """
-        list_fluxes = {}
-        if self.crosstalk:
-            for bus in self.crosstalk.matrix.keys():
-                flux_vector_copy = deepcopy(self)
-                for zero_flux in self.crosstalk.matrix.keys():
-                    if bus_list is not None and bus in bus_list and zero_flux in bus_list and zero_flux != bus:
-                        flux_vector_copy[zero_flux] = 0
-                    elif bus_list is None and zero_flux != bus:
-                        flux_vector_copy[zero_flux] = 0
-                if (bus_list is not None and bus in bus_list) or bus_list is None:
-                    list_fluxes[bus] = flux_vector_copy
-        return list_fluxes
-
-    @classmethod
-    def from_dict(cls, flux_dict: dict[str, float | list[float] | np.ndarray]) -> "FluxVector":
-        """Creates a FluxVector instance from a dictionary of bus[flux]
-
-        Args:
-            flux_dict (dict[str,float]): Dictionary containing buses as keys and fluxes as values
-
-        Returns:
-            FluxVector: FluxVector instance
-        """
-        instance = cls()
-        instance.flux_vector = flux_dict
-        return instance
