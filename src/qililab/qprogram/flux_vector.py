@@ -231,8 +231,10 @@ class NonLinearFluxVector:
                 self._verify_variable_exists(value.right)
             return
         if value.label not in self.variables:
-            raise ValueError(f"Variable with label {value.label} hasn't been contextualized with a loop.\n"
-                             "Use set_loop to contextualize variables.")
+            raise ValueError(
+                f"Variable with label {value.label} hasn't been contextualized with a loop.\n"
+                "Use set_loop to contextualize variables."
+            )
 
     def set_element(self, element: SetGain | SetOffset):
         """Registers a gain or offset value for a bus.
@@ -254,7 +256,6 @@ class NonLinearFluxVector:
         if isinstance(element, SetOffset):
             self._set_offset(element.bus, element.offset_path0)
             return
-
 
     def set_loop(self, loop: Parallel | ForLoop):
         """Registers a loop ('s variable) to the sweep context.
@@ -320,9 +321,7 @@ class NonLinearFluxVector:
 
         # Last value for every variable that belongs to this loop_id
         last_values: dict[str, float] = {
-            label: float(vc.arr[-1])
-            for label, vc in self.variables.items()
-            if vc.loop_ref == loop_id
+            label: float(vc.arr[-1]) for label, vc in self.variables.items() if vc.loop_ref == loop_id
         }
 
         for bus in self.offset:
@@ -374,8 +373,9 @@ class NonLinearFluxVector:
                 Arbitrary otherwise.
         """
         if self.crosstalk is None:
-            raise AttributeError("No crosstalk has been set.\nYou can set it using set_crosstalk or set_crosstalk_from_bias")
-        crosstalk = cast("CrosstalkMatrix", self.crosstalk)
+            raise AttributeError(
+                "No crosstalk has been set.\nYou can set it using set_crosstalk or set_crosstalk_from_bias"
+            )
         durations = {bus: w.get_duration() for bus, w in waveforms.items()}
         if len(set(durations.values())) > 1:
             raise ValueError(f"All waveforms must have the same duration, got: {durations}")
@@ -384,7 +384,7 @@ class NonLinearFluxVector:
         gain_flat = self._generate_matrix_values(self.gain)
         offset_flat = self._generate_matrix_values(self.offset)
 
-        bias_offset: dict[str, np.ndarray] = crosstalk.flux_to_bias(offset_flat)
+        bias_offset: dict[str, np.ndarray] = self.crosstalk.flux_to_bias(offset_flat)  # type: ignore[assignment]
         unique_loop_refs, loop_lengths = self._loop_structure()
         shape = tuple(loop_lengths[lr] for lr in unique_loop_refs) if unique_loop_refs else (1,)
         total_length = int(np.prod(list(loop_lengths.values()))) if loop_lengths else 1
@@ -399,7 +399,7 @@ class NonLinearFluxVector:
                 ).reshape(-1)
             else:
                 combined_flux[bus] = np.repeat(offset_flat[bus], dur)
-        bias_combined: dict[str, np.ndarray] = crosstalk.flux_to_bias(combined_flux)
+        bias_combined: dict[str, np.ndarray] = self.crosstalk.flux_to_bias(combined_flux)  # type: ignore[assignment]
 
         result: dict[str, np.ndarray] = {}
         for bus in self.buses:
@@ -429,10 +429,11 @@ class NonLinearFluxVector:
         """
 
         if self.crosstalk is None:
-            raise AttributeError("No crosstalk has been set.\nYou can set it using set_crosstalk or set_crosstalk_from_bias")
-        crosstalk = cast("CrosstalkMatrix", self.crosstalk)
+            raise AttributeError(
+                "No crosstalk has been set.\nYou can set it using set_crosstalk or set_crosstalk_from_bias"
+            )
         flat = self._generate_matrix_values(self.offset)
-        biases: dict[str, np.ndarray] = crosstalk.flux_to_bias(flat)
+        biases: dict[str, np.ndarray] = self.crosstalk.flux_to_bias(flat)  # type: ignore[assignment]
         unique_loop_refs, loop_lengths = self._loop_structure()
         shape = tuple(loop_lengths[lr] for lr in unique_loop_refs) if unique_loop_refs else (1,)
         return {bus: arr.reshape(shape) for bus, arr in biases.items()}
@@ -444,11 +445,10 @@ class NonLinearFluxVector:
             reverse=True,
         )
         loop_lengths: dict[int, int] = {
-            lr: len(next(vc for vc in self.variables.values() if vc.loop_ref == lr).arr)
-            for lr in unique_loop_refs
+            lr: len(next(vc for vc in self.variables.values() if vc.loop_ref == lr).arr) for lr in unique_loop_refs
         }
         if not loop_lengths:
-            return [-1], {-1:1}
+            return [-1], {-1: 1}
         return unique_loop_refs, loop_lengths
 
     def _generate_matrix_values(
@@ -460,9 +460,7 @@ class NonLinearFluxVector:
         result: dict[str, np.ndarray] = {}
         for bus, val in values.items():
             if isinstance(val, VariableExpression):
-                result[bus] = np.asarray(
-                    self._evaluate_expr(val, unique_loop_refs, loop_lengths), dtype=float
-                )
+                result[bus] = np.asarray(self._evaluate_expr(val, unique_loop_refs, loop_lengths), dtype=float)
             elif isinstance(val, Variable):
                 result[bus] = self._expand_variable(val, unique_loop_refs, loop_lengths)
             else:
@@ -478,7 +476,11 @@ class NonLinearFluxVector:
         """Expand a Variable to a 1D array covering all loop combinations."""
         var_ctx = self.variables[var.label]
         pos = unique_loop_refs.index(var_ctx.loop_ref)
-        inner = int(np.prod([loop_lengths[unique_loop_refs[j]] for j in range(pos + 1, len(unique_loop_refs))]) if pos + 1 < len(unique_loop_refs) else 1)
+        inner = int(
+            np.prod([loop_lengths[unique_loop_refs[j]] for j in range(pos + 1, len(unique_loop_refs))])
+            if pos + 1 < len(unique_loop_refs)
+            else 1
+        )
         outer = int(np.prod([loop_lengths[unique_loop_refs[j]] for j in range(pos)]) if pos > 0 else 1)
         return np.tile(np.repeat(var_ctx.arr, inner), outer)
 
@@ -540,16 +542,14 @@ class NonLinearFluxVector:
                 in self.offset, keyed by bus name.
         """
         self.set_crosstalk(crosstalk)
-
-        for bus_1 in self.crosstalk.matrix.keys():
+        crosstalk = cast("CrosstalkMatrix", self.crosstalk)
+        for bus_1 in crosstalk.matrix.keys():
             self.offset[bus_1] = (
                 sum(
-                    (bias_vector[bus_2] * self.crosstalk.matrix[bus_1][bus_2])  # type: ignore
-                    for bus_2 in self.crosstalk.matrix[bus_1].keys()
+                    (bias_vector[bus_2] * crosstalk.matrix[bus_1][bus_2])  # type: ignore
+                    for bus_2 in crosstalk.matrix[bus_1].keys()
                 )
-                + self.crosstalk.flux_offsets[bus_1]
+                + crosstalk.flux_offsets[bus_1]
             )
 
         return self.offset
-
-

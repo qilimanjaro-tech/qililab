@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from typing import Mapping
+
 import numpy as np
 from scipy.special import jv
 
@@ -139,7 +141,7 @@ class CrosstalkMatrix:
         for bus in resistances:
             self.resistances[bus] = resistances[bus]
 
-    def flux_to_bias(self, flux: dict[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
+    def flux_to_bias(self, flux: Mapping[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
         """Converts target flux values to hardware bias values using linear inversion.
 
         Applies the inverse of the crosstalk matrix to the flux vector, accounting for
@@ -482,4 +484,3 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
     def __repr__(self) -> str:
         return f"NonLinearCrosstalkMatrix({self.matrix}, beta_c={self.beta_c_matrix})"
-
