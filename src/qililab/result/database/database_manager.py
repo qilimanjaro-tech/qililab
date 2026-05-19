@@ -16,7 +16,7 @@ import datetime
 import os
 import warnings
 from configparser import ConfigParser
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 import h5py
 import numpy as np
@@ -204,31 +204,44 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
-    def load_by_id(self, id: int | list[int]) -> Measurement | None:
+    @overload
+    def load_by_id(self, id: list[int]) -> list[Measurement] | None:
+        """Load list of measurements by their measurement_id.
+
+        Args:
+            id (list[int]): measurement_id list given by the database.
+        """
+
+    @overload
+    def load_by_id(self, id: int) -> Measurement | None:
         """Load measurement by its measurement_id.
 
         Args:
             id (int | list[int]): measurement_id value given by the database.
         """
+
+    def load_by_id(self, id: int | list[int]) -> list[Measurement] | Measurement | None:
+        """Load measurements by their measurement_id.
+
+        Args:
+            id (int | list[int]): measurement_id value given by the database.
+        """
         with self.session() as running_session:
-            if isinstance(id, list):
-                measurement_by_id_list = running_session.query(Measurement).filter(Measurement.measurement_id.in_(id)).all()
-                if measurement_by_id_list is not None:
-                    for meas in measurement_by_id_list:
-                        path = meas.result_path
-                        if not os.path.isfile(path):
-                            new_path = path.replace(self.base_path_local, self.base_path_share)
-                            meas.result_path = new_path
-                return measurement_by_id_list
+            if not isinstance(id, list):
+                measurement_id = [id]
             else:
-                measurement_by_id = running_session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
-                if measurement_by_id is not None:
-                    path = measurement_by_id.result_path
+                measurement_id = id
+
+            measurement_by_id_list = (
+                running_session.query(Measurement).filter(Measurement.measurement_id.in_(measurement_id)).all()
+            )
+            if measurement_by_id_list is not None:
+                for meas in measurement_by_id_list:
+                    path = meas.result_path
                     if not os.path.isfile(path):
                         new_path = path.replace(self.base_path_local, self.base_path_share)
-                        measurement_by_id.result_path = new_path
-
-                return measurement_by_id
+                        meas.result_path = new_path
+            return measurement_by_id_list if len(measurement_by_id_list) > 1 else measurement_by_id_list[0]
             
     def load_sequence_by_id(self, id: int | list[int]) -> Measurement | None:
         """Load measurement by its measurement_id.
@@ -328,6 +341,8 @@ class DatabaseManager:
                     Measurement.sample_name,
                     Measurement.result_path,
                     Measurement.created_by,
+                    Measurement.target,
+                    Measurement.secondary_source,
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
@@ -391,6 +406,8 @@ class DatabaseManager:
                     Measurement.sample_name,
                     Measurement.result_path,
                     Measurement.created_by,
+                    Measurement.target,
+                    Measurement.secondary_source,
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
@@ -460,6 +477,34 @@ class DatabaseManager:
                 .scalar()
             )
             
+    def get_dc_offsets(self, measurement_id: int) -> str:
+        """Get DC offsets of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+
+        Args:
+            measurement_id (int): measurement_id value given by the database.
+        """
+        with self.session() as running_session:
+            return (
+                running_session.query(Measurement.dc_offsets)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
+
+    def get_dc_offsets(self, measurement_id: int) -> str:
+        """Get DC offsets of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+
+        Args:
+            measurement_id (int): measurement_id value given by the database.
+        """
+        with self.session() as running_session:
+            return (
+                running_session.query(Measurement.dc_offsets)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
+
     def get_dc_offsets(self, measurement_id: int) -> str:
         """Get DC offsets of a measurement by its measurement_id.
         To be used when you have light loaded measurements
@@ -802,7 +847,7 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
     return create_engine(url)
 
 
-def load_by_id(id: int, path: str = "~/database.ini") -> Measurement | None:
+def load_by_id(id: int | list[int], path: str = "~/database.ini") -> list[Measurement] | Measurement | None:
     """Function to get the database ID without loading the Database Manager"""
 
     db = get_db_manager(path)
