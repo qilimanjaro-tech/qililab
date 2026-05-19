@@ -881,7 +881,9 @@ class QProgram(StructuredProgram):
                 envelope = element.offset_path0  # type: ignore
 
             if isinstance(envelope, np.ndarray):
-                existing_lengths = {len(v) for v in flux_vector.flux_vector.values() if isinstance(v, (np.ndarray, list))}
+                existing_lengths = {
+                    len(v) for v in flux_vector.flux_vector.values() if isinstance(v, (np.ndarray, list))
+                }
                 if existing_lengths and envelope.shape[0] not in existing_lengths:
                     raise ValueError("QProgram.play elements must have the same size.")
             flux_vector.flux_vector[element.bus] = envelope
