@@ -832,7 +832,7 @@ class QbloxCompiler:
                     component=QPyInstructions.Move(var=abs(value), register=register), bot_position=insert_position
                 )
 
-                if value < 0:
+                if value < 0: # take the two's complement
                     self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
                         component=QPyInstructions.Nop(), bot_position=insert_position
                     )
