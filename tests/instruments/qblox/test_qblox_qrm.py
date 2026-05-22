@@ -331,7 +331,6 @@ class TestQbloxQRM:
         qrm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
 
     def test_acquire_qprogram_results(self, qrm: QbloxQRM):
-        """Test uploading a QpySequence to the QCM module."""
         acquisitions = Acquisitions()
         acquisitions.add(name="acquisition_0")
         acquisitions.add(name="acquisition_1")
@@ -351,7 +350,42 @@ class TestQbloxQRM:
         assert qrm.device.store_scope_acquisition.call_count == 1
         assert qrm.device.get_acquisitions.call_count == 2
         assert qrm.device.delete_acquisition_data.call_count == 2
-        assert qrm.device.sequencers[0].sequence.call_count == 3 # after uploading the empty sequence
+        assert qrm.device.sequencers[0].sequence.call_count == 2 # after uploading the empty sequence
+
+    def test_acquire_qprogram_results_multiple_acquisitions_does_not_wipe_sequence_mid_loop(self, qrm: QbloxQRM):
+        acquisitions = Acquisitions()
+        acquisitions.add(name="Acquisition 0")
+        acquisitions.add(name="Acquisition 1")
+
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=acquisitions, weights=Weights())
+        qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
+
+        qp_acquisitions = {
+            "Acquisition 0": AcquisitionData(bus="readout", save_adc=False, shape=(-1,), intertwined=1),
+            "Acquisition 1": AcquisitionData(bus="readout", save_adc=False, shape=(-1,), intertwined=1),
+        }
+
+        # Simulate hardware: once sequence() is called with an empty acquisitions dict,
+        # get_acquisitions() returns an empty dict (hardware cleared).
+        hardware_state: dict = {
+            "Acquisition 0": {"acquisition": MagicMock()},
+            "Acquisition 1": {"acquisition": MagicMock()},
+        }
+
+        def mock_get_acquisitions(sequencer):
+            return dict(hardware_state)
+
+        def mock_set_sequence(seq):
+            if not seq.get("acquisitions"):  # empty acquisitions dict = sequence wipe
+                hardware_state.clear()
+
+        qrm.device.get_acquisitions.side_effect = mock_get_acquisitions
+        qrm.device.sequencers[0].sequence.side_effect = mock_set_sequence
+
+        # With the bug this raises KeyError: 'Acquisition 1' because the sequence is
+        # wiped (clearing hardware acquisition slots) after the first read.
+        results = qrm.acquire_qprogram_results(acquisitions=qp_acquisitions, channel_id=0)
+        assert len(results) == 2
 
     def test_clear_cache(self, qrm: QbloxQRM):
         """Test clearing the cache of the QCM module."""

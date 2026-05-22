@@ -198,7 +198,7 @@ class BusCompilationInfo:
         # Bin index used in the move instruction
         self.start_bin_idx: int = 0
 
-        self.first_acq: int = True
+        self.first_acq: bool = True
 
 
 class QbloxCompiler:
@@ -1547,7 +1547,9 @@ class QbloxCompiler:
         in_avg_block = isinstance(self._buses[element.bus].qpy_block_stack[-1], QPyProgram.Loop)
         is_avg_multi_acquire = in_avg_block and self._buses[element.bus].counter_acquire > 1
 
-        if len(self._acquisition_metadata[element.bus]) > MAX_ACQUISITION_INDEX and self._buses[element.bus].first_acq: #OSCAR's case
+        if (
+            len(self._acquisition_metadata[element.bus]) > MAX_ACQUISITION_INDEX and self._buses[element.bus].first_acq
+        ):  # OSCAR's case
             self._buses[element.bus].exceeds_depth = True
             homogeneous_acq: bool = True
             homogeneous_acq = len(set(self._acquisition_metadata[element.bus].values())) == 1
@@ -1555,14 +1557,14 @@ class QbloxCompiler:
             if homogeneous_acq:
                 self._buses[element.bus].start_bin_idx = 0
                 self._buses[element.bus].shape_acquire = tuple(loop[1].iterations for loop in loops)
-                self._buses[element.bus].num_bins_per_acquire = 1 #TO Change, specific to oscar's case
+                self._buses[element.bus].num_bins_per_acquire = 1  # TO Change, specific to oscar's case
                 acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
-                #self._buses[element.bus].num_bins_total = int(self._buses[element.bus].counter_acquire * self._buses[element.bus].num_bins_per_acquire) #need to fix this
+                # self._buses[element.bus].num_bins_total = int(self._buses[element.bus].counter_acquire * self._buses[element.bus].num_bins_per_acquire) #need to fix this
                 self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
                     bus=element.bus,
                     save_adc=element.save_adc,
                     shape=self._buses[element.bus].shape_acquire,
-                    intertwined=self._buses[element.bus].counter_acquire,
+                    intertwined=len(self._acquisition_metadata[element.bus].values()),
                 )
                 self._buses[element.bus].qpy_sequence._acquisitions.add(
                     name=acquisition_name,
@@ -1587,7 +1589,10 @@ class QbloxCompiler:
                 )
 
         # if it is the first acquire at this nested level, set everything up
-        elif self._buses[element.bus].count_nested_level_acquire != self._buses[element.bus].prev_nested_level_acquire and self._buses[element.bus].exceeds_depth is False:
+        elif (
+            self._buses[element.bus].count_nested_level_acquire != self._buses[element.bus].prev_nested_level_acquire
+            and self._buses[element.bus].exceeds_depth is False
+        ):
             self._buses[element.bus].start_bin_idx = 0
             self._buses[element.bus].shape_acquire = tuple(loop[1].iterations for loop in loops)
             self._buses[element.bus].num_bins_per_acquire = math.prod(loop[1].iterations for loop in loops)
@@ -1675,7 +1680,7 @@ class QbloxCompiler:
                     )
                 )
                 self._buses[element.bus].single_bin_counter += 1
-       
+
         else:
             # if self._buses[element.bus].num_bins_per_acquire > 1:
             register_I = self._get_or_create_weight_register(element.bus, index_I, block_index_for_move_instruction)
@@ -1688,7 +1693,7 @@ class QbloxCompiler:
                     weight_index_1=register_Q,
                     wait_time=integration_length,
                 )
-        )
+            )
             # Advance by N bins per step, where N is the number of acquires sharing this avg block.
             bins_per_step = self._buses[element.bus].counter_acquire if is_avg_multi_acquire else 1
             self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
