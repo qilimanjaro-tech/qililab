@@ -554,6 +554,7 @@ class Galadriel:
         ],
         INSTRUMENTCONTROLLER.RESET: True,
         "reference_clock": "internal",
+        "ext_trigger": True,
 
     }
 
