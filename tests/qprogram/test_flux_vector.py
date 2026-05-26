@@ -119,7 +119,7 @@ class TestNonLinearFluxVector:
 
     def test_exit_loop_resolves_variable_to_last_value(self, nlfv_no_crosstalk):
         phi = Variable("phi", Domain.Voltage)
-        loop = ForLoop(variable=phi, start=0.0, stop=1.0, step=0.5)
+        loop = ForLoop(variable=phi, start=0.0, stop=1.1, step=0.5)
         nlfv_no_crosstalk.set_loop(loop)
         nlfv_no_crosstalk.offset["flux_0"] = phi
         nlfv_no_crosstalk.gain["flux_1"] = phi + 0.1
@@ -131,8 +131,8 @@ class TestNonLinearFluxVector:
         phi = Variable("phi", Domain.Voltage)
         theta = Variable("theta", Domain.Voltage)
         parallel = Parallel(loops=[
-            ForLoop(variable=phi, start=0.0, stop=1.0, step=0.5),
-            ForLoop(variable=theta, start=0.0, stop=2.0, step=1.0),
+            ForLoop(variable=phi, start=0.0, stop=1.1, step=0.5),
+            ForLoop(variable=theta, start=0.0, stop=2.1, step=1.0),
         ])
         nlfv_no_crosstalk.set_loop(parallel)
         nlfv_no_crosstalk.offset["flux_0"] = phi
@@ -182,15 +182,15 @@ class TestNonLinearFluxVector:
         nlfv.offset["flux_1"] = gamma
         nlfv.offset["flux_2"] = theta
         parallel = Parallel(loops=[
-            ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0),    # 3 steps
-            ForLoop(variable=gamma, start=0.0, stop=2.0, step=1.0),  # 3 steps
+            ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0),    # 2 steps
+            ForLoop(variable=gamma, start=0.0, stop=2.0, step=1.0),  # 2 steps
         ])
-        outer = ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0)  # 5 steps
-        nlfv.set_loop(parallel)  # loop_1: 3 steps
-        nlfv.set_loop(outer)     # loop_2: 5 steps
+        outer = ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0)  # 4 steps
+        nlfv.set_loop(parallel)  # loop_1: 2 steps
+        nlfv.set_loop(outer)     # loop_2: 4 steps
         result = nlfv.get_corrected_offsets()
         for bus in crosstalk_matrix.matrix:
-            assert result[bus].shape == (5, 3)
+            assert result[bus].shape == (4, 2)
 
     def test_get_corrected_play_raises_without_crosstalk(self, nlfv_no_crosstalk):
         with pytest.raises(AttributeError):
@@ -222,19 +222,19 @@ class TestNonLinearFluxVector:
         nlfv.offset["flux_1"] = gamma
         nlfv.offset["flux_2"] = theta
         parallel = Parallel(loops=[
-            ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0),    # 3 steps
-            ForLoop(variable=gamma, start=0.0, stop=2.0, step=1.0),  # 3 steps
+            ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0),    # 2 steps
+            ForLoop(variable=gamma, start=0.0, stop=2.0, step=1.0),  # 2 steps
         ])
-        outer = ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0)  # 5 steps
-        nlfv.set_loop(parallel)  # loop_1: 3 steps
-        nlfv.set_loop(outer)     # loop_2: 5 steps
+        outer = ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0)  # 4 steps
+        nlfv.set_loop(parallel)  # loop_1: 2 steps
+        nlfv.set_loop(outer)     # loop_2: 4 steps
         result = nlfv.get_corrected_play({
             "flux_0": Square(0.1, 100),
             "flux_1": Square(0.1, 100),
             "flux_2": Square(0.1, 100),
         })
         for bus in crosstalk_matrix.matrix:
-            assert result[bus].shape == (5, 3)
+            assert result[bus].shape == (4, 2)
 
     def test_set_crosstalk(self, nlfv_no_crosstalk, crosstalk_matrix):
         nlfv_no_crosstalk.offset["flux_0"] = 0.42

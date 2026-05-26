@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from copy import deepcopy
-import itertools
 from typing import TYPE_CHECKING, Sequence, overload
 
 import numpy as np
@@ -46,7 +45,6 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram, VariableInfo
-from qililab.qprogram.blocks.unpack_loop import traverse_unpack_non_linear
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
 
@@ -520,8 +518,11 @@ class QProgram(StructuredProgram):
                                 non_lin_play_waveforms.append(non_lin_flux_vector.get_corrected_play(non_lin_play_dict))
                                 non_lin_offsets.append(non_lin_flux_vector.get_corrected_offsets())
                                 non_lin_play_dict = {}
-                            non_lin_play_dict[element.bus] = element.waveform
+                            non_lin_play_dict[element.bus] = (
+                                element.waveform if isinstance(element.waveform, Waveform) else element.waveform.get_I()
+                            )
                     else:
+                        crosstalk_elements.check_flux_vector(element)
                         crosstalk_elements.flux_vector[str(element.__class__)] = handle_flux_vector(
                             flux_vector=crosstalk_elements.flux_vector[str(element.__class__)],
                             element=element,
@@ -582,8 +583,7 @@ class QProgram(StructuredProgram):
 
                 if (
                     isinstance(block, ForLoop)
-                    or isinstance(block, Parallel)
-                    and all(isinstance(loop, ForLoop) for loop in block.loops)
+                    or (isinstance(block, Parallel) and all(isinstance(loop, ForLoop) for loop in block.loops))
                 ) and block in non_lin_flux_vector.loops.values():
                     non_lin_flux_vector.exit_loop(block)
                     self._index_dim -= 1
@@ -904,12 +904,12 @@ class QProgram(StructuredProgram):
             offsets_index = offsets_0
             last_appended_offset = -1
             plays_index = plays_0
-            play_bus_list = []
+            play_bus_list: list[str] = []
 
             for element in elements:
                 if isinstance(element, SetGain) and element.bus in flux_vector.buses:
                     continue
-                elif isinstance(element, SetOffset) and element.bus in flux_vector.buses:
+                if isinstance(element, SetOffset) and element.bus in flux_vector.buses:
                     if offsets_index != last_appended_offset:
                         for bus in flux_vector.buses:
                             corrected_offsets = offsets[offsets_index][bus][loop_coord]
@@ -953,13 +953,13 @@ class QProgram(StructuredProgram):
                     if element.uuid in flux_vector.loops_uuid.values():
                         shape = next(iter(offsets[offsets_index].values())).shape
                         for key in range(shape[-len(loop_index) - 1]):
-                            loop_coord = (key,) + loop_index[::-1]
+                            loop_coord = (key, *loop_index[::-1])
                             corrected_loop, offset_defined = handle_non_linear(
                                 elements=element.elements,
                                 flux_vector=flux_vector,
                                 offsets=offsets,
                                 play_waveforms=play_waveforms,
-                                loop_index=loop_index + (key,),
+                                loop_index=(*loop_index, key),
                                 loop_coord=loop_coord,
                                 offsets_0=offsets_index,
                                 plays_0=plays_index,
@@ -1035,12 +1035,13 @@ class QProgram(StructuredProgram):
             elif isinstance(element, SetOffset):  # square with same dimension as play
                 envelope = element.offset_path0  # type: ignore
 
-            if (
-                isinstance(envelope, np.ndarray)
-                and isinstance(flux_vector[element.bus], np.ndarray)
-                and flux_vector[element.bus].shape != envelope.shape  # type: ignore
-            ):
-                raise ValueError("qp.play elements must have the same size.")
+            if isinstance(envelope, np.ndarray):
+                existing_array = next(
+                    (flux for flux in flux_vector.flux_vector.values() if isinstance(flux, np.ndarray)),
+                    None,
+                )
+                if existing_array is not None and existing_array.shape != envelope.shape:
+                    raise ValueError("qp.play elements must have the same size.")
             flux_vector.flux_vector[element.bus] = envelope
             return flux_vector
 

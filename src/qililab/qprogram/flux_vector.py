@@ -17,7 +17,6 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
-from uuid import UUID
 
 import numpy as np
 
@@ -28,6 +27,8 @@ from qililab.waveforms import Arbitrary, Square, Waveform
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 
 
