@@ -703,9 +703,7 @@ class QbloxCompiler:
             self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.Add(left, right, result))
         elif expression.operator == "-":
             if isinstance(left, QPyProgram.Register):
-                self._buses[bus].qpy_block_stack[-1].add(
-                    component=QPyInstructions.Sub(left, right, result)
-                )
+                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.Sub(left, right, result))
             else:  # Q1ASM forbids the first element of sub to be an immediate
                 constant_register = QPyProgram.Register()
                 if left < 0:
@@ -717,7 +715,7 @@ class QbloxCompiler:
                     block_idx = loops[0][0] - 1 if loops else -2
                     zero_register = QPyProgram.Register()
                     self._buses[bus].qpy_block_stack[block_idx].add(
-                        component=QPyInstructions.Move(var=0, register=zero_register),
+                        component=QPyInstructions.Move(source=0, destination=zero_register), insert_idx=0
                     )
                     self._buses[bus].qpy_block_stack[-1].add(
                         component=QPyInstructions.Sub(zero_register, abs(left), constant_register)
@@ -725,9 +723,7 @@ class QbloxCompiler:
                 else:
                     # TODO: this move is done at every loop iteration; ideally it belongs outside the loop
                     # where loop registers are initialised — requires a qpysequence change.
-                    self._buses[bus].qpy_block_stack[-1].add(
-                        component=QPyInstructions.Move(left, constant_register)
-                    )
+                    self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.Move(left, constant_register))
 
                 self._buses[bus].qpy_block_stack[-1].add(
                     component=QPyInstructions.Sub(constant_register, right, result)
@@ -743,7 +739,7 @@ class QbloxCompiler:
         if isinstance(element.gain, VariableExpression):
             result = self._resolve_binary_expression(element.bus, element.gain, convert)
             self._buses[element.bus].qpy_block_stack[-1].add(
-                component=QPyInstructions.SetAwgGain(gain_0=result, gain_1=result)
+                component=QPyInstructions.SetAwgGain(value_0=result, value_1=result)
             )
             self._buses[element.bus].upd_param_instruction_pending = True
             return
@@ -767,7 +763,7 @@ class QbloxCompiler:
             raise NotImplementedError(
                 "Having a different offset for I and Q whilst using VariableExpressions is not supported."
             )
-            
+
         if isinstance(element.offset_path0, VariableExpression):
             if element.offset_path1 is not None:
                 raise NotImplementedError(
@@ -775,7 +771,7 @@ class QbloxCompiler:
                 )
             result = self._resolve_binary_expression(element.bus, element.offset_path0, convert)
             self._buses[element.bus].qpy_block_stack[-1].add(
-                component=QPyInstructions.SetAwgOffs(offset_0=result, offset_1=result)
+                component=QPyInstructions.SetAwgOffs(value_0=result, value_1=result)
             )
 
         # TODO: the flattening of all variable expressions will be moved to qpysequence
@@ -783,19 +779,19 @@ class QbloxCompiler:
             offset_0 = (
                 self._buses[element.bus].variable_to_register[element.offset_path0]
                 if isinstance(element.offset_path0, Variable)
-                else convert(element.offset_path0)
+                else element.offset_path0
             )
-
             if element.offset_path1 is None:
                 offset_1 = offset_0
                 logger.warning(
                     "Qblox requires an offset for the two paths, the offset of the second path has been set to the same as the first path."
                 )
+
             else:
                 offset_1 = (
-                    self._buses[element.bus].variable_to_register[element.offset_path1]  # type: ignore[index]
+                    self._buses[element.bus].variable_to_register[element.offset_path1]
                     if isinstance(element.offset_path1, Variable)
-                    else convert(element.offset_path1)
+                    else element.offset_path1
                 )
 
             if (isinstance(offset_0, QPyProgram.Register) and not isinstance(offset_1, QPyProgram.Register)) or (
@@ -826,10 +822,15 @@ class QbloxCompiler:
                         component=QPyInstructions.Add(a=register, b=1, destination=register), insert_idx=2
                     )
 
-            if isinstance(element.offset_path0, Variable) or isinstance(element.offset_path1, Variable):
                 self._buses[element.bus].qpy_block_stack[-1].add(
                     component=QPyInstructions.SetAwgOffs(value_0=offset_0, value_1=offset_1)
                 )
+
+            elif isinstance(offset_0, QPyProgram.Register) and isinstance(offset_1, QPyProgram.Register):
+                self._buses[element.bus].qpy_block_stack[-1].add(
+                    component=QPyInstructions.SetAwgOffs(value_0=offset_0, value_1=offset_1)
+                )
+
             else:
                 self._buses[element.bus].qpy_block_stack[-1].add(
                     component=QPyInstructions.SetNormalisedOffs(offset_i=offset_0, offset_q=offset_1)
@@ -1068,7 +1069,7 @@ class QbloxCompiler:
 
     @staticmethod
     def _clamp_duration(duration: int, label: str = "duration") -> int | None:
-        """Return None if duration is 0 (caller should skip), or clamp to INST_MIN_WAIT if below INST_MIN_WAIT.
+        """Clamp to INST_MIN_WAIT if below INST_MIN_WAIT.
         The returned duration is rounded.
 
         Args:
@@ -1079,15 +1080,12 @@ class QbloxCompiler:
             None if duration is 0 (caller should skip), or clamp to INST_MIN_WAIT if below INST_MIN_WAIT.
             Otherwise the given duration is returned rounded.
         """
-        if duration == 0:
-            warnings.warn(f"Ignoring {label} instruction: duration is 0 ns.")
-            logger.warning(f"Ignoring {label} instruction: duration is 0 ns.")
-            return None
         if duration < INST_MIN_WAIT:
-            warnings.warn(f"{label} duration {duration} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns.")
-            logger.warning(f"{label} duration {duration} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns.")
+            logger.warning(
+                f"{label} duration {duration} ns is below the Q1ASM minimum ({INST_MIN_WAIT} ns), clamping to {INST_MIN_WAIT} ns."
+            )
             return INST_MIN_WAIT
-        return round(duration)
+        return int(duration)
 
     def _handle_add_waits(self, bus: str, duration: int):
         """Wait for longer than QBLOX INST_MAX_WAIT by looping over wait instructions
@@ -1514,7 +1512,7 @@ class QbloxCompiler:
             self._buses[element.bus].bin_register = QPyProgram.Register()
             self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction]._add_structure(
                 component=QPyInstructions.Move(source=start_bin_idx, destination=self._buses[element.bus].bin_register),
-                insert_idx=0
+                insert_idx=0,
             )
             self._buses[element.bus].start_bin_idx += 1
 

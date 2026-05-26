@@ -1006,6 +1006,7 @@ def inner_average_outer_sweep_two_measures() -> QProgram:
     frequency = qp.variable(label="frequency", domain=Domain.Frequency)
     with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
         with qp.average(shots=100):
+            qp.set_frequency(bus="readout", frequency=frequency)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
     return qp
@@ -1388,7 +1389,7 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=offset_loop_negative)
 
-        assert sequences["drive"]._program._compiled
+        assert len(sequences["drive"]._program.compiler_flags) == 0
 
         drive_str = """
             setup:
@@ -1396,35 +1397,34 @@ class TestQBloxCompiler:
                             set_mrk          0
                             upd_param        4
 
+                            move             16383, R0      
+                            nop                             
+                            not              R0, R0         
+                            nop                             
+                            add              R0, 1, R0      
+                            move             16383, R1      
+                            nop                             
+                            not              R1, R1         
+                            nop                             
+                            add              R1, 1, R1  
             main:
-                            move             16383, R0
-                            nop
-                            not              R0, R0
-                            nop
-                            add              R0, 1, R0
-                            move             16383, R1
-                            nop
-                            not              R1, R1
-                            nop
-                            add              R1, 1, R1
-                            move             3, R2
-                            move             0, R3
+                            move             0, R2
+                            move             3, R3
             loop_0:
-                            nop
-                            set_awg_offs     R3, R1
-                            add              R3, 3276, R3
-                            loop             R2, @loop_0
-                            move             3, R4
-                            move             0, R5
+                            set_awg_offs     R2, R1
+                            add              R2, 3276, R2
+                            loop             R3, @loop_0
+                            move             0, R4
+                            move             3, R5
             loop_1:
-                            nop
-                            set_awg_offs     R0, R5
-                            add              R5, 3276, R5
-                            loop             R4, @loop_1
+                            set_awg_offs     R0, R4
+                            add              R4, 3276, R4
+                            loop             R5, @loop_1
                             set_mrk          0
                             upd_param        4
                             stop
         """
+        print(sequences["drive"]._program)
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_dynamic_wait(self, dynamic_wait: QProgram):
@@ -4168,14 +4168,16 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive_q0_bus"], drive_str)
         assert is_q1asm_equal(sequences["readout_q0_bus"], readout_str)
 
-    def test_clamp_duration_zero_returns_none_with_warning(self):
-        with pytest.warns(UserWarning, match="Ignoring wait instruction: duration is 0 ns."):
+    def test_clamp_duration_zero_is_clamped_to_minimum_with_warning(self, caplog):
+        with caplog.at_level(logging.WARNING):
             result = QbloxCompiler._clamp_duration(0, label="wait")
-        assert result is None
+        assert "wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        assert result == 4
 
-    def test_clamp_duration_below_minimum_returns_4_with_warning(self):
-        with pytest.warns(UserWarning, match=r"wait duration 2 ns is below the Q1ASM minimum \(4 ns\), clamping to 4 ns\."):
+    def test_clamp_duration_below_minimum_returns_4_with_warning(self, caplog):
+        with caplog.at_level(logging.WARNING):
             result = QbloxCompiler._clamp_duration(2, label="wait")
+        assert "wait duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         assert result == 4
 
     def test_clamp_duration_at_minimum_returns_unchanged(self):
@@ -4186,30 +4188,33 @@ class TestQBloxCompiler:
         result = QbloxCompiler._clamp_duration(100, label="wait")
         assert result == 100
 
-    def test_wait_duration_zero_is_skipped(self):
+    def test_wait_duration_zero_is_clamped_to_minimum(self, caplog):
         qp = QProgram()
         qp.wait(bus="drive", duration=0)
         compiler = QbloxCompiler()
-        with pytest.warns(UserWarning, match="Ignoring wait instruction"):
+        with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp)
+        assert "wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         expected = """
             setup:
                 wait_sync        4
                 set_mrk          0
                 upd_param        4
             main:
-                set_mrk          0
-                upd_param        4
+                wait             4
+                set_mrk          0              
+                upd_param        4              
                 stop
         """
         assert is_q1asm_equal(sequences["drive"], expected)
 
-    def test_wait_duration_below_minimum_is_clamped(self):
+    def test_wait_duration_below_minimum_is_clamped(self, caplog):
         qp = QProgram()
         qp.wait(bus="drive", duration=2)
         compiler = QbloxCompiler()
-        with pytest.warns(UserWarning, match=re.escape("wait duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")):
+        with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp)
+        assert "wait duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         expected = """
             setup:
                 wait_sync        4
@@ -4223,30 +4228,13 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"]._program, expected)
 
-    def test_wait_trigger_duration_zero_is_skipped(self):
+    def test_wait_trigger_duration_zero_is_clamped_to_minimum(self, caplog):
         qp = QProgram()
         qp.wait_trigger(bus="drive", duration=0)
         compiler = QbloxCompiler()
-        with pytest.warns(UserWarning, match="Ignoring wait_trigger instruction: duration is 0 ns."):
+        with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
-        expected = """
-            setup:
-                wait_sync        4
-                set_mrk          0
-                upd_param        4
-            main:
-                set_mrk          0
-                upd_param        4
-                stop
-        """
-        assert is_q1asm_equal(sequences["drive"], expected)
-
-    def test_wait_trigger_duration_below_minimum_is_clamped(self):
-        qp = QProgram()
-        qp.wait_trigger(bus="drive", duration=2)
-        compiler = QbloxCompiler()
-        with pytest.warns(UserWarning, match=re.escape("wait_trigger duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")):
-            sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+        assert "wait_trigger duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         expected = """
             setup:
                 wait_sync        4
@@ -4261,32 +4249,56 @@ class TestQBloxCompiler:
         """
         assert is_q1asm_equal(sequences["drive"]._program, expected)
 
-    def test_play_wait_time_zero_is_skipped(self):
-        wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+    def test_wait_trigger_duration_below_minimum_is_clamped(self, caplog):
         qp = QProgram()
-        qp.qblox.play(bus="drive", waveform=wf, wait_time=0)
+        qp.wait_trigger(bus="drive", duration=2)
         compiler = QbloxCompiler()
-        with pytest.warns(UserWarning, match="Ignoring play instruction: duration is 0 ns."):
-            sequences, _ = compiler.compile(qprogram=qp)
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp, ext_trigger=True)
+        assert "wait_trigger duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         expected = """
             setup:
                 wait_sync        4
                 set_mrk          0
                 upd_param        4
             main:
+                wait_trigger     15, 4
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"]._program, expected)
+
+    def test_play_wait_time_zero_is_clamped_to_minimum(self, caplog):
+        wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        qp = QProgram()
+        qp.qblox.play(bus="drive", waveform=wf, wait_time=0)
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp)
+        assert "play duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+            main:
+                play             0, 1, 4
                 set_mrk          0
                 upd_param        4
                 stop
         """
         assert is_q1asm_equal(sequences["drive"], expected)
 
-    def test_play_wait_time_below_minimum_is_clamped(self):
+    def test_play_wait_time_below_minimum_is_clamped(self, caplog):
         wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         qp = QProgram()
         qp.qblox.play(bus="drive", waveform=wf, wait_time=2)
         compiler = QbloxCompiler()
-        with pytest.warns(UserWarning, match=re.escape("play duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")):
+        with caplog.at_level(logging.WARNING):
             sequences, _ = compiler.compile(qprogram=qp)
+        assert "play duration 2 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
         expected = """
             setup:
                 wait_sync        4
@@ -4330,62 +4342,53 @@ class TestQBloxCompiler:
 
             main:
                             move             0, R0
-                            move             9, R1         
-                            move             3276, R2          
+                            move             3276, R1         
+                            move             9, R2          
             loop_0:
-                            nop
-                            add              R2, 3276, R3
+                            add              R1, 3276, R3
                             nop
                             set_awg_gain     R3, R3
                             play             0, 1, 40  
-                            nop
-                            sub              R2, 3276, R4
+                            sub              R1, 3276, R4
                             nop
                             set_awg_gain     R4, R4
                             play             0, 1, 40  
-                            nop
-                            sub              R2, 3276, R5
+                            sub              R1, 3276, R5
                             nop
                             set_awg_gain     R5, R5
                             play             0, 1, 40     
-                            nop
                             sub              R0, 3276, R6
                             nop
-                            sub              R6, R2, R7
+                            sub              R6, R1, R7
                             nop
                             set_awg_gain     R7, R7
                             play             0, 1, 40
-                            nop
-                            add              R2, 3276, R8
+                            add              R1, 3276, R8
                             nop
                             set_awg_gain     R8, R8
                             play             0, 1, 40
-                            nop
                             move             3276, R9
                             nop
-                            sub              R9, R2, R10
+                            sub              R9, R1, R10
                             nop
                             set_awg_gain     R10, R10
-                            play             0, 1, 40       
-                            nop                             
+                            play             0, 1, 40                   
                             move             0, R11         
                             nop                             
-                            sub              R11, R2, R12   
+                            sub              R11, R1, R12   
                             nop                             
                             set_awg_gain     R12, R12
                             play             0, 1, 40 
-                            nop
-                            add              R2, 3276, R13
+                            add              R1, 3276, R13
                             nop
                             set_awg_gain     R13, R13
                             play             0, 1, 40 
-                            nop
-                            sub              R2, 3276, R14
+                            sub              R1, 3276, R14
                             nop
                             set_awg_gain     R14, R14
                             play             0, 1, 40 
-                            add              R2, 3276, R2   
-                            loop             R1, @loop_0    
+                            add              R1, 3276, R1   
+                            loop             R2, @loop_0    
                             set_mrk          0              
                             upd_param        4              
                             stop                
@@ -4407,62 +4410,53 @@ class TestQBloxCompiler:
 
         main:
                         move             0, R0          
-                        move             9, R1          
-                        move             3276, R2       
-        loop_0:
-                        nop                             
-                        add              R2, 3276, R3   
+                        move             3276, R1          
+                        move             9, R2       
+        loop_0:                          
+                        add              R1, 3276, R3   
                         nop                             
                         set_awg_offs     R3, R3         
-                        play             0, 1, 40       
-                        nop                             
-                        sub              R2, 3276, R4   
+                        play             0, 1, 40                        
+                        sub              R1, 3276, R4   
                         nop                             
                         set_awg_offs     R4, R4         
-                        play             0, 1, 40       
-                        nop                             
-                        sub              R2, 3276, R5   
+                        play             0, 1, 40                           
+                        sub              R1, 3276, R5   
                         nop                             
                         set_awg_offs     R5, R5         
-                        play             0, 1, 40       
-                        nop                             
+                        play             0, 1, 40              
                         sub              R0, 3276, R6   
                         nop                             
-                        sub              R6, R2, R7     
+                        sub              R6, R1, R7     
                         nop                             
                         set_awg_offs     R7, R7         
-                        play             0, 1, 40       
-                        nop                             
-                        add              R2, 3276, R8   
+                        play             0, 1, 40                                 
+                        add              R1, 3276, R8   
                         nop                             
                         set_awg_offs     R8, R8         
-                        play             0, 1, 40       
-                        nop                             
+                        play             0, 1, 40               
                         move             3276, R9       
                         nop                             
-                        sub              R9, R2, R10    
+                        sub              R9, R1, R10    
                         nop                             
                         set_awg_offs     R10, R10       
-                        play             0, 1, 40       
-                        nop                             
+                        play             0, 1, 40                  
                         move             0, R11         
                         nop                             
-                        sub              R11, R2, R12   
+                        sub              R11, R1, R12   
                         nop                             
                         set_awg_offs     R12, R12       
-                        play             0, 1, 40       
-                        nop                             
-                        add              R2, 3276, R13  
+                        play             0, 1, 40               
+                        add              R1, 3276, R13  
                         nop                             
                         set_awg_offs     R13, R13       
-                        play             0, 1, 40       
-                        nop                             
-                        sub              R2, 3276, R14  
+                        play             0, 1, 40                          
+                        sub              R1, 3276, R14  
                         nop                             
                         set_awg_offs     R14, R14       
                         play             0, 1, 40       
-                        add              R2, 3276, R2   
-                        loop             R1, @loop_0    
+                        add              R1, 3276, R1   
+                        loop             R2, @loop_0    
                         set_mrk          0              
                         upd_param        4              
                         stop                             
@@ -4491,27 +4485,27 @@ class TestQBloxCompiler:
                             set_mrk          0
                             upd_param        4
 
+
             main:
-                            move             11, R0
-                            move             0, R1
+                            move             0, R0
+                            move             11, R1
+
             loop_0:
-                            move             11, R2
-                            move             32767, R3
+                            move             32767, R2  
+                            move             11, R3
             loop_1:
-                            nop
-                            add              R1, R3, R4
+                            add              R0, R2, R4
                             nop
                             set_awg_gain     R4, R4
                             play             0, 1, 40
-                            nop
-                            sub              R1, R3, R5
+                            sub              R0, R2, R5
                             nop
                             set_awg_gain     R5, R5
                             play             0, 1, 40
-                            sub              R3, 3277, R3
-                            loop             R2, @loop_1
-                            add              R1, 3276, R1
-                            loop             R0, @loop_0
+                            sub              R2, 3276, R2
+                            loop             R3, @loop_1
+                            add              R0, 3276, R0
+                            loop             R1, @loop_0
                             set_mrk          0
                             upd_param        4
                             stop
@@ -4536,21 +4530,19 @@ class TestQBloxCompiler:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
-                nop
-                set_awg_offs     R1, R1         
+                set_awg_offs     R0, R0         
                 upd_param        4              
                 wait             6              
-                set_awg_gain     819, 819       
-                set_awg_gain     819, 819       
+                set_awg_gain     819, 819             
                 play             0, 1, 50       
                 wait             54             
-                add              R1, 327, R1    
-                add              R2, 163, R2    
-                loop             R0, @loop_0    
+                add              R0, 327, R0    
+                add              R1, 163, R1    
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4562,21 +4554,19 @@ class TestQBloxCompiler:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
-                nop
-                set_awg_offs     R2, R2         
+                set_awg_offs     R1, R1       
                 upd_param        4              
                 wait             6              
-                set_awg_gain     1638, 1638     
-                set_awg_gain     1638, 1638     
+                set_awg_gain     1638, 1638       
                 play             0, 1, 50       
                 wait             54             
-                add              R1, 327, R1    
-                add              R2, 163, R2    
-                loop             R0, @loop_0    
+                add              R0, 327, R0    
+                add              R1, 163, R1    
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4588,16 +4578,16 @@ class TestQBloxCompiler:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
                 wait             10             
                 play             0, 0, 50       
                 wait             54             
-                add              R1, 327, R1    
-                add              R2, 163, R2    
-                loop             R0, @loop_0    
+                add              R0, 327, R0  
+                add              R1, 163, R1    
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4606,22 +4596,22 @@ class TestQBloxCompiler:
         setup:
                 wait_sync        4              
                 set_mrk          0              
-                upd_param        4              
+                upd_param        4    
 
-        main:
                 move             0, R0          
+        main:
                 move             0, R1          
-                move             10, R2         
+                move             0, R2         
                 move             0, R3          
-                move             0, R4          
+                move             10, R4          
         loop_0:
                 wait             60             
                 play             0, 0, 4        
                 acquire_weighed  0, R1, R0, R0, 50
                 add              R1, 1, R1      
-                add              R3, 327, R3    
-                add              R4, 163, R4    
-                loop             R2, @loop_0    
+                add              R2, 327, R2    
+                add              R3, 163, R3    
+                loop             R4, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4651,21 +4641,19 @@ class TestQBloxCompiler:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
-                nop
                 set_awg_offs     1638, 1638     
                 upd_param        4              
                 wait             6              
-                set_awg_gain     R1, R1         
-                set_awg_gain     R1, R1         
+                set_awg_gain     R0, R0               
                 play             0, 1, 50       
                 wait             54             
-                add              R1, 163, R1    
-                add              R2, 327, R2    
-                loop             R0, @loop_0    
+                add              R0, 163, R0    
+                add              R1, 327, R1    
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4677,21 +4665,19 @@ class TestQBloxCompiler:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
-                nop
                 set_awg_offs     819, 819       
                 upd_param        4              
-                wait             6              
-                set_awg_gain     R2, R2         
-                set_awg_gain     R2, R2         
+                wait             6                     
+                set_awg_gain     R1, R1         
                 play             0, 1, 50       
                 wait             54             
-                add              R1, 163, R1    
-                add              R2, 327, R2    
-                loop             R0, @loop_0    
+                add              R0, 163, R0   
+                add              R1, 327, R1   
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4703,16 +4689,16 @@ class TestQBloxCompiler:
                 upd_param        4              
 
         main:
-                move             10, R0         
+                move             0, R0         
                 move             0, R1          
-                move             0, R2          
+                move             10, R2          
         loop_0:
                 wait             10             
                 play             0, 0, 50       
                 wait             54             
-                add              R1, 163, R1    
-                add              R2, 327, R2    
-                loop             R0, @loop_0    
+                add              R0, 163, R0    
+                add              R1, 327, R1    
+                loop             R2, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4721,22 +4707,22 @@ class TestQBloxCompiler:
         setup:
                 wait_sync        4              
                 set_mrk          0              
-                upd_param        4              
+                upd_param        4      
 
+                move             0, R0
         main:
-                move             0, R0          
                 move             0, R1          
-                move             10, R2         
+                move             0, R2         
                 move             0, R3          
-                move             0, R4          
+                move             10, R4          
         loop_0:
                 wait             60             
                 play             0, 0, 4        
                 acquire_weighed  0, R1, R0, R0, 50
                 add              R1, 1, R1      
-                add              R3, 163, R3    
-                add              R4, 327, R4    
-                loop             R2, @loop_0    
+                add              R2, 163, R2    
+                add              R3, 327, R3    
+                loop             R4, @loop_0    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4836,27 +4822,25 @@ class TestQBloxCompiler:
                 upd_param        4              
 
         main:
-                move             10, R0         
-                move             1638, R1       
-                move             3276, R2       
+                move             1638, R0         
+                move             3276, R1       
+                move             10, R2       
         loop_0:
-                set_awg_gain     R1, R1         
-                set_awg_gain     R1, R1         
+                set_awg_gain     R0, R0              
                 play             0, 1, 50       
-                add              R1, 163, R1    
-                sub              R2, 164, R2    
-                loop             R0, @loop_0    
-                move             10, R3         
-                move             1638, R4       
-                move             3276, R5       
+                add              R0, 163, R0    
+                sub              R1, 163, R1   
+                loop             R2, @loop_0    
+                move             1638, R3         
+                move             3276, R4       
+                move             10, R5       
         loop_1:
-                nop
-                set_awg_offs     R4, R4         
+                set_awg_offs     R3, R3        
                 upd_param        4              
                 wait             6              
-                add              R4, 163, R4    
-                sub              R5, 164, R5    
-                loop             R3, @loop_1    
+                add              R3, 163, R3    
+                sub              R4, 163, R4    
+                loop             R5, @loop_1    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -4868,28 +4852,25 @@ class TestQBloxCompiler:
                 upd_param        4              
 
         main:
-                move             10, R0         
-                move             1638, R1       
-                move             3276, R2       
-        loop_0:
-                set_awg_gain     R2, R2         
-                set_awg_gain     R2, R2         
+                move             1638, R0         
+                move             3276, R1       
+                move             10, R2       
+        loop_0:        
+                set_awg_gain     R1, R1         
                 play             0, 1, 50       
-                add              R1, 163, R1    
-                sub              R2, 164, R2    
-                loop             R0, @loop_0    
-                nop                             
-                move             10, R3         
-                move             1638, R4       
-                move             3276, R5       
+                add              R0, 163, R0    
+                sub              R1, 163, R1    
+                loop             R2, @loop_0                    
+                move             1638, R3         
+                move             3276, R4       
+                move             10, R5       
         loop_1:
-                nop
-                set_awg_offs     R5, R5         
+                set_awg_offs     R4, R4         
                 upd_param        4              
                 wait             6              
-                add              R4, 163, R4    
-                sub              R5, 164, R5    
-                loop             R3, @loop_1    
+                add              R3, 163, R3    
+                sub              R4, 163, R4    
+                loop             R5, @loop_1    
                 set_mrk          0              
                 upd_param        4              
                 stop
@@ -5033,7 +5014,7 @@ class TestQBloxCompiler:
                                             acquire_weighed  0, R2, R1, R0, 2000
                                             loop             R5, @avg_0     
                                             add              R2, 1, R2      
-                                            add              R3, 10, R3     
+                                            add              R3, 40, R3     
                                             loop             R4, @loop_0    
                                             set_mrk          0              
                                             upd_param        4              
@@ -5051,18 +5032,20 @@ class TestQBloxCompiler:
         expected_q1asm =    """setup:
                                                 wait_sync        4              
                                                 set_mrk          0              
-                                                upd_param        4              
+                                                upd_param        4      
 
-                                main:
                                                 move             1, R0          
                                                 move             1, R1          
-                                                move             0, R2          
+                                                move             0, R2           
+
+                                main:
                                                 move             0, R3          
-                                                move             11, R4         
-                                                move             100, R5        
+                                                move             400, R4         
+                                                move             11, R5        
                                 loop_0:
                                                 move             100, R6        
                                 avg_0:
+                                                set_freq         R4
                                                 play             0, 1, 4        
                                                 acquire_weighed  0, R3, R2, R1, 2000
                                                 play             0, 1, 4        
@@ -5070,8 +5053,8 @@ class TestQBloxCompiler:
                                                 loop             R6, @avg_0     
                                                 add              R3, 2, R3      
                                                 add              R0, 2, R0      
-                                                add              R5, 10, R5     
-                                                loop             R4, @loop_0    
+                                                add              R4, 40, R4    
+                                                loop             R5, @loop_0    
                                                 set_mrk          0              
                                                 upd_param        4              
                                                 stop  """
@@ -5087,19 +5070,20 @@ class TestQBloxCompiler:
         expected_q1asm =    """setup:
                                                 wait_sync        4              
                                                 set_mrk          0              
-                                                upd_param        4              
+                                                upd_param        4 
 
-                                main:
                                                 move             2, R0
                                                 move             1, R1          
                                                 move             1, R2          
-                                                move             0, R3          
+                                                move             0, R3            
+                                main:
                                                 move             0, R4          
-                                                move             11, R5         
-                                                move             100, R6        
+                                                move             400, R5         
+                                                move             11, R6        
                                 loop_0:
                                                 move             100, R7        
                                 avg_0:
+                                                set_freq         R5
                                                 play             0, 1, 4        
                                                 acquire_weighed  0, R4, R3, R2, 2000
                                                 play             0, 1, 4        
@@ -5110,12 +5094,11 @@ class TestQBloxCompiler:
                                                 add              R4, 3, R4      
                                                 add              R1, 3, R1   
                                                 add              R0, 3, R0
-                                                add              R6, 10, R6
-                                                loop             R5, @loop_0
+                                                add              R5, 40, R5
+                                                loop             R6, @loop_0
                                                 set_mrk          0
                                                 upd_param        4
                                                 stop  """
-
 
         assert is_q1asm_equal(sequences["readout"], expected_q1asm)
 

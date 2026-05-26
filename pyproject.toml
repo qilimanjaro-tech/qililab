@@ -80,8 +80,7 @@ override-dependencies = ["marshmallow==3.26.2"]
 
 [tool.uv.sources]
 qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
-qpysequence = { git = "https://github.com/qilimanjaro-tech/qpysequence.git", branch = "qhc-1267-qpysequence-redesign" }
-
+qpysequence = { path = "../qpysequence", editable = true }
 [tool.ruff]
 line-length = 120
 output-format = "concise"
@@ -233,3 +232,4 @@ filterwarnings = [
 markers = [
     "qm: tests that require Quantum Machines",
 ]
+
