@@ -43,8 +43,6 @@ def get_nl_xtalk_matrix(crosstalk_matrix):
     With the non-linear parameters.
     """
     nl_xtalk = NonLinearCrosstalkMatrix.from_linear(crosstalk_matrix)
-    # nl_xtalk.set_non_linear_params("flux_2", "flux_1", beta_c=-0.3, amplitude=-0.08)
-    # nl_xtalk.set_non_linear_params("flux_0", "flux_1", junction_asym=0.02)
     return nl_xtalk
 
 
