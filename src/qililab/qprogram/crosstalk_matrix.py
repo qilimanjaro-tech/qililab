@@ -164,7 +164,7 @@ class CrosstalkMatrix:
             bias[bus_1] = sum(
                 (flux[bus_2] - inverse.flux_offsets[bus_2]) * inverse.matrix[bus_1][bus_2]
                 for bus_2 in inverse.matrix[bus_1].keys()
-            )  # type: ignore[assignment]
+            )
         return bias
 
     @classmethod
