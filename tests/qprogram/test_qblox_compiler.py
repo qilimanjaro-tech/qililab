@@ -2,7 +2,7 @@ import re
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.waveforms.arbitrary import Arbitrary
 import pytest
 import qpysequence as QPy
@@ -996,6 +996,121 @@ def inner_average_outer_sweep() -> QProgram:
     with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
         with qp.average(shots=100):
             qp.measure(bus="readout", waveform=readout_pair, weights=weights_pair)
+    return qp
+
+
+@pytest.fixture(name="non_linear_crosstalk_qprogram")
+def fixture_non_linear_crosstalk_qprogram() -> QProgram:
+    square_wf = Square(amplitude=0.1, duration=50)
+    square_iq = IQPair(I=square_wf, Q=square_wf)
+    qp = QProgram()
+    offset = qp.variable(label="offset", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.08):
+        qp.set_offset(bus="flux1", offset_path0=offset)
+        qp.wait(bus="drive", duration=10)
+        qp.wait(bus="flux1", duration=10)
+        qp.wait(bus="flux2", duration=10)
+        qp.set_gain(bus="flux2", gain=0.05)
+        qp.play(bus="flux1", waveform=square_wf)
+        qp.play(bus="drive", waveform=square_iq)
+        qp.sync(["drive", "readout"])
+        qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+    return qp
+
+
+@pytest.fixture(name="non_linear_crosstalk_qprogram_inner_non_flux_loop")
+def fixture_non_linear_crosstalk_qprogram_inner_non_flux_loop() -> QProgram:
+    square_wf = Square(amplitude=0.1, duration=50)
+    square_iq = IQPair(I=square_wf, Q=square_wf)
+    qp = QProgram()
+    frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+    offset = qp.variable(label="offset", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.08):
+        with qp.for_loop(variable=frequency, start=100, stop=200, step=10):
+            qp.set_frequency(bus="drive", frequency=frequency)
+            qp.set_offset(bus="flux2", offset_path0=offset)
+            qp.wait(bus="drive", duration=10)
+            qp.play(bus="flux1", waveform=square_wf)
+            qp.play(bus="drive", waveform=square_iq)
+            qp.sync(["drive", "readout"])
+            qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+    return qp
+
+
+@pytest.fixture(name="non_linear_crosstalk_qprogram_gain")
+def fixture_non_linear_crosstalk_qprogram_gain() -> QProgram:
+    square_wf = Square(amplitude=0.1, duration=50)
+    square_iq = IQPair(I=square_wf, Q=square_wf)
+    qp = QProgram()
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    with qp.for_loop(variable=gain, start=0, stop=0.1, step=0.08):
+        qp.set_offset(bus="flux1", offset_path0=0.05)
+        qp.wait(bus="drive", duration=10)
+        qp.wait(bus="flux1", duration=10)
+        qp.wait(bus="flux2", duration=10)
+        qp.set_gain(bus="flux2", gain=gain)
+        qp.play(bus="flux1", waveform=square_wf)
+        qp.play(bus="drive", waveform=square_iq)
+        qp.sync(["drive", "readout"])
+        qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+    return qp
+
+
+@pytest.fixture(name="non_linear_crosstalk_qprogram_parallel")
+def fixture_non_linear_crosstalk_qprogram_parallel() -> QProgram:
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
+    gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
+    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+    with qp.parallel(
+        loops=[
+            ForLoop(variable=gain_1, start=0, stop=0.1, step=0.08),
+            ForLoop(variable=gain_2, start=0.1, stop=0, step=-0.08),
+        ]
+    ):
+        qp.set_gain(bus="flux1", gain=gain_1)
+        qp.set_gain(bus="flux2", gain=gain_2)
+        qp.play(bus="flux1", waveform=square_wf)
+    with qp.parallel(
+        loops=[
+            ForLoop(variable=offset_1, start=0, stop=0.1, step=0.08),
+            ForLoop(variable=offset_2, start=0.1, stop=0, step=-0.08),
+        ]
+    ):
+        qp.set_offset(bus="flux1", offset_path0=offset_1)
+        qp.set_offset(bus="flux2", offset_path0=offset_2)
+        qp.wait(bus="flux1", duration=10)
+        qp.wait(bus="flux2", duration=10)
+    return qp
+
+
+@pytest.fixture(name="non_linear_crosstalk_qprogram_double_loop")
+def fixture_non_linear_crosstalk_qprogram_double_offset_loop() -> QProgram:
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset_1, start=0, stop=0.1, step=0.08):
+        with qp.for_loop(variable=offset_2, start=0.1, stop=0, step=-0.08):
+            qp.set_offset(bus="flux1", offset_path0=offset_1)
+            qp.set_offset(bus="flux2", offset_path0=offset_2)
+            qp.play(bus="flux1", waveform=square_wf)
+    return qp
+
+
+@pytest.fixture(name="non_linear_crosstalk_qprogram_double_gain_loop")
+def fixture_non_linear_crosstalk_qprogram_double_gain_loop() -> QProgram:
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    gain_1 = qp.variable(label="gain_1", domain=Domain.Voltage)
+    gain_2 = qp.variable(label="gain_2", domain=Domain.Voltage)
+    with qp.for_loop(variable=gain_1, start=0, stop=0.1, step=0.08):
+        with qp.for_loop(variable=gain_2, start=0.1, stop=0, step=-0.08):
+            qp.set_gain(bus="flux1", gain=gain_1)
+            qp.set_gain(bus="flux2", gain=gain_2)
+            qp.play(bus="flux1", waveform=square_wf)
     return qp
 
 @pytest.fixture(name="inner_average_outer_sweep_two_measures")
@@ -4583,6 +4698,631 @@ other_max_duration_0:
         assert is_q1asm_equal(sequences["flux2"], flux2_str)
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_non_linear_crosstalk_compensation(self, non_linear_crosstalk_qprogram: QProgram):
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=non_linear_crosstalk_qprogram, crosstalk=non_linear_crosstalk)
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        flux1_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        nop                             
+                        set_awg_offs     0, 0           
+                        upd_param        4              
+                        wait             6              
+                        set_awg_gain     11374, 11374   
+                        set_awg_gain     11374, 11374   
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        wait             54             
+                        nop                             
+                        set_awg_offs     10434, 10434   
+                        upd_param        4              
+                        wait             6              
+                        set_awg_gain     3240, 3240     
+                        set_awg_gain     3240, 3240     
+                        nop                             
+                        set_awg_offs     10434, 10434   
+                        play             0, 1, 50       
+                        wait             54             
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        flux2_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        nop                             
+                        set_awg_offs     0, 0           
+                        upd_param        4              
+                        wait             6              
+                        set_awg_gain     17832, 17832   
+                        set_awg_gain     17832, 17832   
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        wait             54             
+                        nop                             
+                        set_awg_offs     16936, 16936   
+                        upd_param        4              
+                        wait             6              
+                        set_awg_gain     1565, 1565     
+                        set_awg_gain     1565, 1565     
+                        nop                             
+                        set_awg_offs     16936, 16936   
+                        play             0, 1, 50       
+                        wait             54             
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        drive_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        wait             10             
+                        play             0, 0, 50       
+                        wait             64             
+                        play             0, 0, 50       
+                        wait             54             
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        readout_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        wait             60             
+                        play             0, 0, 4        
+                        acquire_weighed  0, 0, 0, 0, 50 
+                        wait             60             
+                        play             0, 0, 4        
+                        acquire_weighed  0, 1, 0, 0, 50 
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_str)
+        assert is_q1asm_equal(sequences["flux2"], flux2_str)
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_non_linear_crosstalk_compensation_inner_non_flux_loop(
+        self, non_linear_crosstalk_qprogram_inner_non_flux_loop: QProgram
+    ):
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(
+            qprogram=non_linear_crosstalk_qprogram_inner_non_flux_loop, crosstalk=non_linear_crosstalk
+        )
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        flux1_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             11, R0         
+                        move             400, R1        
+        loop_0:
+                        nop                             
+                        set_awg_offs     0, 0           
+                        set_awg_gain     11374, 11374   
+                        set_awg_gain     11374, 11374   
+                        play             0, 1, 50       
+                        wait             64             
+                        add              R1, 40, R1     
+                        loop             R0, @loop_0    
+                        move             11, R2         
+                        move             400, R3        
+        loop_1:
+                        nop                             
+                        set_awg_offs     1310, 1310     
+                        set_awg_gain     11374, 11374   
+                        set_awg_gain     11374, 11374   
+                        play             0, 1, 50       
+                        wait             64             
+                        add              R3, 40, R3     
+                        loop             R2, @loop_1    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        flux2_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             11, R0         
+                        move             400, R1        
+        loop_0:
+                        nop                             
+                        set_awg_offs     0, 0           
+                        set_awg_gain     17832, 17832   
+                        set_awg_gain     17832, 17832   
+                        play             0, 1, 50       
+                        wait             64             
+                        add              R1, 40, R1     
+                        loop             R0, @loop_0    
+                        move             11, R2         
+                        move             400, R3        
+        loop_1:
+                        nop                             
+                        set_awg_offs     2621, 2621     
+                        set_awg_gain     17832, 17832   
+                        set_awg_gain     17832, 17832   
+                        play             0, 1, 50       
+                        wait             64             
+                        add              R3, 40, R3     
+                        loop             R2, @loop_1    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        drive_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             11, R0         
+                        move             400, R1        
+        loop_0:
+                        set_freq         R1             
+                        set_freq         R1             
+                        upd_param        4              
+                        wait             6              
+                        play             0, 0, 50       
+                        wait             54             
+                        add              R1, 40, R1     
+                        loop             R0, @loop_0    
+                        nop                             
+                        move             11, R2         
+                        move             400, R3        
+                        nop                             
+        loop_1:
+                        set_freq         R3             
+                        set_freq         R3             
+                        upd_param        4              
+                        wait             6              
+                        play             0, 0, 50       
+                        wait             54             
+                        add              R3, 40, R3     
+                        loop             R2, @loop_1    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        readout_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             0, R0          
+                        move             0, R1          
+                        move             0, R2          
+                        move             11, R3         
+                        move             400, R4        
+        loop_0:
+                        wait             60             
+                        play             0, 0, 4        
+                        acquire_weighed  0, R2, R1, R1, 50
+                        add              R2, 1, R2      
+                        add              R4, 40, R4     
+                        loop             R3, @loop_0    
+                        move             11, R5         
+                        move             400, R6        
+        loop_1:
+                        wait             60             
+                        play             0, 0, 4        
+                        acquire_weighed  1, R0, R1, R1, 50
+                        add              R0, 1, R0      
+                        add              R6, 40, R6     
+                        loop             R5, @loop_1    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_str)
+        assert is_q1asm_equal(sequences["flux2"], flux2_str)
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_non_linear_crosstalk_compensation_gain(self, non_linear_crosstalk_qprogram_gain: QProgram):
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=non_linear_crosstalk_qprogram_gain, crosstalk=non_linear_crosstalk)
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        flux1_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        nop                             
+                        set_awg_offs     8430, 8430     
+                        upd_param        4              
+                        wait             6              
+                        set_awg_gain     4570, 4570     
+                        set_awg_gain     4570, 4570     
+                        nop                             
+                        set_awg_offs     8430, 8430     
+                        play             0, 1, 50       
+                        wait             54             
+                        nop                             
+                        set_awg_offs     8430, 8430     
+                        upd_param        4              
+                        wait             6              
+                        set_awg_gain     4570, 4570     
+                        set_awg_gain     4570, 4570     
+                        nop                             
+                        set_awg_offs     8430, 8430     
+                        play             0, 1, 50       
+                        wait             54             
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        flux2_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        nop                             
+                        set_awg_offs     14403, 14403   
+                        upd_param        4              
+                        wait             6              
+                        set_awg_gain     4225, 4225     
+                        set_awg_gain     4225, 4225     
+                        nop                             
+                        set_awg_offs     14403, 14403   
+                        play             0, 1, 50       
+                        wait             54             
+                        nop                             
+                        set_awg_offs     14403, 14403   
+                        upd_param        4              
+                        wait             6              
+                        set_awg_gain     4225, 4225     
+                        set_awg_gain     4225, 4225     
+                        nop                             
+                        set_awg_offs     14403, 14403   
+                        play             0, 1, 50       
+                        wait             54             
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        drive_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        wait             10             
+                        play             0, 0, 50       
+                        wait             64             
+                        play             0, 0, 50       
+                        wait             54             
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        readout_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        wait             60             
+                        play             0, 0, 4        
+                        acquire_weighed  0, 0, 0, 0, 50 
+                        wait             60             
+                        play             0, 0, 4        
+                        acquire_weighed  0, 1, 0, 0, 50 
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_str)
+        assert is_q1asm_equal(sequences["flux2"], flux2_str)
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_non_linear_crosstalk_compensation_parallel(self, non_linear_crosstalk_qprogram_parallel: QProgram):
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=non_linear_crosstalk_qprogram_parallel, crosstalk=non_linear_crosstalk)
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        flux1_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        set_awg_gain     0, 0           
+                        set_awg_gain     0, 0           
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        set_awg_gain     2224, 2224     
+                        set_awg_gain     2224, 2224     
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        nop                             
+                        set_awg_offs     1638, 1638     
+                        upd_param        4              
+                        wait             6              
+                        nop                             
+                        set_awg_offs     10761, 10761   
+                        upd_param        4              
+                        wait             6              
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        flux2_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        set_awg_gain     0, 0           
+                        set_awg_gain     0, 0           
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        set_awg_gain     4055, 4055     
+                        set_awg_gain     4055, 4055     
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        nop                             
+                        set_awg_offs     3276, 3276     
+                        upd_param        4              
+                        wait             6              
+                        nop                             
+                        set_awg_offs     17591, 17591   
+                        upd_param        4              
+                        wait             6              
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_str)
+        assert is_q1asm_equal(sequences["flux2"], flux2_str)
+
+    def test_non_linear_crosstalk_compensation_double_offset_loop(
+        self, non_linear_crosstalk_qprogram_double_loop: QProgram
+    ):
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(
+            qprogram=non_linear_crosstalk_qprogram_double_loop, crosstalk=non_linear_crosstalk
+        )
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        flux1_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        nop                             
+                        set_awg_offs     1638, 1638     
+                        set_awg_gain     11374, 11374   
+                        set_awg_gain     11374, 11374   
+                        play             0, 1, 50       
+                        nop                             
+                        set_awg_offs     327, 327       
+                        set_awg_gain     11374, 11374   
+                        set_awg_gain     11374, 11374   
+                        play             0, 1, 50       
+                        nop                             
+                        set_awg_offs     12072, 12072   
+                        set_awg_gain     3240, 3240     
+                        set_awg_gain     3240, 3240     
+                        play             0, 1, 50       
+                        nop                             
+                        set_awg_offs     10761, 10761   
+                        set_awg_gain     3240, 3240     
+                        set_awg_gain     3240, 3240     
+                        play             0, 1, 50       
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        flux2_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        nop                             
+                        set_awg_offs     3276, 3276     
+                        set_awg_gain     17832, 17832   
+                        set_awg_gain     17832, 17832   
+                        play             0, 1, 50       
+                        nop                             
+                        set_awg_offs     655, 655       
+                        set_awg_gain     17832, 17832   
+                        set_awg_gain     17832, 17832   
+                        play             0, 1, 50       
+                        nop                             
+                        set_awg_offs     20213, 20213   
+                        set_awg_gain     1565, 1565     
+                        set_awg_gain     1565, 1565     
+                        play             0, 1, 50       
+                        nop                             
+                        set_awg_offs     17591, 17591   
+                        set_awg_gain     1565, 1565     
+                        set_awg_gain     1565, 1565     
+                        play             0, 1, 50       
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_str)
+        assert is_q1asm_equal(sequences["flux2"], flux2_str)
+        
+    def test_non_linear_crosstalk_compensation_double_gain_loop(
+        self, non_linear_crosstalk_qprogram_double_gain_loop: QProgram
+    ):
+
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(
+            qprogram=non_linear_crosstalk_qprogram_double_gain_loop, crosstalk=non_linear_crosstalk
+        )
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        flux1_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        set_awg_gain     0, 0           
+                        set_awg_gain     0, 0           
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        set_awg_gain     0, 0           
+                        set_awg_gain     0, 0           
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        set_awg_gain     2224, 2224     
+                        set_awg_gain     2224, 2224     
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        set_awg_gain     2224, 2224     
+                        set_awg_gain     2224, 2224     
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        flux2_str = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        set_awg_gain     0, 0           
+                        set_awg_gain     0, 0           
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        set_awg_gain     0, 0           
+                        set_awg_gain     0, 0           
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        set_awg_gain     4055, 4055     
+                        set_awg_gain     4055, 4055     
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        set_awg_gain     4055, 4055     
+                        set_awg_gain     4055, 4055     
+                        nop                             
+                        set_awg_offs     0, 0           
+                        play             0, 1, 50       
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_str)
+        assert is_q1asm_equal(sequences["flux2"], flux2_str)
         
     def test_crosstalk_compensation_gain_loop(self, crosstalk_qprogram_gain_loop: QProgram):
 

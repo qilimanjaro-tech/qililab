@@ -469,7 +469,7 @@ class QProgram(StructuredProgram):
         self._bus_variable_map: dict[tuple[Variable | float | None, str], Variable] = {}
         self._block_variables: dict[Variable | float | None, list[Variable]] = {}
         self._parallel_loops: dict[Variable, list[ForLoop]] = {}
-        self._active_loops: list[ForLoop] = []
+        self._active_loops: list[ForLoop | Parallel] = []
         self._loop_depths: list[int] = []
         self._index_dim: int = 0
 
@@ -509,7 +509,11 @@ class QProgram(StructuredProgram):
                                 non_lin_offset_list.append(element.bus)
                             value = element.gain if isinstance(element, SetGain) else element.offset_path0
                             if isinstance(value, Variable) and value.label not in non_lin_flux_vector.variables.keys():
-                                new_loop = next(loop for loop in self._active_loops if loop.variable == value)
+                                new_loop = next(
+                                    loop for loop in self._active_loops
+                                    if (isinstance(loop, ForLoop) and loop.variable == value)
+                                    or (isinstance(loop, Parallel) and any(for_loop.variable == value for for_loop in loop.loops))
+                                )
                                 non_lin_flux_vector.set_loop(new_loop)
                                 self._index_dim += 1
                             non_lin_flux_vector.set_element(element)
@@ -542,9 +546,13 @@ class QProgram(StructuredProgram):
                         self._loop_depths.append(loop_idx)
                     if isinstance(element, Parallel) and all(isinstance(loop, ForLoop) for loop in element.loops):
                         variable_list = [loop.variable for loop in element.loops]
-                        for loop in element.loops:
-                            self._active_loops.append(loop)  # type: ignore [arg-type]
+                        if non_lin_flux_vector is not None:
+                            self._active_loops.append(element)
                             self._loop_depths.append(loop_idx)
+                        else:
+                            for loop in element.loops:
+                                self._active_loops.append(loop)  # type: ignore [arg-type]
+                                self._loop_depths.append(loop_idx)
                     traverse(element, variables, deepcopy(crosstalk_elements.flux_vector))
 
                     if variable_list is not None and any(
@@ -899,6 +907,7 @@ class QProgram(StructuredProgram):
             offsets_0: int = 0,
             plays_0: int = 0,
             offset_defined: bool = False,
+            wait_defined: bool = False,
         ):
             corrected_elements: list[Block | Operation] = []
             offsets_index = offsets_0
@@ -911,6 +920,8 @@ class QProgram(StructuredProgram):
                     continue
                 if isinstance(element, SetOffset) and element.bus in flux_vector.buses:
                     if offsets_index != last_appended_offset:
+                        if wait_defined:
+                            offsets_index += 1
                         for bus in flux_vector.buses:
                             corrected_offsets = offsets[offsets_index][bus][loop_coord]
                             corrected_elements.append(SetOffset(bus, corrected_offsets))
@@ -943,12 +954,12 @@ class QProgram(StructuredProgram):
                             corrected_elements.append(play)
                         plays_index += 1
                         offsets_index += 1
-                        offset_defined = False
+                        offset_defined = True
                 elif isinstance(element, Wait) and element.bus in flux_vector.buses:
                     corrected_elements.append(element)
                     if offset_defined:
-                        offsets_index += 1
                         offset_defined = False
+                        wait_defined = True
                 elif isinstance(element, Block):
                     if element.uuid in flux_vector.loops_uuid.values():
                         shape = next(iter(offsets[offsets_index].values())).shape
@@ -984,6 +995,9 @@ class QProgram(StructuredProgram):
                         offset_defined = False
                 else:
                     corrected_elements.append(element)
+                    
+            # Needs to sync at the end of every loop for the unpack to work with non-flux buses
+            corrected_elements.append(Sync())
             return corrected_elements, offset_defined
 
         copied_qprogram = deepcopy(self)
