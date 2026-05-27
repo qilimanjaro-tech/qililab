@@ -488,7 +488,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
 
 @yaml.register_class
 class FluxVector:
-    """Class to represent a flux vector. This is a dictionary of bus[flux] values"""
+    """Class to represent a flux vector. This is a dictionary of bus[flux] values
 
     The nonlinear correction models the flux induced on qubit i by coupler j
     as a Bessel-series expansion:
@@ -532,7 +532,7 @@ class FluxVector:
         are applied via its overridden flux_to_bias method.
 
         Any bus present in the crosstalk matrix but missing from the flux vector is
-        initialised to zero. List values are converted to numpy arrays before processing.
+        initialized to zero. List values are converted to numpy arrays before processing.
 
         Args:
             crosstalk (CrosstalkMatrix): The crosstalk matrix to apply. Can be a linear
