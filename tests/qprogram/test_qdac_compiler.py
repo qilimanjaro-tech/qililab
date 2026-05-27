@@ -11,7 +11,6 @@ from qililab.qprogram import Calibration, QdacCompiler, QProgram
 from qililab.qprogram.blocks.for_loop import ForLoop
 from qililab.qprogram.blocks.loop import Loop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
-from qililab.qprogram.operations.play import Play
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 from qililab.core.variables import Domain
 from qililab.waveforms import Square
@@ -563,7 +562,7 @@ class TestQdacCompiler:
 
         with pytest.raises(
             ValueError,
-            match="qp.play elements must have the same size.",
+            match="QProgram.play elements must have the same size.",
         ):
             compiler.compile(
                 qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0], crosstalk=crosstalk

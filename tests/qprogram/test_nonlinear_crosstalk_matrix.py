@@ -4,6 +4,12 @@ from scipy.special import jv
 
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 
+import math
+import numpy as np
+import pytest
+from scipy.special import jv
+
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 
 @pytest.fixture(name="linear_crosstalk_matrix")
 def get_linear_crosstalk_matrix():
@@ -114,7 +120,7 @@ class TestNonLinearCrosstalkMatrix:
     def test_from_linear_does_not_share_matrix_reference(self, linear_crosstalk_matrix):
         xtalk = NonLinearCrosstalkMatrix.from_linear(linear_crosstalk_matrix)
         xtalk.matrix["flux_0"]["flux_1"] = 999.0
-        assert linear_crosstalk_matrix.matrix["flux_0"]["flux_1"] != 999.0
+        assert not math.isclose(linear_crosstalk_matrix.matrix["flux_0"]["flux_1"], 999.0)
 
     # --- set_non_linear_params ---
 
