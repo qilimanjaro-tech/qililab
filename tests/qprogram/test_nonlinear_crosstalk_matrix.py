@@ -4,6 +4,12 @@ from scipy.special import jv
 
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 
+import math
+import numpy as np
+import pytest
+from scipy.special import jv
+
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 
 @pytest.fixture(name="linear_crosstalk_matrix")
 def get_linear_crosstalk_matrix():
