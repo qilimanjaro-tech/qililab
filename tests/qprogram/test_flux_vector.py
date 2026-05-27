@@ -278,7 +278,7 @@ class TestNonLinearFluxVector:
         for bus in nlfv.crosstalk.matrix:
             assert result[bus].shape == (4, 2)
     
-    def test_raise_error_invalid_Expresion_operator(self, nlfv):
+    def test_raise_error_invalid_expresion_operator(self, nlfv):
         phi = Variable("phi", Domain.Voltage)
         loop = ForLoop(variable=phi, start=0.0, stop=2.0, step=1.0)
         nlfv.set_loop(loop)
@@ -329,7 +329,7 @@ class TestFluxVector:
         pytest.raises(AttributeError, flux_vector.update_bias_vector)
 
         bias = flux_vector.set_crosstalk(crosstalk_matrix)
-        bias_arr = np.array([b for b in bias.values()])
+        bias_arr = np.array(list(bias.values()))
         supposed_arr = np.linalg.inv(crosstalk_array_buses[0]) @ np.array([0.5, 1.0, 0.0])
         assert np.array_equal(bias_arr, supposed_arr)
             

@@ -164,9 +164,7 @@ class FluxVector:
             for bus in self.crosstalk.matrix.keys():
                 flux_vector_copy = deepcopy(self)
                 for zero_flux in self.crosstalk.matrix.keys():
-                    if bus_list is not None and bus in bus_list and zero_flux in bus_list and zero_flux != bus:
-                        flux_vector_copy[zero_flux] = 0
-                    elif bus_list is None and zero_flux != bus:
+                    if (bus_list is not None and bus in bus_list and zero_flux in bus_list and zero_flux != bus) or (bus_list is None and zero_flux != bus):
                         flux_vector_copy[zero_flux] = 0
                 if (bus_list is not None and bus in bus_list) or bus_list is None:
                     list_fluxes[bus] = flux_vector_copy
@@ -256,10 +254,8 @@ class NonLinearFluxVector:
         """
         if isinstance(element, SetGain):
             self._set_gain(element.bus, element.gain)
-            return
-        if isinstance(element, SetOffset):
+        elif isinstance(element, SetOffset):
             self._set_offset(element.bus, element.offset_path0)
-            return
 
     def set_loop(self, loop: Parallel | ForLoop):
         """Registers a loop ('s variable) to the sweep context.
