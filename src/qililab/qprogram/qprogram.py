@@ -510,9 +510,13 @@ class QProgram(StructuredProgram):
                             value = element.gain if isinstance(element, SetGain) else element.offset_path0
                             if isinstance(value, Variable) and value.label not in non_lin_flux_vector.variables.keys():
                                 new_loop = next(
-                                    loop for loop in self._active_loops
+                                    loop
+                                    for loop in self._active_loops
                                     if (isinstance(loop, ForLoop) and loop.variable == value)
-                                    or (isinstance(loop, Parallel) and any(for_loop.variable == value for for_loop in loop.loops))
+                                    or (
+                                        isinstance(loop, Parallel)
+                                        and any(for_loop.variable == value for for_loop in loop.loops)
+                                    )
                                 )
                                 non_lin_flux_vector.set_loop(new_loop)
                                 self._index_dim += 1
@@ -864,9 +868,9 @@ class QProgram(StructuredProgram):
             for ii, element_idx in enumerate(element_group):
                 element = elements[element_idx]
                 variable = get_element_variable(element)
-                if variable is not None and variable in [loop.variable for loop in self._active_loops]:
+                if variable is not None and variable in [loop.variable for loop in self._active_loops]:  # type: ignore [union-attr]
                     loop_idx = next(
-                        (idx for loop, idx in zip(self._active_loops, self._loop_depths) if loop.variable is variable),
+                        (idx for loop, idx in zip(self._active_loops, self._loop_depths) if loop.variable is variable),  # type: ignore [union-attr]
                         None,
                     )
                     if loop_idx is not None and loop_idx not in used_loop_indices:
@@ -995,7 +999,7 @@ class QProgram(StructuredProgram):
                         offset_defined = False
                 else:
                     corrected_elements.append(element)
-                    
+
             # Needs to sync at the end of every loop for the unpack to work with non-flux buses
             corrected_elements.append(Sync())
             return corrected_elements, offset_defined
