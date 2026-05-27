@@ -14,6 +14,7 @@
 
 """__init__.py"""
 
+from .becker import RSWUSP16TR
 from .decorators import check_device_initialized, log_set_parameter
 from .instrument import Instrument, ParameterNotFound
 from .instruments import Instruments
@@ -23,6 +24,7 @@ from .signal_generator import SignalGenerator
 from .utils import InstrumentFactory
 
 __all__ = [
+    "RSWUSP16TR",
     "SGS100A",
     "Attenuator",
     "Instrument",
