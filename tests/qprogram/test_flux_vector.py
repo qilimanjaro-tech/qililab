@@ -74,6 +74,19 @@ class TestNonLinearFluxVector:
     def test_set_element_stores_offset_path0(self, nlfv):
         nlfv.set_element(SetOffset(bus="flux_1", offset_path0=0.3))
         assert nlfv.offset["flux_1"] == 0.3
+    
+    def test_set_element_stores_variables(self, nlfv):
+        var_1 = Variable("var_1", Domain.Voltage)
+        nlfv.variables[var_1.label] = NonLinearFluxVector.VariableContext(
+                var_1.label,
+                np.array([0.0,]),
+                1,
+            )
+        nlfv.set_element(SetOffset(bus="flux_1", offset_path0=var_1 + 2.0))
+        var_exp = var_1 + 2.0
+        assert nlfv.offset["flux_1"].right == var_exp.right
+        assert nlfv.offset["flux_1"].operator == var_exp.operator
+        assert nlfv.offset["flux_1"].left == var_exp.left
 
     def test_set_element_raises_when_buses_empty(self, nlfv_no_crosstalk):
         with pytest.raises(ValueError):
