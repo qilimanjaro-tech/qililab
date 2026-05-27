@@ -141,7 +141,7 @@ class CrosstalkMatrix:
         for bus in resistances:
             self.resistances[bus] = resistances[bus]
 
-    def flux_to_bias(self, flux: dict[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
+    def flux_to_bias(self, flux: Mapping[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
         """Converts target flux values to hardware bias values using linear inversion.
 
         Applies the inverse of the crosstalk matrix to the flux vector, accounting for
