@@ -164,7 +164,9 @@ class FluxVector:
             for bus in self.crosstalk.matrix.keys():
                 flux_vector_copy = deepcopy(self)
                 for zero_flux in self.crosstalk.matrix.keys():
-                    if (bus_list is not None and bus in bus_list and zero_flux in bus_list and zero_flux != bus) or (bus_list is None and zero_flux != bus):
+                    if (bus_list is not None and bus in bus_list and zero_flux in bus_list and zero_flux != bus) or (
+                        bus_list is None and zero_flux != bus
+                    ):
                         flux_vector_copy[zero_flux] = 0
                 if (bus_list is not None and bus in bus_list) or bus_list is None:
                     list_fluxes[bus] = flux_vector_copy
