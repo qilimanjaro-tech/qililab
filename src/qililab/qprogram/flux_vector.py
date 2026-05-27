@@ -27,6 +27,8 @@ from qililab.waveforms import Arbitrary, Square, Waveform
 from qililab.yaml import yaml
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 
 
@@ -204,6 +206,8 @@ class NonLinearFluxVector:
         self.buses: set[str] = set()
         self.crosstalk: CrosstalkMatrix | None = None
 
+        self.loops: dict[int, ForLoop | Parallel] = {}
+        self.loops_uuid: dict[int, UUID] = {}
         self.variables: NonLinearFluxVector.VariableRegistry = NonLinearFluxVector.VariableRegistry()
         self.curr_loop_id = 0
 
@@ -277,7 +281,7 @@ class NonLinearFluxVector:
                 if isinstance(in_loop, ForLoop):
                     self.variables[in_loop.variable.label] = self.VariableContext(
                         in_loop.variable.label,
-                        np.arange(in_loop.start, in_loop.stop + in_loop.step, in_loop.step),
+                        np.arange(in_loop.start, in_loop.stop, in_loop.step),
                         self.curr_loop_id,
                     )
                 elif isinstance(in_loop, Loop):
@@ -289,9 +293,11 @@ class NonLinearFluxVector:
         elif isinstance(loop, ForLoop):
             self.variables[loop.variable.label] = self.VariableContext(
                 loop.variable.label,
-                np.arange(loop.start, loop.stop + loop.step, loop.step),
+                np.arange(loop.start, loop.stop, loop.step),
                 self.curr_loop_id,
             )
+        self.loops[self.curr_loop_id] = loop
+        self.loops_uuid[self.curr_loop_id] = loop.uuid
         self.curr_loop_id += 1
 
     def exit_loop(self, loop: Parallel | ForLoop):
