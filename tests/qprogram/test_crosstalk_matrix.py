@@ -291,12 +291,11 @@ class TestNonLinearCrosstalkMatrix:
         with pytest.raises(ValueError, match="Junction asymetry cannot be NaN"):
             non_linear_crosstalk_matrix.junction_asymmetry_correction(flux_x=0.1, d=float("nan"))
 
-    def test_flux_to_bias_no_nonlinear_matches_linear_inversion(self, non_linear_crosstalk_matrix):
-        flux_dict = {"flux_0": 0.5, "flux_1": 1, "flux_2": 0}
-        bias = non_linear_crosstalk_matrix.flux_to_bias(flux_dict)
+    def test_flux_to_bias_no_nonlinear_matches_linear_inversion(self, non_linear_crosstalk_matrix, flux_vector_dict):
+        bias = non_linear_crosstalk_matrix.flux_to_bias(flux_vector_dict)
 
-        sorted_buses = sorted(flux_dict.keys())
-        flux_arr = np.array([flux_dict[b] for b in sorted_buses])
+        sorted_buses = sorted(flux_vector_dict.keys())
+        flux_arr = np.array([flux_vector_dict[b] for b in sorted_buses])
         offsets = np.array([non_linear_crosstalk_matrix.flux_offsets.get(b, 0.0) for b in sorted_buses])
         expected = np.linalg.inv(non_linear_crosstalk_matrix.to_array()) @ (flux_arr - offsets)
 
