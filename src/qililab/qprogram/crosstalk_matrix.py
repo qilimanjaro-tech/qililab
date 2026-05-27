@@ -141,7 +141,7 @@ class CrosstalkMatrix:
         for bus in resistances:
             self.resistances[bus] = resistances[bus]
 
-    def flux_to_bias(self, flux: Mapping[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
+    def flux_to_bias(self, flux: dict[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
         """Converts target flux values to hardware bias values using linear inversion.
 
         Applies the inverse of the crosstalk matrix to the flux vector, accounting for
@@ -320,6 +320,250 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             if bus_i not in self.junction_asym_matrix:
                 self.junction_asym_matrix[bus_i] = {}
             self.junction_asym_matrix[bus_i][bus_j] = junction_asym
+
+    def sin_beta_scaled(
+        self,
+        flux: float | np.ndarray,
+        beta: float,
+        amp: float,
+        k_max: int = 50,
+    ) -> np.ndarray:
+        """Evaluates the Bessel-series nonlinear flux term.
+
+        Args:
+            flux (float | np.ndarray): Flux value(s) in units of phi_0.
+            beta (float): Bessel modulation parameter.
+            amp (float): Amplitude scaling factor.
+            k_max (int): Number of terms in the Bessel expansion. Defaults to 50.
+
+        Returns:
+            np.ndarray: Nonlinear flux correction.
+
+        Raises:
+            ValueError: If amp is NaN.
+        """
+        if np.isnan(amp):
+            raise ValueError("Amplitude cannot be NaN. Set non_lin_amp_matrix accordingly.")
+
+        phi = np.asarray(flux, dtype=float) * 2 * np.pi
+        result = np.zeros_like(phi, dtype=float)
+        for k in range(1, k_max + 1):
+            result += (jv(k, k * beta) / (k * beta)) * np.sin(k * phi)
+        return 2 * result * amp
+
+    def junction_asymmetry_correction(self, flux_x: float | np.ndarray, d: float) -> float | np.ndarray:
+        """Effective flux shift from SQUID junction asymmetry in a fluxonium.
+
+        For a SQUID loop with asymmetry d = (E_J2 - E_J1)/(E_J1 + E_J2), the
+        external flux Φ_x induces an additional phase
+            φ_d = arctan(d · tan(π Φ_x / Φ_0)),
+        equivalent to a flux offset Δφ = -φ_d / (2π) (in units of Φ_0) that
+        must be subtracted from the target flux before inverting the linear
+        crosstalk. Vanishes for a symmetric SQUID (d = 0).
+
+        Args:
+            flux_x (float | np.ndarray): Applied flux through the SQUID loop, in units of Φ_0.
+            d (float): Junction asymmetry, d ∈ [-1, 1].
+
+        Raises:
+            ValueError: If d is NaN
+
+        Returns:
+            float | np.ndarray: Effective flux correction Δφ in units of Φ_0.
+        """
+
+        if np.isnan(d):
+            raise ValueError("Junction asymetry cannot be NaN. Set junction_asym_matrix accordingly.")
+        phi_d = np.arctan(d * np.tan(np.pi * flux_x))
+        return -phi_d / (2 * np.pi)
+
+    def get_non_linear_flux_terms(
+        self,
+        flux: dict[str, float | np.ndarray],
+    ) -> dict[str, float | np.ndarray]:
+        """Computes the nonlinear flux correction for each bus.
+
+        Args:
+            flux (dict[str, float]): Flux values keyed by bus name.
+
+        Returns:
+            dict[str, float]: Nonlinear correction terms keyed by bus name.
+
+        Raises:
+            ValueError: If a bus with nonlinear params set is not found in the provided flux dict.
+        """
+        corrections: dict[str, float | np.ndarray] = dict.fromkeys(flux, 0.0)
+
+        for bus_i, row in self.beta_c_matrix.items():
+            for bus_j, beta in row.items():
+                if beta is None:
+                    continue
+                if bus_i not in flux:
+                    raise ValueError(
+                        f"Bus '{bus_i}' has nonlinear parameters set but was not found "
+                        f"in the provided flux dict. All buses with nonlinear corrections "
+                        f"must be included."
+                    )
+                amp = self.non_lin_amp_matrix.get(bus_i, {}).get(bus_j)
+                if amp is None:
+                    raise ValueError(f"beta_c is set for ({bus_i}, {bus_j}) but non_lin_amp is None.")
+                if bus_j not in flux:
+                    raise ValueError(f"Bus '{bus_j}' not found in provided flux dict.")
+                result = self.sin_beta_scaled(flux=flux[bus_j], beta=beta, amp=amp)
+                corrections[bus_i] += result  # type: ignore[assignment]
+        for bus_i in self.junction_asym_matrix:
+            for bus_j in self.junction_asym_matrix[bus_i]:
+                d = self.junction_asym_matrix[bus_i][bus_j]
+                if d is None:
+                    continue
+                corrections[bus_i] += self.junction_asymmetry_correction(flux_x=flux[bus_j], d=d)
+
+        return corrections
+
+    def flux_to_bias(self, flux: dict[str, float | np.ndarray]) -> dict[str, float | np.ndarray]:
+        """Converts target flux values to hardware bias values, including nonlinear corrections.
+
+        First computes the nonlinear flux corrections via the Bessel-series expansion and
+        adds them to the target flux values, then applies the linear matrix inversion to
+        obtain the final hardware bias values. Both scalar and array inputs are supported.
+
+        Args:
+            flux (dict[str, float | np.ndarray]): Target flux values keyed by bus name.
+                Values can be scalars or numpy arrays of the same length.
+
+        Returns:
+            dict[str, float | np.ndarray]: Hardware bias values keyed by bus name,
+                including nonlinear corrections.
+        """
+        sorted_buses = sorted(self.matrix.keys())
+
+        corrections = self.get_non_linear_flux_terms(flux)
+        if all(isinstance(f, (float, int)) for f in flux.values()):
+            corrected_flux = np.array([flux[bus] + corrections[bus] for bus in sorted_buses], dtype=float)
+        else:
+            len_wf = max(len(flux[bus]) for bus in sorted_buses if not isinstance(flux[bus], (float, int)))  # type: ignore[arg-type]
+            corrected_flux = np.array(
+                [
+                    flux[bus]
+                    + (
+                        corrections[bus]
+                        if isinstance(corrections[bus], np.ndarray)
+                        else np.array([corrections[bus]] * len_wf)
+                    )
+                    for bus in sorted_buses
+                ],
+                dtype=float,
+            )
+        offsets = np.array([self.flux_offsets.get(bus, 0.0) for bus in sorted_buses])
+
+        inverse_matrix = self.inverse().to_array()
+        corr_m_off = corrected_flux.T - offsets
+        bias_array = inverse_matrix @ corr_m_off.T
+
+        return dict(zip(sorted_buses, bias_array))
+
+    @classmethod
+    def from_linear(cls, linear: CrosstalkMatrix) -> "NonLinearCrosstalkMatrix":
+        """Creates a NonLinearCrosstalkMatrix from an existing linear CrosstalkMatrix,
+        copying all its data and initializing nonlinear parameters to None.
+
+        Args:
+            linear (CrosstalkMatrix): An existing linear crosstalk matrix.
+
+        Returns:
+            NonLinearCrosstalkMatrix: A new instance with linear parameters copied.
+        """
+        instance = cls()
+        instance.matrix = {bus: dict(row) for bus, row in linear.matrix.items()}
+        instance.flux_offsets = dict(linear.flux_offsets)
+        instance.resistances = dict(linear.resistances)
+        instance.beta_c_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
+        instance.non_lin_amp_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
+        instance.junction_asym_matrix = {bus: dict.fromkeys(row) for bus, row in linear.matrix.items()}
+        return instance
+
+    def __repr__(self) -> str:
+        return f"NonLinearCrosstalkMatrix({self.matrix}, beta_c={self.beta_c_matrix})"
+
+
+@yaml.register_class
+class FluxVector:
+    """Class to represent a flux vector. This is a dictionary of bus[flux] values"""
+
+    The nonlinear correction models the flux induced on qubit i by coupler j
+    as a Bessel-series expansion:
+
+        delta_phi_i = 2 * amp_ij * sum_{k=1}^{K} [J_k(k*beta_ij) / (k*beta_ij)] * sin(k * 2pi * phi_j)
+
+    where beta_ij and amp_ij are stored in ``beta_c_matrix`` and ``non_lin_amp_matrix``
+    respectively. Entries that are None indicate no nonlinear coupling between that pair.
+    """
+
+    def __init__(self) -> None:
+        """Initializes an empty nonlinear crosstalk matrix."""
+        super().__init__()
+        self.beta_c_matrix: dict[str, dict[str, float | None]] = {}
+        self.non_lin_amp_matrix: dict[str, dict[str, float | None]] = {}
+        self.junction_asym_matrix: dict[str, dict[str, float | None]] = {}
+
+    def __setitem__(self, key: str, value: dict[str, float]) -> None:
+        """Sets the crosstalk values for the given bus and initializes nonlinear entries.
+
+        Args:
+            key (str): The bus for which to set the crosstalk values.
+            value (dict[str, float]): A dictionary of crosstalk values.
+        """
+        super().__setitem__(key, value)
+
+        if key not in self.beta_c_matrix:
+            self.beta_c_matrix[key] = dict.fromkeys(value)
+        else:
+            for bus in value:
+                if bus not in self.beta_c_matrix[key]:
+                    self.beta_c_matrix[key][bus] = None
+
+    def set_crosstalk(self, crosstalk: CrosstalkMatrix) -> dict[str, float | list[float] | np.ndarray]:
+        """Set the crosstalk compensation on the existing flux vector.
+
+        Applies the crosstalk matrix inversion to convert target flux values into
+        hardware bias values. Both scalar and array flux values are supported, allowing
+        this method to be used for single operating points as well as sweep-based
+        experiments. If a NonLinearCrosstalkMatrix is provided, nonlinear corrections
+        are applied via its overridden flux_to_bias method.
+
+        Any bus present in the crosstalk matrix but missing from the flux vector is
+        initialised to zero. List values are converted to numpy arrays before processing.
+
+        Args:
+            crosstalk (CrosstalkMatrix): The crosstalk matrix to apply. Can be a linear
+                CrosstalkMatrix or a NonLinearCrosstalkMatrix, in which case the nonlinear
+                Bessel-series corrections are included in the bias computation.
+
+        Returns:
+            dict[str, float | list[float] | np.ndarray]: The computed bias vector keyed
+                by bus name. Scalar flux inputs produce scalar bias outputs; array flux
+                inputs produce array bias outputs.
+        """
+        self.crosstalk = crosstalk
+        self.crosstalk_inverse = crosstalk.inverse()
+        self.crosstalk_inverse.flux_offsets = self.crosstalk.flux_offsets
+
+        for bus in self.crosstalk.matrix.keys():
+            if bus not in self.flux_vector:
+                self.flux_vector[bus] = 0
+            if isinstance(self.flux_vector[bus], list):
+                self.flux_vector[bus] = np.array(self.flux_vector[bus])
+
+        return self.update_bias_vector()
+
+    def update_bias_vector(self):
+        if self.crosstalk:
+            flux_dict = {bus: self.flux_vector[bus] for bus in self.crosstalk.matrix.keys()}
+            self.bias_vector = self.flux_vector.copy()
+            self.bias_vector.update(self.crosstalk.flux_to_bias(flux_dict))
+
+            return self.bias_vector
+        raise AttributeError("Cannot calcualte effective bias if Crosstalk is not set")
 
     def sin_beta_scaled(
         self,
