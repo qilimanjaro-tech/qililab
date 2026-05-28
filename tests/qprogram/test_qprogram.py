@@ -466,11 +466,7 @@ class TestQProgram(TestStructuredProgram):
         assert new_qp is not None
 
         assert isinstance(new_qp.body.elements[0], SetOffset)
-        # assert new_qp.body.elements[0].offset_path0 == 0.0
-        # assert new_qp.body.elements[0].bus == "flux1"
         assert isinstance(new_qp.body.elements[1], SetOffset)
-        # assert new_qp.body.elements[1].offset_path0 == 0.0
-        # assert new_qp.body.elements[1].bus == "flux2"
         assert isinstance(new_qp.body.elements[2], Wait)
         assert new_qp.body.elements[2].bus == "drive"
         assert isinstance(new_qp.body.elements[3], Wait)
@@ -478,24 +474,14 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[4], Wait)
         assert new_qp.body.elements[4].bus == "flux2"
         assert isinstance(new_qp.body.elements[5], SetGain)
-        # assert new_qp.body.elements[5].gain == 0.3471177904070214
-        # assert new_qp.body.elements[5].bus == "flux1"
         assert isinstance(new_qp.body.elements[6], SetOffset)
-        # assert new_qp.body.elements[6].offset_path0 == 0.0
-        # assert new_qp.body.elements[6].bus == "flux1"
         assert isinstance(new_qp.body.elements[7], Play)
         assert isinstance(new_qp.body.elements[7].waveform, Square)
-        # assert new_qp.body.elements[7].bus == "flux1"
         assert new_qp.body.elements[7].waveform.amplitude == 1.0  #Check that Square pulses are normalized
         assert isinstance(new_qp.body.elements[8], SetGain)
-        # assert new_qp.body.elements[8].bus == "flux2"
-        # assert new_qp.body.elements[8].gain == 0.5442355808140428
         assert isinstance(new_qp.body.elements[9], SetOffset)
-        # assert new_qp.body.elements[9].bus == "flux2"
-        # assert new_qp.body.elements[9].offset_path0 == 0.0
         assert isinstance(new_qp.body.elements[10], Play)
         assert isinstance(new_qp.body.elements[10].waveform, Square)
-        # assert new_qp.body.elements[10].bus == "flux2"
         assert isinstance(new_qp.body.elements[11], Play)
         assert new_qp.body.elements[11].bus == "drive"
         assert isinstance(new_qp.body.elements[12], Sync)
@@ -506,11 +492,7 @@ class TestQProgram(TestStructuredProgram):
         # Repeat loop again
         
         assert isinstance(new_qp.body.elements[15], SetOffset)
-        # assert new_qp.body.elements[15].offset_path0 == 0.31843980232472535
-        # assert new_qp.body.elements[15].bus == "flux1"
         assert isinstance(new_qp.body.elements[16], SetOffset)
-        # assert new_qp.body.elements[16].offset_path0 == 0.5168796046494507
-        # assert new_qp.body.elements[16].bus == "flux2"
         assert isinstance(new_qp.body.elements[17], Wait)
         assert new_qp.body.elements[17].bus == "drive"
         assert isinstance(new_qp.body.elements[18], Wait)
@@ -518,24 +500,14 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[19], Wait)
         assert new_qp.body.elements[19].bus == "flux2"
         assert isinstance(new_qp.body.elements[20], SetGain)
-        # assert new_qp.body.elements[20].gain == 0.09888972435411081
-        # assert new_qp.body.elements[20].bus == "flux1"
         assert isinstance(new_qp.body.elements[21], SetOffset)
-        # assert new_qp.body.elements[21].offset_path0 == 0.31843980232472535
-        # assert new_qp.body.elements[21].bus == "flux1"
         assert isinstance(new_qp.body.elements[22], Play)
         assert isinstance(new_qp.body.elements[22].waveform, Square)
-        # assert new_qp.body.elements[22].bus == "flux1"
         assert new_qp.body.elements[22].waveform.amplitude == 1.0  #Check that Square pulses are normalized
         assert isinstance(new_qp.body.elements[23], SetGain)
-        # assert new_qp.body.elements[23].bus == "flux2"
-        # assert new_qp.body.elements[23].gain == 0.047779448708221595
         assert isinstance(new_qp.body.elements[24], SetOffset)
-        # assert new_qp.body.elements[24].bus == "flux2"
-        # assert new_qp.body.elements[24].offset_path0 == 0.5168796046494507
         assert isinstance(new_qp.body.elements[25], Play)
         assert isinstance(new_qp.body.elements[25].waveform, Square)
-        # assert new_qp.body.elements[25].bus == "flux2"
         assert isinstance(new_qp.body.elements[26], Play)
         assert new_qp.body.elements[26].bus == "drive"
         assert isinstance(new_qp.body.elements[27], Sync)
