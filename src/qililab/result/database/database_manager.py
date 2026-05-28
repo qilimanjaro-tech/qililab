@@ -242,13 +242,13 @@ class DatabaseManager:
                         new_path = path.replace(self.base_path_local, self.base_path_share)
                         meas.result_path = new_path
             return measurement_by_id_list if len(measurement_by_id_list) > 1 else measurement_by_id_list[0]
-            
-    def load_sequence_by_id(self, id: int | list[int]) -> Measurement | None:
+
+    def load_sequence_by_id(self, id: int | list[int]) -> list[Measurement] | None:
         """Load measurement by its measurement_id.
 
         Args:
             id (int | list[int]): measurement_id value given by the database.
-        """            
+        """
         with self.session() as running_session:
             measurement_by_id_list = running_session.query(Measurement).where(Measurement.sequence_id == id).all()
             if measurement_by_id_list is not None:
@@ -473,34 +473,6 @@ class DatabaseManager:
         with self.session() as running_session:
             return (
                 running_session.query(Measurement.debug_file)
-                .filter(Measurement.measurement_id == measurement_id)
-                .scalar()
-            )
-            
-    def get_dc_offsets(self, measurement_id: int) -> str:
-        """Get DC offsets of a measurement by its measurement_id.
-        To be used when you have light loaded measurements
-
-        Args:
-            measurement_id (int): measurement_id value given by the database.
-        """
-        with self.session() as running_session:
-            return (
-                running_session.query(Measurement.dc_offsets)
-                .filter(Measurement.measurement_id == measurement_id)
-                .scalar()
-            )
-
-    def get_dc_offsets(self, measurement_id: int) -> str:
-        """Get DC offsets of a measurement by its measurement_id.
-        To be used when you have light loaded measurements
-
-        Args:
-            measurement_id (int): measurement_id value given by the database.
-        """
-        with self.session() as running_session:
-            return (
-                running_session.query(Measurement.dc_offsets)
                 .filter(Measurement.measurement_id == measurement_id)
                 .scalar()
             )

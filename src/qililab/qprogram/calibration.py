@@ -256,8 +256,8 @@ class Calibration:
         new_matrix = CrosstalkMatrix().from_buses(self.crosstalk_history[0]["previous_matrix"]).to_array()
         for i in range(len(self.crosstalk_history)):
             full_crosstalk = CrosstalkMatrix().from_buses(self.crosstalk_history[i]["full_matrix"])
-            new_matrix = full_crosstalk.to_array()@new_matrix
-        
+            new_matrix = full_crosstalk.to_array() @ new_matrix
+
         self.crosstalk_matrix.matrix = CrosstalkMatrix().from_array(bus_list, new_matrix).matrix
         self.crosstalk_history[-1]["result_inter"] = self.crosstalk_matrix.matrix
 
