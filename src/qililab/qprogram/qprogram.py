@@ -1028,7 +1028,7 @@ class QProgram(StructuredProgram):
                     corrected_elements.append(element)
 
             # Needs to sync at the end of every loop for the unpack to work with non-flux buses
-            if not isinstance(corrected_elements[-1], Sync):
+            if corrected_elements and not isinstance(corrected_elements[-1], Sync):
                 corrected_elements.append(Sync())
             return corrected_elements, offset_defined
 
