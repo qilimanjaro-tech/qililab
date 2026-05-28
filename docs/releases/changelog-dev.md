@@ -2,6 +2,30 @@
 
 ### New features since last release
 
+- Added `NonLinearCrosstalkMatrix` class extending `CrosstalkMatrix` to support nonlinear flux crosstalk correction between buses. The  nonlinear correction models SQUID-mediated coupling using a Bessel-series expansion of the periodic SQUID nonlinearity:
+
+  $$\delta\phi_i = 2 \cdot \text{amp}_{ij} \sum_{k=1}^{K} \frac{J_k(k\beta_{ij})}{k\beta_{ij}} \sin(2\pi k \phi_j)$$
+
+  where $\beta_{ij}$ and $\text{amp}_{ij}$ are per-bus-pair parameters stored in `beta_c_matrix` and `non_lin_amp_matrix` respectively. Entries set to `None` indicate no nonlinear coupling for that pair.
+
+  Key additions:
+  - `set_non_linear_params(bus_i, bus_j, beta_c, amplitude)`: sets the Bessel modulation parameter and amplitude for a given bus pair.
+  - `get_non_linear_flux_terms(flux)`: computes the nonlinear correction vector for a given flux operating point.
+  - `flux_to_bias(flux)`: converts target flux values to hardware bias values including nonlinear corrections, applying the inverse of the linear crosstalk matrix on top.
+  - `from_linear(linear_crosstalk_matrix)`: creates a `NonLinearCrosstalkMatrix` from an existing `CrosstalkMatrix`, copying all linear parameters and initializing nonlinear entries to `None`.
+
+  Usage example:
+
+```python
+  xtalk = NonLinearCrosstalkMatrix.from_linear(existing_crosstalk)
+
+  xtalk.set_non_linear_params("qubit_flux_0", "coupler_flux_2", beta_c=-0.234, amplitude=-0.021)
+  xtalk.set_non_linear_params("qubit_flux_3", "coupler_flux_2", beta_c=-0.253, amplitude=-0.021)
+
+  bias = xtalk.flux_to_bias({"qubit_flux_0": 0.1, "qubit_flux_3": 0.2, "coupler_flux_2": 0.05})
+```
+[#1102](https://github.com/qilimanjaro-tech/qililab/pull/1102)
+
 - Extended `VariableExpression` capabilities (Qblox backend only)
   The capabilities of `VariableExpression` have been extended, and remain exclusive to the Qblox backend. 
 
@@ -133,6 +157,9 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 ### Bug fixes
 
+- Fixed a bug in `set_offset` where using a `Variable` on one path and a negative static value on the other would generate a `move` instruction with a negative immediate, which is invalid Q1ASM.
+  [#1113](https://github.com/qilimanjaro-tech/qililab/pull/1113)
+
 - Fixed a bug where `qp.qblox.play` with `wait_time=0` was treated as no `wait_time` provided, producing incorrect Q1ASM. The wait time is now correctly clamped to the minimum valid value of 4 ns.
   [#1114](https://github.com/qilimanjaro-tech/qililab/pull/1114)
 
@@ -149,7 +176,10 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
 
 - Fixed a bug in the Qblox compiler where the bin acquisition index was not incrementing correctly when multiple `measure` calls are used sequentially inside an `average` block with an outer sweep loop.  Each sequential acquire now gets its own bin register initialised to its position offset, and the bin register is advanced by the total number of acquires per sweep step (instead of always 1), so that consecutive acquires write to consecutive bins and the full acquisition matrix is filled correctly.
-  [#1098](https://github.com/qilimanjaro-tech/qililab/pull/1098
+  [#1098](https://github.com/qilimanjaro-tech/qililab/pull/1098)
 
 - Fixed a bug where the qblox instrument controller parameter `ext_trigger` and the qdac instrument controller parameter `reference_clock` where not correctly translated to dictionary from the runcard and therefore not saved with `ql.save_platform(platform)`.
   [#1104](https://github.com/qilimanjaro-tech/qililab/pull/1104)
+
+- Fixed bug were the RSWU_SP16TR `Instrument` and `InstrumentController` wouldn't be registred causing `build_platform` to fail.
+  [#1120](https://github.com/qilimanjaro-tech/qililab/pull/1120)
