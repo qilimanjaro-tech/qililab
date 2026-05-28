@@ -943,22 +943,25 @@ class QProgram(StructuredProgram):
             plays_index = plays_0
             play_bus_list: list[str] = []
 
+            flux_vector_buses = list(flux_vector.buses)
+            flux_vector_buses.sort()
+
             for element in elements:
-                if isinstance(element, SetGain) and element.bus in flux_vector.buses:
+                if isinstance(element, SetGain) and element.bus in flux_vector_buses:
                     continue
-                if isinstance(element, SetOffset) and element.bus in flux_vector.buses:
+                if isinstance(element, SetOffset) and element.bus in flux_vector_buses:
                     if offsets_index != last_appended_offset:
                         if wait_defined:
                             offsets_index += 1
-                        for bus in flux_vector.buses:
+                        for bus in flux_vector_buses:
                             corrected_offsets = offsets[offsets_index][bus][loop_coord]
                             corrected_elements.append(SetOffset(bus, corrected_offsets))
                         last_appended_offset = offsets_index
                         offset_defined = True
-                elif isinstance(element, Play) and element.bus in flux_vector.buses:
+                elif isinstance(element, Play) and element.bus in flux_vector_buses:
                     if not play_bus_list or element.bus in play_bus_list:
                         play_bus_list.append(element.bus)
-                        for bus in flux_vector.buses:
+                        for bus in flux_vector_buses:
                             corrected_waveform = play_waveforms[plays_index][bus][loop_coord]
                             if isinstance(corrected_waveform, Square):
                                 gain = SetGain(bus, corrected_waveform.amplitude)
@@ -983,7 +986,7 @@ class QProgram(StructuredProgram):
                         plays_index += 1
                         offsets_index += 1
                         offset_defined = True
-                elif isinstance(element, Wait) and element.bus in flux_vector.buses:
+                elif isinstance(element, Wait) and element.bus in flux_vector_buses:
                     corrected_elements.append(element)
                     if offset_defined:
                         offset_defined = False
