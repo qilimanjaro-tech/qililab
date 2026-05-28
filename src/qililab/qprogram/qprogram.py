@@ -923,7 +923,7 @@ class QProgram(StructuredProgram):
                 offsets (list[dict[str, np.ndarray]]): list of measured non-linear offsets ordered by order of creation.
                 play_waveforms (list[dict[str, np.ndarray]]): List of measured non-linear waveforms ordered by order of creation.
                 loop_index (tuple[int, ...], optional): Index of the existing loop. Defaults to ().
-                loop_coord (tuple[int, ...], optional): Coordinates ordered to find the right waveform / offset on 
+                loop_coord (tuple[int, ...], optional): Coordinates ordered to find the right waveform / offset on
                                                          the non-linear matrices. Defaults to ().
                 offsets_0 (int, optional): Order of the offsets by order of creation,
                                             this is the list index for offsets. Defaults to 0.
