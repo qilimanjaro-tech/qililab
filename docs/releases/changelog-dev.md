@@ -146,6 +146,38 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 ### Improvements
 
+- Allowing for multiple hardware loops for gain and offset with crosstalk compensation, such as flux vs flux measurements. This is possible due to the `VariableExpression` with crosstalk compensation.  Removed raised `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). Example qprograms:
+
+    ```
+    ...
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset_1, start=0, stop=0.1, step=0.01):
+        with qp.for_loop(variable=offset_2, start=0.1, stop=0, step=-0.01):
+            qp.set_offset(bus="flux1", offset_path0=offset_1)
+            qp.set_offset(bus="flux2", offset_path0=offset_2)
+            ...
+    ```
+And after the crosstalk compensation has been applied the qprogram will look internally like this: 
+    ```
+    ...
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    flux_offset_1_1 = qp.variable(label="flux_offset_1_1", domain=Domain.Voltage)  # Flux 1 to itself
+    flux_offset_1_2 = qp.variable(label="flux_offset_1_2", domain=Domain.Voltage)  # Flux 2 to flux 1
+    flux_offset_2_1 = qp.variable(label="flux_offset_2_1", domain=Domain.Voltage)  # Flux 1 to flux 2
+    flux_offset_2_2 = qp.variable(label="flux_offset_2_2", domain=Domain.Voltage)  # Flux 2 to itself
+    with qp.parallel([ForLoop(flux_offset_1_1, 0, 0.1, 0.01), ForLoop(flux_offset_1_2, 0, 0.1, 0.01)]):
+        with qp.parallel([ForLoop(flux_offset_2_1, 0.1, 0, -0.01), ForLoop(flux_offset_2_2, 0.1, 0, -0.01)]):
+            qp.set_offset(bus="flux1", offset_path0=flux_offset_1_1 + flux_offset_1_2)  # Here we require variable extension
+            qp.set_offset(bus="flux2", offset_path0=flux_offset_2_1 + flux_offset_2_2)
+            ...
+    ```
+
+  [#1109](https://github.com/qilimanjaro-tech/qililab/pull/1109)
+
 - Modified database manager's `load_by_id` to allow a list of ids to return a list of the measurements with said ids. Also added function `db_manager.get_dc_offsets(id)`, for recent addition to the measurements database, `dc_offsets`.
   [#1097](https://github.com/qilimanjaro-tech/qililab/pull/1097)
 
