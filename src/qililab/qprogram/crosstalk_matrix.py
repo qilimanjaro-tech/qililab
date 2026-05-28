@@ -569,7 +569,7 @@ class FluxVector:
         """Set the crosstalk compensation on the existing flux vector. This function does the matrix product to calculate the correct flux
 
         Args:
-            crosstalk (CrosstalkMatrix): _description_
+            crosstalk (CrosstalkMatrix): crosstalk matrix to be applied
 
         """
         self.crosstalk = crosstalk
