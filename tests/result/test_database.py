@@ -718,7 +718,7 @@ class Testdatabase:
         with patch("os.path.isfile", return_value=False):
             result = db_manager.load_sequence_by_id([123, 124])
 
-        db_manager._mock_session.query.assert_called
+        db_manager._mock_session.query.assert_called()
         assert result[0].result_path == "/shared_test/results/file.h5"
 
     def test_load_by_id_path_not_found(self, db_manager: DatabaseManager):

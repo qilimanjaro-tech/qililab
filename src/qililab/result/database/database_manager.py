@@ -248,6 +248,8 @@ class DatabaseManager:
 
         Args:
             id (int | list[int]): measurement_id value given by the database.
+        Returns:
+            list[Measurement] | None: returns the list of measurements or None if no sequence could be found.
         """
         with self.session() as running_session:
             measurement_by_id_list = running_session.query(Measurement).where(Measurement.sequence_id == id).all()
@@ -347,8 +349,6 @@ class DatabaseManager:
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
                     (Measurement.debug_file != "null").label("has_debug"),
-                    Measurement.target,
-                    Measurement.secondary_source,
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
                 )
 
@@ -412,8 +412,6 @@ class DatabaseManager:
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
                     (Measurement.debug_file != "null").label("has_debug"),
-                    Measurement.target,
-                    Measurement.secondary_source,
                     (Measurement.dc_offsets != "null").label("has_dc_offsets"),
                 )
 
