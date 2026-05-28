@@ -406,7 +406,7 @@ class TestQProgram(TestStructuredProgram):
         assert qp._body.elements[0].offset_path1 == 0.0
 
     def test_with_crosstalk_multi_variable_offset(self):
-        """Test with_crosstalk covers the multi-variable branch in handle_offset
+        """Test with_crosstalk_qblox covers the multi-variable branch in handle_offset
         and handle_gain when len(variable_list) > 1."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
@@ -423,7 +423,7 @@ class TestQProgram(TestStructuredProgram):
                 qp.set_offset(bus="flux_bus_0", offset_path0=offset_0, offset_path1=0.0)
                 qp.set_offset(bus="flux_bus_1", offset_path0=offset_1, offset_path1=0.0)
 
-        new_qp = qp.with_crosstalk(crosstalk)
+        new_qp = qp.with_crosstalk_qblox(crosstalk)
         assert new_qp is not None
 
         # Test handle_gain
@@ -436,7 +436,7 @@ class TestQProgram(TestStructuredProgram):
                 qp2.set_gain(bus="flux_bus_0", gain=gain_0)
                 qp2.set_gain(bus="flux_bus_1", gain=gain_1)
 
-        new_qp2 = qp2.with_crosstalk(crosstalk)
+        new_qp2 = qp2.with_crosstalk_qblox(crosstalk)
         assert new_qp2 is not None
 
     def test_set_markers(self):
