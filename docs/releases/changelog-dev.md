@@ -119,7 +119,7 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 ### Improvements
 
-- `VariableExpression` with crosstalk compensation is now possible. Allowing for multiple loops for gain and offset. Removed raised `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). For example:
+- Allowing for multiple hardware loops for gain and offset with crosstalk compensation, such as flux vs flux measurements. This is possible due to the `VariableExpression` with crosstalk compensation.  Removed raised `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). Example qprograms:
 
     ```
     ...
