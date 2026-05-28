@@ -705,6 +705,22 @@ class Testdatabase:
         assert result[0].result_path == "/shared_test/results/file.h5"
         assert result[1].result_path == "/shared_test/results_2/file.h5"
 
+    def test_load_sequence_by_id(self, db_manager: DatabaseManager):
+        db_manager.base_path_local = "/local_test/results"
+        db_manager.base_path_share = "/shared_test/results"
+
+        mock_measurement = MagicMock(spec=Measurement)
+        mock_measurement.result_path = "/local_test/results/file.h5"
+        mock_measurement.sequence_id = [123, 124]
+
+        db_manager._mock_session.query.return_value.where.return_value.all.return_value = [mock_measurement]
+
+        with patch("os.path.isfile", return_value=False):
+            result = db_manager.load_sequence_by_id([123, 124])
+
+        db_manager._mock_session.query.assert_called
+        assert result[0].result_path == "/shared_test/results/file.h5"
+
     def test_load_by_id_path_not_found(self, db_manager: DatabaseManager):
         # Setup a mock measurement
         mock_measurement = MagicMock(spec=Measurement)

@@ -2,7 +2,7 @@
 
 ### New features since last release
 
-- Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs. `Measurement.sequence_id`, `Measurement.target` and `Measurement.secondary_source` have been added as measurement expressions inside head and tail.
+- Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs from a sequence of measurements. `Measurement.sequence_id`, `Measurement.target` and `Measurement.secondary_source` have been added as measurement expressions inside head and tail.
   [#1121](https://github.com/qilimanjaro-tech/qililab/pull/1121)
 
 - Added `NonLinearCrosstalkMatrix` class extending `CrosstalkMatrix` to support nonlinear flux crosstalk correction between buses. The  nonlinear correction models SQUID-mediated coupling using a Bessel-series expansion of the periodic SQUID nonlinearity:
