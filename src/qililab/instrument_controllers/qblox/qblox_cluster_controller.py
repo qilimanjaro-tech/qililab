@@ -25,8 +25,6 @@ from qililab.typings.enums import (
     ConnectionName,
     InstrumentControllerName,
     InstrumentTypeName,
-    Parameter,
-    ReferenceClock,
 )
 from qililab.typings.instruments.cluster import Cluster
 
@@ -52,8 +50,6 @@ class QbloxClusterController(InstrumentController):
     class QbloxClusterControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific Qblox Cluster Controller."""
 
-        reference_clock: ReferenceClock
-
         def __post_init__(self):
             super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
@@ -78,7 +74,7 @@ class QbloxClusterController(InstrumentController):
     @InstrumentController.CheckConnected
     def _set_reference_source(self):
         """Set the reference source ('internal' or 'external')."""
-        self.device.reference_source(self.reference_clock.value)
+        self.device.reference_source(self.reference_clock)
 
     @InstrumentController.CheckConnected
     def _set_ext_trigger(self):
@@ -110,9 +106,3 @@ class QbloxClusterController(InstrumentController):
         """Set the initialized device to all attached modules."""
         for module, slot_id in zip(self.modules, self.connected_modules_slot_ids):
             module.device = self.device.modules[slot_id - 1]  # slot_id represents the number displayed in the cluster
-
-    def to_dict(self):
-        """Return a dictionary representation of the Qblox controller class."""
-        return super().to_dict() | {
-            Parameter.REFERENCE_CLOCK.value: self.reference_clock.value,
-        }

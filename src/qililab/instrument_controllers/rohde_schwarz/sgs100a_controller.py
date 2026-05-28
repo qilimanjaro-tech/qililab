@@ -43,8 +43,6 @@ class SGS100AController(SingleInstrumentController):
     class SGS100AControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific SGS100A Controller."""
 
-        reference_clock: str
-
         def __post_init__(self):
             super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
