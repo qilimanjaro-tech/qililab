@@ -73,8 +73,3 @@ class QDevilQDac2Controller(SingleInstrumentController):
                     f"Instrument {type(module)} not supported."
                     + f"The only supported instrument is {InstrumentTypeName.QDEVIL_QDAC2}"
                 )
-
-    @property
-    def reference_clock(self):
-        """Get the reference clock setting."""
-        return self.settings.reference_clock
