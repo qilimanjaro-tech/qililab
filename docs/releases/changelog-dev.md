@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+- Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs. `Measurement.sequence_id`, `Measurement.target` and `Measurement.secondary_source` have been added as measurement expressions inside head and tail.
+  [#1121](https://github.com/qilimanjaro-tech/qililab/pull/1121)
+
 - Added `NonLinearCrosstalkMatrix` class extending `CrosstalkMatrix` to support nonlinear flux crosstalk correction between buses. The  nonlinear correction models SQUID-mediated coupling using a Bessel-series expansion of the periodic SQUID nonlinearity:
 
   $$\delta\phi_i = 2 \cdot \text{amp}_{ij} \sum_{k=1}^{K} \frac{J_k(k\beta_{ij})}{k\beta_{ij}} \sin(2\pi k \phi_j)$$
@@ -156,6 +159,9 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 ### Documentation
 
 ### Bug fixes
+
+- Fixed a bug in the `Calibration` crosstalk matrix where the `inter_crosstalk`'s new_matrix was not correctly calculated. Now it behaves as intended.
+  [#1121](https://github.com/qilimanjaro-tech/qililab/pull/1121)
 
 - Fixed a bug in `set_offset` where using a `Variable` on one path and a negative static value on the other would generate a `move` instruction with a negative immediate, which is invalid Q1ASM.
   [#1113](https://github.com/qilimanjaro-tech/qililab/pull/1113)
