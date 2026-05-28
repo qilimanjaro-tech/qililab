@@ -183,3 +183,6 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 - Fixed bug were the RSWU_SP16TR `Instrument` and `InstrumentController` wouldn't be registred causing `build_platform` to fail.
   [#1120](https://github.com/qilimanjaro-tech/qililab/pull/1120)
+
+- Fixed a mismatch between `FlatTop`'s duration and `envelope`, were the waveform's `envelope` had length duration + 1.
+  [#1122](https://github.com/qilimanjaro-tech/qililab/pull/1122)
