@@ -555,6 +555,10 @@ class QProgram(StructuredProgram):
                             for loop in element.loops:
                                 self._active_loops.append(loop)  # type: ignore [arg-type]
                                 self._loop_depths.append(loop_idx)
+                    if non_lin_play_dict:
+                        non_lin_play_waveforms.append(non_lin_flux_vector.get_corrected_play(non_lin_play_dict))
+                        non_lin_offsets.append(non_lin_flux_vector.get_corrected_offsets())
+                        non_lin_play_dict = {}
                     traverse(element, variables, deepcopy(crosstalk_elements.flux_vector))
 
                     if variable_list is not None and any(
@@ -946,6 +950,9 @@ class QProgram(StructuredProgram):
             flux_vector_buses = list(flux_vector.buses)
             flux_vector_buses.sort()
 
+            if not loop_coord:
+                loop_coord = (0,)
+
             for element in elements:
                 if isinstance(element, SetGain) and element.bus in flux_vector_buses:
                     continue
@@ -991,6 +998,7 @@ class QProgram(StructuredProgram):
                     if offset_defined:
                         offset_defined = False
                         wait_defined = True
+                        last_appended_offset = -1
                 elif isinstance(element, Block):
                     if element.uuid in flux_vector.loops_uuid.values():
                         shape = next(iter(offsets[offsets_index].values())).shape
