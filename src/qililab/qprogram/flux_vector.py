@@ -49,7 +49,7 @@ class FluxVector:
             bus (str): The bus for which to get the flux values.
 
         Returns:
-            float: Flux value for the given bus
+            float | list[float] | np.ndarray: Flux value for the given bus
         """
         if self.bias_vector:
             return self.bias_vector[bus]
@@ -119,6 +119,10 @@ class FluxVector:
         Args:
             crosstalk (CrosstalkMatrix): crosstalk matrix to be applied
 
+        Returns:
+            dict[str, float | list[float] | np.ndarray]: The computed flux vector keyed
+                by bus name. Scalar bias inputs produce scalar flux outputs; array bias
+                inputs produce array flux outputs.
         """
         self.crosstalk = crosstalk
 
@@ -142,7 +146,7 @@ class FluxVector:
         """To dictionary method, returns the vector's dictionary
 
         Returns:
-            dict[str, float]: Flux vector dictionary
+            dict[str, float | list[float] | np.ndarray]: Flux vector dictionary
         """
         if self.bias_vector:
             return self.bias_vector
@@ -380,6 +384,10 @@ class NonLinearFluxVector:
             raise AttributeError(
                 "No crosstalk has been set.\nYou can set it using set_crosstalk or set_crosstalk_from_bias"
             )
+        if not waveforms:
+            raise ValueError(
+                "The 'waveforms' dictionary is empty.\nIf you want the offsets use `get_corrected_offsets` instead"
+            )
         durations = {bus: w.get_duration() for bus, w in waveforms.items()}
         if len(set(durations.values())) > 1:
             raise ValueError(f"All waveforms must have the same duration, got: {durations}")
@@ -393,7 +401,6 @@ class NonLinearFluxVector:
         shape = tuple(loop_lengths[lr] for lr in unique_loop_refs) if unique_loop_refs else (1,)
         total_length = int(np.prod(list(loop_lengths.values()))) if loop_lengths else 1
 
-        # combined[bus][k * dur + t] = gain_flat[bus][k] * envelope[t] + offset_flat[bus][k]
         # Buses without a waveform contribute only their offset (play = 0).
         combined_flux: dict[str, np.ndarray] = {}
         for bus in self.buses:

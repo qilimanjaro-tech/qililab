@@ -71,6 +71,43 @@ As the conversion to the new bias is non-linear, the loops given to the qblox Q1
 ```
 [#1102](https://github.com/qilimanjaro-tech/qililab/pull/1102)
 
+- Added `NonLinearFluxVector` class for managing per-bus flux offsets and gain values with crosstalk compensation across multi-loop sweeps. This class is in qililab.qprogram.flux_vector. The original `FluxVector` has been moved to this module.
+
+  Unlike `FluxVector`, `NonLinearFluxVector` works directly with `Variable` and `VariableExpression` objects so that offsets and gains can sweep over loop dimensions without materialising large arrays up front. It is designed to be driven by a compiler that calls `set_loop` / `exit_loop` as it walks a `QProgram` block tree.
+
+  Usage example:
+
+  ```python
+  import numpy as np
+
+  from qililab.core.variables import Domain, Variable
+  from qililab.qprogram.blocks import ForLoop, Parallel
+  from qililab.qprogram.crosstalk_matrix import NonLinearCrosstalkMatrix
+  from qililab.qprogram.flux_vector import NonLinearFluxVector
+  from qililab.qprogram.operations import SetGain, SetOffset
+  from qililab.waveforms import Square
+
+  nlxtalk = NonLinearCrosstalkMatrix.from_array(...)
+  # (...set up xtalk...)
+
+  phi   = Variable("phi",   Domain.Voltage)
+  theta = Variable("theta", Domain.Voltage)
+
+  nlfv = NonLinearFluxVector()
+  nlfv.set_crosstalk_from_bias(nlxtalk, {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
+
+  nlfv.set_loop(ForLoop(variable=phi,   start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
+  nlfv.set_loop(ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0))  # 5 steps → loop_2
+
+  nlfv.set_element(SetOffset(bus="flux_0", offset_path0=phi))
+  nlfv.set_element(SetGain(bus="flux_1", gain=theta))
+
+  offsets = nlfv.get_corrected_offsets()   # shape (5, 3) per bus
+  plays   = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
+  ```
+
+  [#1115](https://github.com/qilimanjaro-tech/qililab/pull/1115)
+
 - Extended `VariableExpression` capabilities (Qblox backend only)
   The capabilities of `VariableExpression` have been extended, and remain exclusive to the Qblox backend. 
 
@@ -186,45 +223,39 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
   [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
 
-- Added `NonLinearFluxVector` class for managing per-bus flux offsets and gain values with crosstalk compensation across multi-loop sweeps.
-
-  Unlike `FluxVector`, `NonLinearFluxVector` works directly with `Variable` and `VariableExpression` objects so that offsets and gains can sweep over loop dimensions without materialising large arrays up front. It is designed to be driven by a compiler that calls `set_loop` / `exit_loop` as it walks a `QProgram` block tree.
-
-  Usage example:
-
-  ```python
-  import numpy as np
-
-  from qililab.core.variables import Domain, Variable
-  from qililab.qprogram.blocks import ForLoop, Parallel
-  from qililab.qprogram.crosstalk_matrix import NonLinearCrosstalkMatrix
-  from qililab.qprogram.flux_vector import NonLinearFluxVector
-  from qililab.qprogram.operations import SetGain, SetOffset
-  from qililab.waveforms import Square
-
-  nlxtalk = NonLinearCrosstalkMatrix.from_array(...)
-  # (...set up xtalk...)
-
-  phi   = Variable("phi",   Domain.Voltage)
-  theta = Variable("theta", Domain.Voltage)
-
-  nlfv = NonLinearFluxVector()
-  nlfv.set_crosstalk_from_bias(nlxtalk, {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
-
-  nlfv.set_loop(ForLoop(variable=phi,   start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
-  nlfv.set_loop(ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0))  # 5 steps → loop_2
-
-  nlfv.set_element(SetOffset(bus="flux_0", offset_path0=phi))
-  nlfv.set_element(SetGain(bus="flux_1", gain=theta))
-
-  offsets = nlfv.get_corrected_offsets()   # shape (5, 3) per bus
-  plays   = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
-  ```
-
-  [#1115](https://github.com/qilimanjaro-tech/qililab/pull/1115)
-
-
 ### Improvements
+
+- Allowing for multiple hardware loops for gain and offset with crosstalk compensation, such as flux vs flux measurements. This is possible due to the `VariableExpression` with crosstalk compensation.  Removed raised `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). Example qprograms:
+
+    ```
+    ...
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+    offset_2 = qp.variable(label="offset_2", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset_1, start=0, stop=0.1, step=0.01):
+        with qp.for_loop(variable=offset_2, start=0.1, stop=0, step=-0.01):
+            qp.set_offset(bus="flux1", offset_path0=offset_1)
+            qp.set_offset(bus="flux2", offset_path0=offset_2)
+            ...
+    ```
+And after the crosstalk compensation has been applied the qprogram will look internally like this: 
+    ```
+    ...
+    square_wf = Square(amplitude=0.1, duration=50)
+    qp = QProgram()
+    flux_offset_1_1 = qp.variable(label="flux_offset_1_1", domain=Domain.Voltage)  # Flux 1 to itself
+    flux_offset_1_2 = qp.variable(label="flux_offset_1_2", domain=Domain.Voltage)  # Flux 2 to flux 1
+    flux_offset_2_1 = qp.variable(label="flux_offset_2_1", domain=Domain.Voltage)  # Flux 1 to flux 2
+    flux_offset_2_2 = qp.variable(label="flux_offset_2_2", domain=Domain.Voltage)  # Flux 2 to itself
+    with qp.parallel([ForLoop(flux_offset_1_1, 0, 0.1, 0.01), ForLoop(flux_offset_1_2, 0, 0.1, 0.01)]):
+        with qp.parallel([ForLoop(flux_offset_2_1, 0.1, 0, -0.01), ForLoop(flux_offset_2_2, 0.1, 0, -0.01)]):
+            qp.set_offset(bus="flux1", offset_path0=flux_offset_1_1 + flux_offset_1_2)  # Here we require variable extension
+            qp.set_offset(bus="flux2", offset_path0=flux_offset_2_1 + flux_offset_2_2)
+            ...
+    ```
+
+  [#1109](https://github.com/qilimanjaro-tech/qililab/pull/1109)
 
 - Modified database manager's `load_by_id` to allow a list of ids to return a list of the measurements with said ids. Also added function `db_manager.get_dc_offsets(id)`, for recent addition to the measurements database, `dc_offsets`.
   [#1097](https://github.com/qilimanjaro-tech/qililab/pull/1097)
