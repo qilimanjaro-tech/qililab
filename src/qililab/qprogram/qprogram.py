@@ -555,7 +555,7 @@ class QProgram(StructuredProgram):
                             for loop in element.loops:
                                 self._active_loops.append(loop)  # type: ignore [arg-type]
                                 self._loop_depths.append(loop_idx)
-                    if non_lin_play_dict:
+                    if non_lin_flux_vector and non_lin_play_dict:
                         non_lin_play_waveforms.append(non_lin_flux_vector.get_corrected_play(non_lin_play_dict))
                         non_lin_offsets.append(non_lin_flux_vector.get_corrected_offsets())
                         non_lin_play_dict = {}

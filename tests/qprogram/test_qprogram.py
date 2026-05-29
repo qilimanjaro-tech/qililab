@@ -692,6 +692,77 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[8], Measure)
         assert new_qp.body.elements[8].bus == "readout"
         assert isinstance(new_qp.body.elements[9], Sync)
+        
+    def test_with_crosstalk_non_linear_play_before_loop(self):
+        """Test with_crosstalk_qblox covers the non-linear implementation playing a pulse before a loop."""
+        # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        square_wf = Square(amplitude=0.1, duration=50)
+        gauss_wf = Gaussian(amplitude=0.7, duration=50, num_sigmas=4)
+        square_iq = IQPair(I=square_wf, Q=square_wf)
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        qp.play(bus="flux1", waveform=gauss_wf)
+        qp.sync()
+        with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.08):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.play(bus="flux1", waveform=gauss_wf)
+            qp.play(bus="drive", waveform=square_iq)
+            qp.sync(["drive", "readout"])
+            qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+
+        new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
+        assert new_qp is not None
+        assert isinstance(new_qp.body.elements[0], SetGain)
+        assert math.isclose(new_qp.body.elements[0].gain, 1)
+        assert new_qp.body.elements[0].bus == "flux1"
+        assert isinstance(new_qp.body.elements[1], SetOffset)
+        assert math.isclose(new_qp.body.elements[1].offset_path0, 0.0)
+        assert new_qp.body.elements[1].bus == "flux1"
+        assert isinstance(new_qp.body.elements[2], Play)
+        assert isinstance(new_qp.body.elements[2].waveform, Arbitrary)
+        assert new_qp.body.elements[2].bus == "flux1"
+        assert isinstance(new_qp.body.elements[3], SetGain)
+        assert new_qp.body.elements[3].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[3].gain, 1)
+        assert isinstance(new_qp.body.elements[4], SetOffset)
+        assert new_qp.body.elements[4].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[4].offset_path0, 0.0)
+        assert isinstance(new_qp.body.elements[5], Play)
+        assert isinstance(new_qp.body.elements[5].waveform, Arbitrary)
+        assert new_qp.body.elements[5].bus == "flux2"
+        assert isinstance(new_qp.body.elements[6], Sync)
+        # Here the loop begins
+        assert isinstance(new_qp.body.elements[7 ], SetOffset)
+        assert math.isclose(new_qp.body.elements[7 ].offset_path0, 0.0)
+        assert new_qp.body.elements[7 ].bus == "flux1"
+        assert isinstance(new_qp.body.elements[8], SetOffset)
+        assert math.isclose(new_qp.body.elements[8].offset_path0, 0.0)
+        assert isinstance(new_qp.body.elements[9], SetGain)
+        assert math.isclose(new_qp.body.elements[9].gain, 1)
+        assert new_qp.body.elements[9].bus == "flux1"
+        assert isinstance(new_qp.body.elements[10], Play)
+        assert isinstance(new_qp.body.elements[10].waveform, Arbitrary)
+        assert new_qp.body.elements[10].bus == "flux1"
+        assert isinstance(new_qp.body.elements[11], SetGain)
+        assert new_qp.body.elements[11].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[11].gain, 1)
+        assert isinstance(new_qp.body.elements[12], Play)
+        assert isinstance(new_qp.body.elements[12].waveform, Arbitrary)
+        assert new_qp.body.elements[12].bus == "flux2"
+        assert isinstance(new_qp.body.elements[13], Play)
+        assert new_qp.body.elements[13].bus == "drive"
+        assert isinstance(new_qp.body.elements[14], Sync)
+        assert new_qp.body.elements[14].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[15], Measure)
+        assert new_qp.body.elements[15].bus == "readout"
+        assert isinstance(new_qp.body.elements[16], Sync)
+        # ... second iteration of the loop
+        assert isinstance(new_qp.body.elements[26], Sync)
 
     def test_set_markers(self):
         qp = QProgram()
