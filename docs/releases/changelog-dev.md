@@ -143,6 +143,9 @@ With `execute_qprogram(..., crosstalk= True / False)` the parameter introduced i
 
 ### Improvements
 
+- Moved qblox external trigger check from compiler to platform. This avoids raising errors related to the Runcard inside the compiler.
+  [#1112](https://github.com/qilimanjaro-tech/qililab/pull/1112)
+
 - Allowing for multiple hardware loops for gain and offset with crosstalk compensation, such as flux vs flux measurements. This is possible due to the `VariableExpression` with crosstalk compensation.  Removed raised `NotImplementedError` (`"Double Hardware loops are not yet implemented with the crosstalk."`). Example qprograms:
 
     ```

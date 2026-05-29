@@ -257,7 +257,6 @@ class QbloxCompiler:
         times_of_flight: dict[str, int] | None = None,
         delays: dict[str, int] | None = None,
         markers: dict[str, str] | None = None,
-        ext_trigger: bool = False,
         qblox_buses: list[str] | None = None,
         single_channel: list[str] | None = None,
         crosstalk: CrosstalkMatrix | None = None,
@@ -335,7 +334,6 @@ class QbloxCompiler:
 
         self._sync_counter = 0
         self._buses = self._populate_buses()
-        self._ext_trigger = ext_trigger
         self._single_channel = single_channel if single_channel is not None else []
 
         # Pre-processing: Update time of flight
@@ -1184,6 +1182,8 @@ class QbloxCompiler:
         if element.bus not in self._qblox_buses:
             return
 
+        self._qprogram._ext_trigger = True
+
         duration: QPyProgram.Register | int
 
         if isinstance(element.duration, Variable):
@@ -1191,9 +1191,6 @@ class QbloxCompiler:
 
         convert = QbloxCompiler._convert_value(element)
         duration = convert(element.duration)
-
-        if not self._ext_trigger:
-            raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
 
         # loop over wait instructions if static duration is longer than allowed qblox max wait time of 2**16 -4
         self._handle_add_trigger_waits(bus=element.bus, duration=duration, port=element.port)
