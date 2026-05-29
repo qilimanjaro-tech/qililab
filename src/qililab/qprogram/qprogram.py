@@ -640,20 +640,18 @@ class QProgram(StructuredProgram):
                         None,  # type: ignore [arg-type]
                     )
                 )
-                dict_variable = self._bus_variable_map[variable, bus]
+                bus_variable = self._bus_variable_map[variable, bus]
+                self._block_variables[variable].append(bus_variable)
 
+                summed_variable = bus_variable
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
-                            raise NotImplementedError(
-                                "Double Hardware loops are not yet implemented with the crosstalk."
-                            )
-                            # TODO: Voltage-domain VariableExpression is now supported (PR #1057).
-                            # dict_variable += self._bus_variable_map[var, bus]
-                            # self._block_variables[var].append(self._bus_variable_map[var, bus])
+                            # Only added if there are more than one loop with different variables.
+                            summed_variable = summed_variable + self._bus_variable_map[var, bus]
+                            self._block_variables[var].append(self._bus_variable_map[var, bus])
 
-                offset = SetOffset(bus, dict_variable)
-                self._block_variables[variable].append(dict_variable)
+                offset = SetOffset(bus, summed_variable)
             elif isinstance(bias_vector, float):
                 offset = SetOffset(bus, bias_vector)
 
@@ -683,20 +681,18 @@ class QProgram(StructuredProgram):
                         None,  # type: ignore [arg-type]
                     )
                 )
-                dict_variable = self._bus_variable_map[variable, bus]
+                bus_variable = self._bus_variable_map[variable, bus]
+                self._block_variables[variable].append(bus_variable)
 
+                summed_variable = bus_variable
                 if len(variable_list) > 1 and variable in variable_list:
                     for var in variable_list:
                         if isinstance(variable, Variable) and var.label != variable.label:
-                            raise NotImplementedError(
-                                "Double Hardware loops are not yet implemented with the crosstalk."
-                            )
-                            # dict_variable = dict_variable + self._bus_variable_map[var, bus]
-                            # TODO: Voltage-domain VariableExpression is now supported (PR #1057).
-                            # self._block_variables[var].append(self._bus_variable_map[var, bus])
+                            # Only added if there are more than one loop with different variables.
+                            summed_variable = summed_variable + self._bus_variable_map[var, bus]
+                            self._block_variables[var].append(self._bus_variable_map[var, bus])
 
-                gain = SetGain(bus, dict_variable)
-                self._block_variables[variable].append(dict_variable)
+                gain = SetGain(bus, summed_variable)
             elif isinstance(bias_vector, float):
                 gain = SetGain(bus, bias_vector)
             return gain
@@ -875,21 +871,22 @@ class QProgram(StructuredProgram):
             if isinstance(element, Play):
                 if isinstance(element.waveform, Waveform):
                     envelope = element.waveform.envelope()
-                elif isinstance(element.waveform, IQPair):
-                    envelope = element.waveform.I.envelope()
+                elif isinstance(element.waveform, IQWaveform):
+                    envelope = element.waveform.get_I().envelope()
             elif isinstance(element, SetOffset):  # square with same dimension as play
                 envelope = element.offset_path0  # type: ignore
 
-            if (
-                isinstance(envelope, np.ndarray)
-                and isinstance(flux_vector[element.bus], np.ndarray)
-                and flux_vector[element.bus].shape != envelope.shape  # type: ignore
-            ):
-                raise ValueError("qp.play elements must have the same size.")
-            flux_vector[element.bus] = envelope
+            if isinstance(envelope, np.ndarray):
+                existing_lengths = {
+                    len(v) for v in flux_vector.flux_vector.values() if isinstance(v, (np.ndarray, list))
+                }
+                if existing_lengths and envelope.shape[0] not in existing_lengths:
+                    raise ValueError("QProgram.play elements must have the same size.")
+            flux_vector.flux_vector[element.bus] = envelope
             return flux_vector
 
         def handle_crosstalk_element(block: Block, element_list: list[int], flux_vector: FluxVector):
+            flux_vector.update_bias_vector()
             if element_list:
                 elements = []
                 for ii, element_idx in enumerate(element_list):
@@ -909,10 +906,7 @@ class QProgram(StructuredProgram):
                         offset = SetOffset(bus, flux_vector.bias_vector[bus])  # type: ignore
                         block.elements.insert(element_list[0], offset)
                         copied_qprogram.buses.add(bus)
-                    elif (
-                        isinstance(flux_vector.bias_vector[bus], np.ndarray)
-                        or isinstance(flux_vector.bias_vector[bus], list)
-                    ) and play_elements:
+                    elif isinstance(flux_vector.bias_vector[bus], (np.ndarray, list)) and play_elements:
                         play = Play(
                             bus,
                             Arbitrary(flux_vector.bias_vector[bus]),  # type: ignore

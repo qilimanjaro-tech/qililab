@@ -822,12 +822,27 @@ class QbloxCompiler:
                     value = offset_0
                     offset_0 = register
 
-                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                    component=QPyInstructions.Move(var=value, register=register),
-                    bot_position=len(
-                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
-                    ),
+                insert_position = len(
+                    self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
                 )
+
+                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                    component=QPyInstructions.Move(var=abs(value), register=register), bot_position=insert_position
+                )
+
+                if value < 0:  # take the two's complement
+                    self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                        component=QPyInstructions.Nop(), bot_position=insert_position
+                    )
+                    self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                        component=QPyInstructions.Not(register, register), bot_position=insert_position
+                    )
+                    self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                        component=QPyInstructions.Nop(), bot_position=insert_position
+                    )
+                    self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                        component=QPyInstructions.Add(register, 1, register), bot_position=insert_position
+                    )
             self._buses[element.bus].qpy_block_stack[-1].append_component(component=QPyInstructions.Nop())
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.SetAwgOffs(offset_0=offset_0, offset_1=offset_1)
@@ -1677,7 +1692,7 @@ class QbloxCompiler:
         if waveform_variables:
             logger.error("Variables in waveforms are not supported in Qblox.")
             return
-        if element.wait_time:
+        if element.wait_time is not None:
             # The qp.qblox.play() was used. Don't apply optimizations
             index_I, index_Q, _ = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q

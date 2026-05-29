@@ -130,6 +130,17 @@ def fixture_offset_loop() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="offset_loop_negative")
+def fixture_offset_loop_negative() -> QProgram:
+    qp = QProgram()
+    variable_offset = qp.variable(label="offset", domain=Domain.Voltage)
+    with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
+        qp.set_offset(bus="drive", offset_path0=variable_offset, offset_path1=-0.5)
+    with qp.for_loop(variable=variable_offset, start=0.0, stop=0.2, step=0.1):
+        qp.set_offset(bus="drive", offset_path0=-0.5, offset_path1=variable_offset)
+    return qp
+
+
 @pytest.fixture(name="dynamic_wait")
 def fixture_dynamic_wait() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -1023,6 +1034,20 @@ def average_only_two_measures() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="qblox_play_zero_wait_time")
+def fixture_qblox_play_zero_wait_time() -> QProgram:
+    qp = QProgram()
+    qp.qblox.play(bus="drive", waveform=Square(amplitude=1, duration=200), wait_time=0)
+    return qp
+
+
+@pytest.fixture(name="qblox_play_none_wait_time")
+def fixture_qblox_play_none_wait_time() -> QProgram:
+    qp = QProgram()
+    qp.qblox.play(bus="drive", waveform=Square(amplitude=1, duration=99), wait_time=None)
+    return qp
+
+
 class TestQBloxCompiler:
     def test_play_named_operation_and_bus_mapping(self, play_named_operation: QProgram, calibration: Calibration):
         compiler = QbloxCompiler()
@@ -1310,7 +1335,6 @@ class TestQBloxCompiler:
             in caplog.text
         )
 
-
     def test_set_offset_with_loop(
         self, offset_loop: QProgram
     ):
@@ -1345,6 +1369,49 @@ class TestQBloxCompiler:
                             loop             R4, @loop_1    
                             set_mrk          0              
                             upd_param        4              
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_set_offset_with_negative_static_value(self, offset_loop_negative: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=offset_loop_negative)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            move             16383, R0
+                            nop
+                            not              R0, R0
+                            nop
+                            add              R0, 1, R0
+                            move             16383, R1
+                            nop
+                            not              R1, R1
+                            nop
+                            add              R1, 1, R1
+                            move             3, R2
+                            move             0, R3
+            loop_0:
+                            nop
+                            set_awg_offs     R3, R1
+                            add              R3, 3276, R3
+                            loop             R2, @loop_0
+                            move             3, R4
+                            move             0, R5
+            loop_1:
+                            nop
+                            set_awg_offs     R0, R5
+                            add              R5, 3276, R5
+                            loop             R4, @loop_1
+                            set_mrk          0
+                            upd_param        4
                             stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
@@ -4783,12 +4850,141 @@ other_max_duration_0:
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
 
         compiler_gain = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Double Hardware loops are not yet implemented with the crosstalk."):
-            compiler_gain.compile(qprogram=crosstalk_qprogram_double_gain_loop, crosstalk=crosstalk)
+        sequences, _ = compiler_gain.compile(qprogram=crosstalk_qprogram_double_gain_loop, crosstalk=crosstalk)
+
+        for bus in sequences:
+            assert isinstance(sequences[bus], QPy.Sequence)
+
+        flux1_gain = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             10, R0         
+                        move             0, R1          
+                        move             0, R2          
+        loop_0:
+                        move             10, R3         
+                        move             1638, R4       
+                        move             3276, R5       
+        loop_1:
+                        nop                             
+                        add              R1, R4, R6     
+                        nop                             
+                        set_awg_gain     R6, R6         
+                        play             0, 1, 50       
+                        sub              R4, 164, R4    
+                        sub              R5, 328, R5    
+                        loop             R3, @loop_1    
+                        add              R1, 327, R1    
+                        add              R2, 163, R2    
+                        loop             R0, @loop_0    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        flux2_gain = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             10, R0         
+                        move             0, R1          
+                        move             0, R2          
+        loop_0:
+                        move             10, R3         
+                        move             1638, R4       
+                        move             3276, R5       
+        loop_1:
+                        nop                             
+                        add              R5, R2, R6     
+                        nop                             
+                        set_awg_gain     R6, R6         
+                        play             0, 1, 50       
+                        sub              R4, 164, R4    
+                        sub              R5, 328, R5    
+                        loop             R3, @loop_1    
+                        add              R1, 327, R1    
+                        add              R2, 163, R2    
+                        loop             R0, @loop_0    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_gain)
+        assert is_q1asm_equal(sequences["flux2"], flux2_gain)
 
         compiler_offset = QbloxCompiler()
-        with pytest.raises(NotImplementedError, match="Double Hardware loops are not yet implemented with the crosstalk."):
-            compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
+        sequences, _ = compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
+
+        flux1_offset = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             10, R0         
+                        move             0, R1          
+                        move             0, R2          
+        loop_0:
+                        move             10, R3         
+                        move             1638, R4       
+                        move             3276, R5       
+        loop_1:
+                        nop                             
+                        add              R1, R4, R6     
+                        nop                             
+                        set_awg_offs     R6, R6         
+                        play             0, 1, 50       
+                        sub              R4, 164, R4    
+                        sub              R5, 328, R5    
+                        loop             R3, @loop_1    
+                        add              R1, 327, R1    
+                        add              R2, 163, R2    
+                        loop             R0, @loop_0    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+        flux2_offset = """
+        setup:
+                        wait_sync        4              
+                        set_mrk          0              
+                        upd_param        4              
+
+        main:
+                        move             10, R0         
+                        move             0, R1          
+                        move             0, R2          
+        loop_0:
+                        move             10, R3         
+                        move             1638, R4       
+                        move             3276, R5       
+        loop_1:
+                        nop                             
+                        add              R5, R2, R6     
+                        nop                             
+                        set_awg_offs     R6, R6         
+                        play             0, 1, 50       
+                        sub              R4, 164, R4    
+                        sub              R5, 328, R5    
+                        loop             R3, @loop_1    
+                        add              R1, 327, R1    
+                        add              R2, 163, R2    
+                        loop             R0, @loop_0    
+                        set_mrk          0              
+                        upd_param        4              
+                        stop                            
+        """
+
+        assert is_q1asm_equal(sequences["flux1"], flux1_offset)
+        assert is_q1asm_equal(sequences["flux2"], flux2_offset)
 
     def test_crosstalk_compensation_through_calibration(self, crosstalk_qprogram: QProgram, calibration_crosstalk: Calibration):
 
@@ -5015,3 +5211,43 @@ other_max_duration_0:
                                 stop"""
 
         assert is_q1asm_equal(sequences["readout"], expected_q1asm)
+
+    def test_qblox_play_zero_wait_time(self, qblox_play_zero_wait_time: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qblox_play_zero_wait_time)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 4
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_qblox_play_none_wait_time(self, qblox_play_none_wait_time: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qblox_play_none_wait_time)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 99
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
