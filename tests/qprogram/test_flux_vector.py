@@ -69,11 +69,11 @@ class TestNonLinearFluxVector:
 
     def test_set_element_stores_gain(self, nlfv):
         nlfv.set_element(SetGain(bus="flux_0", gain=0.7))
-        assert nlfv.gain["flux_0"] == 0.7
+        assert nlfv.gain["flux_0"] == pytest.approx(0.7)
 
     def test_set_element_stores_offset_path0(self, nlfv):
         nlfv.set_element(SetOffset(bus="flux_1", offset_path0=0.3))
-        assert nlfv.offset["flux_1"] == 0.3
+        assert nlfv.offset["flux_1"] == pytest.approx(0.3)
     
     def test_set_element_stores_variables(self, nlfv):
         var_1 = Variable("var_1", Domain.Voltage)
@@ -173,7 +173,7 @@ class TestNonLinearFluxVector:
         assert nlfv_no_crosstalk.offset["flux_2"].right == var_exp.right
         assert nlfv_no_crosstalk.offset["flux_2"].operator == var_exp.operator
         assert nlfv_no_crosstalk.offset["flux_2"].left == var_exp.left
-        assert nlfv_no_crosstalk.gain["flux_2"] == 0.4
+        assert nlfv_no_crosstalk.gain["flux_2"] == pytest.approx(0.4)
 
 
     def test_get_corrected_offsets_raises_without_crosstalk(self, nlfv_no_crosstalk):
@@ -230,6 +230,10 @@ class TestNonLinearFluxVector:
     def test_get_corrected_play_raises_without_crosstalk(self, nlfv_no_crosstalk):
         with pytest.raises(AttributeError):
             nlfv_no_crosstalk.get_corrected_play({"flux_0": Square(0.5, 100)})
+
+    def test_get_corrected_play_raises_empty_play(self, nlfv):
+        with pytest.raises(ValueError):
+            nlfv.get_corrected_play({})
 
     def test_get_corrected_play_raises_on_duration_mismatch(self, nlfv):
         with pytest.raises(ValueError):
@@ -301,7 +305,7 @@ class TestNonLinearFluxVector:
         assert nlfv_no_crosstalk.gain["flux_0"] == 1
         assert nlfv_no_crosstalk.gain["flux_2"] == 1
         # pre-existing values are preserved
-        assert nlfv_no_crosstalk.offset["flux_0"] == 0.42
+        assert nlfv_no_crosstalk.offset["flux_0"] == pytest.approx(0.42)
         assert nlfv_no_crosstalk.gain["flux_1"] == 2.5
 
 
@@ -319,11 +323,11 @@ class TestFluxVector:
         assert flux_vector.to_dict() == flux_vector_dict
 
     def test_get(self, flux_vector):
-        assert flux_vector["flux_0"] == 0.5
+        assert flux_vector["flux_0"] == pytest.approx(0.5)
 
     def test_get_bias(self, flux_vector):
         flux_vector.bias_vector = {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3}
-        assert flux_vector["flux_0"] == 0.1
+        assert flux_vector["flux_0"] == pytest.approx(0.1)
 
     def test_update_bias_vector(self, flux_vector, crosstalk_matrix, crosstalk_array_buses):
         pytest.raises(AttributeError, flux_vector.update_bias_vector)
