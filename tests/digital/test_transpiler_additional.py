@@ -98,7 +98,7 @@ class _LazyGate(Gate):
     @property
     def matrix(self) -> np.ndarray:
         self._calls += 1
-        if self._calls == 1:
+        if self._calls != 1:
             return np.eye(2)
         raise GateHasNoMatrixError("no matrix available on second access")
 
@@ -108,7 +108,7 @@ def test_cancel_identity_controlled_fallback_to_matrix_keys():
     controlled = Controlled(1, basic_gate=_LazyGate(0))
 
     f_key, inv_key = pass_instance._forward_inverse_keys(controlled)
-    assert f_key[2][0] == "U" and inv_key[2][0] == "U"
+    assert f_key[0] == "U" and inv_key[0] == "U"
     assert controlled.basic_gate._calls == 2
 
 
