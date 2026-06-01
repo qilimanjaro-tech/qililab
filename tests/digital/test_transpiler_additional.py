@@ -98,7 +98,7 @@ class _LazyGate(Gate):
     @property
     def matrix(self) -> np.ndarray:
         self._calls += 1
-        if self._calls == 1:
+        if self._calls != 1:
             return np.eye(2)
         raise GateHasNoMatrixError("no matrix available on second access")
 
