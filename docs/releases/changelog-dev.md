@@ -2,6 +2,51 @@
 
 ### New features since last release
 
+- Added Qblox automatic non-linear crosstalk compensation inside qprogram. This feature requires a `NonLinearCrosstalkMatrix` as the input crosstalk matrix and it makes use of the features given by `NonLinearFluxVector`. 
+
+It functions much like the linear crosstalk compensation as it modifies the qprogram to adjust the flux buses into their correct bias, in this case the compensation is non-linear.
+
+As the conversion to the new bias is non-linear, the loops given to the qblox Q1ASM cannot be linear and are therefore unpacked limiting the amount of instructions to be given to the Q1ASM sequencer. As well as the `qp.play` waveforms given, if those are arbitrary and inside a loop, it can lead to a waveform memory limitation. Square pulses and `qp.set_offset` does not have this limitation.
+
+  [#1118](https://github.com/qilimanjaro-tech/qililab/pull/1118)
+
+- Added `NonLinearFluxVector` class for managing per-bus flux offsets and gain values with crosstalk compensation across multi-loop sweeps.
+
+  Unlike `FluxVector`, `NonLinearFluxVector` works directly with `Variable` and `VariableExpression` objects so that offsets and gains can sweep over loop dimensions without materialising large arrays up front. It is designed to be driven by a compiler that calls `set_loop` / `exit_loop` as it walks a `QProgram` block tree.
+
+  Usage example:
+
+  ```python
+  import numpy as np
+
+  from qililab.core.variables import Domain, Variable
+  from qililab.qprogram.blocks import ForLoop, Parallel
+  from qililab.qprogram.crosstalk_matrix import NonLinearCrosstalkMatrix
+  from qililab.qprogram.flux_vector import NonLinearFluxVector
+  from qililab.qprogram.operations import SetGain, SetOffset
+  from qililab.waveforms import Square
+
+  nlxtalk = NonLinearCrosstalkMatrix.from_array(...)
+  # (...set up xtalk...)
+
+  phi   = Variable("phi",   Domain.Voltage)
+  theta = Variable("theta", Domain.Voltage)
+
+  nlfv = NonLinearFluxVector()
+  nlfv.set_crosstalk_from_bias(nlxtalk, {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
+
+  nlfv.set_loop(ForLoop(variable=phi,   start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
+  nlfv.set_loop(ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0))  # 5 steps → loop_2
+
+  nlfv.set_element(SetOffset(bus="flux_0", offset_path0=phi))
+  nlfv.set_element(SetGain(bus="flux_1", gain=theta))
+
+  offsets = nlfv.get_corrected_offsets()   # shape (5, 3) per bus
+  plays   = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
+  ```
+
+  [#1115](https://github.com/qilimanjaro-tech/qililab/pull/1115)
+
 - Added `NonLinearCrosstalkMatrix` class extending `CrosstalkMatrix` to support nonlinear flux crosstalk correction between buses. The  nonlinear correction models SQUID-mediated coupling using a Bessel-series expansion of the periodic SQUID nonlinearity:
 
   $$\delta\phi_i = 2 \cdot \text{amp}_{ij} \sum_{k=1}^{K} \frac{J_k(k\beta_{ij})}{k\beta_{ij}} \sin(2\pi k \phi_j)$$
