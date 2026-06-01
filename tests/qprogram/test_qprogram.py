@@ -487,13 +487,13 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[7], Play)
         assert isinstance(new_qp.body.elements[7].waveform, Square)
         assert new_qp.body.elements[7].bus == "flux1"
-        assert new_qp.body.elements[7].waveform.amplitude == 1.0  #Check that Square pulses are normalized
+        assert math.isclose(new_qp.body.elements[7].waveform.amplitude, 1.0)  #Check that Square pulses are normalized
         assert isinstance(new_qp.body.elements[8], SetGain)
         assert new_qp.body.elements[8].bus == "flux2"
         assert math.isclose(new_qp.body.elements[8].gain, 0.5442355808140428)
         assert isinstance(new_qp.body.elements[9], SetOffset)
         assert new_qp.body.elements[9].bus == "flux2"
-        assert new_qp.body.elements[9].offset_path0 == 0.0
+        assert math.isclose(new_qp.body.elements[9].offset_path0, 0.0)
         assert isinstance(new_qp.body.elements[10], Play)
         assert isinstance(new_qp.body.elements[10].waveform, Square)
         assert new_qp.body.elements[10].bus == "flux2"
@@ -526,7 +526,7 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[22], Play)
         assert isinstance(new_qp.body.elements[22].waveform, Square)
         assert new_qp.body.elements[22].bus == "flux1"
-        assert new_qp.body.elements[22].waveform.amplitude == 1.0  #Check that Square pulses are normalized
+        assert math.isclose(new_qp.body.elements[22].waveform.amplitude, 1.0)  #Check that Square pulses are normalized
         assert isinstance(new_qp.body.elements[23], SetGain)
         assert new_qp.body.elements[23].bus == "flux2"
         assert math.isclose(new_qp.body.elements[23].gain, 0.047779448708221595)
@@ -608,7 +608,7 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[12], Play)
         assert isinstance(new_qp.body.elements[12].waveform, Square)
         assert new_qp.body.elements[12].bus == "flux1"
-        assert new_qp.body.elements[12].waveform.amplitude == 1.0  #Check that Square pulses are normalized
+        assert math.isclose(new_qp.body.elements[12].waveform.amplitude, 1.0)  #Check that Square pulses are normalized
         assert isinstance(new_qp.body.elements[13], SetGain)
         assert new_qp.body.elements[13].bus == "flux2"
         assert math.isclose(new_qp.body.elements[13].gain, 0.012862935904286998)
