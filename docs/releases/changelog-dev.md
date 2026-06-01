@@ -26,6 +26,43 @@
 ```
 [#1102](https://github.com/qilimanjaro-tech/qililab/pull/1102)
 
+- Added `NonLinearFluxVector` class for managing per-bus flux offsets and gain values with crosstalk compensation across multi-loop sweeps. This class is in qililab.qprogram.flux_vector. The original `FluxVector` has been moved to this module.
+
+  Unlike `FluxVector`, `NonLinearFluxVector` works directly with `Variable` and `VariableExpression` objects so that offsets and gains can sweep over loop dimensions without materialising large arrays up front. It is designed to be driven by a compiler that calls `set_loop` / `exit_loop` as it walks a `QProgram` block tree.
+
+  Usage example:
+
+  ```python
+  import numpy as np
+
+  from qililab.core.variables import Domain, Variable
+  from qililab.qprogram.blocks import ForLoop, Parallel
+  from qililab.qprogram.crosstalk_matrix import NonLinearCrosstalkMatrix
+  from qililab.qprogram.flux_vector import NonLinearFluxVector
+  from qililab.qprogram.operations import SetGain, SetOffset
+  from qililab.waveforms import Square
+
+  nlxtalk = NonLinearCrosstalkMatrix.from_array(...)
+  # (...set up xtalk...)
+
+  phi   = Variable("phi",   Domain.Voltage)
+  theta = Variable("theta", Domain.Voltage)
+
+  nlfv = NonLinearFluxVector()
+  nlfv.set_crosstalk_from_bias(nlxtalk, {"flux_0": 0.1, "flux_1": 0.2, "flux_2": 0.3})
+
+  nlfv.set_loop(ForLoop(variable=phi,   start=0.0, stop=1.0, step=0.5))  # 3 steps → loop_1
+  nlfv.set_loop(ForLoop(variable=theta, start=0.0, stop=4.0, step=1.0))  # 5 steps → loop_2
+
+  nlfv.set_element(SetOffset(bus="flux_0", offset_path0=phi))
+  nlfv.set_element(SetGain(bus="flux_1", gain=theta))
+
+  offsets = nlfv.get_corrected_offsets()   # shape (5, 3) per bus
+  plays   = nlfv.get_corrected_play({"flux_0": Square(0.5, 100)})  # shape (5, 3) per bus
+  ```
+
+  [#1115](https://github.com/qilimanjaro-tech/qililab/pull/1115)
+
 - Extended `VariableExpression` capabilities (Qblox backend only)
   The capabilities of `VariableExpression` have been extended, and remain exclusive to the Qblox backend. 
 
