@@ -5,7 +5,7 @@ description = "Fundamental package for fast characterization and calibration of 
 authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
 urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11, <3.14"
 keywords = ["quantum control"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -79,7 +79,7 @@ prerelease = "if-necessary"
 override-dependencies = ["marshmallow==3.26.2"]
 
 [tool.uv.sources]
-qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
+qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", tag = "0.2.0" }
 
 [tool.ruff]
 line-length = 120
