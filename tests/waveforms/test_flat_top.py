@@ -35,8 +35,9 @@ class TestFlatTop:
 
     def test_envelope(self, flat_top, expected_envelope):
         """Test envelope method"""
-
-        assert np.allclose(flat_top.envelope(), expected_envelope)
+        env = flat_top.envelope()
+        assert env.shape[0] == flat_top.duration
+        assert np.allclose(env, expected_envelope)
 
     def test_get_duration(self, flat_top):
         """Test that the duration is retrieved properly."""
