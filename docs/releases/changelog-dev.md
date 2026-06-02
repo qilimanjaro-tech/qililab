@@ -15,6 +15,9 @@
 
 ### Bug fixes
 
+- Fixed a mismatch between `FlatTop`'s duration and `envelope`, were the waveform's `envelope` had length duration + 1.
+  [#1122](https://github.com/qilimanjaro-tech/qililab/pull/1122)
+
 - Fixed a bug in the `Calibration` crosstalk matrix where the `inter_crosstalk`'s new_matrix was not correctly calculated. Now it behaves as intended.
   [#1121](https://github.com/qilimanjaro-tech/qililab/pull/1121)
 
