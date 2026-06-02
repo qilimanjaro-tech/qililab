@@ -52,17 +52,13 @@ class FlatTop(Waveform):
         Returns:
             np.ndarray: Height of the envelope for each time step.
         """
-        x = np.linspace(-self.duration / 2, self.duration / 2, self.duration // resolution)
+        x = np.arange(-self.duration / 2 + 0.5, self.duration / 2 + 0.5, resolution)
         A = self.amplitude
         sigma = self.smooth_duration
         buf = self.buffer
         dur = self.duration
         return (
-            0.5
-            * A
-            * np.real(
-                (erf(4 * (x + (dur / 2 - buf)) / sigma - 2) - erf(4 * (x - (dur / 2 - buf)) / sigma + 2))
-            )
+            0.5 * A * np.real((erf(4 * (x + (dur / 2 - buf)) / sigma - 2) - erf(4 * (x - (dur / 2 - buf)) / sigma + 2)))
         )
 
     def get_duration(self) -> int:
