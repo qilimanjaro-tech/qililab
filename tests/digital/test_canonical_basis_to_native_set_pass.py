@@ -54,7 +54,7 @@ class TestCanonicalBasisToNativeSetPass:
     def test_edges(self):
         THE_circuit = Circuit(1)
         THE_circuit._gates = [M(0)]
-        assert CanonicalBasisToNativeSetPass().run(THE_circuit) != THE_circuit
+        assert id(CanonicalBasisToNativeSetPass().run(THE_circuit)) != id(THE_circuit)
 
         non_canonical_gate = Circuit(1)
         non_canonical_gate._gates = [Z(0)]
