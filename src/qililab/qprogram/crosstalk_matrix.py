@@ -42,10 +42,11 @@ class CrosstalkMatrix:
 
         sorted_buses = sorted(buses)
 
-        xtalk_matrix = np.empty(shape=[len(self.matrix), len(self.matrix)])
+        xtalk_matrix = np.eye(len(self.matrix))
         for i, bus1 in enumerate(sorted_buses):
             for j, bus2 in enumerate(sorted_buses):
-                xtalk_matrix[i, j] = self.matrix[bus1][bus2]
+                if bus1 in self.matrix and bus2 in self.matrix[bus1]:
+                    xtalk_matrix[i, j] = self.matrix[bus1][bus2]
         return xtalk_matrix
 
     def inverse(self) -> "CrosstalkMatrix":
@@ -115,7 +116,7 @@ class CrosstalkMatrix:
         for bus1 in sorted_buses:
             row = [f"{bus1:{col_width}}"]
             for bus2 in sorted_buses:
-                row.append(f"{self.matrix.get(bus1, {}).get(bus2, 1.0):{col_width}}")
+                row.append(f"{self.matrix.get(bus1, {}).get(bus2, 0.0):{col_width}}")
             rows.append(" ".join(row))
         return header + "\n".join(rows)
 
