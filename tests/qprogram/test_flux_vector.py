@@ -147,8 +147,8 @@ class TestNonLinearFluxVector:
         nlfv_no_crosstalk.offset["flux_0"] = phi
         nlfv_no_crosstalk.gain["flux_1"] = phi + 0.1
         nlfv_no_crosstalk.exit_loop(loop)
-        assert nlfv_no_crosstalk.offset["flux_0"] == pytest.approx(1.0)
-        assert nlfv_no_crosstalk.gain["flux_1"] == pytest.approx(1.1)
+        assert nlfv_no_crosstalk.offset["flux_0"] == pytest.approx(1.5)
+        assert nlfv_no_crosstalk.gain["flux_1"] == pytest.approx(1.6)
 
     def test_exit_loop_parallel_resolves_all_variables(self, nlfv_no_crosstalk):
         phi = Variable("phi", Domain.Voltage)
@@ -168,7 +168,7 @@ class TestNonLinearFluxVector:
         nlfv_no_crosstalk.exit_loop(parallel)
         var_exp = (2.0 - mu)
 
-        assert nlfv_no_crosstalk.offset["flux_0"] == pytest.approx(1.0)
+        assert nlfv_no_crosstalk.offset["flux_0"] == pytest.approx(1.5)
         assert nlfv_no_crosstalk.offset["flux_1"] == pytest.approx(2.5)
         assert nlfv_no_crosstalk.offset["flux_2"].right == var_exp.right
         assert nlfv_no_crosstalk.offset["flux_2"].operator == var_exp.operator
@@ -225,7 +225,7 @@ class TestNonLinearFluxVector:
         nlfv.set_loop(outer)     # loop_2: 4 steps
         result = nlfv.get_corrected_offsets()
         for bus in nlfv.crosstalk.matrix:
-            assert result[bus].shape == (4, 2)
+            assert result[bus].shape == (5, 3)
 
     def test_get_corrected_play_raises_without_crosstalk(self, nlfv_no_crosstalk):
         with pytest.raises(AttributeError):
@@ -280,7 +280,7 @@ class TestNonLinearFluxVector:
             "flux_2": Square(0.1, 100),
         })
         for bus in nlfv.crosstalk.matrix:
-            assert result[bus].shape == (4, 2)
+            assert result[bus].shape == (5, 3)
     
     def test_raise_error_invalid_expresion_operator(self, nlfv):
         phi = Variable("phi", Domain.Voltage)

@@ -244,6 +244,11 @@ class NonLinearFluxVector:
                 "Use set_loop to contextualize variables."
             )
 
+    @staticmethod
+    def _array_from_for_loop(loop: ForLoop):
+        num_div = int((loop.stop - loop.start) // loop.step + 1)
+        return np.linspace(loop.start, loop.stop, num_div)
+
     def set_element(self, element: SetGain | SetOffset):
         """Registers a gain or offset value for a bus.
 
@@ -283,7 +288,7 @@ class NonLinearFluxVector:
                 if isinstance(in_loop, ForLoop):
                     self.variables[in_loop.variable.label] = self.VariableContext(
                         in_loop.variable.label,
-                        np.arange(in_loop.start, in_loop.stop, in_loop.step),
+                        self._array_from_for_loop(in_loop),
                         self.curr_loop_id,
                     )
                 elif isinstance(in_loop, Loop):
@@ -295,7 +300,7 @@ class NonLinearFluxVector:
         elif isinstance(loop, ForLoop):
             self.variables[loop.variable.label] = self.VariableContext(
                 loop.variable.label,
-                np.arange(loop.start, loop.stop, loop.step),
+                self._array_from_for_loop(loop),
                 self.curr_loop_id,
             )
         self.loops[self.curr_loop_id] = loop
