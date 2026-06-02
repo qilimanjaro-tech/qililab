@@ -949,7 +949,7 @@ def fixture_crosstalk_qprogram_parallel() -> QProgram:
 @pytest.fixture(name="crosstalk_qprogram_plays")
 def fixture_crosstalk_qprogram_plays() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
-    flattop_iq = FlatTop(amplitude=0.1, duration=49, smooth_duration=10)
+    flattop_iq = FlatTop(amplitude=0.1, duration=50, smooth_duration=10)
     arbitrary = Arbitrary(samples=np.linspace(0, 0.1, 50))
     qp = QProgram()
     qp.play(bus="flux1", waveform=square_wf)
@@ -2434,16 +2434,16 @@ set_freq         R5
                             upd_param        4
 
             main:
-                            play             0, 1, 26
-                            play             2, 3, 51
+                            play             0, 1, 25
+                            play             2, 3, 50
                             play             4, 5, 10
                             move             4, R0
             square_0:
                             play             6, 7, 120
                             loop             R0, @square_0
                             play             8, 5, 10
-                            play             9, 10, 26
-                            play             11, 3, 51
+                            play             9, 10, 25
+                            play             11, 3, 50
                             play             12, 13, 4
                             move             1, R1
             square_1:
