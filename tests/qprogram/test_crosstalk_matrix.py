@@ -52,6 +52,29 @@ class TestCrosstalkMatrix:
 
     def test_to_array(self, crosstalk_matrix, crosstalk_array_buses):
         assert np.allclose(crosstalk_matrix.to_array(), crosstalk_array_buses[0])
+        
+    def test_to_array_two_independent_qubits(self):
+        """Test to_array method when two independent qubits added
+        The matrix has missing elements of the dictionary.
+        """
+        # Create the CrosstalkMatrix for qubit 1, only flux1_z and flux1_x
+        crosstalk_matrix = CrosstalkMatrix.from_buses(
+            buses={"flux1_z": {"flux1_x": 0.1, "flux1_z": 1.0}, "flux1_x": {"flux1_x": 1.0, "flux1_z": 0.5}}
+        )
+
+        # Add the elements for qubit 2, only flux2_z and flux2_x
+        crosstalk_matrix["flux2_x"] = {"flux2_z": 0.3, "flux2_x": 1}
+        crosstalk_matrix["flux2_z"] = {"flux2_z": 1, "flux2_x": 0.4}
+
+        crosstalk_q1 = np.array([[1.0, 0.5], [0.1, 1.0]])
+        crosstalk_q2 = np.array([[1.0, 0.3], [0.4, 1.0]])
+        full_crosstalk = np.eye(4)
+        full_crosstalk[0:2, 0:2] = crosstalk_q1  # first component is qubit 1
+        full_crosstalk[2:4, 2:4] = crosstalk_q2  # second component is qubit 2
+        # Elements outside the diagonal should be empty
+
+        # Get and compare the crosstalk matrix as an array
+        assert np.allclose(crosstalk_matrix.to_array(), full_crosstalk)
 
     def test_inverse(self, crosstalk_matrix):
         inv_array = np.linalg.inv(crosstalk_matrix.to_array())
@@ -147,6 +170,25 @@ class TestCrosstalkMatrix:
             == """            bus1     bus2
 bus1         -0.5      0.5
 bus2          0.7     -0.5"""
+        )
+
+    def test_str_method_independent_value(self):
+        """Test __str__ method"""
+        crosstalk_matrix = CrosstalkMatrix()
+        crosstalk_matrix["bus1"]["bus1"] = -0.5
+        crosstalk_matrix["bus1"]["bus2"] = 0.5
+        crosstalk_matrix["bus2"]["bus1"] = 0.7
+        crosstalk_matrix["bus2"]["bus2"] = -0.5
+        # New bus
+        crosstalk_matrix["bus3"]["bus3"] = 0.2
+
+        string = str(crosstalk_matrix)
+        assert (
+            string
+            == """            bus1     bus2     bus3
+bus1         -0.5      0.5      0.0
+bus2          0.7     -0.5      0.0
+bus3          0.0      0.0      0.2"""
         )
 
     def test_repr_method(self):
