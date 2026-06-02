@@ -246,7 +246,7 @@ class NonLinearFluxVector:
 
     @staticmethod
     def _array_from_for_loop(loop: ForLoop):
-        num_div = int((loop.stop - loop.start) // loop.step + 1)
+        num_div = round((loop.stop - loop.start) / loop.step) + 1
         return np.linspace(loop.start, loop.stop, num_div)
 
     def set_element(self, element: SetGain | SetOffset):
