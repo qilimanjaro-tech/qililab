@@ -17,6 +17,9 @@
 
 ### Bug fixes
 
+- Fixed `NonLinearFluxVector` handling of the ForLoop to mach the QbloxCompiler behavior.
+ [#1126](https://github.com/qilimanjaro-tech/qililab/pull/1126)
+
 - Fixed a mismatch between `FlatTop`'s duration and `envelope`, were the waveform's `envelope` had length duration + 1.
   [#1122](https://github.com/qilimanjaro-tech/qililab/pull/1122)
 
