@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Keithley module."""
+"""Keithley2400 driver."""
 
-from .keithley_2400 import Keithley2400
-from .keithley_2600 import Keithley2600
+from qcodes.instrument_drivers.Keithley import Keithley2400
 
-__all__ = ["Keithley2400", "Keithley2600"]
+from qililab.typings.instruments.device import Device
+
+
+class Keithley2400Driver(Keithley2400, Device):
+    """Typing class of the QCoDeS driver for the Keithley 2400 instrument."""

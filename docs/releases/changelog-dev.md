@@ -5,6 +5,9 @@
 - Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs from a sequence of measurements. `Measurement.sequence_id`has been added as a measurement expression inside head and tail.
   [#1121](https://github.com/qilimanjaro-tech/qililab/pull/1121)
 
+- Added drivers to operate the Keithley 2400 through the runcard and run a measurement. Through the runcard the user can set the mode and a respective voltage or current. alternatively the user can sweep either current or voltage and retrieve the data of the other component.
+[#1065](https://github.com/qilimanjaro-tech/qililab/pull/1065)
+
 ### Improvements
 
 ### Breaking changes
