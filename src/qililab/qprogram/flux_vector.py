@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import math
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
@@ -244,6 +245,21 @@ class NonLinearFluxVector:
                 "Use set_loop to contextualize variables."
             )
 
+    @staticmethod
+    def _iterations_from_loop(loop: ForLoop | Loop):
+        if isinstance(loop, Loop):
+            return loop.values.shape[0]
+        raw_iterations = (loop.stop - loop.start + loop.step) / loop.step
+
+        # If the raw number of iterations is very close to an integer, round it to that integer
+        # This accounts for potential floating-point inaccuracies
+        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
+            raw_iterations = round(raw_iterations)
+        else:
+            raw_iterations = math.floor(raw_iterations)
+
+        return raw_iterations
+
     def set_element(self, element: SetGain | SetOffset):
         """Registers a gain or offset value for a bus.
 
@@ -279,11 +295,14 @@ class NonLinearFluxVector:
                 (duplicate variable across active loops).
         """
         if isinstance(loop, Parallel):
-            for in_loop in loop.loops:
+            loop_iterations = [self._iterations_from_loop(in_loop) for in_loop in loop.loops]
+            if not np.allclose(loop_iterations, loop_iterations[0]):
+                raise ValueError("All the loops in a parallel loop should have the same length")
+            for loop_iter, in_loop in zip(loop_iterations, loop.loops):
                 if isinstance(in_loop, ForLoop):
                     self.variables[in_loop.variable.label] = self.VariableContext(
                         in_loop.variable.label,
-                        np.arange(in_loop.start, in_loop.stop, in_loop.step),
+                        np.linspace(in_loop.start, in_loop.stop, loop_iter),
                         self.curr_loop_id,
                     )
                 elif isinstance(in_loop, Loop):
@@ -295,7 +314,7 @@ class NonLinearFluxVector:
         elif isinstance(loop, ForLoop):
             self.variables[loop.variable.label] = self.VariableContext(
                 loop.variable.label,
-                np.arange(loop.start, loop.stop, loop.step),
+                np.linspace(loop.start, loop.stop, self._iterations_from_loop(loop)),
                 self.curr_loop_id,
             )
         self.loops[self.curr_loop_id] = loop
