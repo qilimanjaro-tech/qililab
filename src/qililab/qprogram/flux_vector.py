@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import math
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
@@ -246,8 +247,16 @@ class NonLinearFluxVector:
 
     @staticmethod
     def _array_from_for_loop(loop: ForLoop):
-        num_div = round((loop.stop - loop.start) / loop.step) + 1
-        return np.linspace(loop.start, loop.stop, num_div)
+        raw_iterations = (loop.stop - loop.start + loop.step) / loop.step
+
+        # If the raw number of iterations is very close to an integer, round it to that integer
+        # This accounts for potential floating-point inaccuracies
+        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
+            raw_iterations = round(raw_iterations)
+        else:  # Otherwise, if we're incrementing, take the ceiling, and if we're decrementing, take the floor
+            raw_iterations = math.floor(raw_iterations) if loop.step > 0 else math.ceil(raw_iterations)
+
+        return np.linspace(loop.start, loop.stop, raw_iterations)
 
     def set_element(self, element: SetGain | SetOffset):
         """Registers a gain or offset value for a bus.
