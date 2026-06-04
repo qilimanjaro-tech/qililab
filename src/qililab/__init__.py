@@ -46,9 +46,7 @@ from .waveforms import (
     Ramp,
     Ramps,
     Chained,
-    SequentialWaveform,
     ComposedWaveform,
-    DerivedWaveform,
 )
 
 from .result import Cooldown, DatabaseManager, Sample, get_db_manager, load_results, save_results, Measurement
@@ -62,7 +60,6 @@ __all__ = [
     "Cooldown",
     "CrosstalkMatrix",
     "DatabaseManager",
-    "DerivedWaveform",
     "Domain",
     "Experiment",
     "ExperimentResults",
