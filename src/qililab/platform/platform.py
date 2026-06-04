@@ -33,7 +33,6 @@ from qililab.analog import AnnealingProgram
 from qililab.config import logger
 from qililab.constants import FLUX_CONTROL_REGEX, GATE_ALIAS_REGEX, RUNCARD
 from qililab.core.variables import Domain
-from qililab.digital import CircuitToQProgramCompiler, CircuitTranspiler, qprogram_results_to_samples
 from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import (
     QuantumMachinesCluster,
@@ -74,7 +73,6 @@ from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID
 
 if TYPE_CHECKING:
     import numpy as np
-    from qilisdk.digital import Circuit
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
@@ -1876,67 +1874,6 @@ class Platform:
                 ):
                     if isinstance(instrument, QbloxModule):
                         instrument.desync_sequencer(sequencer_id=int(channel))  # type: ignore[arg-type]
-
-    def execute_circuit(
-        self, circuit: Circuit, nshots: int = 1000, *, qubit_mapping: dict[int, int] | None = None
-    ) -> dict[str, int]:
-        # Compile pulse schedule
-        qprogram, logical_to_physical_mapping = self.compile_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
-
-        results = self.execute_qprogram(qprogram)
-
-        samples = qprogram_results_to_samples(results, logical_to_physical_mapping)
-
-        return samples
-
-    def compile_circuit(
-        self, circuit: Circuit, nshots: int, *, qubit_mapping: dict[int, int] | None = None
-    ) -> tuple[QProgram, dict[int, int]]:
-        """Compiles the circuit / pulse schedule into a set of assembly programs, to be uploaded into the awg buses.
-
-        If the ``program`` argument is a :class:`.Circuit`, it will first be translated into a :class:`.PulseSchedule` using the transpilation
-        settings of the platform and passed  transpile configuration. Then the pulse schedules will be compiled into the assembly programs.
-
-        .. note::
-
-            Compile is called during ``platform.execute()``, check its documentation for more information.
-
-        The transpilation is performed using the :meth:`.CircuitTranspiler.transpile_circuit()` method. Refer to the method's documentation or :ref:`Transpilation <transpilation>` for more detailed information.
-
-        The main stages of this process are: **1.** Routing, **2.** Canceling Hermitian pairs, **3.** Translate to native gates, **4.** Correcting Drag phases, **5** Optimize Drag gates, **6.** Convert to pulse schedule.
-
-        .. note ::
-
-            Default steps are only: **3.**, **4.**, and **6.**, since they are always needed.
-
-            To do Step **1.** set routing=True in transpilation_config (default behavior skips it).
-
-            To do Steps **2.** and **5.** set optimize=True in transpilation_config (default behavior skips it)
-
-        Args:
-            program (PulseSchedule | Circuit): Circuit or pulse schedule to compile.
-            num_avg (int): Number of hardware averages used.
-            repetition_duration (int): Minimum duration of a single execution.
-            num_bins (int): Number of bins used.
-
-        Returns:
-            tuple[dict, list[int] | None]: Tuple containing the dictionary of compiled assembly programs (The key is the bus alias (``str``),
-                and the value is the assembly compilation (``list``)), and its corresponding final layout (Initial Re-mapping + SWAPs routing) of
-                the Original Logical Qubits (l_q) in the physical circuit (wires): [l_q in wire 0, l_q in wire 1, ...] (None = trivial mapping).
-
-        Raises:
-            ValueError: raises value error if the circuit execution time is longer than ``repetition_duration`` for some qubit.
-        """
-        if self.digital_compilation_settings is None:
-            raise ValueError("Cannot compile Circuit without defining DigitalCompilationSettings.")
-
-        transpiler = CircuitTranspiler(self.digital_compilation_settings, qubit_mapping=qubit_mapping)
-        transpiled_circuit = transpiler.run(circuit)
-
-        compiler = CircuitToQProgramCompiler(self.digital_compilation_settings)
-        qprogram = compiler.compile(transpiled_circuit, nshots)
-
-        return qprogram, transpiler.context.final_layout
 
     def calibrate_mixers(self, alias: str, cal_type: str, channel_id: ChannelID | None = None):
         bus = self.get_element(alias=alias)

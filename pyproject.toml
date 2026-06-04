@@ -1,6 +1,6 @@
 [project]
 name = "qililab"
-version = "0.33.1"
+version = "0.33.0+sdk1"
 description = "Fundamental package for fast characterization and calibration of quantum chips."
 authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
 urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}
@@ -35,13 +35,14 @@ dependencies = [
     "qcodes-contrib-drivers>=0.23.0",
     "qpysequence>=0.10.8",
     "rich>=14.0.0",
-    "ruamel-yaml>=0.18.10",
+    "ruamel-yaml>=0.18.16",
     "sqlalchemy<2.1",
     "submitit>=1.5.2",
     "urllib3>=2.3.0",
     "xarray>=2025.11.0",
     "rustworkx>=0.17.1",
-    "qilisdk",
+    "scipy>=1.16.3; sys_platform == 'darwin'",
+    "scipy>=1.15,<1.16.3; sys_platform != 'darwin'",
 ]
 
 [project.optional-dependencies]
@@ -67,6 +68,7 @@ docs = [
     "sphinx-automodapi>=0.22.0",
     "sphinx-mdinclude>=0.6.2",
     "sphinxawesome-theme>=5.3.2",
+    "sphinx-design>=0.7.0",
 ]
 
 [build-system]
@@ -74,12 +76,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv]
-prerelease = "if-necessary"
+prerelease = "if-necessary-or-explicit"
 # qm-qua==1.2.4 depends on marshmallow>=3,<3.24; override until upstream loosens.
-override-dependencies = ["marshmallow==3.26.2"]
+override-dependencies = ["marshmallow==3.26.2", "betterproto==2.0.0b7"]
 
-[tool.uv.sources]
-qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
+[[tool.uv.index]]
+name = "speqtrum"
+url = "https://api.pyx.dev/simple/qilimanjaro/speqtrum"
+publish-url = "https://api.pyx.dev/v1/upload/qilimanjaro/speqtrum"
 
 [tool.ruff]
 line-length = 120

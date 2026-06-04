@@ -1,4 +1,5 @@
 """Unit tests for the `about` function."""
+
 import importlib
 import platform
 import sys
@@ -8,7 +9,6 @@ import qblox_instruments
 import qcodes
 import qcodes_contrib_drivers
 import qpysequence
-import qilisdk
 import qililab as ql
 
 about_module = importlib.import_module("qililab.about")
@@ -23,7 +23,6 @@ def _expected_base_output() -> str:
         f"QCodes Contrib version:    {qcodes_contrib_drivers.__version__}\n"
         f"Qblox Instrument version:  {qblox_instruments.__version__}\n"
         f"Qpysequence version:       {qpysequence.__version__}\n"
-        f"QiliSDK version:           {qilisdk.__version__}\n"
     )
 
 
