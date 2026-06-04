@@ -124,9 +124,19 @@ class TestNonLinearFluxVector:
         phi = Variable("phi")
         theta = Variable("theta")
         nlfv_no_crosstalk.set_loop(Parallel(loops=[
-            ForLoop(variable=phi, start=0.0, stop=1.0, step=0.1),
-            Loop(variable=theta, values=np.arange(0.0, 2.0, 0.5)),
+            ForLoop(variable=phi, start=0, stop=0.1, step=0.08),
+            ForLoop(variable=theta, start=0.1, stop=0, step=-0.08),
         ]))
+    
+    def test_set_loop_parallel_raises_different_loop_lengths(self, nlfv_no_crosstalk):
+        phi = Variable("phi")
+        theta = Variable("theta")
+        parallel = Parallel(loops=[
+            ForLoop(variable=phi, start=0.0, stop=1.0, step=0.1),
+            Loop(variable=theta, values=np.arange(0.0, 2.0, 0.2)),
+        ])
+        with pytest.raises(ValueError):
+            nlfv_no_crosstalk.set_loop(parallel)
 
     def test_set_loop_raises_on_duplicate_variable(self, nlfv_no_crosstalk):
         phi = Variable("phi")
@@ -147,15 +157,15 @@ class TestNonLinearFluxVector:
         nlfv_no_crosstalk.offset["flux_0"] = phi
         nlfv_no_crosstalk.gain["flux_1"] = phi + 0.1
         nlfv_no_crosstalk.exit_loop(loop)
-        assert nlfv_no_crosstalk.offset["flux_0"] == pytest.approx(1.0)
-        assert nlfv_no_crosstalk.gain["flux_1"] == pytest.approx(1.1)
+        assert nlfv_no_crosstalk.offset["flux_0"] == pytest.approx(1.5)
+        assert nlfv_no_crosstalk.gain["flux_1"] == pytest.approx(1.6)
 
     def test_exit_loop_parallel_resolves_all_variables(self, nlfv_no_crosstalk):
         phi = Variable("phi", Domain.Voltage)
         theta = Variable("theta", Domain.Voltage)
         mu = Variable("mu", Domain.Voltage)
         parallel = Parallel(loops=[
-            ForLoop(variable=phi, start=0.0, stop=1.5, step=0.5),
+            ForLoop(variable=phi, start=0.0, stop=1.0, step=0.5),
             Loop(variable=theta, values=np.arange(0.0, 3.0, 1.0)),
         ])
         ex_loop = ForLoop(variable=mu, start=0.0, stop=1.0, step=0.2)
@@ -225,7 +235,7 @@ class TestNonLinearFluxVector:
         nlfv.set_loop(outer)     # loop_2: 4 steps
         result = nlfv.get_corrected_offsets()
         for bus in nlfv.crosstalk.matrix:
-            assert result[bus].shape == (4, 2)
+            assert result[bus].shape == (5, 3)
 
     def test_get_corrected_play_raises_without_crosstalk(self, nlfv_no_crosstalk):
         with pytest.raises(AttributeError):
@@ -280,7 +290,7 @@ class TestNonLinearFluxVector:
             "flux_2": Square(0.1, 100),
         })
         for bus in nlfv.crosstalk.matrix:
-            assert result[bus].shape == (4, 2)
+            assert result[bus].shape == (5, 3)
     
     def test_raise_error_invalid_expresion_operator(self, nlfv):
         phi = Variable("phi", Domain.Voltage)

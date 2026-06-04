@@ -949,7 +949,7 @@ def fixture_crosstalk_qprogram_parallel() -> QProgram:
 @pytest.fixture(name="crosstalk_qprogram_plays")
 def fixture_crosstalk_qprogram_plays() -> QProgram:
     square_wf = Square(amplitude=0.1, duration=50)
-    flattop_iq = FlatTop(amplitude=0.1, duration=49, smooth_duration=10)
+    flattop_iq = FlatTop(amplitude=0.1, duration=50, smooth_duration=10)
     arbitrary = Arbitrary(samples=np.linspace(0, 0.1, 50))
     qp = QProgram()
     qp.play(bus="flux1", waveform=square_wf)
@@ -2434,16 +2434,16 @@ set_freq         R5
                             upd_param        4
 
             main:
-                            play             0, 1, 26
-                            play             2, 3, 51
+                            play             0, 1, 25
+                            play             2, 3, 50
                             play             4, 5, 10
                             move             4, R0
             square_0:
                             play             6, 7, 120
                             loop             R0, @square_0
                             play             8, 5, 10
-                            play             9, 10, 26
-                            play             11, 3, 51
+                            play             9, 10, 25
+                            play             11, 3, 50
                             play             12, 13, 4
                             move             1, R1
             square_1:
@@ -4730,13 +4730,13 @@ other_max_duration_0:
                         play             0, 1, 50       
                         wait             54             
                         nop                             
-                        set_awg_offs     10434, 10434   
+                        set_awg_offs     11374, 11374   
                         upd_param        4              
                         wait             6              
-                        set_awg_gain     3240, 3240     
-                        set_awg_gain     3240, 3240     
+                        set_awg_gain     2668, 2668     
+                        set_awg_gain     2668, 2668     
                         nop                             
-                        set_awg_offs     10434, 10434   
+                        set_awg_offs     11374, 11374   
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
@@ -4761,13 +4761,13 @@ other_max_duration_0:
                         play             0, 1, 50       
                         wait             54             
                         nop                             
-                        set_awg_offs     16936, 16936   
+                        set_awg_offs     17832, 17832   
                         upd_param        4              
                         wait             6              
-                        set_awg_gain     1565, 1565     
-                        set_awg_gain     1565, 1565     
+                        set_awg_gain     421, 421     
+                        set_awg_gain     421, 421     
                         nop                             
-                        set_awg_offs     16936, 16936   
+                        set_awg_offs     17832, 17832   
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
@@ -4852,7 +4852,7 @@ other_max_duration_0:
                         move             400, R3        
         loop_1:
                         nop                             
-                        set_awg_offs     1310, 1310     
+                        set_awg_offs     1638, 1638     
                         set_awg_gain     11374, 11374   
                         set_awg_gain     11374, 11374   
                         play             0, 1, 50       
@@ -4885,7 +4885,7 @@ other_max_duration_0:
                         move             400, R3        
         loop_1:
                         nop                             
-                        set_awg_offs     2621, 2621     
+                        set_awg_offs     3276, 3276     
                         set_awg_gain     17832, 17832   
                         set_awg_gain     17832, 17832   
                         play             0, 1, 50       
@@ -5108,8 +5108,8 @@ other_max_duration_0:
                         nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
-                        set_awg_gain     2224, 2224     
-                        set_awg_gain     2224, 2224     
+                        set_awg_gain     2724, 2724     
+                        set_awg_gain     2724, 2724     
                         nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
@@ -5118,7 +5118,7 @@ other_max_duration_0:
                         upd_param        4              
                         wait             6              
                         nop                             
-                        set_awg_offs     10761, 10761   
+                        set_awg_offs     11374, 11374   
                         upd_param        4              
                         wait             6              
                         set_mrk          0              
@@ -5137,8 +5137,8 @@ other_max_duration_0:
                         nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
-                        set_awg_gain     4055, 4055     
-                        set_awg_gain     4055, 4055     
+                        set_awg_gain     4957, 4957     
+                        set_awg_gain     4957, 4957     
                         nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
@@ -5147,7 +5147,7 @@ other_max_duration_0:
                         upd_param        4              
                         wait             6              
                         nop                             
-                        set_awg_offs     17591, 17591   
+                        set_awg_offs     17832, 17832   
                         upd_param        4              
                         wait             6              
                         set_mrk          0              
@@ -5188,19 +5188,19 @@ other_max_duration_0:
                         set_awg_gain     11374, 11374   
                         play             0, 1, 50       
                         nop                             
-                        set_awg_offs     327, 327       
+                        set_awg_offs     0, 0       
                         set_awg_gain     11374, 11374   
                         set_awg_gain     11374, 11374   
                         play             0, 1, 50       
                         nop                             
-                        set_awg_offs     12072, 12072   
-                        set_awg_gain     3240, 3240     
-                        set_awg_gain     3240, 3240     
+                        set_awg_offs     13012, 13012   
+                        set_awg_gain     2668, 2668     
+                        set_awg_gain     2668, 2668     
                         play             0, 1, 50       
                         nop                             
-                        set_awg_offs     10761, 10761   
-                        set_awg_gain     3240, 3240     
-                        set_awg_gain     3240, 3240     
+                        set_awg_offs     11374, 11374   
+                        set_awg_gain     2668, 2668     
+                        set_awg_gain     2668, 2668     
                         play             0, 1, 50       
                         set_mrk          0              
                         upd_param        4              
@@ -5219,19 +5219,19 @@ other_max_duration_0:
                         set_awg_gain     17832, 17832   
                         play             0, 1, 50       
                         nop                             
-                        set_awg_offs     655, 655       
+                        set_awg_offs     0, 0       
                         set_awg_gain     17832, 17832   
                         set_awg_gain     17832, 17832   
                         play             0, 1, 50       
                         nop                             
-                        set_awg_offs     20213, 20213   
-                        set_awg_gain     1565, 1565     
-                        set_awg_gain     1565, 1565     
+                        set_awg_offs     21109, 21109   
+                        set_awg_gain     421, 421     
+                        set_awg_gain     421, 421     
                         play             0, 1, 50       
                         nop                             
-                        set_awg_offs     17591, 17591   
-                        set_awg_gain     1565, 1565     
-                        set_awg_gain     1565, 1565     
+                        set_awg_offs     17832, 17832   
+                        set_awg_gain     421, 421     
+                        set_awg_gain     421, 421     
                         play             0, 1, 50       
                         set_mrk          0              
                         upd_param        4              
@@ -5275,13 +5275,13 @@ other_max_duration_0:
                         nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
-                        set_awg_gain     2224, 2224     
-                        set_awg_gain     2224, 2224     
+                        set_awg_gain     2724, 2724     
+                        set_awg_gain     2724, 2724     
                         nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
-                        set_awg_gain     2224, 2224     
-                        set_awg_gain     2224, 2224     
+                        set_awg_gain     2724, 2724     
+                        set_awg_gain     2724, 2724     
                         nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
@@ -5306,13 +5306,13 @@ other_max_duration_0:
                         nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
-                        set_awg_gain     4055, 4055     
-                        set_awg_gain     4055, 4055     
+                        set_awg_gain     4957, 4957     
+                        set_awg_gain     4957, 4957     
                         nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
-                        set_awg_gain     4055, 4055     
-                        set_awg_gain     4055, 4055     
+                        set_awg_gain     4957, 4957     
+                        set_awg_gain     4957, 4957     
                         nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       

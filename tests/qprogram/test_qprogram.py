@@ -506,10 +506,10 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[14], Sync)
         # Repeat loop for second iteration
         assert isinstance(new_qp.body.elements[15], SetOffset)
-        assert math.isclose(new_qp.body.elements[15].offset_path0,0.31843980232472535)
+        assert math.isclose(new_qp.body.elements[15].offset_path0,0.3471177904070214)
         assert new_qp.body.elements[15].bus == "flux1"
         assert isinstance(new_qp.body.elements[16], SetOffset)
-        assert math.isclose(new_qp.body.elements[16].offset_path0, 0.5168796046494507)
+        assert math.isclose(new_qp.body.elements[16].offset_path0, 0.5442355808140428)
         assert new_qp.body.elements[16].bus == "flux2"
         assert isinstance(new_qp.body.elements[17], Wait)
         assert new_qp.body.elements[17].bus == "drive"
@@ -518,10 +518,10 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[19], Wait)
         assert new_qp.body.elements[19].bus == "flux2"
         assert isinstance(new_qp.body.elements[20], SetGain)
-        assert math.isclose(new_qp.body.elements[20].gain, 0.09888972435411081)
+        assert math.isclose(new_qp.body.elements[20].gain,0.08143146795214351)
         assert new_qp.body.elements[20].bus == "flux1"
         assert isinstance(new_qp.body.elements[21], SetOffset)
-        assert math.isclose(new_qp.body.elements[21].offset_path0, 0.31843980232472535)
+        assert math.isclose(new_qp.body.elements[21].offset_path0, 0.3471177904070214)
         assert new_qp.body.elements[21].bus == "flux1"
         assert isinstance(new_qp.body.elements[22], Play)
         assert isinstance(new_qp.body.elements[22].waveform, Square)
@@ -529,10 +529,10 @@ class TestQProgram(TestStructuredProgram):
         assert math.isclose(new_qp.body.elements[22].waveform.amplitude, 1.0)  #Check that Square pulses are normalized
         assert isinstance(new_qp.body.elements[23], SetGain)
         assert new_qp.body.elements[23].bus == "flux2"
-        assert math.isclose(new_qp.body.elements[23].gain, 0.047779448708221595)
+        assert math.isclose(new_qp.body.elements[23].gain, 0.012862935904286998)
         assert isinstance(new_qp.body.elements[24], SetOffset)
         assert new_qp.body.elements[24].bus == "flux2"
-        assert math.isclose(new_qp.body.elements[24].offset_path0, 0.5168796046494507)
+        assert math.isclose(new_qp.body.elements[24].offset_path0, 0.5442355808140428)
         assert isinstance(new_qp.body.elements[25], Play)
         assert isinstance(new_qp.body.elements[25].waveform, Square)
         assert new_qp.body.elements[25].bus == "flux2"
@@ -640,10 +640,10 @@ class TestQProgram(TestStructuredProgram):
         # The loop repeats itself until 47 iterations, 
         # we focus here on the initial offsets being modified and the last point
         assert isinstance(new_qp.body.elements[24], SetOffset)
-        assert math.isclose(new_qp.body.elements[24].offset_path0,0.31843980232472535)
+        assert math.isclose(new_qp.body.elements[24].offset_path0,0.3471177904070214)
         assert new_qp.body.elements[24].bus == "flux1"
         assert isinstance(new_qp.body.elements[25], SetOffset)
-        assert math.isclose(new_qp.body.elements[25].offset_path0, 0.5168796046494507)
+        assert math.isclose(new_qp.body.elements[25].offset_path0, 0.5442355808140428)
         assert new_qp.body.elements[25].bus == "flux2"
         # ...
         assert isinstance(new_qp.body.elements[47], Sync)
