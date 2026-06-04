@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qilisdk.qprogram.operations import Measure as SdkMeasure
-from qilisdk.qprogram.operations import Operation, ResetPhase, SetFrequency, SetPhase, Sync, Wait
-from qilisdk.qprogram.operations import Play as SdkPlay
+from qprogram.operations import Measure as SdkMeasure
+from qprogram.operations import Operation, ResetPhase, SetFrequency, SetPhase, Sync, Wait
+from qprogram.operations import Play as SdkPlay
 
 from .acquire import Acquire, AcquireWithCalibratedWeights
 from .execute_qprogram import ExecuteQProgram

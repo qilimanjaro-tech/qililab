@@ -43,6 +43,7 @@ dependencies = [
     "rustworkx>=0.17.1",
     "scipy>=1.16.3; sys_platform == 'darwin'",
     "scipy>=1.15,<1.16.3; sys_platform != 'darwin'",
+    "qprogram==0.0.1"
 ]
 
 [project.optional-dependencies]
@@ -84,6 +85,9 @@ override-dependencies = ["marshmallow==3.26.2", "betterproto==2.0.0b7"]
 name = "euroqcs"
 url = "https://api.pyx.dev/simple/qilimanjaro/euroqcs"
 publish-url = "https://api.pyx.dev/v1/upload/qilimanjaro/euroqcs"
+
+[tool.uv.sources]
+qprogram = { git = "https://github.com/qilimanjaro-tech/qprogram-euroqcs", branch = "main" }
 
 [tool.ruff]
 line-length = 120

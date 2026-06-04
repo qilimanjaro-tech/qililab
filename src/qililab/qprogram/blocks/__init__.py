@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qilisdk.qprogram.blocks import Average, Block, ForLoop
+from qprogram.blocks import Average, Block, ForLoop
 
 from .infinite_loop import InfiniteLoop
 from .loop import Loop
