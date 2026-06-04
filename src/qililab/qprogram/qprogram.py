@@ -518,6 +518,7 @@ class QProgram(StructuredProgram):
                                     )
                                 )
                                 non_lin_flux_vector.set_loop(new_loop)
+                                self._active_loops.remove(new_loop)
                             non_lin_flux_vector.set_element(element)
                         elif isinstance(element, Play):
                             if element.bus in non_lin_play_dict:
@@ -907,8 +908,6 @@ class QProgram(StructuredProgram):
             loop_coord: tuple[int, ...] = (),
             offsets_0: int = 0,
             plays_0: int = 0,
-            offset_defined: bool = False,
-            wait_defined: bool = False,
         ):
             """Handles the Qprogram following Non-linear crosstalk compensation:
             - Unpacks gain and offset loops involving flux buses.
@@ -929,11 +928,6 @@ class QProgram(StructuredProgram):
                                             this is the list index for offsets. Defaults to 0.
                 plays_0 (int, optional): Order of the play waveforms by order of creation,
                                           this is the list index for play_waveforms. Defaults to 0.
-                offset_defined (bool, optional): Flag to check if the offset has been defined,
-                                                  at the beginning of a loop it is reset to False. Defaults to False.
-                wait_defined (bool, optional): Flag to check if the wait has been defined,
-                                                at the beginning of a loop it is reset to False. Defaults to False.
-
             Returns:
                 list[Block | Operation]: list of elements converted to nonlinear.
             """
@@ -942,6 +936,10 @@ class QProgram(StructuredProgram):
             last_appended_offset = -1
             plays_index = plays_0
             play_bus_list: list[str] = []
+
+            offset_defined: bool = False
+            wait_defined: bool = False
+            plays_defined: bool = False
 
             flux_vector_buses = list(flux_vector.buses)
             flux_vector_buses.sort()
@@ -987,20 +985,26 @@ class QProgram(StructuredProgram):
                             )
                             corrected_elements.append(play)
                         plays_index += 1
+                        plays_defined = True
                         offsets_index += 1
                         offset_defined = True
                 elif isinstance(element, Wait) and element.bus in flux_vector_buses:
                     corrected_elements.append(element)
-                    if offset_defined:
+                    if offset_defined and not wait_defined:
                         offset_defined = False
                         wait_defined = True
                         last_appended_offset = -1
                 elif isinstance(element, Block):
+                    if offset_defined and wait_defined:
+                        wait_defined = False
+                        offsets_index += 1
+                    if plays_defined:
+                        plays_index += 1
                     if element.uuid in flux_vector.loops_uuid.values():
                         shape = next(iter(offsets[offsets_index].values())).shape
                         for key in range(shape[-len(loop_index) - 1]):
                             loop_coord = (key, *loop_index[::-1])
-                            corrected_loop, offset_defined = handle_non_linear(
+                            corrected_loop, offset_defined, plays_defined = handle_non_linear(
                                 elements=element.elements,
                                 flux_vector=flux_vector,
                                 offsets=offsets,
@@ -1011,8 +1015,11 @@ class QProgram(StructuredProgram):
                                 plays_0=plays_index,
                             )
                             corrected_elements.extend(corrected_loop)
+                        loop_coord = loop_coord[:-1]
+                        if not loop_coord:
+                            loop_coord = (0,)
                     else:
-                        corrected_loop, offset_defined = handle_non_linear(
+                        corrected_loop, offset_defined, plays_defined = handle_non_linear(
                             elements=element.elements,
                             flux_vector=flux_vector,
                             offsets=offsets,
@@ -1026,20 +1033,19 @@ class QProgram(StructuredProgram):
                         element_copy.elements = corrected_loop
                         corrected_elements.append(element_copy)
                     if offset_defined:
-                        offsets_index += 1
-                        offset_defined = False
+                        wait_defined = True
                 else:
                     corrected_elements.append(element)
 
             # Needs to sync at the end of every loop for the unpack to work with non-flux buses
             if corrected_elements and not isinstance(corrected_elements[-1], Sync):
                 corrected_elements.append(Sync())
-            return corrected_elements, offset_defined
+            return corrected_elements, offset_defined, plays_defined
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body, copied_qprogram._variables)
         if isinstance(non_lin_flux_vector, NonLinearFluxVector):
-            corrected_elements, _ = handle_non_linear(
+            corrected_elements, _, _ = handle_non_linear(
                 deepcopy(copied_qprogram.body.elements),
                 non_lin_flux_vector,
                 non_lin_offsets,
