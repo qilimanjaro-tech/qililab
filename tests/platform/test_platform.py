@@ -1514,8 +1514,8 @@ class TestMethods:
         mock_bus.instruments = [MagicMock(spec=QbloxModule)]
         mock_bus.channels = [0]
         mock_bus.run.side_effect = TimeoutError("Simulated timeout")
-        # First call (direct check on leaked bus) returns None, fallback scan returns 3 each retry
-        mock_bus.check_recurrent_timeout.side_effect = [None, 3, None, 3, None, 3, None, 3]
+        # First call (direct check on leaked bus) returns 0, fallback scan returns 3 each retry
+        mock_bus.check_recurrent_timeout.side_effect = [0, 3, 0, 3, 0, 3, 0, 3]
 
         platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
         platform_qblox_qdac._qpy_sequence_cache = {}
