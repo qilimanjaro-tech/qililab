@@ -3704,7 +3704,7 @@ requires-dist = [
     { name = "qcodes", specifier = "==0.54.3" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.4" },
-    { name = "qprogram", git = "https://github.com/qilimanjaro-tech/qprogram-euroqcs?branch=main" },
+    { name = "qprogram", specifier = "==0.0.1" },
     { name = "qpysequence", specifier = ">=0.10.8" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.16" },
@@ -3782,7 +3782,7 @@ wheels = [
 [[package]]
 name = "qprogram"
 version = "0.0.1"
-source = { git = "https://github.com/qilimanjaro-tech/qprogram-euroqcs?branch=main#71a56c425ea2433ac726e4600cfbf7d388d4909f" }
+source = { registry = "https://api.pyx.dev/simple/qilimanjaro/euroqcs" }
 dependencies = [
     { name = "dill" },
     { name = "numpy" },
@@ -3790,6 +3790,10 @@ dependencies = [
     { name = "ruamel-yaml" },
     { name = "scipy", version = "1.16.2", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
+]
+sdist = { url = "https://files.astralhosted.com/qilimanjaro/5f/7e/fe1a90dfdce0a1effd4823929f30e91d5d72beded53b2730ffba5310efc6/qprogram-0.0.1.tar.gz", hash = "sha256:4ebb4fce541c09ad2f1b0e0fb93713d8d3f90a3198dd817d6eb00e4daa41dc70", size = 103353, upload-time = "2026-06-04T12:47:50Z" }
+wheels = [
+    { url = "https://files.astralhosted.com/qilimanjaro/85/6a/00b17c50a81270fcfaf7f42aec7f8c5aa2613b8959a0a7e548a677426ea6/qprogram-0.0.1-py3-none-any.whl", hash = "sha256:5b01c4ab97952126eaee4a25794d3a141dee67199c919e5115ea9b7fd3246feb", size = 43138, upload-time = "2026-06-04T12:47:49Z", zstd = { hash = "sha256:8a3b088d3db70ee5fa4401357905a90a105f5b676ece591e346aee7297538b34", size = 19820 } },
 ]
 
 [[package]]

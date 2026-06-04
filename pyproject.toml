@@ -86,9 +86,6 @@ name = "euroqcs"
 url = "https://api.pyx.dev/simple/qilimanjaro/euroqcs"
 publish-url = "https://api.pyx.dev/v1/upload/qilimanjaro/euroqcs"
 
-[tool.uv.sources]
-qprogram = { git = "https://github.com/qilimanjaro-tech/qprogram-euroqcs", branch = "main" }
-
 [tool.ruff]
 line-length = 120
 output-format = "concise"
