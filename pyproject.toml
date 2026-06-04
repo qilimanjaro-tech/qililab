@@ -1,6 +1,6 @@
 [project]
 name = "qililab"
-version = "0.32.0"
+version = "0.33.1"
 description = "Fundamental package for fast characterization and calibration of quantum chips."
 authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
 urls = {Repository = "https://github.com/qilimanjaro-tech/qililab"}
@@ -75,6 +75,8 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 prerelease = "if-necessary"
+# qm-qua==1.2.4 depends on marshmallow>=3,<3.24; override until upstream loosens.
+override-dependencies = ["marshmallow==3.26.2"]
 
 [tool.uv.sources]
 qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
