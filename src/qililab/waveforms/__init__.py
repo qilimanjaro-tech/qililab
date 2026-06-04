@@ -25,17 +25,24 @@ Waveforms
     ~Waveform
     ~Square
     ~Ramp
+    ~Ramps
     ~Gaussian
     ~Arbitrary
-    ~DragCorrection
+    ~GaussianDragCorrection
+    ~IQDrag
     ~Chained
     ~IQPair
     ~FlatTop
     ~SuddenNetZero
+    ~SequentialWaveform
+    ~ComposedWaveform
+    ~DerivedWaveform
 """
 
 from .arbitrary import Arbitrary
 from .chained import Chained
+from .composed_waveform import ComposedWaveform
+from .derived_waveform import DerivedWaveform
 from .flat_top import FlatTop
 from .gaussian import Gaussian
 from .gaussian_drag_correction import GaussianDragCorrection
@@ -43,6 +50,8 @@ from .iq_drag import IQDrag
 from .iq_pair import IQPair
 from .iq_waveform import IQWaveform
 from .ramp import Ramp
+from .ramps import Ramps
+from .sequential import SequentialWaveform
 from .snz import SuddenNetZero
 from .square import Square
 from .waveform import Waveform
@@ -50,6 +59,8 @@ from .waveform import Waveform
 __all__ = [
     "Arbitrary",
     "Chained",
+    "ComposedWaveform",
+    "DerivedWaveform",
     "FlatTop",
     "Gaussian",
     "GaussianDragCorrection",
@@ -57,6 +68,8 @@ __all__ = [
     "IQPair",
     "IQWaveform",
     "Ramp",
+    "Ramps",
+    "SequentialWaveform",
     "Square",
     "SuddenNetZero",
     "Waveform",
