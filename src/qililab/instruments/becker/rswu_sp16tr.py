@@ -99,7 +99,9 @@ class RSWUSP16TR(Instrument):
         return dict(super().to_dict().items())
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id=None):
+    def set_parameter(
+        self, parameter: Parameter, value: ParameterValue, channel_id: None = None, output_id: None = None
+    ):
         """Set instrument parameter.
 
         Args:
