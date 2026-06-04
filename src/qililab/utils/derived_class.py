@@ -2,7 +2,7 @@ import base64
 import inspect
 import types
 
-from dill import dumps, loads
+from dill import dumps
 
 from qililab.yaml import yaml
 
