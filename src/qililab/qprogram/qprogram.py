@@ -11,8 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
 from copy import deepcopy
-from typing import TYPE_CHECKING, Sequence, overload
+from typing import TYPE_CHECKING, Self, Sequence, overload
 
 import numpy as np
 
@@ -240,13 +242,13 @@ class QProgram(SdkQProgram, StructuredProgram):
             qprogram = cls.__new__(cls)
             qprogram.__dict__ = state
 
-        qprogram.qblox = cls._QbloxInterface(qprogram)  # type: ignore[attr-defined, arg-type]
-        qprogram.quantum_machines = cls._QuantumMachinesInterface(qprogram)  # type: ignore[attr-defined, arg-type]
-        qprogram.qdac = cls._QdacInterface(qprogram)  # type: ignore[attr-defined, arg-type]
+        qprogram.qblox = cls._QbloxInterface(qprogram)  # type: ignore[attr-defined, arg-type]  # ty:ignore[invalid-assignment]
+        qprogram.quantum_machines = cls._QuantumMachinesInterface(qprogram)  # type: ignore[attr-defined, arg-type]  # ty:ignore[invalid-assignment]
+        qprogram.qdac = cls._QdacInterface(qprogram)  # type: ignore[attr-defined, arg-type]  # ty:ignore[invalid-assignment]
 
         traverse(qprogram.body)
 
-        return qprogram  # type: ignore[return-value]
+        return qprogram  # type: ignore[return-value]  # ty:ignore[invalid-return-type]
 
     def with_bus_mapping(self, bus_mapping: dict[str, str]) -> Self:
         """Returns a copy of the QProgram with bus mappings applied.
