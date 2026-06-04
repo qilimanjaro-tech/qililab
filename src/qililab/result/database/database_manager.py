@@ -252,7 +252,12 @@ class DatabaseManager:
             list[Measurement] | None: returns the list of measurements or None if no sequence could be found.
         """
         with self.session() as running_session:
-            measurement_by_id_list = running_session.query(Measurement).where(Measurement.sequence_id == id).all()
+            measurement_by_id_list = (
+                running_session.query(Measurement)
+                .where(Measurement.sequence_id == id)
+                .order_by(Measurement.measurement_id)  # or whatever column defines sequence order
+                .all()
+            )
             if measurement_by_id_list is not None:
                 for meas in measurement_by_id_list:
                     path = meas.result_path
