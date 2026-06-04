@@ -46,9 +46,7 @@ from .waveforms import (
     Ramp,
     Ramps,
     Chained,
-    SequentialWaveform,
     ComposedWaveform,
-    DerivedWaveform,
 )
 
 # moving circuit_transpiler module imports here because it has instruments module dependencies so circular imports can be avoided
@@ -66,7 +64,6 @@ __all__ = [
     "Cooldown",
     "CrosstalkMatrix",
     "DatabaseManager",
-    "DerivedWaveform",
     "Domain",
     "Experiment",
     "ExperimentResults",
@@ -84,7 +81,6 @@ __all__ = [
     "Ramp",
     "Ramps",
     "Rmw",
-    "SequentialWaveform",
     "Sample",
     "Square",
     "SuddenNetZero",
