@@ -455,9 +455,6 @@ class QbloxQRM(QbloxModule):
         Args:
             value (int): value to update
             sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not float or int
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).timeout_repetitions = int(value)
 

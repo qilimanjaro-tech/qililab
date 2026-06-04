@@ -192,7 +192,7 @@ class TestBus:
 
         # The QCM should not receive the call
         mock_instruments[0].get_parameter.assert_not_called()
-        assert timeout_repetitions == None
+        assert timeout_repetitions == 0
 
     def test_setup_trigger_network(self, bus, mock_instruments):
         # stub the private method on both mocks so they both have it
