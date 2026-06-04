@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
-from qililab.waveforms.arbitrary import Arbitrary
+from qililab.waveforms import Arbitrary
 import pytest
 import qpysequence as QPy
 
@@ -2513,6 +2513,13 @@ set_freq         R5
         compiler = QbloxCompiler()
         with pytest.raises(ValueError, match=re.escape("smooth_duration + buffer of both I and Q must be the same.")):
             compiler.compile(qprogram=qp)
+
+    def test_play_operation_with_variable_in_waveform(self, caplog, play_operation_with_variable_in_waveform: QProgram):
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.ERROR):
+            _ = compiler.compile(qprogram=play_operation_with_variable_in_waveform)
+
+        assert "Variables in waveforms are not supported in Qblox." in caplog.text
 
     def test_delay(self, average_with_for_loop_nshots: QProgram):
         compiler = QbloxCompiler()

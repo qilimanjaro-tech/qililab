@@ -41,6 +41,8 @@ from qililab.qprogram.operations import (
     SetMarkers,
     SetOffset,
     SetTrigger,
+    Sync,
+    Wait,
     WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram, VariableInfo

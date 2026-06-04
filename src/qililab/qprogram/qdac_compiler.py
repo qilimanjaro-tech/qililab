@@ -384,6 +384,10 @@ class QdacCompiler:
                 if isinstance(instrument, QDevilQDac2)
             )
             waveform, _ = element.get_waveforms()
+            waveform_variables = element.get_waveform_variables()
+            if waveform_variables:
+                logger.error("Variables in waveforms are not supported in Qdac.")
+                return
             if not element.dwell:
                 element.dwell = self._dc_dwell
             if not element.delay:
