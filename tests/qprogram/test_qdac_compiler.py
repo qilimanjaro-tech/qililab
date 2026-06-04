@@ -8,14 +8,11 @@ from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Bus
 from qililab.qprogram import Calibration, QdacCompiler, QProgram
-from qililab.qprogram.blocks.for_loop import ForLoop
-from qililab.qprogram.blocks.loop import Loop
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+from qililab.qprogram.blocks import ForLoop, Loop
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
-from qililab.core.variables import Domain
-from qililab.waveforms import Square
-from qililab.waveforms.arbitrary import Arbitrary
-from qililab.waveforms.iq_pair import IQPair
+from qililab.core import Domain
+from qililab.waveforms import Square, Arbitrary, IQPair
 
 
 @pytest.fixture(name="qdac_instrument")
@@ -898,7 +895,7 @@ class TestQdacCompiler:
 
         compiler = QdacCompiler()
         with pytest.raises(
-            NotImplementedError, match=f"<class 'qililab.qprogram.operations.sync.Sync'> is not supported in QDACII."
+            NotImplementedError, match=r"<class 'qilisdk.qprogram.operations.sync.Sync'> is not supported in QDACII."
         ):
             compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 

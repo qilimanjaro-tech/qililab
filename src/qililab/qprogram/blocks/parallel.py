@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from typing import Sequence
 
-from qililab.qprogram.blocks.block import Block
-from qililab.qprogram.blocks.for_loop import ForLoop
-from qililab.qprogram.blocks.loop import Loop
 from qililab.yaml import yaml
+
+from . import Block, ForLoop, Loop
 
 
 @yaml.register_class

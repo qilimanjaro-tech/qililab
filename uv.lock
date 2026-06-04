@@ -3650,6 +3650,7 @@ dependencies = [
     { name = "qcodes" },
     { name = "qcodes-contrib-drivers", version = "0.24.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "qcodes-contrib-drivers", version = "0.25.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "qprogram" },
     { name = "qpysequence" },
     { name = "rich" },
     { name = "ruamel-yaml" },
@@ -3703,6 +3704,7 @@ requires-dist = [
     { name = "qcodes", specifier = "==0.54.3" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.4" },
+    { name = "qprogram", git = "https://github.com/qilimanjaro-tech/qprogram-euroqcs?branch=main" },
     { name = "qpysequence", specifier = ">=0.10.8" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.16" },
@@ -3775,6 +3777,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/51/fe/7f3750e37f9b91ece9ef65f81b8ae423b33a7dc3fbbf1fb902d5a7117d13/qm_qua-1.2.4.tar.gz", hash = "sha256:1866a86511d8bec8fa3d579dcd00d94c650a8672fe7d964fa7ae05af956d4e0d", size = 306620, upload-time = "2025-12-21T10:04:06.877Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/63/b7/bec53806f20367b0574986597bb3f6e257f9b577636e486023fa00d5f77f/qm_qua-1.2.4-py3-none-any.whl", hash = "sha256:2d29fee7895d0c4885f85d6d3b3366fbdf28fa8bbc1b6b2371c66eb5705b9ceb", size = 381596, upload-time = "2025-12-21T10:04:05.435Z" },
+]
+
+[[package]]
+name = "qprogram"
+version = "0.0.1"
+source = { git = "https://github.com/qilimanjaro-tech/qprogram-euroqcs?branch=main#83f72d4750442efeb5ffe47529279726dac3da7b" }
+dependencies = [
+    { name = "dill" },
+    { name = "numpy" },
+    { name = "pydantic" },
+    { name = "ruamel-yaml" },
+    { name = "scipy", version = "1.16.2", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
 ]
 
 [[package]]

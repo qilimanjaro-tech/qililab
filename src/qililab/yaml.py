@@ -67,3 +67,5 @@ yaml.representer.add_representer(deque, deque_representer)
 yaml.constructor.add_constructor("!deque", deque_constructor)
 yaml.representer.add_representer(types.LambdaType, lambda_representer)
 yaml.constructor.add_constructor("!lambda", lambda_constructor)
+
+from qprogram.yaml import yaml  # noqa: F401
