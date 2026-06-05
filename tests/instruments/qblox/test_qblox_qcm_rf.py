@@ -281,7 +281,7 @@ class TestQbloxQCMRF:
         sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
         qcm_rf.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
-        qcm_rf.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
+        qcm_rf.device.sequencers[0].sequence.assert_called_once_with(sequence.to_dict())
 
     def test_clear_cache(self, qcm_rf: QbloxQCMRF):
         """Test clearing the cache of the QCM module."""

@@ -657,7 +657,7 @@ class QbloxModule(Instrument):
         sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
         if sequencer is not None:
             logger.info("Sequence program: \n %s", repr(qpysequence._program))
-            self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
+            self.device.sequencers[sequencer.identifier].sequence(qpysequence.to_dict())
             self.sequences[sequencer.identifier] = qpysequence
 
     def upload(self, channel_id: ChannelID):
@@ -671,7 +671,7 @@ class QbloxModule(Instrument):
         if sequencer is not None and sequencer.identifier in self.sequences:
             sequence = self.sequences[sequencer.identifier]
             logger.info("Uploaded sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
-            self.device.sequencers[sequencer.identifier].sequence(sequence.todict())
+            self.device.sequencers[sequencer.identifier].sequence(sequence.to_dict())
             self.device.sequencers[sequencer.identifier].sync_en(True)
 
     def _set_nco(self, sequencer_id: int):

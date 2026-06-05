@@ -193,15 +193,13 @@ class TestQBloxDraw:
         pio.renderers.default = "json"
         parsing = draw._parse_program(sequences)
         expected_parsing = [
-            ("move", "3, R0", (), 0),
-            ("move", "400000000, R1", (), 1),
-            ("set_freq", "R1", ("loop_0",), 2),
-            ("set_freq", "R1", ("loop_0",), 3),
-            ("play", "0, 1, 10", ("loop_0",), 4),
-            ("wait", "10", ("loop_0",), 5),
-            ("add", "R1, 200000000, R1", ("loop_0",), 6),
-            ("loop", "R0, @loop_0", ("loop_0",), 7),
-            ("nop", "2", (), 8),
+            ("move", "400000000, R0", (), 0),
+            ("move", "3, R1", (), 1),
+            ("set_freq", "R0", ("loop_0",), 2),
+            ("play", "0, 1, 10", ("loop_0",), 3),
+            ("wait", "10", ("loop_0",), 4),
+            ("add", "R0, 200000000, R0", ("loop_0",), 5),
+            ("loop", "R1, @loop_0", ("loop_0",), 6),
         ]
         assert parsing["drive"]["program"]["main"] == expected_parsing
 
