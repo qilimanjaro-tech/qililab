@@ -14,11 +14,15 @@
 
 """File containing the supported native gates."""
 
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
-from qilisdk.core import Parameter
-from qilisdk.digital.gates import BasicGate
+from qilisdk.digital import BasicGate
+from qilisdk.digital.gates import _process_param
+
+if TYPE_CHECKING:
+    from qilisdk.core import Parameter, Term
+
 from qilisdk.yaml import yaml
 
 
@@ -66,26 +70,43 @@ class Rmw(BasicGate):
 
     PARAMETER_NAMES: ClassVar[list[str]] = ["theta", "phase"]
 
-    def __init__(self, qubit: int, *, theta: float, phase: float):
+    def __init__(self, qubit: int, *, theta: float, phase: float) -> None:
+        # Initialize parameter terms dictionary
+        params_to_init: dict[str, Parameter] = {}
+        terms_to_init: dict[str, Term] = {}
+
+        # Process the parameters
+        _process_param("theta", theta, params_to_init, terms_to_init)
+        _process_param("phase", phase, params_to_init, terms_to_init)
+
+        # Initialize the base class
         super().__init__(
             target_qubits=(qubit,),
-            parameters={
-                "theta": theta if isinstance(theta, Parameter) else Parameter("theta", theta),
-                "phase": phase if isinstance(phase, Parameter) else Parameter("phase", phase),
-            },
+            parameters=params_to_init,
+            parameter_transforms=terms_to_init,
         )
 
     @property
-    def name(self) -> str:
-        return "Rmw"
-
-    @property
     def theta(self) -> float:
+        if "theta" in self._parameter_transforms:
+            val = self._parameter_transforms["theta"].evaluate({})
+            if isinstance(val, complex):
+                return val.real
+            return val
         return self.get_parameters()["theta"]
 
     @property
     def phase(self) -> float:
+        if "phase" in self._parameter_transforms:
+            val = self._parameter_transforms["phase"].evaluate({})
+            if isinstance(val, complex):
+                return val.real
+            return val
         return self.get_parameters()["phase"]
+
+    @property
+    def name(self) -> str:
+        return "Rmw"
 
     def _generate_matrix(self) -> np.ndarray:
         theta = float(self.theta)
