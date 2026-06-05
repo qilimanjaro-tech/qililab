@@ -80,6 +80,7 @@ override-dependencies = ["marshmallow==3.26.2"]
 
 [tool.uv.sources]
 qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
+qpysequence = { path = "../qpysequence", editable = true }
 
 [tool.ruff]
 line-length = 120

@@ -1420,8 +1420,8 @@ class TestQBloxCompiler:
                             set_freq         1200
                             set_ph           250000000
                             reset_ph
-                            set_awg_gain     16384, 16384
-                            set_awg_offs     16384, 16384
+                            set_awg_gain     16383, 16383
+                            set_awg_offs     16383, 16383
                             play             0, 1, 40
                             set_mrk          0
                             upd_param        4
@@ -4757,23 +4757,17 @@ class TestQBloxCompiler:
                         upd_param        4              
 
         main:
-                        nop                             
                         set_awg_offs     0, 0           
                         upd_param        4              
                         wait             6              
                         set_awg_gain     11374, 11374   
-                        set_awg_gain     11374, 11374   
-                        nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
                         wait             54             
-                        nop                             
                         set_awg_offs     11374, 11374   
                         upd_param        4              
                         wait             6              
                         set_awg_gain     2668, 2668     
-                        set_awg_gain     2668, 2668     
-                        nop                             
                         set_awg_offs     11374, 11374   
                         play             0, 1, 50       
                         wait             54             
@@ -4788,29 +4782,23 @@ class TestQBloxCompiler:
                         upd_param        4              
 
         main:
-                        nop                             
                         set_awg_offs     0, 0           
                         upd_param        4              
                         wait             6              
                         set_awg_gain     17832, 17832   
-                        set_awg_gain     17832, 17832   
-                        nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
                         wait             54             
-                        nop                             
                         set_awg_offs     17832, 17832   
                         upd_param        4              
                         wait             6              
-                        set_awg_gain     421, 421     
-                        set_awg_gain     421, 421     
-                        nop                             
+                        set_awg_gain     421, 421       
                         set_awg_offs     17832, 17832   
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop   
         """
         drive_str = """
         setup:
@@ -4875,31 +4863,27 @@ class TestQBloxCompiler:
                         upd_param        4              
 
         main:
-                        move             11, R0         
-                        move             400, R1        
+                        move             400, R0        
+                        move             11, R1         
         loop_0:
-                        nop                             
                         set_awg_offs     0, 0           
                         set_awg_gain     11374, 11374   
-                        set_awg_gain     11374, 11374   
                         play             0, 1, 50       
                         wait             64             
-                        add              R1, 40, R1     
-                        loop             R0, @loop_0    
-                        move             11, R2         
-                        move             400, R3        
+                        add              R0, 40, R0     
+                        loop             R1, @loop_0    
+                        move             400, R2        
+                        move             11, R3         
         loop_1:
-                        nop                             
                         set_awg_offs     1638, 1638     
                         set_awg_gain     11374, 11374   
-                        set_awg_gain     11374, 11374   
                         play             0, 1, 50       
                         wait             64             
-                        add              R3, 40, R3     
-                        loop             R2, @loop_1    
+                        add              R2, 40, R2     
+                        loop             R3, @loop_1    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                    
         """
         flux2_str = """
         setup:
@@ -4908,31 +4892,27 @@ class TestQBloxCompiler:
                         upd_param        4              
 
         main:
-                        move             11, R0         
-                        move             400, R1        
+                        move             400, R0        
+                        move             11, R1         
         loop_0:
-                        nop                             
                         set_awg_offs     0, 0           
                         set_awg_gain     17832, 17832   
-                        set_awg_gain     17832, 17832   
                         play             0, 1, 50       
                         wait             64             
-                        add              R1, 40, R1     
-                        loop             R0, @loop_0    
-                        move             11, R2         
-                        move             400, R3        
+                        add              R0, 40, R0     
+                        loop             R1, @loop_0    
+                        move             400, R2        
+                        move             11, R3         
         loop_1:
-                        nop                             
-                        set_awg_offs     3276, 3276     
-                        set_awg_gain     17832, 17832   
+                        set_awg_offs     3276, 3276 
                         set_awg_gain     17832, 17832   
                         play             0, 1, 50       
                         wait             64             
-                        add              R3, 40, R3     
-                        loop             R2, @loop_1    
+                        add              R2, 40, R2     
+                        loop             R3, @loop_1    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop          
         """
         drive_str = """
         setup:
@@ -4941,33 +4921,29 @@ class TestQBloxCompiler:
                         upd_param        4              
 
         main:
-                        move             11, R0         
-                        move             400, R1        
+                        move             400, R0        
+                        move             11, R1         
         loop_0:
-                        set_freq         R1             
-                        set_freq         R1             
+                        set_freq         R0             
                         upd_param        4              
                         wait             6              
                         play             0, 0, 50       
                         wait             54             
-                        add              R1, 40, R1     
-                        loop             R0, @loop_0    
-                        nop                             
-                        move             11, R2         
-                        move             400, R3        
-                        nop                             
+                        add              R0, 40, R0     
+                        loop             R1, @loop_0    
+                        move             400, R2        
+                        move             11, R3         
         loop_1:
-                        set_freq         R3             
-                        set_freq         R3             
+                        set_freq         R2             
                         upd_param        4              
                         wait             6              
                         play             0, 0, 50       
                         wait             54             
-                        add              R3, 40, R3     
-                        loop             R2, @loop_1    
+                        add              R2, 40, R2     
+                        loop             R3, @loop_1    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop         
         """
         readout_str = """
         setup:
@@ -4975,31 +4951,31 @@ class TestQBloxCompiler:
                         set_mrk          0              
                         upd_param        4              
 
-        main:
                         move             0, R0          
                         move             0, R1          
+        main:
                         move             0, R2          
-                        move             11, R3         
-                        move             400, R4        
+                        move             400, R3        
+                        move             11, R4         
         loop_0:
                         wait             60             
                         play             0, 0, 4        
-                        acquire_weighed  0, R2, R1, R1, 50
+                        acquire_weighed  0, R2, R0, R0, 50
                         add              R2, 1, R2      
-                        add              R4, 40, R4     
-                        loop             R3, @loop_0    
-                        move             11, R5         
-                        move             400, R6        
+                        add              R3, 40, R3     
+                        loop             R4, @loop_0    
+                        move             400, R5        
+                        move             11, R6         
         loop_1:
                         wait             60             
                         play             0, 0, 4        
-                        acquire_weighed  1, R0, R1, R1, 50
-                        add              R0, 1, R0      
-                        add              R6, 40, R6     
-                        loop             R5, @loop_1    
+                        acquire_weighed  1, R1, R0, R0, 50
+                        add              R1, 1, R1      
+                        add              R5, 40, R5     
+                        loop             R6, @loop_1    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                    
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
@@ -5027,29 +5003,23 @@ class TestQBloxCompiler:
                         upd_param        4              
 
         main:
-                        nop                             
                         set_awg_offs     8430, 8430     
                         upd_param        4              
                         wait             6              
                         set_awg_gain     4570, 4570     
-                        set_awg_gain     4570, 4570     
-                        nop                             
                         set_awg_offs     8430, 8430     
                         play             0, 1, 50       
                         wait             54             
-                        nop                             
                         set_awg_offs     8430, 8430     
                         upd_param        4              
                         wait             6              
                         set_awg_gain     4570, 4570     
-                        set_awg_gain     4570, 4570     
-                        nop                             
                         set_awg_offs     8430, 8430     
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop        
         """
         flux2_str = """
         setup:
@@ -5058,29 +5028,23 @@ class TestQBloxCompiler:
                         upd_param        4              
 
         main:
-                        nop                             
                         set_awg_offs     14403, 14403   
                         upd_param        4              
                         wait             6              
-                        set_awg_gain     4225, 4225     
-                        set_awg_gain     4225, 4225     
-                        nop                             
+                        set_awg_gain     4225, 4225  
                         set_awg_offs     14403, 14403   
                         play             0, 1, 50       
                         wait             54             
-                        nop                             
                         set_awg_offs     14403, 14403   
                         upd_param        4              
                         wait             6              
-                        set_awg_gain     4225, 4225     
-                        set_awg_gain     4225, 4225     
-                        nop                             
+                        set_awg_gain     4225, 4225    
                         set_awg_offs     14403, 14403   
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop         
         """
         drive_str = """
         setup:
@@ -5136,61 +5100,49 @@ class TestQBloxCompiler:
 
         flux1_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
 
         main:
-                        set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_awg_gain     2724, 2724     
-                        set_awg_gain     2724, 2724     
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     1638, 1638     
-                        upd_param        4              
-                        wait             6              
-                        nop                             
-                        set_awg_offs     11374, 11374   
-                        upd_param        4              
-                        wait             6              
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                    set_awg_gain     0, 0           
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_gain     2724, 2724     
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_offs     1638, 1638     
+                    upd_param        4              
+                    wait             6              
+                    set_awg_offs     11374, 11374   
+                    upd_param        4              
+                    wait             6              
+                    set_mrk          0              
+                    upd_param        4              
+                    stop     
         """
         flux2_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
 
         main:
-                        set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_awg_gain     4957, 4957     
-                        set_awg_gain     4957, 4957     
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     3276, 3276     
-                        upd_param        4              
-                        wait             6              
-                        nop                             
-                        set_awg_offs     17832, 17832   
-                        upd_param        4              
-                        wait             6              
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                    set_awg_gain     0, 0           
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_gain     4957, 4957     
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_offs     3276, 3276  
+                    upd_param        4              
+                    wait             6              
+                    set_awg_offs     17832, 17832   
+                    upd_param        4              
+                    wait             6              
+                    set_mrk          0              
+                    upd_param        4              
+                    stop  
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
@@ -5215,65 +5167,49 @@ class TestQBloxCompiler:
 
         flux1_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
 
         main:
-                        nop                             
-                        set_awg_offs     1638, 1638     
-                        set_awg_gain     11374, 11374   
-                        set_awg_gain     11374, 11374   
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     0, 0       
-                        set_awg_gain     11374, 11374   
-                        set_awg_gain     11374, 11374   
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     13012, 13012   
-                        set_awg_gain     2668, 2668     
-                        set_awg_gain     2668, 2668     
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     11374, 11374   
-                        set_awg_gain     2668, 2668     
-                        set_awg_gain     2668, 2668     
-                        play             0, 1, 50       
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                    set_awg_offs     1638, 1638     
+                    set_awg_gain     11374, 11374   
+                    play             0, 1, 50       
+                    set_awg_offs     0, 0           
+                    set_awg_gain     11374, 11374   
+                    play             0, 1, 50       
+                    set_awg_offs     13012, 13012   
+                    set_awg_gain     2668, 2668     
+                    play             0, 1, 50       
+                    set_awg_offs     11374, 11374   
+                    set_awg_gain     2668, 2668     
+                    play             0, 1, 50       
+                    set_mrk          0              
+                    upd_param        4              
+                    stop        
         """
         flux2_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
 
         main:
-                        nop                             
-                        set_awg_offs     3276, 3276     
-                        set_awg_gain     17832, 17832   
-                        set_awg_gain     17832, 17832   
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     0, 0       
-                        set_awg_gain     17832, 17832   
-                        set_awg_gain     17832, 17832   
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     21109, 21109   
-                        set_awg_gain     421, 421     
-                        set_awg_gain     421, 421     
-                        play             0, 1, 50       
-                        nop                             
-                        set_awg_offs     17832, 17832   
-                        set_awg_gain     421, 421     
-                        set_awg_gain     421, 421     
-                        play             0, 1, 50       
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                    set_awg_offs     3276, 3276    
+                    set_awg_gain     17832, 17832   
+                    play             0, 1, 50       
+                    set_awg_offs     0, 0           
+                    set_awg_gain     17832, 17832   
+                    play             0, 1, 50       
+                    set_awg_offs     21109, 21109  
+                    set_awg_gain     421, 421       
+                    play             0, 1, 50       
+                    set_awg_offs     17832, 17832   
+                    set_awg_gain     421, 421       
+                    play             0, 1, 50       
+                    set_mrk          0              
+                    upd_param        4              
+                    stop        
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
@@ -5304,59 +5240,43 @@ class TestQBloxCompiler:
 
         main:
                         set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
                         set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
                         set_awg_gain     2724, 2724     
-                        set_awg_gain     2724, 2724     
-                        nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
                         set_awg_gain     2724, 2724     
-                        set_awg_gain     2724, 2724     
-                        nop                             
                         set_awg_offs     0, 0           
                         play             0, 1, 50       
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop        
         """
         flux2_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                    wait_sync        4              
+                    set_mrk          0              
+                    upd_param        4              
 
         main:
-                        set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_awg_gain     0, 0           
-                        set_awg_gain     0, 0           
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_awg_gain     4957, 4957     
-                        set_awg_gain     4957, 4957     
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_awg_gain     4957, 4957     
-                        set_awg_gain     4957, 4957     
-                        nop                             
-                        set_awg_offs     0, 0           
-                        play             0, 1, 50       
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                    set_awg_gain     0, 0           
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_gain     0, 0           
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_gain     4957, 4957     
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_awg_gain     4957, 4957     
+                    set_awg_offs     0, 0           
+                    play             0, 1, 50       
+                    set_mrk          0              
+                    upd_param        4              
+                    stop
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
@@ -5619,9 +5539,8 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["flux1"], flux1_str)
         assert is_q1asm_equal(sequences["flux2"], flux2_str)
 
-    def test_crosstalk_compensation_double_loop(self, crosstalk_qprogram_double_gain_loop: QProgram, crosstalk_qprogram_double_offset_loop: QProgram):
+    def test_crosstalk_compensation_double_loop_gain(self, crosstalk_qprogram_double_gain_loop: QProgram):
         """Test to create double loop qprogram with crosstalk. 
-        Currently it raises a non implemented error due to variables summing each other.
         """
         inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
         crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
@@ -5634,33 +5553,32 @@ class TestQBloxCompiler:
 
         flux1_gain = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
 
         main:
-                        move             10, R0         
-                        move             0, R1          
-                        move             0, R2          
+                move             0, R0          
+                move             0, R1          
+                move             10, R2         
         loop_0:
-                        move             10, R3         
-                        move             1638, R4       
-                        move             3276, R5       
+                move             1638, R3       
+                move             3276, R4       
+                move             10, R5         
         loop_1:
-                        nop                             
-                        add              R1, R4, R6     
-                        nop                             
-                        set_awg_gain     R6, R6         
-                        play             0, 1, 50       
-                        sub              R4, 164, R4    
-                        sub              R5, 328, R5    
-                        loop             R3, @loop_1    
-                        add              R1, 327, R1    
-                        add              R2, 163, R2    
-                        loop             R0, @loop_0    
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+                add              R0, R3, R6     
+                nop                             
+                set_awg_gain     R6, R6         
+                play             0, 1, 50       
+                sub              R3, 163, R3    
+                sub              R4, 327, R4    
+                loop             R5, @loop_1    
+                add              R0, 327, R0    
+                add              R1, 163, R1    
+                loop             R2, @loop_0    
+                set_mrk          0              
+                upd_param        4              
+                stop
         """
         flux2_gain = """
         setup:
@@ -5669,32 +5587,37 @@ class TestQBloxCompiler:
                         upd_param        4              
 
         main:
-                        move             10, R0         
+                        move             0, R0          
                         move             0, R1          
-                        move             0, R2          
+                        move             10, R2         
         loop_0:
-                        move             10, R3         
-                        move             1638, R4       
-                        move             3276, R5       
+                        move             1638, R3       
+                        move             3276, R4       
+                        move             10, R5         
         loop_1:
-                        nop                             
-                        add              R5, R2, R6     
+                        add              R4, R1, R6     
                         nop                             
                         set_awg_gain     R6, R6         
                         play             0, 1, 50       
-                        sub              R4, 164, R4    
-                        sub              R5, 328, R5    
-                        loop             R3, @loop_1    
-                        add              R1, 327, R1    
-                        add              R2, 163, R2    
-                        loop             R0, @loop_0    
+                        sub              R3, 163, R3    
+                        sub              R4, 327, R4    
+                        loop             R5, @loop_1    
+                        add              R0, 327, R0    
+                        add              R1, 163, R1    
+                        loop             R2, @loop_0    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_gain)
         assert is_q1asm_equal(sequences["flux2"], flux2_gain)
+
+    def test_crosstalk_compensation_double_loop_offset(self, crosstalk_qprogram_double_offset_loop: QProgram):
+        """Test to create double loop qprogram with crosstalk. 
+        """
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
 
         compiler_offset = QbloxCompiler()
         sequences, _ = compiler_offset.compile(qprogram=crosstalk_qprogram_double_offset_loop, crosstalk=crosstalk)
@@ -5706,28 +5629,27 @@ class TestQBloxCompiler:
                         upd_param        4              
 
         main:
-                        move             10, R0         
+                        move             0, R0          
                         move             0, R1          
-                        move             0, R2          
+                        move             10, R2         
         loop_0:
-                        move             10, R3         
-                        move             1638, R4       
-                        move             3276, R5       
+                        move             1638, R3       
+                        move             3276, R4       
+                        move             10, R5         
         loop_1:
-                        nop                             
-                        add              R1, R4, R6     
+                        add              R0, R3, R6     
                         nop                             
                         set_awg_offs     R6, R6         
                         play             0, 1, 50       
-                        sub              R4, 164, R4    
-                        sub              R5, 328, R5    
-                        loop             R3, @loop_1    
-                        add              R1, 327, R1    
-                        add              R2, 163, R2    
-                        loop             R0, @loop_0    
+                        sub              R3, 163, R3    
+                        sub              R4, 327, R4    
+                        loop             R5, @loop_1    
+                        add              R0, 327, R0    
+                        add              R1, 163, R1    
+                        loop             R2, @loop_0    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                                       
         """
         flux2_offset = """
         setup:
@@ -5736,28 +5658,27 @@ class TestQBloxCompiler:
                         upd_param        4              
 
         main:
-                        move             10, R0         
+                        move             0, R0          
                         move             0, R1          
-                        move             0, R2          
+                        move             10, R2         
         loop_0:
-                        move             10, R3         
-                        move             1638, R4       
-                        move             3276, R5       
+                        move             1638, R3       
+                        move             3276, R4       
+                        move             10, R5         
         loop_1:
-                        nop                             
-                        add              R5, R2, R6     
+                        add              R4, R1, R6     
                         nop                             
                         set_awg_offs     R6, R6         
                         play             0, 1, 50       
-                        sub              R4, 164, R4    
-                        sub              R5, 328, R5    
-                        loop             R3, @loop_1    
-                        add              R1, 327, R1    
-                        add              R2, 163, R2    
-                        loop             R0, @loop_0    
+                        sub              R3, 163, R3    
+                        sub              R4, 327, R4    
+                        loop             R5, @loop_1    
+                        add              R0, 327, R0    
+                        add              R1, 163, R1    
+                        loop             R2, @loop_0    
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop              
         """
 
         assert is_q1asm_equal(sequences["flux1"], flux1_offset)
