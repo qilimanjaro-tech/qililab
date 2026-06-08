@@ -363,6 +363,18 @@ def fixture_exceeds_depth_multiple_per_block() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="exceeds_depth_for_loop_blocks")
+def fixture_exceeds_depth_for_loop_blocks() -> QProgram:
+    """33 separate for_loop blocks each with 1 acquire — must raise because only average blocks are supported."""
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    bins = qp.variable("bins", Domain.Scalar, int)
+    for _ in range(33):
+        with qp.for_loop(bins, 0, 10, 1):
+            qp.qblox.acquire(bus="readout", weights=weights)
+    return qp
+
+
 @pytest.fixture(name="exceeds_depth_boundary")
 def fixture_exceeds_depth_boundary() -> QProgram:
     """33 separate average blocks — exactly at the exceeds-depth threshold (total=33 > 32)."""
@@ -6047,6 +6059,18 @@ class TestAcquisition:
             ),
         ):
             compiler.compile(qprogram=exceeds_depth_multiple_per_block)
+
+    def test_exceeds_depth_for_loop_blocks_raises_error(self, exceeds_depth_for_loop_blocks: QProgram):
+        """for_loop blocks in the exceeds-depth path must raise NotImplementedError."""
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Bus 'readout' has more than 32 acquisitions across separate blocks "
+                "and contains a 'for_loop'. Only 'average' blocks are supported in this case."
+            ),
+        ):
+            compiler.compile(qprogram=exceeds_depth_for_loop_blocks)
 
     def test_more_than_32_acquisitions_mixed_depths_raises_error(self, mixed_depth_exceeds_limit: QProgram):
         """More than 32 acquires on the same bus at different nesting depths must raise NotImplementedError."""

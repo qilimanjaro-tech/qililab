@@ -27,6 +27,7 @@
   The following limitations apply when the number of distinct acquisitions in different blocks exceed 32:
   - All acquisition blocks must be at **the same nesting depth**. Mixed depths (e.g. some acquires inside a `for_loop` and some directly inside `average`) raise `NotImplementedError`.
   - Each block must contain **exactly one acquisition**. Multiple acquires inside the same block raise `NotImplementedError`.
+  - All blocks must be `average` blocks. Using `for_loop` blocks raises `NotImplementedError`.
 
   `QbloxCompiler._handle_acquire` has been refactored into three methods: `_handle_acquire` (dispatcher), `_handle_acquire_exceeds_depth`, and `_handle_acquire_per_depth`, making the two acquisition paths independent. Acquisition depth is now stored alongside the per-block count in a single `_acquisition_metadata` dict. This dict is now also reset at the start of each `compile()` call, ensuring correctness when the same compiler instance is reused.
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)

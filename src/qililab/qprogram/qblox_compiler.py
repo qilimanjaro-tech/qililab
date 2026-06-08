@@ -1588,18 +1588,25 @@ class QbloxCompiler:
         block and one ``add`` into the outer block, so the bin pointer advances by 1
         after each average block completes.
 
+        Only ``average`` blocks are supported in this path. If the block stack contains
+        a ``for_loop`` (``QPyProgram.IterativeLoop``), a ``NotImplementedError`` is raised.
+
         Args:
             element: The acquire operation being compiled.
             index_I: Weight waveform index for the I path.
             index_Q: Weight waveform index for the Q path.
             integration_length: Integration window duration in nanoseconds.
+
+        Raises:
+            NotImplementedError: If a ``for_loop`` is present in the block stack.
         """
-        loops = [
-            (i, loop)
-            for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
-            if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
-        ]
-        block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
+        if any(isinstance(loop, QPyProgram.IterativeLoop) for loop in self._buses[element.bus].qpy_block_stack):
+            raise NotImplementedError(
+                f"Bus '{element.bus}' has more than {MAX_ACQUISITION_INDEX + 1} acquisitions across separate blocks "
+                f"and contains a 'for_loop'. Only 'average' blocks are supported in this case."
+            )
+
+        block_index_for_move_instruction = -2
 
         if not self._buses[element.bus].acquisitions:  # Only for the first acquisition.
             num_acquisitions = len(self._acquisition_metadata[element.bus])
@@ -1607,7 +1614,7 @@ class QbloxCompiler:
             self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
                 bus=element.bus,
                 save_adc=element.save_adc,
-                shape=tuple(loop[1].iterations for loop in loops),
+                shape=(),
                 intertwined=num_acquisitions,
             )
             self._buses[element.bus].qpy_sequence._acquisitions.add(
