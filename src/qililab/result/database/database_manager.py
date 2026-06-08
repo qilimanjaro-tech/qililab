@@ -258,12 +258,11 @@ class DatabaseManager:
                 .order_by(Measurement.measurement_id)
                 .all()
             )
-            if measurement_by_id_list is not None:
-                for meas in measurement_by_id_list:
-                    path = meas.result_path
-                    if not os.path.isfile(path):
-                        new_path = path.replace(self.base_path_local, self.base_path_share)
-                        meas.result_path = new_path
+            for meas in measurement_by_id_list:
+                path = meas.result_path
+                if not os.path.isfile(path):
+                    new_path = path.replace(self.base_path_local, self.base_path_share)
+                    meas.result_path = new_path
             return measurement_by_id_list
 
     def load_calibration_by_id(self, id: int) -> AutocalMeasurement | None:
