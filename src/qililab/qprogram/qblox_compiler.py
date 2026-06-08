@@ -196,7 +196,7 @@ class BusCompilationInfo:
         # Bin index used in the move instruction
         self.start_bin_idx: int = 0
 
-        # Flag used in _handle_acquire for acquisitions with acquisitions on more than 32 depth levels.
+        # Flag used in _handle_acquire if acquisitions have more than 1 depth and the number of acquisitions exceeds MAX_ACQUISITION_INDEX
         self.exceeds_depth: bool = False
 
 
@@ -375,20 +375,20 @@ class QbloxCompiler:
         # Recursive traversal to convert QProgram blocks to Sequence
         self.traverse_qprogram_acquire(self._qprogram._body)
 
-        # Handle the cases where the number of acquisitions exceeds MAX_ACQUISITION_INDEX whilst having more htan one depth.
+        # Handle the cases where the number of acquisitions exceeds MAX_ACQUISITION_INDEX whilst having more than one depth.
         for bus, block_data in self._acquisition_metadata.items():
             total = sum(count for count, _ in block_data.values())
             depths = {depth for _, depth in block_data.values()}
-            if len(block_data) > 1 and total > MAX_ACQUISITION_INDEX:
+            if len(block_data) > 1 and total > MAX_ACQUISITION_INDEX + 1:
                 if len(depths) > 1:
                     raise NotImplementedError(
                         f"Bus '{bus}' has {total} acquisitions at inconsistent nesting depths "
-                        f"{sorted(depths)}. For more than {MAX_ACQUISITION_INDEX} acquisitions, they must be at the same nesting depth."
+                        f"{sorted(depths)}. For more than {MAX_ACQUISITION_INDEX + 1} acquisitions, they must be at the same nesting depth."
                     )
                 if not all(count == 1 for count, _ in block_data.values()):
                     raise NotImplementedError(
                         f"Bus '{bus}' has {total} acquisitions across {len(block_data)} blocks, "
-                        f"but only 1 acquisition per block is supported when total acquisitions exceed {MAX_ACQUISITION_INDEX}."
+                        f"but only 1 acquisition per block is supported when total acquisitions exceed {MAX_ACQUISITION_INDEX + 1}."
                     )
                 self._buses[bus].exceeds_depth = True
 
@@ -1739,7 +1739,7 @@ class QbloxCompiler:
             if (
                 self._buses[element.bus].prev_nested_level_acquire
                 != self._buses[element.bus].count_nested_level_acquire
-            ):
+            ):  # reset the bin index if new depth level
                 self._buses[element.bus].single_bin_counter = 0
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.AcquireWeighed(

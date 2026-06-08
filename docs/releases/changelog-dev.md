@@ -31,8 +31,6 @@
 
 - `QbloxCompiler._handle_acquire` has been refactored into three methods — `_handle_acquire` (dispatcher), `_handle_acquire_exceeds_depth`, and `_handle_acquire_per_depth` — making the two acquisition paths independent and easier to maintain. Acquisition depth is now stored alongside the per-block count in a single `_acquisition_metadata` dict, eliminating the redundant `_acquire_depths` dict.
 
-- Modified database manager's `load_by_id` to allow a list of ids to return a list of the measurements with said ids. Also added function `db_manager.get_dc_offsets(id)`, for recent addition to the measurements database, `dc_offsets`.
-  [#1097](https://github.com/qilimanjaro-tech/qililab/pull/1097)
 
 ### Breaking changes
 
@@ -50,27 +48,3 @@
 
 - Fixed `QbloxCompiler._acquisition_metadata` not being reset between `compile()` calls on the same compiler instance. Stale metadata from a previous compilation could inflate the total acquisition count and incorrectly route a subsequent program to the exceeds-depth path.
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
-
-- Fixed a bug in `set_offset` where using a `Variable` on one path and a negative static value on the other would generate a `move` instruction with a negative immediate, which is invalid Q1ASM.
-  [#1113](https://github.com/qilimanjaro-tech/qililab/pull/1113)
-
-- Fixed a bug where `qp.qblox.play` with `wait_time=0` was treated as no `wait_time` provided, producing incorrect Q1ASM. The wait time is now correctly clamped to the minimum valid value of 4 ns.
-  [#1114](https://github.com/qilimanjaro-tech/qililab/pull/1114)
-
-- The save_platform function was not saving bus distortions because it wasn't added to the Bus.to_dict after the refactor. The property has been added.
-  [#1100](https://github.com/qilimanjaro-tech/qililab/pull/1100)
-
-- Fixed a bug for function Platform.set_bias_to_zero(bus_list) where the flux vector was not updated correctly from bias.
-  [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
-
-- Fixed a bug for qdac execution order, the positions were inverted causing issues with the triggering.
-  [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
-
-- Fixed a bug at the QdacCompiler where the dwell time was converted to us twice turning any value to the minimum dwell possible.
-  [#1030](https://github.com/qilimanjaro-tech/qililab/pull/1030)
-
-- Fixed a bug in the Qblox compiler where the bin acquisition index was not incrementing correctly when multiple `measure` calls are used sequentially inside an `average` block with an outer sweep loop.  Each sequential acquire now gets its own bin register initialised to its position offset, and the bin register is advanced by the total number of acquires per sweep step (instead of always 1), so that consecutive acquires write to consecutive bins and the full acquisition matrix is filled correctly.
-  [#1098](https://github.com/qilimanjaro-tech/qililab/pull/1098
-
-- Fixed a bug where the qblox instrument controller parameter `ext_trigger` and the qdac instrument controller parameter `reference_clock` where not correctly translated to dictionary from the runcard and therefore not saved with `ql.save_platform(platform)`.
-  [#1104](https://github.com/qilimanjaro-tech/qililab/pull/1104)

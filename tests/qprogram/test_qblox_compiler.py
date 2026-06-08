@@ -353,7 +353,7 @@ def fixture_exceeds_depth_basic() -> QProgram:
 
 @pytest.fixture(name="exceeds_depth_multiple_per_block")
 def fixture_exceeds_depth_multiple_per_block() -> QProgram:
-    """2 average blocks × 17 acquires each (total 34 > 31, but >1 acquire per block) — must raise."""
+    """2 average blocks × 17 acquires each (total 34 > 32, but >1 acquire per block) — must raise."""
     weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
     qp = QProgram()
     for _ in range(2):
@@ -365,10 +365,10 @@ def fixture_exceeds_depth_multiple_per_block() -> QProgram:
 
 @pytest.fixture(name="exceeds_depth_boundary")
 def fixture_exceeds_depth_boundary() -> QProgram:
-    """32 separate average blocks — exactly at the exceeds-depth threshold (len=32 > 1, total=32 > 31)."""
+    """33 separate average blocks — exactly at the exceeds-depth threshold (total=33 > 32)."""
     weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
     qp = QProgram()
-    for _ in range(32):
+    for _ in range(33):
         with qp.average(shots=10):
             qp.qblox.acquire(bus="readout", weights=weights)
     return qp
@@ -413,7 +413,7 @@ def fixture_single_average_two_acquires() -> QProgram:
 
 @pytest.fixture(name="single_average_33_acquires")
 def fixture_single_average_33_acquires() -> QProgram:
-    """1 average block with 33 acquires — total > 31 but single block, stays in per-depth path."""
+    """1 average block with 33 acquires — total > 32 but single block, stays in per-depth path."""
     weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
     qp = QProgram()
     with qp.average(shots=10):
@@ -424,7 +424,7 @@ def fixture_single_average_33_acquires() -> QProgram:
 
 @pytest.fixture(name="mixed_depth_exceeds_limit")
 def fixture_mixed_depth_exceeds_limit() -> QProgram:
-    """32 acquires inside an average block + 1 bare acquire — mixed depths with total > 31, must raise."""
+    """32 acquires inside an average block + 1 bare acquire — mixed depths with total > 32, must raise."""
     weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
     qp = QProgram()
     with qp.average(shots=10):
@@ -6043,7 +6043,7 @@ class TestAcquisition:
             NotImplementedError,
             match=re.escape(
                 "Bus 'readout' has 34 acquisitions across 2 blocks, "
-                "but only 1 acquisition per block is supported when total acquisitions exceed 31."
+                "but only 1 acquisition per block is supported when total acquisitions exceed 32."
             ),
         ):
             compiler.compile(qprogram=exceeds_depth_multiple_per_block)
@@ -6055,7 +6055,7 @@ class TestAcquisition:
             NotImplementedError,
             match=re.escape(
                 "Bus 'readout' has 33 acquisitions at inconsistent nesting depths "
-                "[0, 1]. For more than 31 acquisitions, they must be at the same nesting depth."
+                "[0, 1]. For more than 32 acquisitions, they must be at the same nesting depth."
             ),
         ):
             compiler.compile(qprogram=mixed_depth_exceeds_limit)
@@ -6109,14 +6109,14 @@ class TestAcquisition:
         sequences, _ = compiler.compile(qprogram=single_average_33_acquires)
         assert "readout" in sequences
 
-    def test_exceeds_depth_boundary_32_blocks(self, exceeds_depth_boundary: QProgram):
-        """32 separate average blocks (exactly at the threshold) must trigger exceeds_depth: 1 index, 32 bins."""
+    def test_exceeds_depth_boundary_33_blocks(self, exceeds_depth_boundary: QProgram):
+        """33 separate average blocks (exactly at the threshold) must trigger exceeds_depth: 1 index, 33 bins."""
         compiler = QbloxCompiler()
         sequences, acquisitions = compiler.compile(qprogram=exceeds_depth_boundary)
 
         assert len(sequences["readout"]._acquisitions._acquisitions) == 1
-        assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 32
-        assert acquisitions["readout"]["Acquisition 0"].intertwined == 32
+        assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 33
+        assert acquisitions["readout"]["Acquisition 0"].intertwined == 33
 
     def test_exceeds_depth_is_scoped_per_bus(self, exceeds_depth_two_buses: QProgram):
         """exceeds_depth on one bus must not affect a second bus that stays in the per-depth path."""
