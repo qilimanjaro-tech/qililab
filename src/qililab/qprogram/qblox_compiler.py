@@ -181,8 +181,6 @@ class BusCompilationInfo:
         # Count the number of different nested levels there are for this bus in a qprogram
         self.count_nested_level_acquire: int = -1
 
-        self.exceeds_depth: bool = False
-
         # Count the number of acquire in one nested level
         self.counter_acquire: int = 0
 
@@ -198,7 +196,9 @@ class BusCompilationInfo:
         # Bin index used in the move instruction
         self.start_bin_idx: int = 0
 
-        self.first_acq: bool = True
+        # Flag used in _handle_acquire for acquisitions with acquisitions on more than 32 depth levels.
+        self.exceeds_depth: bool = False
+
 
 
 class QbloxCompiler:
@@ -241,17 +241,25 @@ class QbloxCompiler:
         self._markers: dict[str, str] | None
         self._qblox_buses: list[str]
         self._crosstalk: CrosstalkMatrix | None = None
-        self._acquisition_metadata: dict[str, dict[UUID, int]] = {}
+        self._acquisition_metadata: dict[str, dict[UUID, tuple[int, int]]] = {}
         self._single_channel: list[str] = []
 
-    def traverse_qprogram_acquire(self, block: Block):
-        """Traverses a QProgram to gather information on the acquisition."""
+    def traverse_qprogram_acquire(self, block: Block, depth: int = 0):
+        """Pre-pass over the QProgram tree to collect acquisition metadata before compilation.
+
+        Populates ``_acquisition_metadata``: a mapping of bus → {block_uuid → (count, depth)},
+        where ``count`` is the number of acquire operations directly inside that block and
+        ``depth`` is the tree nesting depth of that block. This metadata is consumed by
+        ``compile()`` to detect the exceeds-depth regime and by ``traverse()`` to set
+        ``counter_acquire`` on each bus.
+        """
         for element in block.elements:
             if isinstance(element, Block):
-                self.traverse_qprogram_acquire(element)
+                self.traverse_qprogram_acquire(element, depth + 1)
             elif isinstance(element, (Acquire, Measure, MeasureReset)):
-                self._acquisition_metadata.setdefault(element.bus, {}).setdefault(block.uuid, 0)
-                self._acquisition_metadata[element.bus][block.uuid] += 1
+                meta = self._acquisition_metadata.setdefault(element.bus, {})
+                count, _ = meta.get(block.uuid, (0, depth))
+                meta[block.uuid] = (count + 1, depth)
 
     def compile(
         self,
@@ -301,7 +309,7 @@ class QbloxCompiler:
                     and self._buses[element.bus].first_acquire_of_block is True
                 ):
                     self._buses[element.bus].count_nested_level_acquire += 1
-                    self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid]
+                    self._buses[element.bus].counter_acquire = self._acquisition_metadata[element.bus][block.uuid][0]
                     self._buses[element.bus].first_acquire_of_block = False
 
                 handler = self._handlers.get(type(element))
@@ -341,6 +349,7 @@ class QbloxCompiler:
         self._buses = self._populate_buses()
         self._ext_trigger = ext_trigger
         self._single_channel = single_channel if single_channel is not None else []
+        self._acquisition_metadata = {}
 
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
@@ -366,6 +375,24 @@ class QbloxCompiler:
 
         # Recursive traversal to convert QProgram blocks to Sequence
         self.traverse_qprogram_acquire(self._qprogram._body)
+
+        # Handle the cases where the number of acquisitions exceeds MAX_ACQUISITION_INDEX whilst having more htan one depth.
+        for bus, block_data in self._acquisition_metadata.items():
+            total = sum(count for count, _ in block_data.values())
+            depths = {depth for _, depth in block_data.values()}
+            if len(block_data) > 1 and total > MAX_ACQUISITION_INDEX:
+                if len(depths) > 1:
+                    raise NotImplementedError(
+                        f"Bus '{bus}' has {total} acquisitions at inconsistent nesting depths "
+                        f"{sorted(depths)}. For more than {MAX_ACQUISITION_INDEX} acquisitions, they must be at the same nesting depth."
+                    )
+                if not all(count == 1 for count, _ in block_data.values()):
+                    raise NotImplementedError(
+                        f"Bus '{bus}' has {total} acquisitions across {len(block_data)} blocks, "
+                        f"but only 1 acquisition per block is supported when total acquisitions exceed {MAX_ACQUISITION_INDEX}."
+                    )
+                self._buses[bus].exceeds_depth = True
+
         traverse(self._qprogram._body)
 
         # Post-processing: Set all markers OFF, add stop instructions and compile
@@ -1530,16 +1557,109 @@ class QbloxCompiler:
         self._handle_acquire(acquire)
 
     def _handle_acquire(self, element: Acquire):
+        """Compile an ``Acquire`` operation to Q1ASM.
+
+        Dispatches to ``_handle_acquire_exceeds_depth`` when the bus has more distinct
+        acquisition blocks than the hardware can index (``exceeds_depth=True``), or to
+        ``_handle_acquire_per_depth`` otherwise. The shared tail (duration tracking,
+        sync markers) is applied after both paths.
+        """
         if element.bus not in self._qblox_buses:
             return
-
         # TODO: unify with measure when time of flight is implemented
+        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, element.weights)
+        if self._buses[element.bus].exceeds_depth:
+            self._handle_acquire_exceeds_depth(element, index_I, index_Q, integration_length)
+        else:
+            self._handle_acquire_per_depth(element, index_I, index_Q, integration_length)
+        self._buses[element.bus].prev_nested_level_acquire = self._buses[element.bus].count_nested_level_acquire
+        self._buses[element.bus].static_duration += integration_length
+        self._buses[element.bus].duration_since_sync += integration_length
+        self._buses[element.bus].marked_for_sync = True
+        self._buses[element.bus].upd_param_instruction_pending = False
+
+    def _handle_acquire_exceeds_depth(self, element: Acquire, index_I: int, index_Q: int, integration_length: int):
+        """Compile an ``Acquire`` when exceeds_depth is True.
+
+        All acquisitions on this bus are collapsed into acquisition index 0. On the first
+        call, a single bin register is initialised to 0 and the full bin count is
+        registered. Every call emits one ``acquire_weighed`` into the current average
+        block and one ``add`` into the outer block, so the bin pointer advances by 1
+        after each average block completes.
+
+        Args:
+            element: The acquire operation being compiled.
+            index_I: Weight waveform index for the I path.
+            index_Q: Weight waveform index for the Q path.
+            integration_length: Integration window duration in nanoseconds.
+        """
         loops = [
             (i, loop)
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
             if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
         ]
+        block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
 
+        if not self._buses[element.bus].acquisitions: # Only for the first acquisition.
+            num_acquisitions = len(self._acquisition_metadata[element.bus])
+            acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
+            self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
+                bus=element.bus,
+                save_adc=element.save_adc,
+                shape=tuple(loop[1].iterations for loop in loops),
+                intertwined=num_acquisitions,
+            )
+            self._buses[element.bus].qpy_sequence._acquisitions.add(
+                name=acquisition_name,
+                num_bins=num_acquisitions,
+                index=self._buses[element.bus].count_nested_level_acquire,
+            )
+            self._buses[element.bus].bin_register = QPyProgram.Register()
+            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                component=QPyInstructions.Move(var=0, register=self._buses[element.bus].bin_register),
+                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+            )
+
+        register_I = self._get_or_create_weight_register(element.bus, index_I, block_index_for_move_instruction)
+        register_Q = self._get_or_create_weight_register(element.bus, index_Q, block_index_for_move_instruction)
+        self._buses[element.bus].qpy_block_stack[-1].append_component(
+            component=QPyInstructions.AcquireWeighed(
+                acq_index=0,
+                bin_index=self._buses[element.bus].bin_register,
+                weight_index_0=register_I,
+                weight_index_1=register_Q,
+                wait_time=integration_length,
+            )
+        )
+        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+            component=QPyInstructions.Add(
+                origin=self._buses[element.bus].bin_register,
+                var=1,
+                destination=self._buses[element.bus].bin_register,
+            )
+        )
+
+    def _handle_acquire_per_depth(self, element: Acquire, index_I: int, index_Q: int, integration_length: int):
+        """Compile an ``Acquire`` in the standard case where each distinct nesting depth
+        maps to its own acquisition index (index = ``count_nested_level_acquire``).
+
+        On the first acquire at a new depth level the index is registered and, if the
+        program contains iterative loops, a bin register is created and initialised.
+        Sequential acquires inside the same average block each get their own register
+        offset so consecutive bins are written in order. Single-bin acquires (no outer
+        loops) use a literal bin index via ``single_bin_counter``.
+
+        Args:
+            element: The acquire operation being compiled.
+            index_I: Weight waveform index for the I path.
+            index_Q: Weight waveform index for the Q path.
+            integration_length: Integration window duration in nanoseconds.
+        """
+        loops = [
+            (i, loop)
+            for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
+            if isinstance(loop, QPyProgram.IterativeLoop) and not loop.name.startswith("avg")
+        ]
         block_index_for_add_instruction = loops[-1][0] if loops else -1
         block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
 
@@ -1547,52 +1667,8 @@ class QbloxCompiler:
         in_avg_block = isinstance(self._buses[element.bus].qpy_block_stack[-1], QPyProgram.Loop)
         is_avg_multi_acquire = in_avg_block and self._buses[element.bus].counter_acquire > 1
 
-        if (
-            len(self._acquisition_metadata[element.bus]) > MAX_ACQUISITION_INDEX and self._buses[element.bus].first_acq
-        ):  # OSCAR's case
-            self._buses[element.bus].exceeds_depth = True
-            homogeneous_acq: bool = True
-            homogeneous_acq = len(set(self._acquisition_metadata[element.bus].values())) == 1
-
-            if homogeneous_acq:
-                self._buses[element.bus].start_bin_idx = 0
-                self._buses[element.bus].shape_acquire = tuple(loop[1].iterations for loop in loops)
-                self._buses[element.bus].num_bins_per_acquire = 1  # TO Change, specific to oscar's case
-                acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
-                # self._buses[element.bus].num_bins_total = int(self._buses[element.bus].counter_acquire * self._buses[element.bus].num_bins_per_acquire) #need to fix this
-                self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
-                    bus=element.bus,
-                    save_adc=element.save_adc,
-                    shape=self._buses[element.bus].shape_acquire,
-                    intertwined=len(self._acquisition_metadata[element.bus].values()),
-                )
-                self._buses[element.bus].qpy_sequence._acquisitions.add(
-                    name=acquisition_name,
-                    num_bins=len(self._acquisition_metadata[element.bus]),
-                    index=self._buses[element.bus].count_nested_level_acquire,
-                )
-
-                # using registers is required if the bins are greater than 1
-                # if self._buses[element.bus].num_bins_per_acquire > 1:
-                self._buses[element.bus].bin_register = QPyProgram.Register()
-
-                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                    component=QPyInstructions.Move(var=0, register=self._buses[element.bus].bin_register),
-                    bot_position=len(
-                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
-                    ),
-                )
-                self._buses[element.bus].start_bin_idx += 1
-            else:
-                raise ValueError(
-                    f"Acquisition index {self._buses[element.bus].count_nested_level_acquire} exceeds maximum of {MAX_ACQUISITION_INDEX}. This is not allowed for non homogenous acquisitions."
-                )
-
-        # if it is the first acquire at this nested level, set everything up
-        elif (
-            self._buses[element.bus].count_nested_level_acquire != self._buses[element.bus].prev_nested_level_acquire
-            and self._buses[element.bus].exceeds_depth is False
-        ):
+        # If it is the first acquire at this nested level, set everything up.
+        if self._buses[element.bus].count_nested_level_acquire != self._buses[element.bus].prev_nested_level_acquire:
             self._buses[element.bus].start_bin_idx = 0
             self._buses[element.bus].shape_acquire = tuple(loop[1].iterations for loop in loops)
             self._buses[element.bus].num_bins_per_acquire = math.prod(loop[1].iterations for loop in loops)
@@ -1601,6 +1677,7 @@ class QbloxCompiler:
             self._buses[element.bus].num_bins_total = int(
                 self._buses[element.bus].counter_acquire * self._buses[element.bus].num_bins_per_acquire
             )
+
             acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
             self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
                 bus=element.bus,
@@ -1617,12 +1694,9 @@ class QbloxCompiler:
             # using registers is required if the bins are greater than 1
             if self._buses[element.bus].num_bins_per_acquire > 1:
                 self._buses[element.bus].bin_register = QPyProgram.Register()
-
                 self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
                     component=QPyInstructions.Move(var=0, register=self._buses[element.bus].bin_register),
-                    bot_position=len(
-                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
-                    ),
+                    bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
                 )
                 self._buses[element.bus].start_bin_idx += 1
 
@@ -1630,64 +1704,19 @@ class QbloxCompiler:
             # Each sequential acquire directly inside an average block gets its own register, initialised
             # to the start_bin_idx so that consecutive acquires write to consecutive bins.
             # The register is never modified inside the average, it is modified in the add outside the average.
-            start_bin_idx = self._buses[element.bus].start_bin_idx
             self._buses[element.bus].bin_register = QPyProgram.Register()
             self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=start_bin_idx, register=self._buses[element.bus].bin_register),
+                component=QPyInstructions.Move(var=self._buses[element.bus].start_bin_idx, register=self._buses[element.bus].bin_register),
                 bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
             self._buses[element.bus].start_bin_idx += 1
 
-        index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, element.weights)
-
-        if self._buses[element.bus].exceeds_depth is False:
-            # using registers is required if the bins are greater than 1
-            if self._buses[element.bus].num_bins_per_acquire > 1:
-                register_I = self._get_or_create_weight_register(element.bus, index_I, block_index_for_move_instruction)
-                register_Q = self._get_or_create_weight_register(element.bus, index_Q, block_index_for_move_instruction)
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.AcquireWeighed(
-                        acq_index=self._buses[element.bus].count_nested_level_acquire,
-                        bin_index=self._buses[element.bus].bin_register,
-                        weight_index_0=register_I,
-                        weight_index_1=register_Q,
-                        wait_time=integration_length,
-                    )
-                )
-                # Advance by N bins per step, where N is the number of acquires sharing this avg block.
-                bins_per_step = self._buses[element.bus].counter_acquire if is_avg_multi_acquire else 1
-                self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
-                    component=QPyInstructions.Add(
-                        origin=self._buses[element.bus].bin_register,
-                        var=bins_per_step,
-                        destination=self._buses[element.bus].bin_register,
-                    )
-                )
-            else:  # if only 1 bin, the use of register can be avoided
-                if (
-                    self._buses[element.bus].prev_nested_level_acquire
-                    != self._buses[element.bus].count_nested_level_acquire
-                ):  # reset the bin index if new depth level
-                    self._buses[element.bus].single_bin_counter = 0
-
-                self._buses[element.bus].qpy_block_stack[-1].append_component(
-                    component=QPyInstructions.AcquireWeighed(
-                        acq_index=self._buses[element.bus].count_nested_level_acquire,
-                        bin_index=self._buses[element.bus].single_bin_counter,
-                        weight_index_0=index_I,
-                        weight_index_1=index_Q,
-                        wait_time=integration_length,
-                    )
-                )
-                self._buses[element.bus].single_bin_counter += 1
-
-        else:
-            # if self._buses[element.bus].num_bins_per_acquire > 1:
+        if self._buses[element.bus].num_bins_per_acquire > 1:
             register_I = self._get_or_create_weight_register(element.bus, index_I, block_index_for_move_instruction)
             register_Q = self._get_or_create_weight_register(element.bus, index_Q, block_index_for_move_instruction)
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.AcquireWeighed(
-                    acq_index=0,
+                    acq_index=self._buses[element.bus].count_nested_level_acquire,
                     bin_index=self._buses[element.bus].bin_register,
                     weight_index_0=register_I,
                     weight_index_1=register_Q,
@@ -1696,19 +1725,26 @@ class QbloxCompiler:
             )
             # Advance by N bins per step, where N is the number of acquires sharing this avg block.
             bins_per_step = self._buses[element.bus].counter_acquire if is_avg_multi_acquire else 1
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+            self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
                 component=QPyInstructions.Add(
                     origin=self._buses[element.bus].bin_register,
                     var=bins_per_step,
                     destination=self._buses[element.bus].bin_register,
                 )
             )
-        self._buses[element.bus].first_acq = False
-        self._buses[element.bus].static_duration += integration_length
-        self._buses[element.bus].duration_since_sync += integration_length
-        self._buses[element.bus].marked_for_sync = True
-        self._buses[element.bus].prev_nested_level_acquire = self._buses[element.bus].count_nested_level_acquire
-        self._buses[element.bus].upd_param_instruction_pending = False
+        else:   # if only 1 bin, the use of register can be avoided
+            if self._buses[element.bus].prev_nested_level_acquire != self._buses[element.bus].count_nested_level_acquire:
+                self._buses[element.bus].single_bin_counter = 0
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.AcquireWeighed(
+                    acq_index=self._buses[element.bus].count_nested_level_acquire,
+                    bin_index=self._buses[element.bus].single_bin_counter,
+                    weight_index_0=index_I,
+                    weight_index_1=index_Q,
+                    wait_time=integration_length,
+                )
+            )
+            self._buses[element.bus].single_bin_counter += 1
 
     def _handle_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int):
         # The conditional does not add any static duration as it is assumed that the operations contained within are the same as the else_duration of the conditional

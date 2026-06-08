@@ -151,7 +151,6 @@ class QbloxQRM(QbloxModule):
         """
         results = []
         for acquisition, acquisition_data in acquisitions.items():
-            
             sequencer = next(
                 (sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None
             )
@@ -180,7 +179,8 @@ class QbloxQRM(QbloxModule):
             "acquisitions": {},
             "program": "",
         }
-        self.device.sequencers[sequencer.identifier].sequence(empty_sequence)
+        if sequencer is not None:
+            self.device.sequencers[sequencer.identifier].sequence(empty_sequence)
         return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):

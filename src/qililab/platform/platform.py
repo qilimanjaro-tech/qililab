@@ -1440,9 +1440,7 @@ class Platform:
                             bus_results = bus.acquire_qprogram_results(
                                 acquisitions=acquisitions[bus_alias], channel_id=int(channel)
                             )
-                            for bus_result, (_, acquisition_data) in zip(
-                                bus_results, acquisitions[bus_alias].items()
-                            ):
+                            for bus_result, (_, acquisition_data) in zip(bus_results, acquisitions[bus_alias].items()):
                                 intertwined = acquisition_data.intertwined
                                 unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
                                 for unintertwined_result in unintertwined_results:
