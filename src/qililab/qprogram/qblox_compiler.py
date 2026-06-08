@@ -1555,7 +1555,7 @@ class QbloxCompiler:
         self._handle_play(play)
         self._handle_acquire(acquire)
 
-    def _handle_acquire(self, element: Acquire):
+    def _handle_acquire(self, element: Acquire) -> None:
         """Compile an ``Acquire`` operation to Q1ASM.
 
         Dispatches to ``_handle_acquire_exceeds_depth`` when the bus has more distinct
@@ -1577,7 +1577,7 @@ class QbloxCompiler:
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
 
-    def _handle_acquire_exceeds_depth(self, element: Acquire, index_I: int, index_Q: int, integration_length: int):
+    def _handle_acquire_exceeds_depth(self, element: Acquire, index_I: int, index_Q: int, integration_length: int) -> None:
         """Compile an ``Acquire`` when exceeds_depth is True.
 
         All acquisitions on this bus are collapsed into acquisition index 0. On the first
@@ -1638,7 +1638,7 @@ class QbloxCompiler:
             )
         )
 
-    def _handle_acquire_per_depth(self, element: Acquire, index_I: int, index_Q: int, integration_length: int):
+    def _handle_acquire_per_depth(self, element: Acquire, index_I: int, index_Q: int, integration_length: int) -> None:
         """Compile an ``Acquire`` in the standard case where each distinct nesting depth
         maps to its own acquisition index (index = ``count_nested_level_acquire``).
 
