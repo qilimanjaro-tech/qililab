@@ -255,7 +255,7 @@ class DatabaseManager:
             measurement_by_id_list = (
                 running_session.query(Measurement)
                 .where(Measurement.sequence_id == id)
-                .order_by(Measurement.measurement_id)  # or whatever column defines sequence order
+                .order_by(Measurement.measurement_id)
                 .all()
             )
             if measurement_by_id_list is not None:
