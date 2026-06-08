@@ -243,7 +243,7 @@ class QbloxCompiler:
         self._acquisition_metadata: dict[str, dict[UUID, tuple[int, int]]] = {}
         self._single_channel: list[str] = []
 
-    def traverse_qprogram_acquire(self, block: Block, depth: int = 0):
+    def traverse_qprogram_acquire(self, block: Block, depth: int = 0) -> None:
         """Pre-pass over the QProgram tree to collect acquisition metadata before compilation.
 
         Populates ``_acquisition_metadata``: a mapping of bus → {block_uuid → (count, depth)},
