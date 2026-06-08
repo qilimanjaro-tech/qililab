@@ -52,7 +52,7 @@ class FlatTop(Waveform):
         Returns:
             np.ndarray: Height of the envelope for each time step.
         """
-        x = np.arange(-self.duration / 2, self.duration / 2 + 1, resolution)
+        x = np.arange(-self.duration / 2 + 0.5, self.duration / 2 + 0.5, resolution)
         A = self.amplitude
         sigma = self.smooth_duration
         buf = self.buffer

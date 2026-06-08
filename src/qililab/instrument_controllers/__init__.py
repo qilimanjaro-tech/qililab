@@ -14,6 +14,7 @@
 
 """Instrument Controllers module."""
 
+from .becker import RSWUSP16TRController
 from .instrument_controller import InstrumentController
 from .instrument_controllers import InstrumentControllers
 from .keithley import Keithley2600Controller
@@ -37,6 +38,7 @@ __all__ = [
     "QDevilQDac2Controller",
     "QbloxClusterController",
     "QbloxSPIRackController",
+    "RSWUSP16TRController",
     "SGS100AController",
     "SingleInstrumentController",
 ]

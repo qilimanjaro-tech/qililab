@@ -15,8 +15,9 @@
 """Tools for building and manipulating :class:`~qililab.qprogram.qprogram.QProgram` instances."""
 
 from .calibration import Calibration
-from .crosstalk_matrix import CrosstalkMatrix, FluxVector
+from .crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from .experiment import Experiment
+from .flux_vector import FluxVector, NonLinearFluxVector
 from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
 from .qdac_compiler import QdacCompilationOutput, QdacCompiler
 from .qprogram import QProgram, QProgramCompilationOutput
@@ -26,6 +27,8 @@ __all__ = [
     "CrosstalkMatrix",
     "Experiment",
     "FluxVector",
+    "NonLinearCrosstalkMatrix",
+    "NonLinearFluxVector",
     "QProgram",
     "QProgramCompilationOutput",
     "QbloxCompilationOutput",
