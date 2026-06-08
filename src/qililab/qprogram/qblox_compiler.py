@@ -200,7 +200,6 @@ class BusCompilationInfo:
         self.exceeds_depth: bool = False
 
 
-
 class QbloxCompiler:
     """A class for compiling QProgram to QBlox hardware."""
 
@@ -1600,7 +1599,7 @@ class QbloxCompiler:
         ]
         block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
 
-        if not self._buses[element.bus].acquisitions: # Only for the first acquisition.
+        if not self._buses[element.bus].acquisitions:  # Only for the first acquisition.
             num_acquisitions = len(self._acquisition_metadata[element.bus])
             acquisition_name = f"Acquisition {self._buses[element.bus].count_nested_level_acquire}"
             self._buses[element.bus].acquisitions[acquisition_name] = AcquisitionData(
@@ -1696,7 +1695,9 @@ class QbloxCompiler:
                 self._buses[element.bus].bin_register = QPyProgram.Register()
                 self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
                     component=QPyInstructions.Move(var=0, register=self._buses[element.bus].bin_register),
-                    bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+                    bot_position=len(
+                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
+                    ),
                 )
                 self._buses[element.bus].start_bin_idx += 1
 
@@ -1706,7 +1707,9 @@ class QbloxCompiler:
             # The register is never modified inside the average, it is modified in the add outside the average.
             self._buses[element.bus].bin_register = QPyProgram.Register()
             self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=self._buses[element.bus].start_bin_idx, register=self._buses[element.bus].bin_register),
+                component=QPyInstructions.Move(
+                    var=self._buses[element.bus].start_bin_idx, register=self._buses[element.bus].bin_register
+                ),
                 bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
             self._buses[element.bus].start_bin_idx += 1
@@ -1732,8 +1735,11 @@ class QbloxCompiler:
                     destination=self._buses[element.bus].bin_register,
                 )
             )
-        else:   # if only 1 bin, the use of register can be avoided
-            if self._buses[element.bus].prev_nested_level_acquire != self._buses[element.bus].count_nested_level_acquire:
+        else:  # if only 1 bin, the use of register can be avoided
+            if (
+                self._buses[element.bus].prev_nested_level_acquire
+                != self._buses[element.bus].count_nested_level_acquire
+            ):
                 self._buses[element.bus].single_bin_counter = 0
             self._buses[element.bus].qpy_block_stack[-1].append_component(
                 component=QPyInstructions.AcquireWeighed(
