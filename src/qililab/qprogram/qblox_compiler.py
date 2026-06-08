@@ -1577,7 +1577,9 @@ class QbloxCompiler:
         self._buses[element.bus].marked_for_sync = True
         self._buses[element.bus].upd_param_instruction_pending = False
 
-    def _handle_acquire_exceeds_depth(self, element: Acquire, index_I: int, index_Q: int, integration_length: int) -> None:
+    def _handle_acquire_exceeds_depth(
+        self, element: Acquire, index_I: int, index_Q: int, integration_length: int
+    ) -> None:
         """Compile an ``Acquire`` when exceeds_depth is True.
 
         All acquisitions on this bus are collapsed into acquisition index 0. On the first
