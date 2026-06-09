@@ -586,6 +586,15 @@ wheels = [
 ]
 
 [[package]]
+name = "configparser"
+version = "7.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/ac/ea19242153b5e8be412a726a70e82c7b5c1537c83f61b20995b2eda3dcd7/configparser-7.2.0.tar.gz", hash = "sha256:b629cc8ae916e3afbd36d1b3d093f34193d851e11998920fdcfc4552218b7b70", size = 51273, upload-time = "2025-03-08T16:04:09.339Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/09/fe/f61e7129e9e689d9e40bbf8a36fb90f04eceb477f4617c02c6a18463e81f/configparser-7.2.0-py3-none-any.whl", hash = "sha256:fee5e1f3db4156dcd0ed95bc4edfa3580475537711f67a819c966b389d09ce62", size = 17232, upload-time = "2025-03-08T16:04:07.743Z" },
+]
+
+[[package]]
 name = "contourpy"
 version = "1.3.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1481,7 +1490,7 @@ name = "intel-cmplr-lib-ur"
 version = "2025.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "umf", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
+    { name = "umf", marker = "sys_platform != 'darwin'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/70/9a/a338de7fc24087c40d38401372618c8465103795baefe941eea3acf55678/intel_cmplr_lib_ur-2025.3.1-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:1730cce0c65591d157d5fa1acdc8447a9ed419b527ea52e66db0815a0fb5e444", size = 30771263, upload-time = "2025-11-03T05:32:33.173Z" },
@@ -1493,7 +1502,7 @@ name = "intel-openmp"
 version = "2025.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "intel-cmplr-lib-ur", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
+    { name = "intel-cmplr-lib-ur", marker = "sys_platform != 'darwin'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/da/ad/72e2fb7e30f5fd2b7650b721c5979cf2a614538fd99afb45672b31157fb9/intel_openmp-2025.3.1-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:2c3541ea275f0e8417243612a16b6f1f4d15c1e9fcc96667db0824d0735f1413", size = 74333087, upload-time = "2025-11-03T05:32:21.171Z" },
@@ -2079,9 +2088,9 @@ name = "mkl"
 version = "2025.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "intel-openmp", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
-    { name = "onemkl-license", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
-    { name = "tbb", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
+    { name = "intel-openmp", marker = "sys_platform != 'darwin'" },
+    { name = "onemkl-license", marker = "sys_platform != 'darwin'" },
+    { name = "tbb", marker = "sys_platform != 'darwin'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6d/b4/ef531295ed33b929c6c5214421eeebe370f1be22536b6956b4aaf18fdbc5/mkl-2025.3.0-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:7b81f5d2e034637b187ca58666878c4e8889988a78e39e0b6ee92e846568f660", size = 195022935, upload-time = "2025-10-22T17:56:20.854Z" },
@@ -2091,7 +2100,23 @@ wheels = [
 [[package]]
 name = "mkl-service"
 version = "2.6.1"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.12' and platform_machine == 'aarch64' and sys_platform != 'darwin'",
+    "python_full_version < '3.12' and platform_machine == 'aarch64' and sys_platform != 'darwin'",
+]
+dependencies = [
+    { name = "mkl", marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
+]
+
+[[package]]
+name = "mkl-service"
+version = "2.6.1"
 source = { registry = "https://urob.github.io/numpy-mkl" }
+resolution-markers = [
+    "python_full_version >= '3.12' and platform_machine != 'aarch64' and sys_platform != 'darwin'",
+    "python_full_version < '3.12' and platform_machine != 'aarch64' and sys_platform != 'darwin'",
+]
 dependencies = [
     { name = "mkl", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
 ]
@@ -2420,6 +2445,10 @@ resolution-markers = [
     "python_full_version >= '3.12' and platform_machine == 'aarch64' and sys_platform != 'darwin'",
     "python_full_version < '3.12' and platform_machine == 'aarch64' and sys_platform != 'darwin'",
 ]
+dependencies = [
+    { name = "mkl", marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
+    { name = "mkl-service", version = "2.6.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
+]
 sdist = { url = "https://files.pythonhosted.org/packages/24/62/ae72ff66c0f1fd959925b4c11f8c2dea61f47f6acaea75a08512cdfe3fed/numpy-2.4.1.tar.gz", hash = "sha256:a1ceafc5042451a858231588a104093474c6a5c57dcc724841f5c888d237d690", size = 20721320, upload-time = "2026-01-10T06:44:59.619Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/86/9c/841c15e691c7085caa6fd162f063eff494099c8327aeccd509d1ab1e36ab/numpy-2.4.1-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:a92f227dbcdc9e4c3e193add1a189a9909947d4f8504c576f4a732fd0b54240a", size = 14708058, upload-time = "2026-01-10T06:42:23.546Z" },
@@ -2453,7 +2482,7 @@ resolution-markers = [
 ]
 dependencies = [
     { name = "mkl", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
-    { name = "mkl-service", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
+    { name = "mkl-service", version = "2.6.1", source = { registry = "https://urob.github.io/numpy-mkl" }, marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
 ]
 wheels = [
     { url = "https://github.com/urob/numpy-mkl/releases/download/0.2.0/numpy-2.4.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:bbe5c9ac6ae3b7c474171746ace1013ddd2e10b8f7adc7cbadd408f39b62311f" },
@@ -3245,6 +3274,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pysquashfsimage"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/62/b6/8a453795e78c743bb6d765b8288f86ecbba4e3522bcc1db534142062ec0e/PySquashfsImage-0.9.0.tar.gz", hash = "sha256:d3330ccd111ac2ef2cebf0c392077fe8608e2760862531d960ec9cb6c6d3655f", size = 44190, upload-time = "2023-07-02T23:41:10.785Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/28/f7/fa862ed72fbd05c930aeb979785fcfe33f9b874e639eb563f5ab9e46e277/PySquashfsImage-0.9.0-py2.py3-none-any.whl", hash = "sha256:a8ea154bf946f985c65fab7d8c08dc73da7ad47a0aebf0d13ae50ae56e369f90", size = 43220, upload-time = "2023-07-02T23:41:09.091Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -3472,18 +3510,21 @@ wheels = [
 
 [[package]]
 name = "qblox-instruments"
-version = "0.16.0"
+version = "1.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "configparser" },
     { name = "fastjsonschema" },
     { name = "ifaddr" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://urob.github.io/numpy-mkl" }, marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
+    { name = "pysquashfsimage" },
     { name = "qcodes" },
     { name = "spirack" },
+    { name = "strenum" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/48/7974ef40f055866a48091477d691b8f85ea5312a60a8f3ced5af6a1edede/qblox_instruments-0.16.0.tar.gz", hash = "sha256:8a9785d916af27a35c0c51a6a870de5ed879cadb56fff1ee47f4a79a2cf0ad62", size = 2289124, upload-time = "2025-03-31T17:30:05.213Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/c5/92860233ea0d7f14df45df10633682f40d86ee03d2667b423c8f3c574307/qblox_instruments-1.0.3.tar.gz", hash = "sha256:798528d69253c64f6e70b283c623a7cb6b5265806320bd90cec424a9f384f5ff", size = 2305021, upload-time = "2025-12-15T22:37:11.946Z" }
 
 [[package]]
 name = "qcodes"
@@ -3603,7 +3644,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "pyvisa-py", specifier = ">=0.7.2" },
-    { name = "qblox-instruments", specifier = "==0.16.0" },
+    { name = "qblox-instruments", specifier = "==1.0.3" },
     { name = "qcodes", specifier = "==0.54.3" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qilisdk", git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main" },
@@ -3648,7 +3689,7 @@ dependencies = [
     { name = "gputil" },
     { name = "loguru" },
     { name = "matplotlib" },
-    { name = "mkl-service", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
+    { name = "mkl-service", version = "2.6.1", source = { registry = "https://urob.github.io/numpy-mkl" }, marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://urob.github.io/numpy-mkl" }, marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
@@ -3978,6 +4019,8 @@ resolution-markers = [
     "python_full_version < '3.12' and platform_machine == 'aarch64' and sys_platform != 'darwin'",
 ]
 dependencies = [
+    { name = "mkl", marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
+    { name = "mkl-service", version = "2.6.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/4c/3b/546a6f0bfe791bbb7f8d591613454d15097e53f906308ec6f7c1ce588e8e/scipy-1.16.2.tar.gz", hash = "sha256:af029b153d243a80afb6eabe40b0a07f8e35c9adc269c019f364ad747f826a6b", size = 30580599, upload-time = "2025-09-11T17:48:08.271Z" }
@@ -4012,7 +4055,7 @@ resolution-markers = [
 ]
 dependencies = [
     { name = "mkl", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
-    { name = "mkl-service", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
+    { name = "mkl-service", version = "2.6.1", source = { registry = "https://urob.github.io/numpy-mkl" }, marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://urob.github.io/numpy-mkl" }, marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
 ]
 wheels = [
@@ -4296,6 +4339,15 @@ wheels = [
 ]
 
 [[package]]
+name = "strenum"
+version = "0.4.15"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/85/ad/430fb60d90e1d112a62ff57bdd1f286ec73a2a0331272febfddd21f330e1/StrEnum-0.4.15.tar.gz", hash = "sha256:878fb5ab705442070e4dd1929bb5e2249511c0bcf2b0eeacf3bcd80875c82eff", size = 23384, upload-time = "2023-06-29T22:02:58.399Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/81/69/297302c5f5f59c862faa31e6cb9a4cd74721cd1e052b38e464c5b402df8b/StrEnum-0.4.15-py3-none-any.whl", hash = "sha256:a30cda4af7cc6b5bf52c8055bc4bf4b2b6b14a93b574626da33df53cf7740659", size = 8851, upload-time = "2023-06-29T22:02:56.947Z" },
+]
+
+[[package]]
 name = "stringparser"
 version = "0.7"
 source = { registry = "https://pypi.org/simple" }
@@ -4334,7 +4386,7 @@ name = "tbb"
 version = "2022.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "tcmlib", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
+    { name = "tcmlib", marker = "sys_platform != 'darwin'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e3/9e/b7f1f7af53580e4e8cf39cf51b14c8e295d767b3ae9d78b5007d6058cfc8/tbb-2022.3.0-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:a7e122cb98a6f8823940341aa323dcdfffa77e36712a22a1ae3a76430fa9f412", size = 4178631, upload-time = "2025-10-22T18:00:00.181Z" },
@@ -4589,7 +4641,7 @@ name = "umf"
 version = "1.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "tcmlib", marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
+    { name = "tcmlib", marker = "sys_platform != 'darwin'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/27/8e/4a90b6aa955268988e7491f502b7ac2bd65cb954b4979bfcc892cf019b50/umf-1.0.2-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:ef4d144a2007a73a1a22ee575ee4f5a1894a206532c6f6d77b4cf548643502fb", size = 359878, upload-time = "2025-10-22T17:58:50.929Z" },
