@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Gaussian waveform."""
+from copy import copy
 
 import numpy as np
 
@@ -77,6 +78,7 @@ class Gaussian(Waveform):
         self.amplitude = amplitude
         self.duration = duration
         self.num_sigmas = num_sigmas
+        self._added = 0
 
     def envelope(self, resolution: int = 1) -> np.ndarray:
         """Gaussian envelope centered with respect to the pulse.
@@ -101,7 +103,7 @@ class Gaussian(Waveform):
         gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
         corr_norm = np.amax(np.real(gaussian))
 
-        return gaussian * norm / corr_norm if corr_norm != 0 else gaussian
+        return (gaussian * norm / corr_norm if corr_norm != 0 else gaussian) + self._added
 
     def get_duration(self) -> int:
         """Get the duration of the waveform.
@@ -110,3 +112,24 @@ class Gaussian(Waveform):
             int: The duration of the waveform in ns.
         """
         return self.duration
+
+    def sum(self, other: float | int | np.floating | Waveform, return_copy = False):
+        obj = copy(self) if return_copy else self
+        # if isinstance(other, ComposedWaveform): #TODO: warn context disapearence
+        #     obj.waveforms += other.waveforms
+        # elif isinstance(other, Waveform):
+        #     obj.add(other)
+        if isinstance(other, float | int | np.floating ):
+            obj._added += other
+        else:
+            raise NotImplementedError(f"+, - operators not supported for `ComposedWaveform` and `{other.__class__}`")
+        return obj
+
+    def mult(self, other: float | int | np.floating, return_copy = False) -> Waveform:
+        obj = copy(self) if return_copy else self
+        if isinstance(other, float | int | np.floating):
+            obj.amplitude *= other
+            obj._added *= other
+        else:
+            raise NotImplementedError(f"+, - operators not supported for `ComposedWaveform` and `{other.__class__}`")
+        return obj

@@ -14,6 +14,8 @@
 
 """Square waveform."""
 
+from copy import copy
+
 import numpy as np
 
 from qililab.core.variables import Domain, requires_domain
@@ -71,3 +73,23 @@ class Square(Waveform):
             int: The duration of the waveform in ns.
         """
         return self.duration
+
+    def sum(self, other: float | int | np.floating | Waveform, return_copy = False):
+        obj = copy(self) if return_copy else self
+        # if isinstance(other, ComposedWaveform): #TODO: warn context disapearence
+        #     obj.waveforms += other.waveforms
+        # elif isinstance(other, Waveform):
+        #     obj.add(other)
+        if isinstance(other, float | int | np.floating ):
+            obj.amplitude += other
+        else:
+            raise NotImplementedError(f"+, - operators not supported for `ComposedWaveform` and `{other.__class__}`")
+        return obj
+
+    def mult(self, other: float | int | np.floating, return_copy = False) -> Waveform:
+        obj = copy(self) if return_copy else self
+        if isinstance(other, float | int | np.floating):
+            obj.amplitude *= other
+        else:
+            raise NotImplementedError(f"+, - operators not supported for `ComposedWaveform` and `{other.__class__}`")
+        return obj

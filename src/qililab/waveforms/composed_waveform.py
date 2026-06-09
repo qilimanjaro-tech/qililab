@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import warnings
+from copy import copy
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal, Optional, cast
 
 import numpy as np
 
@@ -51,6 +54,7 @@ class ComposedWaveform(Waveform):
         self,
         duration: int | None = None,
         snap: Optional[Literal["beginning", "start", "center", "end", "termination"]] = None,
+        default_aligment: Literal["start", "center", "end"] = "start"
     ):
         if snap is not None and duration is None:
             warnings.warn(
@@ -61,10 +65,11 @@ class ComposedWaveform(Waveform):
         self.duration = duration
         self.snap = snap
         self.waveforms: list[ComposedWaveform.WaveformContext] = []
+        self.default_aligment = default_aligment
         self._added: float = 0.0
         self._scaled: float = 1.0
 
-    def add(self, waveform: Waveform, at: int = 0, align: Literal["start", "center", "end"] = "start") -> "ComposedWaveform":
+    def add(self, waveform: Waveform, at: int = 0, align: Optional[Literal["start", "center", "end"]] = None) -> "ComposedWaveform":
         """Place a sub-waveform at sample offset ``at``.
 
         Args:
@@ -75,7 +80,8 @@ class ComposedWaveform(Waveform):
         Returns:
             ComposedWaveform: self, for chaining.
         """
-        self.waveforms.append(self.WaveformContext(waveform=waveform, at=at, align=align))
+        wf_aligment = align or self.default_aligment
+        self.waveforms.append(self.WaveformContext(waveform=waveform, at=at, align=wf_aligment))
         return self
 
     def _start_offset(self) -> int:
@@ -117,7 +123,7 @@ class ComposedWaveform(Waveform):
         Returns:
             np.ndarray: Array of exactly ``self.duration`` samples.
         """
-        dur = self.duration
+        dur = cast("int", self.duration)
         n = len(envelope)
 
         if self.snap in (None, "beginning"):
@@ -149,16 +155,25 @@ class ComposedWaveform(Waveform):
         if self.duration is not None:
             result = self._handle_duration(result, reference_idx=-offset)
 
-        return (result + self._added)[::resolution] * self._scaled
+        return result[::resolution] * self._scaled + self._added
 
-    def __add__(self, other: float) -> "ComposedWaveform":
-        self._added += other
-        return self
+    def sum(self, other: float | int | np.floating | Waveform, return_copy = False):
+        obj = copy(self) if return_copy else self
+        if isinstance(other, ComposedWaveform): #TODO: warn context disapearence
+            obj.waveforms += [*obj.waveforms, *other.waveforms]
+        elif isinstance(other, Waveform):
+            obj.add(other)
+        elif isinstance(other, float | int | np.floating):
+            obj._added += other
+        else:
+            raise NotImplementedError(f"+, - operators not supported for `ComposedWaveform` and `{other.__class__.__name__}`")
+        return obj
 
-    def __sub__(self, other: float) -> "ComposedWaveform":
-        self._added -= other
-        return self
-
-    def __mul__(self, other: float) -> "ComposedWaveform":
-        self._scaled *= other
-        return self
+    def mult(self, other: float | int | np.floating, return_copy = False):
+        obj = copy(self) if return_copy else self
+        if isinstance(other, float | int | np.floating):
+            obj._scaled *= other
+            obj._added += other
+        else:
+            raise NotImplementedError(f"*, / operators not supported for `ComposedWaveform` and `{other.__class__.__name__}`")
+        return obj
