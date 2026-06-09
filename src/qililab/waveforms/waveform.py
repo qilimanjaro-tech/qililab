@@ -14,6 +14,8 @@
 
 """Waveform protocol class."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -44,3 +46,35 @@ class Waveform(ABC):
             int: The duration of the waveform in ns.
         """
         return len(self.envelope())
+
+    # @abstractmethod
+    def sum(self, other: float | int | np.floating | Waveform, return_copy = False) -> Waveform: pass
+
+    # @abstractmethod
+    def mult(self, other: float | int | np.floating, return_copy = False) -> Waveform: pass
+
+    def __add__(self, other: float | int | np.floating | Waveform) -> Waveform: return self.sum(other=other, return_copy=True)
+
+    def __radd__(self, other: float | int | np.floating | Waveform) -> Waveform: return self.sum(other=other, return_copy=True)
+
+    def __iadd__(self, other: float | int | np.floating | Waveform) -> Waveform: return self.sum(other=other, return_copy=False)
+
+    def __sub__(self, other: float | int | np.floating | Waveform) -> Waveform: return self.sum(other=-other, return_copy=True)
+
+    def __rsub__(self, other: float | int | np.floating | Waveform) -> Waveform: return (-self).sum(other=other, return_copy=True)
+
+    def __isub__(self, other: float | int | np.floating | Waveform) -> Waveform: return self.sum(other=-other, return_copy=False)
+
+    def __mul__(self, other: float | int | np.floating) -> Waveform: return self.mult(other=other, return_copy=True)
+
+    def __rmul__(self, other: float | int | np.floating) -> Waveform: return self.mult(other=other, return_copy=True)
+
+    def __imul__(self, other: float | int | np.floating) -> Waveform: return self.mult(other=other, return_copy=True)
+
+    def __truediv__(self, other: float | int | np.floating) -> Waveform: return self.mult(other=1/other, return_copy=True)
+
+    def __rtruediv__(self, other) -> Waveform: raise NotImplementedError("You cannot divide by a Waveform")
+
+    def __itruediv__(self, other: float | int | np.floating) -> Waveform: return self.mult(other=1/other, return_copy=False)
+
+    def __neg__(self) -> Waveform: return self.mult(other=-1, return_copy=True)
