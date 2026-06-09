@@ -14,7 +14,7 @@
 
 from dataclasses import dataclass, field
 
-from qililab.pulse.pulse_distortion import PulseDistortion
+from qililab.pulse_distortion import PulseDistortion
 from qililab.typings import ChannelID
 
 

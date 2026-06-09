@@ -12,10 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MeasurementResult class."""
+"""QProgramResults class."""
 
-from qililab.result.qprogram.measurement_result import MeasurementResult
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from qililab.yaml import yaml
+
+if TYPE_CHECKING:
+    from qililab.result.qprogram.measurement_result import MeasurementResult
 
 
 @yaml.register_class

@@ -60,7 +60,13 @@ class QbloxD5a(VoltageSource):
         return getattr(self.device, f"dac{dac_index}")
 
     @log_set_parameter
-    def set_parameter(self, parameter: Parameter, value: ParameterValue, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: ParameterValue,
+        channel_id: ChannelID | None = None,
+        output_id: OutputID | None = None,
+    ):
         """Set Qblox instrument calibration settings."""
 
         if channel_id is None:
@@ -89,7 +95,9 @@ class QbloxD5a(VoltageSource):
             return
         raise ParameterNotFound(self, parameter)
 
-    def get_parameter(self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None):
+    def get_parameter(
+        self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
+    ):
         """Get instrument parameter.
 
         Args:

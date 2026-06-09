@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """CurrentSource class."""
+
 from dataclasses import dataclass
 
 from qililab.instruments.instrument import Instrument

@@ -6,14 +6,13 @@ import re
 import warnings
 from pathlib import Path
 from queue import Queue
-from types import MethodType
-from unittest.mock import MagicMock, create_autospec, patch
+from types import MethodType, SimpleNamespace
+from unittest.mock import ANY, MagicMock, create_autospec, patch
 import logging
 
 import numpy as np
 import pytest
-from qibo import gates
-from qibo.models import Circuit
+from qilisdk.digital import Circuit, M, X
 from qililab.data_management import build_platform as platform_build_platform
 from qililab.qprogram import QbloxCompilationOutput
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
@@ -33,7 +32,6 @@ from tests.test_utils import build_platform
 
 from qililab import Arbitrary, save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.digital import DigitalTranspilationConfig
 from qililab.exceptions import ExceptionGroup
 from qililab.extra.quantum_machines import QuantumMachinesCluster, QuantumMachinesMeasurementResult
 from qililab.instrument_controllers import InstrumentControllers
@@ -43,16 +41,15 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform
-from qililab.pulse import Drag, Pulse, PulseEvent, PulseSchedule, Rectangular
-from qililab.qprogram import Calibration, Domain, Experiment, QProgram, QbloxCompilationOutput
+from qililab.core.variables import Domain
+from qililab.qprogram import Calibration, Experiment, QProgram, QbloxCompilationOutput
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
 from qililab.result.database import get_db_manager
-from qililab.result.qblox_results import QbloxResult
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
 from qililab.settings import AnalogCompilationSettings, DigitalCompilationSettings, Runcard
 from qililab.settings.analog.flux_control_topology import FluxControlTopology
-from qililab.settings.digital.gate_event_settings import GateEventSettings
+from qililab.settings.digital.gate_event import GateEvent
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.waveforms import Chained, IQPair, Ramp, Square
 
@@ -64,6 +61,14 @@ def fixture_platform():
 @pytest.fixture(name="platform_qblox_qdac")
 def fixture_platform_qblox_qdac():
     return platform_build_platform(runcard="tests/runcards/qblox_and_qdac.yml")
+
+@pytest.fixture(name="platform_qblox_qdacs")
+def fixture_platform_qblox_qdacs():
+    return platform_build_platform(runcard="tests/runcards/qblox_and_qdacs.yml")
+
+@pytest.fixture(name="platform_qblox_qdacs_no_trigger")
+def fixture_platform_qblox_qdacs_no_trigger():
+    return platform_build_platform(runcard="tests/runcards/qblox_and_qdacs_no_trigger.yml")
 
 
 @pytest.fixture(name="platform_qm_qdac")
@@ -289,8 +294,7 @@ def get_anneal_qprogram(runcard, flux_to_bus_topology):
             for bus, waveform in anneal_waveforms.items():
                 qp_anneal.play(bus=bus, waveform=waveform)
             qp_anneal.sync()
-            with qp_anneal.block():
-                qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
 
@@ -323,15 +327,13 @@ def get_anneal_qprogram_with_preparation(runcard, flux_to_bus_topology):
     shots_variable = qp_anneal.variable("num_shots", Domain.Scalar, int)
     with qp_anneal.for_loop(variable=shots_variable, start=0, stop=num_shots, step=1):
         with qp_anneal.average(num_averages):
-            with qp_anneal.block():
-                qp_anneal.play(bus="flux_line_phix_q0", waveform=preparation_wf)
-                qp_anneal.play(bus="flux_line_phiz_q0", waveform=preparation_wf)
+            qp_anneal.play(bus="flux_line_phix_q0", waveform=preparation_wf)
+            qp_anneal.play(bus="flux_line_phiz_q0", waveform=preparation_wf)
             qp_anneal.sync()
             for bus, waveform in anneal_waveforms.items():
                 qp_anneal.play(bus=bus, waveform=waveform)
             qp_anneal.sync()
-            with qp_anneal.block():
-                qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
+            qp_anneal.measure(bus="readout_bus", waveform=readout_waveform, weights=weights)
     return qp_anneal
 
 
@@ -341,6 +343,71 @@ def fixture_qp_quantum_machine() -> QProgram:
     qp.play(bus="drive_q0", waveform=Square(amplitude=1, duration=10))
     qp.wait("drive_q0", 10)
     return qp
+
+def compare_platforms(obj1, obj2, path="root", depth=0, max_depth=10):
+    """
+    Recursively compare two objects' properties up to max_depth.
+    """
+    differences = []
+
+    if depth > max_depth:
+        return True, []
+
+    # Different types: report and stop recursing this branch
+    if type(obj1) is not type(obj2):
+        differences.append(f"{path}: type mismatch ({type(obj1).__name__} vs {type(obj2).__name__})")
+        return False, differences
+
+    # Primitives and non-inspectable types
+    if isinstance(obj1, (int, float, complex, str, bool, bytes, type(None))):
+        if obj1 != obj2:
+            differences.append(f"{path}: {obj1!r} != {obj2!r}")
+        return obj1 == obj2, differences
+
+    # Lists and tuples
+    if isinstance(obj1, (list, tuple)):
+        if len(obj1) != len(obj2):
+            differences.append(f"{path}: length mismatch ({len(obj1)} vs {len(obj2)})")
+            # Still compare up to the shorter length
+        for i, (a, b) in enumerate(zip(obj1, obj2)):
+            _, diffs = compare_platforms(a, b, path=f"{path}[{i}]", depth=depth + 1, max_depth=max_depth)
+            differences.extend(diffs)
+        return len(differences) == 0, differences
+
+    # Dicts
+    if isinstance(obj1, dict):
+        keys1, keys2 = set(obj1.keys()), set(obj2.keys())
+        for k in keys1 - keys2:
+            differences.append(f"{path}[{k!r}]: key only in first object")
+        for k in keys2 - keys1:
+            differences.append(f"{path}[{k!r}]: key only in second object")
+        for k in keys1 & keys2:
+            _, diffs = compare_platforms(obj1[k], obj2[k], path=f"{path}[{k!r}]", depth=depth + 1, max_depth=max_depth)
+            differences.extend(diffs)
+        return len(differences) == 0, differences
+
+    # Objects with __dict__ (dataclasses, custom classes, etc.)
+    if hasattr(obj1, "__dict__"):
+        attrs1 = set(vars(obj1).keys())
+        attrs2 = set(vars(obj2).keys())
+        for attr in attrs1 - attrs2:
+            differences.append(f"{path}.{attr}: attribute only in first object")
+
+        for attr in attrs2 - attrs1:
+            differences.append(f"{path}.{attr}: attribute only in second object")
+
+        for attr in attrs1 & attrs2:
+            _, diffs = compare_platforms(
+                getattr(obj1, attr), getattr(obj2, attr),
+                path=f"{path}.{attr}", depth=depth + 1, max_depth=max_depth
+            )
+            differences.extend(diffs)
+        return len(differences) == 0, differences
+
+    # Fallback: direct equality
+    if obj1 != obj2:
+        differences.append(f"{path}: {obj1!r} != {obj2!r}")
+    return obj1 == obj2, differences
 
 class TestPlatformInitialization:
     """Unit tests for the Platform class initialization"""
@@ -369,6 +436,136 @@ class TestPlatform:
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
 
+    def test_compile_circuit_invokes_transpiler_and_compiler(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """Platform.compile_circuit wires transpilation and compilation stages together."""
+        circuit = Circuit(2)
+        circuit.add(X(0))
+
+        transpiled_circuit = object()
+        compiled_qprogram = QProgram()
+
+        transpiler_instance = MagicMock()
+        transpiler_instance.run.return_value = transpiled_circuit
+        transpiler_instance.context = SimpleNamespace(
+            initial_layout={0: 0, 1: 1},
+            final_layout={0: 1, 1: 0},
+        )
+
+        compiler_instance = MagicMock()
+        compiler_instance.compile.return_value = compiled_qprogram
+
+        transpiler_cls = MagicMock(return_value=transpiler_instance)
+        compiler_cls = MagicMock(return_value=compiler_instance)
+
+        monkeypatch.setattr("qililab.platform.platform.CircuitTranspiler", transpiler_cls)
+        monkeypatch.setattr("qililab.platform.platform.CircuitToQProgramCompiler", compiler_cls)
+
+        qubit_mapping = {0: 1}
+        nshots = 256
+
+        result = platform.compile_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
+
+        transpiler_cls.assert_called_once_with(platform.digital_compilation_settings, qubit_mapping=qubit_mapping)
+        transpiler_instance.run.assert_called_once_with(circuit)
+        compiler_cls.assert_called_once_with(platform.digital_compilation_settings)
+        compiler_instance.compile.assert_called_once_with(transpiled_circuit, nshots)
+
+        assert result[0] is compiled_qprogram
+        assert result[1] == {0: 1, 1: 0}
+
+    def test_compile_circuit_with_default_mapping(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """If no mapping is provided, the transpiler is invoked with qubit_mapping=None and may return None layout."""
+        circuit = Circuit(1)
+
+        transpiler_instance = MagicMock()
+        transpiler_instance.run.return_value = circuit
+        transpiler_instance.context = SimpleNamespace(final_layout=None)
+
+        compiler_instance = MagicMock()
+        compiler_instance.compile.return_value = QProgram()
+
+        transpiler_cls = MagicMock(return_value=transpiler_instance)
+        compiler_cls = MagicMock(return_value=compiler_instance)
+
+        monkeypatch.setattr("qililab.platform.platform.CircuitTranspiler", transpiler_cls)
+        monkeypatch.setattr("qililab.platform.platform.CircuitToQProgramCompiler", compiler_cls)
+
+        qprogram, layout = platform.compile_circuit(circuit, nshots=5)
+
+        transpiler_cls.assert_called_once_with(platform.digital_compilation_settings, qubit_mapping=None)
+        transpiler_instance.run.assert_called_once_with(circuit)
+        compiler_instance.compile.assert_called_once_with(circuit, 5)
+        assert isinstance(qprogram, QProgram)
+        assert layout is None
+
+    def test_compile_circuit_without_digital_settings_raises(
+        self, platform: Platform
+    ):
+        """Raises ValueError when digital compilation settings are missing."""
+        platform.digital_compilation_settings = None
+
+        circuit = Circuit(1)
+
+        with pytest.raises(
+            ValueError, match="Cannot compile Circuit without defining DigitalCompilationSettings."
+        ):
+            platform.compile_circuit(circuit, nshots=128)
+
+    def test_execute_circuit_uses_compilation_and_execution_pipeline(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """execute_circuit compiles, executes, and formats samples via helpers."""
+        circuit = Circuit(1)
+        circuit.add(M(0))
+
+        compiled_qprogram = QProgram()
+        logical_mapping = {0: 0}
+        samples = {"0": 42}
+
+        compile_mock = MagicMock(return_value=(compiled_qprogram, logical_mapping))
+        execute_mock = MagicMock(return_value="results")
+        samples_mock = MagicMock(return_value=samples)
+
+        monkeypatch.setattr(platform, "compile_circuit", compile_mock)
+        monkeypatch.setattr(platform, "execute_qprogram", execute_mock)
+        monkeypatch.setattr("qililab.platform.platform.qprogram_results_to_samples", samples_mock)
+
+        qubit_mapping = {0: 0}
+        nshots = 32
+
+        result = platform.execute_circuit(circuit, nshots, qubit_mapping=qubit_mapping)
+
+        compile_mock.assert_called_once_with(circuit, nshots, qubit_mapping=qubit_mapping)
+        execute_mock.assert_called_once_with(compiled_qprogram)
+        samples_mock.assert_called_once_with("results", logical_mapping)
+
+        assert result == samples
+
+    def test_execute_circuit_handles_none_mapping(
+        self, monkeypatch: pytest.MonkeyPatch, platform: Platform
+    ):
+        """execute_circuit forwards a None logical-to-physical mapping without modification."""
+        circuit = Circuit(1)
+
+        compile_mock = MagicMock(return_value=(QProgram(), None))
+        execute_mock = MagicMock(return_value="results")
+        samples_mock = MagicMock(return_value={"0": 1})
+
+        monkeypatch.setattr(platform, "compile_circuit", compile_mock)
+        monkeypatch.setattr(platform, "execute_qprogram", execute_mock)
+        monkeypatch.setattr("qililab.platform.platform.qprogram_results_to_samples", samples_mock)
+
+        result = platform.execute_circuit(circuit, nshots=20)
+
+        compile_mock.assert_called_once_with(circuit, 20, qubit_mapping=None)
+        execute_mock.assert_called_once_with(compile_mock.return_value[0])
+        samples_mock.assert_called_once_with("results", None)
+        assert result == {"0": 1}
+
     def test_initial_setup_no_instrument_connection(self, platform: Platform):
         """Test platform raises and error if no instrument connection."""
         platform._connected_to_instruments = False
@@ -377,35 +574,46 @@ class TestPlatform:
         ):
             platform.initial_setup()
 
-    @patch("qililab.typings.Parameter")
-    def test_set_flux_parameter_qblox_channel0(self, mock_parameter, platform: Platform):
-        """Test platform raises and error if no instrument connection."""
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q0_bus": {"flux_line_q0_bus": 0.1}}))
-        platform.set_parameter(alias="flux_line_q0_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.OFFSET_OUT0.called_once()
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q1_bus": {"flux_line_q1_bus": 0.1}}))
-        platform.set_parameter(alias="flux_line_q1_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.OFFSET_OUT1.called_once()
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q2_bus": {"flux_line_q2_bus": 0.1}}))
-        platform.set_parameter(alias="flux_line_q2_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.OFFSET_OUT2.called_once()
-        platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={"flux_line_q3_bus": {"flux_line_q3_bus": 0.1}}))
-        platform.set_parameter(alias="flux_line_q3_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.OFFSET_OUT3.called_once()
+    def test_set_flux_parameter_qblox_channel0(self, platform: Platform, monkeypatch: pytest.MonkeyPatch):
+        """Test platform sets the expected parameter for each QBlox output channel."""
+        alias_to_parameter = {
+            "flux_line_q0_bus": Parameter.OFFSET_OUT0,
+            "flux_line_q1_bus": Parameter.OFFSET_OUT1,
+            "flux_line_q2_bus": Parameter.OFFSET_OUT2,
+            "flux_line_q3_bus": Parameter.OFFSET_OUT3,
+        }
 
-    @patch("qililab.typings.Parameter")
-    def test_set_flux_parameter_spi(self, mock_parameter, platform_spi: Platform):
-        """Test platform raises and error if no instrument connection."""
+        for alias, expected_parameter in alias_to_parameter.items():
+            bus = platform.get_element(alias=alias)
+            set_parameter_mock = MagicMock()
+            monkeypatch.setattr(bus, "set_parameter", set_parameter_mock)
+
+            platform.set_crosstalk(CrosstalkMatrix.from_buses(buses={alias: {alias: 0.1}}))
+            platform.set_parameter(alias=alias, parameter=Parameter.FLUX, value=0.14)
+
+            set_parameter_mock.assert_called_once_with(parameter=expected_parameter, value=ANY)
+
+    def test_set_flux_parameter_spi(self, platform_spi: Platform, monkeypatch: pytest.MonkeyPatch):
+        """Test SPI buses use current when setting flux."""
+        bus = platform_spi.get_element(alias="spi_bus")
+        set_parameter_mock = MagicMock()
+        monkeypatch.setattr(bus, "set_parameter", set_parameter_mock)
+
         platform_spi.set_crosstalk(CrosstalkMatrix.from_buses(buses={"spi_bus": {"spi_bus": 0.1}}))
         platform_spi.set_parameter(alias="spi_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.CURRENT.called_once()
 
-    @patch("qililab.typings.Parameter")
-    def test_set_flux_parameter_qdevil(self, mock_parameter, platform_qdevil: Platform):
-        """Test platform raises and error if no instrument connection."""
+        set_parameter_mock.assert_called_once_with(parameter=Parameter.CURRENT, value=ANY)
+
+    def test_set_flux_parameter_qdevil(self, platform_qdevil: Platform, monkeypatch: pytest.MonkeyPatch):
+        """Test QDevil buses use voltage when setting flux."""
+        bus = platform_qdevil.get_element(alias="qdac_bus")
+        set_parameter_mock = MagicMock()
+        monkeypatch.setattr(bus, "set_parameter", set_parameter_mock)
+
         platform_qdevil.set_crosstalk(CrosstalkMatrix.from_buses(buses={"qdac_bus": {"qdac_bus": 0.1}}))
         platform_qdevil.set_parameter(alias="qdac_bus", parameter=Parameter.FLUX, value=0.14)
-        assert mock_parameter.VOLTAGE.called_once()
+
+        set_parameter_mock.assert_called_once_with(parameter=Parameter.VOLTAGE, value=ANY)
 
     def test_set_flux_parameter_with_set_crosstalk(self, platform: Platform):
         """Test platform set FLUX parameter when crosstalk is given."""
@@ -546,10 +754,10 @@ class TestPlatform:
         element = platform.get_element(alias="ABC")
         assert element is None
 
-    def test_get_element_with_gate(self, platform: Platform):
-        """Test the get_element method with a gate alias."""
-        p_gates = platform.digital_compilation_settings.gates.keys()
-        all(isinstance(event, GateEventSettings) for gate in p_gates for event in platform.get_element(alias=gate))
+    # def test_get_element_with_gate(self, platform: Platform):
+    #     """Test the get_element method with a gate alias."""
+    #     p_gates = platform.digital_compilation_settings.keys()
+    #     all(isinstance(event, GateEventSettings) for gate in p_gates for event in platform.get_element(alias=gate))
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
@@ -572,14 +780,6 @@ class TestPlatform:
         """Test bus 1 qubit readout instance."""
         element = platform.get_element(alias=f"{InstrumentName.QBLOX_QRM.value}_0")
         assert isinstance(element, QbloxModule)
-
-    @patch("qililab.data_management.open")
-    @patch("qililab.data_management.YAML.dump")
-    def test_platform_manager_dump_method(self, mock_dump: MagicMock, mock_open: MagicMock, platform: Platform):
-        """Test PlatformManager dump method."""
-        save_platform(path="runcard.yml", platform=platform)
-        mock_open.assert_called_once_with(file=Path("runcard.yml"), mode="w", encoding="utf-8")
-        mock_dump.assert_called_once()
 
     @pytest.mark.parametrize("alias", ["drive_line_q0_bus", "drive_line_q1_bus", "feedline_input_output_bus", "foobar"])
     def test_get_bus_by_alias(self, platform: Platform, alias):
@@ -618,8 +818,6 @@ class TestPlatform:
         #  Check that the parameters can be set
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, value = True, output_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_3, output_id=0) == "enabled"
-
-        print(platform)
 
         platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, value = False, output_id=0)
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_2, output_id=0) == "bypassed"
@@ -673,24 +871,13 @@ class TestPlatform:
         assert isinstance(runcard_dict, dict)
 
         new_platform = Platform(runcard=Runcard(**runcard_dict))
-        assert isinstance(new_platform, Platform)
-        assert str(new_platform) == str(platform)
-        assert str(new_platform.name) == str(platform.name)
-        assert str(new_platform.buses) == str(platform.buses)
-        assert str(new_platform.instruments) == str(platform.instruments)
-        assert str(new_platform.instrument_controllers) == str(platform.instrument_controllers)
 
-        new_runcard_dict = new_platform.to_dict()
-        assert isinstance(new_runcard_dict, dict)
-        assert new_runcard_dict == runcard_dict
-
-        newest_platform = Platform(runcard=Runcard(**new_runcard_dict))
-        assert isinstance(newest_platform, Platform)
-        assert str(newest_platform) == str(new_platform)
-        assert str(newest_platform.name) == str(new_platform.name)
-        assert str(newest_platform.buses) == str(new_platform.buses)
-        assert str(newest_platform.instruments) == str(new_platform.instruments)
-        assert str(newest_platform.instrument_controllers) == str(new_platform.instrument_controllers)
+        is_equal, diffs = compare_platforms(platform, new_platform)
+        error_message = f"Platforms differ in {len(diffs)} place(s):\n"
+        if not is_equal:
+            for d in diffs:
+                error_message += "-" + d + "\n"
+            pytest.fail(error_message, is_equal)
 
 
 class TestMethods:
@@ -817,84 +1004,6 @@ class TestMethods:
         platform.turn_off_instruments.assert_called_once()
         platform.disconnect.assert_called_once()
 
-    @pytest.mark.parametrize("optimize", [True, False])
-    def test_compile_circuit(self, optimize: bool, platform: Platform):
-        """Test the compilation of a qibo Circuit."""
-        circuit = Circuit(3)
-        circuit.add(gates.X(0))
-        circuit.add(gates.X(1))
-        circuit.add(gates.Y(0))
-        circuit.add(gates.Y(1))
-        circuit.add(gates.M(0, 1, 2))
-
-        self._compile_and_assert(platform, circuit, 6, optimize=optimize)
-
-    def test_compile_circuit_raises_error_if_digital_settings_missing(self, platform: Platform):
-        """Test the compilation of a qibo Circuit."""
-        circuit = Circuit(3)
-        circuit.add(gates.X(0))
-        circuit.add(gates.X(1))
-        circuit.add(gates.Y(0))
-        circuit.add(gates.Y(1))
-        circuit.add(gates.M(0, 1, 2))
-
-        platform.digital_compilation_settings = None
-
-        with pytest.raises(ValueError):
-            _ = platform.compile(program=circuit, num_avg=1000, repetition_duration=200_000, num_bins=1)
-
-    def test_compile_raises_error_if_digital_bus_not_in_main_buses(self, platform_with_orphan_digital_bus: Platform):
-        """
-        Test that platform.compile() raises a ValueError if a bus alias defined
-        in runcard.digital.buses is not present in the main runcard.buses list.
-        """
-        platform = platform_with_orphan_digital_bus
-        circuit = Circuit(1)
-        circuit.add(gates.X(0))
-        circuit.add(gates.M(0))
-
-        # This is the expected error message format. Adjust if your PR has a different one.
-        # The alias used in the fixture is "orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses"
-        expected_error_message = "Bus with alias 'orphan_digital_q2_flux_bus_that_does_not_exist_in_main_buses' defined in Digital/Buses section of the Runcard, not found in main Buses section of the same Runcard."
-
-        with pytest.raises(ValueError, match=re.escape(expected_error_message)):
-            platform.compile(program=circuit, num_avg=1000, repetition_duration=200_000, num_bins=1)
-
-    def test_compile_pulse_schedule(self, platform: Platform):
-        """Test the compilation of a qibo Circuit."""
-        pulse_schedule = PulseSchedule()
-        drag_pulse = Pulse(
-            amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
-        )
-        readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
-        pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
-        )
-
-        self._compile_and_assert(platform, pulse_schedule, 2)
-
-    def _compile_and_assert(
-        self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int, optimize: bool = False
-    ):
-        sequences_w_alias, _ = platform.compile(
-            program=program,
-            num_avg=1000,
-            repetition_duration=200_000,
-            num_bins=1,
-            transpilation_config=DigitalTranspilationConfig(optimize=optimize),
-        )
-        assert isinstance(sequences_w_alias, dict)
-        if not optimize:
-            assert len(sequences_w_alias) == len_sequences
-        else:
-            assert len(sequences_w_alias) < len_sequences
-        for alias, sequences in sequences_w_alias.items():
-            assert alias in {bus.alias for bus in platform.buses}
-            assert isinstance(sequences, list)
-            assert all(isinstance(sequence, Sequence) for sequence in sequences)
-            assert sequences[0]._program.duration == 200_000 * 1000 + 4 + 4 + 4
-
     @pytest.mark.parametrize(
         "qprogram_fixture, calibration_fixture",
         [
@@ -983,9 +1092,6 @@ class TestMethods:
             MockExecutor.assert_called_once_with(
                 platform=platform,
                 experiment=mock_experiment,
-                live_plot=False,
-                slurm_execution=True,
-                port_number=None,
                 job_id=None,
                 sample=None,
                 cooldown=None,
@@ -1060,8 +1166,8 @@ class TestMethods:
 
             _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assert upload executed only once (4 because there are 4 buses)
-        assert upload.call_count == 4
+        # assert upload executed at each call (4 because there are 4 buses)
+        assert upload.call_count == 12
 
         # assert run executed all three times (12 because there are 4 buses)
         assert run.call_count == 12
@@ -1099,6 +1205,7 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1109,8 +1216,8 @@ class TestMethods:
 
             _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assert upload executed only once (2 because there are 2 buses)
-        assert upload.call_count == 2
+        # assert upload executed each time (6 because there are 2 buses)
+        assert upload.call_count == 6
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
@@ -1121,10 +1228,96 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
+        
+    def test_execute_qprogram_with_qblox_and_multiple_qdacs(self, platform_qblox_qdacs: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac2_bus_1", offset_path0=1)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        # Retrieve the qdac_2 instrument instance from the platform to patch it directly
+        qdac_2_instrument = next(
+            instrument
+            for instrument in platform_qblox_qdacs.instruments.elements
+            if isinstance(instrument, QDevilQDac2) and instrument.alias == "qdac_2"
+        )
+        mock_device = MagicMock()
+        mock_device.name = "qdac_2"
+        qdac_2_instrument.device = mock_device
+        # Simulate that channel 1 of qdac_2 already has a dc list uploaded
+        qdac_2_instrument._cache_dc = {"qdac_2_1": True}
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+            # Mock Qdac functions without connecting
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_out_external_trigger") as set_out_external_trigger,
+            patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
+            patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
+            patch.object(QDevilQDac2, "start") as start,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            first_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
+
+            acquire_qprogram_results.return_value = [456]
+            second_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
+
+            _ = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed each time (6 because there are 2 buses)
+        assert upload.call_count == 6
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert sync_sequencer.call_count == 6  # called as many times as run
+        assert desync_sequencer.call_count == 6
+        assert first_execution_results.results["resonator"] == [123]
+        assert second_execution_results.results["resonator"] == [456]
+        assert upload_voltage_list.call_count == 3  # called as many times as executes
+        assert set_out_external_trigger.call_count == 3  # called as many times as executes
+        assert set_in_external_trigger.call_count == 3  # called as many times as executes
+        assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 6  # called as many times as executes
+        assert start.call_count == 6  # called as many times as executes
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_and_multiple_qdacs_raises_error(self, platform_qblox_qdacs_no_trigger: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac2_bus_1", offset_path0=1)
+        qprogram.set_trigger(bus="qdac_bus_1", duration=10e-6, outputs=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        error_text = "Multiple QDAC-II instruments used but no Output trigger instrument given."
+        with pytest.raises(ValueError, match=error_text):
+            platform_qblox_qdacs_no_trigger.execute_qprogram(qprogram=qprogram)
 
     def test_execute_qprogram_with_qblox_and_qdac_back(self, platform_qblox_qdac: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
@@ -1149,6 +1342,7 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1159,8 +1353,8 @@ class TestMethods:
 
             _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True)
 
-        # assert upload executed only once (2 because there are 2 buses)
-        assert upload.call_count == 2
+        # assert upload executed each time (6 because there are 2 buses)
+        assert upload.call_count == 6
 
         # assert run executed all three times (6 because there are 2 buses)
         assert run.call_count == 6
@@ -1171,7 +1365,99 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+
+    def test_execute_qprogram_with_qblox_and_qdac_no_crosstalk(self, platform_qblox_qdac: Platform, calibration:Calibration):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
+        readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qdac_wf = Square(amplitude=1.0, duration=100)
+        qprogram = QProgram()
+        qprogram.play(bus="qdac_bus_1", waveform=qdac_wf)
+        qprogram.set_offset(bus="qdac_bus_2", offset_path0=1)
+        qprogram.wait_trigger(bus="qdac_bus_1", duration=10e-6, port=1)
+        qprogram.play(bus="drive", waveform=drive_wf)
+        qprogram.measure(bus="resonator", waveform=readout_wf, weights=weights_wf)
+
+        expected_crosstalk = CrosstalkMatrix.from_buses(buses={"qdac_bus": {"qdac_bus": 0.1}})
+        platform_qblox_qdac.set_crosstalk(expected_crosstalk)
+        calibration.crosstalk_matrix = platform_qblox_qdac.crosstalk
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+            # Mock Qdac functions without connecting
+            patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
+            patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
+            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
+            patch.object(QDevilQDac2, "start") as start,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
+
+            acquire_qprogram_results.return_value = [456]
+            second_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, crosstalk=False)
+
+            _ = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, debug=True, crosstalk=False)
+
+        # assert upload executed each time (6 because there are 2 buses)
+        assert upload.call_count == 6
+
+        # assert run executed all three times (6 because there are 2 buses)
+        assert run.call_count == 6
+        assert acquire_qprogram_results.call_count == 3  # only readout buses
+        assert sync_sequencer.call_count == 6  # called as many times as run
+        assert desync_sequencer.call_count == 6
+        assert first_execution_results.results["resonator"] == [123]
+        assert second_execution_results.results["resonator"] == [456]
+        assert upload_voltage_list.call_count == 3  # called as many times as executes
+        assert set_in_external_trigger.call_count == 3  # called as many times as executes
+        assert remove_digital_trace.call_count == 3  # called as many times as executes
+        assert start.call_count == 3  # called as many times as executes
+
+        # assure only one debug was called
+        assert patched_open.call_count == 1
+        
+        assert calibration.crosstalk_matrix == expected_crosstalk
+
+    def test_execute_qprogram_single_baseband_channel(self, platform: Platform):
+        """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
+        drive_wf = Square(amplitude=1.0, duration=40)
+        qprogram = QProgram()
+        qprogram.play(bus="drive_line_q0_bus_baseband", waveform=drive_wf)
+
+        with (
+            patch("builtins.open") as patched_open,
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(Bus, "run") as run,
+            patch.object(Bus, "acquire_qprogram_results") as acquire_qprogram_results,
+            patch.object(QbloxModule, "sync_sequencer") as sync_sequencer,
+            patch.object(QbloxModule, "desync_sequencer") as desync_sequencer,
+        ):
+            acquire_qprogram_results.return_value = [123]
+            platform.execute_qprogram(qprogram=qprogram)
+
+            acquire_qprogram_results.return_value = [456]
+            platform.execute_qprogram(qprogram=qprogram)
+
+            _ = platform.execute_qprogram(qprogram=qprogram, debug=True)
+
+        # assert upload executed each time (3 because there is 1 bus)
+        assert upload.call_count == 3
+
+        # assert run executed all three times (3 because there is 1 bus)
+        assert run.call_count == 3
+        assert sync_sequencer.call_count == 3  # called as many times as run
+        assert desync_sequencer.call_count == 3
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1202,7 +1488,7 @@ class TestMethods:
         platform_qblox_qdac.trigger_runs = 0
 
         mock_output.qprogram = MagicMock(spec=QProgram)
-        mock_output.qprogram.qblox = MagicMock(spec=mock_output.qprogram._QbloxInterface)
+        mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
         mock_output.qprogram.qblox.trigger_network_required = []
 
         with pytest.raises(TimeoutError):
@@ -1213,6 +1499,7 @@ class TestMethods:
         # Assert it retried 3 times (initial + 3 retries = 4 attempts)
         assert mock_bus.run.call_count == 4
 
+    @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines_and_qdac(self, platform_qm_qdac: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1350,8 +1637,8 @@ class TestMethods:
 
         error_string = "The QM `config` dictionary does not exist. Please run `initial_setup()` first."
         escaped_error_str = re.escape(error_string)
-        platform_quantum_machines.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform_quantum_machines.compile.return_value = Exception(escaped_error_str)
+        platform_quantum_machines.compile_circuit = MagicMock()  # type: ignore # don't care about compilation
+        platform_quantum_machines.compile_circuit.return_value = Exception(escaped_error_str)
 
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
         readout_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
@@ -1368,204 +1655,14 @@ class TestMethods:
 
         turn_off.assert_called_once_with()
 
-    def test_execute(self, platform: Platform, qblox_results: list[dict]):
-        """Test that the execute method calls the buses to run and return the results."""
-        # Define pulse schedule
-        pulse_schedule = PulseSchedule()
-        drag_pulse = Pulse(
-            amplitude=1, phase=0.5, duration=200, frequency=1e9, pulse_shape=Drag(num_sigmas=4, drag_coefficient=0.5)
-        )
-        readout_pulse = Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular())
-        pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), bus_alias="drive_line_q0_bus", delay=0)
-        pulse_schedule.add_event(
-            PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), bus_alias="feedline_input_output_bus", delay=0
-        )
-        qblox_result = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
-        with patch.object(Bus, "upload") as upload:
-            with patch.object(Bus, "run") as run:
-                with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers") as desync:
-                        acquire_result.return_value = qblox_result
-                        result = platform.execute(
-                            program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
-                        )
-
-        assert upload.call_count == len(pulse_schedule.elements)
-        assert run.call_count == len(pulse_schedule.elements)
-        acquire_result.assert_called_once_with()
-        assert result == qblox_result
-        desync.assert_called()
-
-    def test_execute_with_queue(self, platform: Platform, qblox_results: list[dict]):
-        """Test that the execute method adds the obtained results to the given queue."""
-        queue: Queue = Queue()
-        pulse_schedule = PulseSchedule()
-        pulse_schedule.add_event(
-            PulseEvent(
-                pulse=Pulse(amplitude=1, phase=0.5, duration=1500, frequency=1e9, pulse_shape=Rectangular()),
-                start_time=200,
-                qubit=0,
-            ),
-            bus_alias="feedline_input_output_bus",
-            delay=0,
-        )
-        qblox_result = QbloxResult(qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1])
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers") as desync:
-                        acquire_result.return_value = qblox_result
-                        _ = platform.execute(
-                            program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
-                        )
-
-        assert len(queue.queue) == 1
-        assert queue.get() == qblox_result
-        desync.assert_called()
-
-    def test_execute_returns_ordered_measurements(self, platform: Platform, qblox_results: list[dict]):
-        """Test that executing with some circuit returns acquisitions with multiple measurements in same order
-        as they appear in circuit"""
-
-        # Define circuit
-        c = Circuit(2)
-        c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
-        # the order from qblox qrm will be M(0),M(0),M(1),M(1)
-
-        for idx, final_layout in enumerate([{0: 0, 1: 1}, {0: 1, 1: 0}]):
-            platform.compile = MagicMock()  # type: ignore # don't care about compilation
-            platform.compile.return_value = {"feedline_input_output_bus": None}, final_layout
-            with patch.object(Bus, "upload"):
-                with patch.object(Bus, "run"):
-                    with patch.object(Bus, "acquire_result") as acquire_result:
-                        with patch.object(QbloxModule, "desync_sequencers"):
-                            acquire_result.return_value = QbloxResult(
-                                qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
-                            )
-                            result = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
-
-            # check that the order of #measurement # qubit is the same as in the circuit
-            order_measurement_qubit = [(result["qubit"], result["measurement"]) for result in result.qblox_raw_results]  # type: ignore
-
-            # Change the qubit mappings, given the final_layout:
-            assert (
-                order_measurement_qubit == [(1, 0), (0, 0), (0, 1), (1, 1)]
-                if idx == 0
-                else [(0, 0), (1, 0), (1, 1), (0, 1)]
-            )
-
-    def test_execute_no_readout_raises_error(self, platform: Platform, qblox_results: list[dict]):
-        """Test that executing with some circuit returns acquisitions with multiple measurements in same order
-        as they appear in circuit"""
-
-        # Define circuit
-        c = Circuit(2)
-        c.add([gates.M(1), gates.M(0), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
-        # the order from qblox qrm will be M(0),M(0),M(1),M(1)
-
-        # compile will return nothing and thus
-        # readout_buses = [
-        #     bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl) and bus.alias in programs
-        # ]
-        # in platform will be empty
-        platform.compile = MagicMock()  # type: ignore # don't care about compilation
-        platform.compile.return_value = {"drive_line_q0_bus": None}, {"q0": 0}
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers"):
-                        acquire_result.return_value = QbloxResult(
-                            qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
-                        )
-                        error_string = "There are no readout buses in the platform."
-                        with pytest.raises(ValueError, match=error_string):
-                            _ = platform.execute(program=c, num_avg=1000, repetition_duration=20_000, num_bins=1)
-
-    def test_order_results_circuit_M_neq_acquisitions(self, platform: Platform, qblox_results: list[dict]):
-        """Test that executing with some circuit returns acquisitions with multiple measurements in same order
-        as they appear in circuit"""
-
-        # Define circuit
-        c = Circuit(2)
-        c.add([gates.M(1), gates.M(0, 1)])  # without ordering, these are retrieved for each sequencer, so
-        # the order from qblox qrm will be M(0),M(1),M(1)
-        n_m = len([qubit for gate in c.queue for qubit in gate.qubits if isinstance(gate, gates.M)])
-
-        platform.compile = MagicMock()  # type: ignore[method-assign] # don't care about compilation
-        platform.compile.return_value = {"feedline_input_output_bus": None}, {"q0": 0}
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers"):
-                        acquire_result.return_value = QbloxResult(
-                            qblox_raw_results=qblox_results, integration_lengths=[1, 1, 1, 1]
-                        )
-                        error_string = f"Number of measurements in the circuit {n_m} does not match number of acquisitions {len(qblox_results)}"
-                        with pytest.raises(ValueError, match=error_string):
-                            _ = platform.execute(program=c, num_avg=1000, repetition_duration=2000, num_bins=1)
-
-    def test_execute_raises_error_if_program_type_wrong(self, platform: Platform):
-        """Test that `Platform.execute` raises an error if the program sent is not a Circuit or a PulseSchedule."""
-        c = Circuit(1)
-        c.add(gates.M(0))
-        program = [c, c]
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                f"Program to execute can only be either a single circuit or a pulse schedule. Got program of type {type(program)} instead"
-            ),
-        ):
-            platform.execute(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
-
-    def test_execute_stack_2qrm(self, platform: Platform):
-        """Test that the execute stacks results when more than one qrm is called."""
-        # build mock qblox results
-        qblox_raw_results = QbloxResult(
-            integration_lengths=[20],
-            qblox_raw_results=[
-                {
-                    "scope": {
-                        "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1000},
-                        "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
-                    },
-                    "bins": {
-                        "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
-                        "threshold": [0.5, 0.5, 0.5, 0.5],
-                        "avg_cnt": [1000, 1000, 1000, 1000],
-                    },
-                    "qubit": 0,
-                    "measurement": 0,
-                }
-            ],
-        )
-        pulse_schedule = PulseSchedule()
-        # mock compile method
-        platform.compile = MagicMock()  # type: ignore[method-assign]
-        platform.compile.return_value = (
-            {"feedline_input_output_bus": None, "feedline_input_output_bus_2": None},
-            {"q0": 0},
-        )
-        # mock execution
-        with patch.object(Bus, "upload"):
-            with patch.object(Bus, "run"):
-                with patch.object(Bus, "acquire_result") as acquire_result:
-                    with patch.object(QbloxModule, "desync_sequencers"):
-                        acquire_result.return_value = qblox_raw_results
-                        result = platform.execute(
-                            program=pulse_schedule, num_avg=1000, repetition_duration=2000, num_bins=1
-                        )
-        assert len(result.qblox_raw_results) == 2  # type: ignore[attr-defined]
-        assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[0]  # type: ignore[attr-defined]
-        assert qblox_raw_results.qblox_raw_results[0] == result.qblox_raw_results[1]  # type: ignore[attr-defined]
-
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
     @pytest.mark.parametrize("value", [1.0, 100, 0.0])
     def test_set_parameter_of_gates(self, parameter, gate, value, platform: Platform):
-        """Test the ``get_parameter`` method with gates."""
+        """Test the ``get_parameter`` method with """
         platform.set_parameter(parameter=parameter, alias=gate, value=value)
         gate_settings = platform.digital_compilation_settings.gates[gate][0]
-        assert getattr(gate_settings.pulse, parameter.value) == value
+        assert gate_settings.get_parameter(parameter) == value
 
         platform.digital_compilation_settings = None
         with pytest.raises(ValueError):
@@ -1574,9 +1671,9 @@ class TestMethods:
     @pytest.mark.parametrize("parameter", [Parameter.AMPLITUDE, Parameter.DURATION, Parameter.PHASE])
     @pytest.mark.parametrize("gate", ["I(0)", "X(0)", "Y(0)"])
     def test_get_parameter_of_gates(self, parameter, gate, platform: Platform):
-        """Test the ``get_parameter`` method with gates."""
+        """Test the ``get_parameter`` method with """
         gate_settings = platform.digital_compilation_settings.gates[gate][0]
-        assert platform.get_parameter(parameter=parameter, alias=gate) == getattr(gate_settings.pulse, parameter.value)
+        assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.get_parameter(parameter)
 
         platform.digital_compilation_settings = None
         with pytest.raises(ValueError):
@@ -1585,20 +1682,14 @@ class TestMethods:
     @pytest.mark.parametrize("parameter", [Parameter.DRAG_COEFFICIENT, Parameter.NUM_SIGMAS])
     @pytest.mark.parametrize("gate", ["X(0)", "Y(0)"])
     def test_get_parameter_of_pulse_shapes(self, parameter, gate, platform: Platform):
-        """Test the ``get_parameter`` method with gates."""
+        """Test the ``get_parameter`` method with """
         gate_settings = platform.digital_compilation_settings.gates[gate][0]
-        assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.pulse.shape[parameter.value]
+        assert platform.get_parameter(parameter=parameter, alias=gate) == gate_settings.get_parameter(parameter)
 
     def test_get_parameter_of_gates_raises_error(self, platform: Platform):
         """Test that the ``get_parameter`` method with gates raises an error when a gate is not found."""
-        with pytest.raises(KeyError, match="Gate Drag for qubits 3 not found in settings"):
-            platform.get_parameter(parameter=Parameter.AMPLITUDE, alias="Drag(3)")
-
-    @pytest.mark.parametrize("parameter", [Parameter.DELAY_BEFORE_READOUT])
-    def test_get_parameter_of_platform(self, parameter, platform: Platform):
-        """Test the ``get_parameter`` method with platform parameters."""
-        value = platform.get_parameter(parameter=parameter, alias="platform")
-        assert value == 0
+        with pytest.raises(KeyError, match="Gate Rmw for qubits 3 not found in settings"):
+            platform.get_parameter(parameter=Parameter.AMPLITUDE, alias="Rmw(3)")
 
     @pytest.mark.parametrize("parameter", [Parameter.FLUX])
     def test_get_flux_parameter(self, parameter, platform: Platform):
@@ -1646,6 +1737,10 @@ class TestMethods:
                 for flux_bus in platform.analog_compilation_settings.flux_control_topology
                 if flux_bus.flux == flux
             )
+
+    def test_get_element_gate(self, platform: Platform):
+        gate_events = platform.get_element("Rmw(0)_amplitude")
+        assert all(isinstance(gate_event, GateEvent) for gate_event in gate_events)
 
     def test_parallelisation_same_bus_raises_error_qblox(self, platform: Platform):
         """Test that if parallelisation is attempted on qprograms using at least one bus in common, an error will be raised"""
@@ -2015,6 +2110,7 @@ class TestMethods:
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
+    @pytest.mark.qm    
     def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
@@ -2115,5 +2211,3 @@ class TestMethods:
 
         with pytest.raises(Exception, match=f"ChannelID {sequencer} is not linked to bus with alias {bus_alias}"):
             platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.IF, channel_id=sequencer)
-
-

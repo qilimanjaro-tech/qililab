@@ -98,7 +98,6 @@ class QuantumMachinesCluster(Instrument):
             octaves = self._get_octaves_config()
 
             return {
-                "version": 1,
                 "controllers": controllers,
                 "elements": elements,
                 "mixers": mixers,
@@ -457,7 +456,7 @@ class QuantumMachinesCluster(Instrument):
             QuantumMachinesManager(
                 host=self.settings.address,
                 cluster_name=self.settings.cluster,
-                octave_calibration_db_path=self._octave_config._calibration_db_path,
+                octave_calibration_db_path=self._octave_config.calibration_db,
             )
             if self._octave_config is not None
             else QuantumMachinesManager(
@@ -943,7 +942,7 @@ class QuantumMachinesCluster(Instrument):
         results = {
             name: handle.fetch_all(flat_struct=True) for name, handle in job.result_handles if handle is not None
         }
-        return {name: data for name, data in results.items() if data is not None}
+        return {name: data for name, data in results.items() if data is not None}  # type: ignore[misc]
 
     def simulate(self, program: Program) -> RunningQmJob:
         """Simulates the QUA Program.

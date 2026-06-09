@@ -24,7 +24,6 @@ _QM_RUNTIME = OptionalFeature(
     name="quantum-machines",
     dependencies=[
         "qm-qua",
-        "qualang-tools",
     ],
     symbols=[
         Symbol(path="qm", name="generate_qua_script", kind="callable"),

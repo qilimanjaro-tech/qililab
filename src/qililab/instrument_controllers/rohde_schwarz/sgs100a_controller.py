@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Rohde & Schwarz SGS100A Instrument Controller """
+"""Rohde & Schwarz SGS100A Instrument Controller"""
+
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -41,8 +42,6 @@ class SGS100AController(SingleInstrumentController):
     @dataclass
     class SGS100AControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific SGS100A Controller."""
-
-        reference_clock: str
 
         def __post_init__(self):
             super().__post_init__()

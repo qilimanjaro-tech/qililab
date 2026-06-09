@@ -51,6 +51,7 @@ instruments:
     ramp_rate: [0.01, 0.01]
     low_pass_filter: ["dc", "dc"]
     dacs: [1, 2]
+    trigger_sync: True
 
 
 instrument_controllers:

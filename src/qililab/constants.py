@@ -65,12 +65,9 @@ class RUNCARD:
 class PLATFORM:
     """Platform attribute names."""
 
-    DELAY_BETWEEN_PULSES = "delay_between_pulses"
-    DELAY_BEFORE_READOUT = "delay_before_readout"
     TIMINGS_CALCULATION_METHOD = "timings_calculation_method"
     RESET_METHOD = "reset_method"
     PASSIVE_RESET_DURATION = "passive_reset_duration"
-    MINIMUM_CLOCK_TIME = "minimum_clock_time"
 
 
 class CURRENTSOURCE:
@@ -186,6 +183,8 @@ class INSTRUMENTCONTROLLER:
     CONNECTION = "connection"
     MODULES = "modules"
     RESET = "reset"
+    REFERENCE_CLOCK = "reference_clock"
+    EXT_TRIGGER = "ext_trigger"
 
 
 class CONNECTION:

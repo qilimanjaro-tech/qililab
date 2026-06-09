@@ -132,23 +132,6 @@ class PulseDistortionName(str, Enum):
     LFILTER = "lfilter"
 
 
-class PulseShapeName(str, Enum):
-    """Pulse shape options.
-
-    Args:
-        Enum (str): Available types of PulseShape options:
-        * gaussian
-    """
-
-    GAUSSIAN = "gaussian"
-    DRAG = "drag"
-    RECTANGULAR = "rectangular"
-    SNZ = "snz"
-    COSINE = "cosine"
-    FLATTOP = "flat_top"
-    TWOSTEP = "two_step"
-
-
 class InstrumentName(str, Enum):
     """Instrument names.
 
@@ -164,6 +147,7 @@ class InstrumentName(str, Enum):
         * keysight_e5080b
         * yokogawa_gs200
         * OPX -> Exactly as Quantum Machines InstrumentType
+        * RSWU-SP16TR
     """
 
     QBLOX_QCM = "QCM"
@@ -179,6 +163,7 @@ class InstrumentName(str, Enum):
     QCMRF = "QCM-RF"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster"
     QDEVIL_QDAC2 = "qdevil_qdac2"
+    RSWU_SP16TR = "rswu_sp16tr"
 
 
 class VNAScatteringParameters(str, Enum):
@@ -304,6 +289,7 @@ class InstrumentControllerName(str, Enum):
         * mini_circuits
         * keithley_2600
         * keysight_e5080b
+        * rswu_sp16tr
         * yokogawa
         * qmm
     """
@@ -317,11 +303,13 @@ class InstrumentControllerName(str, Enum):
     YOKOGAWA_GS200 = "yokogawa_gs200_controller"
     QUANTUM_MACHINES_CLUSTER = "quantum_machines_cluster_controller"
     QDEVIL_QDAC2 = "qdevil_qdac2"
+    RSWU_SP16TR = "rswu_sp16tr"
 
 
-@yaml.register_class
+@yaml.register_class(shared=True)
 class Parameter(str, Enum):
     """Parameter names."""
+
     OPERATION_MODE = "operation_mode"
     ALC = "alc"
     IQ_WIDEBAND = "iq_wideband"
@@ -333,8 +321,6 @@ class Parameter(str, Enum):
     AMPLITUDE = "amplitude"
     PHASE = "phase"
     WAIT_TIME = "wait_time"
-    DELAY_BETWEEN_PULSES = "delay_between_pulses"
-    DELAY_BEFORE_READOUT = "delay_before_readout"
     GATE_DURATION = "gate_duration"
     GATE_PARAMETER = "gate_parameter"
     NUM_SIGMAS = "num_sigmas"
@@ -460,11 +446,13 @@ class Parameter(str, Enum):
     EXPONENTIAL_STATE = "exponential_state"
     FIR_COEFF = "fir_coeff"
     FIR_STATE = "fir_state"
+    RF_ACTIVE_CHANNEL = "active_channel"
+    EXT_TRIGGER = "ext_trigger"
 
     @classmethod
     def to_yaml(cls, representer, node):
         """Method to be called automatically during YAML serialization."""
-        return representer.represent_scalar("!Parameter", f"{node.name}-{node.value}")
+        return representer.represent_scalar(cls.yaml_tag, f"{node.name}-{node.value}")
 
     @classmethod
     def from_yaml(cls, _, node):
@@ -474,13 +462,15 @@ class Parameter(str, Enum):
 
 
 FILTER_PARAMETERS = [
-    p for p in Parameter
+    p
+    for p in Parameter
     if (
         p.name.startswith("EXPONENTIAL_AMPLITUDE")
         or p.name.startswith("EXPONENTIAL_TIME_CONSTANT")
         or p.name.startswith("EXPONENTIAL_STATE")
         or p.name.startswith("FIR_")
-    )]
+    )
+]
 
 
 class ResultName(str, Enum):

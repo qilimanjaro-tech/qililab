@@ -14,6 +14,8 @@ from qililab.typings.enums import (
     VNASweepTypes,
 )
 
+from qililab.typings.enums import ReferenceClock
+
 
 class Galadriel:
     """Test data of the galadriel platform."""
@@ -21,79 +23,120 @@ class Galadriel:
     name = "galadriel"
 
     digital_compilation_settings: dict[str, Any] = {
-        PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BEFORE_READOUT: 0,
         "topology": [[0, 2], [1, 2], [2, 3], [2, 4]],
         "gates": {
             "M(0)": [
                 {
                     "bus": "feedline_input_output_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 2000,
-                        "shape": {"name": "rectangular"},
                     },
+                    "weights": {
+                        "type": "IQPair",
+                        "I": {
+                            "type": "Square",
+                            "amplitude": 1.0,
+                            "duration": 2000,                            
+                        },
+                        "Q": {
+                            "type": "Square",
+                            "amplitude": 0.0,
+                            "duration": 2000,                            
+                        }
+                    }
                 }
             ],
             "M(1)": [
                 {
                     "bus": "feedline_input_output_bus_1",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 2000,
-                        "shape": {"name": "rectangular"},
                     },
+                    "weights": {
+                        "type": "IQPair",
+                        "I": {
+                            "type": "Square",
+                            "amplitude": 1.0,
+                            "duration": 2000,                            
+                        },
+                        "Q": {
+                            "type": "Square",
+                            "amplitude": 0.0,
+                            "duration": 2000,                            
+                        }
+                    }
                 }
             ],
             "M(2)": [
                 {
                     "bus": "feedline_input_output_bus_2",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 2000,
-                        "shape": {"name": "rectangular"},
                     },
+                    "weights": {
+                        "type": "IQPair",
+                        "I": {
+                            "type": "Square",
+                            "amplitude": 1.0,
+                            "duration": 2000,                            
+                        },
+                        "Q": {
+                            "type": "Square",
+                            "amplitude": 0.0,
+                            "duration": 2000,                            
+                        }
+                    }
                 }
             ],
             "I(0)": [
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 0,
-                        "duration": 100,
-                        "shape": {"name": "rectangular"},
+                        "duration": 2000,
                     },
                 }
             ],
-            "Drag(0)": [
+            "Rmw(0)": [
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 50,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
-            "Drag(1)": [
+            "Rmw(1)": [
                 {
                     "bus": "drive_line_q1_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 50,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -101,11 +144,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 50,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -113,11 +158,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q1_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 0,
                         "duration": 50,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -125,11 +172,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 0,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
-                        "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "duration": 50,
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -137,11 +186,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q1_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 1.5707963267948966,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
                         "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -149,11 +200,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 1.5707963267948966,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
                         "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -161,11 +214,13 @@ class Galadriel:
                 {
                     "bus": "drive_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 1.5707963267948966,
+                    "waveform": {
+                        "type": "IQDrag",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
                         "duration": 20,
-                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
                     },
                 }
             ],
@@ -173,12 +228,15 @@ class Galadriel:
                 {
                     "bus": "flux_line_q1_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 1.5707963267948966,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
                         "duration": 20,
-                        "shape": {"name": "rectangular"},
-                        "options": {"q0_phase_correction": 0.1, "q1_phase_correction": 0.2},
+                    },
+                    "options": {
+                        "q0_phase_correction": 0.1,
+                        "q1_phase_correction": 0.2
                     },
                 }
             ],
@@ -186,45 +244,18 @@ class Galadriel:
                 {
                     "bus": "flux_line_q0_bus",
                     "wait_time": 0,
-                    "pulse": {
+                    "phase": 1.5707963267948966,
+                    "waveform": {
+                        "type": "Square",
                         "amplitude": 1.0,
-                        "phase": 1.5707963267948966,
                         "duration": 20,
-                        "shape": {"name": "rectangular"},
-                        "options": {"q0_phase_correction": 0.1, "q2_phase_correction": 0.2},
+                    },
+                    "options": {
+                        "q0_phase_correction": 0.1,
+                        "q1_phase_correction": 0.2
                     },
                 }
             ],
-        },
-        "buses": {
-            "drive_line_q0_bus": {
-                "line": "drive",
-                "qubits": [0],
-                "distortions": [
-                    {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
-                ],
-            },
-            "drive_line_q1_bus": {"line": "drive", "qubits": [1]},
-            "drive_line_q2_bus": {"line": "drive", "qubits": [1]},
-            "feedline_input_output_bus": {
-                "line": "readout",
-                "qubits": [0],
-                "delay": 0,
-                "distortions": [],
-            },
-            "feedline_input_output_bus_1": {
-                "line": "readout",
-                "qubits": [1],
-                "delay": 0,
-                "distortions": [],
-            },
-            "feedline_input_output_bus_2": {
-                "line": "readout",
-                "qubits": [2],
-                "delay": 0,
-                "distortions": [],
-            },
-            "flux_line_q0_bus": {"line": "flux", "qubits": [0]},
         },
     }
 
@@ -326,6 +357,18 @@ class Galadriel:
                 Parameter.OFFSET_I.value: 0,
                 Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
+            },
+            {
+                "identifier": 5,
+                "outputs": [0],
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: True,
             },
         ],
     }
@@ -511,6 +554,7 @@ class Galadriel:
         ],
         INSTRUMENTCONTROLLER.RESET: True,
         "reference_clock": "internal",
+        "ext_trigger": True,
 
     }
 
@@ -634,6 +678,7 @@ class Galadriel:
             RUNCARD.ALIAS: "drive_line_q0_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             RUNCARD.CHANNELS: [0, None],
+            "delay": 0,
             "distortions": [
                 {"name": "lfilter", "a": [1.0, 0.0, 1.0], "auto_norm": True, "b": [0.5, 0.5], "norm_factor": 1.0}
             ],
@@ -674,6 +719,11 @@ class Galadriel:
             RUNCARD.ALIAS: "flux_line_q3_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             RUNCARD.CHANNELS: [4, None],
+        },
+        {
+            RUNCARD.ALIAS: "drive_line_q0_bus_baseband",
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value],
+            RUNCARD.CHANNELS: [5],
         },
         {
             RUNCARD.ALIAS: "flux_line_too_many_instr",
@@ -932,11 +982,28 @@ class SauronQDevil:
         ],
     }
 
+    qdevil_qdac2_controller_external_clock = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_external_clock",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qdac",
+                "slot_id": 0,
+            }
+        ],
+        INSTRUMENTCONTROLLER.REFERENCE_CLOCK: ReferenceClock("external"),
+    }
+
     instruments = [qdevil_qdac2, rohde_schwarz]
     instrument_controllers = [
         qdevil_qdac2_controller_ip,
         qdevil_qdac2_controller_usb,
         qdevil_qdac2_controller_wrong_module,
+        qdevil_qdac2_controller_external_clock,
     ]
 
     buses: list[dict[str, Any]] = [{RUNCARD.ALIAS: "qdac_bus", RUNCARD.INSTRUMENTS: ["qdac"], RUNCARD.CHANNELS: [1]}]
@@ -983,6 +1050,70 @@ class SauronVNA:
         {
             RUNCARD.ALIAS: "keysight_e5080b_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
+            RUNCARD.CHANNELS: [0],
+        },
+    ]
+
+    runcard = {
+        RUNCARD.NAME: name,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
+        RUNCARD.BUSES: buses,
+    }
+
+class SauronRSWUSP16TR:
+    """Test data of the sauron platform."""
+
+    name = "sauron_rswu_sp16tr"
+
+    rswu_sp16tr_controller: dict[str, Any] = {
+        "name": InstrumentControllerName.RSWU_SP16TR,
+        "alias": InstrumentControllerName.RSWU_SP16TR.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP,
+            CONNECTION.ADDRESS: "169.254.6.210",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": InstrumentName.RSWU_SP16TR.value,
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    rswu_sp16tr_controller_wrong_module = {
+        "name": InstrumentControllerName.RSWU_SP16TR,
+        "alias": "wrong_rswu_sp16tr",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            "name": ConnectionName.TCP_IP,
+            CONNECTION.ADDRESS: "169.254.6.210",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": InstrumentName.KEYSIGHT_E5080B.value,
+                "slot_id": 0,
+            }
+        ],
+    }
+
+    rswu_sp16tr: dict[str, Any] = {
+        "name": InstrumentName.RSWU_SP16TR,
+        "alias": InstrumentName.RSWU_SP16TR.value,
+    }
+    keysight_e5080b: dict[str, Any] = {
+        "name": InstrumentName.KEYSIGHT_E5080B,
+        "alias": InstrumentName.KEYSIGHT_E5080B.value,
+    }
+
+    instruments = [rswu_sp16tr, keysight_e5080b]
+    instrument_controllers = [
+        rswu_sp16tr_controller, rswu_sp16tr_controller_wrong_module
+    ]
+
+    buses: list[dict[str, Any]] = [
+        {
+            RUNCARD.ALIAS: "rswu_sp16tr_bus",
+            RUNCARD.INSTRUMENTS: [InstrumentName.RSWU_SP16TR.value],
             RUNCARD.CHANNELS: [0],
         },
     ]

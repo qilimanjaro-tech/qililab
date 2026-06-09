@@ -1,0 +1,17 @@
+spec: "1.0"
+devices:
+  RSWU-SP16TR:
+    dialogues:
+      - q: "*IDN?"
+        r: "QCoDeS, RSWU-SP16TR_simulated, simulated, 0.0.1"
+    properties:
+      active_channel:
+        default: "RF1"
+        getter:
+          q: "ROUT:CHAN?"
+          r: "{}"
+        setter:
+          q: "ROUT:CHAN {}"
+resources:
+  "TCPIP::192.168.0.10::5025::SOCKET":
+    device: RSWU-SP16TR

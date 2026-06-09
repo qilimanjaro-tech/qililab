@@ -15,5 +15,5 @@
 """Optional integrations for Qililab."""
 
 __all__ = [
-    "quantum_machines",  # noqa: F822
+    "quantum_machines",
 ]

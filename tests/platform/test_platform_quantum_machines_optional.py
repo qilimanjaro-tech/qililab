@@ -12,6 +12,9 @@ class _DummyBuses(dict):
     def get(self, alias):  # matches keyword usage
         return super().__getitem__(alias)
 
+    def __iter__(self):
+        return iter(self.values())
+
 
 class _DummyBus:
     def __init__(self, alias, instruments, parameters=None):

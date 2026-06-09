@@ -18,7 +18,7 @@ import numpy as np
 import plotly.colors as pc
 import plotly.graph_objects as go
 
-from qililab.qprogram.variable import Domain
+from qililab.core.variables import Domain
 
 
 class QbloxDraw:
@@ -58,6 +58,13 @@ class QbloxDraw:
             else:
                 data_draw = self._handle_wait_draw(data_draw, param, real_wait)
                 param["real_time_counter"] = max(0, param["real_time_counter"] - wait_duration)
+
+            # extend the acquiring status array - cannot be inside the wait handler in the case where real wait is less than 0
+            if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
+                extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
+                param["acquiring_status"] = np.concatenate(
+                    [param["acquiring_status"], np.zeros(extension_length, dtype=int)]
+                )
 
         elif action_type == "play":
             param["play_idx"] += 1
@@ -224,12 +231,6 @@ class QbloxDraw:
                 param[f"{key}_new"] = False
             else:
                 param[key].extend([param[key][-1]] * len(y_wait))
-
-        if len(param["acquiring_status"]) < len(param["intermediate_frequency"]):
-            extension_length = len(param["intermediate_frequency"]) - len(param["acquiring_status"])
-            param["acquiring_status"] = np.concatenate(
-                [param["acquiring_status"], np.zeros(extension_length, dtype=int)]
-            )
 
         return data_draw
 
@@ -483,9 +484,7 @@ class QbloxDraw:
         """
 
         if any(variable.domain == Domain.Time for variable in sequencer.qprogram._variables):
-            raise NotImplementedError(
-                "QbloxDraw does not support hardware time-domain loops at the moment."
-            )
+            raise NotImplementedError("QbloxDraw does not support hardware time-domain loops at the moment.")
 
         self.acquisition_showing = acquisition_showing
         Q1ASM_ordered = self._parse_program(
@@ -675,7 +674,7 @@ class QbloxDraw:
             return ranges
 
         def adjust_color_rgb(color_rgb, factor):
-            r, g, b = map(int, re.findall(r'\d+', color_rgb))
+            r, g, b = map(int, re.findall(r"\d+", color_rgb))
             r = int(min(255, max(0, r * factor)))
             g = int(min(255, max(0, g * factor)))
             b = int(min(255, max(0, b * factor)))
@@ -755,6 +754,11 @@ class QbloxDraw:
                     ranges = range_acquire(parameters[key]["acquiring_status"])
                     y_max = (y_max := max(path0_clipped.max(), path1_clipped.max())) * (1.2 if y_max > 0 else 0.8)
                     y_min = (y_min := min(path0_clipped.min(), path1_clipped.min())) * (1.2 if y_min < 0 else 0.8)
+
+                    # Ensures that the acquisition is visisble even if there is no waveform
+                    if y_max == 0 and y_min == 0:
+                        y_max = 0.5
+                        y_min = -0.5
 
                     for i, bound in enumerate(ranges):
                         fig.add_trace(

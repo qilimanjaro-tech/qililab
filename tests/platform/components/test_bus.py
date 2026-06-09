@@ -3,10 +3,10 @@ from unittest.mock import MagicMock, patch
 from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qblox import QbloxQCM, QbloxQRM
 from qililab.qprogram.qblox_compiler import AcquisitionData
-from qililab.result import Result
 from qililab.typings import Parameter
 from qililab.result.qprogram import MeasurementResult
 from qililab.platform import Bus
+from qililab.pulse_distortion.lfilter_correction import LFilterCorrection
 
 @pytest.fixture
 def mock_instruments():
@@ -25,7 +25,14 @@ def bus(mock_instruments):
     settings = {
         "alias": "bus1",
         "instruments": ["qcm", "qrm"],
-        "channels": [0, 0]
+        "channels": [0, 0],
+        "distortions": [{
+            'name': 'lfilter',
+            'norm_factor': 1,
+            'auto_norm': True,
+            'a': [1],
+            'b': [3, 4]
+        }]
     }
     return Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
 
@@ -51,7 +58,7 @@ class TestBus:
 
     def test_bus_properties(self, bus):
         assert bus.delay == 0
-        assert bus.distortions == []
+        assert bus.distortions == [LFilterCorrection(a=[1], b=[3,4], auto_norm=True)]
 
     def test_bus_equality(self, bus):
         other_bus = MagicMock(spec=Bus)
@@ -67,7 +74,14 @@ class TestBus:
         expected_dict = {
             "alias": "bus1",
             "instruments": ["qcm", "qrm"],
-            "channels": [0, 0]
+            "channels": [0, 0],
+            "distortions": [{
+                'name': 'lfilter',
+                'norm_factor': 1,
+                'auto_norm': True,
+                'a': [1],
+                'b': [3, 4]
+            }]
         }
         assert bus.to_dict() == expected_dict
 
@@ -125,23 +139,6 @@ class TestBus:
         bus.run()
         bus.instruments[0].run.assert_called_once()
 
-    def test_bus_acquire_result(self, bus):
-        result = MagicMock(spec=Result)
-        bus.instruments[1].acquire_result.return_value = result
-        assert bus.acquire_result() == result
-
-    def test_bus_acquire_result_raises_error(self, bus):
-        bus.instruments[1].acquire_result.return_value = None
-        with pytest.raises(AttributeError, match=f"The bus {bus.alias} cannot acquire results."):
-            bus.acquire_result()
-
-        bus.settings.instruments.append(bus.settings.instruments[1])
-        result = MagicMock(spec=Result)
-        bus.instruments[1].acquire_result.return_value = result
-        bus.instruments[2].acquire_result.return_value = result
-        with pytest.raises(ValueError, match="Acquisition from multiple instruments is not supported. Obtained a total of 2 results."):
-            bus.acquire_result()
-
     def test_bus_acquire_qprogram_results(self, bus):
         acquisitions = {"acq1": MagicMock(spec=AcquisitionData)}
         results = [MagicMock(spec=MeasurementResult)]
@@ -161,7 +158,7 @@ class TestBus:
             settings = {
                 "alias": "bus1",
                 "instruments": ["not_in_instruments"],
-                "channels": [None, None]
+                "channels": [None, None],
             }
             _ = Bus(settings=settings, platform_instruments=Instruments(elements=mock_instruments))
 

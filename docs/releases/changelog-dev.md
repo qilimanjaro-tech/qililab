@@ -13,6 +13,5 @@
 ### Documentation
 
 ### Bug fixes
-
-- QbloxDraw: Variable offsets can now be plotted.
-[#1049](https://github.com/qilimanjaro-tech/qililab/pull/1049)
+- Fixed a bug in `load_sequence_by_id` where measurements were returned in an undefined order, causing incorrect results when processing sequences. Measurements are now ordered by `measurement_id`.
+  [#1132](https://github.com/qilimanjaro-tech/qililab/pull/1132)

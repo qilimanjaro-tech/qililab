@@ -17,8 +17,7 @@
 import numpy as np
 from scipy.special import erf
 
-from qililab.qprogram.decorators import requires_domain
-from qililab.qprogram.variable import Domain
+from qililab.core.variables import Domain, requires_domain
 from qililab.yaml import yaml
 
 from .waveform import Waveform
@@ -31,7 +30,7 @@ class FlatTop(Waveform):
     Args:
         duration (int): Duration of the pulse (ns).
         amplitude (float): Maximum amplitude of the pulse.
-        smooth_duration (float, optional): duration of the smoothing component in ns.
+        smooth_duration (int): duration of the smoothing component in ns.
         buffer (float, optional): Buffer of the waveform. Defaults to 0.
     """
 
@@ -53,7 +52,7 @@ class FlatTop(Waveform):
         Returns:
             np.ndarray: Height of the envelope for each time step.
         """
-        x = np.arange(-self.duration / 2, self.duration / 2 + 1, resolution)
+        x = np.arange(-self.duration / 2 + 0.5, self.duration / 2 + 0.5, resolution)
         A = self.amplitude
         sigma = self.smooth_duration
         buf = self.buffer

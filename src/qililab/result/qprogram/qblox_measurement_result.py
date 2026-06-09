@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """QbloxResult class."""
+
 import numpy as np
 
 from qililab.result.qprogram.measurement_result import MeasurementResult

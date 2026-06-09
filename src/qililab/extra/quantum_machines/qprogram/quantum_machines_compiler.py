@@ -23,8 +23,8 @@ import numpy as np
 from qm import qua
 from qm.program import Program
 from qm.qua import _dsl as qua_dsl
-from qualang_tools.config.integration_weights_tools import convert_integration_weights
 
+from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
 from qililab.qprogram.calibration import Calibration
@@ -41,8 +41,9 @@ from qililab.qprogram.operations import (
     Wait,
 )
 from qililab.qprogram.qprogram import QProgram
-from qililab.qprogram.variable import Domain, FloatVariable, IntVariable, Variable
-from qililab.waveforms import IQPair, Square, Waveform
+from qililab.waveforms import IQWaveform, Square, Waveform
+
+from .integration_weights_tools import convert_integration_weights
 
 if TYPE_CHECKING:
     from qililab.platform.components.bus import Bus
@@ -58,7 +59,8 @@ class LoopInfo:
 
 class _BusCompilationInfo:
     def __init__(self) -> None:
-        self.current_gain: float | qua.QuaVariableType | None = None
+        qua_dsl._Variable._qua_type
+        self.current_gain: float | qua.Variable | None = None
         self.threshold: float | None = None
         self.threshold_rotation: float | None = None
 
@@ -67,15 +69,15 @@ class _MeasurementCompilationInfo:
     def __init__(
         self,
         bus: str,
-        variable_I: qua.QuaVariableType,
-        variable_Q: qua.QuaVariableType,
+        variable_I: qua.Variable,
+        variable_Q: qua.Variable,
         stream_I: qua_dsl._ResultSource,
         stream_Q: qua_dsl._ResultSource,
         stream_raw_adc: qua_dsl._ResultSource | None = None,
     ) -> None:
         self.bus: str = bus
-        self.variable_I: qua.QuaVariableType = variable_I
-        self.variable_Q: qua.QuaVariableType = variable_Q
+        self.variable_I: qua.Variable = variable_I
+        self.variable_Q: qua.Variable = variable_Q
         self.stream_I: qua_dsl._ResultSource = stream_I
         self.stream_Q: qua_dsl._ResultSource = stream_Q
         self.stream_raw_adc: qua_dsl._ResultSource | None = stream_raw_adc
@@ -154,7 +156,7 @@ class QuantumMachinesCompiler:
 
         self._qprogram: QProgram
         self._qprogram_block_stack: deque[Block]
-        self._qprogram_to_qua_variables: dict[Variable, qua.QuaVariableType]
+        self._qprogram_to_qua_variables: dict[Variable, qua.Variable]
         self._measurements: list[_MeasurementCompilationInfo]
         self._configuration: dict
         self._buses: dict[str, _BusCompilationInfo]
@@ -246,17 +248,17 @@ class QuantumMachinesCompiler:
             result_handles: list[str] = []
 
             def _process_stream(stream: qua_dsl._ResultSource, save_as: str) -> None:
-                processing_stream: qua_dsl._ResultSource | qua_dsl._ResultStream = stream
+                processing_stream: qua_dsl._ResultSource = stream
                 for index, loop_info in enumerate(measurement.loop_info_list):
                     if loop_info.is_average:
                         if index < len(measurement.loop_info_list) - 1:
-                            processing_stream = processing_stream.buffer(loop_info.iterations)
-                            processing_stream = processing_stream.map(["average"])
+                            processing_stream = processing_stream.buffer(loop_info.iterations)  # type: ignore[assignment]
+                            processing_stream = processing_stream.map(["average"])  # type: ignore[assignment, arg-type]
                         else:
-                            processing_stream = processing_stream.average()
+                            processing_stream = processing_stream.average()  # type: ignore[assignment]
                     else:
-                        processing_stream = processing_stream.buffer(loop_info.iterations)
-                processing_stream.save(save_as)
+                        processing_stream = processing_stream.buffer(loop_info.iterations)  # type: ignore[assignment]
+                processing_stream.save(save_as)  # type: ignore[union-attr]
                 result_handles.append(save_as)
 
             _process_stream(measurement.stream_I, f"I_{index}")
@@ -373,7 +375,7 @@ class QuantumMachinesCompiler:
             if isinstance(element.frequency, Variable)
             else element.frequency
         )
-        qua.update_frequency(element=element.bus, new_frequency=frequency)
+        qua.update_frequency(element=element.bus, new_frequency=frequency)  # type: ignore[arg-type]
 
     def _handle_set_offset(self, element: SetOffset):
         if element.bus not in self._qm_buses:
@@ -499,22 +501,13 @@ class QuantumMachinesCompiler:
         )
         operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
         pulse = operation_name * gain if gain is not None else operation_name
-        if element.demodulation:
-            qua.measure(
-                pulse,
-                element.bus,
-                stream_raw_adc,
-                qua.dual_demod.full(A, "out1", B, "out2", variable_I),
-                qua.dual_demod.full(C, "out1", D, "out2", variable_Q),
-            )
-        else:
-            qua.measure(
-                pulse,
-                element.bus,
-                stream_raw_adc,
-                qua.dual_integration.full(A, "out1", B, "out2", variable_I),
-                qua.dual_integration.full(C, "out1", D, "out2", variable_Q),
-            )
+        qua.measure(
+            pulse,
+            element.bus,
+            stream_raw_adc,
+            qua.dual_demod.full(A, "out1", B, "out2", variable_I),
+            qua.dual_demod.full(C, "out1", D, "out2", variable_Q),
+        )
         qua.save(variable_I, stream_I)
         qua.save(variable_Q, stream_Q)
 
@@ -550,14 +543,14 @@ class QuantumMachinesCompiler:
         duration = (
             self._qprogram_to_qua_variables[element.duration]
             if isinstance(element.duration, Variable)
-            else max(element.duration, self.MINIMUM_TIME)
+            else max(element.duration, self.MINIMUM_TIME)  # type: ignore[arg-type]
         )
 
         qua.wait(
             (
                 duration / int(self.WAIT_COEFF)  # type: ignore
                 if isinstance(element.duration, Variable)
-                else int(duration / self.WAIT_COEFF)  # type: ignore[arg-type, operator]
+                else int(duration / self.WAIT_COEFF)  # type: ignore[arg-type, operator, call-overload]
             ),
             element.bus,
         )
@@ -616,11 +609,11 @@ class QuantumMachinesCompiler:
             )
         return pulse_name
 
-    def __add_weights_to_configuration(self, weights: IQPair, rotation: float):
-        prefix = f"{QuantumMachinesCompiler.__hash_waveform(weights.I)}_{QuantumMachinesCompiler.__hash_waveform(weights.Q)}_{rotation}"
+    def __add_weights_to_configuration(self, weights: IQWaveform, rotation: float):
+        prefix = f"{QuantumMachinesCompiler.__hash_waveform(weights.get_I())}_{QuantumMachinesCompiler.__hash_waveform(weights.get_Q())}_{rotation}"
 
-        envelope_I = weights.I.envelope(4)
-        envelope_Q = weights.Q.envelope(4)
+        envelope_I = weights.get_I().envelope(4)
+        envelope_Q = weights.get_Q().envelope(4)
 
         # Define weights as numpy array
         cos_I = np.cos(rotation) * envelope_I
@@ -631,12 +624,12 @@ class QuantumMachinesCompiler:
         minus_cos_Q = -np.cos(rotation) * envelope_Q
 
         # Convert weights to QM-specific format
-        cos_I_converted = convert_integration_weights(integration_weights=cos_I, N=len(cos_I))
-        sin_I_converted = convert_integration_weights(integration_weights=sin_I, N=len(sin_I))
-        cos_Q_converted = convert_integration_weights(integration_weights=cos_Q, N=len(cos_Q))
-        sin_Q_converted = convert_integration_weights(integration_weights=sin_Q, N=len(sin_Q))
-        minus_sin_I_converted = convert_integration_weights(integration_weights=minus_sin_I, N=len(minus_sin_I))
-        minus_cos_Q_converted = convert_integration_weights(integration_weights=minus_cos_Q, N=len(minus_cos_Q))
+        cos_I_converted = convert_integration_weights(integration_weights=cos_I, ntuples=len(cos_I))
+        sin_I_converted = convert_integration_weights(integration_weights=sin_I, ntuples=len(sin_I))
+        cos_Q_converted = convert_integration_weights(integration_weights=cos_Q, ntuples=len(cos_Q))
+        sin_Q_converted = convert_integration_weights(integration_weights=sin_Q, ntuples=len(sin_Q))
+        minus_sin_I_converted = convert_integration_weights(integration_weights=minus_sin_I, ntuples=len(minus_sin_I))
+        minus_cos_Q_converted = convert_integration_weights(integration_weights=minus_cos_Q, ntuples=len(minus_cos_Q))
 
         # Define weights names
         A = f"{prefix}_A"

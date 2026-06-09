@@ -13,12 +13,12 @@
 # limitations under the License.
 
 """Result class."""
+
 from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
 
-from qililab.result.counts import Counts
 from qililab.typings.enums import ResultName
 from qililab.typings.factory_element import FactoryElement
 from qililab.utils import nested_dict_to_pandas_dataframe
@@ -61,26 +61,6 @@ class Result(FactoryElement, ABC):
 
         Returns:
             pd.DataFrame: I, Q, amplitude and phase.
-        """
-        raise NotImplementedError
-
-    def probabilities(self) -> dict[str, float]:
-        """(Only for `Qblox`) Return probabilities of being in the ground and excited state.
-
-        Returns:
-            dict[str, float]: Dictionary containing the quantum states as the keys of the dictionary, and the
-                probabilities obtained for each state as the values of the dictionary.
-        """
-        return self.counts_object().probabilities()
-
-    def counts_object(self) -> Counts:
-        """(Only for `Qblox`) Returns a Counts object containing the amount of times each state was measured.
-
-        Raises:
-            NotImplementedError: Not implemented.
-
-        Returns:
-            Counts: Counts object containing the amount of times each state was measured.
         """
         raise NotImplementedError
 

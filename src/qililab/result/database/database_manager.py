@@ -16,7 +16,7 @@ import datetime
 import os
 import warnings
 from configparser import ConfigParser
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 import h5py
 import numpy as np
@@ -25,7 +25,7 @@ from sqlalchemy import create_engine, exists
 from sqlalchemy.orm import Session, sessionmaker
 
 from qililab.result.database.database_autocal import AutocalMeasurement, CalibrationRun
-from qililab.result.database.database_measurements import Cooldown, Measurement, Sample
+from qililab.result.database.database_measurements import Cooldown, Measurement, Sample, SequenceRun
 from qililab.result.database.database_qaas import QaaS_Experiment
 from qililab.utils.serialization import serialize
 
@@ -52,6 +52,7 @@ class DatabaseManager:
         self.session: sessionmaker[Session] = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.current_cd: str | None = None
         self.current_sample: str | None = None
+        self.current_sequence: int | None = None
 
         self.base_path_local: str | None = None
         self.base_path_share: str | None = None
@@ -150,14 +151,48 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
-    def add_calibration_run(self, calibration_tree: dict) -> CalibrationRun:
+    def add_sequence_run(
+        self, sequence_name: str, sequence_tree: dict, sample_name: str, cooldown: str | None = None
+    ) -> SequenceRun:
+        """Add sequence of experiments metadata.
+
+        Args:
+            sequence_name (str): Experiment sequence name.
+            sequence_tree (dict): Full experiment sequence tree of the run.
+            sample_name (str): Sample id.
+            cooldown (str | None, optional): Cooldown id. Defaults to None.
+        """
+        sequence_obj = SequenceRun(
+            sequence_name=sequence_name,
+            start_time=datetime.datetime.now(),
+            sequence_tree=sequence_tree,
+            sequence_completed=False,
+            sample_name=sample_name,
+            cooldown=cooldown,
+        )
+        with self.session() as running_session:
+            running_session.add(sequence_obj)
+            try:
+                running_session.commit()
+                self.current_sequence = sequence_obj.sequence_id  # type: ignore[assignment]
+                return sequence_obj
+
+            except Exception as e:
+                running_session.rollback()
+                raise e
+
+    def add_calibration_run(self, calibration_tree: dict, sample_name: str, cooldown: str) -> CalibrationRun:
         """Add autocalibration metadata.
 
         Args:
             calibration_tree (dict): Full calibration tree of the run.
         """
         calibration_obj = CalibrationRun(
-            date=datetime.datetime.now(), calibration_tree=calibration_tree, calibration_completed=False
+            date=datetime.datetime.now(),
+            calibration_tree=calibration_tree,
+            calibration_completed=False,
+            sample_name=sample_name,
+            cooldown=cooldown,
         )
         with self.session() as running_session:
             running_session.add(calibration_obj)
@@ -169,22 +204,66 @@ class DatabaseManager:
                 running_session.rollback()
                 raise e
 
+    @overload
+    def load_by_id(self, id: list[int]) -> list[Measurement] | None:
+        """Load list of measurements by their measurement_id.
+
+        Args:
+            id (list[int]): measurement_id list given by the database.
+        """
+
+    @overload
     def load_by_id(self, id: int) -> Measurement | None:
         """Load measurement by its measurement_id.
 
         Args:
-            id (int): measurement_id value given by the database.
+            id (int | list[int]): measurement_id value given by the database.
+        """
+
+    def load_by_id(self, id: int | list[int]) -> list[Measurement] | Measurement | None:
+        """Load measurements by their measurement_id.
+
+        Args:
+            id (int | list[int]): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            measurement_by_id = running_session.query(Measurement).where(Measurement.measurement_id == id).one_or_none()
+            if not isinstance(id, list):
+                measurement_id = [id]
+            else:
+                measurement_id = id
 
-            if measurement_by_id is not None:
-                path = measurement_by_id.result_path
+            measurement_by_id_list = (
+                running_session.query(Measurement).filter(Measurement.measurement_id.in_(measurement_id)).all()
+            )
+            if measurement_by_id_list is not None:
+                for meas in measurement_by_id_list:
+                    path = meas.result_path
+                    if not os.path.isfile(path):
+                        new_path = path.replace(self.base_path_local, self.base_path_share)
+                        meas.result_path = new_path
+            return measurement_by_id_list if len(measurement_by_id_list) > 1 else measurement_by_id_list[0]
+
+    def load_sequence_by_id(self, id: int | list[int]) -> list[Measurement] | None:
+        """Load measurement by its measurement_id.
+
+        Args:
+            id (int | list[int]): measurement_id value given by the database.
+        Returns:
+            list[Measurement] | None: returns the list of measurements or None if no sequence could be found.
+        """
+        with self.session() as running_session:
+            measurement_by_id_list = (
+                running_session.query(Measurement)
+                .where(Measurement.sequence_id == id)
+                .order_by(Measurement.measurement_id)
+                .all()
+            )
+            for meas in measurement_by_id_list:
+                path = meas.result_path
                 if not os.path.isfile(path):
                     new_path = path.replace(self.base_path_local, self.base_path_share)
-                    measurement_by_id.result_path = new_path
-
-            return measurement_by_id
+                    meas.result_path = new_path
+            return measurement_by_id_list
 
     def load_calibration_by_id(self, id: int) -> AutocalMeasurement | None:
         """Load autocalibration measurement by its measurement_id.
@@ -197,13 +276,6 @@ class DatabaseManager:
                 running_session.query(AutocalMeasurement).where(AutocalMeasurement.measurement_id == id).one_or_none()
             )
 
-            if measurement_by_id is not None:
-                path = measurement_by_id.result_path
-                if not os.path.isfile(path):
-
-                    new_path = path.replace(self.base_path_local, self.base_path_share)
-                    measurement_by_id.result_path = new_path
-
             return measurement_by_id
 
     def load_experiment_by_id(self, id: int) -> QaaS_Experiment | None:
@@ -213,12 +285,13 @@ class DatabaseManager:
             id (int): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            experiment_by_id = running_session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
+            experiment_by_id = (
+                running_session.query(QaaS_Experiment).where(QaaS_Experiment.experiment_id == id).one_or_none()
+            )
 
             if experiment_by_id is not None:
                 path = experiment_by_id.result_path
                 if not os.path.isfile(path):
-
                     new_path = path.replace(self.base_path_local, self.base_path_share)
                     experiment_by_id.result_path = new_path
 
@@ -263,6 +336,7 @@ class DatabaseManager:
             if light_read:
                 query = query.with_entities(  # Note that some columns are missing that currently are not being used
                     Measurement.measurement_id,
+                    Measurement.sequence_id,
                     Measurement.experiment_name,
                     Measurement.optional_identifier,
                     Measurement.start_time,
@@ -273,10 +347,13 @@ class DatabaseManager:
                     Measurement.sample_name,
                     Measurement.result_path,
                     Measurement.created_by,
+                    Measurement.target,
+                    Measurement.secondary_source,
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
                     (Measurement.debug_file != "null").label("has_debug"),
+                    (Measurement.dc_offsets != "null").label("has_dc_offsets"),
                 )
 
             if pandas_output:
@@ -322,6 +399,7 @@ class DatabaseManager:
             if light_read:
                 query = query.with_entities(  # Note that some columns are missing that currently are not being used
                     Measurement.measurement_id,
+                    Measurement.sequence_id,
                     Measurement.experiment_name,
                     Measurement.optional_identifier,
                     Measurement.start_time,
@@ -332,10 +410,13 @@ class DatabaseManager:
                     Measurement.sample_name,
                     Measurement.result_path,
                     Measurement.created_by,
+                    Measurement.target,
+                    Measurement.secondary_source,
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
                     (Measurement.debug_file != "null").label("has_debug"),
+                    (Measurement.dc_offsets != "null").label("has_dc_offsets"),
                 )
 
             if pandas_output:
@@ -350,7 +431,11 @@ class DatabaseManager:
             measurement_id (int): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            return running_session.query(Measurement.qprogram).filter(Measurement.measurement_id == measurement_id).scalar()
+            return (
+                running_session.query(Measurement.qprogram)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
 
     def get_calibration(self, measurement_id: int) -> str:
         """Get Calibration of a measurement by its measurement_id.
@@ -360,7 +445,11 @@ class DatabaseManager:
             measurement_id (int): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            return running_session.query(Measurement.calibration).filter(Measurement.measurement_id == measurement_id).scalar()
+            return (
+                running_session.query(Measurement.calibration)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
 
     def get_platform(self, measurement_id: int) -> dict:
         """Get Platform of a measurement by its measurement_id.
@@ -370,7 +459,11 @@ class DatabaseManager:
             measurement_id (int): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            return running_session.query(Measurement.platform).filter(Measurement.measurement_id == measurement_id).scalar()
+            return (
+                running_session.query(Measurement.platform)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
 
     def get_debug(self, measurement_id: int) -> str:
         """Get Debug of a measurement by its measurement_id.
@@ -380,12 +473,30 @@ class DatabaseManager:
             measurement_id (int): measurement_id value given by the database.
         """
         with self.session() as running_session:
-            return running_session.query(Measurement.debug_file).filter(Measurement.measurement_id == measurement_id).scalar()
+            return (
+                running_session.query(Measurement.debug_file)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
+
+    def get_dc_offsets(self, measurement_id: int) -> str:
+        """Get DC offsets of a measurement by its measurement_id.
+        To be used when you have light loaded measurements
+
+        Args:
+            measurement_id (int): measurement_id value given by the database.
+        """
+        with self.session() as running_session:
+            return (
+                running_session.query(Measurement.dc_offsets)
+                .filter(Measurement.measurement_id == measurement_id)
+                .scalar()
+            )
 
     def add_autocal_measurement(
         self,
         experiment_name: str,
-        qubit_idx: int,
+        qubit_idx: int | str,
         calibration: "Calibration",  # type: ignore
         platform: "Platform" = None,  # type: ignore
         qprogram: "QProgram" = None,  # type: ignore
@@ -407,11 +518,14 @@ class DatabaseManager:
         start_time = datetime.datetime.now()
 
         with self.session() as running_session:
-            calibration_id = running_session.query(CalibrationRun).order_by(CalibrationRun.calibration_id.desc()).first().calibration_id  # type: ignore
+            calibration_id = (
+                running_session.query(CalibrationRun)  # type: ignore[union-attr]
+                .order_by(CalibrationRun.calibration_id.desc())
+                .first()
+                .calibration_id
+            )
 
-        sample_name = calibration.parameters["sample_name"]
-        cooldown = calibration.parameters["cooldown"]
-        base_path = calibration.parameters["base_path"]
+        base_path = calibration.parameters["data_folder"]
 
         result_path = os.path.join(base_path, f"{experiment_name}.h5")
 
@@ -421,15 +535,13 @@ class DatabaseManager:
 
         self.calibration_measurement = AutocalMeasurement(
             experiment_name=experiment_name,
-            sample_name=sample_name,
             calibration_id=calibration_id,
             qbit_idx=qubit_idx,
             result_path=result_path,
             fitting_path=base_path,
             experiment_completed=False,
             start_time=start_time,
-            cooldown=cooldown,
-            platform_after=platform,
+            platform_before=platform,
             qprogram=qprogram,
             calibration=serialize(calibration),
             parameters=serialize(parameters),
@@ -506,6 +618,9 @@ class DatabaseManager:
         debug_file: str | None = None,
         parameters: list[str] | None = None,
         data_shape: np.ndarray | None = None,
+        dc_offsets: dict[str, float] | None = None,
+        target: list[str] | None = None,
+        secondary_source: list[str] | None = None,
     ):
         """Add measurement metadata and data path
 
@@ -524,6 +639,9 @@ class DatabaseManager:
             calibration (Calibration | None, optional): Calibration used on the experiment. Defaults to None.
             parameters (list[str] | None, optional): Parameters used on the experiment. Defaults to None.
             data_shape (np.ndarray | None, optional): Shape of the results array. Defaults to None.
+            dc_offsets (np.ndarray | None, optional): Instruments offsets. Defaults to None.
+            target (np.ndarray | None, optional): Target qubits list. Defaults to None.
+            secondary_source (np.ndarray | None, optional): Secondary source buses list. Defaults to None.
         """
         if sample_name is None:
             if self.current_sample:
@@ -558,6 +676,7 @@ class DatabaseManager:
             experiment_completed=experiment_completed,
             start_time=start_time,
             cooldown=cooldown,
+            sequence_id=self.current_sequence,
             optional_identifier=optional_identifier,
             end_time=end_time,
             run_length=run_length,
@@ -568,6 +687,9 @@ class DatabaseManager:
             debug_file=debug_file,
             parameters=parameters,
             data_shape=data_shape,
+            dc_offsets=dc_offsets,
+            target=target,
+            secondary_source=secondary_source,
         )
         with self.session() as running_session:
             running_session.add(measurement)
@@ -699,7 +821,7 @@ def get_engine(user: str, passwd: str, host: str, port: str, database: str):
     return create_engine(url)
 
 
-def load_by_id(id: int, path: str = "~/database.ini") -> Measurement | None:
+def load_by_id(id: int | list[int], path: str = "~/database.ini") -> list[Measurement] | Measurement | None:
     """Function to get the database ID without loading the Database Manager"""
 
     db = get_db_manager(path)
