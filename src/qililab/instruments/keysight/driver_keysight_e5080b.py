@@ -309,7 +309,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
         )
         """Status Operation"""
 
-        # The more intuitive unit for this parameter is nanosecoonds, even the instrument documentation uses nanoseconds to exemplify, that's why this unit was chosen.
+        # The more intuitive unit for this parameter is nanonseconds, even the instrument documentation uses nanoseconds to exemplify, that's why this unit was chosen.
         self.electrical_delay: Parameter = self.add_parameter(
             "electrical_delay",
             label="Electrical Delay",
@@ -317,6 +317,7 @@ class Driver_KeySight_E5080B(VisaInstrument):
             get_cmd="CALC:MEAS:CORR:EDEL:TIME?",
             set_parser=lambda v: float(v) / 1e9,
             get_parser=lambda v: float(v) * 1e9,
+            unit="s",
             vals=Numbers(min_value=-1e10, max_value=1e10),
         )
         """Electrical Delay in nanoseconds"""
