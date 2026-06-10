@@ -14,6 +14,8 @@ from qililab.typings.enums import (
     VNASweepTypes,
 )
 
+from qililab.typings.enums import ReferenceClock
+
 
 class Galadriel:
     """Test data of the galadriel platform."""
@@ -356,6 +358,18 @@ class Galadriel:
                 Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
             },
+            {
+                "identifier": 5,
+                "outputs": [0],
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: True,
+            },
         ],
     }
 
@@ -540,6 +554,7 @@ class Galadriel:
         ],
         INSTRUMENTCONTROLLER.RESET: True,
         "reference_clock": "internal",
+        "ext_trigger": True,
 
     }
 
@@ -704,6 +719,11 @@ class Galadriel:
             RUNCARD.ALIAS: "flux_line_q3_bus",
             RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             RUNCARD.CHANNELS: [4, None],
+        },
+        {
+            RUNCARD.ALIAS: "drive_line_q0_bus_baseband",
+            RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value],
+            RUNCARD.CHANNELS: [5],
         },
         {
             RUNCARD.ALIAS: "flux_line_too_many_instr",
@@ -962,11 +982,28 @@ class SauronQDevil:
         ],
     }
 
+    qdevil_qdac2_controller_external_clock = {
+        RUNCARD.NAME: InstrumentControllerName.QDEVIL_QDAC2,
+        RUNCARD.ALIAS: "qdac_controller_external_clock",
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                "alias": "qdac",
+                "slot_id": 0,
+            }
+        ],
+        INSTRUMENTCONTROLLER.REFERENCE_CLOCK: ReferenceClock("external"),
+    }
+
     instruments = [qdevil_qdac2, rohde_schwarz]
     instrument_controllers = [
         qdevil_qdac2_controller_ip,
         qdevil_qdac2_controller_usb,
         qdevil_qdac2_controller_wrong_module,
+        qdevil_qdac2_controller_external_clock,
     ]
 
     buses: list[dict[str, Any]] = [{RUNCARD.ALIAS: "qdac_bus", RUNCARD.INSTRUMENTS: ["qdac"], RUNCARD.CHANNELS: [1]}]

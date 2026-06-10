@@ -1,12 +1,14 @@
+import math
 import os
 from itertools import product
 
 import numpy as np
 import pytest
 
-from qililab import Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square, IQDrag
+from qililab import Arbitrary, Domain, GaussianDragCorrection, Gaussian, IQPair, QProgram, Square, IQDrag
 from qililab.qprogram.blocks import Average
 from qililab.qprogram.calibration import Calibration
+from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, NonLinearCrosstalkMatrix
 from qililab.qprogram.operations import (
     Acquire,
     AcquireWithCalibratedWeights,
@@ -143,7 +145,13 @@ class TestQProgram(TestStructuredProgram):
             qp.quantum_machines.measure(bus="readout_q0_bus", waveform="readout", weights=weights, rotation=np.pi)
             qp.quantum_machines.measure(bus="readout_q0_bus", waveform=readout, weights="weights", rotation=np.pi)
             qp.quantum_machines.measure(bus="readout_q0_bus", waveform="readout", weights="weights", rotation=np.pi)
-            qp.qblox.measure_reset(bus="readout_q0_bus", waveform="readout", weights="weights", control_bus="drive_q0_bus", reset_pulse="drag_reset")
+            qp.qblox.measure_reset(
+                bus="readout_q0_bus",
+                waveform="readout",
+                weights="weights",
+                control_bus="drive_q0_bus",
+                reset_pulse="drag_reset",
+            )
 
         # Check that qp has named operations
         assert qp.has_calibrated_waveforms_or_weights() is True
@@ -228,10 +236,11 @@ class TestQProgram(TestStructuredProgram):
         calibration.add_waveform(bus="drive", name="drag_reset", waveform=drag_reset)
 
         measure_qp_block = QProgram()
-        measure_qp_block.qblox.measure_reset(bus='readout',waveform="readout", weights="weights", control_bus='drive',reset_pulse="drag_reset")
-        calibration.add_block("reset",measure_qp_block.body)
+        measure_qp_block.qblox.measure_reset(
+            bus="readout", waveform="readout", weights="weights", control_bus="drive", reset_pulse="drag_reset"
+        )
+        calibration.add_block("reset", measure_qp_block.body)
         reset_block = calibration.get_block(name="reset")
-
 
         qp = QProgram()
         with qp.average(1000):
@@ -247,7 +256,6 @@ class TestQProgram(TestStructuredProgram):
         new_qp = qp.with_calibration(calibration=calibration)
 
         assert isinstance(new_qp.body.elements[0].elements[0], MeasureReset)
-
 
     def test_average_method(self):
         """Test acquire_loop method"""
@@ -398,6 +406,364 @@ class TestQProgram(TestStructuredProgram):
         assert qp._body.elements[0].offset_path0 == 1.0
         assert qp._body.elements[0].offset_path1 == 0.0
 
+    def test_with_crosstalk_multi_variable_offset(self):
+        """Test with_crosstalk_qblox covers the multi-variable branch in handle_offset
+        and handle_gain when len(variable_list) > 1."""
+        # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+
+        # Test handle_offset
+        qp = QProgram()
+        offset_0 = qp.variable(label="offset_0", domain=Domain.Voltage)
+        offset_1 = qp.variable(label="offset_1", domain=Domain.Voltage)
+
+        # Nested loops
+        with qp.for_loop(variable=offset_0, start=0.0, stop=0.5, step=0.1):
+            with qp.for_loop(variable=offset_1, start=0.0, stop=0.5, step=0.1):
+                qp.set_offset(bus="flux_bus_0", offset_path0=offset_0, offset_path1=0.0)
+                qp.set_offset(bus="flux_bus_1", offset_path0=offset_1, offset_path1=0.0)
+
+        new_qp = qp.with_crosstalk_qblox(crosstalk)
+        assert new_qp is not None
+
+        # Test handle_gain
+        qp2 = QProgram()
+        gain_0 = qp2.variable(label="gain_0", domain=Domain.Voltage)
+        gain_1 = qp2.variable(label="gain_1", domain=Domain.Voltage)
+
+        with qp2.for_loop(variable=gain_0, start=0.0, stop=0.5, step=0.1):
+            with qp2.for_loop(variable=gain_1, start=0.0, stop=0.5, step=0.1):
+                qp2.set_gain(bus="flux_bus_0", gain=gain_0)
+                qp2.set_gain(bus="flux_bus_1", gain=gain_1)
+
+        new_qp2 = qp2.with_crosstalk_qblox(crosstalk)
+        assert new_qp2 is not None
+
+    def test_with_crosstalk_non_linear(self):
+        """Test with_crosstalk_qblox covers the non-linear implementation."""
+        # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        square_wf = Square(amplitude=0.1, duration=50)
+        square_iq = IQPair(I=square_wf, Q=square_wf)
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.08):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.wait(bus="drive", duration=10)
+            qp.wait(bus="flux1", duration=10)
+            qp.wait(bus="flux2", duration=10)
+            qp.set_gain(bus="flux2", gain=0.05)
+            qp.play(bus="flux1", waveform=square_wf)
+            qp.play(bus="drive", waveform=square_iq)
+            qp.sync(["drive", "readout"])
+            qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+        
+        new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
+        assert new_qp is not None
+
+        assert isinstance(new_qp.body.elements[0], SetOffset)
+        assert math.isclose(new_qp.body.elements[0].offset_path0, 0.0)
+        assert new_qp.body.elements[0].bus == "flux1"
+        assert isinstance(new_qp.body.elements[1], SetOffset)
+        assert math.isclose(new_qp.body.elements[1].offset_path0, 0.0)
+        assert new_qp.body.elements[1].bus == "flux2"
+        assert isinstance(new_qp.body.elements[2], Wait)
+        assert new_qp.body.elements[2].bus == "drive"
+        assert isinstance(new_qp.body.elements[3], Wait)
+        assert new_qp.body.elements[3].bus == "flux1"
+        assert isinstance(new_qp.body.elements[4], Wait)
+        assert new_qp.body.elements[4].bus == "flux2"
+        assert isinstance(new_qp.body.elements[5], SetGain)
+        assert math.isclose(new_qp.body.elements[5].gain, 0.3471177904070214)
+        assert new_qp.body.elements[5].bus == "flux1"
+        assert isinstance(new_qp.body.elements[6], SetOffset)
+        assert math.isclose(new_qp.body.elements[6].offset_path0, 0.0)
+        assert new_qp.body.elements[6].bus == "flux1"
+        assert isinstance(new_qp.body.elements[7], Play)
+        assert isinstance(new_qp.body.elements[7].waveform, Square)
+        assert new_qp.body.elements[7].bus == "flux1"
+        assert math.isclose(new_qp.body.elements[7].waveform.amplitude, 1.0)  #Check that Square pulses are normalized
+        assert isinstance(new_qp.body.elements[8], SetGain)
+        assert new_qp.body.elements[8].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[8].gain, 0.5442355808140428)
+        assert isinstance(new_qp.body.elements[9], SetOffset)
+        assert new_qp.body.elements[9].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[9].offset_path0, 0.0)
+        assert isinstance(new_qp.body.elements[10], Play)
+        assert isinstance(new_qp.body.elements[10].waveform, Square)
+        assert new_qp.body.elements[10].bus == "flux2"
+        assert isinstance(new_qp.body.elements[11], Play)
+        assert new_qp.body.elements[11].bus == "drive"
+        assert isinstance(new_qp.body.elements[12], Sync)
+        assert new_qp.body.elements[12].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[13], Measure)
+        assert new_qp.body.elements[13].bus == "readout"
+        assert isinstance(new_qp.body.elements[14], Sync)
+        # Repeat loop for second iteration
+        assert isinstance(new_qp.body.elements[15], SetOffset)
+        assert math.isclose(new_qp.body.elements[15].offset_path0,0.3471177904070214)
+        assert new_qp.body.elements[15].bus == "flux1"
+        assert isinstance(new_qp.body.elements[16], SetOffset)
+        assert math.isclose(new_qp.body.elements[16].offset_path0, 0.5442355808140428)
+        assert new_qp.body.elements[16].bus == "flux2"
+        assert isinstance(new_qp.body.elements[17], Wait)
+        assert new_qp.body.elements[17].bus == "drive"
+        assert isinstance(new_qp.body.elements[18], Wait)
+        assert new_qp.body.elements[18].bus == "flux1"
+        assert isinstance(new_qp.body.elements[19], Wait)
+        assert new_qp.body.elements[19].bus == "flux2"
+        assert isinstance(new_qp.body.elements[20], SetGain)
+        assert math.isclose(new_qp.body.elements[20].gain,0.08143146795214351)
+        assert new_qp.body.elements[20].bus == "flux1"
+        assert isinstance(new_qp.body.elements[21], SetOffset)
+        assert math.isclose(new_qp.body.elements[21].offset_path0, 0.3471177904070214)
+        assert new_qp.body.elements[21].bus == "flux1"
+        assert isinstance(new_qp.body.elements[22], Play)
+        assert isinstance(new_qp.body.elements[22].waveform, Square)
+        assert new_qp.body.elements[22].bus == "flux1"
+        assert math.isclose(new_qp.body.elements[22].waveform.amplitude, 1.0)  #Check that Square pulses are normalized
+        assert isinstance(new_qp.body.elements[23], SetGain)
+        assert new_qp.body.elements[23].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[23].gain, 0.012862935904286998)
+        assert isinstance(new_qp.body.elements[24], SetOffset)
+        assert new_qp.body.elements[24].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[24].offset_path0, 0.5442355808140428)
+        assert isinstance(new_qp.body.elements[25], Play)
+        assert isinstance(new_qp.body.elements[25].waveform, Square)
+        assert new_qp.body.elements[25].bus == "flux2"
+        assert isinstance(new_qp.body.elements[26], Play)
+        assert new_qp.body.elements[26].bus == "drive"
+        assert isinstance(new_qp.body.elements[27], Sync)
+        assert new_qp.body.elements[27].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[28], Measure)
+        assert new_qp.body.elements[28].bus == "readout"
+        assert isinstance(new_qp.body.elements[29], Sync)
+        
+    def test_with_crosstalk_non_linear_repeat_offset_play(self):
+        """Test with_crosstalk_qblox covers the non-linear implementation repeating consecutive offsets and plays."""
+        # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        square_wf = Square(amplitude=0.1, duration=50)
+        square_iq = IQPair(I=square_wf, Q=square_wf)
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.08):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.wait(bus="drive", duration=10)
+            qp.wait(bus="flux1", duration=10)
+            qp.wait(bus="flux2", duration=10)
+            qp.set_offset(bus="flux1", offset_path0=0.1)
+            qp.wait(bus="drive", duration=10)
+            qp.wait(bus="flux1", duration=10)
+            qp.wait(bus="flux2", duration=10)
+            qp.play(bus="flux1", waveform=square_wf)
+            qp.play(bus="flux1", waveform=square_wf)
+            qp.play(bus="drive", waveform=square_iq)
+            qp.sync(["drive", "readout"])
+            qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+        
+        new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
+        assert new_qp is not None
+
+        assert isinstance(new_qp.body.elements[0], SetOffset)
+        assert math.isclose(new_qp.body.elements[0].offset_path0, 0.0)
+        assert new_qp.body.elements[0].bus == "flux1"
+        assert isinstance(new_qp.body.elements[1], SetOffset)
+        assert math.isclose(new_qp.body.elements[1].offset_path0, 0.0)
+        assert new_qp.body.elements[1].bus == "flux2"
+        assert isinstance(new_qp.body.elements[2], Wait)
+        assert new_qp.body.elements[2].bus == "drive"
+        assert isinstance(new_qp.body.elements[3], Wait)
+        assert new_qp.body.elements[3].bus == "flux1"
+        assert isinstance(new_qp.body.elements[4], Wait)
+        assert new_qp.body.elements[4].bus == "flux2"
+        # New offsets are called after waits
+        assert isinstance(new_qp.body.elements[5], SetOffset)
+        assert math.isclose(new_qp.body.elements[5].offset_path0, 0.3471177904070214)
+        assert new_qp.body.elements[5].bus == "flux1"
+        assert isinstance(new_qp.body.elements[6], SetOffset)
+        assert math.isclose(new_qp.body.elements[6].offset_path0, 0.5442355808140428)
+        assert new_qp.body.elements[6].bus == "flux2"
+        assert isinstance(new_qp.body.elements[7], Wait)
+        assert new_qp.body.elements[7].bus == "drive"
+        assert isinstance(new_qp.body.elements[8], Wait)
+        assert new_qp.body.elements[8].bus == "flux1"
+        assert isinstance(new_qp.body.elements[9], Wait)
+        assert new_qp.body.elements[9].bus == "flux2"
+        assert isinstance(new_qp.body.elements[10], SetGain)
+        assert math.isclose(new_qp.body.elements[10].gain, 0.08143146795214351)
+        assert new_qp.body.elements[10].bus == "flux1"
+        assert isinstance(new_qp.body.elements[11], SetOffset)
+        assert math.isclose(new_qp.body.elements[11].offset_path0, 0.3471177904070214)
+        assert new_qp.body.elements[11].bus == "flux1"
+        assert isinstance(new_qp.body.elements[12], Play)
+        assert isinstance(new_qp.body.elements[12].waveform, Square)
+        assert new_qp.body.elements[12].bus == "flux1"
+        assert math.isclose(new_qp.body.elements[12].waveform.amplitude, 1.0)  #Check that Square pulses are normalized
+        assert isinstance(new_qp.body.elements[13], SetGain)
+        assert new_qp.body.elements[13].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[13].gain, 0.012862935904286998)
+        assert isinstance(new_qp.body.elements[14], SetOffset)
+        assert new_qp.body.elements[14].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[14].offset_path0, 0.5442355808140428)
+        assert isinstance(new_qp.body.elements[15], Play)
+        assert isinstance(new_qp.body.elements[15].waveform, Square)
+        # Play structure is repeated (because there's two consecutive plays with the same bus)
+        assert isinstance(new_qp.body.elements[16], SetGain)
+        assert new_qp.body.elements[16].bus == "flux1"
+        assert math.isclose(new_qp.body.elements[16].gain, 0.08143146795214351)
+        assert isinstance(new_qp.body.elements[17], Play)
+        assert isinstance(new_qp.body.elements[17].waveform, Square)
+        assert new_qp.body.elements[17].bus == "flux1"
+        assert isinstance(new_qp.body.elements[18], SetGain)
+        assert new_qp.body.elements[18].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[18].gain, 0.012862935904286998)
+        assert isinstance(new_qp.body.elements[19], Play)
+        assert isinstance(new_qp.body.elements[19].waveform, Square)
+        assert new_qp.body.elements[19].bus == "flux2"
+        assert isinstance(new_qp.body.elements[20], Play)
+        assert new_qp.body.elements[20].bus == "drive"
+        assert isinstance(new_qp.body.elements[21], Sync)
+        assert new_qp.body.elements[21].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[22], Measure)
+        assert new_qp.body.elements[22].bus == "readout"
+        assert isinstance(new_qp.body.elements[23], Sync)
+        # The loop repeats itself until 47 iterations, 
+        # we focus here on the initial offsets being modified and the last point
+        assert isinstance(new_qp.body.elements[24], SetOffset)
+        assert math.isclose(new_qp.body.elements[24].offset_path0,0.3471177904070214)
+        assert new_qp.body.elements[24].bus == "flux1"
+        assert isinstance(new_qp.body.elements[25], SetOffset)
+        assert math.isclose(new_qp.body.elements[25].offset_path0, 0.5442355808140428)
+        assert new_qp.body.elements[25].bus == "flux2"
+        # ...
+        assert isinstance(new_qp.body.elements[47], Sync)
+        
+    def test_with_crosstalk_non_linear_convert_arbitrary_play(self):
+        """Test with_crosstalk_qblox covers the non-linear implementation repeating consecutive offsets and plays."""
+        # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        gauss_wf = Gaussian(amplitude=0.1, duration=50, num_sigmas=4)
+        square_wf = Square(amplitude=0.1, duration=50)
+        square_iq = IQPair(I=square_wf, Q=square_wf)
+        qp = QProgram()
+        qp.play(bus="flux1", waveform=gauss_wf)
+        qp.play(bus="drive", waveform=square_iq)
+        qp.sync(["drive", "readout"])
+        qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+
+        new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
+        assert new_qp is not None
+        assert isinstance(new_qp.body.elements[0], SetGain)
+        assert math.isclose(new_qp.body.elements[0].gain, 1)
+        assert new_qp.body.elements[0].bus == "flux1"
+        assert isinstance(new_qp.body.elements[1], SetOffset)
+        assert math.isclose(new_qp.body.elements[1].offset_path0, 0.0)
+        assert new_qp.body.elements[1].bus == "flux1"
+        assert isinstance(new_qp.body.elements[2], Play)
+        assert isinstance(new_qp.body.elements[2].waveform, Arbitrary)
+        assert new_qp.body.elements[2].bus == "flux1"
+        assert isinstance(new_qp.body.elements[3], SetGain)
+        assert new_qp.body.elements[3].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[3].gain, 1)
+        assert isinstance(new_qp.body.elements[4], SetOffset)
+        assert new_qp.body.elements[4].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[4].offset_path0, 0.0)
+        assert isinstance(new_qp.body.elements[5], Play)
+        assert isinstance(new_qp.body.elements[5].waveform, Arbitrary)
+        assert new_qp.body.elements[5].bus == "flux2"
+        assert isinstance(new_qp.body.elements[6], Play)
+        assert new_qp.body.elements[6].bus == "drive"
+        assert isinstance(new_qp.body.elements[7], Sync)
+        assert new_qp.body.elements[7].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[8], Measure)
+        assert new_qp.body.elements[8].bus == "readout"
+        assert isinstance(new_qp.body.elements[9], Sync)
+        
+    def test_with_crosstalk_non_linear_play_before_loop(self):
+        """Test with_crosstalk_qblox covers the non-linear implementation playing a pulse before a loop."""
+        # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        square_wf = Square(amplitude=0.1, duration=50)
+        gauss_wf = Gaussian(amplitude=0.7, duration=50, num_sigmas=4)
+        square_iq = IQPair(I=square_wf, Q=square_wf)
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        qp.play(bus="flux1", waveform=gauss_wf)
+        qp.sync()
+        with qp.for_loop(variable=offset, start=0, stop=0.1, step=0.08):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.play(bus="flux1", waveform=gauss_wf)
+            qp.play(bus="drive", waveform=square_iq)
+            qp.sync(["drive", "readout"])
+            qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+
+        new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
+        assert new_qp is not None
+        assert isinstance(new_qp.body.elements[0], SetGain)
+        assert math.isclose(new_qp.body.elements[0].gain, 1)
+        assert new_qp.body.elements[0].bus == "flux1"
+        assert isinstance(new_qp.body.elements[1], SetOffset)
+        assert math.isclose(new_qp.body.elements[1].offset_path0, 0.0)
+        assert new_qp.body.elements[1].bus == "flux1"
+        assert isinstance(new_qp.body.elements[2], Play)
+        assert isinstance(new_qp.body.elements[2].waveform, Arbitrary)
+        assert new_qp.body.elements[2].bus == "flux1"
+        assert isinstance(new_qp.body.elements[3], SetGain)
+        assert new_qp.body.elements[3].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[3].gain, 1)
+        assert isinstance(new_qp.body.elements[4], SetOffset)
+        assert new_qp.body.elements[4].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[4].offset_path0, 0.0)
+        assert isinstance(new_qp.body.elements[5], Play)
+        assert isinstance(new_qp.body.elements[5].waveform, Arbitrary)
+        assert new_qp.body.elements[5].bus == "flux2"
+        assert isinstance(new_qp.body.elements[6], Sync)
+        # Here the loop begins
+        assert isinstance(new_qp.body.elements[7 ], SetOffset)
+        assert math.isclose(new_qp.body.elements[7 ].offset_path0, 0.0)
+        assert new_qp.body.elements[7 ].bus == "flux1"
+        assert isinstance(new_qp.body.elements[8], SetOffset)
+        assert math.isclose(new_qp.body.elements[8].offset_path0, 0.0)
+        assert isinstance(new_qp.body.elements[9], SetGain)
+        assert math.isclose(new_qp.body.elements[9].gain, 1)
+        assert new_qp.body.elements[9].bus == "flux1"
+        assert isinstance(new_qp.body.elements[10], Play)
+        assert isinstance(new_qp.body.elements[10].waveform, Arbitrary)
+        assert new_qp.body.elements[10].bus == "flux1"
+        assert isinstance(new_qp.body.elements[11], SetGain)
+        assert new_qp.body.elements[11].bus == "flux2"
+        assert math.isclose(new_qp.body.elements[11].gain, 1)
+        assert isinstance(new_qp.body.elements[12], Play)
+        assert isinstance(new_qp.body.elements[12].waveform, Arbitrary)
+        assert new_qp.body.elements[12].bus == "flux2"
+        assert isinstance(new_qp.body.elements[13], Play)
+        assert new_qp.body.elements[13].bus == "drive"
+        assert isinstance(new_qp.body.elements[14], Sync)
+        assert new_qp.body.elements[14].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[15], Measure)
+        assert new_qp.body.elements[15].bus == "readout"
+        assert isinstance(new_qp.body.elements[16], Sync)
+        # ... second iteration of the loop
+        assert isinstance(new_qp.body.elements[26], Sync)
+
     def test_set_markers(self):
         qp = QProgram()
         qp.qblox.set_markers(bus="drive", mask="0111")
@@ -469,7 +835,7 @@ class TestQProgram(TestStructuredProgram):
                     num_sigmas=num_sigmas_var,
                     drag_coefficient=drag_coefficient_var,
                 )
-    
+
     # TODO: qililab.utils.serialization.DeserializationError: Failed to deserialize YAML string: 'Voltage-4' is not a valid Domain
     # def test_serialization_deserialization(self):
     #     """Test serialization and deserialization works."""
@@ -504,7 +870,7 @@ class TestQProgram(TestStructuredProgram):
             waveform=IQPair(one_wf, zero_wf),
             weights=IQPair(one_wf, zero_wf),
             control_bus="control",
-            reset_pulse=IQPair(one_wf, zero_wf)
+            reset_pulse=IQPair(one_wf, zero_wf),
         )
 
         # Should append a single MeasureReset operation
@@ -537,13 +903,13 @@ class TestQProgram(TestStructuredProgram):
         square_wf = Square(1, 200)
         drag = IQDrag(1, 40, 2, 2)
         with qp.average(1000):
-                qp.qblox.measure_reset(
-                    bus="readout_bus",
-                    waveform=IQPair(square_wf,square_wf),
-                    weights=IQPair(I=square_wf, Q=square_wf),
-                    control_bus="drive_bus",
-                    reset_pulse=drag,
-                )
+            qp.qblox.measure_reset(
+                bus="readout_bus",
+                waveform=IQPair(square_wf, square_wf),
+                weights=IQPair(I=square_wf, Q=square_wf),
+                control_bus="drive_bus",
+                reset_pulse=drag,
+            )
 
         new_qp = qp.with_bus_mapping(bus_mapping={"drive_bus": "drive_q0_bus", "readout_bus": "readout_q0_bus"})
         assert len(new_qp.buses) == 2
@@ -585,7 +951,16 @@ class TestQProgram(TestStructuredProgram):
         calibration.add_waveform(bus="readout_q0_bus", name="readout", waveform=readout)
         calibration.add_weights(bus="readout_q0_bus", name="weights", weights=weights)
 
-        with pytest.raises(NotImplementedError, match="For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all."):
+        with pytest.raises(
+            NotImplementedError,
+            match="For the waveform, weight, and reset pulse, you must either use the calibration file for all three or not use it at all.",
+        ):
             qp = QProgram()
             with qp.average(1000):
-                qp.qblox.measure_reset(bus="readout_q0_bus", waveform="readout", weights="weights", control_bus="drive_q0_bus", reset_pulse=drag_reset)
+                qp.qblox.measure_reset(
+                    bus="readout_q0_bus",
+                    waveform="readout",
+                    weights="weights",
+                    control_bus="drive_q0_bus",
+                    reset_pulse=drag_reset,
+                )

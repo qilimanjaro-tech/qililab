@@ -9,7 +9,7 @@ from qililab.typings import PulseDistortionName
 
 def test_bias_tee_correction_apply_returns_normalized_copy():
     envelope = np.ones(10, dtype=float)
-    distortion = BiasTeeCorrection(tau_bias_tee=0.5, sampling_rate=2.0)
+    distortion = BiasTeeCorrection(tau_bias_tee=0.5, sampling_rate=2.0, auto_norm=True)
 
     corrected = distortion.apply(envelope)
 

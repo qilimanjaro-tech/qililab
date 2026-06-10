@@ -58,7 +58,7 @@ class LFilterCorrection(PulseDistortion):
         b (list[float]): The numerator coefficient vector in a 1-D sequence.
         norm_factor (float, optional): The manual normalization factor that multiplies the envelope in the apply() method. Defaults to 1 (no effect).
         auto_norm (bool, optional): Whether to automatically normalize the corrected envelope with the original max height in the apply() method.
-            (The max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to True.
+            (The max height is the furthest number from 0 in the envelope, only checking the real axis/part). Defaults to False.
 
     Returns:
         PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
@@ -89,8 +89,8 @@ class LFilterCorrection(PulseDistortion):
 
         Corrects an envelope applying the scipy.signal.lfilter.
 
-        If `self.auto_norm` is True (default) normalizes the resulting envelope to have the same real max height than the starting one.
-        (the max height is the furthest number from 0, only checking the real axis/part)
+        If `self.auto_norm` is True (Defaults to False) normalizes the resulting envelope to have the same real max height than the starting one.
+        (the max height is the furthest number from 0, only checking the real axis/part).
         If the corrected envelope is zero everywhere or doesn't have a real part this process is skipped.
 
         Finally it applies the manual `self.norm_factor` to the result, reducing the full envelope by its magnitude.

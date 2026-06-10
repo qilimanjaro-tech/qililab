@@ -19,7 +19,8 @@ import h5py
 import numpy as np
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.qprogram.qblox_compiler import QbloxCompiler
+from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
+from qililab.typings.enums import Parameter
 from qililab.utils.serialization import serialize
 
 if TYPE_CHECKING:
@@ -43,7 +44,7 @@ class StreamArray:
         experiment_name (str): Name of the experiment.
         db_manager (DatabaseManager): database manager loaded from the database after setting the db parameters.
         qprogram (QProgram | None, optional): Qprogram of the experiment, if there is no Qprogram related to the results it is not mandatory. Defaults to None.
-        optional_identifier (str | None, optional): String containing a description or any rellevant information about the experiment. Defaults to None.
+        optional_identifier (str | None, optional): String containing a description or any relevant information about the experiment. Defaults to None.
     """
 
     path: str
@@ -63,7 +64,8 @@ class StreamArray:
         bus_mapping: dict[str, str] | None = None,
         optional_identifier: str | None = None,
         autocalibration: bool = False,
-        qubit_idx: int | None = None,
+        qubit_idx: int | str | list[str] | None = None,
+        secondary_idx: int | str | list[str] | None = None,
     ):
         self.results: np.ndarray
         self.shape = [shape] if isinstance(shape, int) else shape
@@ -77,6 +79,7 @@ class StreamArray:
         self.bus_mapping = bus_mapping
         self.autocalibration = autocalibration
         self.qubit_idx = qubit_idx
+        self.second_idx = secondary_idx
         self._first_value = True
 
     def __enter__(self):
@@ -107,6 +110,9 @@ class StreamArray:
                     qprogram=serialize(self.qprogram) if self.qprogram else None,
                     calibration=serialize(self.calibration) if self.calibration else None,
                     debug_file=self._get_debug() if self.platform and self.qprogram else None,
+                    dc_offsets=self._get_offsets() if self.platform else None,
+                    target=self._get_index_list(self.qubit_idx),
+                    secondary_source=self._get_index_list(self.second_idx),
                 )
             self.path = self.measurement.result_path
 
@@ -202,24 +208,37 @@ class StreamArray:
             for bus in self.platform.buses.elements
             for instrument in bus.instruments
         ):
-            if self.bus_mapping is not None:
+            try:
                 compiled = self.platform.compile_qprogram(
                     qprogram=self.qprogram, bus_mapping=self.bus_mapping, calibration=self.calibration
                 ).qblox
-            else:
-                qblox_compiler = QbloxCompiler()
-                compiled = qblox_compiler.compile(qprogram=self.qprogram, calibration=self.calibration)
-
-            sequences = compiled.sequences
-            lines = []
-            for bus_alias, seq in sequences.items():
-                lines.append(f"Bus {bus_alias}:")
-                lines.append(str(seq._program))
-                lines.append("")
-
-            return "\n".join(lines)
+                sequences = compiled.sequences
+                lines = []
+                for bus_alias, seq in sequences.items():
+                    lines.append(f"Bus {bus_alias}:")
+                    lines.append(str(seq._program))
+                    lines.append("")
+                return "\n".join(lines)
+            except Exception as e:  # noqa: BLE001
+                debug_exception = f"Compilation of the debug has failed with the following error:\n{e}"
+                return debug_exception
         debug_exception = "Non Qblox machine."
         return debug_exception
+
+    def _get_offsets(self) -> dict[str, float] | None:
+        qdac_buses = {
+            bus.alias: bus.get_parameter(Parameter.VOLTAGE)
+            for bus in self.platform.buses.elements  # type: ignore [union-attr]
+            for instrument in bus.instruments
+            if isinstance(instrument, QDevilQDac2)
+        }
+        return qdac_buses if qdac_buses else None
+
+    def _get_index_list(self, qubit: int | str | list[str] | None) -> list[str] | None:
+        if qubit is None:
+            return None
+        qubit_list = qubit if isinstance(qubit, list) else [str(qubit)]
+        return qubit_list
 
 
 def stream_results(shape: tuple, path: str, loops: dict[str, np.ndarray]):
