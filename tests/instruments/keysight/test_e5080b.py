@@ -281,10 +281,9 @@ class TestE5080B:
         Parameter.ELECTRICAL_DELAY:   "electrical_delay",
     }
         raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
-        raw = expected_value.value if isinstance(expected_value, Enum) else expected_value
         getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
 
-        value = e5080b_get_param.get_parameter(parameter=parameter_get, channel_id=2)
+        value = e5080b_get_param.get_parameter(parameter=parameter_get)
         assert value == expected_value
 
     def test_error_raises_when_no_modules(self, platform: Platform, e5080b_settings):
