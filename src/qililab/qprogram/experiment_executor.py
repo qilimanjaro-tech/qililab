@@ -493,16 +493,18 @@ class ExperimentExecutor:
         progress.refresh()  # Ensure the final state of the progress bar is rendered
 
     def _inclusive_range(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
-        # Check if all inputs are integers
-        if all(isinstance(x, int) for x in [start, stop, step]):
-            # Use numpy.arange for integer ranges
-            return np.arange(start, stop + step, step)
-
         # Define the number of decimal places based on the precision of the step
         decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
 
-        # Use arange and then round to avoid floating-point inaccuracies
-        result = np.arange(start, stop + step, step)
+        # Calculate the number of steps
+        num_steps = round((stop - start) / step) + 1
+
+        # Use linspace and then round to avoid floating-point inaccuracies
+        result = np.linspace(start, stop, num_steps)
+
+        # Check if all inputs are integers
+        if all(isinstance(x, int) for x in [start, stop, step]):
+            return np.around(result, decimals=0).astype(int)
         return np.around(result, decimals=decimal_places)
 
     def _get_variables_of_loop(self, block: Loop | ForLoop | Parallel) -> list[VariableInfo]:
