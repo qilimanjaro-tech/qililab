@@ -315,9 +315,8 @@ class Driver_KeySight_E5080B(VisaInstrument):
             label="Electrical Delay",
             set_cmd="CALC:MEAS:CORR:EDEL:TIME {}",
             get_cmd="CALC:MEAS:CORR:EDEL:TIME?",
-            set_parser=lambda v: float(v) * 1e9,
-            get_parser=lambda v: float(v) / 1e9,
-            unit="NS",
+            set_parser=lambda v: float(v) / 1e9,
+            get_parser=lambda v: float(v) * 1e9,
             vals=Numbers(min_value=-1e10, max_value=1e10),
         )
         """Electrical Delay in nanoseconds"""
