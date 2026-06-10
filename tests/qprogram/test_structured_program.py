@@ -8,7 +8,6 @@ from qililab.qprogram.blocks import Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.structured_program import StructuredProgram
 
 
-
 class TestStructuredProgram:
     """Unit tests checking the QProgram attributes and methods"""
 
