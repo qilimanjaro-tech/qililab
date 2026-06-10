@@ -682,6 +682,7 @@ class E5080B(Instrument):
         self.settings.format_border = self.device.format_border.get()
         self.settings.rf_on = self.device.rf_on.get()
         self.settings.operation_status = self.device.operation_status.get()
+        self.settings.electrical_delay = self.device.electrical_delay.get()
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
