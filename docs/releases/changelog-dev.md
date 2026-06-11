@@ -6,6 +6,9 @@
 
 ### Improvements
 
+- Upgraded `qblox-instruments` dependency from `0.16.0` to `1.0.3`.
+  [#1134](https://github.com/qilimanjaro-tech/qililab/pull/1134)
+
 ### Breaking changes
 
 ### Deprecations / Removals
