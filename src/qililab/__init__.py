@@ -24,6 +24,7 @@ except PackageNotFoundError:
 
 import contextlib
 
+from . import _supress_warnings
 from .about import about
 from .config import logger
 from .data_management import build_platform, save_platform
@@ -82,6 +83,7 @@ __all__ = [
     "SuddenNetZero",
     "Waveform",
     "__version__",
+    "_supress_warnings",
     "about",
     "build_platform",
     "deserialize",
