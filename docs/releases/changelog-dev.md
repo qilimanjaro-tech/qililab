@@ -15,6 +15,9 @@
 
 ### Bug fixes
 
+- Fixed a bug for Rohde Schwarz `initial_setup` where the `iq_modulation` set as `True` inside the runcard for RS models `SGS-B106V` was not correctly set in the device.
+  [#1132](https://github.com/qilimanjaro-tech/qililab/pull/1132)
+
 - Fixed a bug in `load_sequence_by_id` where measurements were returned in an undefined order, causing incorrect results when processing sequences. Measurements are now ordered by `measurement_id`.
   [#1132](https://github.com/qilimanjaro-tech/qililab/pull/1132)
 
