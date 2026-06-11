@@ -589,6 +589,15 @@ wheels = [
 ]
 
 [[package]]
+name = "configparser"
+version = "7.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/ac/ea19242153b5e8be412a726a70e82c7b5c1537c83f61b20995b2eda3dcd7/configparser-7.2.0.tar.gz", hash = "sha256:b629cc8ae916e3afbd36d1b3d093f34193d851e11998920fdcfc4552218b7b70", size = 51273, upload-time = "2025-03-08T16:04:09.339Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/09/fe/f61e7129e9e689d9e40bbf8a36fb90f04eceb477f4617c02c6a18463e81f/configparser-7.2.0-py3-none-any.whl", hash = "sha256:fee5e1f3db4156dcd0ed95bc4edfa3580475537711f67a819c966b389d09ce62", size = 17232, upload-time = "2025-03-08T16:04:07.743Z" },
+]
+
+[[package]]
 name = "contourpy"
 version = "1.3.3"
 source = { registry = "https://pypi.org/simple" }
@@ -3273,6 +3282,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pysquashfsimage"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/62/b6/8a453795e78c743bb6d765b8288f86ecbba4e3522bcc1db534142062ec0e/PySquashfsImage-0.9.0.tar.gz", hash = "sha256:d3330ccd111ac2ef2cebf0c392077fe8608e2760862531d960ec9cb6c6d3655f", size = 44190, upload-time = "2023-07-02T23:41:10.785Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/28/f7/fa862ed72fbd05c930aeb979785fcfe33f9b874e639eb563f5ab9e46e277/PySquashfsImage-0.9.0-py2.py3-none-any.whl", hash = "sha256:a8ea154bf946f985c65fab7d8c08dc73da7ad47a0aebf0d13ae50ae56e369f90", size = 43220, upload-time = "2023-07-02T23:41:09.091Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -3500,18 +3518,21 @@ wheels = [
 
 [[package]]
 name = "qblox-instruments"
-version = "0.16.0"
+version = "1.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "configparser" },
     { name = "fastjsonschema" },
     { name = "ifaddr" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
     { name = "numpy", version = "2.4.1", source = { registry = "https://urob.github.io/numpy-mkl" }, marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
+    { name = "pysquashfsimage" },
     { name = "qcodes" },
     { name = "spirack" },
+    { name = "strenum" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/48/7974ef40f055866a48091477d691b8f85ea5312a60a8f3ced5af6a1edede/qblox_instruments-0.16.0.tar.gz", hash = "sha256:8a9785d916af27a35c0c51a6a870de5ed879cadb56fff1ee47f4a79a2cf0ad62", size = 2289124, upload-time = "2025-03-31T17:30:05.213Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/c5/92860233ea0d7f14df45df10633682f40d86ee03d2667b423c8f3c574307/qblox_instruments-1.0.3.tar.gz", hash = "sha256:798528d69253c64f6e70b283c623a7cb6b5265806320bd90cec424a9f384f5ff", size = 2305021, upload-time = "2025-12-15T22:37:11.946Z" }
 
 [[package]]
 name = "qcodes"
@@ -3631,7 +3652,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "pyvisa-py", specifier = ">=0.7.2" },
-    { name = "qblox-instruments", specifier = "==0.16.0" },
+    { name = "qblox-instruments", specifier = "==1.0.3" },
     { name = "qcodes", specifier = "==0.54.3" },
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qilisdk", git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main" },
@@ -4323,6 +4344,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707, upload-time = "2023-09-30T13:58:05.479Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521, upload-time = "2023-09-30T13:58:03.53Z" },
+]
+
+[[package]]
+name = "strenum"
+version = "0.4.15"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/85/ad/430fb60d90e1d112a62ff57bdd1f286ec73a2a0331272febfddd21f330e1/StrEnum-0.4.15.tar.gz", hash = "sha256:878fb5ab705442070e4dd1929bb5e2249511c0bcf2b0eeacf3bcd80875c82eff", size = 23384, upload-time = "2023-06-29T22:02:58.399Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/81/69/297302c5f5f59c862faa31e6cb9a4cd74721cd1e052b38e464c5b402df8b/StrEnum-0.4.15-py3-none-any.whl", hash = "sha256:a30cda4af7cc6b5bf52c8055bc4bf4b2b6b14a93b574626da33df53cf7740659", size = 8851, upload-time = "2023-06-29T22:02:56.947Z" },
 ]
 
 [[package]]
