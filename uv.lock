@@ -3585,6 +3585,7 @@ dependencies = [
     { name = "fastjsonschema" },
     { name = "ifaddr" },
     { name = "numpy" },
+    { name = "pysquashfsimage" },
     { name = "qcodes" },
     { name = "spirack" },
     { name = "strenum" },
