@@ -245,7 +245,7 @@ class TestE5080B:
             (Parameter.SWEEP_GROUP_COUNT, 150),
             (Parameter.TRIGGER_TYPE, VNATriggerType.EDGE),
             (Parameter.TRIGGER_SLOPE,VNATriggerSlope.POS),
-            (Parameter.ELECTRICAL_DELAY, 1e-8),
+            (Parameter.ELECTRICAL_DELAY, 10),
         ],
     )
     def test_get_parameter_method(
@@ -284,6 +284,44 @@ class TestE5080B:
         getattr(e5080b_get_param.device, attr_map[parameter_get]).get.return_value = raw
 
         value = e5080b_get_param.get_parameter(parameter=parameter_get)
+        assert value == expected_value
+
+    @pytest.mark.parametrize(
+        "parameter_get, expected_value",
+        [
+           (Parameter.SOURCE_POWER, 0.01),
+            (Parameter.FREQUENCY_START, 1e6),
+            (Parameter.FREQUENCY_STOP, 8e9),
+            (Parameter.FREQUENCY_CENTER, 4e9),
+            (Parameter.FREQUENCY_SPAN, 7.99e9),
+            (Parameter.CW_FREQUENCY, 4e9),
+            (Parameter.NUMBER_POINTS, 201),
+            (Parameter.IF_BANDWIDTH, 1e3),
+            (Parameter.SWEEP_TYPE, VNASweepTypes.LIN),
+            (Parameter.SWEEP_MODE, VNASweepModes.CONT),
+            (Parameter.SCATTERING_PARAMETER, VNAScatteringParameters.S21),
+            (Parameter.AVERAGES_ENABLED, True),
+            (Parameter.NUMBER_AVERAGES, 16),
+            (Parameter.AVERAGES_MODE, VNAAverageModes.POIN),
+            (Parameter.FORMAT_BORDER, VNAFormatBorder.SWAP),
+            (Parameter.RF_ON, False),
+            (Parameter.SWEEP_TIME, 50),
+            (Parameter.SWEEP_TIME_AUTO, False),
+            (Parameter.TRIGGER_SOURCE, VNATriggerSource.IMM),
+            (Parameter.SWEEP_GROUP_COUNT, 150),
+            (Parameter.TRIGGER_TYPE, VNATriggerType.EDGE),
+            (Parameter.TRIGGER_SLOPE,VNATriggerSlope.POS),
+            (Parameter.ELECTRICAL_DELAY, 10),
+        ],
+    )
+    def test_get_parameter_method(
+        self,
+        e5080b_no_device: E5080B,
+        parameter_get: Parameter,
+        expected_value: float,
+    ):
+        e5080b_no_device.set_parameter(parameter=parameter_get, value=expected_value)
+        value = e5080b_no_device.get_parameter(parameter=parameter_get)
         assert value == expected_value
 
     def test_error_raises_when_no_modules(self, platform: Platform, e5080b_settings):

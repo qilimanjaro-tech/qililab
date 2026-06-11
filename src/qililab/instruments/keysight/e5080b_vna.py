@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import cast
 
 import numpy as np
+from loguru import logger
 
 from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
@@ -464,6 +465,10 @@ class E5080B(Instrument):
         Returns:
             ParameterValue.
         """
+        if not self.is_device_active() and hasattr(self.settings, parameter.value):
+            logger.warning("Instrument Keysight E5080B is not connected. Retrieving {parameter} from the driver's settings", parameter=parameter.value)
+            return getattr(self.settings, parameter.value)
+
 
         if parameter == Parameter.FREQUENCY_START:
             self.settings.frequency_start = self.device.start_freq.get()
