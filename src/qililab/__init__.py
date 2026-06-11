@@ -23,6 +23,7 @@ except PackageNotFoundError:
     __version__ = "0.33.1"
 
 import contextlib
+from . import _suppress_warnings
 
 from .about import about
 from .config import logger
@@ -82,6 +83,7 @@ __all__ = [
     "SuddenNetZero",
     "Waveform",
     "__version__",
+    "_suppress_warnings",
     "about",
     "build_platform",
     "deserialize",
