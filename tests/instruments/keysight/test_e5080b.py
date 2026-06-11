@@ -313,7 +313,7 @@ class TestE5080B:
             (Parameter.ELECTRICAL_DELAY, 10),
         ],
     )
-    def test_get_parameter_method(
+    def test_get_parameter_wo_connecting_method(
         self,
         e5080b_no_device: E5080B,
         parameter_get: Parameter,
