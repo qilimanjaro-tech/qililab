@@ -4,7 +4,6 @@ import copy
 from unittest.mock import MagicMock, patch
 
 import pytest
-import time
 
 from qililab.instruments.keysight import E5080B, e5080b_vna
 from qililab.typings.enums import Parameter

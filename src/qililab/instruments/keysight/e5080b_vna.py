@@ -466,9 +466,11 @@ class E5080B(Instrument):
             ParameterValue.
         """
         if not self.is_device_active() and hasattr(self.settings, parameter.value):
-            logger.warning("Instrument Keysight E5080B is not connected. Retrieving {parameter} from the driver's settings", parameter=parameter.value)
+            logger.warning(
+                "Instrument Keysight E5080B is not connected. Retrieving {parameter} from the driver's settings",
+                parameter=parameter.value,
+            )
             return getattr(self.settings, parameter.value)
-
 
         if parameter == Parameter.FREQUENCY_START:
             self.settings.frequency_start = self.device.start_freq.get()
