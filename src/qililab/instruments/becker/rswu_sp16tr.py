@@ -107,7 +107,8 @@ class RSWUSP16TR(Instrument):
         Args:
             parameter (Parameter): Name of the parameter to get.
             value (ParameterValue): value to update the Parameter with
-            channel_id (int): Channel identifier of the parameter to update.
+            channel_id: Unused parameter for inter-instrument signature consistency.
+            output_id: Unused parameter for inter-instrument signature consistency.
         """
         if parameter == Parameter.RF_ACTIVE_CHANNEL:
             self.route(str(value))
@@ -121,7 +122,8 @@ class RSWUSP16TR(Instrument):
 
         Args:
             parameter (Parameter): Name of the parameter to get.
-            channel_id (int | None): channel id of the parameter to get.
+            channel_id: Unused parameter for inter-instrument signature consistency.
+            output_id: Unused parameter for inter-instrument signature consistency.
 
         Returns:
             ParameterValue.
