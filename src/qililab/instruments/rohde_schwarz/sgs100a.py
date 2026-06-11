@@ -262,7 +262,7 @@ class SGS100A(Instrument):
                 else:
                     warnings.warn("Deactivated wideband allows for IF sweeps of ±50e6 Hz", ResourceWarning)
                 self.device.write("SOUR:IQ:WBST 0")
-        elif not self.iq_modulation:
+        elif device_mixer == "SGS-B106V" or not self.iq_modulation:
             self.device.IQ_state(self.iq_modulation)
         if self.rf_on:
             self.device.on()
