@@ -302,6 +302,17 @@ class TestSGS100A:
         )
 
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method_b106v_model(self, mock_get_rs_options, sdg100a: SGS100A):
+        """Test initial setup method"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B106V"
+        sdg100a.initial_setup()
+        sdg100a.device.power.assert_called_with(sdg100a.power)
+        sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
+        sdg100a.device.on.assert_called_once()
+
+        assert sdg100a.settings.iq_modulation is True
+
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
     def test_initial_setup_method_iq_mod_off(self, mock_get_rs_options, sdg100a_iq_mod_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
         mock_get_rs_options.return_value = "Some,other,SGS-B112V"
