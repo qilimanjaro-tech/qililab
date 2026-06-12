@@ -264,6 +264,8 @@ class SGS100A(Instrument):
                 self.device.write("SOUR:IQ:WBST 0")
         elif device_mixer == "SGS-B106V" or not self.iq_modulation:
             self.device.IQ_state(self.iq_modulation)
+        else:
+            raise ValueError(f"iq_modulation set as True for R&S SGS1000A device {device_mixer} without IQ modulation")
         if self.rf_on:
             self.device.on()
         else:
