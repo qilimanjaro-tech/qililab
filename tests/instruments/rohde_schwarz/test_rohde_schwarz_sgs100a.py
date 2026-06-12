@@ -308,6 +308,7 @@ class TestSGS100A:
         sdg100a.initial_setup()
         sdg100a.device.power.assert_called_with(sdg100a.power)
         sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
+        sdg100a.device.IQ_state.assert_called_with(sdg100a.iq_modulation)
         sdg100a.device.on.assert_called_once()
 
         assert sdg100a.settings.iq_modulation is True
