@@ -234,13 +234,13 @@ class Bus:
                 return instrument.get_parameter(parameter, instrument_channel)
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
-    def upload_qpysequence(self, qpysequence: QpySequence):
+    def upload_qpysequence(self, qpysequence: QpySequence, acquisitions_only: bool = False):
         """Uploads the qpysequence into the instrument."""
         from qililab.instruments.qblox.qblox_module import QbloxModule  # pylint: disable=import-outside-toplevel
 
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, QbloxModule):
-                instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=int(instrument_channel))  # type: ignore[arg-type]
+                instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=int(instrument_channel), acquisitions_only=acquisitions_only)  # type: ignore[arg-type]
                 return
 
         raise AttributeError(f"Bus {self.alias} doesn't have any QbloxModule to upload a qpysequence.")

@@ -71,6 +71,7 @@ from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementRes
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
+from qililab.utils import hash_qpy_sequence
 
 if TYPE_CHECKING:
     import numpy as np
@@ -1412,7 +1413,15 @@ class Platform:
 
             # Upload sequences
             for bus_alias in sequences:
-                buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+                sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
+                is_cached_sequence: bool = (bus_alias in self._qpy_sequence_cache and self._qpy_sequence_cache[bus_alias] == sequence_hash)
+                buses[bus_alias].upload_qpysequence(
+                    qpysequence=sequences[bus_alias],
+                    acquisitions_only=is_cached_sequence
+                )
+                if not is_cached_sequence:
+                    self._qpy_sequence_cache[bus_alias] = sequence_hash
+
                 # sync all relevant sequences
                 for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                     if isinstance(instrument, QbloxModule):
