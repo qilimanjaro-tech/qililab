@@ -32,6 +32,9 @@
   `QbloxCompiler._handle_acquire` has been refactored into three methods: `_handle_acquire` (dispatcher), `_handle_acquire_exceeds_depth`, and `_handle_acquire_per_depth`, making the two acquisition paths independent. Acquisition depth is now stored alongside the per-block count in a single `_acquisition_metadata` dict. This dict is now also reset at the start of each `compile()` call, ensuring correctness when the same compiler instance is reused.
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
 
+- Upgraded `qblox-instruments` dependency from `0.16.0` to `1.0.3`.
+  [#1134](https://github.com/qilimanjaro-tech/qililab/pull/1134)
+
 ### Breaking changes
 
 ### Deprecations / Removals
