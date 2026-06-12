@@ -16,4 +16,4 @@
 # Ignore QCodes deprecation warnings from the spirack library
 import warnings
 
-_ = warnings.filterwarnings("ignore", module=r"qblox_instruments\.qcodes_drivers\.spi_rack")
+warnings.filterwarnings("ignore", module=r"qblox_instruments\.qcodes_drivers\.spi_rack")
