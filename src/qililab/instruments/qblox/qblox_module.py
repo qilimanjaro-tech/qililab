@@ -647,7 +647,7 @@ class QbloxModule(Instrument):
         self.clear_cache()
         self.device.reset()
 
-    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: ChannelID):
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: ChannelID, acquisitions_only: bool = False):
         """Upload the qpysequence to its corresponding sequencer.
 
         Args:
@@ -656,6 +656,11 @@ class QbloxModule(Instrument):
         """
         sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
         if sequencer is not None:
+            if acquisitions_only:
+                acquisitions = qpysequence._acquisitions.to_dict()
+                if acquisitions:
+                    self.device.sequencers[sequencer.identifier].update_sequence(acquisitions=acquisitions, erase_existing=True)
+                return
             logger.info("Sequence program: \n %s", repr(qpysequence._program))
             self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
             self.sequences[sequencer.identifier] = qpysequence
