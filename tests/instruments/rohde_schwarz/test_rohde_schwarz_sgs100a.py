@@ -388,21 +388,25 @@ class TestSGS100A:
     def test_initial_setup_sets_correct_freq_range(self, mock_get_rs_options, sdg100a: SGS100A):
         """Test initial setup method"""
         mock_get_rs_options.return_value = "Some,other,SGS-B112"
+        sdg100a.set_parameter(Parameter.IQ_MODULATION, False)
         sdg100a.initial_setup()
         assert sdg100a.freq_top_limit == 12.75e9
         assert sdg100a.freq_bot_limit == 1e6
 
         mock_get_rs_options.return_value = "Some,other,SGS-B112V"
+        sdg100a.set_parameter(Parameter.IQ_MODULATION, True)
         sdg100a.initial_setup()
         assert sdg100a.freq_top_limit == 12.75e9
         assert sdg100a.freq_bot_limit == 80e6
 
         mock_get_rs_options.return_value = "Some,other,SGS-B106"
+        sdg100a.set_parameter(Parameter.IQ_MODULATION, False)
         sdg100a.initial_setup()
         assert sdg100a.freq_top_limit == 6e9
         assert sdg100a.freq_bot_limit == 1e6
 
         mock_get_rs_options.return_value = "Some,other,SGS-B106V"
+        sdg100a.set_parameter(Parameter.IQ_MODULATION, True)
         sdg100a.initial_setup()
         assert sdg100a.freq_top_limit == 6e9
         assert sdg100a.freq_bot_limit == 80e6

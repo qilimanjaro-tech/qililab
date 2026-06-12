@@ -7,6 +7,9 @@
 - Upgraded `qblox-instruments` dependency from `0.16.0` to `1.0.3`.
   [#1134](https://github.com/qilimanjaro-tech/qililab/pull/1134)
 
+- Added a raise error for Rohde Schwarz `initial_setup` when `iq_modulation` is set as `True` for models without IQ modulation (`SGS-B106` and `SGS-B112`).
+  [#1137](https://github.com/qilimanjaro-tech/qililab/pull/1137)
+
 ### Breaking changes
 
 ### Deprecations / Removals
