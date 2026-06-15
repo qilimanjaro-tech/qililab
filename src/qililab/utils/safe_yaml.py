@@ -127,7 +127,9 @@ def _gate(tag: str, original: Any):
             raise _RejectingConstructorError(
                 f"Refusing to deserialize tag {tag!r} importing {fqn!r}: not in allow-list."
             )
-        return original(constructor, node)
+        # Reachable only once an FQN is added to the (currently empty) allow-list, so it
+        # is unreachable in the shipped config.
+        return original(constructor, node)  # pragma: no cover
 
     return _constructor
 
