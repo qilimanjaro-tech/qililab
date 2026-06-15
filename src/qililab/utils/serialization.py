@@ -16,6 +16,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, TypeVar, overload
 
+from qililab.utils.safe_yaml import get_safe_loader
 from qililab.yaml import yaml
 
 T = TypeVar("T")
@@ -73,12 +74,19 @@ def deserialize(string: str) -> Any: ...
 def deserialize(string: str, cls: type[T]) -> T: ...
 
 
-def deserialize(string: str, cls: type[T] | None = None) -> Any | T:
+def deserialize(string: str, cls: type[T] | None = None, trust_code: bool = False) -> Any | T:
     """Deserialize a YAML string to an object.
+
+    By default the input is loaded with a registry-isolated, data-only loader that rejects
+    code-execution YAML tags (``!!python/object/apply``, ``!function``, ``!lambda``, ...),
+    so deserializing an untrusted string cannot execute arbitrary code. The ``cls`` type
+    check still runs after loading.
 
     Args:
         string (str): The YAML string to deserialize.
         cls (type[T], optional): The class type to cast the deserialized object to. Defaults to None.
+        trust_code (bool, optional): If True, load with the unsafe loader, allowing
+            code-execution tags. Only use for input from a fully trusted source. Defaults to False.
 
     Raises:
         DeserializationError: If deserialization fails or the resulting object is not of the specified type.
@@ -86,9 +94,10 @@ def deserialize(string: str, cls: type[T] | None = None) -> Any | T:
     Returns:
         Any | T: The deserialized object, optionally cast to the specified class type.
     """
+    loader = yaml if trust_code else get_safe_loader()
     try:
         with StringIO(string) as stream:
-            result = yaml.load(stream)
+            result = loader.load(stream)
     except Exception as e:
         raise DeserializationError(f"Failed to deserialize YAML string: {e}") from e
     if cls is not None and not isinstance(result, cls):
@@ -104,12 +113,19 @@ def deserialize_from(file: str) -> Any: ...
 def deserialize_from(file: str, cls: type[T]) -> T: ...
 
 
-def deserialize_from(file: str, cls: type[T] | None = None) -> Any | T:
+def deserialize_from(file: str, cls: type[T] | None = None, trust_code: bool = False) -> Any | T:
     """Deserialize a YAML file to an object.
+
+    By default the file is loaded with a registry-isolated, data-only loader that rejects
+    code-execution YAML tags (``!!python/object/apply``, ``!function``, ``!lambda``, ...),
+    so deserializing an untrusted file cannot execute arbitrary code. The ``cls`` type
+    check still runs after loading.
 
     Args:
         file (str): The file path of the YAML file to deserialize.
         cls (type[T], optional): The class type to cast the deserialized object to. Defaults to None.
+        trust_code (bool, optional): If True, load with the unsafe loader, allowing
+            code-execution tags. Only use for files from a fully trusted source. Defaults to False.
 
     Raises:
         DeserializationError: If deserialization fails or the resulting object is not of the specified type.
@@ -117,8 +133,9 @@ def deserialize_from(file: str, cls: type[T] | None = None) -> Any | T:
     Returns:
         Any | T: The deserialized object, optionally cast to the specified class type.
     """
+    loader = yaml if trust_code else get_safe_loader()
     try:
-        result = yaml.load(Path(file))
+        result = loader.load(Path(file))
     except Exception as e:
         raise DeserializationError(f"Failed to deserialize YAML string {e} from file {file}") from e
     if cls is not None and not isinstance(result, cls):
