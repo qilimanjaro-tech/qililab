@@ -234,13 +234,23 @@ class Bus:
                 return instrument.get_parameter(parameter, instrument_channel)
         raise Exception(f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}")
 
-    def upload_qpysequence(self, qpysequence: QpySequence, acquisitions_only: bool = False):
-        """Uploads the qpysequence into the instrument."""
+    def upload_qpysequence(self, qpysequence: QpySequence, components_to_update: dict[str, bool] | None = None):
+        """Uploads the qpysequence into the instrument.
+
+        Args:
+            qpysequence (QpySequence): The qpysequence to upload.
+            components_to_update (dict[str, bool] | None): When ``None``, the full sequence is uploaded. Otherwise, a
+                dict flagging which components (``"program"``, ``"waveforms"``, ``"weights"``, ``"acquisitions"``) should
+                be updated, triggering a partial update instead.
+        """
         from qililab.instruments.qblox.qblox_module import QbloxModule  # pylint: disable=import-outside-toplevel
 
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, QbloxModule):
-                instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=int(instrument_channel), acquisitions_only=acquisitions_only)  # type: ignore[arg-type]
+                if components_to_update is not None:
+                    instrument.update_sequencer(qpysequence=qpysequence, channel_id=int(instrument_channel), **components_to_update)
+                    return
+                instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=int(instrument_channel))  # type: ignore[arg-type]
                 return
 
         raise AttributeError(f"Bus {self.alias} doesn't have any QbloxModule to upload a qpysequence.")
