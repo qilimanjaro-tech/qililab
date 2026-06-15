@@ -1830,7 +1830,15 @@ class Platform:
     ) -> None:
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
             for bus_alias in sequences:
-                buses_per_qprogram[qprogram_idx][bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+                sequence_hash = hash_qpy_sequence(sequence=sequences[bus_alias])
+                is_cached_sequence: bool = (bus_alias in self._qpy_sequence_cache and self._qpy_sequence_cache[bus_alias] == sequence_hash)
+                buses_per_qprogram[qprogram_idx][bus_alias].upload_qpysequence(
+                    qpysequence=sequences[bus_alias],
+                    acquisitions_only=is_cached_sequence
+                )
+                if not is_cached_sequence:
+                    self._qpy_sequence_cache[bus_alias] = sequence_hash
+
                 # sync all relevant sequences
                 for instrument, channel in zip(
                     buses_per_qprogram[qprogram_idx][bus_alias].instruments,
