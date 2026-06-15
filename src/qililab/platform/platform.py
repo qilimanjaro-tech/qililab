@@ -63,8 +63,8 @@ from qililab.qprogram import (
     QProgram,
     QProgramCompilationOutput,
 )
-from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix, FluxVector
 from qililab.qprogram.experiment_executor import ExperimentExecutor
+from qililab.qprogram.flux_vector import FluxVector
 from qililab.qprogram.qdac_compiler import QdacCompiler
 from qililab.result.database import get_db_manager
 from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementResult
@@ -78,6 +78,7 @@ if TYPE_CHECKING:
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
+    from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
 

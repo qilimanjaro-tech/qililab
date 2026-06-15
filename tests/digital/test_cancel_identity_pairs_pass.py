@@ -1,5 +1,5 @@
 import math
-from typing import Any
+from typing import Any, TYPE_CHECKING, ClassVar
 
 import numpy as np
 import pytest
@@ -20,7 +20,8 @@ from qilisdk.digital import (
     X,
 )
 from qilisdk.digital.exceptions import GateHasNoMatrixError
-from qilisdk.digital.gates import Adjoint, Controlled, M
+from qilisdk.digital.gates import Adjoint, Controlled, M, BasicGate
+from qilisdk.digital.gates import _process_param
 
 from qililab.digital.circuit_transpiler_passes.cancel_identity_pairs_pass import (
     CancelIdentityPairsPass,
@@ -39,46 +40,63 @@ def describe_gates(circuit: Circuit) -> list[tuple[str, tuple[int, ...], tuple[f
     return snapshot
 
 
-class PhaseGate(Gate):
+class PhaseGate(BasicGate):
     """Simple one-qubit gate used to exercise the matrix fallback."""
+    PARAMETER_NAMES: ClassVar[list[str]] = ["phase"]
 
-    def __init__(self, qubit: int, phase: float) -> None:
-        self._target = (qubit,)
-        self._phase = phase
+    def __init__(self, qubit: int, *, phase: float) -> None:
+        params_to_init = {}
+        terms_to_init = {}
+
+        # Process the parameters
+        _process_param("phase", phase, params_to_init, terms_to_init)
+
+        # Initialize the base class
+        super().__init__(
+            target_qubits=(qubit,),
+            parameters=params_to_init,
+            parameter_transforms=terms_to_init,
+        )
 
     @property
     def name(self) -> str:  # pragma: no cover - required by abstract base but unused
         return "PhaseGate"
-
+    
     @property
-    def matrix(self) -> np.ndarray:
-        return np.array([[1.0, 0.0], [0.0, np.exp(1j * self._phase)]], dtype=complex)
+    def phase(self) -> float:
+        if "phase" in self._parameter_transforms:
+            val = self._parameter_transforms["phase"].evaluate({})
+            if isinstance(val, complex):
+                return val.real
+            return val
+        return self.get_parameters()["phase"]
+    
+    def _generate_matrix(self) -> np.ndarray:
+        return np.array([[1.0, 0.0], [0.0, np.exp(1j * self.phase)]], dtype=complex)
 
-    @property
-    def target_qubits(self) -> tuple[int, ...]:
-        return self._target
 
-    def get_parameters(self) -> dict[str, float]:
-        return {"phase": self._phase}
-
-
-class NoMatrixGate(Gate):
+class NoMatrixGate(BasicGate):
     """Gate without a matrix to trigger the barrier path."""
 
-    def __init__(self, qubit: int) -> None:
-        self._target = (qubit,)
+    PARAMETER_NAMES: ClassVar[list[str]] = []
+
+    def __init__(self, qubit: int,) -> None:
+        params_to_init = {}
+        terms_to_init = {}
+
+        # Initialize the base class
+        super().__init__(
+            target_qubits=(qubit,),
+            parameters=params_to_init,
+            parameter_transforms=terms_to_init,
+        )
 
     @property
     def name(self) -> str:  # pragma: no cover - required by abstract base but unused
         return "NoMatrixGate"
 
-    @property
-    def matrix(self) -> np.ndarray:
+    def _generate_matrix(self) -> np.ndarray:
         raise GateHasNoMatrixError
-
-    @property
-    def target_qubits(self) -> tuple[int, ...]:
-        return self._target
 
 
 class TestCancelIdentityPairsPass:
