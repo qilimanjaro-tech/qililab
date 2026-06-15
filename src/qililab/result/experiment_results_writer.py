@@ -132,6 +132,7 @@ class ExperimentResultsWriter(ExperimentResults):
         self._live_plot_true = get_settings().experiment_live_plot_enabled
         self._slurm_execution = get_settings().experiment_live_plot_on_slurm
         self._port_number = get_settings().experiment_live_plot_port
+        self._host = get_settings().experiment_live_plot_host
 
     # pylint: disable=too-many-locals
     def _create_results_file(self):
@@ -211,7 +212,9 @@ class ExperimentResultsWriter(ExperimentResults):
 
             # Generate live plot figures
             if self._live_plot_true:
-                self.results_liveplot = ExperimentLivePlot(self.path, self._slurm_execution, self._port_number)
+                self.results_liveplot = ExperimentLivePlot(
+                    self.path, self._slurm_execution, self._port_number, self._host
+                )
                 self.results_liveplot.live_plot_figures(dims_dict)
 
     def _create_resuts_access(self):

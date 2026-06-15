@@ -52,6 +52,10 @@ class QililabSettings(BaseSettings):
         default=None,
         description="The port number of the Dash server for when experiment_live_plot_on_slurm is True. Defaults to None. [env: QILILAB_EXPERIMENT_LIVE_PLOT_PORT]",
     )
+    experiment_live_plot_host: str = Field(
+        default="127.0.0.1",
+        description="Bind address for the live-plot Dash server when experiment_live_plot_on_slurm is True. Defaults to loopback ('127.0.0.1'). Set to '0.0.0.0' (or a specific routable interface) ONLY when remote/cross-node viewing is required, and ONLY behind an authenticated reverse proxy; the server itself has no authentication. [env: QILILAB_EXPERIMENT_LIVE_PLOT_HOST]",
+    )
 
 
 @lru_cache(maxsize=1)

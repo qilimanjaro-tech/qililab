@@ -35,17 +35,23 @@ class ExperimentLivePlot:
 
     LIVE_PLOT_NAME = "live_plot.png"
 
-    def __init__(self, path: str, slurm_execution: bool = True, port_number: int | None = None):
+    def __init__(
+        self, path: str, slurm_execution: bool = True, port_number: int | None = None, host: str = "127.0.0.1"
+    ):
         """Initializes the ExperimentResults instance.
 
         Args:
             path (str): The file path to the HDF5 results file.
             slurm_execution (bool): Flag that defines if the liveplot will be held through Dash or a notebook cell. Defaults to True.
             port_number (int|None): Optional parameter for when slurm_execution is True. It defines the port number of the Dash server. Defaults to None.
+            host (str): Bind address for the Dash server when slurm_execution is True. Defaults to loopback ('127.0.0.1'). A routable
+                address (e.g. '0.0.0.0') must be set explicitly and fronted by an authenticated reverse proxy, since the server has no
+                authentication of its own.
         """
         self.path = path
         self._slurm_execution = slurm_execution
         self._port_number = port_number
+        self._host = host
 
         self.live_plot_dict: dict[tuple[str, str], int] = {}
 
@@ -70,7 +76,9 @@ class ExperimentLivePlot:
         self._live_plot_fig.set_subplots(
             rows=len(dims_dict), cols=1, subplot_titles=[str(key) for key in dims_dict.keys()]
         )
-        self._live_plot_fig.update_layout(height=500 * len(dims_dict), width=700, title_text=self.path)
+        self._live_plot_fig.update_layout(
+            height=500 * len(dims_dict), width=700, title_text=os.path.basename(self.path)
+        )
 
         for n, coordinates in enumerate(dims_dict.keys()):
             self.live_plot_dict[coordinates] = n
@@ -127,8 +135,10 @@ class ExperimentLivePlot:
 
             if not self._port_number:
                 self._port_number = 8050
-            # TODO: assign with access a host that is not 0.0.0.0 as 127.0.0.1 does not work
-            self._dash_app.run(debug=False, host="0.0.0.0", port=self._port_number)  # noqa: S104
+            # Binds to loopback by default; a routable host must be set explicitly via the configurable
+            # `host` (see QililabSettings.experiment_live_plot_host) and fronted by an authenticated proxy.
+            # Do NOT hardcode a wide bind (e.g. "0.0.0.0") here, or ruff S104 will correctly flag it.
+            self._dash_app.run(debug=False, host=self._host, port=self._port_number)
 
         else:
             warnings.filterwarnings("ignore")

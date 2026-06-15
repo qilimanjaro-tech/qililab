@@ -333,4 +333,118 @@ class TestSlurmDashSetup:
             fig_mock.update_layout.assert_called()
             fig_mock.update_xaxes.assert_called()
             fig_mock.add_scatter.assert_called()
-            mock_dash.return_value.run.assert_called_once_with(debug=False, host="0.0.0.0", port=8050)
+            mock_dash.return_value.run.assert_called_once_with(debug=False, host="127.0.0.1", port=8050)
+
+    @patch("qililab.result.experiment_live_plot.Dash")
+    @patch("qililab.result.experiment_live_plot.html.Div")
+    @patch("qililab.result.experiment_live_plot.dcc.Graph")
+    @patch("qililab.result.experiment_live_plot.dcc.Interval")
+    @patch("qililab.result.experiment_live_plot.callback")
+    def test_slurm_dash_default_bind_is_loopback(
+        self,
+        mock_callback,
+        mock_interval,
+        mock_graph,
+        mock_div,
+        mock_dash,
+    ):
+        """The Dash server must bind to loopback by default, never 0.0.0.0 (QILILAB-03)."""
+        fig_mock = MagicMock()
+        mock_callback.side_effect = lambda *a, **k: (lambda fn: fn)
+
+        with patch("qililab.result.experiment_live_plot.go.Figure", return_value=fig_mock):
+            live_plot = ExperimentLivePlot(path="/tmp/run/abc.h5", slurm_execution=True, port_number=None)
+
+            dims_dict = {("QProgram_0", "Measurement_0"): MagicMock()}
+            dims_mock = dims_dict[("QProgram_0", "Measurement_0")]
+            dims_mock.__len__.return_value = 2
+            dims_mock[0].label = "x"
+            dims_mock[0].values.return_value = [np.linspace(0, 1, 10)]
+
+            live_plot.live_plot_figures(dims_dict)
+
+            _, run_kwargs = mock_dash.return_value.run.call_args
+            assert run_kwargs["host"] == "127.0.0.1"
+            assert run_kwargs["host"] != "0.0.0.0"
+
+    @patch("qililab.result.experiment_live_plot.Dash")
+    @patch("qililab.result.experiment_live_plot.html.Div")
+    @patch("qililab.result.experiment_live_plot.dcc.Graph")
+    @patch("qililab.result.experiment_live_plot.dcc.Interval")
+    @patch("qililab.result.experiment_live_plot.callback")
+    def test_slurm_dash_host_is_configurable(
+        self,
+        mock_callback,
+        mock_interval,
+        mock_graph,
+        mock_div,
+        mock_dash,
+    ):
+        """A routable host can still be opted into explicitly (cross-node SLURM viewing)."""
+        fig_mock = MagicMock()
+        mock_callback.side_effect = lambda *a, **k: (lambda fn: fn)
+
+        with patch("qililab.result.experiment_live_plot.go.Figure", return_value=fig_mock):
+            live_plot = ExperimentLivePlot(
+                path="/tmp/run/abc.h5", slurm_execution=True, port_number=None, host="0.0.0.0"
+            )
+
+            dims_dict = {("QProgram_0", "Measurement_0"): MagicMock()}
+            dims_mock = dims_dict[("QProgram_0", "Measurement_0")]
+            dims_mock.__len__.return_value = 2
+            dims_mock[0].label = "x"
+            dims_mock[0].values.return_value = [np.linspace(0, 1, 10)]
+
+            live_plot.live_plot_figures(dims_dict)
+
+            _, run_kwargs = mock_dash.return_value.run.call_args
+            assert run_kwargs["host"] == "0.0.0.0"
+
+    @patch("qililab.result.experiment_live_plot.Dash")
+    @patch("qililab.result.experiment_live_plot.html.Div")
+    @patch("qililab.result.experiment_live_plot.dcc.Graph")
+    @patch("qililab.result.experiment_live_plot.dcc.Interval")
+    @patch("qililab.result.experiment_live_plot.callback")
+    def test_title_carries_no_absolute_path(
+        self,
+        mock_callback,
+        mock_interval,
+        mock_graph,
+        mock_div,
+        mock_dash,
+    ):
+        """The page title must not leak the absolute result-file path (QILILAB-03)."""
+        fig_mock = MagicMock()
+        mock_callback.side_effect = lambda *a, **k: (lambda fn: fn)
+
+        with patch("qililab.result.experiment_live_plot.go.Figure", return_value=fig_mock):
+            live_plot = ExperimentLivePlot(path="/tmp/run/abc.h5", slurm_execution=True, port_number=None)
+
+            dims_dict = {("QProgram_0", "Measurement_0"): MagicMock()}
+            dims_mock = dims_dict[("QProgram_0", "Measurement_0")]
+            dims_mock.__len__.return_value = 2
+            dims_mock[0].label = "x"
+            dims_mock[0].values.return_value = [np.linspace(0, 1, 10)]
+
+            live_plot.live_plot_figures(dims_dict)
+
+            _, layout_kwargs = fig_mock.update_layout.call_args
+            assert layout_kwargs["title_text"] == "abc.h5"
+            assert "/tmp/run" not in layout_kwargs["title_text"]
+
+
+class TestLivePlotSettings:
+    """Test the live-plot bind-host setting (QILILAB-03)."""
+
+    def test_default_host_is_loopback(self):
+        """The bind host defaults to loopback."""
+        from qililab.qililab_settings import QililabSettings
+
+        assert QililabSettings().experiment_live_plot_host == "127.0.0.1"
+
+    def test_host_respects_env_var(self, monkeypatch):
+        """The bind host can be overridden via the documented env var."""
+        from qililab.qililab_settings import QililabSettings
+
+        monkeypatch.setenv("QILILAB_EXPERIMENT_LIVE_PLOT_HOST", "0.0.0.0")
+        assert QililabSettings().experiment_live_plot_host == "0.0.0.0"
