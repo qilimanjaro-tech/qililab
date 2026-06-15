@@ -380,13 +380,14 @@ class ExperimentExecutor:
                         else:
                             # Variable has a value that was set from a loop. Thus, bind `value` in lambda with the current value of the variable.
                             elements_operations.append(
-                                lambda operation=element,
-                                value=current_value_of_variable[element.value.uuid]: self.platform.set_parameter(
-                                    alias=operation.alias,
-                                    parameter=operation.parameter,
-                                    value=value,
-                                    channel_id=operation.channel_id,
-                                    output_id=operation.output_id,
+                                lambda operation=element, value=current_value_of_variable[element.value.uuid]: (
+                                    self.platform.set_parameter(
+                                        alias=operation.alias,
+                                        parameter=operation.parameter,
+                                        value=value,
+                                        channel_id=operation.channel_id,
+                                        output_id=operation.output_id,
+                                    )
                                 )
                             )
                     else:
@@ -423,24 +424,24 @@ class ExperimentExecutor:
 
                         # Bind the values for known variables, and retrieve deferred ones when the lambda is executed
                         elements_operations.append(
-                            lambda operation=element,
-                            call_parameters=call_parameters,
-                            qprogram_index=qprogram_index: store_results(
-                                self.platform.execute_qprogram(
-                                    qprogram=operation.qprogram(
-                                        **{
-                                            **call_parameters,  # Bind the values that are known
+                            lambda operation=element, call_parameters=call_parameters, qprogram_index=qprogram_index: (
+                                store_results(
+                                    self.platform.execute_qprogram(
+                                        qprogram=operation.qprogram(
                                             **{
-                                                param_name: current_value_of_variable[uuid]
-                                                for param_name, uuid in deferred_parameters.items()
-                                            },  # Defer retrieving missing values
-                                        }
-                                    ),  # type: ignore
-                                    bus_mapping=operation.bus_mapping,
-                                    calibration=operation.calibration,
-                                    debug=operation.debug,
-                                ),
-                                qprogram_index,
+                                                **call_parameters,  # Bind the values that are known
+                                                **{
+                                                    param_name: current_value_of_variable[uuid]
+                                                    for param_name, uuid in deferred_parameters.items()
+                                                },  # Defer retrieving missing values
+                                            }
+                                        ),  # type: ignore
+                                        bus_mapping=operation.bus_mapping,
+                                        calibration=operation.calibration,
+                                        debug=operation.debug,
+                                    ),
+                                    qprogram_index,
+                                )
                             )
                         )
                     else:
@@ -492,11 +493,6 @@ class ExperimentExecutor:
         progress.refresh()  # Ensure the final state of the progress bar is rendered
 
     def _inclusive_range(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
-        # Check if all inputs are integers
-        if all(isinstance(x, int) for x in [start, stop, step]):
-            # Use numpy.arange for integer ranges
-            return np.arange(start, stop + step, step)
-
         # Define the number of decimal places based on the precision of the step
         decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
 
@@ -505,6 +501,10 @@ class ExperimentExecutor:
 
         # Use linspace and then round to avoid floating-point inaccuracies
         result = np.linspace(start, stop, num_steps)
+
+        # Check if all inputs are integers
+        if all(isinstance(x, int) for x in [start, stop, step]):
+            return np.around(result, decimals=0).astype(int)
         return np.around(result, decimals=decimal_places)
 
     def _get_variables_of_loop(self, block: Loop | ForLoop | Parallel) -> list[VariableInfo]:

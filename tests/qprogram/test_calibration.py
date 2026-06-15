@@ -335,6 +335,10 @@ class TestCalibration:
             "flux_0": {"flux_0": 2.15, "flux_1": 1.1},
             "flux_1": {"flux_0": 1.1, "flux_1": 2.15},
         }
+        new_new_buses = {
+            "flux_0": {"flux_0": 4.85, "flux_1": 3.2750000000000004},
+            "flux_1": {"flux_0": 3.2750000000000004, "flux_1": 4.85},
+        }
 
         crosstalk_matrix = CrosstalkMatrix().from_buses(buses)
         calibration = Calibration()
@@ -346,6 +350,13 @@ class TestCalibration:
         assert calibration.crosstalk_history[-1]["idx"] == 0
         assert calibration.crosstalk_history[-1]["full_matrix"] == matrix_buses
         assert calibration.crosstalk_matrix.matrix == new_buses
+
+        calibration.add_intra_crosstalk(block_diag_xt_matrix=diag_buses, flux_offsets=offsets_buses)
+        calibration.add_inter_crosstalk(full_crosstalk_matrix=matrix_buses)
+
+        assert calibration.crosstalk_history[-1]["idx"] == 1
+        assert calibration.crosstalk_history[-1]["full_matrix"] == matrix_buses
+        assert calibration.crosstalk_matrix.matrix == new_new_buses
 
     def test_add_inter_crosstalk_raises_error_no_crosstalk(self):
         """Test adding an intra qubit crosstalk matrix to the crosstalk history raises error when no crosstalk is given"""

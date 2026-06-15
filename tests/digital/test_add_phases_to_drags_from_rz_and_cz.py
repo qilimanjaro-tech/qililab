@@ -145,8 +145,8 @@ class TestAddPhasesToRmwFromRZAndCZ:
             assert g_exp.name == g_tr.name
             assert g_exp.qubits == g_tr.qubits
             if isinstance(g_exp, Rmw):
-                assert np.isclose(g_exp.parameters["theta"].value, g_tr.parameters["theta"].value)
-                assert np.isclose(_wrap_angle(g_exp.parameters["phase"].value), _wrap_angle(g_tr.parameters["phase"].value))
+                assert np.isclose(g_exp.theta, g_tr.theta)
+                assert np.isclose(_wrap_angle(g_exp.phase), _wrap_angle(g_tr.phase))
 
     def test_frame_persists_across_multiple_Rmw(self, digital_settings: DigitalCompilationSettings):
         """
@@ -163,7 +163,7 @@ class TestAddPhasesToRmwFromRZAndCZ:
         # Expect two gates (both Rmw), both with phase +0.5
         assert len(out.gates) == 2
         assert all(isinstance(g, Rmw) for g in out.gates)
-        phases = [g.parameters["phase"].value for g in out.gates]
+        phases = [g.phase for g in out.gates]
         assert np.allclose(phases, [-0.5, -0.5])
 
     def test_cz_corrections_applied_to_both_qubits(self, digital_settings: DigitalCompilationSettings):
@@ -180,8 +180,8 @@ class TestAddPhasesToRmwFromRZAndCZ:
         out = step.run(c)
         assert [g.name for g in out.gates] == ["CZ", "Rmw", "Rmw"]
         # Check applied phases
-        p0 = out.gates[1].parameters["phase"].value
-        p1 = out.gates[2].parameters["phase"].value
+        p0 = out.gates[1].phase
+        p1 = out.gates[2].phase
         assert np.isclose(p0, -0.1)  # q0
         assert np.isclose(p1, -0.2)  # q1
 
@@ -199,8 +199,8 @@ class TestAddPhasesToRmwFromRZAndCZ:
         out = step.run(c)
         assert [g.name for g in out.gates] == ["CZ", "Rmw", "Rmw"]
         # Phases must be unchanged (no shift applied from that CZ)
-        assert np.isclose(out.gates[1].parameters["phase"].value, 0.05)
-        assert np.isclose(out.gates[2].parameters["phase"].value, -0.07 - 0.1)
+        assert np.isclose(out.gates[1].phase, 0.05)
+        assert np.isclose(out.gates[2].phase, -0.07 - 0.1)
 
     def test_trailing_rz_is_removed_and_m_is_untouched(self, digital_settings: DigitalCompilationSettings):
         """
