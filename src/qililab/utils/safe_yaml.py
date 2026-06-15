@@ -87,9 +87,7 @@ def _reject(tag: str):
     """
 
     def _constructor(constructor: Any, node: Any) -> Any:
-        raise _RejectingConstructorError(
-            f"Refusing to deserialize tag {tag!r}: possible arbitrary code execution."
-        )
+        raise _RejectingConstructorError(f"Refusing to deserialize tag {tag!r}: possible arbitrary code execution.")
 
     return _constructor
 
