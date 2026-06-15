@@ -25,11 +25,6 @@
 
 ## 0.33.1
 
-### Security fixes
-
-- Made `deserialize` / `deserialize_from` safe by default. They now load through a registry-isolated, data-only YAML loader that rejects code-execution tags (`!!python/object/apply`, `!!python/name`, `!function`, `!lambda`, and the gated `!type` / `!PydanticModel` / `!defaultdict`), so deserializing an untrusted string or file can no longer execute arbitrary code. Every legitimate round-trip (waveforms, `QProgram`, `Experiment`, `Calibration`, numpy arrays, tuples, complex numbers, UUIDs, enums) keeps working, and a `trust_code=True` opt-in restores the previous behavior for fully trusted input. This also closes the `build_platform` runcard remote-code-execution path, where a gate-event waveform/weights string reached the unsafe loader via the `GateEvent` validators.
-  [#1138](https://github.com/qilimanjaro-tech/qililab/pull/1138)
-
 ### New features since last release
 
 - Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs from a sequence of measurements. `Measurement.sequence_id`has been added as a measurement expression inside head and tail.
