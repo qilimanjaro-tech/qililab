@@ -12,6 +12,9 @@
 
 ### Bug fixes
 
+- Hardened the live-plot Dash server: it now binds to loopback (`127.0.0.1`) by default instead of all interfaces. Routable exposure (for cross-node SLURM viewing) is opt-in via `QILILAB_EXPERIMENT_LIVE_PLOT_HOST` and must be fronted by an authenticated reverse proxy, since the server has no authentication of its own. The absolute result-file path was also removed from the live-plot page title.
+  [#1141](https://github.com/qilimanjaro-tech/qililab/pull/1141)
+
 - Fixed a bug for Rohde Schwarz `initial_setup` where the `iq_modulation` set as `True` inside the runcard for RS models `SGS-B106V` was not correctly set in the device.
   [#1137](https://github.com/qilimanjaro-tech/qililab/pull/1137)
 
