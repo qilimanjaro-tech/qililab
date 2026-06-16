@@ -49,6 +49,9 @@
 
 ### Bug fixes
 
+- Fixed a bug for wait trigger in the qblox compiler using a single sequencer because it created an unnecessary wait_sync (without any other sequencers to sync). Now the Qblox compiler checks for the amount of buses with a sequencer.
+  [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
+
 - Fixed a bug for `wait_trigger` where for large durations the waiting time was not correctly implemented. Now it uses `_handle_add_waits` like `wait`.
   These are some examples of uses:
   - Duration of 4 creates a simple Q1ASM with the wait trigger with the minimal wait duration, not defining a port defaults to port 15:

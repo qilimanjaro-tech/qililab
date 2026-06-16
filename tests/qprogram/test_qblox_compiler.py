@@ -1405,6 +1405,7 @@ class TestQBloxCompiler:
                             upd_param        4              
                             stop                            
         """
+        assert len(sequences) == 1
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
     def test_wait_trigger_var_duration_raises_error(self):
