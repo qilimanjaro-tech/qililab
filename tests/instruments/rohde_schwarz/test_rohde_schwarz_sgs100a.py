@@ -302,6 +302,26 @@ class TestSGS100A:
         )
 
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method_b106v_model(self, mock_get_rs_options, sdg100a: SGS100A):
+        """Test initial setup method"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B106V"
+        sdg100a.initial_setup()
+        sdg100a.device.power.assert_called_with(sdg100a.power)
+        sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
+        sdg100a.device.IQ_state.assert_called_with(sdg100a.iq_modulation)
+        sdg100a.device.on.assert_called_once()
+
+        assert sdg100a.settings.iq_modulation is True
+
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method_b112_raises_error(self, mock_get_rs_options, sdg100a: SGS100A):
+        """Test initial setup method"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B112"  # module without IQ-band
+        error_string = "iq_modulation set as True for R&S SGS1000A device SGS-B112 without IQ modulation"
+        with pytest.raises(ValueError, match=re.escape(error_string)):
+            sdg100a.initial_setup()
+
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
     def test_initial_setup_method_iq_mod_off(self, mock_get_rs_options, sdg100a_iq_mod_off: SGS100A):
         """Test initial method when the runcard sets rf_on as False"""
         mock_get_rs_options.return_value = "Some,other,SGS-B112V"
@@ -369,21 +389,25 @@ class TestSGS100A:
     def test_initial_setup_sets_correct_freq_range(self, mock_get_rs_options, sdg100a: SGS100A):
         """Test initial setup method"""
         mock_get_rs_options.return_value = "Some,other,SGS-B112"
+        sdg100a.set_parameter(Parameter.IQ_MODULATION, False)
         sdg100a.initial_setup()
         assert sdg100a.freq_top_limit == 12.75e9
         assert sdg100a.freq_bot_limit == 1e6
 
         mock_get_rs_options.return_value = "Some,other,SGS-B112V"
+        sdg100a.set_parameter(Parameter.IQ_MODULATION, True)
         sdg100a.initial_setup()
         assert sdg100a.freq_top_limit == 12.75e9
         assert sdg100a.freq_bot_limit == 80e6
 
         mock_get_rs_options.return_value = "Some,other,SGS-B106"
+        sdg100a.set_parameter(Parameter.IQ_MODULATION, False)
         sdg100a.initial_setup()
         assert sdg100a.freq_top_limit == 6e9
         assert sdg100a.freq_bot_limit == 1e6
 
         mock_get_rs_options.return_value = "Some,other,SGS-B106V"
+        sdg100a.set_parameter(Parameter.IQ_MODULATION, True)
         sdg100a.initial_setup()
         assert sdg100a.freq_top_limit == 6e9
         assert sdg100a.freq_bot_limit == 80e6
