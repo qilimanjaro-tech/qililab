@@ -1447,12 +1447,11 @@ class Platform:
                             bus_results = bus.acquire_qprogram_results(
                                 acquisitions=acquisitions[bus_alias], channel_id=int(channel)
                             )
-                            for bus_result in bus_results:
-                                for _, acquisition_data in acquisitions[bus_alias].items():
-                                    intertwined = acquisition_data.intertwined
-                                    unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
-                                    for unintertwined_result in unintertwined_results:
-                                        results.append_result(bus=bus_alias, result=unintertwined_result)
+                            for bus_result, (_, acquisition_data) in zip(bus_results, acquisitions[bus_alias].items()):
+                                intertwined = acquisition_data.intertwined
+                                unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
+                                for unintertwined_result in unintertwined_results:
+                                    results.append_result(bus=bus_alias, result=unintertwined_result)
 
             # Reset instrument settings
             for bus_alias in sequences:
@@ -1890,12 +1889,13 @@ class Platform:
                                 acquisitions=aquisitions_per_qprogram[qprogram_idx][bus_alias],
                                 channel_id=int(channel),  # type: ignore[arg-type]
                             )
-                            for bus_result in bus_results:
-                                for _, acquisition_data in aquisitions_per_qprogram[qprogram_idx][bus_alias].items():
-                                    intertwined = acquisition_data.intertwined
-                                    unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)  # type: ignore[arg-type]
-                                    for unintertwined_result in unintertwined_results:
-                                        results[qprogram_idx].append_result(bus=bus_alias, result=unintertwined_result)
+                            for bus_result, (_, acquisition_data) in zip(
+                                bus_results, aquisitions_per_qprogram[qprogram_idx][bus_alias].items()
+                            ):
+                                intertwined = acquisition_data.intertwined
+                                unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)  # type: ignore[arg-type]
+                                for unintertwined_result in unintertwined_results:
+                                    results[qprogram_idx].append_result(bus=bus_alias, result=unintertwined_result)
         return results
 
     def _reset_qblox_parallel_sequencers(
