@@ -153,6 +153,7 @@ class TestQbloxQRM:
             (Parameter.INTEGRATION_MODE, "ssb"),
             (Parameter.SEQUENCE_TIMEOUT, 2),
             (Parameter.ACQUISITION_TIMEOUT, 2),
+            (Parameter.TIMEOUT_REPETITIONS, 2),
             (Parameter.TIME_OF_FLIGHT, 80),
             (Parameter.SCOPE_STORE_ENABLED, True),
             (Parameter.THRESHOLD, 0.5),
@@ -196,6 +197,8 @@ class TestQbloxQRM:
             assert sequencer.sequence_timeout == value  # type: ignore[attr-defined]
         elif parameter == Parameter.ACQUISITION_TIMEOUT:
             assert sequencer.acquisition_timeout == value  # type: ignore[attr-defined]
+        elif parameter == Parameter.TIMEOUT_REPETITIONS:
+            assert sequencer.timeout_repetitions == value  # type: ignore[attr-defined]
         elif parameter == Parameter.TIME_OF_FLIGHT:
             assert sequencer.time_of_flight == value  # type: ignore[attr-defined]
         elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
@@ -263,6 +266,7 @@ class TestQbloxQRM:
             (Parameter.INTEGRATION_MODE, "ssb"),
             (Parameter.SEQUENCE_TIMEOUT, 5.0),
             (Parameter.ACQUISITION_TIMEOUT, 1.0),
+            (Parameter.TIMEOUT_REPETITIONS, 3),
             (Parameter.TIME_OF_FLIGHT, 120),
             (Parameter.SCOPE_STORE_ENABLED, False),
             (Parameter.THRESHOLD, 1.0),
