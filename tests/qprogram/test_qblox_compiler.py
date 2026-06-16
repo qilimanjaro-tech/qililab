@@ -4725,8 +4725,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     11374, 11374   
                         set_awg_gain     11374, 11374   
-                        nop                             
-                        set_awg_offs     0, 0           
                         play             0, 1, 50       
                         wait             54             
                         nop                             
@@ -4735,8 +4733,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     2668, 2668     
                         set_awg_gain     2668, 2668     
-                        nop                             
-                        set_awg_offs     11374, 11374   
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
@@ -4756,8 +4752,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     17832, 17832   
                         set_awg_gain     17832, 17832   
-                        nop                             
-                        set_awg_offs     0, 0           
                         play             0, 1, 50       
                         wait             54             
                         nop                             
@@ -4766,8 +4760,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     421, 421     
                         set_awg_gain     421, 421     
-                        nop                             
-                        set_awg_offs     17832, 17832   
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
@@ -4995,8 +4987,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     4570, 4570     
                         set_awg_gain     4570, 4570     
-                        nop                             
-                        set_awg_offs     8430, 8430     
                         play             0, 1, 50       
                         wait             54             
                         nop                             
@@ -5005,8 +4995,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     4570, 4570     
                         set_awg_gain     4570, 4570     
-                        nop                             
-                        set_awg_offs     8430, 8430     
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
@@ -5015,34 +5003,30 @@ other_max_duration_0:
         """
         flux2_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
 
-        main:
-                        nop                             
-                        set_awg_offs     14403, 14403   
-                        upd_param        4              
-                        wait             6              
-                        set_awg_gain     4225, 4225     
-                        set_awg_gain     4225, 4225     
-                        nop                             
-                        set_awg_offs     14403, 14403   
-                        play             0, 1, 50       
-                        wait             54             
-                        nop                             
-                        set_awg_offs     14403, 14403   
-                        upd_param        4              
-                        wait             6              
-                        set_awg_gain     4225, 4225     
-                        set_awg_gain     4225, 4225     
-                        nop                             
-                        set_awg_offs     14403, 14403   
-                        play             0, 1, 50       
-                        wait             54             
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+main:
+                nop                             
+                set_awg_offs     14403, 14403   
+                upd_param        4              
+                wait             6              
+                set_awg_gain     4225, 4225     
+                set_awg_gain     4225, 4225     
+                play             0, 1, 50       
+                wait             54             
+                nop                             
+                set_awg_offs     14403, 14403   
+                upd_param        4              
+                wait             6              
+                set_awg_gain     4225, 4225     
+                set_awg_gain     4225, 4225     
+                play  0, 1, 50       
+                wait             54             
+                set_mrk          0              
+                upd_param        4              
+                stop                            
         """
         drive_str = """
         setup:
