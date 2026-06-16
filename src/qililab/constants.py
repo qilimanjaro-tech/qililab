@@ -184,7 +184,6 @@ class INSTRUMENTCONTROLLER:
     MODULES = "modules"
     RESET = "reset"
     REFERENCE_CLOCK = "reference_clock"
-    EXT_TRIGGER = "ext_trigger"
 
 
 class CONNECTION:

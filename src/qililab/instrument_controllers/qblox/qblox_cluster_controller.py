@@ -60,8 +60,6 @@ class QbloxClusterController(InstrumentController):
     def initial_setup(self):
         """Initial setup of the Qblox Cluster Controller."""
         self._set_reference_source()
-        if self.ext_trigger:
-            self._set_ext_trigger()
         super().initial_setup()
 
     @InstrumentController.CheckConnected
@@ -77,7 +75,7 @@ class QbloxClusterController(InstrumentController):
         self.device.reference_source(self.reference_clock)
 
     @InstrumentController.CheckConnected
-    def _set_ext_trigger(self):
+    def set_ext_trigger(self):
         """set the external trigger parameters"""
         self.device.ext_trigger_input_trigger_en(True)
         # As only one ext trigger is available the last address is selected
