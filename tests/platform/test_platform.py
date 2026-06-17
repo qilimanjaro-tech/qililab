@@ -3,9 +3,6 @@
 import copy
 import io
 import re
-import warnings
-from pathlib import Path
-from queue import Queue
 from types import MethodType, SimpleNamespace
 from unittest.mock import ANY, MagicMock, create_autospec, patch
 import logging
@@ -17,7 +14,8 @@ from qililab.data_management import build_platform as platform_build_platform
 from qililab.qprogram import QbloxCompilationOutput
 from qililab.qprogram.qdac_compiler import QdacCompilationOutput
 from qililab.qprogram.qprogram import QProgramCompilationOutput
-from qpysequence import Sequence, Waveforms
+from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
+from qpysequence.program import Block
 from ruamel.yaml import YAML
 from tests.data import (
     Galadriel,
@@ -1182,6 +1180,83 @@ class TestMethods:
         # assure only one debug was called
         assert patched_open.call_count == 1
 
+    @staticmethod
+    def _build_sequence(waveform_data, program=None):
+        """Build a QPy Sequence with the given waveform data (and optionally a specific program)."""
+        waveforms = Waveforms()
+        waveforms.add(np.array(waveform_data, dtype=float))
+        return Sequence(
+            program=program if program is not None else Program(),
+            waveforms=waveforms,
+            acquisitions=Acquisitions(),
+            weights=Weights(),
+        )
+
+    def test_compute_components_to_update_same_program_different_waveforms(self, platform: Platform):
+        """Same program but different waveforms must trigger a partial update flagging only the waveforms."""
+        bus_alias = "drive_line_q0_bus"
+        seq_a = self._build_sequence([0.0, 0.1, 0.2])
+        seq_b = self._build_sequence([0.9, 0.8, 0.7])  # same (empty) program, different waveforms
+
+        # First upload for the bus: nothing cached yet -> full upload.
+        assert platform._compute_components_to_update(bus_alias, seq_a) is None
+
+        # Same program, different waveforms -> only waveforms (and always-on acquisitions) flagged.
+        assert platform._compute_components_to_update(bus_alias, seq_b) == {
+            "program": False,
+            "waveforms": True,
+            "weights": False,
+            "acquisitions": True,
+        }
+
+        # Re-uploading the identical sequence -> nothing changed except acquisitions.
+        assert platform._compute_components_to_update(bus_alias, seq_b) == {
+            "program": False,
+            "waveforms": False,
+            "weights": False,
+            "acquisitions": True,
+        }
+
+    def test_compute_components_to_update_program_change_forces_full_upload(self, platform: Platform):
+        """A changed program invalidates index alignment and must force a full re-upload (None)."""
+        bus_alias = "drive_line_q0_bus"
+        seq_a = self._build_sequence([0.0, 0.1, 0.2])
+
+        program_b = Program()
+        program_b.append_block(Block(name="different_block"))
+        seq_b = self._build_sequence([0.0, 0.1, 0.2], program=program_b)
+
+        assert platform._compute_components_to_update(bus_alias, seq_a) is None
+        assert platform._compute_components_to_update(bus_alias, seq_b) is None
+
+    def test_upload_qpysequence_called_with_partial_update_for_different_waveforms(self, platform: Platform):
+        """Capture the components passed to upload_qpysequence when re-uploading same program / new waveforms."""
+        bus_alias = "drive_line_q0_bus"
+        seq_a = self._build_sequence([0.0, 0.1, 0.2])
+        seq_b = self._build_sequence([0.9, 0.8, 0.7])  # same program, different waveforms
+
+        # Seed the cache as if seq_a had already been uploaded for this bus.
+        assert platform._compute_components_to_update(bus_alias, seq_a) is None
+
+        with (
+            patch.object(Bus, "upload_qpysequence") as upload,
+            patch.object(QbloxModule, "sync_sequencer"),
+        ):
+            sequences_per_qprogram = [{bus_alias: seq_b}]
+            platform._upload_qblox_parallel_sequences(
+                sequences_per_qprogram=sequences_per_qprogram,
+                buses_per_qprogram=platform._resolve_qblox_parallel_buses(sequences_per_qprogram),
+            )
+
+        upload.assert_called_once()
+        assert upload.call_args.kwargs["qpysequence"] is seq_b
+        assert upload.call_args.kwargs["components_to_update"] == {
+            "program": False,
+            "waveforms": True,
+            "weights": False,
+            "acquisitions": True,
+        }
+
     def test_execute_qprogram_with_qblox_and_qdac(self, platform_qblox_qdac: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -2137,6 +2212,7 @@ class TestMethods:
         platform.instrument_controllers.elements = [controller]
 
         # Call the method under testus
+        pytest.MonkeyPatch().setattr(Platform, "_compute_components_to_update", lambda *a, **k: None)  # We want _compute_components_to_update to return None
         platform._execute_qblox_compilation_output(output)
 
         # Verify the two lines ran

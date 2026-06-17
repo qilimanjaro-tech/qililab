@@ -7,8 +7,10 @@
 - Upgraded `qblox-instruments` dependency from `0.16.0` to `1.0.3`.
   [#1134](https://github.com/qilimanjaro-tech/qililab/pull/1134)
 
-- Updated `Platform.execute_qprogram` and `Platform.execute_qprograms_parallel` so that when uploading the sequence to a QBlox cluster, if the previous program is the same, it updated acquisitions (to reset the bins) and weights and waveforms if they changed. This speeds up software loops where the program does not change between executions.
+- Optimized sequence uploads in `Platform.execute_qprogram` and `Platform.execute_qprograms_parallel`. When the program uploaded to a Qblox sequencer is unchanged from the previous execution, only the components that actually changed are re-uploaded: waveforms and weights when they differ, and acquisitions always (to reset the bins). When the program changes — or on the first upload for a bus — the full sequence is uploaded. This avoids redundant re-uploads and speeds up software loops that repeatedly run the same program while only changing an instrument setting (`Platform.set_parameter`) or waveform data.
+  Note that changing a value *inside* the QProgram (e.g. setting the gain or frequency) alters the compiled program itself, so the full sequence is re-uploaded. Only changes made through `Platform.set_parameter` keep the program unchanged.
   []()
+
 - Added support for QPrograms with more than 32 distinct acquisitions in different blocks on the same bus. The compiler detects this case during a pre-traversal pass and maps all acquisitions to hardware index 0 with N bins, one bin per block. The platform then unpacks the single hardware result into N separate `QbloxMeasurementResult` objects, so `len(results["bus"]) == N` as expected.
 
   The typical use case is sweeping over a non-linear (arbitrary) set of values, not expressible as a hardware `for_loop`:

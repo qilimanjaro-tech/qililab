@@ -204,7 +204,7 @@ class QbloxModule(Instrument):
     def _have_sequencer(self, channel_id: ChannelID):
         return next((True for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), False)
 
-    def run(self, channel_id: ChannelID):
+    def run(self, channel_id: int):
         """Run the uploaded program"""
         if self._have_sequencer(channel_id) and channel_id in self.sequences:
             self.device.arm_sequencer(sequencer=channel_id)
@@ -649,7 +649,7 @@ class QbloxModule(Instrument):
         self.clear_cache()
         self.device.reset()
 
-    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: ChannelID):
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int):
         """Upload the qpysequence to its corresponding sequencer.
 
         Args:
@@ -661,7 +661,7 @@ class QbloxModule(Instrument):
             self.device.sequencers[channel_id].sequence(qpysequence.todict())
             self.sequences[channel_id] = qpysequence
 
-    def update_sequencer(self, qpysequence: QpySequence, channel_id: ChannelID, **components_to_update: bool):
+    def update_sequencer(self, qpysequence: QpySequence, channel_id: int, **components_to_update: bool):
         """Updates the last sequencer with the current qpysequence if the program hasn't changed.
 
         Args:
@@ -672,12 +672,11 @@ class QbloxModule(Instrument):
                 considered ``False``.
         """
         if self._have_sequencer(channel_id):
-            qpysequence_dict  = qpysequence.todict()
+            qpysequence_dict = qpysequence.todict()
             sequence_args = {key: value for key, value in qpysequence_dict.items() if components_to_update.get(key)}
-
             self.device.sequencers[channel_id].update_sequence(**sequence_args, erase_existing=True)
 
-    def upload(self, channel_id: ChannelID):
+    def upload(self, channel_id: int):
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile`` in the compiler

@@ -32,6 +32,7 @@ def fixture_qrm(platform: Platform) -> QbloxQRM:
         "gain_awg_path0",
         "gain_awg_path1",
         "sequence",
+        "update_sequence",
         "mod_en_awg",
         "nco_freq",
         "scope_acq_sequencer_select",
@@ -120,28 +121,7 @@ class TestQbloxQRM:
     @pytest.mark.parametrize(
         "parameter, value",
         [
-            # Test GAIN setting
-            (Parameter.GAIN, 2.0),
-            (Parameter.GAIN, 3.5),
-            # Test GAIN_I and GAIN_Q settings
-            (Parameter.GAIN_I, 1.5),
-            (Parameter.GAIN_Q, 1.5),
-            # Test OFFSET_I and OFFSET_Q settings
-            (Parameter.OFFSET_I, 0.1),
-            (Parameter.OFFSET_Q, 0.2),
-            # Test IF setting (intermediate frequency)
-            (Parameter.IF, 100e6),
-            # Test HARDWARE_MODULATION setting
-            (Parameter.HARDWARE_MODULATION, True),
-            # Test GAIN_IMBALANCE setting
-            (Parameter.GAIN_IMBALANCE, 0.05),
-            # Test PHASE_IMBALANCE setting
-            (Parameter.PHASE_IMBALANCE, 0.02),
-            # Test OFFSET_OUT settings
-            (Parameter.OFFSET_OUT0, 0.1),
-            (Parameter.OFFSET_OUT1, 0.15),
-            (Parameter.OFFSET_OUT2, 0.2),
-            (Parameter.OFFSET_OUT3, 0.25),
+            # Test QbloxADCSequencer settings rest are tested on test_qblox_module.py
             (Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, "sequencer"),
             (Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, "level"),
             (Parameter.SCOPE_HARDWARE_AVERAGING, True),
@@ -165,27 +145,14 @@ class TestQbloxQRM:
         sequencer = qrm.get_sequencer(0)
 
         # Check values based on the parameter
-        if parameter == Parameter.GAIN:
-            assert sequencer.gain_i == value
-            assert sequencer.gain_q == value
-        elif parameter == Parameter.GAIN_I:
-            assert sequencer.gain_i == value
-        elif parameter == Parameter.GAIN_Q:
-            assert sequencer.gain_q == value
-        elif parameter == Parameter.OFFSET_I:
-            assert sequencer.offset_i == value
-        elif parameter == Parameter.OFFSET_Q:
-            assert sequencer.offset_q == value
-        elif parameter == Parameter.IF:
-            assert sequencer.intermediate_frequency == value
-        elif parameter == Parameter.HARDWARE_MODULATION:
-            assert sequencer.hardware_modulation == value
-        elif parameter == Parameter.GAIN_IMBALANCE:
-            assert sequencer.gain_imbalance == value
-        elif parameter == Parameter.PHASE_IMBALANCE:
-            assert sequencer.phase_imbalance == value
+        if parameter == Parameter.HARDWARE_DEMODULATION:
+            assert sequencer.hardware_demodulation == value
         elif parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
-            assert sequencer.scope_acquire_trigger_mode == AcquireTriggerMode(value)  # type: ignore[attr-defined]
+            assert sequencer.scope_acquire_trigger_mode == AcquireTriggerMode(value) # type: ignore[attr-defined]
+        elif parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
+            assert sequencer.scope_hardware_averaging == value
+        elif parameter == Parameter.SCOPE_STORE_ENABLED:
+            assert sequencer.scope_store_enabled == value
         elif parameter == Parameter.INTEGRATION_LENGTH:
             assert sequencer.integration_length == value  # type: ignore[attr-defined]
         elif parameter == Parameter.SAMPLING_RATE:
@@ -195,9 +162,13 @@ class TestQbloxQRM:
         elif parameter == Parameter.SEQUENCE_TIMEOUT:
             assert sequencer.sequence_timeout == value  # type: ignore[attr-defined]
         elif parameter == Parameter.ACQUISITION_TIMEOUT:
-            assert sequencer.acquisition_timeout == value  # type: ignore[attr-defined]
+            assert sequencer.acquisition_timeout == value
         elif parameter == Parameter.TIME_OF_FLIGHT:
-            assert sequencer.time_of_flight == value  # type: ignore[attr-defined]
+            assert sequencer.time_of_flight == value
+        elif parameter == Parameter.THRESHOLD:
+            assert sequencer.threshold == value
+        elif parameter == Parameter.THRESHOLD_ROTATION:
+            assert sequencer.threshold_rotation == value
         elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
             assert qrm.out_offsets[output] == value
@@ -236,25 +207,7 @@ class TestQbloxQRM:
     @pytest.mark.parametrize(
         "parameter, expected_value",
         [
-            # Test GAIN_I and GAIN_Q settings
-            (Parameter.GAIN_I, 1.0),
-            (Parameter.GAIN_Q, 1.0),
-            # Test OFFSET_I and OFFSET_Q settings
-            (Parameter.OFFSET_I, 0.0),
-            (Parameter.OFFSET_Q, 0.0),
-            # Test IF setting (intermediate frequency)
-            (Parameter.IF, 100e6),
-            # Test HARDWARE_MODULATION setting
-            (Parameter.HARDWARE_MODULATION, True),
-            # Test GAIN_IMBALANCE setting
-            (Parameter.GAIN_IMBALANCE, 0.05),
-            # Test PHASE_IMBALANCE setting
-            (Parameter.PHASE_IMBALANCE, 0.02),
-            # Test OFFSET_OUT settings
-            (Parameter.OFFSET_OUT0, 0.0),
-            (Parameter.OFFSET_OUT1, 0.1),
-            (Parameter.OFFSET_OUT2, 0.2),
-            (Parameter.OFFSET_OUT3, 0.3),
+            # Test QbloxADCSequencer settings rest are tested on test_qblox_module.py
             (Parameter.SCOPE_ACQUIRE_TRIGGER_MODE, "sequencer"),
             (Parameter.SCOPE_HARDWARE_AVERAGING, True),
             (Parameter.SAMPLING_RATE, 1.0e9),
@@ -312,24 +265,6 @@ class TestQbloxQRM:
         for sequencer in qrm.awg_sequencers:
             qrm.device.sequencers[sequencer.identifier].sync_en.assert_called_with(False)
 
-    def test_run(self, qrm: QbloxQRM):
-        """Test running the QCM module."""
-        qrm.sequences[0] = Sequence(
-            program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights()
-        )
-        qrm.run(channel_id=0)
-
-        sequencer = qrm.get_sequencer(0)
-        qrm.device.arm_sequencer.assert_called_with(sequencer=sequencer.identifier)
-        qrm.device.start_sequencer.assert_called_with(sequencer=sequencer.identifier)
-
-    def test_upload_qpysequence(self, qrm: QbloxQRM):
-        """Test uploading a QpySequence to the QCM module."""
-        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
-        qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
-
-        qrm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
-
     def test_acquire_qprogram_results(self, qrm: QbloxQRM):
         acquisitions = Acquisitions()
         acquisitions.add(name="acquisition_0")
@@ -350,8 +285,8 @@ class TestQbloxQRM:
         assert qrm.device.store_scope_acquisition.call_count == 1
         assert qrm.device.get_acquisitions.call_count == 2
         assert qrm.device.delete_acquisition_data.call_count == 2
-        assert qrm.device.sequencers[0].sequence.call_count == 2 # after uploading the empty sequence
-
+        assert qrm.device.sequencers[0].sequence.call_count == 1  # only the initial upload
+        qrm.device.sequencers[0].update_sequence.assert_called_once_with(acquisitions={}, erase_existing=True)
 
     def test_acquire_qprogram_results_multiple_acquisitions_does_not_wipe_sequence_mid_loop(self, qrm: QbloxQRM):
         acquisitions = Acquisitions()
@@ -376,8 +311,8 @@ class TestQbloxQRM:
         assert len(results) == 2
         # The sequence should be wiped exactly once — after all acquisitions are read, not after each one.
         wipe_calls = [
-            c for c in qrm.device.sequencers[0].sequence.call_args_list
-            if not c[0][0].get("acquisitions")
+            c for c in qrm.device.sequencers[0].update_sequence.call_args_list
+            if not c.kwargs.get("acquisitions")
         ]
         assert len(wipe_calls) == 1, (
             f"Expected exactly one empty-acquisitions call (final wipe), got {len(wipe_calls)}. "
@@ -407,29 +342,13 @@ class TestQbloxQRM:
 
         assert len(results) == n
         wipe_calls = [
-            c for c in qrm.device.sequencers[0].sequence.call_args_list
-            if not c[0][0].get("acquisitions")
+            c for c in qrm.device.sequencers[0].update_sequence.call_args_list
+            if not c.kwargs.get("acquisitions")
         ]
         assert len(wipe_calls) == 1, (
             f"Expected exactly one empty-acquisitions call (final wipe), got {len(wipe_calls)}. "
             "With the buggy code the wipe happened inside the loop, once per acquisition."
         )
-
-    def test_clear_cache(self, qrm: QbloxQRM):
-        """Test clearing the cache of the QCM module."""
-        qrm.cache = {0: MagicMock()}  # type: ignore[misc]
-        qrm.clear_cache()
-
-        assert qrm.cache == {}
-        assert qrm.sequences == {}
-
-    def test_reset(self, qrm: QbloxQRM):
-        """Test resetting the QCM module."""
-        qrm.reset()
-
-        qrm.device.reset.assert_called_once()
-        assert qrm.cache == {}
-        assert qrm.sequences == {}
 
     def test_setup_trigger_network(self, qrm: QbloxQRM):
         """Test the setup of the trigger network."""
