@@ -4,6 +4,46 @@
 
 ### Improvements
 
+- Removed unnecessary wait_syncs created by `qp.wait_trigger` when the instrument has only one sequencer.
+  Now for one sequencer it will behave like this:
+
+    ```
+        qp.set_frequency(bus="drive", frequency=1e6)
+        qp.wait_trigger(bus="drive", duration=1_000, port=1)
+      ---            
+        set_freq         4000000
+        set_freq         4000000
+        upd_param        4
+        wait_trigger     1, 4
+        wait             992
+    ```
+
+  Whereas with two buses there will be an extra wait_sync in the Q1ASM (also compensated by duration):
+
+    ```
+        qp.set_frequency(bus="drive", frequency=1e6)
+        qp.set_frequency(bus="readout", frequency=1e6)
+        qp.wait_trigger(bus="drive", duration=1_000, port=1)
+      ---
+      drive sequencer:
+        set_freq         4000000        
+        set_freq         4000000        
+        wait_trigger     1, 4           
+        wait_sync        4              
+        upd_param        4              
+        wait             996            
+
+      readout sequencer:
+        set_freq         4000000        
+        set_freq         4000000        
+        wait_sync        4 
+    ```
+
+  [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
+
+- Added `wait_trigger` to the qblox drawer. The drawer shows the wait duration stated in `wait_trigger`, although the duration of this wait is non deterministic (as it is waiting for an external source to send a pulse).
+  [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
+
 - Removed `external_trigger` parameter from within the runcard's qblox controller instrument. Now the function `QbloxClusterController.set_ext_trigger` is risen internally every time a qprogram contains a `wait_trigger` using the trigger channel 15 (last one).
   [#1112](https://github.com/qilimanjaro-tech/qililab/pull/1112)
 
@@ -43,6 +83,45 @@
 
 ### Bug fixes
 
+- Fixed an error where the external trigger was activated even using ports different than the external port 15 while defining the qprogram.wait_trigger (not defining a port defaults to port 15, external, as well).
+  [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
+
+- Fixed a bug for wait trigger in the qblox compiler using a single sequencer because it created an unnecessary wait_sync (without any other sequencers to sync). Now the Qblox compiler checks for the amount of buses with a sequencer.
+  [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
+
+- Fixed a bug for `wait_trigger` where for large durations the waiting time was not correctly implemented. Now it uses `_handle_add_waits` like `wait`.
+  These are some examples of uses:
+  - Duration of 4 creates a simple Q1ASM with the wait trigger with the minimal wait duration, not defining a port defaults to port 15:
+
+    ```
+        qp.wait_trigger(bus="drive", duration=4)
+      ---
+        wait_trigger     15, 4
+    ```
+
+  - Duration of 70,000 (and any duration bigger than 8) will execute `_handle_add_waits` and create waits with duration minus 4 ns (from the wait trigger):
+
+    ```
+        qp.wait_trigger(bus="drive", duration=70_000, port=1)
+      ---
+        wait_trigger     1, 4
+        wait             65532
+        wait             4464
+    ```
+
+  - If the wait_trigger is set before any parameter update qprogram defines an `upd_param` of 4 ns (adding this value to the total time):
+
+    ```
+        qp.set_frequency(bus="readout", frequency=1e6)
+        qp.wait_trigger(bus="drive", duration=1_000, port=1)
+      ---
+        upd_param        4
+        wait_trigger     1, 4
+        wait             992
+    ```
+
+  [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
+
 - Fixed a bug for Rohde & Schwarz SGS100A instrument class where the module SGS-B106V did not apply the iq_wideband at the initial_setup.
     [#1144](https://github.com/qilimanjaro-tech/qililab/pull/1144)
 
@@ -51,6 +130,6 @@
 
 - Fixed `QbloxQRM.acquire_qprogram_results` uploading an empty sequence after each individual acquisition deletion, which wiped the hardware acquisition table mid-loop and caused subsequent deletions to fail. The empty-sequence upload now happens once after all acquisitions have been deleted. This was triggered by any QProgram that produced more than one named acquisition on the same sequencer (e.g. two separate `average` blocks each containing one `acquire` on the same bus).
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
- 
+
 - Fixed a bug for `ExperimentExecutor`'s `_inclusive_range` function where the range for certain loops had overflows and didn't match the experimental result. Now it matches the `QProgram`'s result shape.
   [#1066](https://github.com/qilimanjaro-tech/qililab/pull/1066)
