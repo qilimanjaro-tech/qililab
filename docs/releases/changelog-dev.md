@@ -41,6 +41,9 @@
 
   [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
 
+- Added `wait_trigger` to the qblox drawer. The drawer shows the wait duration stated in `wait_trigger`, although the duration of this wait is non deterministic (as it is waiting for an external source to send a pulse).
+  [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
+
 - Removed `external_trigger` parameter from within the runcard's qblox controller instrument. Now the function `QbloxClusterController.set_ext_trigger` is risen internally every time a qprogram contains a `wait_trigger` using the trigger channel 15 (last one).
   [#1112](https://github.com/qilimanjaro-tech/qililab/pull/1112)
 

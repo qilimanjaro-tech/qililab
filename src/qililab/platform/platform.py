@@ -358,8 +358,6 @@ class Platform:
         self.trigger_runs: int = 0
         """Number of tries after a timeout error."""
 
-        self.has_ext_trigger: bool = False
-
         self.qblox_alias_module: list = self._get_qblox_alias_module()
         """List of dict with key the alias of qblox module and value the module_id. Used for the qblox distortions"""
 
