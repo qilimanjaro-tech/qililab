@@ -44,9 +44,6 @@
 - Fixed issue where `Platform.set_parameter` using the alias of a "rswu-sp16tr" instrument would raise an error.
   [#1130](https://github.com/qilimanjaro-tech/qililab/pull/1130)
 
-- Fixed a bug in `load_sequence_by_id` where measurements were returned in an undefined order, causing incorrect results when processing sequences. Measurements are now ordered by `measurement_id`.
-  [#1132](https://github.com/qilimanjaro-tech/qililab/pull/1132)
-
 - Fixed a bug in `platform._execute_qblox_compilation_output` where a program with N acquisitions on the same bus returned N² results instead of N. A nested loop incorrectly paired every hardware result with every acquisition slot; replaced with `zip` pairing. This was triggered by any QProgram with acquires at more than one nesting depth on the same bus (e.g. two separate `average` blocks each containing one `acquire`).
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
 
