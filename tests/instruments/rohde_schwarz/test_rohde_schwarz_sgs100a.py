@@ -357,6 +357,19 @@ class TestSGS100A:
             "Operation mode 'wrong_operation_mode' not allowed, defaulting to normal operation mode", ResourceWarning
         )
 
+    @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
+    def test_initial_setup_method_iq_wideband_on(self, mock_get_rs_options, sdg100a: SGS100A):
+        """Test initial setup method"""
+        mock_get_rs_options.return_value = "Some,other,SGS-B106V"
+        sdg100a.initial_setup()
+        sdg100a.device.power.assert_called_with(sdg100a.power)
+        sdg100a.device.frequency.assert_called_with(sdg100a.frequency)
+        sdg100a.device.IQ_state.assert_called_with(sdg100a.iq_modulation)
+        sdg100a.device.write.assert_any_call ("SOUR:IQ:WBST 1")
+        sdg100a.device.on.assert_called_once()
+
+        assert sdg100a.settings.iq_modulation is True
+
     @patch("warnings.warn")
     @patch("qililab.instruments.rohde_schwarz.SGS100A.get_rs_options")
     def test_initial_setup_method_wideband_off(self, mock_get_rs_options, mock_warn, sdg100a_wideband_off: SGS100A):
@@ -366,6 +379,7 @@ class TestSGS100A:
         assert sdg100a_wideband_off.settings.iq_wideband is False
         assert sdg100a_wideband_off.iq_wideband is False
         assert sdg100a_wideband_off.iq_modulation is True
+        sdg100a_wideband_off.device.write.assert_any_call ("SOUR:IQ:WBST 0")
 
         mock_warn.assert_any_call(
             "Deactivated wideband & LO frequency below 1GHz allows for IF sweeps of ±4.00e+06 Hz", ResourceWarning
