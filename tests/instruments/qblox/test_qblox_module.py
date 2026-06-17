@@ -243,8 +243,8 @@ class TestQbloxModule:
         """Test that setting GAIN updates both I and Q gains."""
         module.set_parameter(Parameter.GAIN, 2.0, channel_id=0)
         sequencer = module.get_sequencer(0)
-        assert sequencer.gain_i == 2.0
-        assert sequencer.gain_q == 2.0
+        assert sequencer.gain_i == pytest.approx(2.0)
+        assert sequencer.gain_q == pytest.approx(2.0)
 
     @pytest.mark.parametrize(
         "parameter, value",
