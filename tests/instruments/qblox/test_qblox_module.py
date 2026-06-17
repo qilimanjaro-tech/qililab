@@ -150,14 +150,14 @@ class TestQbloxModule:
         sequencer = module.get_sequencer(0)
         assert sequencer.identifier == 0
         assert sequencer.outputs == [3, 2]
-        assert sequencer.intermediate_frequency == 100e6
-        assert sequencer.gain_imbalance == 0.05
-        assert sequencer.phase_imbalance == 0.02
+        assert sequencer.intermediate_frequency == pytest.approx(100e6)
+        assert sequencer.gain_imbalance == pytest.approx(0.05)
+        assert sequencer.phase_imbalance == pytest.approx(0.02)
         assert sequencer.hardware_modulation is True
-        assert sequencer.gain_i == 1.0
-        assert sequencer.gain_q == 1.0
-        assert sequencer.offset_i == 0.0
-        assert sequencer.offset_q == 0.0
+        assert sequencer.gain_i == pytest.approx(1.0)
+        assert sequencer.gain_q == pytest.approx(1.0)
+        assert sequencer.offset_i == pytest.approx(0.0)
+        assert sequencer.offset_q == pytest.approx(0.0)
 
     def test_get_sequencer(self, module: QbloxModule):
         sequencer = module.get_sequencer(1)
@@ -168,13 +168,13 @@ class TestQbloxModule:
             module.get_sequencer(5)
 
     def test_get_filter(self, module: QbloxModule):
-        filter = module.get_filter(0)
-        assert filter.output_id == 0
-        assert filter.exponential_amplitude[0] == 0.31
-        assert filter.exponential_time_constant[0] == 200
-        assert filter.exponential_state == ["enabled", "enabled", "bypassed", None]
-        assert filter.fir_coeff == [0.4] * 32
-        assert filter.fir_state == "enabled"
+        test_filter = module.get_filter(0)
+        assert test_filter.output_id == 0
+        assert test_filter.exponential_amplitude[0] == pytest.approx(0.31)
+        assert test_filter.exponential_time_constant[0] == 200
+        assert test_filter.exponential_state == ["enabled", "enabled", "bypassed", None]
+        assert test_filter.fir_coeff == [0.4] * 32
+        assert test_filter.fir_state == "enabled"
 
     def test_get_filter_raises_error(self, module: QbloxModule):
         with pytest.raises(IndexError, match="There is no filter with id=3."):
@@ -217,27 +217,27 @@ class TestQbloxModule:
         sequencer = module.get_sequencer(0)
 
         if parameter == Parameter.GAIN:
-            assert sequencer.gain_i == value
-            assert sequencer.gain_q == value
+            assert sequencer.gain_i == pytest.approx(value)
+            assert sequencer.gain_q == pytest.approx(value)
         elif parameter == Parameter.GAIN_I:
-            assert sequencer.gain_i == value
+            assert sequencer.gain_i == pytest.approx(value)
         elif parameter == Parameter.GAIN_Q:
-            assert sequencer.gain_q == value
+            assert sequencer.gain_q == pytest.approx(value)
         elif parameter == Parameter.OFFSET_I:
-            assert sequencer.offset_i == value
+            assert sequencer.offset_i == pytest.approx(value)
         elif parameter == Parameter.OFFSET_Q:
-            assert sequencer.offset_q == value
+            assert sequencer.offset_q == pytest.approx(value)
         elif parameter == Parameter.IF:
-            assert sequencer.intermediate_frequency == value
+            assert sequencer.intermediate_frequency == pytest.approx(value)
         elif parameter == Parameter.HARDWARE_MODULATION:
             assert sequencer.hardware_modulation == value
         elif parameter == Parameter.GAIN_IMBALANCE:
-            assert sequencer.gain_imbalance == value
+            assert sequencer.gain_imbalance == pytest.approx(value)
         elif parameter == Parameter.PHASE_IMBALANCE:
-            assert sequencer.phase_imbalance == value
+            assert sequencer.phase_imbalance == pytest.approx(value)
         elif parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
             output = int(parameter.value[-1])
-            assert module.out_offsets[output] == value
+            assert module.out_offsets[output] == pytest.approx(value)
 
     def test_set_parameter_gain(self, module: QbloxModule):
         """Test that setting GAIN updates both I and Q gains."""
@@ -260,17 +260,17 @@ class TestQbloxModule:
         """Test setting filter parameters using parameterized values."""
         output_id = 0
         module.set_parameter(parameter=parameter, value=value, output_id=output_id)
-        filter = module.get_filter(output_id)
+        test_filter = module.get_filter(output_id)
         if parameter == Parameter.EXPONENTIAL_AMPLITUDE_1:
-            assert filter.exponential_amplitude[1] == value
+            assert test_filter.exponential_amplitude[1] == pytest.approx(value)
         elif parameter == Parameter.EXPONENTIAL_TIME_CONSTANT_2:
-            assert filter.exponential_time_constant[2] == value
+            assert test_filter.exponential_time_constant[2] == value
         elif parameter == Parameter.EXPONENTIAL_STATE_0:
-            assert filter.exponential_state[0] == value
+            assert test_filter.exponential_state[0] == value
         elif parameter == Parameter.FIR_COEFF:
-            assert filter.fir_coeff == value
+            assert test_filter.fir_coeff == value
         elif parameter == Parameter.FIR_STATE:
-            assert filter.fir_state == value
+            assert test_filter.fir_state == value
 
     def test_set_parameter_raises_error(self, module: QbloxModule):
         """Test the error paths of set_parameter."""
@@ -316,11 +316,11 @@ class TestQbloxModule:
         """Test setting state parameters of filters as bool converts them to the string from DistortionState."""
         output_id = 0
         module.set_parameter(parameter=parameter, value=value, output_id=output_id)
-        filter = module.get_filter(output_id)
+        test_filter = module.get_filter(output_id)
         if parameter == Parameter.EXPONENTIAL_STATE_0:
-            assert filter.exponential_state[0] == DistortionState.ENABLED
+            assert test_filter.exponential_state[0] == DistortionState.ENABLED
         elif parameter == Parameter.FIR_STATE:
-            assert filter.fir_state == DistortionState.ENABLED
+            assert test_filter.fir_state == DistortionState.ENABLED
 
     @pytest.mark.parametrize(
         "parameter, value",
@@ -333,11 +333,11 @@ class TestQbloxModule:
         """Test setting state parameters of filters as bool converts them to the string from DistortionState."""
         output_id = 0
         module.set_parameter(parameter=parameter, value=value, output_id=output_id)
-        filter = module.get_filter(output_id)
+        test_filter = module.get_filter(output_id)
         if parameter == Parameter.EXPONENTIAL_STATE_0:
-            assert filter.exponential_state[0] == DistortionState.BYPASSED
+            assert test_filter.exponential_state[0] == DistortionState.BYPASSED
         elif parameter == Parameter.FIR_STATE:
-            assert filter.fir_state == DistortionState.BYPASSED
+            assert test_filter.fir_state == DistortionState.BYPASSED
 
     @pytest.mark.parametrize(
         "parameter, expected_value",
@@ -524,6 +524,6 @@ class TestQbloxSequencer:
 
 class TestQbloxFilter:
     def test_to_dict(self, module: QbloxModule):
-        filter = module.get_filter(0)
-        as_dict = filter.to_dict()
+        test_filter = module.get_filter(0)
+        as_dict = test_filter.to_dict()
         assert isinstance(as_dict, dict)
