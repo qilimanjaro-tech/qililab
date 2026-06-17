@@ -9,7 +9,7 @@
 
 - Optimized sequence uploads in `Platform.execute_qprogram` and `Platform.execute_qprograms_parallel`. When the program uploaded to a Qblox sequencer is unchanged from the previous execution, only the components that actually changed are re-uploaded: waveforms and weights when they differ, and acquisitions always (to reset the bins). When the program changes — or on the first upload for a bus — the full sequence is uploaded. This avoids redundant re-uploads and speeds up software loops that repeatedly run the same program while only changing an instrument setting (`Platform.set_parameter`) or waveform data.
   Note that changing a value *inside* the QProgram (e.g. setting the gain or frequency) alters the compiled program itself, so the full sequence is re-uploaded. Only changes made through `Platform.set_parameter` keep the program unchanged.
-  []()
+  [#1146](https://github.com/qilimanjaro-tech/qililab/pull/1146)
 
 - Added support for QPrograms with more than 32 distinct acquisitions in different blocks on the same bus. The compiler detects this case during a pre-traversal pass and maps all acquisitions to hardware index 0 with N bins, one bin per block. The platform then unpacks the single hardware result into N separate `QbloxMeasurementResult` objects, so `len(results["bus"]) == N` as expected.
 
