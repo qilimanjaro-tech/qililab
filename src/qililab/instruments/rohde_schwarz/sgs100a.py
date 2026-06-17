@@ -16,9 +16,9 @@
 Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 
-import warnings
 from dataclasses import dataclass
 
+from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized, log_set_parameter
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
@@ -247,20 +247,20 @@ class SGS100A(Instrument):
             self.device.IQ_state(self.iq_modulation)
             if self.iq_wideband:
                 if self.frequency < 2.5e9:
-                    warnings.warn(
+                    logger.warning(
                         f"LO frequency below 2.5GHz only allows for IF sweeps of ±{self.frequency * 0.2:,.2e} Hz",
-                        ResourceWarning,
+                        exc_info=ResourceWarning,
                     )
                 self.device.write("SOUR:IQ:WBST 1")
             else:
                 if self.frequency < 1e9:
                     freq = self.frequency * 0.05
-                    warnings.warn(
+                    logger.warning(
                         f"Deactivated wideband & LO frequency below 1GHz allows for IF sweeps of ±{freq:,.2e} Hz",
-                        ResourceWarning,
+                        exc_info=ResourceWarning,
                     )
                 else:
-                    warnings.warn("Deactivated wideband allows for IF sweeps of ±50e6 Hz", ResourceWarning)
+                    logger.warning("Deactivated wideband allows for IF sweeps of ±50e6 Hz", exc_info=ResourceWarning)
                 self.device.write("SOUR:IQ:WBST 0")
         elif device_mixer == "SGS-B106V" or not self.iq_modulation:
             self.device.IQ_state(self.iq_modulation)
@@ -274,9 +274,9 @@ class SGS100A(Instrument):
             operation_mode = "NORMal" if self.operation_mode == "normal" else "BBBYpass"
             self.device.write(f":SOUR:OPMode {operation_mode}")
         else:
-            warnings.warn(
+            logger.warning(
                 f"Operation mode '{self.operation_mode}' not allowed, defaulting to normal operation mode",
-                ResourceWarning,
+                exc_info=ResourceWarning,
             )
             self.settings.operation_mode = "normal"
             self.device.write(":SOUR:OPMode NORMal")
