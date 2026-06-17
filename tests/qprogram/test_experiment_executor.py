@@ -337,6 +337,29 @@ class TestExperimentExecutor:
                 "sample_name": "sample_test",
             }
 
+    def test_inclusive_range(self):
+        """Test correct behavior and consistency of loop generation inside inclusive range."""
+
+        int_result = ExperimentExecutor._inclusive_range(None, 0, 1000, 11)  # Mock passing self as None
+        int_check = np.array([   0,   11,   22,   33,   44,   55,   66,   77,   88,   99,  110,
+            121,  132,  143,  154,  165,  176,  187,  198,  209,  220,  231,
+            242,  253,  264,  275,  286,  297,  308,  319,  330,  341,  352,
+            363,  374,  385,  396,  407,  418,  429,  440,  451,  462,  473,
+            484,  495,  505,  516,  527,  538,  549,  560,  571,  582,  593,
+            604,  615,  626,  637,  648,  659,  670,  681,  692,  703,  714,
+            725,  736,  747,  758,  769,  780,  791,  802,  813,  824,  835,
+            846,  857,  868,  879,  890,  901,  912,  923,  934,  945,  956,
+            967,  978,  989, 1000])
+        
+        float_result = ExperimentExecutor._inclusive_range(None, 0, 10, 0.3)
+        float_check = np.array([ 0. ,  0.3,  0.6,  0.9,  1.2,  1.5,  1.8,  2.1,  2.4,  2.7,  3. ,
+            3.3,  3.6,  3.9,  4.2,  4.5,  4.8,  5.2,  5.5,  5.8,  6.1,  6.4,
+            6.7,  7. ,  7.3,  7.6,  7.9,  8.2,  8.5,  8.8,  9.1,  9.4,  9.7,
+            10. ])
+        
+        assert np.array_equal(int_result, int_check)
+        assert np.array_equal(float_result, float_check)
+
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")
     def test_execute_database_no_job_id_raises_error(
