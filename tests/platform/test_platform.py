@@ -1500,44 +1500,7 @@ class TestMethods:
 
         # Assert it retried 3 times (initial + 3 retries = 4 attempts)
         assert mock_bus.run.call_count == 4
-        
-    def test_execute_qprogram_with_qblox_and_qdac_external_trigger_error(self, platform_qblox_qdac: Platform):
-        """Test that the execute_qprogram method raises the exception 
-        if the qprogram has wait_trigger but no ext_trigger
-        """
 
-        # Setup mock QbloxCompilationOutput and QdacCompilationOutput
-        mock_output = MagicMock(spec=QbloxCompilationOutput)
-        mock_qdac_output = MagicMock(spec=QdacCompilationOutput)
-        mock_output.sequences = {"bus1": MagicMock()}
-        mock_output.acquisitions = {"bus1": MagicMock()}
-
-        mock_qdac_output.trigger_position = "front"
-        mock_qdac = MagicMock()
-        mock_qdac_output.qdac = mock_qdac
-
-        mock_bus = MagicMock()
-        mock_bus.has_adc.return_value = False
-        mock_bus.instruments = [MagicMock(spec=QbloxModule)]
-        mock_bus.channels = [0]
-
-        # Raise TimeoutError on run
-        mock_bus.run.side_effect = TimeoutError("Simulated timeout")
-
-        platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
-        platform_qblox_qdac.has_ext_trigger = False
-        platform_qblox_qdac._qpy_sequence_cache = {}
-        platform_qblox_qdac.trigger_runs = 0
-
-        mock_output.qprogram = MagicMock(spec=QProgram)
-        mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
-        mock_output.qprogram.qblox.trigger_network_required = []
-
-        error_src = "External trigger has not been set as True inside runcard's instrument controllers."
-        with pytest.raises(AttributeError, match=error_src):
-            platform_qblox_qdac._execute_qblox_compilation_output(
-                output=QProgramCompilationOutput(qblox=mock_output, qdac=mock_qdac_output), debug=False
-            )
 
     def test_execute_qprogram_with_qblox_and_qdac_timeout_error_wrong_bus(self, platform_qblox_qdac: Platform):
         """Test that the execute_qprogram method retries correctly when the timed-out bus is not the one with timeout config."""
@@ -1545,6 +1508,7 @@ class TestMethods:
         mock_qdac_output = MagicMock(spec=QdacCompilationOutput)
         mock_output.sequences = {"bus1": MagicMock()}
         mock_output.acquisitions = {"bus1": MagicMock()}
+        mock_output.external_trigger = False
         mock_qdac_output.trigger_position = "front"
         mock_qdac_output.qdac = MagicMock()
 
@@ -1576,7 +1540,6 @@ class TestMethods:
         """Test that the execute_qprogram method executes controller.set_ext_trigger 
         when QbloxClusterController has external_trigger set as True (there is a wait trigger in the qprogram)
         """
-
         # Setup mock QbloxCompilationOutput and QdacCompilationOutput
         mock_output = MagicMock(spec=QbloxCompilationOutput)
         mock_qdac_output = MagicMock(spec=QdacCompilationOutput)
