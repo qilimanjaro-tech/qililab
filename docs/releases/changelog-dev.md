@@ -41,23 +41,6 @@
 
   [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
 
-- Added `timeout_repetitions` parameter for QRM and QRM-RF instruments sequencers inside the runcard. This parameter controls how many (if any) executions of the same qblox qprogram execution must be done after an acquisition `TimeoutError`. Defaults to no repetitions.
-In the runcard this parameter is located inside the instruments sequencer for QRM and QRM-RF modules.
-
-  ```
-    - name: QRM-RF
-    alias: QRM-RF1
-    ...
-    awg_sequencers:
-    - identifier: 0
-      ...
-      acquisition_timeout: 1  # In minutes
-      timeout_repetitions: 3  # Optional parameter, defaults to None
-      ...
-  ```
-
-  [#1106](https://github.com/qilimanjaro-tech/qililab/pull/1106)
-
 - Removed `external_trigger` parameter from within the runcard's qblox controller instrument. Now the function `QbloxClusterController.set_ext_trigger` is risen internally every time a qprogram contains a `wait_trigger` using the trigger channel 15 (last one).
   [#1112](https://github.com/qilimanjaro-tech/qililab/pull/1112)
 

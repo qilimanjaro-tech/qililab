@@ -1480,7 +1480,6 @@ class TestMethods:
         mock_bus.has_adc.return_value = False
         mock_bus.instruments = [MagicMock(spec=QbloxModule)]
         mock_bus.channels = [0]
-        mock_bus.check_recurrent_timeout.return_value = 3
 
         # Raise TimeoutError on run
         mock_bus.run.side_effect = TimeoutError("Simulated timeout")

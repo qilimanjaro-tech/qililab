@@ -54,7 +54,6 @@ instruments:
         integration_mode: ssb
         sequence_timeout: 5.0
         acquisition_timeout: 1.0
-        timeout_repetitions: 3
         scope_store_enabled: false
         threshold: 1.0
         threshold_rotation: 0.0
