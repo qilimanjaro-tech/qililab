@@ -243,7 +243,7 @@ class SGS100A(Instrument):
             self.device.write(":SOUR:POW:ALC:STAT ONT")
         else:
             self.device.write(":SOUR:POW:ALC:STAT OFF")
-        if device_mixer == "SGS-B112V" and self.iq_modulation:
+        if (device_mixer == "SGS-B112V" or device_mixer == "SGS-B106V") and self.iq_modulation:
             self.device.IQ_state(self.iq_modulation)
             if self.iq_wideband:
                 if self.frequency < 2.5e9:
@@ -262,7 +262,7 @@ class SGS100A(Instrument):
                 else:
                     warnings.warn("Deactivated wideband allows for IF sweeps of ±50e6 Hz", ResourceWarning)
                 self.device.write("SOUR:IQ:WBST 0")
-        elif device_mixer == "SGS-B106V" or not self.iq_modulation:
+        elif not self.iq_modulation:
             self.device.IQ_state(self.iq_modulation)
         else:
             raise ValueError(f"iq_modulation set as True for R&S SGS1000A device {device_mixer} without IQ modulation")
