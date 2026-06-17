@@ -335,7 +335,6 @@ class TestQbloxQRM:
         qrm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
 
     def test_acquire_qprogram_results(self, qrm: QbloxQRM):
-        """Test uploading a QpySequence to the QCM module."""
         acquisitions = Acquisitions()
         acquisitions.add(name="acquisition_0")
         acquisitions.add(name="acquisition_1")
@@ -355,7 +354,70 @@ class TestQbloxQRM:
         assert qrm.device.store_scope_acquisition.call_count == 1
         assert qrm.device.get_acquisitions.call_count == 2
         assert qrm.device.delete_acquisition_data.call_count == 2
-        assert qrm.device.sequencers[0].sequence.call_count == 3 # after uploading the empty sequence
+        assert qrm.device.sequencers[0].sequence.call_count == 2 # after uploading the empty sequence
+
+
+    def test_acquire_qprogram_results_multiple_acquisitions_does_not_wipe_sequence_mid_loop(self, qrm: QbloxQRM):
+        acquisitions = Acquisitions()
+        acquisitions.add(name="Acquisition 0")
+        acquisitions.add(name="Acquisition 1")
+
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=acquisitions, weights=Weights())
+        qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
+
+        qp_acquisitions = {
+            "Acquisition 0": AcquisitionData(bus="readout", save_adc=False, shape=(-1,), intertwined=1),
+            "Acquisition 1": AcquisitionData(bus="readout", save_adc=False, shape=(-1,), intertwined=1),
+        }
+
+        qrm.device.get_acquisitions.return_value = {
+            "Acquisition 0": {"acquisition": MagicMock()},
+            "Acquisition 1": {"acquisition": MagicMock()},
+        }
+
+        results = qrm.acquire_qprogram_results(acquisitions=qp_acquisitions, channel_id=0)
+
+        assert len(results) == 2
+        # The sequence should be wiped exactly once — after all acquisitions are read, not after each one.
+        wipe_calls = [
+            c for c in qrm.device.sequencers[0].sequence.call_args_list
+            if not c[0][0].get("acquisitions")
+        ]
+        assert len(wipe_calls) == 1, (
+            f"Expected exactly one empty-acquisitions call (final wipe), got {len(wipe_calls)}. "
+            "A wipe inside the loop clears hardware state before all acquisitions are read."
+        )
+
+    def test_acquire_qprogram_results_returns_one_result_per_acquisition(self, qrm: QbloxQRM):
+        """Regression: acquire_qprogram_results must return exactly one result per entry in the
+        acquisitions dict, regardless of how many there are."""
+        n = 4
+        acquisitions_obj = Acquisitions()
+        for i in range(n):
+            acquisitions_obj.add(name=f"Acquisition {i}")
+
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=acquisitions_obj, weights=Weights())
+        qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
+
+        qp_acquisitions = {
+            f"Acquisition {i}": AcquisitionData(bus="readout", save_adc=False, shape=(-1,), intertwined=1)
+            for i in range(n)
+        }
+        qrm.device.get_acquisitions.return_value = {
+            f"Acquisition {i}": {"acquisition": MagicMock()} for i in range(n)
+        }
+
+        results = qrm.acquire_qprogram_results(acquisitions=qp_acquisitions, channel_id=0)
+
+        assert len(results) == n
+        wipe_calls = [
+            c for c in qrm.device.sequencers[0].sequence.call_args_list
+            if not c[0][0].get("acquisitions")
+        ]
+        assert len(wipe_calls) == 1, (
+            f"Expected exactly one empty-acquisitions call (final wipe), got {len(wipe_calls)}. "
+            "With the buggy code the wipe happened inside the loop, once per acquisition."
+        )
 
     def test_clear_cache(self, qrm: QbloxQRM):
         """Test clearing the cache of the QCM module."""
