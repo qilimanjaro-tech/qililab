@@ -249,8 +249,8 @@ class Bus:
             if isinstance(instrument, QbloxModule):
                 if components_to_update is not None:
                     instrument.update_sequencer(
-                        qpysequence=qpysequence, channel_id=int(instrument_channel), **components_to_update
-                    )  # type: ignore[arg-type]
+                        qpysequence=qpysequence, channel_id=int(instrument_channel), **components_to_update   # type: ignore[arg-type]
+                    )
                     return
                 instrument.upload_qpysequence(qpysequence=qpysequence, channel_id=int(instrument_channel))  # type: ignore[arg-type]
                 return
