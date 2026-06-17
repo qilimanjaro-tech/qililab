@@ -58,6 +58,8 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 
   [#1106](https://github.com/qilimanjaro-tech/qililab/pull/1106)
 
+- Removed `external_trigger` parameter from within the runcard's qblox controller instrument. Now the function `QbloxClusterController.set_ext_trigger` is risen internally every time a qprogram contains a `wait_trigger` using the trigger channel 15 (last one).
+  [#1112](https://github.com/qilimanjaro-tech/qililab/pull/1112)
 
 ### Breaking changes
 
