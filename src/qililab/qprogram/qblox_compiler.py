@@ -1223,9 +1223,6 @@ class QbloxCompiler:
         if element.bus not in self._qblox_buses:
             return
 
-        # Set external trigger as True, using trigger address 15 for external trigger
-        self.external_trigger = True
-
         duration: QPyProgram.Register | int
         convert = QbloxCompiler._convert_value(element)
         if isinstance(element.duration, Variable):
@@ -1235,6 +1232,10 @@ class QbloxCompiler:
         port = element.port
         if not port:
             port = EXT_TRIGGER_ADDRESS
+
+        # Set external trigger as True, using trigger address 15 for external trigger
+        if port == EXT_TRIGGER_ADDRESS:
+            self.external_trigger = True
 
         if self._buses[element.bus].upd_param_instruction_pending and len(self._buses) == 1:
             self._buses[element.bus].qpy_block_stack[-1].append_component(

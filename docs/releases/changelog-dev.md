@@ -83,6 +83,9 @@
 
 ### Bug fixes
 
+- Fixed an error where the external trigger was activated even using ports different than the external port 15 while defining the qprogram.wait_trigger (not defining a port defaults to port 15, external, as well).
+  [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
+
 - Fixed a bug for wait trigger in the qblox compiler using a single sequencer because it created an unnecessary wait_sync (without any other sequencers to sync). Now the Qblox compiler checks for the amount of buses with a sequencer.
   [#1099](https://github.com/qilimanjaro-tech/qililab/pull/1099)
 

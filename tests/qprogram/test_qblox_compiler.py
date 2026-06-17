@@ -553,6 +553,15 @@ def fixture_wait_trigger() -> QProgram:
     qp.wait_trigger(bus="drive", duration=70_000, port=1)
     return qp
 
+@pytest.fixture(name="wait_trigger_non_external")
+def fixture_wait_trigger_non_external() -> QProgram:
+    qp = QProgram()
+    # With update parameter pending
+    qp.set_frequency(bus="drive", frequency=1e6)
+    qp.set_frequency(bus="readout", frequency=1e6)
+    qp.set_trigger(bus="readout", duration=4, outputs=1)
+    qp.wait_trigger(bus="drive", duration=4, port=1)
+    return qp
 
 @pytest.fixture(name="wait_trigger_single_bus")
 def fixture_wait_trigger_single_bus() -> QProgram:
@@ -1476,6 +1485,51 @@ class TestQBloxCompiler:
                             upd_param        4              
                             stop 
         """
+        assert compiler.external_trigger == True  # Validate external trigger
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_wait_trigger_non_external(self, wait_trigger_non_external: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=wait_trigger_non_external)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            set_freq         4000000        
+                            set_freq         4000000        
+                            upd_param        4              
+                            wait_trigger     1, 4           
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                            
+        """
+
+        readout_str = """
+            setup:
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+
+            main:
+                            set_freq         4000000        
+                            set_freq         4000000        
+                            set_mrk          1              
+                            upd_param        4              
+                            set_mrk          0              
+                            wait_sync        4              
+                            set_mrk          0              
+                            upd_param        4              
+                            stop                            
+        """
+        assert compiler.external_trigger == False
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
