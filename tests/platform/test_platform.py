@@ -1217,7 +1217,7 @@ class TestMethods:
             "acquisitions": True,
         }
 
-    def test_compute_components_to_update_program_change_forces_full_upload(self, platform: Platform):
+    def test_compute_components_to_update_program(self, platform: Platform):
         """A changed program invalidates index alignment and must force a full re-upload (None)."""
         bus_alias = "drive_line_q0_bus"
         seq_a = self._build_sequence([0.0, 0.1, 0.2])
@@ -1227,7 +1227,12 @@ class TestMethods:
         seq_b = self._build_sequence([0.0, 0.1, 0.2], program=program_b)
 
         assert platform._compute_components_to_update(bus_alias, seq_a) is None
-        assert platform._compute_components_to_update(bus_alias, seq_b) is None
+        assert platform._compute_components_to_update(bus_alias, seq_b) == {
+            "program": True,
+            "waveforms": False,
+            "weights": False,
+            "acquisitions": True,
+        }
 
     def test_upload_qpysequence_called_with_partial_update_for_different_waveforms(self, platform: Platform):
         """Capture the components passed to upload_qpysequence when re-uploading same program / new waveforms."""

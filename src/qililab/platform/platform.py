@@ -1834,10 +1834,10 @@ class Platform:
         new_hashes = hash_qpy_sequence_components(sequence)
         cached_hashes = self._qpy_sequence_cache.get(bus_alias)
         self._qpy_sequence_cache[bus_alias] = new_hashes
-        if cached_hashes is None or new_hashes["program"] != cached_hashes["program"]:
+        if cached_hashes is None:
             return None
         return {
-            "program": False,
+            "program": new_hashes["program"] != cached_hashes["program"],
             "waveforms": new_hashes["waveforms"] != cached_hashes["waveforms"],
             "weights": new_hashes["weights"] != cached_hashes["weights"],
             "acquisitions": True,
