@@ -1827,9 +1827,8 @@ class Platform:
             sequence: The QPy Sequence about to be uploaded.
 
         Returns:
-            None when the full sequence must be uploaded, i.e. the first upload for the bus or a changed program, which
-            can shift waveform/weight/acquisition indices. Otherwise, a dict flagging which components to update: changed
-            waveforms/weights, and acquisitions which are always re-uploaded.
+            None when the full sequence must be uploaded, i.e. the first upload for the bus. Otherwise, a dict flagging which components to update: changed
+            waveforms/weights/program, and acquisitions which are always re-uploaded.
         """
         new_hashes = hash_qpy_sequence_components(sequence)
         cached_hashes = self._qpy_sequence_cache.get(bus_alias)
