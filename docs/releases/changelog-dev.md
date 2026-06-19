@@ -41,6 +41,9 @@
 
 ### Bug fixes
 
+- Made `deserialize` / `deserialize_from` safe by default. They now load through a registry-isolated, data-only YAML loader that rejects code-execution tags (`!!python/object/apply`, `!!python/name`, `!function`, `!lambda`, and the gated `!type` / `!PydanticModel` / `!defaultdict`), so deserializing an untrusted string or file can no longer execute arbitrary code. Every legitimate round-trip (waveforms, `QProgram`, `Experiment`, `Calibration`, numpy arrays, tuples, complex numbers, UUIDs, enums) keeps working, and a `trust_code=True` opt-in restores the previous behavior for fully trusted input. This also closes the `build_platform` runcard remote-code-execution path, where a gate-event waveform/weights string reached the unsafe loader via the `GateEvent` validators.
+  [#1142](https://github.com/qilimanjaro-tech/qililab/pull/1142)
+
 - Fixed issue where `Platform.set_parameter` using the alias of a "rswu-sp16tr" instrument would raise an error.
   [#1130](https://github.com/qilimanjaro-tech/qililab/pull/1130)
 
@@ -52,6 +55,5 @@
 
 - Fixed `QbloxQRM.acquire_qprogram_results` uploading an empty sequence after each individual acquisition deletion, which wiped the hardware acquisition table mid-loop and caused subsequent deletions to fail. The empty-sequence upload now happens once after all acquisitions have been deleted. This was triggered by any QProgram that produced more than one named acquisition on the same sequencer (e.g. two separate `average` blocks each containing one `acquire` on the same bus).
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
- 
 - Fixed a bug for `ExperimentExecutor`'s `_inclusive_range` function where the range for certain loops had overflows and didn't match the experimental result. Now it matches the `QProgram`'s result shape.
   [#1066](https://github.com/qilimanjaro-tech/qililab/pull/1066)
