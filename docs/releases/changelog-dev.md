@@ -44,6 +44,9 @@
 - Hardened the live-plot Dash server: it now binds to loopback (`127.0.0.1`) by default instead of all interfaces. Routable exposure (for cross-node SLURM viewing) is opt-in via `QILILAB_EXPERIMENT_LIVE_PLOT_HOST` and must be fronted by an authenticated reverse proxy, since the server has no authentication of its own. The absolute result-file path was also removed from the live-plot page title.
 [#1143](https://github.com/qilimanjaro-tech/qililab/pull/1143)
 
+- Fixed issue where `Platform.set_parameter` using the alias of a "rswu-sp16tr" instrument would raise an error.
+  [#1130](https://github.com/qilimanjaro-tech/qililab/pull/1130)
+
 - Fixed a bug for Rohde & Schwarz SGS100A instrument class where the module SGS-B106V did not apply the iq_wideband at the initial_setup.
     [#1144](https://github.com/qilimanjaro-tech/qililab/pull/1144)
 
