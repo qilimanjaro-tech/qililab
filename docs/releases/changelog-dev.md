@@ -41,6 +41,9 @@
 
 ### Bug fixes
 
+- Fixed issue where `Platform.set_parameter` using the alias of a "rswu-sp16tr" instrument would raise an error.
+  [#1130](https://github.com/qilimanjaro-tech/qililab/pull/1130)
+
 - Fixed a bug for Rohde & Schwarz SGS100A instrument class where the module SGS-B106V did not apply the iq_wideband at the initial_setup.
     [#1144](https://github.com/qilimanjaro-tech/qililab/pull/1144)
 
