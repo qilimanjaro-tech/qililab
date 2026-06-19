@@ -70,8 +70,13 @@ def test_set_parameter_active_channel_calls_route(switch: RSWUSP16TR, monkeypatc
     """Test set parameter active channel."""
     called = {}
     monkeypatch.setattr(switch, "route", lambda ch: called.setdefault("ch", ch))
-    switch.set_parameter(Parameter.RF_ACTIVE_CHANNEL, "RF3")
+    switch.set_parameter(Parameter.RF_ACTIVE_CHANNEL, "RF3", channel_id=None, output_id=None)
     assert called["ch"] == "RF3"
+    # Check that runs correctly even if channel_id and output_id are not provided
+    called = {}
+    monkeypatch.setattr(switch, "route", lambda ch: called.setdefault("ch", ch))
+    switch.set_parameter(Parameter.RF_ACTIVE_CHANNEL, "RF10")
+    assert called["ch"] == "RF10"
 
 
 def test_set_parameter_unknown_raises(switch: RSWUSP16TR):
