@@ -15,9 +15,13 @@ prerelease-mode = "if-necessary"
 
 [manifest]
 constraints = [
-    { name = "aiohttp", specifier = ">=3.14.0" },
+    { name = "aiohttp", specifier = ">=3.14.1" },
+    { name = "cryptography", specifier = ">=48.0.1" },
+    { name = "msgpack", specifier = ">=1.2.1" },
     { name = "pyarrow", specifier = ">=23.0.1" },
+    { name = "pydantic-settings", specifier = ">=2.14.2" },
     { name = "tornado", specifier = ">=6.5.6" },
+    { name = "ujson", specifier = ">=5.13.0" },
 ]
 overrides = [
     { name = "marshmallow", specifier = "==3.26.2" },
