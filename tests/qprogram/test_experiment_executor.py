@@ -144,6 +144,18 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
     return experiment
 
 
+def make_platform_returning(qprogram_results: QProgramResults):
+    """Build a mock Platform whose ``execute_qprogram`` returns the given results."""
+    platform = create_autospec(Platform)
+    platform.set_parameter = Mock()
+    platform.get_parameter = Mock(return_value=1.23)
+    platform.execute_qprogram = Mock(return_value=qprogram_results)
+    platform.to_dict = Mock(return_value={"name": "platform"})
+    platform.set_crosstalk = Mock()
+    platform.db_manager = Mock()
+    return platform
+
+
 class TestExperimentExecutor:
     """Test ExperimentExecutor class"""
 
@@ -281,6 +293,77 @@ class TestExperimentExecutor:
             qprogram2_measurement1_data, _ = experiment_results.get(2, 1)
             assert qprogram2_measurement1_data.shape == (3, 11, 2)
             assert np.allclose(qprogram2_measurement1_data, measurement_data[None, :, :])
+
+    def test_execute_counts_acquire_as_measurement(self, override_settings):
+        """A QProgram using ``qp.qblox.acquire`` (instead of ``qp.measure``) must allocate a
+        result dataset, just like a Measure, so the acquired data can be read back."""
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        with qp.for_loop(frequency, 0, 10, 1):  # 11 points
+            qp.qblox.acquire(bus="readout_bus", weights=IQPair(Square(1.0, 100), Square(1.0, 100)))
+
+        experiment = Experiment(label="acquire_experiment")
+        experiment.execute_qprogram(qp)
+
+        qprogram_results = QProgramResults()
+        qprogram_results.append_result(
+            "readout_bus", QuantumMachinesMeasurementResult(bus="readout", I=np.arange(0, 11), Q=np.arange(100, 111))
+        )
+        platform = make_platform_returning(qprogram_results)
+
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
+            results_path = executor.execute()
+
+        with ExperimentResults(results_path) as experiment_results:
+            # A single measurement dataset was allocated for the acquire operation.
+            assert len(experiment_results) == 1
+            data, _ = experiment_results.get(0, 0)
+            assert data.shape == (11, 2)
+            assert np.allclose(data, np.column_stack((np.arange(0, 11), np.arange(100, 111))))
+
+    def test_execute_counts_mixed_measure_and_acquire(self, override_settings):
+        """A QProgram mixing ``qp.measure`` and ``qp.qblox.acquire`` must allocate one
+        measurement dataset per operation, in order of appearance."""
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        with qp.for_loop(frequency, 0, 10, 1):  # 11 points
+            qp.measure(
+                "readout_bus",
+                waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
+                weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
+            )
+            qp.qblox.acquire(bus="readout_bus", weights=IQPair(Square(1.0, 100), Square(1.0, 100)))
+
+        experiment = Experiment(label="mixed_experiment")
+        experiment.execute_qprogram(qp)
+
+        qprogram_results = QProgramResults()
+        for _ in range(2):  # one result per measurement op: the measure and the acquire
+            qprogram_results.append_result(
+                "readout_bus",
+                QuantumMachinesMeasurementResult(bus="readout", I=np.arange(0, 11), Q=np.arange(100, 111)),
+            )
+        platform = make_platform_returning(qprogram_results)
+
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
+            results_path = executor.execute()
+
+        with ExperimentResults(results_path) as experiment_results:
+            # Two measurement datasets: Measurement_0 (measure) and Measurement_1 (acquire).
+            assert len(experiment_results) == 2
+            for measurement_index in range(2):
+                data, _ = experiment_results.get(0, measurement_index)
+                assert data.shape == (11, 2)
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")
