@@ -42,6 +42,9 @@ dependencies = [
     "xarray>=2025.11.0",
     "rustworkx>=0.17.1",
     "qilisdk",
+    "qprogram",
+    "qprogram-qblox",
+    "qprogram-qdac",
 ]
 
 [project.optional-dependencies]
@@ -83,6 +86,9 @@ override-dependencies = [
 
 [tool.uv.sources]
 qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
+qprogram = { path = "../../demos/qprogram-decoupling/qprogram", editable = true }
+qprogram-qblox = { path = "../../demos/qprogram-decoupling/qprogram-qblox", editable = true }
+qprogram-qdac = { path = "../../demos/qprogram-decoupling/qprogram-qdac", editable = true }
 
 [tool.ruff]
 line-length = 120

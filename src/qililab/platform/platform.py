@@ -75,10 +75,16 @@ from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID
 if TYPE_CHECKING:
     import numpy as np
     from qilisdk.digital import Circuit
+    from qprogram.buses import BusRef as BusRefT
+    from qprogram.buses import BusSchema as BusSchemaT
+    from qprogram.qprogram import QProgram as NewQProgramT
+    from qprogram.result import QProgramResult as QProgramResultT
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
+    from qililab.qprogram.qblox_compiler import QbloxCompilationOutput as QbloxCompilationOutputT
+    from qililab.qprogram.v2.schema import RuncardBusSchema as RuncardBusSchemaT
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
 
@@ -1556,6 +1562,254 @@ class Platform:
         except Exception as e:
             cluster.turn_off()
             raise e
+
+    def _runcard_bus_schema(self) -> "RuncardBusSchemaT":
+        """Build (and cache) the runcard-derived schema bundle (schema + ``(element, kind) -> vendor`` + refs).
+
+        Cached on first use so :meth:`bus_schema`, :meth:`bus_ref` and :meth:`execute` share one schema
+        instance — a QProgram's bus references must all come from a single schema, so rebuilding per call
+        would make a program built via :meth:`bus_ref` fail to validate against :meth:`execute`.
+        """
+        cached = getattr(self, "_v2_bus_schema_cache", None)
+        if cached is None:
+            from qililab.qprogram.v2.schema import build_runcard_bus_schema
+
+            cached = build_runcard_bus_schema(self.buses.elements)
+            self._v2_bus_schema_cache = cached
+        return cached
+
+    def bus_schema(self) -> "BusSchemaT":
+        """Return the :class:`~qprogram.buses.BusSchema` derived from this platform's runcard buses.
+
+        Build *new* QProgram programs against this schema (``QProgram(schema=platform.bus_schema())``)
+        so :meth:`execute` can route each bus to its vendor capability profile; each resulting
+        :class:`~qprogram.buses.BusRef` string equals the runcard bus alias.
+        """
+        return self._runcard_bus_schema().schema
+
+    def bus_ref(self, alias: str) -> "BusRefT":
+        """Return the schema-backed :class:`~qprogram.buses.BusRef` for a runcard bus ``alias``."""
+        return self._runcard_bus_schema().ref(alias)
+
+    def execute(self, qprogram: "NewQProgramT", *, debug: bool = False) -> "QProgramResultT":
+        """Execute a *new* :class:`qprogram.QProgram` (unified SW/HW) on this platform.
+
+        Single entry point replacing the legacy ``execute_qprogram`` / ``execute_experiment`` split.
+        The program is validated against the platform's :class:`~qprogram.protocol.PlatformCapabilities`
+        (derived from the runcard), checked for the SW-outer / HW-inner structure, then run: software
+        (outer) loops are unrolled host-side while each hardware (inner) frontier is compiled with
+        :class:`~qililab.qprogram.v2.qblox_compiler.QbloxCompilerV2` and run on the instruments.
+
+        Args:
+            qprogram: The program to execute. Build it against :meth:`bus_schema`.
+            debug: Whether to dump the generated ``Q1ASM`` for each hardware execution.
+
+        Returns:
+            A :class:`qprogram.result.QProgramResult`: one array per measurement with dimensions
+            ``(*software_sweeps, *hardware_sweeps, IQ)`` (outermost first).
+
+        Raises:
+            UnsupportedOperationError: If validation finds any ``error`` diagnostic.
+            QProgramStructureError: If the program is not SW-outer / HW-inner.
+        """
+        import warnings
+
+        from qprogram.errors import UnsupportedOperationError
+        from qprogram.validation import validate as _validate
+
+        from qililab.qprogram.v2.capabilities import qililab_capabilities
+        from qililab.qprogram.v2.crosstalk import apply_crosstalk_compensation, extract_crosstalk
+        from qililab.qprogram.v2.executor import QProgramExecutor
+        from qililab.qprogram.v2.partition import assert_sw_outer_hw_inner
+
+        bus_schema = self._runcard_bus_schema()
+        capabilities = qililab_capabilities(bus_specs=bus_schema.bus_specs)
+
+        if getattr(qprogram, "fragments", None):
+            qprogram = qprogram.expand()
+
+        # Flux-crosstalk compensation lowering: if the program installs a crosstalk matrix via
+        # ``program.qililab.set_crosstalk(...)``, statically rewrite its flux ops into the
+        # already-compensated ones (linear via CrosstalkMatrix/FluxVector, non-linear via the
+        # NonLinear variants) before validation/partition/compile. The injected flux ops then flow
+        # through the QDAC + Qblox compilers unchanged.
+        crosstalk = extract_crosstalk(qprogram)
+        if crosstalk is not None:
+            # Record the matrix on the platform for its crosstalk helpers (e.g. set_flux_to_zero); the
+            # ``set_crosstalk`` op is consumed (stripped) by the lowering, so the executor no longer
+            # sees it to record the matrix itself.
+            self.set_crosstalk(crosstalk)
+            qprogram = apply_crosstalk_compensation(qprogram, crosstalk)
+
+        diagnostics, plan = _validate(qprogram, capabilities)
+        errors = [d for d in diagnostics if d.severity == "error"]
+        if errors:
+            joined = "\n".join(f"  - {d}" for d in errors)
+            raise UnsupportedOperationError(f"Platform cannot execute this QProgram:\n{joined}")
+        for diagnostic in diagnostics:
+            if diagnostic.severity == "warning":
+                warnings.warn(str(diagnostic), stacklevel=2)
+
+        assert_sw_outer_hw_inner(qprogram, plan)
+
+        markers, ext_trigger = self._qblox_v2_markers_and_trigger()
+        qdac_output = self._compile_qdac_v2(qprogram)
+        return QProgramExecutor(
+            self,
+            qprogram,
+            plan,
+            bus_schema,
+            markers=markers,
+            ext_trigger=ext_trigger,
+            qdac_output=qdac_output,
+            debug=debug,
+        ).execute()
+
+    def _run_hw_qblox_v2(
+        self, output: "QbloxCompilationOutputT", qdac_output=None, debug: bool = False
+    ) -> dict[str, QbloxMeasurementResult]:
+        """Upload, run and acquire a single hardware-frontier Qblox compilation, keyed by acquisition.
+
+        The v2 sibling of :meth:`_execute_qblox_compilation_output`. Each v2 acquisition has its own
+        name and a single un-intertwined bin set, so results are returned keyed by measurement name for
+        the executor to place in the right result-tensor slice. Supports the active-reset trigger
+        network (via ``output.trigger_network_required``) and QDAC start/stop coordination (via
+        ``qdac_output.trigger_position``), mirroring the legacy executor.
+
+        Args:
+            output: A :class:`~qililab.qprogram.qblox_compiler.QbloxCompilationOutput` produced by
+                :class:`~qililab.qprogram.v2.qblox_compiler.QbloxCompilerV2`. May carry a
+                ``trigger_network_required`` mapping (active-reset readout bus -> trigger address).
+            qdac_output: Optional QDAC compilation output (armed up front by :meth:`execute`); its
+                ``trigger_position`` (``"back"`` / ``"front"`` / ``None``) sequences ``qdac.start()``
+                relative to the Qblox run.
+            debug: Whether to dump the ``Q1ASM`` of every sequence.
+
+        Returns:
+            Mapping ``measurement-name -> QbloxMeasurementResult``.
+        """
+        sequences, acquisitions = output.sequences, output.acquisitions
+        buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
+
+        # Active-reset feedback: set up the trigger network for any readout bus that needs it.
+        trigger_network_required = getattr(output, "trigger_network_required", {}) or {}
+        for bus_alias, trigger_address in trigger_network_required.items():
+            if bus_alias in buses:
+                buses[bus_alias]._setup_trigger_network(trigger_address=trigger_address)
+                for controller in self.instrument_controllers.elements:
+                    if isinstance(controller, QbloxClusterController):
+                        controller.device.reset_trigger_monitor_count(address=trigger_address)
+
+        for bus_alias, bus in buses.items():
+            if bus.distortions:
+                for distortion in bus.distortions:
+                    for waveform in sequences[bus_alias]._waveforms._waveforms:
+                        sequences[bus_alias]._waveforms.modify(waveform.name, distortion.apply(waveform.data))
+
+        if debug:
+            with open("debug_qblox_execution.txt", "w", encoding="utf-8") as source_file:
+                for bus_alias, sequence in sequences.items():
+                    print(f"Bus {bus_alias}:", file=source_file)
+                    print(str(sequence._program), file=source_file)
+                    print(file=source_file)
+
+        for bus_alias in sequences:
+            buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
+                if isinstance(instrument, QbloxModule):
+                    instrument.sync_sequencer(sequencer_id=int(channel))
+
+        # Run, coordinating the QDAC trigger before/after the Qblox run per its trigger position.
+        if qdac_output is not None:
+            for qdac in qdac_output.qdacs:
+                qdac.remove_digital_trace()
+            if qdac_output.trigger_position == "back":
+                for qdac in qdac_output.qdacs:
+                    qdac.start()
+        for bus_alias in sequences:
+            buses[bus_alias].run()
+        if qdac_output is not None and qdac_output.trigger_position == "front":
+            for qdac in qdac_output.qdacs:
+                qdac.start()
+
+        results: dict[str, QbloxMeasurementResult] = {}
+        for bus_alias, bus in buses.items():
+            if bus.has_adc():
+                for instrument, channel in zip(bus.instruments, bus.channels):
+                    if isinstance(instrument, QbloxModule):
+                        bus_results = bus.acquire_qprogram_results(
+                            acquisitions=acquisitions[bus_alias], channel_id=int(channel)
+                        )
+                        for bus_result, name in zip(bus_results, acquisitions[bus_alias].keys()):
+                            results[name] = bus_result
+
+        for bus_alias in sequences:
+            for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
+                if isinstance(instrument, QbloxModule):
+                    instrument.desync_sequencer(sequencer_id=int(channel))
+
+        return results
+
+    def _qblox_v2_markers_and_trigger(self) -> tuple[dict[str, str], bool]:
+        """Compute the per-bus initial marker mask + the external-trigger flag for the v2 path.
+
+        Mirrors the marker / ``ext_trigger`` derivation in :meth:`compile_qprogram` so the v2 Qblox
+        compiler produces the same module-model-aware marker init and gates ``wait_trigger`` correctly.
+        """
+        markers: dict[str, str] = {}
+        for bus in self.buses.elements:
+            for instrument, channel in zip(bus.instruments, bus.channels):
+                if isinstance(instrument, QbloxModule):
+                    sequencer = instrument.get_sequencer(sequencer_id=channel)
+                    if instrument.name == InstrumentName.QCMRF:
+                        markers[bus.alias] = "".join(
+                            "1" if i in [0, 1] and i in sequencer.outputs else "0" for i in range(4)
+                        )[::-1]
+                    elif instrument.name == InstrumentName.QRMRF:
+                        markers[bus.alias] = "".join(
+                            "1" if i == 1 and i - 1 in sequencer.outputs else "0" for i in range(4)
+                        )[::-1]
+                    else:
+                        markers[bus.alias] = "0000"
+        ext_trigger = any(
+            controller.ext_trigger
+            for controller in self.instrument_controllers.elements
+            if isinstance(controller, QbloxClusterController)
+        )
+        return markers, ext_trigger
+
+    def _compile_qdac_v2(self, qprogram):
+        """Compile the program's QDAC (flux) ops up front, arming the devices. ``None`` if no QDAC bus.
+
+        Returns the :class:`~qililab.qprogram.qdac_compiler.QdacCompilationOutput` whose
+        ``trigger_position`` :meth:`_run_hw_qblox_v2` uses to sequence ``qdac.start()``. Swept-flux
+        values are not yet resolved per software iteration (see the v2 QDAC compiler caveat).
+        """
+        program_buses = set(qprogram.buses)
+        qdac_buses = [
+            bus
+            for bus in self.buses.elements
+            if bus.alias in program_buses and any(isinstance(i, QDevilQDac2) for i in bus.instruments)
+        ]
+        if not qdac_buses:
+            return None
+        qdac_instruments = list(
+            {instrument for bus in qdac_buses for instrument in bus.instruments if isinstance(instrument, QDevilQDac2)}
+        )
+        qdac_offsets = [float(bus.get_parameter(Parameter.VOLTAGE)) for bus in qdac_buses]
+        out_instrument = None
+        if len(qdac_instruments) > 1:
+            out_instrument = next((i for i in qdac_instruments if i.out_trigger is not None), None)
+
+        from qililab.qprogram.v2.qdac_compiler import QdacCompilerV2
+
+        return QdacCompilerV2().compile(
+            qprogram,
+            qdacs=qdac_instruments,
+            qdac_buses=qdac_buses,
+            qdac_offsets=qdac_offsets,
+            out_instrument=out_instrument,
+        )
 
     def execute_qprogram(
         self,
