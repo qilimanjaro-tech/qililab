@@ -153,28 +153,31 @@ class NonLinearState:
         self.play_bus_list: list[str] = []
 
     def on_offset(self):
-        """Bumps offsets_index when a new SetOffset is encountered after activity."""
+        """Modify offset flags after set_offset is called."""
         if self.wait_defined or self.plays_defined:
-            self.offsets_index += 1
-        self.last_appended_offset = self.offsets_index
-        self.offset_defined = True
+            self.offsets_index += 1  # A new offset index is used every time the offset is modified
+        self.last_appended_offset = self.offsets_index  # This prevents repeating offsets when no time has passed
+        self.offset_defined = True  # Flag for on_wait and on_block
 
     def on_play(self, bus: str):
-        self.play_bus_list.append(bus)
-        self.plays_index += 1
-        self.plays_defined = True
-        self.offset_defined = True
+        """Modify play and offset flags after play is called."""
+        self.play_bus_list.append(bus)  # bus explicitly used for play
+        self.plays_index += 1  # A new play index is used every time there is a new play for used buses
+        self.plays_defined = True  # Flag for on_block (wait is not relevant for a play)
+        self.offset_defined = True  # Flag for on_wait and on_block
 
     def on_wait(self):
+        """Modify wait flags after wait is called."""
         if self.offset_defined and not self.wait_defined:
-            self.wait_defined = True
-            self.last_appended_offset = -1
+            self.wait_defined = True  # Used to modify the offset index after a wait
+            self.last_appended_offset = -1  # Reset last_appended_offset after every wait
 
     def on_block(self):
+        """Modify offset and wait flags after a loo block is created."""
         if self.offset_defined and (self.wait_defined or self.plays_defined):
-            self.wait_defined = False
-            self.offsets_index += 1
-            self.last_appended_offset = -1
+            self.wait_defined = False  # Every block has its own wait state
+            self.offsets_index += 1  # A new block implies a new offset index
+            self.last_appended_offset = -1  # Reset last_appended_offset after every loop
 
 
 @yaml.register_class
