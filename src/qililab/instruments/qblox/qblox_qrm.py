@@ -173,13 +173,14 @@ class QbloxQRM(QbloxModule):
 
                 # always deleting acquisitions without checking save_adc flag
                 self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
-                empty_sequence = {
-                    "waveforms": {},
-                    "weights": {},
-                    "acquisitions": {},
-                    "program": "",
-                }
-                self.device.sequencers[sequencer.identifier].sequence(empty_sequence)
+        empty_sequence = {
+            "waveforms": {},
+            "weights": {},
+            "acquisitions": {},
+            "program": "",
+        }
+        if sequencer is not None:
+            self.device.sequencers[sequencer.identifier].sequence(empty_sequence)
         return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
