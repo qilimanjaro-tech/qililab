@@ -174,6 +174,10 @@ class QdacCompiler:
                 "Cannot compile to hardware-native instructions because QProgram contains named operations that are not mapped. Provide a calibration instance containing all necessary mappings."
             )
 
+        for qdac_instrument in self._qdacs:
+            qdac_instrument.clear_trigger()
+            qdac_instrument.clear_cache()
+
         self._populate_qdac_buses()
         traverse(self._qprogram._body)
 
