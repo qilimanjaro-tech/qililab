@@ -16,7 +16,7 @@ from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import QProgram
 from qililab.core.variables import Domain
 from qililab.result.experiment_results import ExperimentResults
-from qililab.result.qprogram import QProgramResults
+from qililab.result.qprogram import QbloxMeasurementResult, QProgramResults
 from qililab.typings.enums import Parameter
 from qililab.waveforms import IQPair, Square
 
@@ -154,6 +154,14 @@ def make_platform_returning(qprogram_results: QProgramResults):
     platform.set_crosstalk = Mock()
     platform.db_manager = Mock()
     return platform
+
+
+def make_qblox_result(i_values: np.ndarray, q_values: np.ndarray) -> QbloxMeasurementResult:
+    """Build a ``QbloxMeasurementResult`` wrapping the given I/Q integration data."""
+    return QbloxMeasurementResult(
+        bus="readout",
+        raw_measurement_data={"bins": {"integration": {"path0": i_values, "path1": q_values}}},
+    )
 
 
 class TestExperimentExecutor:
@@ -306,9 +314,7 @@ class TestExperimentExecutor:
         experiment.execute_qprogram(qp)
 
         qprogram_results = QProgramResults()
-        qprogram_results.append_result(
-            "readout_bus", QuantumMachinesMeasurementResult(bus="readout", I=np.arange(0, 11), Q=np.arange(100, 111))
-        )
+        qprogram_results.append_result("readout_bus", make_qblox_result(np.arange(0, 11), np.arange(100, 111)))
         platform = make_platform_returning(qprogram_results)
 
         with override_settings(
@@ -344,10 +350,7 @@ class TestExperimentExecutor:
 
         qprogram_results = QProgramResults()
         for _ in range(2):  # one result per measurement op: the measure and the acquire
-            qprogram_results.append_result(
-                "readout_bus",
-                QuantumMachinesMeasurementResult(bus="readout", I=np.arange(0, 11), Q=np.arange(100, 111)),
-            )
+            qprogram_results.append_result("readout_bus", make_qblox_result(np.arange(0, 11), np.arange(100, 111)))
         platform = make_platform_returning(qprogram_results)
 
         with override_settings(
