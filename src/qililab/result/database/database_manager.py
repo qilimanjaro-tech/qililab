@@ -252,13 +252,17 @@ class DatabaseManager:
             list[Measurement] | None: returns the list of measurements or None if no sequence could be found.
         """
         with self.session() as running_session:
-            measurement_by_id_list = running_session.query(Measurement).where(Measurement.sequence_id == id).all()
-            if measurement_by_id_list is not None:
-                for meas in measurement_by_id_list:
-                    path = meas.result_path
-                    if not os.path.isfile(path):
-                        new_path = path.replace(self.base_path_local, self.base_path_share)
-                        meas.result_path = new_path
+            measurement_by_id_list = (
+                running_session.query(Measurement)
+                .where(Measurement.sequence_id == id)
+                .order_by(Measurement.measurement_id)
+                .all()
+            )
+            for meas in measurement_by_id_list:
+                path = meas.result_path
+                if not os.path.isfile(path):
+                    new_path = path.replace(self.base_path_local, self.base_path_share)
+                    meas.result_path = new_path
             return measurement_by_id_list
 
     def load_calibration_by_id(self, id: int) -> AutocalMeasurement | None:
