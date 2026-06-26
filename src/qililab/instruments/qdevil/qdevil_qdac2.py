@@ -342,9 +342,9 @@ class QDevilQDac2(VoltageSource):
 
         channel = self.device.channel(channel_id)
         if not step:
-            channel.write_channel(f"sour{'{0}'}:dc:mark:pend {self._triggers[str(trigger)].value}")
+            channel.write_channel(f"sour{'{0}'}:dc:mark:pend {channel_id}")
         else:
-            channel.write_channel(f"sour{'{0}'}:dc:mark:send {self._triggers[str(trigger)].value}")
+            channel.write_channel(f"sour{'{0}'}:dc:mark:send {channel_id}")
 
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
@@ -378,9 +378,9 @@ class QDevilQDac2(VoltageSource):
 
         channel = self.device.channel(channel_id)
         if not step:
-            channel.write_channel(f"sour{'{0}'}:dc:mark:pstart {self._triggers[str(trigger)].value}")
+            channel.write_channel(f"sour{'{0}'}:dc:mark:pstart {channel_id}")
         else:
-            channel.write_channel(f"sour{'{0}'}:dc:mark:sstart {self._triggers[str(trigger)].value}")
+            channel.write_channel(f"sour{'{0}'}:dc:mark:sstart {channel_id}")
 
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
@@ -405,9 +405,9 @@ class QDevilQDac2(VoltageSource):
 
         channel = self.device.channel(channel_id)
         if not step:
-            channel.write_channel(f"sour{'{0}'}:dc:mark:pstart {self._triggers[str(trigger)].value}")
+            channel.write_channel(f"sour{'{0}'}:dc:mark:pstart {channel_id}")
         else:
-            channel.write_channel(f"sour{'{0}'}:dc:mark:sstart {self._triggers[str(trigger)].value}")
+            channel.write_channel(f"sour{'{0}'}:dc:mark:sstart {channel_id}")
 
     def set_end_marker_internal_trigger(self, channel_id: ChannelID, trigger: str, step: bool = False):
         """Method to create an internal trigger at the start of every dc_list period.
@@ -430,9 +430,9 @@ class QDevilQDac2(VoltageSource):
 
         channel = self.device.channel(channel_id)
         if not step:
-            channel.write_channel(f"sour{'{0}'}:dc:mark:pend {self._triggers[str(trigger)].value}")
+            channel.write_channel(f"sour{'{0}'}:dc:mark:pend {channel_id}")
         else:
-            channel.write_channel(f"sour{'{0}'}:dc:mark:send {self._triggers[str(trigger)].value}")
+            channel.write_channel(f"sour{'{0}'}:dc:mark:send {channel_id}")
 
     def play_awg(self, channel_id: ChannelID | None = None, clear_after: bool = True):
         """Plays a waveform for a given channel id. If no channel id is given, plays all waveforms stored in the cache.
