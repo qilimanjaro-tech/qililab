@@ -44,7 +44,29 @@
 
 ### Bug fixes
 
-- Fixed a bug with the automatic non-linear crosstalk compensation at the `QbloxCompiler` where the offset was set unnecessary times whenever a play followed a set offset in a qprogram.
+- Fixed some bugs with the automatic non-linear crosstalk compensation at the `QbloxCompiler`:
+  - The offset was set unnecessary times whenever a play followed a set offset in a qprogram, now the amount of set offsets are reduced on the Q1ASM sequencer.
+  - A sequence of offset loops using the same variable did not update the offset value correctly, now the variables are set correctly. For example:
+
+    ```
+    with qp_qblox.for_loop(variable=offset, start=0, stop=0.9, step=0.1):
+        qp_qblox.set_offset(bus="qblox_flux1", offset_path0=offset)
+        qp_qblox.set_offset(bus="qblox_flux2", offset_path0=0.1)
+    with qp_qblox.for_loop(variable=offset, start=0.9, stop=0, step=-0.1):
+        qp_qblox.set_offset(bus="qblox_flux1", offset_path0=offset)
+        qp_qblox.set_offset(bus="qblox_flux2", offset_path0=0.1)
+    ```
+
+  - An offset set after a loop containing `qprogram.set_offset` was not updated, now it sets correctly after a loop. For example:
+
+    ```
+    with qp_qblox.for_loop(variable=offset, start=0, stop=0.9, step=0.1):
+        qp_qblox.set_offset(bus="qblox_flux1", offset_path0=offset)
+        qp_qblox.set_offset(bus="qblox_flux2", offset_path0=0.1)
+    qp_qblox.set_offset(bus="qblox_flux1", offset_path0=0)
+    qp_qblox.set_offset(bus="qblox_flux2", offset_path0=0)
+    ```
+
   [#1149](https://github.com/qilimanjaro-tech/qililab/pull/1149)
 
 - Fixed issue where `Platform.set_parameter` using the alias of a "rswu-sp16tr" instrument would raise an error.
