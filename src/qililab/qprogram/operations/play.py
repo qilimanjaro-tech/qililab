@@ -13,14 +13,15 @@
 # limitations under the License.
 
 
-from qililab.core.variables import Variable
-from qililab.qprogram.operations.operation import Operation
+from qililab.core import Variable
 from qililab.waveforms import IQWaveform, Waveform
 from qililab.yaml import yaml
 
+from . import Operation, SdkPlay
+
 
 @yaml.register_class
-class Play(Operation):
+class Play(SdkPlay):
     def __init__(
         self,
         bus: str,
@@ -31,24 +32,12 @@ class Play(Operation):
         repetitions: int | None = None,
         stepped: bool | None = None,
     ) -> None:
-        super().__init__()
-        self.bus: str = bus
-        self.waveform: Waveform | IQWaveform = waveform
+        super().__init__(bus=bus, waveform=waveform)
         self.wait_time: int | None = wait_time
         self.dwell: int | None = dwell
         self.delay: int | None = delay
         self.repetitions: int | None = repetitions
         self.stepped: bool | None = stepped
-
-    def get_waveforms(self) -> tuple[Waveform, Waveform | None]:
-        """Get the waveforms.
-
-        Returns:
-            tuple[Waveform, Waveform | None]: The waveforms as tuple. The second waveform can be None.
-        """
-        wf_I: Waveform = self.waveform.get_I() if isinstance(self.waveform, IQWaveform) else self.waveform
-        wf_Q: Waveform | None = self.waveform.get_Q() if isinstance(self.waveform, IQWaveform) else None
-        return wf_I, wf_Q
 
     def get_waveform_variables(self) -> set[Variable]:
         """Get a set of the variables used in the waveforms, if any.

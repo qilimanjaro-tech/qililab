@@ -4,6 +4,9 @@ on:
 
 name: Changelog Reminder
 
+env:
+  PYX_API_KEY: ${{ secrets.PYX_API_KEY }}
+
 jobs:
   remind:
     name: Changelog Reminder

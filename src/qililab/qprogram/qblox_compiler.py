@@ -28,7 +28,7 @@ import qpysequence.program.instructions as QPyInstructions
 from qpysequence.constants import INST_MAX_WAIT, INST_MIN_WAIT
 
 from qililab.config import logger
-from qililab.core.variables import Domain, Variable, VariableExpression
+from qililab.core import Domain, Variable, VariableExpression
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
@@ -1978,8 +1978,6 @@ class QbloxCompiler:
 
         if not operations:
             return None
-        if isinstance(operations[0], Play) and operations[0].get_waveform_variables():
-            raise NotImplementedError("TODO: Variables referenced in a loop cannot be used in Play operation.")
         return operations[0]
 
     @staticmethod
