@@ -30,7 +30,15 @@ from qililab.core import Variable
 from qililab.qililab_settings import get_settings
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
-from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
+from qililab.qprogram.operations import (
+    Acquire,
+    ExecuteQProgram,
+    GetParameter,
+    Measure,
+    MeasureReset,
+    Operation,
+    SetParameter,
+)
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.result.experiment_results_writer import (
     ExperimentDataBaseMetadata,
@@ -203,7 +211,10 @@ class ExperimentExecutor:
             for element in block.elements:
                 if isinstance(element, Block):
                     traverse_qprogram(element)
-                if isinstance(element, Measure):
+                # Acquire, Measure and MeasureReset each produce a measurement result in the
+                # QProgramResults timeline (this is the same set the QbloxCompiler treats as
+                # acquisitions), so each must get its own entry in the results structure.
+                if isinstance(element, (Acquire, Measure, MeasureReset)):
                     finalize_measurement_structure()
 
             if isinstance(block, (Loop, ForLoop, Parallel)):
@@ -212,7 +223,7 @@ class ExperimentExecutor:
                 self._shots = 1
 
         def finalize_measurement_structure():
-            """Finalize the structure of a measurement when a Measure operation is encountered."""
+            """Finalize the structure of a measurement when an Acquire, Measure or MeasureReset operation is encountered."""
             qprogram_name = f"QProgram_{self._qprogram_index}"
             measurement_name = f"Measurement_{self._measurement_index}"
 
