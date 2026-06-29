@@ -150,11 +150,12 @@ class NonLinearState:
         self.offset_defined: bool = False
         self.wait_defined: bool = False
         self.plays_defined: bool = False
+        self.block_defined: bool = False
         self.play_bus_list: list[str] = []
 
     def on_offset(self):
         """Modify offset flags after set_offset is called."""
-        if self.wait_defined or self.plays_defined:
+        if self.wait_defined or self.plays_defined or self.block_defined:
             self.offsets_index += 1  # A new offset index is used every time the offset is modified
         self.last_appended_offset = self.offsets_index  # This prevents repeating offsets when no time has passed
         self.offset_defined = True  # Flag for on_wait and on_block
@@ -174,10 +175,15 @@ class NonLinearState:
 
     def on_block(self):
         """Modify offset and wait flags after a loo block is created."""
-        if self.offset_defined and (self.wait_defined or self.plays_defined):
+        if self.offset_defined and (self.wait_defined or self.plays_defined or self.block_defined):
+            self.block_defined = False  # Every block has its own block state
             self.wait_defined = False  # Every block has its own wait state
             self.offsets_index += 1  # A new block implies a new offset index
             self.last_appended_offset = -1  # Reset last_appended_offset after every loop
+    def after_block(self):
+        """Modify block defined flag after a block is traversed."""
+        self.block_defined = True
+        self.last_appended_offset = -1  # Reset last_appended_offset after every loop
 
 
 @yaml.register_class
@@ -1049,8 +1055,7 @@ class QProgram(StructuredProgram):
                         element_copy = deepcopy(element)
                         element_copy.elements = corrected_loop
                         corrected_elements.append(element_copy)
-                    if state.offset_defined:
-                        state.wait_defined = True
+                    state.after_block()
                 else:
                     corrected_elements.append(element)
 
