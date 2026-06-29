@@ -48,9 +48,20 @@ def mock_platform():
 @pytest.fixture(name="platform_uneven_loops")
 def mock_platform_uneven_loops():
     """Fixture to create a mock Platform."""
+    raw_measurement_data = {
+        "bins": {
+            "integration": {
+                "path0": list(range(0,10)),
+                "path1": list(range(100,110)),
+            },
+            "threshold": [float(i) for i in range(10)],
+            "avg_cnt": [],
+        },
+        "scope": {"path0": {"data": []}, "path1": {"data": []}},
+    }
     qprogram_results = QProgramResults()
     qprogram_results.append_result(
-        "readout_bus", QuantumMachinesMeasurementResult(bus="readout", I=np.arange(0, 10), Q=np.arange(100, 110))
+        "readout_bus", QbloxMeasurementResult(bus="readout", raw_measurement_data=raw_measurement_data, shape=[10])
     )
 
     platform = create_autospec(Platform)
