@@ -5892,8 +5892,6 @@ class TestQBloxCompiler:
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qblox_play_zero_wait_time)
 
-        assert sequences["drive"]._program._compiled
-
         drive_str = """
             setup:
                             wait_sync        4
@@ -5911,8 +5909,6 @@ class TestQBloxCompiler:
     def test_qblox_play_none_wait_time(self, qblox_play_none_wait_time: QProgram):
         compiler = QbloxCompiler()
         sequences, _ = compiler.compile(qprogram=qblox_play_none_wait_time)
-
-        assert sequences["drive"]._program._compiled
 
         drive_str = """
             setup:

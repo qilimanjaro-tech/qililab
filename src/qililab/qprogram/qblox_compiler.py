@@ -1549,26 +1549,26 @@ class QbloxCompiler:
                 index=self._buses[element.bus].count_nested_level_acquire,
             )
             self._buses[element.bus].bin_register = QPyProgram.Register()
-            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
-                component=QPyInstructions.Move(var=0, register=self._buses[element.bus].bin_register),
-                bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
+            self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].add(
+                component=QPyInstructions.Move(source=0, destination=self._buses[element.bus].bin_register),
+                insert_idx=0,
             )
 
         register_I = self._get_or_create_weight_register(element.bus, index_I, block_index_for_move_instruction)
         register_Q = self._get_or_create_weight_register(element.bus, index_Q, block_index_for_move_instruction)
-        self._buses[element.bus].qpy_block_stack[-1].append_component(
+        self._buses[element.bus].qpy_block_stack[-1].add(
             component=QPyInstructions.AcquireWeighed(
-                acq_index=0,
-                bin_index=self._buses[element.bus].bin_register,
-                weight_index_0=register_I,
-                weight_index_1=register_Q,
-                wait_time=integration_length,
+                acquisition=0,
+                bin=self._buses[element.bus].bin_register,
+                weight_0=register_I,
+                weight_1=register_Q,
+                duration=integration_length,
             )
         )
-        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].add(
             component=QPyInstructions.Add(
-                origin=self._buses[element.bus].bin_register,
-                var=1,
+                a=self._buses[element.bus].bin_register,
+                b=1,
                 destination=self._buses[element.bus].bin_register,
             )
         )
@@ -1640,7 +1640,7 @@ class QbloxCompiler:
             # The register is never modified inside the average, it is modified in the add outside the average.
             self._buses[element.bus].bin_register = QPyProgram.Register()
             self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction]._add_structure(
-                component=QPyInstructions.Move(source=start_bin_idx, destination=self._buses[element.bus].bin_register),
+                component=QPyInstructions.Move(source=self._buses[element.bus].start_bin_idx, destination=self._buses[element.bus].bin_register),
                 insert_idx=0,
             )
             self._buses[element.bus].start_bin_idx += 1
@@ -1682,11 +1682,6 @@ class QbloxCompiler:
                 )
             )
             self._buses[element.bus].single_bin_counter += 1
-        self._buses[element.bus].static_duration += integration_length
-        self._buses[element.bus].duration_since_sync += integration_length
-        self._buses[element.bus].marked_for_sync = True
-        self._buses[element.bus].prev_nested_level_acquire = self._buses[element.bus].count_nested_level_acquire
-        self._buses[element.bus].upd_param_instruction_pending = False
 
     def _handle_conditional(self, bus: str, enable: int, mask: int, operator: int, else_duration: int) -> None:
         # The conditional does not add any static duration as it is assumed that the operations contained within are the same as the else_duration of the conditional
@@ -1745,6 +1740,7 @@ class QbloxCompiler:
             clamped = QbloxCompiler._clamp_duration(element.wait_time, label="play")
             if clamped is None:
                 return
+            duration = clamped
             index_I, index_Q, _ = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
             )
@@ -1927,7 +1923,9 @@ class QbloxCompiler:
         return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
 
     @staticmethod
-    def _get_qpysequence_conversion_instructions(operation: Operation) -> type[QPyInstructions.ConversionInstruction] | None:
+    def _get_qpysequence_conversion_instructions(operation: Operation | None) -> type[QPyInstructions.ConversionInstruction] | None:
+        if operation is None:
+            return None
         instruction_map: dict[type[Operation], type[QPyInstructions.ConversionInstruction] | None] = {
             SetFrequency: QPyInstructions.SetFrequencyHz,
             SetPhase: QPyInstructions.SetPhaseRad,
