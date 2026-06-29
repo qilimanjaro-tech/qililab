@@ -713,12 +713,17 @@ class Testdatabase:
         mock_measurement.result_path = "/local_test/results/file.h5"
         mock_measurement.sequence_id = [123, 124]
 
-        db_manager._mock_session.query.return_value.where.return_value.all.return_value = [mock_measurement]
+        db_manager._mock_session.query.return_value.where.return_value.order_by.return_value.all.return_value = [
+            mock_measurement
+        ]
 
         with patch("os.path.isfile", return_value=False):
             result = db_manager.load_sequence_by_id([123, 124])
 
         db_manager._mock_session.query.assert_called()
+        db_manager._mock_session.query.return_value.where.return_value.order_by.assert_called_once_with(
+            Measurement.measurement_id
+        )
         assert result[0].result_path == "/shared_test/results/file.h5"
 
     def test_load_by_id_path_not_found(self, db_manager: DatabaseManager):

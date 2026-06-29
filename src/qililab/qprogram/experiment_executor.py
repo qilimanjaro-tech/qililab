@@ -30,7 +30,15 @@ from qililab.core.variables import Variable
 from qililab.qililab_settings import get_settings
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
-from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
+from qililab.qprogram.operations import (
+    Acquire,
+    ExecuteQProgram,
+    GetParameter,
+    Measure,
+    MeasureReset,
+    Operation,
+    SetParameter,
+)
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.result.experiment_results_writer import (
     ExperimentDataBaseMetadata,
@@ -203,7 +211,10 @@ class ExperimentExecutor:
             for element in block.elements:
                 if isinstance(element, Block):
                     traverse_qprogram(element)
-                if isinstance(element, Measure):
+                # Acquire, Measure and MeasureReset each produce a measurement result in the
+                # QProgramResults timeline (this is the same set the QbloxCompiler treats as
+                # acquisitions), so each must get its own entry in the results structure.
+                if isinstance(element, (Acquire, Measure, MeasureReset)):
                     finalize_measurement_structure()
 
             if isinstance(block, (Loop, ForLoop, Parallel)):
@@ -212,7 +223,7 @@ class ExperimentExecutor:
                 self._shots = 1
 
         def finalize_measurement_structure():
-            """Finalize the structure of a measurement when a Measure operation is encountered."""
+            """Finalize the structure of a measurement when an Acquire, Measure or MeasureReset operation is encountered."""
             qprogram_name = f"QProgram_{self._qprogram_index}"
             measurement_name = f"Measurement_{self._measurement_index}"
 
@@ -493,11 +504,6 @@ class ExperimentExecutor:
         progress.refresh()  # Ensure the final state of the progress bar is rendered
 
     def _inclusive_range(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
-        # Check if all inputs are integers
-        if all(isinstance(x, int) for x in [start, stop, step]):
-            # Use numpy.arange for integer ranges
-            return np.arange(start, stop + step, step)
-
         # Define the number of decimal places based on the precision of the step
         decimal_places = -int(np.floor(np.log10(step))) if step < 1 else 0
 
@@ -506,6 +512,10 @@ class ExperimentExecutor:
 
         # Use linspace and then round to avoid floating-point inaccuracies
         result = np.linspace(start, stop, num_steps)
+
+        # Check if all inputs are integers
+        if all(isinstance(x, int) for x in [start, stop, step]):
+            return np.around(result, decimals=0).astype(int)
         return np.around(result, decimals=decimal_places)
 
     def _get_variables_of_loop(self, block: Loop | ForLoop | Parallel) -> list[VariableInfo]:

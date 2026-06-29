@@ -16,7 +16,7 @@ from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import QProgram
 from qililab.core.variables import Domain
 from qililab.result.experiment_results import ExperimentResults
-from qililab.result.qprogram import QProgramResults
+from qililab.result.qprogram import QbloxMeasurementResult, QProgramResults
 from qililab.typings.enums import Parameter
 from qililab.waveforms import IQPair, Square
 
@@ -142,6 +142,26 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
         )
 
     return experiment
+
+
+def make_platform_returning(qprogram_results: QProgramResults):
+    """Build a mock Platform whose ``execute_qprogram`` returns the given results."""
+    platform = create_autospec(Platform)
+    platform.set_parameter = Mock()
+    platform.get_parameter = Mock(return_value=1.23)
+    platform.execute_qprogram = Mock(return_value=qprogram_results)
+    platform.to_dict = Mock(return_value={"name": "platform"})
+    platform.set_crosstalk = Mock()
+    platform.db_manager = Mock()
+    return platform
+
+
+def make_qblox_result(i_values: np.ndarray, q_values: np.ndarray) -> QbloxMeasurementResult:
+    """Build a ``QbloxMeasurementResult`` wrapping the given I/Q integration data."""
+    return QbloxMeasurementResult(
+        bus="readout",
+        raw_measurement_data={"bins": {"integration": {"path0": i_values, "path1": q_values}}},
+    )
 
 
 class TestExperimentExecutor:
@@ -282,6 +302,72 @@ class TestExperimentExecutor:
             assert qprogram2_measurement1_data.shape == (3, 11, 2)
             assert np.allclose(qprogram2_measurement1_data, measurement_data[None, :, :])
 
+    def test_execute_counts_acquire_as_measurement(self, override_settings):
+        """A QProgram using ``qp.qblox.acquire`` (instead of ``qp.measure``) must allocate a
+        result dataset, just like a Measure, so the acquired data can be read back."""
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        with qp.for_loop(frequency, 0, 10, 1):  # 11 points
+            qp.qblox.acquire(bus="readout_bus", weights=IQPair(Square(1.0, 100), Square(1.0, 100)))
+
+        experiment = Experiment(label="acquire_experiment")
+        experiment.execute_qprogram(qp)
+
+        qprogram_results = QProgramResults()
+        qprogram_results.append_result("readout_bus", make_qblox_result(np.arange(0, 11), np.arange(100, 111)))
+        platform = make_platform_returning(qprogram_results)
+
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
+            results_path = executor.execute()
+
+        with ExperimentResults(results_path) as experiment_results:
+            # A single measurement dataset was allocated for the acquire operation.
+            assert len(experiment_results) == 1
+            data, _ = experiment_results.get(0, 0)
+            assert data.shape == (11, 2)
+            assert np.allclose(data, np.column_stack((np.arange(0, 11), np.arange(100, 111))))
+
+    def test_execute_counts_mixed_measure_and_acquire(self, override_settings):
+        """A QProgram mixing ``qp.measure`` and ``qp.qblox.acquire`` must allocate one
+        measurement dataset per operation, in order of appearance."""
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        with qp.for_loop(frequency, 0, 10, 1):  # 11 points
+            qp.measure(
+                "readout_bus",
+                waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
+                weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
+            )
+            qp.qblox.acquire(bus="readout_bus", weights=IQPair(Square(1.0, 100), Square(1.0, 100)))
+
+        experiment = Experiment(label="mixed_experiment")
+        experiment.execute_qprogram(qp)
+
+        qprogram_results = QProgramResults()
+        for _ in range(2):  # one result per measurement op: the measure and the acquire
+            qprogram_results.append_result("readout_bus", make_qblox_result(np.arange(0, 11), np.arange(100, 111)))
+        platform = make_platform_returning(qprogram_results)
+
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
+            results_path = executor.execute()
+
+        with ExperimentResults(results_path) as experiment_results:
+            # Two measurement datasets: Measurement_0 (measure) and Measurement_1 (acquire).
+            assert len(experiment_results) == 2
+            for measurement_index in range(2):
+                data, _ = experiment_results.get(0, measurement_index)
+                assert data.shape == (11, 2)
+
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")
     def test_execute_database_metadata_only(
@@ -336,6 +422,29 @@ class TestExperimentExecutor:
                 "experiment_name": "experiment",
                 "sample_name": "sample_test",
             }
+
+    def test_inclusive_range(self):
+        """Test correct behavior and consistency of loop generation inside inclusive range."""
+
+        int_result = ExperimentExecutor._inclusive_range(None, 0, 1000, 11)  # Mock passing self as None
+        int_check = np.array([   0,   11,   22,   33,   44,   55,   66,   77,   88,   99,  110,
+            121,  132,  143,  154,  165,  176,  187,  198,  209,  220,  231,
+            242,  253,  264,  275,  286,  297,  308,  319,  330,  341,  352,
+            363,  374,  385,  396,  407,  418,  429,  440,  451,  462,  473,
+            484,  495,  505,  516,  527,  538,  549,  560,  571,  582,  593,
+            604,  615,  626,  637,  648,  659,  670,  681,  692,  703,  714,
+            725,  736,  747,  758,  769,  780,  791,  802,  813,  824,  835,
+            846,  857,  868,  879,  890,  901,  912,  923,  934,  945,  956,
+            967,  978,  989, 1000])
+        
+        float_result = ExperimentExecutor._inclusive_range(None, 0, 10, 0.3)
+        float_check = np.array([ 0. ,  0.3,  0.6,  0.9,  1.2,  1.5,  1.8,  2.1,  2.4,  2.7,  3. ,
+            3.3,  3.6,  3.9,  4.2,  4.5,  4.8,  5.2,  5.5,  5.8,  6.1,  6.4,
+            6.7,  7. ,  7.3,  7.6,  7.9,  8.2,  8.5,  8.8,  9.1,  9.4,  9.7,
+            10. ])
+        
+        assert np.array_equal(int_result, int_check)
+        assert np.array_equal(float_result, float_check)
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")
