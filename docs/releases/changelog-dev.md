@@ -41,6 +41,9 @@
 
 ### Bug fixes
 
+- Fixed `ExperimentExecutor` not allocating result datasets for `Acquire` (`qp.qblox.acquire`) and `MeasureReset` operations. Previously only `Measure` operations were counted as measurements, so a QProgram that read out via `qp.qblox.acquire` produced no result datasets and `ExperimentResults.get()` raised `KeyError`. The executor now counts the same `(Acquire, Measure, MeasureReset)` set as the `QbloxCompiler`.
+  [#1148](https://github.com/qilimanjaro-tech/qililab/pull/1148)
+
 - Fixed issue where `Platform.set_parameter` using the alias of a "rswu-sp16tr" instrument would raise an error.
   [#1130](https://github.com/qilimanjaro-tech/qililab/pull/1130)
 
