@@ -585,10 +585,10 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[59], Sync)
         # FINISHING OFFSETS TO 0
         assert isinstance(new_qp.body.elements[60], SetOffset)
-        assert math.isclose(new_qp.body.elements[60].offset_path0, 0)
+        assert math.isclose(new_qp.body.elements[60].offset_path0, 0.0)
         assert new_qp.body.elements[60].bus == "flux1"
         assert isinstance(new_qp.body.elements[61], SetOffset)
-        assert math.isclose(new_qp.body.elements[61].offset_path0, 0)
+        assert math.isclose(new_qp.body.elements[61].offset_path0, 0.0)
         assert new_qp.body.elements[61].bus == "flux2"
 
     def test_with_crosstalk_non_linear_offset_loop_after_offset_loop(self):
