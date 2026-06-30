@@ -380,6 +380,31 @@ class TestMeasurement:
 class Testdatabase:
     """Test database class"""
 
+    def test_database_manager_raises_error_wrong_config(self):
+        config = {
+            "user": "user",
+            "passwd": "passwd",
+            "host": "host",
+            "port": "5432",
+            "database": "database",
+        }
+
+        del config["user"]
+        del config["port"]
+        del config["database"]
+        with patch("qililab.result.database.database_manager._load_config") as mock_load_config:
+            mock_load_config.return_value = config
+
+            with pytest.raises(ValueError) as exc_info:
+                DatabaseManager("test_file.ini", "database")
+        
+            message = str(exc_info.value)
+            assert "user" in message
+            assert "port" in message
+            assert "database" in message
+            # keys that were present should not be flagged
+            assert "host" not in message.split("Missing the database keys:")[1]
+
     def test_set_sample(self, db_manager: DatabaseManager):
         mock_session = db_manager.session()
         mock_session.query.return_value.scalar.return_value = True
@@ -1189,7 +1214,6 @@ def test_get_db_manager(mock_db_manager):
     filename = os.path.expanduser("~/database.ini")
     get_db_manager()
     mock_db_manager.assert_called_once_with(filename, "postgresql")
-
 
 @patch("qililab.result.database.database_manager.create_engine")
 def test_get_engine(mock_create_engine):
