@@ -5,7 +5,7 @@
 ### Improvements
 
 - Added a `ValueError` while creating the `DatabaseManager` (for example with `get_db_manager`) checking for `user`, `passwd`, `host`, `port` or `database` inside the database.ini config file, if any of these parameters is missing an error is thrown.
-  [#](https://github.com/qilimanjaro-tech/qililab/pull/)
+  [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
 
 - Added support for QPrograms with more than 32 distinct acquisitions in different blocks on the same bus. The compiler detects this case during a pre-traversal pass and maps all acquisitions to hardware index 0 with N bins, one bin per block. The platform then unpacks the single hardware result into N separate `QbloxMeasurementResult` objects, so `len(results["bus"]) == N` as expected.
 
@@ -45,7 +45,7 @@
 ### Bug fixes
 
 - Fixed the folder shape at `add_measurement` and `add_results` to take into account us intervals of time. This will solve any issue with parallelization while creating more than one folder in less than a second.
-  [#](https://github.com/qilimanjaro-tech/qililab/pull/)
+  [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
 
 - Fixed `ExperimentExecutor` not allocating result datasets for `Acquire` (`qp.qblox.acquire`) and `MeasureReset` operations. Previously only `Measure` operations were counted as measurements, so a QProgram that read out via `qp.qblox.acquire` produced no result datasets and `ExperimentResults.get()` raised `KeyError`. The executor now counts the same `(Acquire, Measure, MeasureReset)` set as the `QbloxCompiler`.
   [#1148](https://github.com/qilimanjaro-tech/qililab/pull/1148)
