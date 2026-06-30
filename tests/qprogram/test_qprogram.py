@@ -531,7 +531,150 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(new_qp.body.elements[24], Measure)
         assert new_qp.body.elements[24].bus == "readout"
         assert isinstance(new_qp.body.elements[25], Sync)
-        
+
+    def test_with_crosstalk_non_linear_set_offset_after_loop(self):
+        """Test with_crosstalk_qblox covers the non-linear implementation repeating consecutive offsets and plays."""
+        # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        square_wf = Square(amplitude=0.1, duration=50)
+        square_iq = IQPair(I=square_wf, Q=square_wf)
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        with qp.for_loop(variable=offset, start=0, stop=0.9, step=0.1):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.set_offset(bus="flux2", offset_path0=0.1)
+            qp.play(bus="drive", waveform=square_iq)
+            qp.sync(["drive", "readout"])
+            qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+        qp.set_offset(bus="flux1", offset_path0=0)
+        qp.set_offset(bus="flux2", offset_path0=0)
+
+        new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
+        assert new_qp is not None
+        # FIRST ITERATION
+        assert isinstance(new_qp.body.elements[0], SetOffset)
+        assert math.isclose(new_qp.body.elements[0].offset_path0, 0.05)
+        assert new_qp.body.elements[0].bus == "flux1"
+        assert isinstance(new_qp.body.elements[1], SetOffset)
+        assert math.isclose(new_qp.body.elements[1].offset_path0, 0.1)
+        assert new_qp.body.elements[1].bus == "flux2"
+        assert isinstance(new_qp.body.elements[2], Play)
+        assert new_qp.body.elements[2].bus == "drive"
+        assert isinstance(new_qp.body.elements[3], Sync)
+        assert new_qp.body.elements[3].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[4], Measure)
+        assert new_qp.body.elements[4].bus == "readout"
+        assert isinstance(new_qp.body.elements[5], Sync)
+        # LAST ITERATION
+        assert isinstance(new_qp.body.elements[54], SetOffset)
+        assert math.isclose(new_qp.body.elements[54].offset_path0, 0.7028822095929785)
+        assert new_qp.body.elements[54].bus == "flux1"
+        assert isinstance(new_qp.body.elements[55], SetOffset)
+        assert math.isclose(new_qp.body.elements[55].offset_path0, 0.05576441918595704)
+        assert new_qp.body.elements[55].bus == "flux2"
+        assert isinstance(new_qp.body.elements[56], Play)
+        assert new_qp.body.elements[56].bus == "drive"
+        assert isinstance(new_qp.body.elements[57], Sync)
+        assert new_qp.body.elements[57].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[58], Measure)
+        assert new_qp.body.elements[58].bus == "readout"
+        assert isinstance(new_qp.body.elements[59], Sync)
+        # FINISHING OFFSETS TO 0
+        assert isinstance(new_qp.body.elements[60], SetOffset)
+        assert math.isclose(new_qp.body.elements[60].offset_path0, 0)
+        assert new_qp.body.elements[60].bus == "flux1"
+        assert isinstance(new_qp.body.elements[61], SetOffset)
+        assert math.isclose(new_qp.body.elements[61].offset_path0, 0)
+        assert new_qp.body.elements[61].bus == "flux2"
+
+    def test_with_crosstalk_non_linear_offset_loop_after_offset_loop(self):
+        """Test with_crosstalk_qblox covers the non-linear implementation repeating consecutive offsets and plays."""
+        # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
+        inverse_xtalk_array = np.linalg.inv([[1, 0.5], [0.5, 1]])
+        crosstalk = CrosstalkMatrix().from_array(["flux1", "flux2"], inverse_xtalk_array)
+        non_linear_crosstalk = NonLinearCrosstalkMatrix.from_linear(crosstalk)
+        non_linear_crosstalk.set_non_linear_params("flux2", "flux1", beta_c=0.8, amplitude=0.5)
+
+        square_wf = Square(amplitude=0.1, duration=50)
+        square_iq = IQPair(I=square_wf, Q=square_wf)
+        qp = QProgram()
+        offset = qp.variable(label="offset", domain=Domain.Voltage)
+        with qp.for_loop(variable=offset, start=0, stop=0.9, step=0.1):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.set_offset(bus="flux2", offset_path0=0.1)
+            qp.play(bus="drive", waveform=square_iq)
+            qp.sync(["drive", "readout"])
+            qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+        with qp.for_loop(variable=offset, start=0.9, stop=0, step=-0.1):
+            qp.set_offset(bus="flux1", offset_path0=offset)
+            qp.set_offset(bus="flux2", offset_path0=0.1)
+            qp.play(bus="drive", waveform=square_iq)
+            qp.sync(["drive", "readout"])
+            qp.measure(bus="readout", waveform=square_iq, weights=square_iq)
+
+        new_qp = qp.with_crosstalk_qblox(non_linear_crosstalk)
+        assert new_qp is not None
+        # FIRST ITERATION FIRST LOOP
+        assert isinstance(new_qp.body.elements[0], SetOffset)
+        assert math.isclose(new_qp.body.elements[0].offset_path0, 0.05)
+        assert new_qp.body.elements[0].bus == "flux1"
+        assert isinstance(new_qp.body.elements[1], SetOffset)
+        assert math.isclose(new_qp.body.elements[1].offset_path0, 0.1)
+        assert new_qp.body.elements[1].bus == "flux2"
+        assert isinstance(new_qp.body.elements[2], Play)
+        assert new_qp.body.elements[2].bus == "drive"
+        assert isinstance(new_qp.body.elements[3], Sync)
+        assert new_qp.body.elements[3].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[4], Measure)
+        assert new_qp.body.elements[4].bus == "readout"
+        assert isinstance(new_qp.body.elements[5], Sync)
+        # LAST ITERATION FIRST LOOP
+        assert isinstance(new_qp.body.elements[54], SetOffset)
+        assert math.isclose(new_qp.body.elements[54].offset_path0, 0.7028822095929785)
+        assert new_qp.body.elements[54].bus == "flux1"
+        assert isinstance(new_qp.body.elements[55], SetOffset)
+        assert math.isclose(new_qp.body.elements[55].offset_path0, 0.05576441918595704)
+        assert new_qp.body.elements[55].bus == "flux2"
+        assert isinstance(new_qp.body.elements[56], Play)
+        assert new_qp.body.elements[56].bus == "drive"
+        assert isinstance(new_qp.body.elements[57], Sync)
+        assert new_qp.body.elements[57].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[58], Measure)
+        assert new_qp.body.elements[58].bus == "readout"
+        assert isinstance(new_qp.body.elements[59], Sync)
+        # FIRST ITERATION SECOND LOOP
+        assert isinstance(new_qp.body.elements[60], SetOffset)
+        assert math.isclose(new_qp.body.elements[60].offset_path0, 0.7028822095929785)
+        assert new_qp.body.elements[60].bus == "flux1"
+        assert isinstance(new_qp.body.elements[61], SetOffset)
+        assert math.isclose(new_qp.body.elements[61].offset_path0, 0.05576441918595704)
+        assert new_qp.body.elements[61].bus == "flux2"
+        assert isinstance(new_qp.body.elements[62], Play)
+        assert new_qp.body.elements[62].bus == "drive"
+        assert isinstance(new_qp.body.elements[63], Sync)
+        assert new_qp.body.elements[63].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[64], Measure)
+        assert new_qp.body.elements[64].bus == "readout"
+        assert isinstance(new_qp.body.elements[65], Sync)
+        # LAST ITERATION SECOND LOOP
+        assert isinstance(new_qp.body.elements[114], SetOffset)
+        assert math.isclose(new_qp.body.elements[114].offset_path0, 0.05)
+        assert new_qp.body.elements[114].bus == "flux1"
+        assert isinstance(new_qp.body.elements[115], SetOffset)
+        assert math.isclose(new_qp.body.elements[115].offset_path0, 0.1)
+        assert new_qp.body.elements[115].bus == "flux2"
+        assert isinstance(new_qp.body.elements[116], Play)
+        assert new_qp.body.elements[116].bus == "drive"
+        assert isinstance(new_qp.body.elements[117], Sync)
+        assert new_qp.body.elements[117].buses == ["drive", "readout"]
+        assert isinstance(new_qp.body.elements[118], Measure)
+        assert new_qp.body.elements[118].bus == "readout"
+        assert isinstance(new_qp.body.elements[119], Sync)
+
     def test_with_crosstalk_non_linear_repeat_offset_play(self):
         """Test with_crosstalk_qblox covers the non-linear implementation repeating consecutive offsets and plays."""
         # Build a 2x2 crosstalk matrix between flux_bus_0 and flux_bus_1
