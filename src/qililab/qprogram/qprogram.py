@@ -45,7 +45,7 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram, VariableInfo
-from qililab.qprogram.utils_crosstalk import CrosstalkElements, NonLinearState
+from qililab.qprogram.utils_crosstalk import CrosstalkElements, NonLinearFlagState
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
 
@@ -835,7 +835,7 @@ class QProgram(StructuredProgram):
             play_waveforms: list[dict[str, np.ndarray]],
             loop_index: tuple[int, ...] = (),
             loop_coord: tuple[int, ...] = (0,),
-            state: NonLinearState = NonLinearState(),
+            state: NonLinearFlagState = NonLinearFlagState(),
         ):
             """Handles the Qprogram following Non-linear crosstalk compensation:
             - Unpacks gain and offset loops involving flux buses.
@@ -919,7 +919,7 @@ class QProgram(StructuredProgram):
                                 play_waveforms=play_waveforms,
                                 loop_index=(*loop_index, key),
                                 loop_coord=loop_coord,
-                                state=NonLinearState(offsets_index=offsets_index, plays_index=plays_index),
+                                state=NonLinearFlagState(offsets_index=offsets_index, plays_index=plays_index),
                             )
                             corrected_elements.extend(corrected_loop)
                         loop_coord = loop_coord[:-1]
@@ -933,7 +933,7 @@ class QProgram(StructuredProgram):
                             play_waveforms=play_waveforms,
                             loop_index=loop_index,
                             loop_coord=loop_coord,
-                            state=NonLinearState(offsets_index=state.offsets_index, plays_index=state.plays_index),
+                            state=NonLinearFlagState(offsets_index=state.offsets_index, plays_index=state.plays_index),
                         )
                         element_copy = deepcopy(element)
                         element_copy.elements = corrected_loop

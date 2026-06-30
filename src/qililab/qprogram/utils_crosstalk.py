@@ -89,7 +89,7 @@ class CrosstalkElements:
                     self.flux_vector[operation].set_crosstalk(self.crosstalk)
 
 
-class NonLinearState:
+class NonLinearFlagState:
     def __init__(self, offsets_index: int = 0, plays_index: int = 0):
         """Tracks cursor positions and flags during non-linear element processing."""
         self.offsets_index = offsets_index

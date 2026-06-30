@@ -2,10 +2,10 @@
 
 ### New features since last release
 
-- Added `NonLinearState` to qprogram qblox crosstalk handler. This class controls the behavior of `play`, `set_offset`, `set_gain` and loop unpacking of the handler.
-  [#1149](https://github.com/qilimanjaro-tech/qililab/pull/1149)
-
 ### Improvements
+
+- Added `NonLinearFlagState` to qprogram qblox crosstalk handler. This class controls the behavior of `play`, `set_offset`, `set_gain` and loop unpacking of the handler.
+  [#1149](https://github.com/qilimanjaro-tech/qililab/pull/1149)
 
 - Added support for QPrograms with more than 32 distinct acquisitions in different blocks on the same bus. The compiler detects this case during a pre-traversal pass and maps all acquisitions to hardware index 0 with N bins, one bin per block. The platform then unpacks the single hardware result into N separate `QbloxMeasurementResult` objects, so `len(results["bus"]) == N` as expected.
 
