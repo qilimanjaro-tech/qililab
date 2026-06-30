@@ -661,7 +661,7 @@ class DatabaseManager:
             cooldown = self.current_cd
 
         start_time = datetime.datetime.now()
-        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
+        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S_%f")
 
         base_path = f"{self.base_path_local}{self.folder_path}"
         if not os.path.isdir(base_path):
