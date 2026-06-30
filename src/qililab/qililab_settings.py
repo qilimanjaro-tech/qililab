@@ -32,6 +32,14 @@ class QililabSettings(BaseSettings):
         default=tempfile.gettempdir(),
         description="Base path for saving experiment results. [env: QILILAB_EXPERIMENT_RESULTS_BASE_PATH]",
     )
+    experiment_results_allowed_roots: str = Field(
+        default="",
+        description=(
+            "Optional os.pathsep-separated allow-list of directories that DB-sourced result "
+            "files (Measurement.result_path) must resolve under before they are opened. Empty "
+            "disables confinement. [env: QILILAB_EXPERIMENT_RESULTS_ALLOWED_ROOTS]"
+        ),
+    )
     experiment_results_path_format: str = Field(
         default="{date}/{time}/{label}.h5",
         description="Format of the experiment results path. [env: QILILAB_EXPERIMENT_RESULTS_PATH_FORMAT]",

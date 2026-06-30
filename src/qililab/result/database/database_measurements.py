@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import datetime
+import os
 
 from pandas import read_hdf
 from sqlalchemy import (
@@ -33,10 +34,31 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 from xarray import DataArray
 
+from qililab.qililab_settings import get_settings
 from qililab.result.experiment_results import ExperimentResults
 from qililab.result.result_management import load_results
 
 base = declarative_base()
+
+
+def _validated_result_path(result_path: str) -> str:
+    """QILILAB-04 (CWE-502 / CWE-22): validate a DB-sourced result path before opening it.
+
+    ``result_path`` is read verbatim from the shared measurements database, so a tampered
+    row would otherwise let ``pandas.read_hdf`` open an arbitrary local file (and, if PyTables
+    is installed, execute code via its pickle support). The path is canonicalised (resolving
+    symlinks / ``..``); when ``experiment_results_allowed_roots`` is configured, it must
+    additionally resolve under one of those roots.
+    """
+    if not isinstance(result_path, str) or not result_path:
+        raise ValueError("Measurement result_path is missing or not a string.")
+    resolved = os.path.realpath(result_path)
+    roots = [r for r in get_settings().experiment_results_allowed_roots.split(os.pathsep) if r.strip()]
+    if roots and not any(os.path.commonpath([resolved, os.path.realpath(r)]) == os.path.realpath(r) for r in roots):
+        raise ValueError(
+            f"Measurement result_path {resolved!r} is outside the configured experiment_results_allowed_roots."
+        )
+    return resolved
 
 
 class Cooldown(base):  # type: ignore
@@ -233,20 +255,20 @@ class Measurement(base):  # type: ignore
 
     def load_old_h5(self):
         """Load old experiment data from h5 files."""
-        return load_results(self.result_path)
+        return load_results(_validated_result_path(self.result_path))
 
     def load_df(self):
         """Loads experiments data from hdf files."""
-        return read_hdf(self.result_path)
+        return read_hdf(_validated_result_path(self.result_path))
 
     def load_xarray(self):
         """Loads experiments data from hdf files into Xarray format."""
-        df = read_hdf(self.result_path)
+        df = read_hdf(_validated_result_path(self.result_path))
         return df.to_xarray().to_dataarray()
 
     def read_numpy(self):
         """Loads experiments data from hdf files into numpy array format."""
-        df = read_hdf(self.result_path)
+        df = read_hdf(_validated_result_path(self.result_path))
         da = df.to_xarray().to_dataarray()
         arr = da.to_numpy()[0,]
         axis_labels = {dim: da.coords[dim].values for dim in da.dims[1:]}
