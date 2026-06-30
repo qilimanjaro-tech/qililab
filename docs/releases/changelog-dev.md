@@ -4,6 +4,20 @@
 
 ### Improvements
 
+- Migrated `QbloxCompiler` to the redesigned `qpysequence` API (version 1.0.0). The compiler now uses the new `Compiler` class (`qpysequence.compiler.Compiler`) to lower and compile Q1ASM programs, replacing the old `program.compile()` call. Program construction now uses `block.add()` throughout, programs have an explicit `setup` block followed by `main`, loop sweeps use the new `SweepSpec`-based `IterativeLoop` API with `ConversionInstruction` subclasses (`SetNormalisedOffs`, `SetNormalisedGain`, `SetFrequencyHz`, `SetPhaseRad`) for automatic physical-unit-to-integer scaling, and label references no longer require the `@` prefix. `Sequence.todict()` is replaced by `Sequence.to_dict()` throughout. Several responsibilities have shifted from `qililab` to `qpysequence`:
+  - **`nop` insertion**: qililab no longer emits `nop` instructions manually; qpysequence's compiler handles read-after-write hazard guards automatically. Duplicate parameter instructions (e.g. double `set_awg_gain` or `set_freq`) that were previously emitted as a workaround are no longer needed.
+  - **Physical-unit-to-integer conversion**: scaling of physical-unit values (normalised gain/offset, Hz frequency, radian phase) to Q1ASM integers is now fully owned by qpysequence via `ConversionInstruction.scale_factor`.
+  - **Long-wait handling**: durations exceeding `INST_MAX_WAIT` are now managed by qpysequence's `LongWait` instruction rather than qililab.
+  - **Adjacent wait merging**: consecutive `wait` instructions are now combined by qpysequence's compiler rather than by qililab.
+  - The Q1ASM output is functionally equivalent but may differ structurally from previous versions; see the qpysequence changelog for a full description.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+  
+- Updated `QbloxDraw` to iterate over all program blocks (`setup` and `main`) to match the new multi-block program structure.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+  
+- `QbloxCompiler` now emits a warning and clamps to 4 ns when a `wait` duration or loop start value is below the Q1ASM minimum of 4 ns.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+  
 - Added support for QPrograms with more than 32 distinct acquisitions in different blocks on the same bus. The compiler detects this case during a pre-traversal pass and maps all acquisitions to hardware index 0 with N bins, one bin per block. The platform then unpacks the single hardware result into N separate `QbloxMeasurementResult` objects, so `len(results["bus"]) == N` as expected.
 
   The typical use case is sweeping over a non-linear (arbitrary) set of values, not expressible as a hardware `for_loop`:
@@ -41,6 +55,12 @@
 
 ### Bug fixes
 
+- Fixed incorrect Q1ASM emitted when a long wait (> `INST_MAX_WAIT`) follows a pending `upd_param`: the pending-instruction branch now uses `LongWait` consistently with the no-pending branch.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/71)
+  
+- Fixed numpy scalar passthrough in `QProgram` operations: `wait`, `wait_trigger`, `set_phase`, `set_frequency`, `set_gain`, `set_offset`, and `for_loop` parameters now call `_to_scalar()` to convert numpy integer/float types to native Python scalars before constructing operations, preventing type errors downstream.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/71)
+
 - Fixed `ExperimentExecutor` not allocating result datasets for `Acquire` (`qp.qblox.acquire`) and `MeasureReset` operations. Previously only `Measure` operations were counted as measurements, so a QProgram that read out via `qp.qblox.acquire` produced no result datasets and `ExperimentResults.get()` raised `KeyError`. The executor now counts the same `(Acquire, Measure, MeasureReset)` set as the `QbloxCompiler`.
   [#1148](https://github.com/qilimanjaro-tech/qililab/pull/1148)
 
@@ -48,7 +68,7 @@
   [#1130](https://github.com/qilimanjaro-tech/qililab/pull/1130)
 
 - Fixed a bug for Rohde & Schwarz SGS100A instrument class where the module SGS-B106V did not apply the iq_wideband at the initial_setup.
-    [#1144](https://github.com/qilimanjaro-tech/qililab/pull/1144)
+  [#1144](https://github.com/qilimanjaro-tech/qililab/pull/1144)
 
 - Fixed a bug in `platform._execute_qblox_compilation_output` where a program with N acquisitions on the same bus returned N² results instead of N. A nested loop incorrectly paired every hardware result with every acquisition slot; replaced with `zip` pairing. This was triggered by any QProgram with acquires at more than one nesting depth on the same bus (e.g. two separate `average` blocks each containing one `acquire`).
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
