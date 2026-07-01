@@ -532,40 +532,22 @@ class ExperimentExecutor:
         # Use linspace
         return np.linspace(start, stop, int(iterations))
 
+    def _get_loop_values(self, loop: Loop | ForLoop, qprogram: bool = False) -> np.ndarray:
+        """Compute the values for a single Loop/ForLoop."""
+        if not isinstance(loop, ForLoop):
+            return loop.values
+        if qprogram:
+            return self._inclusive_range_qprogram(loop.start, loop.stop, loop.step)
+        return self._inclusive_range(loop.start, loop.stop, loop.step)
+
     def _get_variables_of_loop(self, block: Loop | ForLoop | Parallel, qprogram: bool = False) -> list[VariableInfo]:
         variables: dict[UUID, VariableInfo] = {}
 
-        if isinstance(block, (ForLoop, Loop)):
-            if qprogram:
-                values = (
-                    self._inclusive_range_qprogram(block.start, block.stop, block.step)
-                    if isinstance(block, ForLoop)
-                    else block.values
-                )
-            else:
-                values = (
-                    self._inclusive_range(block.start, block.stop, block.step)
-                    if isinstance(block, ForLoop)
-                    else block.values
-                )
-            variable = VariableInfo(uuid=block.variable.uuid, label=block.variable.label, values=values)
-            variables[block.variable.uuid] = variable
-        else:
-            for loop in block.loops:
-                if qprogram:
-                    values = (
-                        self._inclusive_range_qprogram(loop.start, loop.stop, loop.step)
-                        if isinstance(loop, ForLoop)
-                        else loop.values
-                    )
-                else:
-                    values = (
-                        self._inclusive_range(loop.start, loop.stop, loop.step)
-                        if isinstance(loop, ForLoop)
-                        else loop.values
-                    )
-                variable = VariableInfo(uuid=loop.variable.uuid, label=loop.variable.label, values=values)
-                variables[loop.variable.uuid] = variable
+        loops = block.loops if isinstance(block, Parallel) else [block]
+        for loop in loops:
+            values = self._get_loop_values(loop, qprogram)
+            variable = VariableInfo(uuid=loop.variable.uuid, label=loop.variable.label, values=values)
+            variables[loop.variable.uuid] = variable
 
         self._variables_per_block[block] = list(variables.values())
 
