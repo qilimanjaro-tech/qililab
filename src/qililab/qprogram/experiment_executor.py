@@ -202,7 +202,7 @@ class ExperimentExecutor:
         def traverse_qprogram(block: Block):
             """Traverses a QProgram to gather loop information."""
             if isinstance(block, (Loop, ForLoop, Parallel)):
-                variables = self._get_variables_of_loop(block, qprogram = True)
+                variables = self._get_variables_of_loop(block, qprogram=True)
 
                 self._qprogram_variables_stack.append(variables)
             if isinstance(block, Average):
