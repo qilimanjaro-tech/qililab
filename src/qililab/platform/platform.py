@@ -71,6 +71,7 @@ from qililab.result.qprogram.qblox_measurement_result import QbloxMeasurementRes
 from qililab.result.qprogram.qprogram_results import QProgramResults
 from qililab.result.stream_results import StreamArray
 from qililab.typings import ChannelID, DistortionState, InstrumentName, OutputID, Parameter, ParameterValue
+from qililab.utils import hash_qpy_sequence_components
 
 if TYPE_CHECKING:
     import numpy as np
@@ -334,8 +335,8 @@ class Platform:
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
 
-        self._qpy_sequence_cache: dict[str, str] = {}
-        """Dictionary for caching qpysequences."""
+        self._qpy_sequence_cache: dict[str, dict[str, str]] = {}
+        """Dictionary for caching qpysequences, mapping each bus alias to its per-component hashes."""
 
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
@@ -1412,7 +1413,12 @@ class Platform:
 
             # Upload sequences
             for bus_alias in sequences:
-                buses[bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+                components_to_update = self._compute_components_to_update(bus_alias, sequences[bus_alias])
+                buses[bus_alias].upload_qpysequence(
+                    qpysequence=sequences[bus_alias],
+                    components_to_update=components_to_update,
+                )
+
                 # sync all relevant sequences
                 for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                     if isinstance(instrument, QbloxModule):
@@ -1813,6 +1819,29 @@ class Platform:
                     print(str(sequence._program), file=sourceFile)
                     print(file=sourceFile)
 
+    def _compute_components_to_update(self, bus_alias: str, sequence: Any) -> dict[str, bool] | None:
+        """Decide which sequence components need to be (re)uploaded for a bus, updating the cache in place.
+
+        Args:
+            bus_alias: Alias of the bus the sequence belongs to.
+            sequence: The QPy Sequence about to be uploaded.
+
+        Returns:
+            None when the full sequence must be uploaded, i.e. the first upload for the bus. Otherwise, a dict flagging which components to update: changed
+            waveforms/weights/program, and acquisitions which are always re-uploaded.
+        """
+        new_hashes = hash_qpy_sequence_components(sequence)
+        cached_hashes = self._qpy_sequence_cache.get(bus_alias)
+        self._qpy_sequence_cache[bus_alias] = new_hashes
+        if cached_hashes is None:
+            return None
+        return {
+            "program": new_hashes["program"] != cached_hashes["program"],
+            "waveforms": new_hashes["waveforms"] != cached_hashes["waveforms"],
+            "weights": new_hashes["weights"] != cached_hashes["weights"],
+            "acquisitions": True,
+        }
+
     def _upload_qblox_parallel_sequences(
         self,
         sequences_per_qprogram: list[dict[str, Any]],
@@ -1820,7 +1849,12 @@ class Platform:
     ) -> None:
         for qprogram_idx, sequences in enumerate(sequences_per_qprogram):
             for bus_alias in sequences:
-                buses_per_qprogram[qprogram_idx][bus_alias].upload_qpysequence(qpysequence=sequences[bus_alias])
+                components_to_update = self._compute_components_to_update(bus_alias, sequences[bus_alias])
+                buses_per_qprogram[qprogram_idx][bus_alias].upload_qpysequence(
+                    qpysequence=sequences[bus_alias],
+                    components_to_update=components_to_update,
+                )
+
                 # sync all relevant sequences
                 for instrument, channel in zip(
                     buses_per_qprogram[qprogram_idx][bus_alias].instruments,
