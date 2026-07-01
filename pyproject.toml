@@ -80,6 +80,16 @@ override-dependencies = [
     "marshmallow==3.26.2",
     "spirack==0.2.12",
 ]
+# Floor recurring transitive CVE offenders so a generic re-resolve cannot regress them.
+constraint-dependencies = [
+    "aiohttp>=3.14.1",  # CVE-2026-54273..54280 (W-26; raised from 3.14.0)
+    "cryptography>=48.0.1",       # high (W-26)
+    "msgpack>=1.2.1",             # high (W-26)
+    "pyarrow>=23.0.1",  # CVE-2026-25087 (W-24)
+    "pydantic-settings>=2.14.2",  # W-26
+    "tornado>=6.5.6",   # CVE-2026-49854 (W-24)
+    "ujson>=5.13.0",              # CVE-2026-54911 (W-26)
+]
 
 [tool.uv.sources]
 qilisdk = { git = "https://github.com/qilimanjaro-tech/qilisdk.git", branch = "main" }
