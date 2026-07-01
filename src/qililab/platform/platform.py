@@ -356,6 +356,7 @@ class Platform:
         """Database manager for experiment class and db stream array"""
 
         self.trigger_runs: int = 0
+        """Number of tries after a timeout error."""
 
         self.qblox_alias_module: list = self._get_qblox_alias_module()
         """List of dict with key the alias of qblox module and value the module_id. Used for the qblox distortions"""
@@ -1280,12 +1281,6 @@ class Platform:
 
         if all(isinstance(instrument, QbloxModule) for instrument in instruments):
             # Retrieve the time of flight parameter from settings
-            instrument_controllers = [
-                controller
-                for controller in self.instrument_controllers.elements
-                if isinstance(controller, QbloxClusterController)
-            ]
-            ext_trigger = any(controller.ext_trigger for controller in instrument_controllers)
             times_of_flight = {
                 bus.alias: int(bus.get_parameter(Parameter.TIME_OF_FLIGHT)) for bus in buses if bus.has_adc()
             }
@@ -1323,7 +1318,6 @@ class Platform:
                     times_of_flight=times_of_flight,
                     delays=delays,
                     markers=markers,
-                    ext_trigger=ext_trigger,
                     qblox_buses=qblox_buses,
                     single_channel=single_channel,
                     crosstalk=self.crosstalk if crosstalk else None,
@@ -1388,6 +1382,10 @@ class Platform:
 
     def _execute_qblox_compilation_output(self, output: QProgramCompilationOutput, debug: bool = False):
         try:
+            if output.qblox.external_trigger:  # type: ignore[union-attr]
+                for controller in self.instrument_controllers.elements:
+                    if isinstance(controller, QbloxClusterController):
+                        controller.set_ext_trigger()
             sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
 

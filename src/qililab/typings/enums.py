@@ -447,7 +447,6 @@ class Parameter(str, Enum):
     FIR_COEFF = "fir_coeff"
     FIR_STATE = "fir_state"
     RF_ACTIVE_CHANNEL = "active_channel"
-    EXT_TRIGGER = "ext_trigger"
 
     @classmethod
     def to_yaml(cls, representer, node):

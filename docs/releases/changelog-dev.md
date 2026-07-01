@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- Removed `external_trigger` parameter from within the runcard's qblox controller instrument. Now the function `QbloxClusterController.set_ext_trigger` is risen internally every time a qprogram contains a `wait_trigger` using the trigger channel 15 (last one).
+  [#1112](https://github.com/qilimanjaro-tech/qililab/pull/1112)
+
 - Added support for QPrograms with more than 32 distinct acquisitions in different blocks on the same bus. The compiler detects this case during a pre-traversal pass and maps all acquisitions to hardware index 0 with N bins, one bin per block. The platform then unpacks the single hardware result into N separate `QbloxMeasurementResult` objects, so `len(results["bus"]) == N` as expected.
 
   The typical use case is sweeping over a non-linear (arbitrary) set of values, not expressible as a hardware `for_loop`:
@@ -31,7 +34,6 @@
 
   `QbloxCompiler._handle_acquire` has been refactored into three methods: `_handle_acquire` (dispatcher), `_handle_acquire_exceeds_depth`, and `_handle_acquire_per_depth`, making the two acquisition paths independent. Acquisition depth is now stored alongside the per-block count in a single `_acquisition_metadata` dict. This dict is now also reset at the start of each `compile()` call, ensuring correctness when the same compiler instance is reused.
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
-
 
 ### Breaking changes
 
