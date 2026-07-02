@@ -113,6 +113,7 @@ class StreamArray:
                     dc_offsets=self._get_offsets() if self.platform else None,
                     target=self._get_index_list(self.qubit_idx),
                     secondary_source=self._get_index_list(self.second_idx),
+                    bus_mapping=self.bus_mapping,
                 )
             self.path = self.measurement.result_path
 

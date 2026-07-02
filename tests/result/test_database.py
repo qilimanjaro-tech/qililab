@@ -1046,6 +1046,29 @@ class Testdatabase:
         db_manager._mock_session.commit.assert_called_once()
         mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00")
 
+    @patch("qililab.result.database.database_manager.os.makedirs")
+    @patch("qililab.result.database.database_manager.datetime")
+    def test_add_measurement_bus_mapping(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
+        # Setup
+        db_manager.current_sample = "sampleA"
+        db_manager.current_cd = "cdX"
+
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+
+        bus_map = {"readout": "resonator"}
+        # Act
+        measurement = db_manager.add_measurement("exp1", experiment_completed=True, bus_mapping=bus_map)
+
+        # Assert
+        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+        assert measurement.result_path == expected_path
+        assert measurement.bus_mapping == bus_map
+        db_manager._mock_session.add.assert_called_once()
+        db_manager._mock_session.commit.assert_called_once()
+        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00")
+
     def test_add_measurement_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set
         db_manager.current_sample = None
