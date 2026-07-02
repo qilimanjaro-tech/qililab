@@ -14,10 +14,9 @@
 
 """QuantumMachinesResult class."""
 
-from warnings import warn
-
 import numpy as np
 
+from qililab.config import logger
 from qililab.result.qprogram.measurement_result import MeasurementResult
 from qililab.typings.enums import ResultName
 from qililab.yaml import yaml
@@ -73,7 +72,7 @@ class QuantumMachinesMeasurementResult(MeasurementResult):
             np.ndarray: The thresholded data.
         """
         if self._classification_threshold is None:
-            warn("Classification threshold is not specified, returning a `np.zeros` array.", stacklevel=2)
+            logger.warning("Classification threshold is not specified, returning a `np.zeros` array.")
 
         return (
             np.where(self._classification_threshold <= self.I, 1.0, 0.0)
