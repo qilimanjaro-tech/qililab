@@ -39,6 +39,7 @@ from qililab.instrument_controllers.qblox import QbloxClusterController
 from qililab.instruments import SGS100A
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
+from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.platform import Bus, Buses, Platform
 from qililab.core.variables import Domain
@@ -2226,6 +2227,130 @@ class TestMethods:
             results = platform.execute_qprogram(qprogram=qprogram)
 
         assert len(results.results["feedline_input_output_bus"]) == n_measures
+
+    def test_execute_qprogram_programs_threshold_with_weight_duration(self, platform: Platform):
+        """The hardware threshold must be programmed using the weight duration derived from the QProgram,
+        not a static integration_length from the runcard."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qprogram = QProgram()
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "is_device_active", return_value=True),
+            patch.object(QbloxQRM, "_set_device_threshold") as mock_set_threshold,
+        ):
+            platform.execute_qprogram(qprogram=qprogram)
+
+        mock_set_threshold.assert_called_once_with(
+            value=ANY,
+            sequencer_id=ANY,
+            integration_length=120,
+        )
+
+    # --- weight_duration tracking ---
+
+    def test_weight_duration_single_acquisition(self):
+        """A single acquire populates the bus list with one entry."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=weights_wf)
+        assert qp.qblox.weight_duration == {"readout": [120]}
+
+    def test_weight_duration_multiple_acquisitions_same_bus(self):
+        """Multiple acquires on the same bus append to the list in order."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=w1)
+        qp.qblox.acquire(bus="readout", weights=w2)
+        assert qp.qblox.weight_duration == {"readout": [120, 200]}
+
+    def test_weight_duration_multiple_buses(self):
+        """Different buses have independent lists."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout_a", weights=w1)
+        qp.qblox.acquire(bus="readout_b", weights=w2)
+        assert qp.qblox.weight_duration == {"readout_a": [120], "readout_b": [200]}
+
+    # --- _resolve_weight_duration ---
+
+    def test_resolve_weight_duration_integers(self, platform: Platform):
+        """Integer durations are passed through unchanged; no calibration needed."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=weights_wf)
+        platform._resolve_weight_duration(qp, calibration=None)
+        assert qp.qblox.weight_duration == {"readout": [120]}
+
+    def test_resolve_weight_duration_with_calibrated_weights(self, platform: Platform):
+        """String weight names are resolved to their integer duration from calibration."""
+        calibration = Calibration()
+        calibration.add_weights(
+            bus="feedline_input_output_bus",
+            name="optimal_weights",
+            weights=IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300)),
+        )
+        qp = QProgram()
+        qp.qblox.acquire(bus="feedline_input_output_bus", weights="optimal_weights")
+        platform._resolve_weight_duration(qp, calibration=calibration)
+        assert qp.qblox.weight_duration == {"feedline_input_output_bus": [300]}
+
+    def test_resolve_weight_duration_calibration_none_raises(self, platform: Platform):
+        """A calibrated weight name with calibration=None must raise ValueError, not AttributeError."""
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights="optimal_weights")
+        with pytest.raises(ValueError, match=re.escape("Calibrated weight 'optimal_weights' requires a calibration object, but none was provided.")):
+            platform._resolve_weight_duration(qp, calibration=None)
+
+    def test_resolve_weight_duration_weight_not_found_raises(self, platform: Platform):
+        """A calibrated weight name absent from calibration must raise ValueError."""
+        calibration = Calibration()
+        calibration.add_weights(
+            bus="feedline_input_output_bus",
+            name="other_weights",
+            weights=IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300)),
+        )
+        qp = QProgram()
+        qp.qblox.acquire(bus="feedline_input_output_bus", weights="optimal_weights")
+        with pytest.raises(ValueError, match=re.escape("Calibrated weight 'optimal_weights' not found in calibration.")):
+            platform._resolve_weight_duration(qp, calibration=calibration)
+
+    def test_execute_qprogram_warns_when_bus_has_multiple_different_weight_durations(
+        self, platform: Platform, caplog
+    ):
+        """A warning must be logged when the same ADC bus has acquisitions with different weight durations."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+        qprogram = QProgram()
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=w1)
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=w2)
+
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results", return_value=[]),
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(QbloxQRM, "is_device_active", return_value=True),
+            patch.object(QbloxQRM, "_set_device_threshold"),
+        ):
+            import logging
+            with caplog.at_level(logging.WARNING):
+                platform.execute_qprogram(qprogram=qprogram)
+
+        assert any(
+            msg == "Bus 'feedline_input_output_bus' has multiple different weight durations: [120, 200]. Using the first value (120 ns) as integration length for threshold."
+            for msg in caplog.messages
+        )
 
     def test_setting_getting_filter_bus_error_raised(self, platform: Platform):
         #  Check that setting/getting a filter through a bus incorrectly raises the adequate error

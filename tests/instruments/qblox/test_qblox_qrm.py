@@ -1,5 +1,6 @@
 """Tests for the Qblox Module class."""
 
+import re
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -149,7 +150,7 @@ class TestQbloxQRM:
             (Parameter.SAMPLING_RATE, 0.09),
             (Parameter.HARDWARE_DEMODULATION, True),
             (Parameter.HARDWARE_DEMODULATION, False),
-            (Parameter.INTEGRATION_LENGTH, 100),
+
             (Parameter.INTEGRATION_MODE, "ssb"),
             (Parameter.SEQUENCE_TIMEOUT, 2),
             (Parameter.ACQUISITION_TIMEOUT, 2),
@@ -186,8 +187,7 @@ class TestQbloxQRM:
             assert sequencer.phase_imbalance == value
         elif parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
             assert sequencer.scope_acquire_trigger_mode == AcquireTriggerMode(value)  # type: ignore[attr-defined]
-        elif parameter == Parameter.INTEGRATION_LENGTH:
-            assert sequencer.integration_length == value  # type: ignore[attr-defined]
+
         elif parameter == Parameter.SAMPLING_RATE:
             assert sequencer.sampling_rate == value  # type: ignore[attr-defined]
         elif parameter == Parameter.INTEGRATION_MODE:
@@ -259,7 +259,7 @@ class TestQbloxQRM:
             (Parameter.SCOPE_HARDWARE_AVERAGING, True),
             (Parameter.SAMPLING_RATE, 1.0e9),
             (Parameter.HARDWARE_DEMODULATION, True),
-            (Parameter.INTEGRATION_LENGTH, 1000),
+
             (Parameter.INTEGRATION_MODE, "ssb"),
             (Parameter.SEQUENCE_TIMEOUT, 5.0),
             (Parameter.ACQUISITION_TIMEOUT, 1.0),
@@ -440,3 +440,37 @@ class TestQbloxQRM:
         qrm._setup_trigger_network(trigger_address=trigger_address, sequencer_id=sequencer_id)
         raw_seq.thresholded_acq_trigger_address.assert_called_with(trigger_address)
         raw_seq.thresholded_acq_trigger_en.assert_called_with(True)
+
+    def test_set_parameter_threshold_stores_model_only_when_integration_length_is_none(self, qrm: QbloxQRM):
+        """When integration_length is None (new-style runcard), set_parameter(THRESHOLD) must update
+        the model but not program the device — hardware will be set at QProgram execution time."""
+        from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
+        sequencer = cast(QbloxADCSequencer, qrm.get_sequencer(0))
+        sequencer.integration_length = None
+
+        qrm.set_parameter(Parameter.THRESHOLD, 0.7, channel_id=0)
+
+        assert sequencer.threshold == 0.7
+        qrm.device.sequencers[0].thresholded_acq_threshold.assert_not_called()
+
+    def test_set_parameter_threshold_programs_device_when_integration_length_set(self, qrm: QbloxQRM):
+        """When integration_length is set (legacy runcard), set_parameter(THRESHOLD) must update
+        both the model and program the device immediately."""
+        from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
+        sequencer = cast(QbloxADCSequencer, qrm.get_sequencer(0))
+        # fixture runcard has integration_length=1000
+        assert sequencer.integration_length == 1000
+
+        qrm.set_parameter(Parameter.THRESHOLD, 0.5, channel_id=0)
+
+        assert sequencer.threshold == 0.5
+        qrm.device.sequencers[0].thresholded_acq_threshold.assert_called_once_with(0.5 * 1000)
+
+    def test_platform_load_warns_on_integration_length_in_runcard(self):
+        """Loading a runcard that contains integration_length must emit a FutureWarning."""
+        with pytest.warns(FutureWarning, match=re.escape("Integration_length in the runcard is deprecated and will be removed in a future release. The integration length is now derived from the QProgram's first weight duration.")):
+            build_platform(runcard="tests/instruments/qblox/qblox_runcard.yaml")
+
+    def test_parameter_integration_length_not_in_enum(self):
+        """Parameter.INTEGRATION_LENGTH must not exist — it was removed to prevent silent no-ops."""
+        assert not hasattr(Parameter, "INTEGRATION_LENGTH")

@@ -35,9 +35,20 @@
 
 ### Breaking changes
 
+- `QbloxQRM.set_parameter(Parameter.INTEGRATION_LENGTH, ...)` now emits a `DeprecationWarning` and has no effect. Integration length is derived automatically from the QProgram weight duration. Remove any `integration_length` runcard entries or direct `set_parameter` calls targeting this parameter.
+  [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
+
 ### Deprecations / Removals
 
+- `Parameter.INTEGRATION_LENGTH` is deprecated. The value is retained in the enum for backwards compatibility but calling `set_parameter` with it emits a `FutureWarning` and performs no hardware operation.
+  [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
+
 ### Documentation
+
+### Improvements
+
+- `integration_length` is now derived dynamically from the QProgram weight waveform duration instead of being a static runcard field. `QProgram._weight_duration` is now a `dict[str, int | str]` keyed by bus alias, ensuring each ADC bus uses its own weight duration when programming the hardware threshold. Setting `Parameter.THRESHOLD` before a QProgram is compiled now stores the value in the model and defers hardware programming to execution time.
+  [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
 
 ### Bug fixes
 

@@ -49,6 +49,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qblox import QbloxModule
 from qililab.instruments.qblox.qblox_draw import QbloxDraw
+from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
@@ -78,6 +79,7 @@ if TYPE_CHECKING:
 
     from qililab.instrument_controllers.instrument_controller import InstrumentController
     from qililab.instruments.instrument import Instrument
+    from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
     from qililab.qprogram.crosstalk_matrix import CrosstalkMatrix
     from qililab.result.database import DatabaseManager
     from qililab.settings import Runcard
@@ -1220,6 +1222,28 @@ class Platform:
         )
         return executor.execute()
 
+    def _resolve_weight_duration(self, qprogram: QProgram, calibration: Calibration | None) -> None:
+        """Resolve calibrated weight names in ``qprogram.qblox.weight_duration`` to integer durations in-place."""
+        resolved: dict[str, list[int | str]] = {}
+        for bus, entries in qprogram.qblox.weight_duration.items():
+            resolved_entries: list[int | str] = []
+            for entry in entries:
+                if isinstance(entry, int):
+                    resolved_entries.append(entry)
+                else:
+                    if calibration is None:
+                        raise ValueError(
+                            f"Calibrated weight {entry!r} requires a calibration object, but none was provided."
+                        )
+                    for bus_weights in calibration.weights.values():
+                        if entry in bus_weights:
+                            resolved_entries.append(bus_weights[entry].get_duration())
+                            break
+                    else:
+                        raise ValueError(f"Calibrated weight {entry!r} not found in calibration.")
+            resolved[bus] = resolved_entries
+        qprogram.qblox._weight_duration = resolved
+
     def compile_qprogram(
         self,
         qprogram: QProgram,
@@ -1311,6 +1335,7 @@ class Platform:
                             if len(sequencer.outputs) == 1:
                                 single_channel.append(bus.alias)
 
+            self._resolve_weight_duration(qprogram, calibration)
             qblox_compiler = QbloxCompiler()
             qblox_buses = [
                 bus.alias for bus in buses if any(isinstance(instrument, QbloxModule) for instrument in bus.instruments)
@@ -1391,6 +1416,7 @@ class Platform:
             sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
 
+            weight_durations = output.qblox.qprogram.qblox.weight_duration  # type: ignore[union-attr]
             for bus_alias, bus in buses.items():
                 # set up the trigger network if required
                 if bus_alias in output.qblox.qprogram.qblox.trigger_network_required:  # type: ignore[union-attr]
@@ -1399,6 +1425,21 @@ class Platform:
                     for controller in self.instrument_controllers.elements:
                         if isinstance(controller, QbloxClusterController):
                             controller.device.reset_trigger_monitor_count(address=trigger_address)
+                durations = weight_durations.get(bus_alias)
+                if bus.has_adc() and durations:
+                    if len(set(durations)) > 1:
+                        logger.warning(
+                            f"Bus {bus_alias!r} has multiple different weight durations: {durations}. "
+                            f"Using the first value ({durations[0]} ns) as integration length for threshold."
+                        )
+                    for instrument, channel in zip(bus.instruments, bus.channels):
+                        if isinstance(instrument, QbloxQRM) and instrument.is_device_active():
+                            sequencer = cast("QbloxADCSequencer", instrument.get_sequencer(int(channel)))
+                            instrument._set_device_threshold(
+                                value=sequencer.threshold,
+                                sequencer_id=int(channel),
+                                integration_length=int(durations[0]),
+                            )
                 if bus.distortions:
                     for distortion in bus.distortions:
                         for waveform in sequences[bus_alias]._waveforms._waveforms:
