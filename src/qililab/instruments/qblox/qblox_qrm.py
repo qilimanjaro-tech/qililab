@@ -17,6 +17,7 @@
 from dataclasses import dataclass
 from typing import Sequence, cast
 
+from qililab.config import logger
 from qililab.instruments.decorators import check_device_initialized
 from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
@@ -77,7 +78,9 @@ class QbloxQRM(QbloxModule):
 
     @check_device_initialized
     def initial_setup(self):
-        """Initial setup"""
+        """Initial setup
+        Device threshold is not set here: the integration_length is only known
+        once a QProgram is compiled. It is applied in the platform execution flow."""
         super().initial_setup()
         self._obtain_scope_sequencer()
         for sequencer in self.awg_sequencers:
@@ -100,8 +103,6 @@ class QbloxQRM(QbloxModule):
             self._set_hardware_demodulation(
                 value=cast("QbloxADCSequencer", sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
-            # Device threshold is not set here: the integration_length is only known
-            # once a QProgram is compiled. It is applied in the platform execution flow.
             self._set_threshold_rotation(
                 value=cast("QbloxADCSequencer", sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
@@ -292,8 +293,18 @@ class QbloxQRM(QbloxModule):
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.THRESHOLD:
-            integration_length = cast("QbloxADCSequencer", self.get_sequencer(channel_id)).integration_length or 0
-            self._set_threshold(value=float(value), sequencer_id=channel_id, integration_length=integration_length)
+            sequencer = cast("QbloxADCSequencer", self.get_sequencer(channel_id))
+            integration_length = sequencer.integration_length
+            if integration_length is None:
+                # QProgram not yet compiled: store threshold in model only.
+                # Hardware will be programmed with the correct integration length in _execute_qblox_compilation_output.
+                logger.debug(
+                    "Threshold stored in model but not set on the device: integration_length is not set. "
+                    "The threshold will be set on the device when a QProgram is executed."
+                )
+                sequencer.threshold = float(value)
+            else:
+                self._set_threshold(value=float(value), sequencer_id=channel_id, integration_length=integration_length)
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
             self._set_threshold_rotation(value=float(value), sequencer_id=channel_id)
@@ -329,7 +340,9 @@ class QbloxQRM(QbloxModule):
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).threshold = float(value)
 
         if self.is_device_active():
-            self._set_device_threshold(value=float(value), sequencer_id=sequencer_id, integration_length=integration_length)
+            self._set_device_threshold(
+                value=float(value), sequencer_id=sequencer_id, integration_length=integration_length
+            )
 
     def _set_threshold_rotation(self, value: float | str | bool, sequencer_id: int):
         """Set threshold rotation value for the specific channel.
@@ -371,7 +384,6 @@ class QbloxQRM(QbloxModule):
         )
         if self.is_device_active():
             self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
-
 
     def _set_sampling_rate(self, value: int | float | str | bool, sequencer_id: int):
         """set sampling_rate for the specific channel
