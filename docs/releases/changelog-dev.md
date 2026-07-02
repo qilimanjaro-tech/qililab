@@ -69,6 +69,9 @@
 
   [#1149](https://github.com/qilimanjaro-tech/qililab/pull/1149)
 
+- Fixed `ExperimentExecutor` not generating the loop shape correctly for data coming from a `QProgram` hardware loop, breaking the execution whenever the data does not fit with .h5 loop shape. This has been fixed by setting the same data size from `ExperimentExecutor` class axis generation as the output shape from the Qblox.
+  [#1153](https://github.com/qilimanjaro-tech/qililab/pull/1153)
+
 - Fixed `ExperimentExecutor` not allocating result datasets for `Acquire` (`qp.qblox.acquire`) and `MeasureReset` operations. Previously only `Measure` operations were counted as measurements, so a QProgram that read out via `qp.qblox.acquire` produced no result datasets and `ExperimentResults.get()` raised `KeyError`. The executor now counts the same `(Acquire, Measure, MeasureReset)` set as the `QbloxCompiler`.
   [#1148](https://github.com/qilimanjaro-tech/qililab/pull/1148)
 
