@@ -1428,6 +1428,10 @@ class Platform:
                 if output.qdac.trigger_position == "front":
                     for qdac in output.qdac.qdacs:
                         qdac.start()
+                # Remove QDAC-II trigger network created in this execution
+                qdac.clear_trigger()
+                # Remove dc / awg generators from the QDAC-II instrument
+                qdac.clear_cache()
             else:
                 for bus_alias in sequences:
                     buses[bus_alias].run()

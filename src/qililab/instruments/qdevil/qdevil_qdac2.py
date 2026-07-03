@@ -15,9 +15,11 @@
 """QDevil QDAC-II Instrument"""
 
 from dataclasses import dataclass
+from itertools import product
 from typing import TYPE_CHECKING
 
 import numpy as np
+from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import QDac2Trigger_Context
 
 from qililab.instruments import InstrumentFactory, ParameterNotFound, check_device_initialized, log_set_parameter
 from qililab.instruments.voltage_source import VoltageSource
@@ -26,7 +28,7 @@ from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
 from qililab.waveforms import Waveform
 
 if TYPE_CHECKING:
-    from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import List_Context, QDac2Trigger_Context
+    from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import List_Context
 
 
 @InstrumentFactory.register
@@ -42,6 +44,11 @@ class QDevilQDac2(VoltageSource):
     _MIN_RAMPING_RATE: float = 0.01
     _MAX_RAMPING_RATE: float = 2e7
     name = InstrumentName.QDEVIL_QDAC2
+
+    _N_DACS: int = 24
+    _N_INT_TRIGGERS: int = 14
+    _GENERATOR_LIST: tuple[str, str, str, str, str] = ("DC", "SINe", "SQUare", "TRIangle", "AWG")
+    _MARKER_LOCATION: tuple[str, str, str, str, str, str] = ("STARt", "END", "PSTart", "PEND", "SSTart", "SEND")
 
     @dataclass
     class QDevilQDac2Settings(VoltageSource.VoltageSourceSettings):
@@ -61,6 +68,8 @@ class QDevilQDac2(VoltageSource):
         self._cache_awg: dict[int | str, bool] = {}
         self._cache_dc: dict[int | str, List_Context] = {}
         self._triggers: dict[str, QDac2Trigger_Context] = {}
+
+        self._internal_triggers: dict = {}
 
     @property
     def low_pass_filter(self):
@@ -187,7 +196,7 @@ class QDevilQDac2(VoltageSource):
         self._validate_channel(channel_id=channel_id)
 
         envelope = waveform.envelope()
-        values = list(envelope)  # TODO: does np array work?
+        values = list(envelope)
         if channel_id in self._cache_awg:
             raise ValueError(
                 f"Device {self.name} already has a waveform allocated to channel {channel_id}. Clear the cache before allocating a new waveform"
@@ -289,7 +298,12 @@ class QDevilQDac2(VoltageSource):
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{channel_id}"].start_marker()
+        self._triggers[str(trigger)] = self.allocate_internal_trigger(
+            self._cache_dc[f"{self.device.name}_{channel_id}"]
+        )
+
+        channel = self.device.channel(channel_id)
+        channel.write_channel(f"sour{'{0}'}:dc:mark:star {self._triggers[str(trigger)].value}")
 
         self.device.connect_external_trigger(port=out_port, trigger=self._triggers[str(trigger)], width_s=width_s)
 
@@ -310,7 +324,12 @@ class QDevilQDac2(VoltageSource):
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{channel_id}"].start_marker()
+        self._triggers[str(trigger)] = self.allocate_internal_trigger(
+            self._cache_dc[f"{self.device.name}_{channel_id}"]
+        )
+
+        channel = self.device.channel(channel_id)
+        channel.write_channel(f"sour{'{0}'}:dc:mark:star {self._triggers[str(trigger)].value}")
 
     def set_end_marker_external_trigger(
         self,
@@ -338,7 +357,9 @@ class QDevilQDac2(VoltageSource):
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{channel_id}"].allocate_trigger()
+        self._triggers[str(trigger)] = self.allocate_internal_trigger(
+            self._cache_dc[f"{self.device.name}_{channel_id}"]
+        )
 
         channel = self.device.channel(channel_id)
         if not step:
@@ -374,7 +395,9 @@ class QDevilQDac2(VoltageSource):
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{channel_id}"].allocate_trigger()
+        self._triggers[str(trigger)] = self.allocate_internal_trigger(
+            self._cache_dc[f"{self.device.name}_{channel_id}"]
+        )
 
         channel = self.device.channel(channel_id)
         if not step:
@@ -401,7 +424,9 @@ class QDevilQDac2(VoltageSource):
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{channel_id}"].allocate_trigger()
+        self._triggers[str(trigger)] = self.allocate_internal_trigger(
+            self._cache_dc[f"{self.device.name}_{channel_id}"]
+        )
 
         channel = self.device.channel(channel_id)
         if not step:
@@ -426,7 +451,9 @@ class QDevilQDac2(VoltageSource):
         if str(trigger) in self._triggers.keys():
             self.clear_trigger(trigger)
 
-        self._triggers[str(trigger)] = self._cache_dc[f"{self.device.name}_{channel_id}"].allocate_trigger()
+        self._triggers[str(trigger)] = self.allocate_internal_trigger(
+            self._cache_dc[f"{self.device.name}_{channel_id}"]
+        )
 
         channel = self.device.channel(channel_id)
         if not step:
@@ -455,23 +482,63 @@ class QDevilQDac2(VoltageSource):
 
     def start(self):
         """All generators, that have not been explicitly set to trigger on an internal or external trigger, will be started."""
-        self.device.start_all()
+        for awg in self._cache_awg:
+            awg.start()
+        for dc_list in self._cache_dc:
+            dc_list.start()
         self._cache_awg = {}
         self._cache_dc = {}
         # TODO: add synchronous multiple qdac interaction using QDAC2_Array and qdacs.sync (https://qcodes.github.io/Qcodes_contrib_drivers/examples/QDevil/QDAC2/SyncMultipleQDACs.html)
 
     def clear_cache(self):
         """Clears the cache of the instrument"""
-        self.device.remove_traces()  # TODO: this method should be run at initial setup if instrument is in awg mode
+        self.device.remove_traces()
         self._cache_awg = {}
         self._cache_dc = {}
 
-    def clear_trigger(self, trigger: str | None = None):
-        """Clears all created triggers or only the specified trigger in case a trigger string is given."""
-        if trigger:
-            self.device.free_trigger(self._triggers[str(trigger)])
-        else:
-            self.device.free_all_triggers()
+    def _check_internal_triggers(self):
+        for channel_id in range(1, self._N_DACS + 1):
+            channel = self.device.channel(channel_id)
+            for generator, marker_location in product(self._GENERATOR_LIST, self._MARKER_LOCATION):
+                internal_trigger = channel.ask_channel(f"SOUR{'{0}'}:{generator}:MARK:{marker_location}?")
+                if internal_trigger != 0:
+                    self._internal_triggers[internal_trigger] = (channel_id, generator, marker_location)
+
+    def allocate_internal_trigger(self, qdac_generator: "QDevilQDac2Driver") -> QDac2Trigger_Context:
+        """Allocate an internal trigger
+
+        Does not have any effect on the instrument, only the driver.
+
+        Args:
+            qdac_generator (QDevilQDac2Driver): QDAC pulse generator such as DC list, AWG, Square...
+
+        Raises:
+            ValueError: no free triggers
+
+        Returns:
+            QDac2Trigger_Context: Context manager
+        """
+        self._check_internal_triggers()
+        free_int_trigger = set(range(1, self._N_INT_TRIGGERS + 1)) - self._internal_triggers.keys()
+        if not free_int_trigger:
+            raise ValueError("No free internal triggers")
+        return QDac2Trigger_Context(qdac_generator, min(free_int_trigger))
+
+    def clear_trigger(self, trigger: str | None = None) -> None:
+        """Free an internal trigger
+
+        Args:
+            trigger (optional, str | None): trigger to free, if no name is given it will free all triggers
+                                            set in this instance. Defaults to None.
+        """
+        self._check_internal_triggers()
+        triggers = {trigger: self._triggers[trigger]} if trigger is not None else self._triggers
+        for name, marker in triggers.items():
+            internal_trigger = marker.value
+            channel_id, generator, marker_location = self._internal_triggers[internal_trigger]
+            channel = self.device.channel(channel_id)
+            internal_trigger = channel.write_channel(f"SOUR{'{0}'}:{generator}:MARK:{marker_location} 0")
+            self._triggers.pop(name)
 
     def get_parameter(
         self, parameter: Parameter, channel_id: ChannelID | None = None, output_id: OutputID | None = None
@@ -517,7 +584,7 @@ class QDevilQDac2(VoltageSource):
 
     @check_device_initialized
     def turn_on(self):
-        """Start outputing voltage."""
+        """Start outputting voltage."""
         for channel_id in self.dacs:
             index = self.dacs.index(channel_id)
             channel = self.device.channel(channel_id)
@@ -528,7 +595,7 @@ class QDevilQDac2(VoltageSource):
 
     @check_device_initialized
     def turn_off(self):
-        """Stop outputing voltage."""
+        """Stop outputting voltage."""
         for channel_id in self.dacs:
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(0.0)
@@ -549,10 +616,10 @@ class QDevilQDac2(VoltageSource):
         if self._triggers:
             for trigger_name in self._triggers.keys():
                 self.clear_trigger(trigger_name)
+        self.clear_cache()
         self.device.reset()
 
     def remove_digital_trace(self):
-        self.clear_trigger()
         self._triggers = {}
         self.device.remove_traces()
 
