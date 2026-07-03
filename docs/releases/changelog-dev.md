@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- Added a `ValueError` while creating the `DatabaseManager` (for example with `get_db_manager`) checking for `user`, `passwd`, `host`, `port` or `database` inside the database.ini config file, if any of these parameters is missing an error is thrown.
+  [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
+
 - Added `NonLinearFlagState` to qprogram qblox crosstalk handler. This class controls the behavior of `play`, `set_offset`, `set_gain` and loop unpacking of the handler.
   [#1149](https://github.com/qilimanjaro-tech/qililab/pull/1149)
 
@@ -43,6 +46,9 @@
 ### Documentation
 
 ### Bug fixes
+
+- Fixed the folder shape at `add_measurement` and `add_results` to take into account us intervals of time. This will solve any issue with parallelization while creating more than one folder in less than a second.
+  [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
 
 - Fixed some bugs with the automatic non-linear crosstalk compensation at the `QbloxCompiler`:
   - The offset was set unnecessary times whenever a play followed a set offset in a qprogram, now the amount of set offsets are reduced on the Q1ASM sequencer.
