@@ -28,6 +28,7 @@ from qililab.qprogram.operations import (
     SetPhase,
     Sync,
     Wait,
+    WaitTrigger,
 )
 from qililab.utils.serialization import deserialize, deserialize_from, serialize, serialize_to
 from tests.qprogram.test_structured_program import (
@@ -298,6 +299,26 @@ class TestQProgram(TestStructuredProgram):
         assert isinstance(qp._body.elements[0], Wait)
         assert qp._body.elements[0].bus == "drive"
         assert qp._body.elements[0].duration == 100
+        
+    def test_wait_trigger_method(self):
+        """Test wait method"""
+        qp = QProgram()
+        qp.wait_trigger(bus="flux_1", duration=100)
+        qp.wait_trigger(bus="flux_2", duration=100, port=1)
+
+        assert len(qp._active_block.elements) == 2
+        assert len(qp._body.elements) == 2
+        assert isinstance(qp._body.elements[0], WaitTrigger)
+        assert qp._body.elements[0].bus == "flux_1"
+        assert qp._body.elements[0].duration == 100
+        assert qp._body.elements[0].port == None
+
+        assert isinstance(qp._body.elements[1], WaitTrigger)
+        assert qp._body.elements[1].bus == "flux_2"
+        assert qp._body.elements[1].duration == 100
+        assert qp._body.elements[1].port == 1
+        
+        assert qp.qblox.external_trigger == ["flux_1", "flux_2"]
 
     def test_measure_method(self):
         """Test measure method"""

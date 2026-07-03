@@ -87,13 +87,10 @@ class QbloxCompilationOutput:
         acquisitions (Acquisitions): A dictionary with the buses participating in the acquisitions as keys and the corresponding Acquisitions as values.
     """
 
-    def __init__(
-        self, qprogram: QProgram, sequences: Sequences, acquisitions: Acquisitions, external_trigger: bool = False
-    ):
+    def __init__(self, qprogram: QProgram, sequences: Sequences, acquisitions: Acquisitions):
         self.qprogram = qprogram
         self.sequences = sequences
         self.acquisitions = acquisitions
-        self.external_trigger = external_trigger
 
     def __iter__(self):
         """Allows the class to be unpacked as a tuple (program, config, measurements)."""
@@ -351,9 +348,6 @@ class QbloxCompiler:
         self._single_channel = single_channel if single_channel is not None else []
         self._acquisition_metadata = {}
 
-        # Pre-processing: Set initial external trigger buses to an empty list
-        self.external_trigger: bool = False
-
         # Pre-processing: Update time of flight
         if times_of_flight is not None:
             for bus in self._buses.keys() & times_of_flight.keys():
@@ -525,12 +519,7 @@ class QbloxCompiler:
         # Return a dictionary with bus names as keys and the compiled Sequence as values.
         sequences = {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
         acquisitions = {bus: bus_info.acquisitions for bus, bus_info in self._buses.items()}
-        return QbloxCompilationOutput(
-            qprogram=self._qprogram,
-            sequences=sequences,
-            acquisitions=acquisitions,
-            external_trigger=self.external_trigger,
-        )
+        return QbloxCompilationOutput(qprogram=self._qprogram, sequences=sequences, acquisitions=acquisitions)
 
     def _populate_buses(self):
         """Map each bus in the QProgram to a BusCompilationInfo instance.
@@ -1222,9 +1211,6 @@ class QbloxCompiler:
     def _handle_wait_trigger(self, element: WaitTrigger):
         if element.bus not in self._qblox_buses:
             return
-
-        # Set external trigger as True, using trigger address 15 for external trigger
-        self.external_trigger = True
 
         duration: QPyProgram.Register | int
 

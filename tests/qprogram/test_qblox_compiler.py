@@ -1440,13 +1440,6 @@ class TestQBloxCompiler:
         assert is_q1asm_equal(sequences["drive"], drive_str)
         assert is_q1asm_equal(sequences["readout"], readout_str)
 
-    def test_wait_trigger_sets_external_trigger(self, wait_trigger: QProgram):
-        """Test that using wait_trigger sets the external_trigger flag at QbloxCompilationOutput as True"""
-        compiler = QbloxCompiler()
-        qblox_output = compiler.compile(qprogram=wait_trigger)
-
-        assert qblox_output.external_trigger == True
-
     def test_wait_trigger_var_durationraises_error(self):
 
         qp = QProgram()
