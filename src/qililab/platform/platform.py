@@ -20,7 +20,6 @@ from __future__ import annotations
 import ast
 import io
 import re
-import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -1456,7 +1455,7 @@ class Platform:
             return results
         except TimeoutError as timeout:
             if output.qdac:
-                warnings.warn("Timeout reached for triggered measurement, trying again.")
+                logger.warning("Timeout reached for triggered measurement, trying again.")
 
                 # Reset instrument settings
                 for bus_alias in sequences:

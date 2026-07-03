@@ -14,7 +14,6 @@
 
 import datetime
 import os
-import warnings
 from configparser import ConfigParser
 from typing import TYPE_CHECKING, overload
 
@@ -24,6 +23,7 @@ from pandas import read_sql
 from sqlalchemy import create_engine, exists
 from sqlalchemy.orm import Session, sessionmaker
 
+from qililab.config import logger
 from qililab.result.database.database_autocal import AutocalMeasurement, CalibrationRun
 from qililab.result.database.database_measurements import Cooldown, Measurement, Sample, SequenceRun
 from qililab.result.database.database_qaas import QaaS_Experiment
@@ -83,15 +83,15 @@ class DatabaseManager:
                 if cd_object:
                     self.current_cd = cooldown
                     if not cd_object.active:
-                        warnings.warn(
+                        logger.warning(
                             f"Cooldown '{cooldown}' is not active. Make sure you have set the right cooldown."
                         )
                         # TODO: limit data addition to active cooldowns
                 else:
                     raise Exception(f"CD entry '{cooldown}' does not exist. Add it with add_cooldown()")
-                warnings.warn(f"Set current sample to {sample} and cooldown to {cooldown}")
+                logger.warning(f"Set current sample to {sample} and cooldown to {cooldown}")
                 return
-            warnings.warn(f"Set current sample to {sample}")
+            logger.warning(f"Set current sample to {sample}")
 
     def add_cooldown(self, cooldown: str, fridge: str, date: datetime.date = datetime.date.today()):
         """Add cooldown to metadata
@@ -531,7 +531,7 @@ class DatabaseManager:
 
         if not os.path.isdir(base_path):
             os.makedirs(base_path)
-            warnings.warn(f"Data folder did not exist. Created one at {base_path}")
+            logger.warning(f"Data folder did not exist. Created one at {base_path}")
 
         self.calibration_measurement = AutocalMeasurement(
             experiment_name=experiment_name,
@@ -667,7 +667,7 @@ class DatabaseManager:
         folder = dir_path
         if not os.path.isfile(folder):
             os.makedirs(folder)
-            warnings.warn(f"Data folder did not exist. Created one at {folder}")
+            logger.warning(f"Data folder did not exist. Created one at {folder}")
 
         measurement = Measurement(
             experiment_name=experiment_name,
@@ -749,7 +749,7 @@ class DatabaseManager:
         folder = dir_path
         if not os.path.isfile(folder):
             os.makedirs(folder)
-            warnings.warn(f"Data folder did not exist. Created one at {folder}")
+            logger.warning(f"Data folder did not exist. Created one at {folder}")
 
         # Save results
         _file = h5py.File(name=result_path, mode="w")
