@@ -579,9 +579,7 @@ class QDevilQDac2(VoltageSource):
     @check_device_initialized
     def reset(self):
         """Reset instrument. This will affect all channels."""
-        if self._triggers:
-            for trigger_name in list(self._triggers.keys()):
-                self.clear_trigger(trigger_name)
+        self.clear_trigger()
         self.clear_cache()
         self.device.reset()
 
