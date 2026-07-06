@@ -12,17 +12,21 @@ from qililab.waveforms import Square
 def _stateful_qdac_device() -> MagicMock:
     """MagicMock emulating the QDAC-II marker registers.
 
-    qililab discovers busy internal triggers by querying the instrument
-    (`SOUR{0}:<gen>:MARK:<loc>?`), so the mock must remember what was written
-    via `write_channel` and report it back via `ask_channel`. SCPI is
-    case-insensitive and allows abbreviations ("star" == "STARt"), hence the
-    per-segment prefix matching.
+    qililab discovers busy internal triggers with one compound SCPI query per
+    channel (`SOUR<n>:<gen>:MARK:<loc>?;:...` via `device.ask`), so the mock
+    must remember what was written via `write_channel` and report it back.
+    SCPI is case-insensitive and allows abbreviations ("star" == "STARt"),
+    hence the per-segment prefix matching. `device.channel` returns a single
+    shared mock, so the channel number in the first segment is normalized away.
     """
     device = MagicMock()
     markers: dict[tuple[str, ...], int] = {}
 
     def _segments(header: str) -> tuple[str, ...]:
-        return tuple(header.upper().rstrip("?").split(":"))
+        parts = header.upper().rstrip("?").split(":")
+        if parts[0].startswith("SOUR"):
+            parts[0] = "SOUR"  # SOUR{0} and SOUR<n> address the same shared channel mock
+        return tuple(parts)
 
     def _find(segments):
         for stored in markers:
@@ -38,13 +42,15 @@ def _stateful_qdac_device() -> MagicMock:
         key = _find(segments) or segments
         markers[key] = int(value)
 
-    def _ask_channel(command: str) -> int:
-        key = _find(_segments(command))
-        return markers[key] if key else 0  # int 0, so `!= 0` behaves correctly
+    def _ask(command: str) -> str:
+        values = []
+        for sub_query in command.split(";"):
+            key = _find(_segments(sub_query.lstrip(":")))
+            values.append(str(markers[key] if key else 0))
+        return ";".join(values)
 
-    channel = device.channel.return_value
-    channel.write_channel.side_effect = _write_channel
-    channel.ask_channel.side_effect = _ask_channel
+    device.ask.side_effect = _ask
+    device.channel.return_value.write_channel.side_effect = _write_channel
     return device
 
 
@@ -53,13 +59,15 @@ def _shared_physical_qdac(n_connections: int = 2):
 
     Channel objects and marker registers are shared across connections,
     keyed per channel, so trigger allocation on one connection is visible
-    to the others via ask_channel — just like real hardware.
+    to the others via the compound `device.ask` scan — just like real hardware.
     """
     markers: dict[tuple[int, tuple[str, ...]], int] = {}
     channels: dict[int, MagicMock] = {}
 
     def _segments(header: str) -> tuple[str, ...]:
-        return tuple(header.upper().rstrip("?").split(":"))
+        parts = header.upper().rstrip("?").split(":")
+        parts[0] = "SOUR"  # channel number is carried separately, as the key's first element
+        return tuple(parts)
 
     def _find(cid: int, segments: tuple[str, ...]):
         for key in markers:
@@ -80,20 +88,25 @@ def _shared_physical_qdac(n_connections: int = 2):
                 key = _find(_cid, _segments(header)) or (_cid, _segments(header))
                 markers[key] = int(value)
 
-            def _ask(command: str, _cid=cid) -> int:
-                key = _find(_cid, _segments(command))
-                return markers[key] if key else 0
-
             ch.write_channel.side_effect = _write
-            ch.ask_channel.side_effect = _ask
             channels[cid] = ch
         return channels[cid]
+
+    def _ask(command: str) -> str:
+        values = []
+        for sub_query in command.split(";"):
+            header = sub_query.lstrip(":")
+            cid = int(header.split(":", 1)[0].upper().removeprefix("SOUR"))
+            key = _find(cid, _segments(header))
+            values.append(str(markers[key] if key else 0))
+        return ";".join(values)
 
     devices = []
     for _ in range(n_connections):
         device = MagicMock()
         device.name = "qdac_shared"  # one physical instrument, one name
         device.channel.side_effect = _get_channel
+        device.ask.side_effect = _ask
         devices.append(device)
     return devices, channels
 
@@ -406,7 +419,7 @@ class TestQDevilQDac2:
         qdac.set_end_marker_external_trigger(channel_id, out_port, trigger, step=True)
         qdac.device.connect_external_trigger.assert_called_once()
         qdac.device.channel.return_value.write_channel.assert_any_call(
-            f"sour{{0}}:dc:mark:send {qdac._triggers[trigger].value}"
+            f"SOUR{{0}}:DC:MARK:SEND {qdac._triggers[trigger].value}"
         )
 
     def test_set_end_marker_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
@@ -539,7 +552,10 @@ class TestQDevilQDac2:
 
         qdac.start()
 
-        trace.start.assert_called_once()
+        # the cached trace is wrapped in an AWG generator and started
+        channel = qdac.device.channel.return_value
+        channel.arbitrary_wave.assert_called_once_with(trace.name)
+        channel.arbitrary_wave.return_value.start.assert_called_once()
         dc_list.start.assert_called_once()
         assert qdac._cache_awg == {}
         assert qdac._cache_dc == {}
@@ -564,6 +580,32 @@ class TestQDevilQDac2:
         qdac.clear_trigger(trigger)
         assert qdac._triggers == {}
         qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PEND 0")
+
+    def test_clear_trigger_no_argument_clears_all_triggers(self, qdac: QDevilQDac2, waveform: Square):
+        """clear_trigger() without a name frees every trigger of this instance (the platform cleanup path)."""
+        qdac.upload_voltage_list(waveform, channel_id=4)
+        qdac.upload_voltage_list(waveform, channel_id=2)
+        qdac.set_start_marker_internal_trigger(channel_id=4, trigger="t1")
+        qdac.set_end_marker_internal_trigger(channel_id=2, trigger="t2")
+        assert len(qdac._triggers) == 2
+
+        qdac.clear_trigger()
+
+        assert qdac._triggers == {}
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PSTart 0")
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PEND 0")
+
+    def test_internal_trigger_reusable_after_clear(self, qdac: QDevilQDac2, waveform: Square):
+        """A freed internal trigger number is seen as free again on the next allocation."""
+        qdac.upload_voltage_list(waveform, channel_id=4)
+        qdac.set_start_marker_internal_trigger(channel_id=4, trigger="t1")
+        assert qdac._triggers["t1"].value == 1
+
+        qdac.clear_trigger("t1")
+        qdac.set_start_marker_internal_trigger(channel_id=4, trigger="t1")
+
+        # without rebuilding _internal_triggers from the instrument this would be 2
+        assert qdac._triggers["t1"].value == 1
 
     def test_stop(self, qdac: QDevilQDac2, waveform: Square):
         channel_id = 4

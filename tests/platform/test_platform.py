@@ -798,7 +798,7 @@ class TestPlatform:
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, output_id=0) == 200
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "enabled"
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_COEFF, output_id=0)== [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
-        
+
         #  Check that filters marked as delay_comp in the runcard have not been changed
         assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=3) == "delay_comp"
         assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0) == "delay_comp"
@@ -829,7 +829,7 @@ class TestPlatform:
         """Test that the filter is created if needed"""
         platform_galadriel_no_filter.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
         assert platform_galadriel_no_filter.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
-        
+
 
     def test_setting_filter_bypassed_give_warning(self, caplog, platform: Platform):
         #  Check that setting a filter as bypassed will actually put/leave it as delay_comp if needed
@@ -1207,7 +1207,7 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "_check_internal_triggers") as check_internal_triggers,
+            patch.object(QDevilQDac2, "clear_trigger") as clear_trigger,
             patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1232,12 +1232,12 @@ class TestMethods:
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
         assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert check_internal_triggers.call_count == 3  # called as many times as executes
+        assert clear_trigger.call_count == 3  # cleanup after each execution frees this instance's triggers
         assert clear_cache.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
-        
+
     def test_execute_qprogram_with_qblox_and_multiple_qdacs(self, platform_qblox_qdacs: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1277,7 +1277,7 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "_check_internal_triggers") as check_internal_triggers,
+            patch.object(QDevilQDac2, "clear_trigger") as clear_trigger,
             patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1304,8 +1304,8 @@ class TestMethods:
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
         assert remove_digital_trace.call_count == 6  # called as many times as executes
         assert start.call_count == 6  # called as many times as executes
-        assert check_internal_triggers.call_count == 3  # called as many times as executes
-        assert clear_cache.call_count == 3  # called as many times as executes
+        assert clear_trigger.call_count == 6  # cleanup after each execution frees each qdac's triggers: 2 qdacs x 3 executes
+        assert clear_cache.call_count == 6  # 2 qdacs x 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1352,7 +1352,7 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "_check_internal_triggers") as check_internal_triggers,
+            patch.object(QDevilQDac2, "clear_trigger") as clear_trigger,
             patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1377,7 +1377,7 @@ class TestMethods:
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert check_internal_triggers.call_count == 3  # called as many times as executes
+        assert clear_trigger.call_count == 3  # cleanup after each execution frees this instance's triggers
         assert clear_cache.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
@@ -1412,7 +1412,7 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "_check_internal_triggers") as check_internal_triggers,
+            patch.object(QDevilQDac2, "clear_trigger") as clear_trigger,
             patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1437,12 +1437,12 @@ class TestMethods:
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert check_internal_triggers.call_count == 3  # called as many times as executes
+        assert clear_trigger.call_count == 3  # cleanup after each execution frees this instance's triggers
         assert clear_cache.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
-        
+
         assert calibration.crosstalk_matrix == expected_crosstalk
 
     def test_execute_qprogram_single_baseband_channel(self, platform: Platform):
@@ -2126,14 +2126,14 @@ class TestMethods:
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
-    @pytest.mark.qm    
+    @pytest.mark.qm
     def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
 
         with pytest.raises(NotImplementedError) as exc_info:
             platform_quantum_machines.draw(qp_quantum_machine)
-    
+
         assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
 
     def test_trigger_network_setup_and_reset(self, platform):
@@ -2252,7 +2252,7 @@ class TestMethods:
 
         with pytest.raises(Exception, match="Filter parameters are controlled using output_id and not channel_id"):
             platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", channel_id=output_id)
-            
+
         with pytest.raises(Exception, match=f"OutputID {output_id} is not linked to bus with alias {bus_alias}"):
             platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=output_id)
 
