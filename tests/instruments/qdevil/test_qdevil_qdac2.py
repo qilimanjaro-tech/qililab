@@ -615,8 +615,9 @@ class TestQDevilQDac2:
         for trigger_number, (generator, location) in enumerate(registers, start=1):
             channel.write_channel(f"SOUR{{0}}:{generator}:MARK:{location} {trigger_number}")
 
+        qdac_generator = MagicMock()
         with pytest.raises(ValueError, match="No free internal triggers"):
-            qdac.allocate_internal_trigger(MagicMock())
+            qdac.allocate_internal_trigger(qdac_generator)
         assert len(qdac._internal_triggers) == qdac._N_INT_TRIGGERS
 
     def test_stop(self, qdac: QDevilQDac2, waveform: Square):

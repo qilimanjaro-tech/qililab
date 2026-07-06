@@ -14,6 +14,7 @@
 
 """QDevil QDAC-II Instrument"""
 
+from copy import deepcopy
 from dataclasses import dataclass
 from itertools import product
 from typing import TYPE_CHECKING
@@ -580,7 +581,7 @@ class QDevilQDac2(VoltageSource):
     def reset(self):
         """Reset instrument. This will affect all channels."""
         if self._triggers:
-            for trigger_name in list(self._triggers.keys()):
+            for trigger_name in deepcopy(self._triggers.keys()):
                 self.clear_trigger(trigger_name)
         self.clear_cache()
         self.device.reset()
