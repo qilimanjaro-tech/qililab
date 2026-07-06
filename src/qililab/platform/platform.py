@@ -1434,7 +1434,7 @@ class Platform:
                         )
                     for instrument, channel in zip(bus.instruments, bus.channels):
                         if isinstance(instrument, QbloxQRM) and instrument.is_device_active():
-                            sequencer = cast("QbloxADCSequencer", instrument.get_sequencer(int(channel)))
+                            sequencer = cast("QbloxADCSequencer", instrument.get_sequencer(channel))
                             instrument._set_device_threshold(
                                 value=sequencer.threshold,
                                 sequencer_id=int(channel),
@@ -1797,6 +1797,7 @@ class Platform:
         self._apply_qblox_distortions_parallel(
             sequences_per_qprogram=sequences_per_qprogram, buses_per_qprogram=buses_per_qprogram
         )
+        self._apply_qblox_threshold_parallel(outputs=outputs, buses_per_qprogram=buses_per_qprogram)
 
         if debug:
             self._write_qblox_parallel_debug(sequences_per_qprogram=sequences_per_qprogram)
@@ -1843,6 +1844,30 @@ class Platform:
                         for waveform in sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms._waveforms:
                             sequences_per_qprogram[qprogram_idx][bus_alias]._waveforms.modify(
                                 waveform.name, distortion.apply(waveform.data)
+                            )
+
+    def _apply_qblox_threshold_parallel(
+        self,
+        outputs: list[QbloxCompilationOutput],
+        buses_per_qprogram: list[dict[str, Bus]],
+    ) -> None:
+        for qprogram_idx, buses in enumerate(buses_per_qprogram):
+            weight_durations = outputs[qprogram_idx].qprogram.qblox.weight_duration
+            for bus_alias, bus in buses.items():
+                durations = weight_durations.get(bus_alias)
+                if bus.has_adc() and durations:
+                    if len(set(durations)) > 1:
+                        logger.warning(
+                            f"Bus {bus_alias!r} has multiple different weight durations: {durations}. "
+                            f"Using the first value ({durations[0]} ns) as integration length for threshold."
+                        )
+                    for instrument, channel in zip(bus.instruments, bus.channels):
+                        if isinstance(instrument, QbloxQRM) and instrument.is_device_active():
+                            sequencer = cast("QbloxADCSequencer", instrument.get_sequencer(int(channel)))  # type: ignore[arg-type]
+                            instrument._set_device_threshold(
+                                value=sequencer.threshold,
+                                sequencer_id=int(channel),  # type: ignore[arg-type]
+                                integration_length=int(durations[0]),
                             )
 
     def _write_qblox_parallel_debug(self, sequences_per_qprogram: list[dict[str, Any]]) -> None:

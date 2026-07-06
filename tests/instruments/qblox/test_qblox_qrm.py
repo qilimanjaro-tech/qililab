@@ -8,7 +8,7 @@ import pytest
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
-
+from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
 from qililab.data_management import build_platform
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.qblox import QbloxQRM
@@ -441,30 +441,18 @@ class TestQbloxQRM:
         raw_seq.thresholded_acq_trigger_address.assert_called_with(trigger_address)
         raw_seq.thresholded_acq_trigger_en.assert_called_with(True)
 
-    def test_set_parameter_threshold_stores_model_only_when_integration_length_is_none(self, qrm: QbloxQRM):
-        """When integration_length is None (new-style runcard), set_parameter(THRESHOLD) must update
-        the model but not program the device — hardware will be set at QProgram execution time."""
-        from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
+    def test_set_parameter_threshold_stores_model_only(self, qrm: QbloxQRM):
+        """set_parameter(THRESHOLD) must update the stored value but never program the device directly —
+        hardware is programmed with the correct integration length at QProgram execution time, regardless
+        of whether the (deprecated) runcard integration_length is set."""
         sequencer = cast(QbloxADCSequencer, qrm.get_sequencer(0))
-        sequencer.integration_length = None
+        # fixture runcard has integration_length=1000, kept only to trigger the deprecation warning.
+        assert sequencer.integration_length == 1000
 
         qrm.set_parameter(Parameter.THRESHOLD, 0.7, channel_id=0)
 
         assert sequencer.threshold == 0.7
         qrm.device.sequencers[0].thresholded_acq_threshold.assert_not_called()
-
-    def test_set_parameter_threshold_programs_device_when_integration_length_set(self, qrm: QbloxQRM):
-        """When integration_length is set (legacy runcard), set_parameter(THRESHOLD) must update
-        both the model and program the device immediately."""
-        from qililab.instruments.qblox.qblox_adc_sequencer import QbloxADCSequencer
-        sequencer = cast(QbloxADCSequencer, qrm.get_sequencer(0))
-        # fixture runcard has integration_length=1000
-        assert sequencer.integration_length == 1000
-
-        qrm.set_parameter(Parameter.THRESHOLD, 0.5, channel_id=0)
-
-        assert sequencer.threshold == 0.5
-        qrm.device.sequencers[0].thresholded_acq_threshold.assert_called_once_with(0.5 * 1000)
 
     def test_platform_load_warns_on_integration_length_in_runcard(self):
         """Loading a runcard that contains integration_length must emit a FutureWarning."""

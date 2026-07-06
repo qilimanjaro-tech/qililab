@@ -41,19 +41,19 @@
 
 ### Breaking changes
 
-- `QbloxQRM.set_parameter(Parameter.INTEGRATION_LENGTH, ...)` now emits a `DeprecationWarning` and has no effect. Integration length is derived automatically from the QProgram weight duration. Remove any `integration_length` runcard entries or direct `set_parameter` calls targeting this parameter.
+- `Parameter.INTEGRATION_LENGTH` has been removed from the `Parameter` enum. Calling `set_parameter`/`get_parameter` with it now raises `AttributeError`.
   [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
 
 ### Deprecations / Removals
 
-- `Parameter.INTEGRATION_LENGTH` is deprecated. The value is retained in the enum for backwards compatibility but calling `set_parameter` with it emits a `FutureWarning` and performs no hardware operation.
+- The runcard's `integration_length` field (on `QbloxADCSequencer`) is deprecated and will be removed in a future release; setting it now emits a `FutureWarning`. The integration length is derived from the QProgram's weight duration instead.
   [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
 
 ### Documentation
 
 ### Improvements
 
-- `integration_length` is now derived dynamically from the QProgram weight waveform duration instead of being a static runcard field. `QProgram._weight_duration` is now a `dict[str, int | str]` keyed by bus alias, ensuring each ADC bus uses its own weight duration when programming the hardware threshold. Setting `Parameter.THRESHOLD` before a QProgram is compiled now stores the value in the model and defers hardware programming to execution time.
+- `integration_length` is now derived dynamically from the QProgram weight waveform duration instead of being a static runcard field. `QProgram.qblox.weight_duration` is a `dict[str, list[int | str]]` keyed by bus alias, ensuring each ADC bus uses its own weight duration when programming the hardware threshold. Setting `Parameter.THRESHOLD` always stores the value in the software only and defers hardware programming to QProgram execution time, regardless of whether the (deprecated) runcard `integration_length` is set. This improvement applies to single and parallel qprogram execution.
   [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
 
 ### Bug fixes

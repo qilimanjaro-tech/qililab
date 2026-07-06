@@ -294,17 +294,11 @@ class QbloxQRM(QbloxModule):
             return
         if parameter == Parameter.THRESHOLD:
             sequencer = cast("QbloxADCSequencer", self.get_sequencer(channel_id))
-            integration_length = sequencer.integration_length
-            if integration_length is None:
-                # QProgram not yet compiled: store threshold in model only.
-                # Hardware will be programmed with the correct integration length in _execute_qblox_compilation_output.
-                logger.debug(
-                    "Threshold stored in model but not set on the device: integration_length is not set. "
-                    "The threshold will be set on the device when a QProgram is executed."
-                )
-                sequencer.threshold = float(value)
-            else:
-                self._set_threshold(value=float(value), sequencer_id=channel_id, integration_length=integration_length)
+            logger.debug(
+                "Threshold stored in software but not set on the device. "
+                "The threshold will be set on the device when a QProgram is executed."
+            )
+            sequencer.threshold = float(value)
             return
         if parameter == Parameter.THRESHOLD_ROTATION:
             self._set_threshold_rotation(value=float(value), sequencer_id=channel_id)
@@ -328,21 +322,6 @@ class QbloxQRM(QbloxModule):
 
         if self.is_device_active():
             self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
-
-    def _set_threshold(self, value: float | str | bool, sequencer_id: int, integration_length: int):
-        """Set threshold value for the specific channel.
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-            integration_length (int): weight duration in nanoseconds used to scale the threshold
-        """
-        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).threshold = float(value)
-
-        if self.is_device_active():
-            self._set_device_threshold(
-                value=float(value), sequencer_id=sequencer_id, integration_length=integration_length
-            )
 
     def _set_threshold_rotation(self, value: float | str | bool, sequencer_id: int):
         """Set threshold rotation value for the specific channel.

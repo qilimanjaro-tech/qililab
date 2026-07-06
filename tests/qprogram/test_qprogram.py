@@ -314,6 +314,7 @@ class TestQProgram(TestStructuredProgram):
         assert np.equal(qp._body.elements[0].waveform.Q, zero_wf)
         assert np.equal(qp._body.elements[0].weights.I, one_wf)
         assert np.equal(qp._body.elements[0].weights.Q, zero_wf)
+        assert qp.qblox.weight_duration == {"readout": [40]}
 
     def test_acquire_method(self):
         """Test acquire method"""
@@ -328,6 +329,31 @@ class TestQProgram(TestStructuredProgram):
         assert qp._body.elements[0].bus == "readout"
         assert np.equal(qp._body.elements[0].weights.I, one_wf)
         assert np.equal(qp._body.elements[0].weights.Q, zero_wf)
+
+    def test_weight_duration_single_acquisition(self):
+        """A single acquire populates the bus list with one entry."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=weights_wf)
+        assert qp.qblox.weight_duration == {"readout": [120]}
+
+    def test_weight_duration_multiple_acquisitions_same_bus(self):
+        """Multiple acquires on the same bus append to the list in order."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=w1)
+        qp.qblox.acquire(bus="readout", weights=w2)
+        assert qp.qblox.weight_duration == {"readout": [120, 200]}
+
+    def test_weight_duration_multiple_buses(self):
+        """Different buses have independent lists."""
+        w1 = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        w2 = IQPair(I=Square(amplitude=1.0, duration=200), Q=Square(amplitude=0.0, duration=200))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout_a", weights=w1)
+        qp.qblox.acquire(bus="readout_b", weights=w2)
+        assert qp.qblox.weight_duration == {"readout_a": [120], "readout_b": [200]}
 
     def test_qdac_methods(self):
         """Test acquire method"""
@@ -1033,6 +1059,7 @@ class TestQProgram(TestStructuredProgram):
         # Interface flags updated
         assert "control" in qp.qblox.latch_enabled
         assert qp.qblox.trigger_network_required["readout"] == 1
+        assert qp.qblox.weight_duration == {"readout": [40]}
 
     def test_with_bus_mapping_measure_reset(self):
         """Test with_bus_mapping method"""
