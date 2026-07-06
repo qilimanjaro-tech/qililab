@@ -380,6 +380,31 @@ class TestMeasurement:
 class Testdatabase:
     """Test database class"""
 
+    def test_database_manager_raises_error_wrong_config(self):
+        config = {
+            "user": "user",
+            "passwd": "passwd",
+            "host": "host",
+            "port": "5432",
+            "database": "database",
+        }
+
+        del config["user"]
+        del config["port"]
+        del config["database"]
+        with patch("qililab.result.database.database_manager._load_config") as mock_load_config:
+            mock_load_config.return_value = config
+
+            with pytest.raises(ValueError) as exc_info:
+                DatabaseManager("test_file.ini", "database")
+        
+            message = str(exc_info.value)
+            assert "user" in message
+            assert "port" in message
+            assert "database" in message
+            # keys that were present should not be flagged
+            assert "host" not in message.split("Missing the database keys:")[1]
+
     def test_set_sample(self, db_manager: DatabaseManager):
         mock_session = db_manager.session()
         mock_session.query.return_value.scalar.return_value = True
@@ -1040,11 +1065,11 @@ class Testdatabase:
         measurement = db_manager.add_measurement("exp1", experiment_completed=True)
 
         # Assert
-        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000/exp1.h5"
         assert measurement.result_path == expected_path
         db_manager._mock_session.add.assert_called_once()
         db_manager._mock_session.commit.assert_called_once()
-        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00")
+        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000")
 
     @patch("qililab.result.database.database_manager.os.makedirs")
     @patch("qililab.result.database.database_manager.datetime")
@@ -1212,7 +1237,6 @@ def test_get_db_manager(mock_db_manager):
     filename = os.path.expanduser("~/database.ini")
     get_db_manager()
     mock_db_manager.assert_called_once_with(filename, "postgresql")
-
 
 @patch("qililab.result.database.database_manager.create_engine")
 def test_get_engine(mock_create_engine):
