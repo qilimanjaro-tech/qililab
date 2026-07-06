@@ -301,7 +301,7 @@ class TestQProgram(TestStructuredProgram):
         assert qp._body.elements[0].duration == 100
         
     def test_wait_trigger_method(self):
-        """Test wait method"""
+        """Test wait trigger method"""
         qp = QProgram()
         qp.wait_trigger(bus="flux_1", duration=100)
         qp.wait_trigger(bus="flux_2", duration=100, port=1)
@@ -319,6 +319,27 @@ class TestQProgram(TestStructuredProgram):
         assert qp._body.elements[1].port == 1
         
         assert qp.qblox.external_trigger == ["flux_1", "flux_2"]
+
+    def test_wait_trigger_method_with_bus_mapping(self):
+        """Test wait trigger method with bus mapping to check external trigger reformat."""
+        qp = QProgram()
+        qp.wait_trigger(bus="flux_1", duration=100)
+        qp.wait_trigger(bus="flux_2", duration=100, port=1)
+
+        new_qp = qp.with_bus_mapping(bus_mapping={"flux_1": "flux_x", "flux_2": "flux_z"})
+        assert len(new_qp._active_block.elements) == 2
+        assert len(new_qp._body.elements) == 2
+        assert isinstance(new_qp._body.elements[0], WaitTrigger)
+        assert new_qp._body.elements[0].bus == "flux_x"
+        assert new_qp._body.elements[0].duration == 100
+        assert new_qp._body.elements[0].port == None
+
+        assert isinstance(new_qp._body.elements[1], WaitTrigger)
+        assert new_qp._body.elements[1].bus == "flux_z"
+        assert new_qp._body.elements[1].duration == 100
+        assert new_qp._body.elements[1].port == 1
+        
+        assert new_qp.qblox.external_trigger == ["flux_x", "flux_z"]
 
     def test_measure_method(self):
         """Test measure method"""
