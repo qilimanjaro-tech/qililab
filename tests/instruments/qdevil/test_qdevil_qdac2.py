@@ -1,4 +1,5 @@
 import re
+from itertools import product
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -606,6 +607,17 @@ class TestQDevilQDac2:
 
         # without rebuilding _internal_triggers from the instrument this would be 2
         assert qdac._triggers["t1"].value == 1
+
+    def test_allocate_internal_trigger_limit_of_triggers_raises_error(self, qdac: QDevilQDac2):
+        """When the instrument reports every internal trigger as busy, allocation fails."""
+        channel = qdac.device.channel.return_value
+        registers = list(product(qdac._GENERATOR_LIST, qdac._MARKER_LOCATION))[: qdac._N_INT_TRIGGERS]
+        for trigger_number, (generator, location) in enumerate(registers, start=1):
+            channel.write_channel(f"SOUR{{0}}:{generator}:MARK:{location} {trigger_number}")
+
+        with pytest.raises(ValueError, match="No free internal triggers"):
+            qdac.allocate_internal_trigger(MagicMock())
+        assert len(qdac._internal_triggers) == qdac._N_INT_TRIGGERS
 
     def test_stop(self, qdac: QDevilQDac2, waveform: Square):
         channel_id = 4
