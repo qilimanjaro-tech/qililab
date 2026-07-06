@@ -4,6 +4,12 @@
 
 ### Improvements
 
+- Added a `ValueError` while creating the `DatabaseManager` (for example with `get_db_manager`) checking for `user`, `passwd`, `host`, `port` or `database` inside the database.ini config file, if any of these parameters is missing an error is thrown.
+  [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
+
+- Added `NonLinearFlagState` to qprogram qblox crosstalk handler. This class controls the behavior of `play`, `set_offset`, `set_gain` and loop unpacking of the handler.
+  [#1149](https://github.com/qilimanjaro-tech/qililab/pull/1149)
+
 - Added support for QPrograms with more than 32 distinct acquisitions in different blocks on the same bus. The compiler detects this case during a pre-traversal pass and maps all acquisitions to hardware index 0 with N bins, one bin per block. The platform then unpacks the single hardware result into N separate `QbloxMeasurementResult` objects, so `len(results["bus"]) == N` as expected.
 
   The typical use case is sweeping over a non-linear (arbitrary) set of values, not expressible as a hardware `for_loop`:
@@ -40,6 +46,37 @@
 ### Documentation
 
 ### Bug fixes
+
+- Fixed the folder shape at `add_measurement` and `add_results` to take into account us intervals of time. This will solve any issue with parallelization while creating more than one folder in less than a second.
+  [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
+
+- Fixed some bugs with the automatic non-linear crosstalk compensation at the `QbloxCompiler`:
+  - The offset was set unnecessary times whenever a play followed a set offset in a qprogram, now the amount of set offsets are reduced on the Q1ASM sequencer.
+  - A sequence of offset loops using the same variable did not update the offset value correctly, now the variables are set correctly. For example:
+
+    ```
+    with qp_qblox.for_loop(variable=offset, start=0, stop=0.9, step=0.1):
+        qp_qblox.set_offset(bus="qblox_flux1", offset_path0=offset)
+        qp_qblox.set_offset(bus="qblox_flux2", offset_path0=0.1)
+    with qp_qblox.for_loop(variable=offset, start=0.9, stop=0, step=-0.1):
+        qp_qblox.set_offset(bus="qblox_flux1", offset_path0=offset)
+        qp_qblox.set_offset(bus="qblox_flux2", offset_path0=0.1)
+    ```
+
+  - An offset set after a loop containing `qprogram.set_offset` was not updated, now it sets correctly after a loop. For example:
+
+    ```
+    with qp_qblox.for_loop(variable=offset, start=0, stop=0.9, step=0.1):
+        qp_qblox.set_offset(bus="qblox_flux1", offset_path0=offset)
+        qp_qblox.set_offset(bus="qblox_flux2", offset_path0=0.1)
+    qp_qblox.set_offset(bus="qblox_flux1", offset_path0=0)
+    qp_qblox.set_offset(bus="qblox_flux2", offset_path0=0)
+    ```
+
+  [#1149](https://github.com/qilimanjaro-tech/qililab/pull/1149)
+
+- Fixed `ExperimentExecutor` not generating the loop shape correctly for data coming from a `QProgram` hardware loop, breaking the execution whenever the data does not fit with .h5 loop shape. This has been fixed by setting the same data size from `ExperimentExecutor` class axis generation as the output shape from the Qblox.
+  [#1153](https://github.com/qilimanjaro-tech/qililab/pull/1153)
 
 - Fixed `ExperimentExecutor` not allocating result datasets for `Acquire` (`qp.qblox.acquire`) and `MeasureReset` operations. Previously only `Measure` operations were counted as measurements, so a QProgram that read out via `qp.qblox.acquire` produced no result datasets and `ExperimentResults.get()` raised `KeyError`. The executor now counts the same `(Acquire, Measure, MeasureReset)` set as the `QbloxCompiler`.
   [#1148](https://github.com/qilimanjaro-tech/qililab/pull/1148)
