@@ -1087,12 +1087,12 @@ class Testdatabase:
         measurement = db_manager.add_measurement("exp1", experiment_completed=True, bus_mapping=bus_map)
 
         # Assert
-        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000/exp1.h5"
         assert measurement.result_path == expected_path
         assert measurement.bus_mapping == bus_map
         db_manager._mock_session.add.assert_called_once()
         db_manager._mock_session.commit.assert_called_once()
-        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00")
+        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000")
 
     def test_add_measurement_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set
