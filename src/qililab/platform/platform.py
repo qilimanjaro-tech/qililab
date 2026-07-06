@@ -1235,12 +1235,9 @@ class Platform:
                         raise ValueError(
                             f"Calibrated weight {entry!r} requires a calibration object, but none was provided."
                         )
-                    for bus_weights in calibration.weights.values():
-                        if entry in bus_weights:
-                            resolved_entries.append(bus_weights[entry].get_duration())
-                            break
-                    else:
+                    if not calibration.has_weights(bus, entry):
                         raise ValueError(f"Calibrated weight {entry!r} not found in calibration.")
+                    resolved_entries.append(calibration.get_weights(bus, entry).get_duration())
             resolved[bus] = resolved_entries
         qprogram.qblox._weight_duration = resolved
 

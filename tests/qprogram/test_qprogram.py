@@ -76,6 +76,17 @@ class TestQProgram(TestStructuredProgram):
     def instance(self):
         return QProgram()
 
+    def test_with_bus_mapping_remaps_weight_duration_keys(self):
+        """with_bus_mapping must remap qblox.weight_duration keys, otherwise threshold programming
+        can never find the duration for a mapped bus."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        qp = QProgram()
+        qp.qblox.acquire(bus="readout", weights=weights_wf)
+
+        mapped_qp = qp.with_bus_mapping(bus_mapping={"readout": "readout_q0_bus"})
+
+        assert mapped_qp.qblox.weight_duration == {"readout_q0_bus": [120]}
+
     def test_with_bus_mapping_method(self):
         """Test with_bus_mapping method"""
         qp = QProgram()

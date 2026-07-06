@@ -266,6 +266,11 @@ class QProgram(StructuredProgram):
                 copied_qprogram.buses.remove(bus)
                 copied_qprogram.buses.add(bus_mapping[bus])
 
+        # Apply the mapping to weight_duration keys
+        copied_qprogram.qblox._weight_duration = {
+            bus_mapping.get(bus, bus): durations for bus, durations in copied_qprogram.qblox._weight_duration.items()
+        }
+
         return copied_qprogram
 
     def with_calibration(self, calibration: Calibration):

@@ -2335,6 +2335,25 @@ class TestMethods:
         platform._resolve_weight_duration(qp, calibration=calibration)
         assert qp.qblox.weight_duration == {"feedline_input_output_bus": [300]}
 
+    def test_resolve_weight_duration_scopes_lookup_to_the_entrys_own_bus(self, platform: Platform):
+        """When two buses register a weight under the same name with different durations, resolving
+        must use the duration registered for the entry's own bus, not whichever bus is found first."""
+        calibration = Calibration()
+        calibration.add_weights(
+            bus="feedline_input_output_bus",
+            name="optimal_weights",
+            weights=IQPair(I=Square(amplitude=1.0, duration=300), Q=Square(amplitude=0.0, duration=300)),
+        )
+        calibration.add_weights(
+            bus="feedline_input_output_bus_2",
+            name="optimal_weights",
+            weights=IQPair(I=Square(amplitude=1.0, duration=999), Q=Square(amplitude=0.0, duration=999)),
+        )
+        qp = QProgram()
+        qp.qblox.acquire(bus="feedline_input_output_bus_2", weights="optimal_weights")
+        platform._resolve_weight_duration(qp, calibration=calibration)
+        assert qp.qblox.weight_duration == {"feedline_input_output_bus_2": [999]}
+
     def test_resolve_weight_duration_calibration_none_raises(self, platform: Platform):
         """A calibrated weight name with calibration=None must raise ValueError, not AttributeError."""
         qp = QProgram()
