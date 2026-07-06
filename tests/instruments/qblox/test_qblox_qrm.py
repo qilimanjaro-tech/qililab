@@ -451,8 +451,16 @@ class TestQbloxQRM:
 
         qrm.set_parameter(Parameter.THRESHOLD, 0.7, channel_id=0)
 
-        assert sequencer.threshold == 0.7
+        assert sequencer.threshold == pytest.approx(0.7)
         qrm.device.sequencers[0].thresholded_acq_threshold.assert_not_called()
+
+    def test_set_device_threshold_scales_by_integration_length(self, qrm: QbloxQRM):
+        """_set_device_threshold must program the device with value * integration_length,
+        not the raw threshold value. This is the only place that scaling happens, and it is
+        only ever called from Platform at QProgram execution time."""
+        qrm._set_device_threshold(value=0.5, sequencer_id=0, integration_length=1000)
+
+        qrm.device.sequencers[0].thresholded_acq_threshold.assert_called_once_with(500)
 
     def test_platform_load_warns_on_integration_length_in_runcard(self):
         """Loading a runcard that contains integration_length must emit a FutureWarning."""

@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- `integration_length` is now derived dynamically from the QProgram weight waveform duration instead of being a static runcard field. `QProgram.qblox.weight_duration` is a `dict[str, list[int | str]]` keyed by bus alias, ensuring each ADC bus uses its own weight duration when programming the hardware threshold. Setting `Parameter.THRESHOLD` always stores the value in the software only and defers hardware programming to QProgram execution time, regardless of whether the (deprecated) runcard `integration_length` is set. This improvement applies to single and parallel qprogram execution.
+  [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
+
 - Added a `ValueError` while creating the `DatabaseManager` (for example with `get_db_manager`) checking for `user`, `passwd`, `host`, `port` or `database` inside the database.ini config file, if any of these parameters is missing an error is thrown.
   [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
 
@@ -50,11 +53,6 @@
   [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
 
 ### Documentation
-
-### Improvements
-
-- `integration_length` is now derived dynamically from the QProgram weight waveform duration instead of being a static runcard field. `QProgram.qblox.weight_duration` is a `dict[str, list[int | str]]` keyed by bus alias, ensuring each ADC bus uses its own weight duration when programming the hardware threshold. Setting `Parameter.THRESHOLD` always stores the value in the software only and defers hardware programming to QProgram execution time, regardless of whether the (deprecated) runcard `integration_length` is set. This improvement applies to single and parallel qprogram execution.
-  [#1151](https://github.com/qilimanjaro-tech/qililab/pull/1151)
 
 ### Bug fixes
 
