@@ -47,9 +47,13 @@
 
 ### Bug fixes
 
-- Fixed an issue where two users connected to the same QDAC-II encountered some issues with the trigger network. This occurred because the device's drivers created an arbitrary number for the internal trigger, unable to communicate this value to other instances of python, If the number was the same the triggers went would be sent though multiple networks (interfering with each other experiments).
+- Fixed the QDAC-II trigger network breaking when multiple users are connected to the same instrument. Each qililab instance allocated internal trigger numbers from its own driver-side pool, with no way of knowing which numbers other Python processes were already using. When two instances picked the same number, their triggers fired through each other's networks, interfering with both experiments.
 
-  This issue has been solved by creating a function (`_check_internal_triggers`) that reviews each channel and creates only internal triggers that have not been set in the internal trigger network.
+  Internal triggers in use are now read directly from the instrument's marker registers before every allocation, so a new trigger always takes the lowest number that is actually free on the hardware. Related behavior changes:
+  - `QDevilQDac2.start()` now starts only the DC lists and AWG waveforms uploaded by this instance, instead of `start_all()`, which also fired generators armed by other users.
+  - `QDevilQDac2.clear_trigger()` now frees the triggers created by this instance from the instrument (previously `free_all_triggers()` released the triggers set by `QCodes`, not affecting the instrument).
+  - `Platform.execute_qprogram` now clears each QDAC-II's trigger network and generator caches after every execution, so consecutive executions always start from a clean trigger state.
+  - Allocating a trigger when all 14 internal triggers are busy raises a `ValueError` including other users triggers.
   [#1154](https://github.com/qilimanjaro-tech/qililab/pull/1154)
 
 - Fixed the folder shape at `add_measurement` and `add_results` to take into account us intervals of time. This will solve any issue with parallelization while creating more than one folder in less than a second.
