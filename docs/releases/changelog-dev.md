@@ -41,6 +41,11 @@
 
 ### Bug fixes
 
+- Fixed an issue where two users connected to the same QDAC-II encountered some issues with the trigger network. This occurred because the device's drivers created an arbitrary number for the internal trigger, unable to communicate this value to other instances of python, If the number was the same the triggers went would be sent though multiple networks (interfering with each other experiments).
+
+  This issue has been solved by creating a function (`_check_internal_triggers`) that reviews each channel and creates only internal triggers that have not been set in the internal trigger network.
+  [#1154](https://github.com/qilimanjaro-tech/qililab/pull/1154)
+
 - Fixed `ExperimentExecutor` not allocating result datasets for `Acquire` (`qp.qblox.acquire`) and `MeasureReset` operations. Previously only `Measure` operations were counted as measurements, so a QProgram that read out via `qp.qblox.acquire` produced no result datasets and `ExperimentResults.get()` raised `KeyError`. The executor now counts the same `(Acquire, Measure, MeasureReset)` set as the `QbloxCompiler`.
   [#1148](https://github.com/qilimanjaro-tech/qililab/pull/1148)
 
@@ -48,7 +53,7 @@
   [#1130](https://github.com/qilimanjaro-tech/qililab/pull/1130)
 
 - Fixed a bug for Rohde & Schwarz SGS100A instrument class where the module SGS-B106V did not apply the iq_wideband at the initial_setup.
-    [#1144](https://github.com/qilimanjaro-tech/qililab/pull/1144)
+  [#1144](https://github.com/qilimanjaro-tech/qililab/pull/1144)
 
 - Fixed a bug in `platform._execute_qblox_compilation_output` where a program with N acquisitions on the same bus returned N² results instead of N. A nested loop incorrectly paired every hardware result with every acquisition slot; replaced with `zip` pairing. This was triggered by any QProgram with acquires at more than one nesting depth on the same bus (e.g. two separate `average` blocks each containing one `acquire`).
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
