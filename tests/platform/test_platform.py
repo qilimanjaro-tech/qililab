@@ -1207,6 +1207,8 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
+            patch.object(QDevilQDac2, "_check_internal_triggers") as check_internal_triggers,
+            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
@@ -1230,6 +1232,8 @@ class TestMethods:
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
         assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
+        assert check_internal_triggers.call_count == 3  # called as many times as executes
+        assert clear_cache.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1273,6 +1277,8 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
+            patch.object(QDevilQDac2, "_check_internal_triggers") as check_internal_triggers,
+            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
@@ -1298,6 +1304,8 @@ class TestMethods:
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
         assert remove_digital_trace.call_count == 6  # called as many times as executes
         assert start.call_count == 6  # called as many times as executes
+        assert check_internal_triggers.call_count == 3  # called as many times as executes
+        assert clear_cache.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1344,6 +1352,8 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
+            patch.object(QDevilQDac2, "_check_internal_triggers") as check_internal_triggers,
+            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
@@ -1367,6 +1377,8 @@ class TestMethods:
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
+        assert check_internal_triggers.call_count == 3  # called as many times as executes
+        assert clear_cache.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1400,6 +1412,8 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
+            patch.object(QDevilQDac2, "_check_internal_triggers") as check_internal_triggers,
+            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
@@ -1423,6 +1437,8 @@ class TestMethods:
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
+        assert check_internal_triggers.call_count == 3  # called as many times as executes
+        assert clear_cache.call_count == 3  # called as many times as executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1

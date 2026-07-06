@@ -28,7 +28,7 @@ from qililab.typings import QDevilQDac2 as QDevilQDac2Driver
 from qililab.waveforms import Waveform
 
 if TYPE_CHECKING:
-    from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import List_Context
+    from qcodes_contrib_drivers.drivers.QDevil.QDAC2 import List_Context, Trace_Context
 
 
 @InstrumentFactory.register
@@ -65,7 +65,7 @@ class QDevilQDac2(VoltageSource):
 
     def __init__(self, settings: dict) -> None:
         super().__init__(settings=settings)
-        self._cache_awg: dict[int | str, bool] = {}
+        self._cache_awg: dict[int | str, Trace_Context] = {}
         self._cache_dc: dict[int | str, List_Context] = {}
         self._triggers: dict[str, QDac2Trigger_Context] = {}
 
@@ -208,7 +208,7 @@ class QDevilQDac2(VoltageSource):
             raise ValueError("Waveform amplitudes must be within [-1,1] range.")
         trace = self.device.allocate_trace(channel_id, len(values))
         trace.waveform(values)
-        self._cache_awg[channel_id] = True
+        self._cache_awg[channel_id] = trace
 
     def upload_voltage_list(
         self,
@@ -482,9 +482,9 @@ class QDevilQDac2(VoltageSource):
 
     def start(self):
         """All generators, that have not been explicitly set to trigger on an internal or external trigger, will be started."""
-        for awg in self._cache_awg:
+        for _, awg in self._cache_awg.items():
             awg.start()
-        for dc_list in self._cache_dc:
+        for _, dc_list in self._cache_dc.items():
             dc_list.start()
         self._cache_awg = {}
         self._cache_dc = {}
@@ -500,7 +500,7 @@ class QDevilQDac2(VoltageSource):
         for channel_id in range(1, self._N_DACS + 1):
             channel = self.device.channel(channel_id)
             for generator, marker_location in product(self._GENERATOR_LIST, self._MARKER_LOCATION):
-                internal_trigger = channel.ask_channel(f"SOUR{'{0}'}:{generator}:MARK:{marker_location}?")
+                internal_trigger = int(channel.ask_channel(f"SOUR{'{0}'}:{generator}:MARK:{marker_location}?"))
                 if internal_trigger != 0:
                     self._internal_triggers[internal_trigger] = (channel_id, generator, marker_location)
 
@@ -614,7 +614,7 @@ class QDevilQDac2(VoltageSource):
     def reset(self):
         """Reset instrument. This will affect all channels."""
         if self._triggers:
-            for trigger_name in self._triggers.keys():
+            for trigger_name in list(self._triggers.keys()):
                 self.clear_trigger(trigger_name)
         self.clear_cache()
         self.device.reset()

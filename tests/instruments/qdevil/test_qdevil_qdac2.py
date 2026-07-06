@@ -9,6 +9,95 @@ from qililab.typings.enums import Parameter
 from qililab.waveforms import Square
 
 
+def _stateful_qdac_device() -> MagicMock:
+    """MagicMock emulating the QDAC-II marker registers.
+
+    qililab discovers busy internal triggers by querying the instrument
+    (`SOUR{0}:<gen>:MARK:<loc>?`), so the mock must remember what was written
+    via `write_channel` and report it back via `ask_channel`. SCPI is
+    case-insensitive and allows abbreviations ("star" == "STARt"), hence the
+    per-segment prefix matching.
+    """
+    device = MagicMock()
+    markers: dict[tuple[str, ...], int] = {}
+
+    def _segments(header: str) -> tuple[str, ...]:
+        return tuple(header.upper().rstrip("?").split(":"))
+
+    def _find(segments):
+        for stored in markers:
+            if len(stored) == len(segments) and all(
+                a.startswith(b) or b.startswith(a) for a, b in zip(stored, segments)
+            ):
+                return stored
+        return None
+
+    def _write_channel(command: str) -> None:
+        header, _, value = command.partition(" ")
+        segments = _segments(header)
+        key = _find(segments) or segments
+        markers[key] = int(value)
+
+    def _ask_channel(command: str) -> int:
+        key = _find(_segments(command))
+        return markers[key] if key else 0  # int 0, so `!= 0` behaves correctly
+
+    channel = device.channel.return_value
+    channel.write_channel.side_effect = _write_channel
+    channel.ask_channel.side_effect = _ask_channel
+    return device
+
+
+def _shared_physical_qdac(n_connections: int = 2):
+    """N driver connections to ONE physical QDAC-II.
+
+    Channel objects and marker registers are shared across connections,
+    keyed per channel, so trigger allocation on one connection is visible
+    to the others via ask_channel — just like real hardware.
+    """
+    markers: dict[tuple[int, tuple[str, ...]], int] = {}
+    channels: dict[int, MagicMock] = {}
+
+    def _segments(header: str) -> tuple[str, ...]:
+        return tuple(header.upper().rstrip("?").split(":"))
+
+    def _find(cid: int, segments: tuple[str, ...]):
+        for key in markers:
+            stored_cid, stored = key
+            if stored_cid == cid and len(stored) == len(segments) and all(
+                a.startswith(b) or b.startswith(a) for a, b in zip(stored, segments)
+            ):
+                return key
+        return None
+
+    def _get_channel(channel_id) -> MagicMock:
+        cid = int(channel_id)
+        if cid not in channels:
+            ch = MagicMock()
+
+            def _write(command: str, _cid=cid) -> None:
+                header, _, value = command.partition(" ")
+                key = _find(_cid, _segments(header)) or (_cid, _segments(header))
+                markers[key] = int(value)
+
+            def _ask(command: str, _cid=cid) -> int:
+                key = _find(_cid, _segments(command))
+                return markers[key] if key else 0
+
+            ch.write_channel.side_effect = _write
+            ch.ask_channel.side_effect = _ask
+            channels[cid] = ch
+        return channels[cid]
+
+    devices = []
+    for _ in range(n_connections):
+        device = MagicMock()
+        device.name = "qdac_shared"  # one physical instrument, one name
+        device.channel.side_effect = _get_channel
+        devices.append(device)
+    return devices, channels
+
+
 @pytest.fixture(name="qdac")
 def fixture_qdac() -> QDevilQDac2:
     """Fixture that returns an instance of a dummy QDAC-II."""
@@ -23,7 +112,25 @@ def fixture_qdac() -> QDevilQDac2:
             "low_pass_filter": ["dc", "dc", "dc", "dc"],
         }
     )
-    qdac.device = MagicMock()
+    qdac.device = _stateful_qdac_device()
+    return qdac
+
+
+@pytest.fixture(name="qdac_2")
+def fixture_qdac_2() -> QDevilQDac2:
+    """Fixture that returns an instance of a dummy QDAC-II."""
+    qdac = QDevilQDac2(
+        {
+            "alias": "qdac_2",
+            "voltage": [0.5, 0.5, 0.5, 0.5],
+            "span": ["low", "low", "low", "low"],
+            "ramping_enabled": [True, True, True, False],
+            "ramp_rate": [0.01, 0.01, 0.01, 0.01],
+            "dacs": [1, 3, 9, 12],
+            "low_pass_filter": ["dc", "dc", "dc", "dc"],
+        }
+    )
+    qdac.device = _stateful_qdac_device()
     return qdac
 
 
@@ -116,6 +223,11 @@ class TestQDevilQDac2:
         qdac.reset()
 
         qdac.device.reset.assert_called_once()
+        assert qdac._triggers == {}          # trigger was actually freed
+        assert qdac._cache_awg == {}
+        assert qdac._cache_dc == {}
+        # reset released the marker on the instrument
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PSTart 0")
 
     def test_get_dac(self, qdac: QDevilQDac2):
         """Test get_dac method"""
@@ -130,7 +242,9 @@ class TestQDevilQDac2:
         channel_id = 4
         qdac.upload_awg_waveform(waveform, channel_id)
         qdac.device.allocate_trace.assert_called_once_with(channel_id, len(waveform.envelope()))
-        assert qdac._cache_awg == {4: True}
+        assert qdac._cache_awg == {channel_id: qdac.device.allocate_trace.return_value}
+        # the waveform data was actually pushed to the trace
+        qdac.device.allocate_trace.return_value.waveform.assert_called_once_with(list(waveform.envelope()))
 
     def test_upload_awg_waveform_fails_overwrite_cache(self, qdac: QDevilQDac2, waveform: Square):
         """Test that upload waveform raises an error when trying to allocate a waveform to an already allocated channel id"""
@@ -230,9 +344,10 @@ class TestQDevilQDac2:
         qdac.set_out_external_trigger(channel_id, out_port, trigger)
         qdac.device.connect_external_trigger.assert_called_once()
 
-        # Same test for reset trigger
+        # Second call clears the old trigger before re-allocating
         qdac.set_out_external_trigger(channel_id, out_port, trigger)
-        qdac.device.free_trigger.assert_called_once()
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:STARt 0")
+        assert qdac.device.connect_external_trigger.call_count == 2
 
     def test_set_out_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
         """Test set_out_external_trigger method raises error when no DC list is created"""
@@ -251,10 +366,13 @@ class TestQDevilQDac2:
         """Test set_out_internal_trigger method"""
         channel_id = 4
         trigger = "trigger_test"
-        qdac._triggers = {"trigger_test": "test_free_trigger"}
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_out_internal_trigger(channel_id, trigger)
-        qdac.device.free_trigger.assert_called_once()
+        assert qdac._triggers[trigger].value == 1
+
+        # Second call clears the old trigger before re-allocating
+        qdac.set_out_internal_trigger(channel_id, trigger)
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:STARt 0")
 
     def test_set_out_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
         """Test set_out_internal_trigger method raises error when no DC list is created"""
@@ -270,25 +388,26 @@ class TestQDevilQDac2:
 
     def test_set_end_marker_external_trigger(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
-        channel_id = 4
-        out_port = 1
-        trigger = "trigger_test"
-        qdac._triggers = {"trigger_test": "test_free_trigger"}
+        channel_id, out_port, trigger = 4, 1, "trigger_test"
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_end_marker_external_trigger(channel_id, out_port, trigger)
         qdac.device.connect_external_trigger.assert_called_once()
-        qdac.device.free_trigger.assert_called_once()
+
+        qdac.set_end_marker_external_trigger(channel_id, out_port, trigger, step=True)
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PEND 0")
+        assert qdac.device.connect_external_trigger.call_count == 2
 
     def test_set_end_marker_external_trigger_stepped(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
         channel_id = 4
         out_port = 1
         trigger = "trigger_test"
-        qdac._triggers = {"trigger_test": "test_free_trigger"}
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_end_marker_external_trigger(channel_id, out_port, trigger, step=True)
         qdac.device.connect_external_trigger.assert_called_once()
-        qdac.device.free_trigger.assert_called_once()
+        qdac.device.channel.return_value.write_channel.assert_any_call(
+            f"sour{{0}}:dc:mark:send {qdac._triggers[trigger].value}"
+        )
 
     def test_set_end_marker_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
@@ -308,14 +427,14 @@ class TestQDevilQDac2:
         channel_id = 4
         out_port = 1
         trigger = "trigger_test"
-        qdac._triggers = {}
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_start_marker_external_trigger(channel_id, out_port, trigger)
-
         qdac.device.connect_external_trigger.assert_called_once()
 
+        # step=True re-call: old PSTart marker is released, SSTart is set
         qdac.set_start_marker_external_trigger(channel_id, out_port, trigger, step=True)
-        qdac.device.free_trigger.assert_called_once()
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PSTart 0")
+        assert qdac.device.connect_external_trigger.call_count == 2
 
     def test_set_start_marker_external_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
@@ -334,14 +453,12 @@ class TestQDevilQDac2:
         """Test upload_waveform method"""
         channel_id = 4
         trigger = "trigger_test"
-        qdac._triggers = {}
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_end_marker_internal_trigger(channel_id, trigger)
-
-        qdac.device.channel(channel_id).write_channel.assert_called_once()
+        qdac.device.channel.return_value.write_channel.assert_called_once()
 
         qdac.set_end_marker_internal_trigger(channel_id, trigger, step=True)
-        qdac.device.free_trigger.assert_called_once()
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PEND 0")
 
     def test_set_end_marker_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
@@ -359,14 +476,12 @@ class TestQDevilQDac2:
         """Test upload_waveform method"""
         channel_id = 4
         trigger = "trigger_test"
-        qdac._triggers = {}
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_start_marker_internal_trigger(channel_id, trigger)
-
-        qdac.device.channel(channel_id).write_channel.assert_called_once()
+        qdac.device.channel.return_value.write_channel.assert_called_once()
 
         qdac.set_start_marker_internal_trigger(channel_id, trigger, step=True)
-        qdac.device.free_trigger.assert_called_once()
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PSTart 0")
 
     def test_set_start_marker_internal_trigger_no_cache_raises_error(self, qdac: QDevilQDac2, waveform: Square):
         """Test upload_waveform method"""
@@ -407,7 +522,7 @@ class TestQDevilQDac2:
         channel_id = 4
         trigger = "trigger_test"
         qdac._cache_dc = {}
-        qdac._triggers = {"trigger_test": "test_free_trigger"}
+        qdac._triggers = {"trigger_test": MagicMock()}  # exists, so we reach the cache check
 
         with pytest.raises(
             ValueError,
@@ -415,9 +530,19 @@ class TestQDevilQDac2:
         ):
             qdac.set_in_internal_trigger(channel_id, trigger)
 
-    def test_start(self, qdac: QDevilQDac2):
+    def test_start(self, qdac: QDevilQDac2, waveform: Square):
+        channel_id = 4
+        qdac.upload_awg_waveform(waveform, channel_id)
+        qdac.upload_voltage_list(waveform, channel_id)
+        trace = qdac._cache_awg[channel_id]
+        dc_list = qdac._cache_dc[f"{qdac.device.name}_{channel_id}"]
+
         qdac.start()
-        qdac.device.start_all()
+
+        trace.start.assert_called_once()
+        dc_list.start.assert_called_once()
+        assert qdac._cache_awg == {}
+        assert qdac._cache_dc == {}
 
     def test_clear_cache(self, qdac: QDevilQDac2):
         """Test clear_cache method"""
@@ -430,17 +555,15 @@ class TestQDevilQDac2:
     def test_clear_trigger(self, qdac: QDevilQDac2, waveform: Square):
         """Test clear_trigger method"""
         qdac.clear_trigger()
-        qdac.device.free_all_triggers.assert_called_once()
 
         # Creating test trigger
-        channel_id = 4
-        trigger = "trigger_test"
-        qdac._triggers = {}
+        channel_id, trigger = 4, "trigger_test"
         qdac.upload_voltage_list(waveform, channel_id)
         qdac.set_end_marker_internal_trigger(channel_id, trigger)
 
-        qdac.clear_trigger("trigger_test")
-        qdac.device.free_all_triggers.assert_called_once()
+        qdac.clear_trigger(trigger)
+        assert qdac._triggers == {}
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PEND 0")
 
     def test_stop(self, qdac: QDevilQDac2, waveform: Square):
         channel_id = 4
@@ -535,3 +658,57 @@ class TestQDevilQDac2:
         """Test the _validate_channel method raises an exception with wrong parameters"""
         with pytest.raises(ValueError):
             qdac._validate_channel(channel_id)
+
+    def test_qdac_to_qdac_consecutive_execution(self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, waveform: Square):
+        """qdac emits on out port 1; qdac_2 starts its DC list on in port 1."""
+        qdac.device.name = "qdac"
+        qdac_2.device.name = "qdac_2"
+
+        qdac.upload_voltage_list(waveform, channel_id=4)
+        qdac.set_out_external_trigger(channel_id=4, out_port=1, trigger="sync")
+        qdac.device.connect_external_trigger.assert_called_once()
+
+        qdac_2.upload_voltage_list(waveform, channel_id=3)
+        qdac_2.set_in_external_trigger(channel_id=3, in_port=1)
+        qdac_2._cache_dc["qdac_2_3"].start_on_external.assert_called_once_with(1)
+
+    def test_two_users_shared_qdac_trigger_pool(self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, waveform: Square):
+        """Two connections to one physical QDAC: the second user sees the first
+        user's allocated internal trigger and gets the next free one."""
+        devices, channels = _shared_physical_qdac(2)
+        qdac.device, qdac_2.device = devices
+
+        # User 1: DC list + start marker on channel 4
+        qdac.upload_voltage_list(waveform, channel_id=4)
+        qdac.set_start_marker_internal_trigger(channel_id=4, trigger="t1")
+
+        # User 2: same flow on channel 3 — scan finds trigger 1 busy, allocates 2
+        qdac_2.upload_voltage_list(waveform, channel_id=3)
+        qdac_2.set_start_marker_internal_trigger(channel_id=3, trigger="t1")
+
+        assert qdac._triggers["t1"].value == 1
+        assert qdac_2._triggers["t1"].value == 2
+
+        # Each user's DC list is independent
+        dc_list_1 = qdac._cache_dc["qdac_shared_4"]
+        dc_list_2 = qdac_2._cache_dc["qdac_shared_3"]
+        assert dc_list_1 is not dc_list_2
+
+        # User 1 starts; user 2's list must not run
+        qdac.start()
+        dc_list_1.start.assert_called_once()
+        dc_list_2.start.assert_not_called()
+        assert qdac._cache_dc == {}
+        assert set(qdac_2._cache_dc) == {"qdac_shared_3"}
+
+        qdac_2.start()
+        dc_list_2.start.assert_called_once()
+
+        # User 1 frees their trigger: only channel 4's register is zeroed
+        qdac.clear_trigger("t1")
+        assert "t1" not in qdac._triggers
+        assert "t1" in qdac_2._triggers
+        ch3_writes = [c.args[0] for c in channels[3].write_channel.call_args_list]
+        ch4_writes = [c.args[0] for c in channels[4].write_channel.call_args_list]
+        assert any(w.upper().startswith("SOUR{0}:DC:MARK:PSTART 0") for w in ch4_writes)
+        assert not any(w.endswith(" 0") for w in ch3_writes)
