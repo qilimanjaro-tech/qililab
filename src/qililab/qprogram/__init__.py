@@ -25,13 +25,16 @@ from .flux_vector import FluxVector, NonLinearFluxVector
 from .qblox_compiler import QbloxCompilationOutput, QbloxCompiler
 from .qdac_compiler import QdacCompilationOutput, QdacCompiler
 from .qprogram import QProgram, QProgramCompilationOutput
+from .utils_crosstalk import CrosstalkElements, NonLinearFlagState
 
 __all__ = [
     "Calibration",
+    "CrosstalkElements",
     "CrosstalkMatrix",
     "Experiment",
     "FluxVector",
     "NonLinearCrosstalkMatrix",
+    "NonLinearFlagState",
     "NonLinearFluxVector",
     "QProgram",
     "QProgramCompilationOutput",
