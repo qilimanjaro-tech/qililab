@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## BSC-20
+
+### Improvements
+
+- Pin qpysequence==0.10.8
+  [#1156](https://github.com/qilimanjaro-tech/qililab/pull/1156)
+
+
 ## BSC-19
 
 ### New features since last release
