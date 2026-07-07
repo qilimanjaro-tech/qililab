@@ -948,54 +948,28 @@ class TestQProgram(TestStructuredProgram):
             with pytest.raises(ValueError):
                 qp.wait(bus="drive", duration=var)
 
-        for amplitude_var, duration_var in set(product(all_types, repeat=2)) - {(voltage, time)}:
-            with pytest.raises(ValueError):
-                _ = Square(amplitude=amplitude_var, duration=duration_var)
+    def test_serialization_deserialization(self):
+        """Test serialization and deserialization works."""
+        file = "test_serialization_deserialization_qprogram.yml"
+        qp = QProgram()
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
+            qp.set_gain(bus="drive_bus", gain=gain)
+            qp.play(bus="drive_bus", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
 
-        for amplitude_var, duration_var, num_sigmas_var in set(product(all_types, repeat=3)) - {
-            (voltage, time, scalar)
-        }:
-            with pytest.raises(ValueError):
-                _ = Gaussian(amplitude=amplitude_var, duration=duration_var, num_sigmas=num_sigmas_var)
+        serialized = serialize(qp)
+        deserialized_qprogram = deserialize(serialized, QProgram)
 
-        for var in all_types - {scalar}:
-            with pytest.raises(ValueError):
-                _ = GaussianDragCorrection(drag_coefficient=var, amplitude=1.0, duration=40, num_sigmas=2.5)
+        assert isinstance(deserialized_qprogram, QProgram)
 
-        for amplitude_var, duration_var, num_sigmas_var, drag_coefficient_var in set(product(all_types, repeat=4)) - {
-            (voltage, time, scalar, scalar)
-        }:
-            with pytest.raises(ValueError):
-                _ = IQDrag(
-                    amplitude=amplitude_var,
-                    duration=duration_var,
-                    num_sigmas=num_sigmas_var,
-                    drag_coefficient=drag_coefficient_var,
-                )
+        serialize_to(qp, file=file)
+        deserialized_qprogram = deserialize_from(file, QProgram)
 
-    # TODO: qililab.utils.serialization.DeserializationError: Failed to deserialize YAML string: 'Voltage-4' is not a valid Domain
-    # def test_serialization_deserialization(self):
-    #     """Test serialization and deserialization works."""
-    #     file = "test_serialization_deserialization_qprogram.yml"
-    #     qp = QProgram()
-    #     gain = qp.variable(label="gain", domain=Domain.Voltage)
-    #     with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
-    #         qp.set_gain(bus="drive_bus", gain=gain)
-    #         qp.play(bus="drive_bus", waveform=IQPair(I=Square(1.0, 200), Q=Square(1.0, 200)))
+        assert isinstance(deserialized_qprogram, QProgram)
 
-    #     serialized = serialize(qp)
-    #     deserialized_qprogram = deserialize(serialized, QProgram)
+        assert isinstance(deserialized_qprogram, QProgram)
 
-    #     assert isinstance(deserialized_qprogram, QProgram)
-
-    #     serialize_to(qp, file=file)
-    #     deserialized_qprogram = deserialize_from(file, QProgram)
-
-    #     assert isinstance(deserialized_qprogram, QProgram)
-
-    #     assert isinstance(deserialized_qprogram, QProgram)
-
-    #     os.remove(file)
+        os.remove(file)
 
     def test_measure_reset_method(self):
         """Test measure_reset method"""

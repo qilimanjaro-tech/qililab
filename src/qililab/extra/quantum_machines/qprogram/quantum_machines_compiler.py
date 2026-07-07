@@ -24,9 +24,8 @@ from qm import qua
 from qm.program import Program
 from qm.qua import _dsl as qua_dsl
 
-from qililab.core.variables import Domain, FloatVariable, IntVariable, Variable
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
-from qililab.qprogram.blocks.infinite_loop import InfiniteLoop
+from qililab.core import Domain, FloatVariable, IntVariable, Variable
+from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
 from qililab.qprogram.operations import (
     Measure,
@@ -440,7 +439,6 @@ class QuantumMachinesCompiler:
             return
 
         waveform_I, waveform_Q = element.get_waveforms()
-        waveform_variables = element.get_waveform_variables()
         duration = waveform_I.get_duration()
 
         gain = (
@@ -449,13 +447,12 @@ class QuantumMachinesCompiler:
             else None
         )
 
-        if not waveform_variables:
-            waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
-            waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q) if waveform_Q else None
-            pulse_name = self.__add_or_update_control_pulse_to_configuration(waveform_I_name, waveform_Q_name, duration)
-            operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
-            pulse = operation_name * gain if gain is not None else operation_name
-            qua.play(pulse, element.bus)
+        waveform_I_name = self.__add_waveform_to_configuration(waveform_I)
+        waveform_Q_name = self.__add_waveform_to_configuration(waveform_Q) if waveform_Q else None
+        pulse_name = self.__add_or_update_control_pulse_to_configuration(waveform_I_name, waveform_Q_name, duration)
+        operation_name = self.__add_pulse_to_element_operations(element.bus, pulse_name)
+        pulse = operation_name * gain if gain is not None else operation_name
+        qua.play(pulse, element.bus)
 
     @contextmanager
     def _handle_block(self, element: Block):
