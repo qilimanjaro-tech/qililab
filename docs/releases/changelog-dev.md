@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- Pin qpysequence==0.10.8
+  [#1155](https://github.com/qilimanjaro-tech/qililab/pull/1155)
+
 - Added a `ValueError` while creating the `DatabaseManager` (for example with `get_db_manager`) checking for `user`, `passwd`, `host`, `port` or `database` inside the database.ini config file, if any of these parameters is missing an error is thrown.
   [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
 
