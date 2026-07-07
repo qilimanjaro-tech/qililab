@@ -1374,7 +1374,7 @@ class Platform:
     ):
         if isinstance(output.qdac, QdacCompilationOutput):
             for qdac_instrument in self.qdac_instruments:
-                qdac_instrument.remove_digital_trace()
+                qdac_instrument.clear_cache()
         if isinstance(output.qblox, QbloxCompilationOutput):
             self.trigger_runs = 0
             return self._execute_qblox_compilation_output(output=output, debug=debug)

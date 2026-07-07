@@ -1,6 +1,6 @@
 import re
 from itertools import product
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
@@ -580,11 +580,25 @@ class TestQDevilQDac2:
 
     def test_clear_cache(self, qdac: QDevilQDac2):
         """Test clear_cache method"""
-        qdac._cache_awg = {2: True}
-        qdac.clear_cache()
+        qdac._cache_awg = {2: MagicMock(), 4: MagicMock()}
+        qdac._cache_dc = {f"{qdac.device.name}_4": MagicMock()}
+        qdac._triggers = {"t1": MagicMock()}
+        qdac._marker_registers = {"t1": (4, "DC", "PSTart")}
+        qdac._armed_on_trigger = {f"{qdac.device.name}_4"}
+
+        with patch.object(qdac, "clear_trigger", wraps=qdac.clear_trigger) as clear_trigger:
+            qdac.clear_cache()
+
+        # clear_cache frees this instance's triggers on the instrument before wiping the bookkeeping
+        clear_trigger.assert_called_once_with()
+        qdac.device.channel.return_value.write_channel.assert_any_call("SOUR{0}:DC:MARK:PSTart 0")
+        # only this instance's traces are removed from the instrument, by name
+        qdac.device.write.assert_has_calls([call('trac:rem "2"'), call('trac:rem "4"')])
         assert qdac._cache_awg == {}
         assert qdac._cache_dc == {}
-        qdac.device.remove_traces.assert_called_once()
+        assert qdac._triggers == {}
+        assert qdac._marker_registers == {}
+        assert qdac._armed_on_trigger == set()
 
     def test_clear_trigger(self, qdac: QDevilQDac2, waveform: Square):
         """Test clear_trigger method"""

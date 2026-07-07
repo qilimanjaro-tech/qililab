@@ -289,11 +289,19 @@ class QDevilQDac2(VoltageSource):
         self._armed_on_trigger.add(f"{self.device.name}_{channel_id}")
 
     def set_out_external_trigger(self, channel_id: ChannelID, out_port: int, trigger: str, width_s: float = 1e-6):
-        """Method to send an external trigger at the start of a sequence.
+        """Send a pulse through an external trigger output port at the start of the channel's DC list.
+
+        Allocates an internal trigger, writes it to the channel's start marker register and routes
+        it to the given external output port.
 
         Args:
-            channel_id (ChannelID): Channel id of the qdac
-            in_port (int): Trigger input port.
+            channel_id (ChannelID): Channel id of the qdac whose DC list emits the trigger.
+            out_port (int): External trigger output port to send the pulse through.
+            trigger (str): Name used to identify the trigger in this instance.
+            width_s (float, optional): Duration in seconds of the trigger pulse. Defaults to 1e-6.
+
+        Raises:
+            ValueError: if no DC list has been uploaded for the given channel id.
         """
 
         self._validate_channel(channel_id=channel_id)
@@ -418,7 +426,7 @@ class QDevilQDac2(VoltageSource):
 
         if channel_id is None:
             for dac in self.dacs:
-                awg_context = self.get_dac(dac).arbitrary_wave(dac)
+                self.get_dac(dac).arbitrary_wave(dac)
             self.device.start_all()
         else:
             self._validate_channel(channel_id=channel_id)
@@ -438,13 +446,6 @@ class QDevilQDac2(VoltageSource):
         self._cache_dc = {}
         self._armed_on_trigger = set()
         # TODO: add synchronous multiple qdac interaction using QDAC2_Array and qdacs.sync (https://qcodes.github.io/Qcodes_contrib_drivers/examples/QDevil/QDAC2/SyncMultipleQDACs.html)
-
-    def clear_cache(self):
-        """Clears the cache of the instrument"""
-        self.device.remove_traces()
-        self._cache_awg = {}
-        self._cache_dc = {}
-        self._armed_on_trigger = set()
 
     def _set_dc_marker(self, channel_id: ChannelID, marker_location: str, trigger: str) -> None:
         """Write a trigger's number to a DC marker register and remember where it was written,
@@ -483,9 +484,6 @@ class QDevilQDac2(VoltageSource):
         """Allocate an internal trigger
 
         Does not have any effect on the instrument, only the driver.
-
-        Args:
-            qdac_generator (QDevilQDac2Driver): QDAC pulse generator such as DC list, AWG, Square...
 
         Raises:
             ValueError: no free triggers
@@ -563,7 +561,6 @@ class QDevilQDac2(VoltageSource):
             index = self.dacs.index(channel_id)
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(self.voltage[index])
-        self.remove_digital_trace()
         self.clear_cache()
 
     @check_device_initialized
@@ -572,8 +569,6 @@ class QDevilQDac2(VoltageSource):
         for channel_id in self.dacs:
             channel = self.device.channel(channel_id)
             channel.dc_constant_V(0.0)
-        self.remove_digital_trace()
-        self.device.reset()
         self.clear_cache()
 
     def stop(self):
@@ -585,14 +580,20 @@ class QDevilQDac2(VoltageSource):
     @check_device_initialized
     def reset(self):
         """Reset instrument. This will affect all channels."""
-        self.clear_trigger()
         self.clear_cache()
+        self.device.remove_traces()
         self.device.reset()
 
-    def remove_digital_trace(self):
+    def clear_cache(self):
+        """Clears the cache of the instrument"""
+        self.clear_trigger()
+        for trace_name in self._cache_awg:
+            self.device.write(f'trac:rem "{trace_name}"')
+        self._cache_awg = {}
+        self._cache_dc = {}
         self._triggers = {}
         self._marker_registers = {}
-        self.device.remove_traces()
+        self._armed_on_trigger = set()
 
     def _validate_channel(self, channel_id: ChannelID | None):
         """Check if channel identifier is valid and in the allowed range."""
