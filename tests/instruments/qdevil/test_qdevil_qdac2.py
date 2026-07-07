@@ -255,10 +255,14 @@ class TestQDevilQDac2:
         """Test upload_waveform method"""
         channel_id = 4
         qdac.upload_awg_waveform(waveform, channel_id)
+        trace = qdac.device.allocate_trace.return_value
         qdac.device.allocate_trace.assert_called_once_with(channel_id, len(waveform.envelope()))
-        assert qdac._cache_awg == {channel_id: qdac.device.allocate_trace.return_value}
         # the waveform data was actually pushed to the trace
-        qdac.device.allocate_trace.return_value.waveform.assert_called_once_with(list(waveform.envelope()))
+        trace.waveform.assert_called_once_with(list(waveform.envelope()))
+        # the trace was wrapped in an AWG generator and cached
+        channel = qdac.device.channel.return_value
+        channel.arbitrary_wave.assert_called_once_with(trace.name)
+        assert qdac._cache_awg == {channel_id: channel.arbitrary_wave.return_value}
 
     def test_upload_awg_waveform_fails_overwrite_cache(self, qdac: QDevilQDac2, waveform: Square):
         """Test that upload waveform raises an error when trying to allocate a waveform to an already allocated channel id"""
@@ -548,18 +552,31 @@ class TestQDevilQDac2:
         channel_id = 4
         qdac.upload_awg_waveform(waveform, channel_id)
         qdac.upload_voltage_list(waveform, channel_id)
-        trace = qdac._cache_awg[channel_id]
+        awg = qdac._cache_awg[channel_id]
         dc_list = qdac._cache_dc[f"{qdac.device.name}_{channel_id}"]
 
         qdac.start()
 
-        # the cached trace is wrapped in an AWG generator and started
-        channel = qdac.device.channel.return_value
-        channel.arbitrary_wave.assert_called_once_with(trace.name)
-        channel.arbitrary_wave.return_value.start.assert_called_once()
+        awg.start.assert_called_once()
         dc_list.start.assert_called_once()
         assert qdac._cache_awg == {}
         assert qdac._cache_dc == {}
+
+    def test_start_skips_trigger_armed_lists(self, qdac: QDevilQDac2, waveform: Square):
+        """start() must not start (or re-trigger) DC lists armed to wait on a trigger."""
+        qdac.upload_voltage_list(waveform, channel_id=4)
+        qdac.upload_voltage_list(waveform, channel_id=2)
+        # the shared device mock returns one channel object for all ids — give each entry its own mock
+        armed = qdac._cache_dc[f"{qdac.device.name}_4"] = MagicMock()
+        plain = qdac._cache_dc[f"{qdac.device.name}_2"] = MagicMock()
+        qdac.set_in_external_trigger(channel_id=4, in_port=1)
+
+        qdac.start()
+
+        armed.start.assert_not_called()
+        armed.start_on_external.assert_called_once_with(1)
+        plain.start.assert_called_once()
+        assert qdac._armed_on_trigger == set()
 
     def test_clear_cache(self, qdac: QDevilQDac2):
         """Test clear_cache method"""
@@ -615,9 +632,8 @@ class TestQDevilQDac2:
         for trigger_number, (generator, location) in enumerate(registers, start=1):
             channel.write_channel(f"SOUR{{0}}:{generator}:MARK:{location} {trigger_number}")
 
-        qdac_generator = MagicMock()
         with pytest.raises(ValueError, match="No free internal triggers"):
-            qdac.allocate_internal_trigger(qdac_generator)
+            qdac.allocate_internal_trigger()
         assert len(qdac._internal_triggers) == qdac._N_INT_TRIGGERS
 
     def test_stop(self, qdac: QDevilQDac2, waveform: Square):
