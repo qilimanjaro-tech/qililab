@@ -94,15 +94,23 @@ constraint-dependencies = [
     "ujson>=5.13.0",                # CVE-2026-54911 (W-26)
 ]
 
+[tool.uv.sources]
+qprogram = { index = "dev-refactor-experiments" }
+
 [[tool.uv.index]]
 name = "euroqcs"
 url = "https://api.pyx.dev/simple/qilimanjaro/euroqcs"
 publish-url = "https://api.pyx.dev/v1/upload/qilimanjaro/euroqcs"
 
 [[tool.uv.index]]
-name = "internal-qili-experiments"
-url = "https://qilimanjaro-721195454194.d.codeartifact.eu-west-1.amazonaws.com/pypi/internal-qili-experiments/simple/"
-publish-url = "https://qilimanjaro-721195454194.d.codeartifact.eu-west-1.amazonaws.com/pypi/internal-qili-experiments/"
+name = "dev-refactor-experiments"
+url = "https://api.pyx.dev/simple/qilimanjaro/dev-refactor-experiments"
+publish-url = "https://api.pyx.dev/v1/upload/qilimanjaro/dev-refactor-experiments"
+
+# [[tool.uv.index]]
+# name = "internal-qili-experiments"
+# url = "https://qilimanjaro-721195454194.d.codeartifact.eu-west-1.amazonaws.com/pypi/internal-qili-experiments/simple/"
+# publish-url = "https://qilimanjaro-721195454194.d.codeartifact.eu-west-1.amazonaws.com/pypi/internal-qili-experiments/"
 
 [tool.ruff]
 line-length = 120
