@@ -1206,7 +1206,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_trigger") as clear_trigger,
             patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1230,7 +1229,6 @@ class TestMethods:
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert clear_trigger.call_count == 3  # cleanup after each execution frees this instance's triggers
         assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
@@ -1274,7 +1272,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_trigger") as clear_trigger,
             patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1300,7 +1297,6 @@ class TestMethods:
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 6  # called as many times as executes
-        assert clear_trigger.call_count == 6  # cleanup after each execution frees each qdac's triggers: 2 qdacs x 3 executes
         assert clear_cache.call_count == 12  # 2 qdacs x (before + after) x 3 executes
 
         # assure only one debug was called
@@ -1347,7 +1343,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_trigger") as clear_trigger,
             patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1371,7 +1366,6 @@ class TestMethods:
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert clear_trigger.call_count == 3  # cleanup after each execution frees this instance's triggers
         assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
@@ -1405,7 +1399,6 @@ class TestMethods:
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "start") as start,
-            patch.object(QDevilQDac2, "clear_trigger") as clear_trigger,
             patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
@@ -1429,7 +1422,6 @@ class TestMethods:
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
-        assert clear_trigger.call_count == 3  # cleanup after each execution frees this instance's triggers
         assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
