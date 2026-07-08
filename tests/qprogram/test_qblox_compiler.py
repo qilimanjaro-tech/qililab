@@ -5129,9 +5129,9 @@ class TestQBloxCompiler:
         """
         flux2_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
 
         main:
                         set_awg_offs     14403, 14403   
