@@ -14,6 +14,7 @@
 
 """config.py"""
 
+from functools import lru_cache
 import logging
 import os
 
@@ -36,3 +37,7 @@ class CustomHandler(logging.StreamHandler):
 logger = logging.getLogger(__name__)
 logger.setLevel(LIBRARY_LOG_LEVEL)
 logger.addHandler(CustomHandler())
+
+@lru_cache(None)
+def warn_once(w_msg: str):
+    logger.warning(w_msg)

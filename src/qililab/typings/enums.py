@@ -351,7 +351,6 @@ class Parameter(str, Enum):
     RAMPING_ENABLED = "ramping_enabled"
     RAMPING_RATE = "ramp_rate"
     SPAN = "span"
-    LOW_PASS_FILTER = "low_pass_filter"  # noqa: S105
     SCATTERING_PARAMETER = "scattering_parameter"
     FREQUENCY_SPAN = "frequency_span"
     FREQUENCY_CENTER = "frequency_center"
@@ -448,6 +447,12 @@ class Parameter(str, Enum):
     FIR_STATE = "fir_state"
     RF_ACTIVE_CHANNEL = "active_channel"
     EXT_TRIGGER = "ext_trigger"
+
+    # QDAC-II exclusive Parameters
+    SYNC_OUT_TRIGGER = "sync_out_trigger"
+    SYNC_IN_TRIGGER = "sync_in_trigger"
+    INSTRUMENT_OUT_TRIGGER = "instrument_out_trigger"
+    LOW_PASS_FILTER = "low_pass_filter"  # noqa: S105
 
     @classmethod
     def to_yaml(cls, representer, node):

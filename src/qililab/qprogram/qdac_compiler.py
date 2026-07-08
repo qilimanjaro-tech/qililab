@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 
-from qililab.config import logger
+from qililab.config import logger, warn_once
 from qililab.instruments.qdevil import QDevilQDac2
 from qililab.qprogram.blocks import Average, Block, ForLoop, InfiniteLoop, Loop, Parallel
 from qililab.qprogram.calibration import Calibration
@@ -259,23 +259,31 @@ class QdacCompiler:
             # Condition to check if positions are properly set.
             if element.position not in {"end", "start", "step", "end_step"}:
                 raise NotImplementedError(
-                    f"position must be set as 'end', 'start', 'step' or 'end_step'. {element.position} is not recognized"
+                    f"Position must be set as 'end', 'start', 'step' or 'end_step'. {element.position} is not recognized"
                 )
 
             trigger_buses = [
                 bus.alias
                 for bus in self._qdac_buses
-                if any(instrument.trigger_sync for instrument in bus.instruments if isinstance(instrument, QDevilQDac2))
+                if any(
+                    instrument.instrument_out_trigger
+                    for instrument in bus.instruments
+                    if isinstance(instrument, QDevilQDac2)
+                )
             ]
             if not trigger_buses:
                 raise ValueError(
-                    "Cannot set Trigger without instrument set as trigger_sync = True. Modify the runcard and add trigger_sync to a QDAC II instrument."
+                    "Cannot set external trigger without instrument instrument_out_trigger. Modify the runcard and add instrument_out_trigger to a QDAC II instrument."
                 )
             instrument = next(
                 instrument
                 for instrument in self._qdac_buses_by_alias[trigger_buses[0]].instruments
                 if isinstance(instrument, QDevilQDac2)
             )
+            outputs = instrument.instrument_out_trigger
+            if element.outputs:
+                warn_once(f"Using outputs {element.outputs} parameter from qprogram.set_trigger. Instead of runcard instrument_out_trigger {instrument.instrument_out_trigger}")
+                outputs = element.outputs
 
             # Select bus from the right qdac instrument. If no dc_list is created there, add an empty one.
             if element.bus not in trigger_buses:
@@ -307,8 +315,8 @@ class QdacCompiler:
                     self._qprogram.buses.add(trigger_bus)
             else:
                 trigger_bus = element.bus
-            if element.outputs:
-                for output in element.outputs if isinstance(element.outputs, list) else [element.outputs]:
+            if outputs:
+                for output in outputs if isinstance(outputs, list) else [outputs]:
                     trigger = self._hash_trigger(element, output)
 
                     if element.position == "end":
@@ -448,7 +456,7 @@ class QdacCompiler:
         )
         self._out_instrument.set_out_external_trigger(
             channel_id=self._channels[out_bus],
-            out_port=self._out_instrument.out_trigger,
+            out_port=self._out_instrument.sync_out_trigger,
             trigger="qdac_external_trigger",
         )
 
@@ -458,7 +466,7 @@ class QdacCompiler:
                 for bus in bus_list:
                     if f"{in_instrument.device.name}_{self._channels[bus]}" in in_instrument._cache_dc:
                         in_instrument.set_in_external_trigger(
-                            channel_id=self._channels[bus], in_port=in_instrument.in_trigger
+                            channel_id=self._channels[bus], in_port=in_instrument.sync_in_trigger
                         )
         self._qdacs = [qdac for qdac in self._qdacs if qdac != self._out_instrument] + [self._out_instrument]
 
