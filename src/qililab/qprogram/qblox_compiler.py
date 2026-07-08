@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import math
-import warnings
 from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass
@@ -530,7 +529,9 @@ class QbloxCompiler:
             return {bus: BusCompilationInfo() for bus in self._qprogram.buses}
         return {bus: BusCompilationInfo() for bus in self._qprogram.buses if bus in self._qblox_buses}
 
-    def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None) -> None:
+    def _append_to_waveforms_of_bus(
+        self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None
+    ) -> tuple[int, int, int]:
         """Append waveforms to Sequence's Waveforms of the given bus.
 
         Args:
@@ -596,18 +597,20 @@ class QbloxCompiler:
         iterations = []
         for loop in element.loops:
             operation = QbloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
-            qpysequence_operation = QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
+            qpysequence_operation = (
+                QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
+            )
             if isinstance(operation, Wait) and isinstance(loop, ForLoop) and loop.start < INST_MIN_WAIT:
                 logger.warning(f"Wait duration {loop.start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
                 loop.start = 4
             start, step, iters = QbloxCompiler._compute_loop_sweep(loop)  # type: ignore[arg-type]
             loops.append((start, step, qpysequence_operation))
             iterations.append(iters)
-        iterations = min(iterations)
+        min_iterations = min(iterations)
 
         for bus in self._buses:
             qpy_loop = QPyProgram.IterativeLoop(
-                name=f"loop_{self._buses[bus].loop_counter}", iterations=iterations, loops=loops
+                name=f"loop_{self._buses[bus].loop_counter}", iterations=min_iterations, loops=loops
             )
             for i, loop in enumerate(element.loops):
                 self._buses[bus].variable_to_register[loop.variable] = qpy_loop.loop_registers[i]
@@ -634,7 +637,9 @@ class QbloxCompiler:
 
     def _handle_for_loop(self, element: ForLoop) -> bool:
         operation = QbloxCompiler._get_reference_operation_of_loop(element)
-        qpysequence_operation = QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
+        qpysequence_operation = (
+            QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
+        )
         if isinstance(operation, Wait) and element.start < INST_MIN_WAIT:
             logger.warning(f"Wait duration {element.start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
             element.start = 4
@@ -766,15 +771,16 @@ class QbloxCompiler:
         if element.bus not in self._qblox_buses:
             return
 
-        convert = lambda x: int(x * QPyInstructions.SetNormalisedGain.scale_factor)
         if isinstance(element.gain, VariableExpression):
-            result = self._resolve_binary_expression(element.bus, element.gain, convert)
+            result = self._resolve_binary_expression(
+                element.bus, element.gain, lambda x: int(x * QPyInstructions.SetNormalisedGain.scale_factor)
+            )
             self._buses[element.bus].qpy_block_stack[-1].add(
                 component=QPyInstructions.SetAwgGain(value_0=result, value_1=result)
             )
             self._buses[element.bus].upd_param_instruction_pending = True
             return
-        elif isinstance(element.gain, Variable):
+        if isinstance(element.gain, Variable):
             gain = self._buses[element.bus].variable_to_register[element.gain]
             instruction = QPyInstructions.SetAwgGain(value_0=gain, value_1=gain)
         else:
@@ -788,8 +794,6 @@ class QbloxCompiler:
         if element.bus not in self._qblox_buses:
             return
 
-        convert = lambda x: int(x * QPyInstructions.SetNormalisedOffs.scale_factor)
-
         if isinstance(element.offset_path1, VariableExpression):
             raise NotImplementedError(
                 "Having a different offset for I and Q whilst using VariableExpressions is not supported."
@@ -800,7 +804,9 @@ class QbloxCompiler:
                 raise NotImplementedError(
                     "Having a different offset for I and Q whilst using VariableExpressions is not supported."
                 )
-            result = self._resolve_binary_expression(element.bus, element.offset_path0, convert)
+            result = self._resolve_binary_expression(
+                element.bus, element.offset_path0, lambda x: int(x * QPyInstructions.SetNormalisedOffs.scale_factor)
+            )
             self._buses[element.bus].qpy_block_stack[-1].add(
                 component=QPyInstructions.SetAwgOffs(value_0=result, value_1=result)
             )
@@ -1640,7 +1646,9 @@ class QbloxCompiler:
             # The register is never modified inside the average, it is modified in the add outside the average.
             self._buses[element.bus].bin_register = QPyProgram.Register()
             self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction]._add_structure(
-                component=QPyInstructions.Move(source=self._buses[element.bus].start_bin_idx, destination=self._buses[element.bus].bin_register),
+                component=QPyInstructions.Move(
+                    source=self._buses[element.bus].start_bin_idx, destination=self._buses[element.bus].bin_register
+                ),
                 insert_idx=0,
             )
             self._buses[element.bus].start_bin_idx += 1
@@ -1923,7 +1931,9 @@ class QbloxCompiler:
         return math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
 
     @staticmethod
-    def _get_qpysequence_conversion_instructions(operation: Operation | None) -> type[QPyInstructions.ConversionInstruction] | None:
+    def _get_qpysequence_conversion_instructions(
+        operation: Operation | None,
+    ) -> type[QPyInstructions.ConversionInstruction] | None:
         if operation is None:
             return None
         instruction_map: dict[type[Operation], type[QPyInstructions.ConversionInstruction] | None] = {

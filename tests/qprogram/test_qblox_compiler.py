@@ -4545,8 +4545,9 @@ class TestQBloxCompiler:
         assert QbloxCompiler._get_qpysequence_conversion_instructions(Wait("drive", 100)) is None
 
     def test_get_conversion_instructions_unknown_raises_value_error(self):
+        operation = ResetPhase("drive")
         with pytest.raises(ValueError, match="ResetPhase does not support variable sweep in a loop."):
-            QbloxCompiler._get_qpysequence_conversion_instructions(ResetPhase("drive"))
+            QbloxCompiler._get_qpysequence_conversion_instructions(operation)
 
     
     def test_variable_expression_one_gain(self, variable_expression_one_gain: QProgram):
@@ -4862,24 +4863,22 @@ class TestQBloxCompiler:
                         set_mrk          0              
                         upd_param        4              
 
-        main:
+        main:                          
                         set_awg_offs     0, 0           
                         upd_param        4              
                         wait             6              
                         set_awg_gain     11374, 11374   
-                        set_awg_offs     0, 0           
                         play             0, 1, 50       
                         wait             54             
                         set_awg_offs     11374, 11374   
                         upd_param        4              
                         wait             6              
-                        set_awg_gain     2668, 2668     
-                        set_awg_offs     11374, 11374   
+                        set_awg_gain     2668, 2668        
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                                       
         """
         flux2_str = """
         setup:
@@ -4887,24 +4886,22 @@ class TestQBloxCompiler:
                         set_mrk          0              
                         upd_param        4              
 
-        main:
+        main:                         
                         set_awg_offs     0, 0           
                         upd_param        4              
                         wait             6              
                         set_awg_gain     17832, 17832   
-                        set_awg_offs     0, 0           
                         play             0, 1, 50       
-                        wait             54             
+                        wait             54                         
                         set_awg_offs     17832, 17832   
                         upd_param        4              
                         wait             6              
                         set_awg_gain     421, 421       
-                        set_awg_offs     17832, 17832   
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop   
+                        stop                         
         """
         drive_str = """
         setup:
@@ -4920,7 +4917,7 @@ class TestQBloxCompiler:
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop                            
+                        stop                               
         """
         readout_str = """
         setup:
@@ -5108,24 +5105,22 @@ class TestQBloxCompiler:
                         set_mrk          0              
                         upd_param        4              
 
-        main:
+        main:                          
                         set_awg_offs     8430, 8430     
                         upd_param        4              
                         wait             6              
                         set_awg_gain     4570, 4570     
-                        set_awg_offs     8430, 8430     
                         play             0, 1, 50       
-                        wait             54             
+                        wait             54                            
                         set_awg_offs     8430, 8430     
                         upd_param        4              
                         wait             6              
                         set_awg_gain     4570, 4570     
-                        set_awg_offs     8430, 8430     
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
                         upd_param        4              
-                        stop        
+                        stop                     
         """
         flux2_str = """
         setup:
@@ -5133,24 +5128,22 @@ class TestQBloxCompiler:
                 set_mrk          0              
                 upd_param        4              
 
-        main:
-                        set_awg_offs     14403, 14403   
-                        upd_param        4              
-                        wait             6              
-                        set_awg_gain     4225, 4225  
-                        set_awg_offs     14403, 14403   
-                        play             0, 1, 50       
-                        wait             54             
-                        set_awg_offs     14403, 14403   
-                        upd_param        4              
-                        wait             6              
-                        set_awg_gain     4225, 4225    
-                        set_awg_offs     14403, 14403   
-                        play             0, 1, 50       
-                        wait             54             
-                        set_mrk          0              
-                        upd_param        4              
-                        stop         
+        main:          
+                set_awg_offs     14403, 14403   
+                upd_param        4              
+                wait             6               
+                set_awg_gain     4225, 4225     
+                play             0, 1, 50       
+                wait             54                            
+                set_awg_offs     14403, 14403   
+                upd_param        4              
+                wait             6                
+                set_awg_gain     4225, 4225     
+                play  0, 1, 50       
+                wait             54             
+                set_mrk          0              
+                upd_param        4              
+                stop                   
         """
         drive_str = """
         setup:

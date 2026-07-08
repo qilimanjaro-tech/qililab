@@ -3621,7 +3621,6 @@ dependencies = [
     { name = "qcodes" },
     { name = "qcodes-contrib-drivers" },
     { name = "qilisdk" },
-    { name = "qpysequence" },
     { name = "rich" },
     { name = "ruamel-yaml" },
     { name = "rustworkx" },
@@ -3671,7 +3670,6 @@ requires-dist = [
     { name = "qcodes-contrib-drivers", specifier = ">=0.23.0" },
     { name = "qilisdk", git = "https://github.com/qilimanjaro-tech/qilisdk.git?branch=main" },
     { name = "qm-qua", marker = "extra == 'quantum-machines'", specifier = "==1.2.4" },
-    { name = "qpysequence", git = "https://github.com/qilimanjaro-tech/qpysequence.git?branch=main" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
     { name = "rustworkx", specifier = ">=0.17.1" },
@@ -3767,17 +3765,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/51/fe/7f3750e37f9b91ece9ef65f81b8ae423b33a7dc3fbbf1fb902d5a7117d13/qm_qua-1.2.4.tar.gz", hash = "sha256:1866a86511d8bec8fa3d579dcd00d94c650a8672fe7d964fa7ae05af956d4e0d", size = 306620, upload-time = "2025-12-21T10:04:06.877Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/63/b7/bec53806f20367b0574986597bb3f6e257f9b577636e486023fa00d5f77f/qm_qua-1.2.4-py3-none-any.whl", hash = "sha256:2d29fee7895d0c4885f85d6d3b3366fbdf28fa8bbc1b6b2371c66eb5705b9ceb", size = 381596, upload-time = "2025-12-21T10:04:05.435Z" },
-]
-
-[[package]]
-name = "qpysequence"
-version = "0.11.0"
-source = { git = "https://github.com/qilimanjaro-tech/qpysequence.git?branch=main#f1d78ab40d829c950579792a3780f2bd5a567e00" }
-dependencies = [
-    { name = "loguru" },
-    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
-    { name = "numpy", version = "2.4.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'aarch64' and sys_platform != 'darwin'" },
-    { name = "numpy", version = "2.4.1", source = { registry = "https://urob.github.io/numpy-mkl" }, marker = "platform_machine != 'aarch64' and sys_platform != 'darwin'" },
 ]
 
 [[package]]

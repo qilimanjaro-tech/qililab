@@ -1105,26 +1105,26 @@ class TestQProgram(TestStructuredProgram):
     def test_set_frequency_with_numpy_float_stores_python_float(self):
         qp = QProgram()
         qp.set_frequency(bus="drive", frequency=np.float64(1e6))
-        assert qp._body.elements[0].frequency == 1e6
+        assert qp._body.elements[0].frequency == pytest.approx(1e6)
         assert type(qp._body.elements[0].frequency) is float
 
     def test_set_phase_with_numpy_float_stores_python_float(self):
         qp = QProgram()
         qp.set_phase(bus="drive", phase=np.float64(1.5))
-        assert qp._body.elements[0].phase == 1.5
+        assert qp._body.elements[0].phase == pytest.approx(1.5)
         assert type(qp._body.elements[0].phase) is float
 
     def test_set_gain_with_numpy_float_stores_python_float(self):
         qp = QProgram()
         qp.set_gain(bus="drive", gain=np.float64(0.5))
-        assert qp._body.elements[0].gain == 0.5
+        assert qp._body.elements[0].gain == pytest.approx(0.5)
         assert type(qp._body.elements[0].gain) is float
 
     def test_for_loop_with_numpy_bounds_stores_python_scalars(self):
         qp = QProgram()
         freq = qp.variable(label="freq", domain=Domain.Frequency)
         with qp.for_loop(variable=freq, start=np.float64(1e6), stop=np.float64(10e6), step=np.float64(1e6)):
-            pass
+            pass  # body is irrelevant; only the loop bounds' types are under test
         loop = qp._body.elements[0]
         assert type(loop.start) is float
         assert type(loop.stop) is float

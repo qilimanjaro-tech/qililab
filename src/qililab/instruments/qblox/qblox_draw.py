@@ -547,14 +547,14 @@ class QbloxDraw:
             loop_info = {}
 
             for block in Q1ASM_ordered[bus]["program"].values():
-                for Q1ASM_line in block:
-                    if Q1ASM_line[0] == "move":
-                        reg = Q1ASM_line[1].split(",")[1].strip()
-                        value = Q1ASM_line[1].split(",")[0].strip()
+                for q1asm_line in block:
+                    if q1asm_line[0] == "move":
+                        reg = q1asm_line[1].split(",")[1].strip()
+                        value = q1asm_line[1].split(",")[0].strip()
                         register[reg] = int(value)
 
                     # sorted labels (label, [start index, end index, register key])
-                    _, value, label, index = Q1ASM_line
+                    _, value, label, index = q1asm_line
                     for l in label:
                         if l not in loop_info:
                             loop_info[l] = [index, index, None]
@@ -604,22 +604,22 @@ class QbloxDraw:
                             current_idx += 1
                 return current_idx
 
-            for Q1ASM_line in Q1ASM_ordered[bus]["program"]["main"]:
+            for q1asm_line in Q1ASM_ordered[bus]["program"]["main"]:
                 if parameters[bus]["time_reached"]:
                     break
 
                 if (
-                    Q1ASM_line[2] and Q1ASM_line[-1] not in instructions_ran
+                    q1asm_line[2] and q1asm_line[-1] not in instructions_ran
                 ):  # if there is a loop label and if the index has not been ran before
                     index = 0
                     for x in sorted_labels:
-                        if x[0] == Q1ASM_line[2][0]:
+                        if x[0] == q1asm_line[2][0]:
                             input_recursive = x
                             break  # Stop as soon as the first match is found
                     process_loop(input_recursive, index)
 
-                elif Q1ASM_line[-1] not in instructions_ran:  # run if no loop label
-                    self._call_handlers(Q1ASM_line, param, register, data_draw[bus], wf)
+                elif q1asm_line[-1] not in instructions_ran:  # run if no loop label
+                    self._call_handlers(q1asm_line, param, register, data_draw[bus], wf)
                     if time_window is not None and len(data_draw[bus][0]) >= time_window:
                         parameters[bus]["time_reached"] = True
                         break
