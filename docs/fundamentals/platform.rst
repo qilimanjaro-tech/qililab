@@ -87,203 +87,24 @@ After building the platform, you need to connect to the instruments, set all the
 
 Executing a circuit with Platform:
 -----------------------------------
-The Platform offers the capability to execute circuits defined with `Qibo <https://qibo.science/>`_, an open-source middleware for quantum computing.
-
-To execute a circuit, you first need to build, connect, and set up the platform as shown in the above examples. Then, define your
-Qibo circuit, for example, a pi pulse and a measurement gate on qubit ``q`` (``int``):
+Once the platform is built, connected and set up, you can execute a circuit defined with ``qilisdk.digital``. For example, a
+pi pulse followed by a measurement gate on qubit ``q`` (``int``):
 
 .. code-block:: python3
 
-    from qibo.models import Circuit
-    from qibo import gates
+    from qilisdk.digital import Circuit, X, M
 
-    circuit = Circuit(q+1)
-    circuit.add(gates.X(q))
-    circuit.add(gates.M(q))
-
-And you are ready to execute the circuit with the platform:
-
->>> result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
->>> result.array
-array([[5.],
-        [5.]])
-
-getting the integrated values of the I/Q signals received by the digitizer!
-
-.. note::
-
-    When disabling scope acquisition mode, the array obtained has shape `(#sequencers, 2, #bins)`. In this case,
-    given that you are using only 1 sequencer to acquire the results, you would obtain an array with shape `(2, #bins)`.
-
-You could also get the results in a more standard format, as already classified ``counts`` or ``probabilities`` dictionaries, with:
-
->>> result.counts
-{'0': 501, '1': 499}
-
->>> result.probabilities
-{'0': .501, '1': .499}
-
-.. note::
-
-    You can find more information about the results, in the :class:`.Results` class documentation.
-
-|
-
-Running a Rabi sweep with Platform:
----------------------------------------
-
-To perform a Rabi sweep, build, connect and set up the platform, and then create a circuit with a
-pi pulse and a measurement gate in qubit ``q`` (``int``), as in the previous examples, which all together look like:
-
-.. code-block:: python
-
-    import qililab as ql
-
-    import numpy as np
-
-    from qibo.models import Circuit
-    from qibo import gates
-
-    # Defining the Rabi circuit:
-    circuit = Circuit(q+1)
-    circuit.add(gates.X(q))
-    circuit.add(gates.M(q))
-
-    # Building the platform:
-    platform = ql.build_platform(runcard="runcards/galadriel.yml")
-
-    # Connecting and setting up the platform:
-    platform.connect()
-    platform.initial_setup()
-    platform.turn_on_instruments()
-
-Now to run the Rabi sweep, you would need to run this sequence by looping over the amplitude of the AWG used
-to create the pi pulse:
-
-.. image:: platform_images/rabi.png
-  :width: 400
-  :align: center
-
-To do this, you need to use the ``set_parameter()`` method with the alias of the bus used
-to drive qubit ``q`` (let's assume it's called ``"drive_q"``):
-
-.. code-block:: python3
-
-    results = []
-    amp_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
-
-    for amp in amp_values:
-        platform.set_parameter(alias="drive_q", parameter=ql.Parameter.AMPLITUDE, value=amp)
-        result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-        results.append(result.array)
-
-And then you can use ``np.hstack`` to stack the obtained results horizontally. By doing this, you would obtain an
-array with shape `(2, N)`, where N is the number of elements inside the loop:
-
->>> results = np.hstack(results)
->>> results
-array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
-        [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
-
-You can see how the integrated I/Q values oscillated, indicating that qubit 0 oscillates between ground and
-excited state!
-
-|
-
-A faster Rabi sequence, translating the circuit to pulses:
------------------------------------------------------------
-
-Since you are looping over variables that are independent of the circuit (in this case, the amplitude of the AWG),
-you can speed up the experiment by translating the circuit into pulses only once:
-
-.. code-block:: python3
-
-    from qililab.pulse.circuit_to_pulses import CircuitToPulses
-
-    pulse_schedule = CircuitToPulses(platform=platform).translate(circuits=[circuit])
-
-and then, executing the obtained pulses inside the loop, by passing the translated
-``pulse_schedule`` instead than the ``circuit``, to the ``execute()`` method:
-
-.. code-block:: python3
-
-    results = []
-    amp_values = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9, 1.0]
-
-    for amp in amp_values:
-        platform.set_parameter(alias="drive_q", parameter=ql.Parameter.AMPLITUDE, value=amp)
-        result = platform.execute(program=pulse_schedule, num_avg=1000, repetition_duration=6000)
-        results.append(result.array)
-
-This approach yields to similar results, but much faster!
-
->>> results = np.hstack(results)
->>> results
-array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
-        [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
-
-|
-
-Ramsey sequence, looping over a parameter inside the circuit:
-----------------------------------------------------------------
-
-To perform a Ramsey sequence, build, connect and setup the platform as before, but this time with a different circuit:
-
-.. code-block:: python
-
-    import qililab as ql
-
-    from qibo.models import Circuit
-    from qibo import gates
-
-    # Defining the Ramsey circuit:
     circuit = Circuit(q + 1)
-    circuit.add(gates.RX(q, theta=np.pi/2))
-    circuit.add(ql.Wait(q, t=0))
-    circuit.add(gates.RX(q, theta=np.pi/2))
-    circuit.add(gates.M(q))
+    circuit.add(X(q))
+    circuit.add(M(q))
 
-    # Building the platform:
-    platform = ql.build_platform(runcard="runcards/galadriel.yml")
+The circuit is transpiled to the platform's native gate set and executed with :meth:`.Platform.execute_circuit`, which
+returns a dictionary of measurement samples:
 
-    # Connecting and setting up the platform:
-    platform.connect()
-    platform.initial_setup()
-    platform.turn_on_instruments()
-
-where you would add two default qibo ``RX`` gates, with a qililab ``Wait`` gate in between, which is just a personalized qibo gate that adds a
-free evolution of duration ``t`` that corresponds to a rotation at the detuning frequency, around the Z axis:
-
-.. image:: platform_images/ramsey_bloch.png
-  :width: 500
-  :align: center
-
-
-To run the Ramsey sequence, you would need to loop over the ``t`` parameter of the ``Wait`` gate. This will produce a
-different `Z` axis height projection for each wait time, resulting in a sinusoidal pattern.
-
-Since the parameter is inside the Qibo circuit, you will need to use Qibo own ``circuit.set_parameters()`` method, putting the parameters
-you want to set in the order they appear in the circuit construction:
+>>> result = platform.execute_circuit(circuit, nshots=1000)
 
 .. note::
-    For more information, please visit the Qibo documentation about `qibo.models.circuit.set_parameter() <https://qibo.science/qibo/stable/api-reference/qibo.html#gates:~:text=circuit%E2%80%99s%20gate%20queue.-,set_parameters,-(parameters)>`_ method.
 
-.. code-block:: python3
+    See :meth:`.Platform.execute_circuit` and :meth:`.Platform.compile_circuit` for the full signature and options, and
+    :ref:`Transpilation <transpilation>` for details on how circuits are transpiled and compiled.
 
-    results = []
-    wait_times = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-    for wait in wait_times:
-        circuit.set_parameters([np.pi/2, wait, np.pi/2])
-        result = platform.execute(program=circuit, num_avg=1000, repetition_duration=6000)
-        results.append(result.array)
-
-which for each execution, would set ``np.pi/2`` to the ``theta`` parameters of the ``RX`` gates, and the looped ``wait`` time  to the ``t`` parameter of the
-``Wait`` gate.
-
-And finally, if you print the results, you obtain the sinusoidal expected behaviour!
-
->>> results = np.hstack(results)
->>> results
-array([[5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3],
-        [5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3]])
