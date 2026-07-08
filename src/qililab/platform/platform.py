@@ -1258,6 +1258,9 @@ class Platform:
                     if isinstance(instrument, QDevilQDac2)
                 }
             )
+            # Start from a clean instrument state before the compiler re-populates it
+            for qdac_instrument in self.qdac_instruments:
+                qdac_instrument.clear_cache()
             out_trigger_qdac = None
             if len(self.qdac_instruments) > 1:
                 out_trigger_qdac = next(
@@ -1372,9 +1375,6 @@ class Platform:
         output: QProgramCompilationOutput,
         debug: bool = False,
     ):
-        if isinstance(output.qdac, QdacCompilationOutput):
-            for qdac_instrument in self.qdac_instruments:
-                qdac_instrument.clear_cache()
         if isinstance(output.qblox, QbloxCompilationOutput):
             self.trigger_runs = 0
             return self._execute_qblox_compilation_output(output=output, debug=debug)
