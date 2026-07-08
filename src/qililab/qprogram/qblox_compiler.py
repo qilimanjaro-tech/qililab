@@ -1092,10 +1092,7 @@ class QbloxCompiler:
             self._time_loop_counter += 1
 
         else:
-            clamped = QbloxCompiler._clamp_duration(element.duration, label="wait")
-            if clamped is None:
-                return
-            element.duration = clamped
+            element.duration = QbloxCompiler._clamp_duration(element.duration, label="wait")
             if not delay:
                 self._buses[element.bus].static_duration += element.duration
                 self._buses[element.bus].duration_since_sync += element.duration
@@ -1105,7 +1102,7 @@ class QbloxCompiler:
         self._buses[element.bus].marked_for_sync = True
 
     @staticmethod
-    def _clamp_duration(duration: int, label: str = "duration") -> int | None:
+    def _clamp_duration(duration: int, label: str = "duration") -> int:
         """Clamp to INST_MIN_WAIT if below INST_MIN_WAIT.
         The returned duration is rounded.
 
@@ -1114,8 +1111,7 @@ class QbloxCompiler:
             label: Name used in warning messages to identify the instruction.
 
         Returns:
-            None if duration is 0 (caller should skip), or clamp to INST_MIN_WAIT if below INST_MIN_WAIT.
-            Otherwise the given duration is returned rounded.
+            The given duration rounded, clamped to INST_MIN_WAIT if below INST_MIN_WAIT.
         """
         if duration < INST_MIN_WAIT:
             logger.warning(
@@ -1159,10 +1155,7 @@ class QbloxCompiler:
         if isinstance(element.duration, Variable):
             raise ValueError("Wait trigger duration cannot be a Variable, it must be an int.")
 
-        clamped = QbloxCompiler._clamp_duration(element.duration, label="wait_trigger")
-        if clamped is None:
-            return
-        element.duration = clamped
+        element.duration = QbloxCompiler._clamp_duration(element.duration, label="wait_trigger")
 
         if not self._ext_trigger:
             raise AttributeError("External trigger has not been set as True inside runcard's instrument controllers.")
@@ -1746,8 +1739,6 @@ class QbloxCompiler:
         if element.wait_time is not None:
             # The qp.qblox.play() was used. Don't apply optimizations
             clamped = QbloxCompiler._clamp_duration(element.wait_time, label="play")
-            if clamped is None:
-                return
             duration = clamped
             index_I, index_Q, _ = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q

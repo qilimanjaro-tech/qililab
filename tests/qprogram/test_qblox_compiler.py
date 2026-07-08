@@ -4409,6 +4409,77 @@ class TestQBloxCompiler:
         result = QbloxCompiler._clamp_duration(100, label="wait")
         assert result == 100
 
+    def test_parallel_loop_wait_start_below_minimum_is_clamped(self, caplog):
+        drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+        qp = QProgram()
+        duration = qp.variable(label="time", domain=Domain.Time)
+        gain = qp.variable(label="gain", domain=Domain.Voltage)
+        duration_loop = ForLoop(variable=duration, start=0, stop=100, step=10)
+        gain_loop = ForLoop(variable=gain, start=0, stop=1, step=0.1)
+        with qp.parallel(loops=[duration_loop, gain_loop]):
+            qp.set_gain(bus="drive", gain=gain)
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.wait(bus="drive", duration=duration)
+
+        compiler = QbloxCompiler()
+        with caplog.at_level(logging.WARNING):
+            sequences, _ = compiler.compile(qprogram=qp)
+
+        assert "Wait duration 0 ns is below the Q1ASM minimum (4 ns), clamping to 4 ns." in caplog.text
+        assert duration_loop.start == 4
+        assert gain_loop.start == 0
+
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+
+            main:
+                move             4, R0
+                move             0, R1
+                move             10, R2
+            loop_0:
+                set_awg_gain     R1, R1
+                play             0, 1, 40
+                wait             R0
+                add              R0, 10, R0
+                add              R1, 3276, R1
+                loop             R2, @loop_0
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
+    def test_set_phase_with_variable_uses_register(self):
+        qp = QProgram()
+        phase = qp.variable(label="phase", domain=Domain.Phase)
+        with qp.for_loop(variable=phase, start=0, stop=0.5, step=0.1):
+            qp.set_phase(bus="drive", phase=phase)
+
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qp)
+
+        expected = """
+            setup:
+                wait_sync        4
+                set_mrk          0
+                upd_param        4
+
+            main:
+                move             0, R0
+                move             6, R1
+            loop_0:
+                set_ph           R0
+                add              R0, 15915494, R0
+                loop             R1, @loop_0
+                set_mrk          0
+                upd_param        4
+                stop
+        """
+        assert is_q1asm_equal(sequences["drive"], expected)
+
     def test_wait_duration_zero_is_clamped_to_minimum(self, caplog):
         qp = QProgram()
         qp.wait(bus="drive", duration=0)
