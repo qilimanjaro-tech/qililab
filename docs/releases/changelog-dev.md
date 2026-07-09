@@ -15,7 +15,7 @@
 - Updated `QbloxDraw` to iterate over all program blocks (`setup` and `main`) to match the new multi-block program structure.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
   
-- `QbloxCompiler` now emits a warning and clamps to 4 ns when a `wait` duration or loop start value is below the Q1ASM minimum of 4 ns.
+- `QbloxCompiler` now emits a warning and clamps to 4 ns when a `wait`, `wait_trigger`, or `play` duration, or a hardware loop's start or stop value, is below the Q1ASM minimum of 4 ns.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
   
 - Pin qpysequence==0.10.8
@@ -65,10 +65,17 @@
 ### Bug fixes
 
 - Fixed incorrect Q1ASM emitted when a long wait (> `INST_MAX_WAIT`) follows a pending `upd_param`: the pending-instruction branch now uses `LongWait` consistently with the no-pending branch.
-  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/71)
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
   
-- Fixed numpy scalar passthrough in `QProgram` operations: `wait`, `wait_trigger`, `set_phase`, `set_frequency`, `set_gain`, `set_offset`, and `for_loop` parameters now call `_to_scalar()` to convert numpy integer/float types to native Python scalars before constructing operations, preventing type errors downstream.
-  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/71)
+- Fixed numpy scalar passthrough in `QProgram` operations: `wait`, `wait_trigger`, `set_phase`, `set_frequency`, `set_gain`, `set_offset`, `set_trigger`, `for_loop`, and `average` parameters now call `_to_scalar()` to convert numpy integer/float types to native Python scalars before constructing operations, preventing type errors downstream.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- Fixed `wait_trigger` overshooting the requested duration by tens of thousands of ns whenever it exceeded `INST_MAX_WAIT`: `_handle_add_trigger_waits` now emits `LongWait`, like its sibling `_handle_add_waits`, instead of a manual splitting loop that always rounded up to a whole number of `INST_MAX_WAIT` chunks and dropped the remainder.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
+- Fixed a hardware loop's `wait` domain not clamping the `stop` value to the Q1ASM minimum of 4 ns: only `start` was previously clamped, so a descending `for_loop`/`parallel` sweep over `wait` durations could reach an invalid (< 4 ns) final register value with no warning.
+  [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
+
 - Fixed the folder shape at `add_measurement` and `add_results` to take into account us intervals of time. This will solve any issue with parallelization while creating more than one folder in less than a second.
   [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
 

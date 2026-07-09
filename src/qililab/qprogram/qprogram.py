@@ -1265,7 +1265,7 @@ class QProgram(StructuredProgram):
             outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
             outputs(optional, str): Trigger position in respective to the pulse location, it can be either `start` or `end. Defaults to start.
         """
-        operation = SetTrigger(bus=bus, outputs=outputs, duration=duration, position=position)
+        operation = SetTrigger(bus=bus, outputs=outputs, duration=_to_scalar(duration), position=position)
         self._active_block.append(operation)
         self._buses.add(bus)
 

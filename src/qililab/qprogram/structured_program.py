@@ -227,7 +227,7 @@ class StructuredProgram:
             >>> with qp.average(shots=1000):
             >>> # operations that shall be executed in the average block
         """
-        return StructuredProgram._AverageContext(program=self, shots=shots)
+        return StructuredProgram._AverageContext(program=self, shots=_to_scalar(shots))
 
     def variable(self, label: str, domain: Domain, type: type[int | float] | None = None):
         """Declare a variable.

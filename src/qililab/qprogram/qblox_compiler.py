@@ -600,10 +600,17 @@ class QbloxCompiler:
             qpysequence_operation = (
                 QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
             )
-            if isinstance(operation, Wait) and isinstance(loop, ForLoop) and loop.start < INST_MIN_WAIT:
-                logger.warning(f"Wait duration {loop.start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
-                loop.start = 4
-            start, step, iters = QbloxCompiler._compute_loop_sweep(loop)  # type: ignore[arg-type]
+            if isinstance(operation, Wait) and isinstance(loop, ForLoop):
+                if loop.start < INST_MIN_WAIT:
+                    logger.warning(
+                        f"Wait duration {loop.start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns."
+                    )
+                    loop.start = 4
+                if loop.stop < INST_MIN_WAIT:
+                    logger.warning(f"Wait duration {loop.stop} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
+                    loop.stop = 4
+            scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
+            start, step, iters = QbloxCompiler._compute_loop_sweep(loop, scale_factor)  # type: ignore[arg-type]
             loops.append((start, step, qpysequence_operation))
             iterations.append(iters)
         min_iterations = min(iterations)
@@ -640,10 +647,15 @@ class QbloxCompiler:
         qpysequence_operation = (
             QbloxCompiler._get_qpysequence_conversion_instructions(operation) if operation is not None else None
         )
-        if isinstance(operation, Wait) and element.start < INST_MIN_WAIT:
-            logger.warning(f"Wait duration {element.start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
-            element.start = 4
-        start, step, iterations = QbloxCompiler._compute_loop_sweep(element)
+        if isinstance(operation, Wait):
+            if element.start < INST_MIN_WAIT:
+                logger.warning(f"Wait duration {element.start} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
+                element.start = 4
+            if element.stop < INST_MIN_WAIT:
+                logger.warning(f"Wait duration {element.stop} ns is below the Q1ASM minimum (4 ns), clamping to 4 ns.")
+                element.stop = 4
+        scale_factor = qpysequence_operation.scale_factor if qpysequence_operation is not None else None
+        start, step, iterations = QbloxCompiler._compute_loop_sweep(element, scale_factor)
 
         if element.variable.domain == Domain.Time and element.stop > INST_MAX_WAIT:
             self._long_wait_dynamic = True
@@ -1194,8 +1206,7 @@ class QbloxCompiler:
                         component=QPyInstructions.WaitTrigger(trigger=port, duration=4)
                     )
                     duration -= 4
-                    for _ in range((duration // INST_MAX_WAIT) + 1):
-                        self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.Wait(duration=INST_MAX_WAIT))
+                    self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWait(duration=duration))
             self._buses[bus].upd_param_instruction_pending = False
 
         else:  # no instructions pending
@@ -1208,8 +1219,7 @@ class QbloxCompiler:
                     component=QPyInstructions.WaitTrigger(trigger=port, duration=4)
                 )
                 duration -= 4
-                for _ in range((duration // INST_MAX_WAIT) + 1):
-                    self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.Wait(duration=INST_MAX_WAIT))
+                self._buses[bus].qpy_block_stack[-1].add(component=QPyInstructions.LongWait(duration=duration))
 
         # Sync all other buses with WaitSync
         for sync_bus in self._buses:
@@ -1939,9 +1949,18 @@ class QbloxCompiler:
         return instruction_map[type(operation)]
 
     @staticmethod
-    def _compute_loop_sweep(for_loop: ForLoop) -> tuple[float, float, int]:
+    def _compute_loop_sweep(for_loop: ForLoop, scale_factor: float | int | None = None) -> tuple[float, float, int]:
         iterations = QbloxCompiler._calculate_iterations(start=for_loop.start, stop=for_loop.stop, step=for_loop.step)
-        qblox_step = (for_loop.stop - for_loop.start) / (iterations - 1)
+        if scale_factor is None:
+            qblox_step = (for_loop.stop - for_loop.start) / (iterations - 1)
+            return (for_loop.start, qblox_step, iterations)
+
+        # Reproduce the pre-0.11 qpysequence rounding:
+        start_int = int(for_loop.start * scale_factor)
+        stop_int = int(for_loop.stop * scale_factor)
+        step_int = (stop_int - start_int) // (iterations - 1)
+        nudge = 0.5 if step_int >= 0 else -0.5
+        qblox_step = (step_int + nudge) / scale_factor
         return (for_loop.start, qblox_step, iterations)
 
     @staticmethod

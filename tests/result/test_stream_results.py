@@ -368,8 +368,6 @@ class TestStreamArray:
                     stream_array_bus_not_in_platform.results == np.zeros(shape=stream_array_bus_not_in_platform.shape)
                 ).all
                 assert stream_array_bus_not_in_platform.loops == {"test_amp_loop": np.arange(0, 1, 2)}
-                print(stream_array_bus_not_in_platform._get_debug())
-                print(debug_q1asm)
                 assert stream_array_bus_not_in_platform._get_debug() == debug_q1asm
 
     def test_stream_array_autocalibration(self, stream_array: StreamArray):
