@@ -59,7 +59,6 @@ from qililab.qprogram import (
     Experiment,
     QbloxCompilationOutput,
     QbloxCompiler,
-    QdacCompilationOutput,
     QProgram,
     QProgramCompilationOutput,
 )

@@ -219,7 +219,7 @@ class QDevilQDac2(VoltageSource):
         self,
         waveform: Waveform,
         channel_id: ChannelID,
-        dwell_us: int = 1,
+        dwell_us: int = 2,
         sync_delay_s: float = 0,
         repetitions: int = 1,
         stepped: bool = False,
@@ -344,7 +344,7 @@ class QDevilQDac2(VoltageSource):
             channel_id (ChannelID): Channel id of the qdac
             out_port (int): Trigger output port.
             trigger (str): Name of the trigger.
-            width_s (float, optional): duration in seconds of the trigger pulse. Defaults to 1e-6.
+            width_s (float, optional): duration in seconds of the trigger pulse. Defaults to 2e-6 s.
             step (bool, optional): sends a trigger every step. Defaults to False
         """
         self._validate_channel(channel_id=channel_id)
@@ -475,7 +475,7 @@ class QDevilQDac2(VoltageSource):
                 f"SOUR{channel_id}:{generator}:MARK:{marker_location}?" for generator, marker_location in registers
             )
             response = self.device.ask(query)
-            for (generator, marker_location), value in zip(registers, response.split(";")):
+            for (generator, marker_location), value in zip(registers, response.split(",")):
                 internal_trigger = int(value)
                 if internal_trigger != 0:
                     self._internal_triggers[internal_trigger] = (channel_id, generator, marker_location)

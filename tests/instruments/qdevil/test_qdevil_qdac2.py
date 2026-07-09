@@ -45,10 +45,10 @@ def _stateful_qdac_device() -> MagicMock:
 
     def _ask(command: str) -> str:
         values = []
-        for sub_query in command.split(";"):
+        for sub_query in command.split(","):
             key = _find(_segments(sub_query.lstrip(":")))
             values.append(str(markers[key] if key else 0))
-        return ";".join(values)
+        return ",".join(values)
 
     device.ask.side_effect = _ask
     device.channel.return_value.write_channel.side_effect = _write_channel
@@ -95,12 +95,12 @@ def _shared_physical_qdac(n_connections: int = 2):
 
     def _ask(command: str) -> str:
         values = []
-        for sub_query in command.split(";"):
+        for sub_query in command.split(","):
             header = sub_query.lstrip(":")
             cid = int(header.split(":", 1)[0].upper().removeprefix("SOUR"))
             key = _find(cid, _segments(header))
             values.append(str(markers[key] if key else 0))
-        return ";".join(values)
+        return ",".join(values)
 
     devices = []
     for _ in range(n_connections):
