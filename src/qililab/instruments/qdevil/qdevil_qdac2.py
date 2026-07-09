@@ -475,7 +475,7 @@ class QDevilQDac2(VoltageSource):
                 f"SOUR{channel_id}:{generator}:MARK:{marker_location}?" for generator, marker_location in registers
             )
             response = self.device.ask(query)
-            for (generator, marker_location), value in zip(registers, response.split(",")):
+            for (generator, marker_location), value in zip(registers, response.split(","), strict=True):
                 internal_trigger = int(value)
                 if internal_trigger != 0:
                     self._internal_triggers[internal_trigger] = (channel_id, generator, marker_location)
