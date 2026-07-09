@@ -266,27 +266,28 @@ class QdacCompiler:
                 bus.alias
                 for bus in self._qdac_buses
                 if any(
-                    instrument.instrument_out_trigger
+                    instrument.instrument_out_trigger is not None
                     for instrument in bus.instruments
                     if isinstance(instrument, QDevilQDac2)
                 )
             ]
-            if not trigger_buses:
-                raise ValueError(
-                    "Cannot set external trigger without instrument instrument_out_trigger. Modify the runcard and add instrument_out_trigger to a QDAC II instrument."
-                )
+            host_bus = trigger_buses[0] if trigger_buses else element.bus
             instrument = next(
                 instrument
-                for instrument in self._qdac_buses_by_alias[trigger_buses[0]].instruments
+                for instrument in self._qdac_buses_by_alias[host_bus].instruments
                 if isinstance(instrument, QDevilQDac2)
+                and (not trigger_buses or instrument.instrument_out_trigger is not None)
             )
             outputs = instrument.instrument_out_trigger
             if element.outputs:
-                warn_once(f"Using outputs {element.outputs} parameter from qprogram.set_trigger. Instead of runcard instrument_out_trigger {instrument.instrument_out_trigger}")
+                if outputs is not None:
+                    warn_once(
+                        f"Using outputs {element.outputs} from qprogram.set_trigger. Instead of runcard instrument_out_trigger {outputs}."
+                    )
                 outputs = element.outputs
 
             # Select bus from the right qdac instrument. If no dc_list is created there, add an empty one.
-            if element.bus not in trigger_buses:
+            if trigger_buses and element.bus not in trigger_buses:
                 trigger_bus = next(
                     (
                         trigger_bus
@@ -352,6 +353,9 @@ class QdacCompiler:
                 if not self._trigger_position:
                     self._trigger_position = "front"
             else:
+                warn_once(
+                    "No trigger output set in runcard's instrument_out_trigger nor qprogram.set_trigger(outputs). Setting QDAC trigger as internal."
+                )
                 trigger = self._hash_trigger(element, None)
                 if element.position == "end":
                     instrument.set_end_marker_internal_trigger(channel_id=self._channels[trigger_bus], trigger=trigger)

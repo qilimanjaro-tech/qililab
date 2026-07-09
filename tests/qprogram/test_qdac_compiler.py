@@ -75,8 +75,8 @@ def fixture_qdac() -> QDevilQDac2:
             "ramp_rate": [0.01, 0.01, 0.01, 0.01],
             "dacs": [1, 2, 3, 4],
             "low_pass_filter": ["dc", "dc", "dc", "dc"],
-            "out_trigger": 1,
-            "trigger_sync": True,
+            "sync_out_trigger": 1,
+            "instrument_out_trigger": 2,
         }
     )
     qdac.device = MagicMock()
@@ -105,8 +105,7 @@ def fixture_qdac_no_sync() -> QDevilQDac2:
             "ramp_rate": [0.01, 0.01, 0.01, 0.01],
             "dacs": [1, 2, 3, 4],
             "low_pass_filter": ["dc", "dc", "dc", "dc"],
-            "out_trigger": 1,
-            "trigger_sync": False,
+            "sync_out_trigger": 1,
         }
     )
     qdac_no_sync.device = MagicMock()
@@ -135,8 +134,7 @@ def fixture_second_qdac() -> QDevilQDac2:
             "ramp_rate": [0.01, 0.01, 0.01, 0.01],
             "dacs": [1, 2, 3, 4],
             "low_pass_filter": ["dc", "dc", "dc", "dc"],
-            "in_trigger": 1,
-            "trigger_sync": False,
+            "sync_in_trigger": 1,
         }
     )
     qdac_2.device = MagicMock()
@@ -314,7 +312,7 @@ class TestQdacCompiler:
 
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        # set_trigger on flux2, which is NOT a trigger_sync bus
+        # set_trigger on flux2, which is NOT a instrument_out_trigger bus
         qp.set_trigger(bus="flux2", duration=10e-6, outputs=out_port, position="start")
 
         compiler = QdacCompiler()
@@ -339,7 +337,7 @@ class TestQdacCompiler:
 
         qp = QProgram()
         qp.qdac.play(bus="flux_qdac1", waveform=pulse_wf, dwell=dwell_us)
-        # set_trigger on flux2, which is NOT a trigger_sync bus, and no DC list exists
+        # set_trigger on flux2, which is NOT a instrument_out_trigger bus, and no DC list exists
         qp.set_trigger(bus="flux_qdac2", duration=10e-6, outputs=out_port, position="start")
 
         compiler = QdacCompiler()
@@ -486,30 +484,6 @@ class TestQdacCompiler:
 
         assert qdac_bus.upload_voltage_list.call_count == 2
         assert qdac_bus.set_parameter.call_count == 0
-
-    def test_crosstalk_no_trigger_buses_raises_error(self, qdac_no_sync: QDevilQDac2, flux_no_sync: Bus):
-        """Test error raised when no trigger_sync is added in the runcard."""
-        flux_wf = Arbitrary(samples=np.array([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.1, 0]))
-        qp = QProgram()
-
-        freq = qp.variable(label="frequency", domain=Domain.Frequency)
-
-        with qp.average(10):
-            with qp.for_loop(variable=freq, start=10e6, stop=100e6, step=10e6):
-                qp.qdac.play(bus="flux_no_sync", waveform=flux_wf, dwell=2)
-                qp.set_trigger(bus="flux_no_sync", duration=10e-6, outputs=1, position="start")
-
-        compiler = QdacCompiler()
-        with pytest.raises(
-            ValueError,
-            match="Cannot set Trigger without instrument set as trigger_sync = True. Modify the runcard and add trigger_sync to a QDAC II instrument.",
-        ):
-            compiler.compile(
-                qprogram=qp,
-                qdacs=[qdac_no_sync],
-                qdac_buses=[flux_no_sync],
-                qdac_offsets=[0],
-            )
 
     def test_crosstalk_compensation_IQPair(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""
@@ -674,7 +648,7 @@ class TestQdacCompiler:
         compiler = QdacCompiler()
         with pytest.raises(
             NotImplementedError,
-            match=f"position must be set as 'end', 'start', 'step' or 'end_step'. {wrong_position} is not recognized",
+            match=f"Position must be set as 'end', 'start', 'step' or 'end_step'. {wrong_position} is not recognized",
         ):
             compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
 

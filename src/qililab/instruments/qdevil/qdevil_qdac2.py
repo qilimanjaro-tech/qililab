@@ -164,16 +164,13 @@ class QDevilQDac2(VoltageSource):
                 channel.output_filter(low_pass_filter)  # type: ignore[union-attr]
             return
         if parameter == Parameter.SYNC_OUT_TRIGGER:
-            sync_out_trigger = int(value)
-            self.settings.sync_out_trigger = sync_out_trigger
+            self.settings.sync_out_trigger = int(value) if value is not None else None
             return
         if parameter == Parameter.SYNC_IN_TRIGGER:
-            sync_in_trigger = int(value)
-            self.settings.sync_in_trigger = sync_in_trigger
+            self.settings.sync_in_trigger = int(value) if value is not None else None
             return
         if parameter == Parameter.INSTRUMENT_OUT_TRIGGER:
-            instrument_out_trigger = int(value)
-            self.settings.instrument_out_trigger = instrument_out_trigger
+            self.settings.instrument_out_trigger = int(value) if value is not None else None
             return
         raise ParameterNotFound(self, parameter)
 
