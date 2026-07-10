@@ -363,6 +363,7 @@ class Parameter(str, Enum):
     NUMBER_POINTS = "number_points"
     INTEGRATION_MODE = "integration_mode"
     ACQUISITION_TIMEOUT = "acquisition_timeout"
+    TIMEOUT_REPETITIONS = "timeout_repetitions"
     MAX_CURRENT = "max_current"
     MAX_VOLTAGE = "max_voltage"
     SCOPE_STORE_ENABLED = "scope_store_enabled"
