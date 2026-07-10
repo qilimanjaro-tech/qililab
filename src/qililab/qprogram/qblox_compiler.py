@@ -896,6 +896,9 @@ class QbloxCompiler:
         if element.bus not in self._qblox_buses:
             return
 
+        if element.internal:
+            raise NotImplementedError("internal=True is only supported on QDAC-II buses.")
+
         mask = self._markers[element.bus] if self._markers is not None and element.bus in self._markers else "0000"
         if not element.outputs:
             raise ValueError("Missing qblox trigger outputs at qp.set_trigger.")

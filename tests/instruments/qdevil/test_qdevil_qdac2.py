@@ -516,6 +516,32 @@ class TestQDevilQDac2:
             qdac.device.channel.assert_has_calls(channel_calls)
             assert qdac.get_parameter(parameter=parameter, channel_id=channel_id) == value
 
+    @pytest.mark.parametrize(
+        "parameter",
+        [Parameter.SYNC_OUT_TRIGGER, Parameter.SYNC_IN_TRIGGER, Parameter.INSTRUMENT_OUT_TRIGGER],
+    )
+    @pytest.mark.parametrize("value", [1, 3, 5, None])
+    def test_set_trigger_parameter_valid_values(self, qdac: QDevilQDac2, parameter: Parameter, value):
+        """Trigger port parameters accept ports in the valid range and None (reset), without a channel_id."""
+        qdac.set_parameter(parameter=parameter, value=value)
+
+        expected = int(value) if value is not None else None
+        assert getattr(qdac.settings, parameter.value) == expected
+        assert qdac.get_parameter(parameter=parameter) == expected
+
+    @pytest.mark.parametrize(
+        "parameter",
+        [Parameter.SYNC_OUT_TRIGGER, Parameter.SYNC_IN_TRIGGER, Parameter.INSTRUMENT_OUT_TRIGGER],
+    )
+    @pytest.mark.parametrize("value", [0, 6, -1, True, False])
+    def test_set_trigger_parameter_invalid_port_raises_error(self, qdac: QDevilQDac2, parameter: Parameter, value):
+        """Trigger port parameters reject out-of-range ports and booleans, leaving the setting unchanged."""
+        error_string = re.escape(f"{parameter.value} must be an external trigger port")
+        with pytest.raises(ValueError, match=error_string):
+            qdac.set_parameter(parameter=parameter, value=value)
+
+        assert getattr(qdac.settings, parameter.value) is None  # fixture default, unchanged by the failed set
+
     @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.GAIN, 0.0005)])
     def test_set_parameter_method_raises_exception(self, qdac: QDevilQDac2, parameter: Parameter, value):
         """Test the setup method raises an exception with wrong parameters"""

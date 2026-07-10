@@ -81,7 +81,7 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 ### Breaking changes
 
 - Changes have been made to the runcard's instrument for qdacs regarding the qdac's external trigger network:
-  - Renamed the runcard's optional fields for `instruments/qdevil_qdac2` that synchronize qdac modules within a single trigger network: in_trigger has been renamed to sync_in_trigger
+  - Renamed the runcard's optional fields for `instruments/qdevil_qdac2` that synchronize qdac modules within a single trigger network: `out_trigger` has been renamed to `sync_out_trigger` and `in_trigger` has been renamed to `sync_in_trigger`.
     For example:
   ```
   instruments
@@ -96,7 +96,8 @@ In the runcard this parameter is located inside the instruments sequencer for QR
       sync_in_trigger: 1
   ```
 
-  - Removed the runcard's optional field `trigger_sync` for `instruments/qdevil_qdac2`. This parameter has been replaced by `instrument_out_trigger`.
+  - Removed the runcard's optional field `trigger_sync` for `instruments/qdevil_qdac2`. This parameter has been replaced by `instrument_out_trigger`, an external trigger output port used to trigger other instruments, which also acts as the default `outputs` of `qprogram.set_trigger`. To use the qdac's internal trigger network instead, omit `instrument_out_trigger` or pass `internal=True` to `qprogram.set_trigger`.
+  - Existing runcards must be updated manually: loading a runcard that still contains `out_trigger`, `in_trigger` or `trigger_sync` will raise a `TypeError` at platform build time.
   [#1159](https://github.com/qilimanjaro-tech/qililab/pull/1159)
 
 ### Deprecations / Removals

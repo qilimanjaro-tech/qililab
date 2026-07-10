@@ -117,6 +117,12 @@ class QDevilQDac2(VoltageSource):
             self._validate_channel(channel_id=channel_id)
             channel = self.device.channel(channel_id) if self.is_device_active() else None
             index = self.dacs.index(channel_id)
+        elif parameter in (
+            Parameter.SYNC_OUT_TRIGGER,
+            Parameter.SYNC_IN_TRIGGER,
+            Parameter.INSTRUMENT_OUT_TRIGGER,
+        ) and (value is not None and (isinstance(value, bool) or not 1 <= int(value) <= 5)):
+            raise ValueError(f"{parameter.value} must be an external trigger port in [1, 4] or None, got {value}.")
 
         if parameter == Parameter.VOLTAGE:
             voltage = float(value)

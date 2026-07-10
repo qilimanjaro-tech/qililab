@@ -271,7 +271,7 @@ class QdacCompiler:
                     if isinstance(instrument, QDevilQDac2)
                 )
             ]
-            host_bus = trigger_buses[0] if (trigger_buses or element.bus not in trigger_buses) else element.bus
+            host_bus = trigger_buses[0] if (trigger_buses and element.bus not in trigger_buses) else element.bus
             instrument = next(
                 instrument
                 for instrument in self._qdac_buses_by_alias[host_bus].instruments
@@ -280,7 +280,7 @@ class QdacCompiler:
             )
             outputs = instrument.instrument_out_trigger
             if element.outputs:
-                if outputs is not None:
+                if outputs is not None and not element.internal:
                     warn_once(
                         f"Using outputs {element.outputs} from qprogram.set_trigger. Instead of runcard instrument_out_trigger {outputs}."
                     )
@@ -470,6 +470,8 @@ class QdacCompiler:
                 bus_list = [bus.alias for bus in self._qdac_buses if in_instrument in bus.instruments]
                 for bus in bus_list:
                     if f"{in_instrument.device.name}_{self._channels[bus]}" in in_instrument._cache_dc:
+                        if in_instrument.sync_in_trigger is None:
+                            raise ValueError(f"QDAC '{in_instrument.alias}' receives a sync trigger but has no sync_in_trigger in the runcard.")
                         in_instrument.set_in_external_trigger(
                             channel_id=self._channels[bus], in_port=in_instrument.sync_in_trigger
                         )

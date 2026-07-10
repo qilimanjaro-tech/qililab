@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+from qililab.config import warn_once
 from qililab.instruments import Instrument, Instruments
 from qililab.instruments.qdevil.qdevil_qdac2 import QDevilQDac2
 from qililab.platform import Bus
@@ -29,6 +30,7 @@ def mock_instrument() -> list[Instrument]:
 def mock_instrument_no_ext_trigger() -> list[Instrument]:
     instrument1 = MagicMock(spec=QDevilQDac2)
     type(instrument1).alias = property(lambda self: "qdac_no_ext_trigger")
+    instrument1.instrument_out_trigger = None
     return [instrument1]
 
 
@@ -161,19 +163,43 @@ def fixture_second_qdac() -> QDevilQDac2:
 
 
 class TestQdacCompiler:
-    def test_play_and_set_trigger(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
-        """Test all possible combinations of play + set_trigger on the QDACII."""
+    @pytest.mark.parametrize(
+        "position, internal, expected_marker, expected_step",
+        [
+            ("start", False, "set_start_marker_external_trigger", False),
+            ("end", False, "set_end_marker_external_trigger", False),
+            ("step", False, "set_start_marker_external_trigger", True),
+            ("end_step", False, "set_end_marker_external_trigger", True),
+            ("start", True, "set_start_marker_internal_trigger", False),
+            ("end", True, "set_end_marker_internal_trigger", False),
+            ("step", True, "set_start_marker_internal_trigger", True),
+            ("end_step", True, "set_end_marker_internal_trigger", True),
+        ],
+    )
+    def test_play_and_set_trigger(
+        self,
+        qdac: QDevilQDac2,
+        flux1: Bus,
+        flux2: Bus,
+        position: str,
+        internal: bool,
+        expected_marker: str,
+        expected_step: bool,
+    ):
+        """Test all combinations of play + set_trigger (external and internal) on the QDACII."""
         qdac_bus = flux1.instruments[0]
 
         pulse_wf = Square(1.0, 100)
         dwell_us = 2
         out_port = 1
 
-        # Setting external trigger at the beginning of the iteration
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
         qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="start")
+        if internal:
+            qp.set_trigger(bus="flux1", duration=10e-6, position=position, internal=True)
+        else:
+            qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position=position)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
@@ -181,129 +207,85 @@ class TestQdacCompiler:
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._qprogram == qp
         assert compiler._qdacs == [qdac]
-        assert compiler._trigger_position == "front"
+        assert compiler._trigger_position == (None if internal else "front")
 
-        assert qdac_bus.set_start_marker_external_trigger.call_count == 1
+        marker_mock = getattr(qdac_bus, expected_marker)
+        assert marker_mock.call_count == 1
+        if not internal:
+            assert marker_mock.call_args.kwargs["out_port"] == out_port
+        if expected_step:
+            assert marker_mock.call_args.kwargs["step"] is True
         assert qdac_bus.upload_voltage_list.call_count == 2
 
-        # Setting external trigger at the end of the iteration
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="end")
+    @pytest.mark.parametrize(
+        "position, expected_marker, expected_step",
+        [
+            ("start", "set_start_marker_internal_trigger", False),
+            ("end", "set_end_marker_internal_trigger", False),
+            ("step", "set_start_marker_internal_trigger", True),
+            ("end_step", "set_end_marker_internal_trigger", True),
+        ],
+    )
+    def test_set_trigger_without_instrument_out_trigger_uses_internal(
+        self,
+        caplog,
+        qdac_instrument_no_ext_trigger: list[Instrument],
+        flux_no_ext_trigger: Bus,
+        position: str,
+        expected_marker: str,
+        expected_step: bool,
+    ):
+        """set_trigger with no `outputs` and no `instrument_out_trigger` in the runcard falls back to
+        an internal trigger on the bus set_trigger was called on, and warns about it."""
+        qdac_bus = flux_no_ext_trigger.instruments[0]
+        pulse_wf = Square(1.0, 100)
 
+        qp = QProgram()
+        qp.qdac.play(bus="flux_no_ext_trigger", waveform=pulse_wf, dwell=2)
+        qp.set_trigger(bus="flux_no_ext_trigger", duration=10e-6, position=position)
+
+        warn_once.cache_clear()  # warn_once is cached process-wide; clear so the warning is observable
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+        with caplog.at_level(logging.WARNING):
+            output = compiler.compile(
+                qprogram=qp, qdacs=qdac_instrument_no_ext_trigger, qdac_buses=[flux_no_ext_trigger], qdac_offsets=[0]
+            )
 
         assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
-        assert compiler._qdacs == [qdac]
-        assert compiler._trigger_position == "front"
+        assert compiler._trigger_position is None
 
-        assert qdac_bus.set_end_marker_external_trigger.call_count == 1
-        assert qdac_bus.upload_voltage_list.call_count == 4
+        marker_mock = getattr(qdac_bus, expected_marker)
+        assert marker_mock.call_count == 1
+        assert marker_mock.call_args.kwargs["channel_id"] == 1
+        if expected_step:
+            assert marker_mock.call_args.kwargs["step"] is True
+        assert qdac_bus.set_start_marker_external_trigger.call_count == 0
+        assert qdac_bus.set_end_marker_external_trigger.call_count == 0
+        assert "Setting QDAC trigger as internal." in caplog.text
 
-        # Setting external trigger at the beginning of each step
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="step")
+    def test_set_trigger_outputs_override_warns_once(self, caplog, qdac: QDevilQDac2, flux_qdac1: Bus):
+        """The warning about qprogram outputs overriding the runcard's instrument_out_trigger fires
+        with the right message, only once for repeated compilations, and not when internal=True."""
+        pulse_wf = Square(1.0, 100)
 
-        compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
+        def compile_qp(outputs: int, internal: bool = False):
+            qp = QProgram()
+            qp.qdac.play(bus="flux_qdac1", waveform=pulse_wf, dwell=2)
+            qp.set_trigger(bus="flux_qdac1", duration=10e-6, outputs=outputs, position="start", internal=internal)
+            QdacCompiler().compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux_qdac1], qdac_offsets=[0])
 
-        assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
-        assert compiler._qdacs == [qdac]
-        assert compiler._trigger_position == "front"
+        warn_once.cache_clear()
+        with caplog.at_level(logging.WARNING):
+            compile_qp(outputs=3)
+            compile_qp(outputs=3)
+            compile_qp(outputs=4, internal=True)
 
-        assert qdac_bus.set_start_marker_external_trigger.call_count == 2
-        assert qdac_bus.upload_voltage_list.call_count == 6
-
-        # Setting external trigger at the end of each step
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, outputs=out_port, position="end_step")
-
-        compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
-
-        assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
-        assert compiler._qdacs == [qdac]
-        assert compiler._trigger_position == "front"
-
-        assert qdac_bus.set_end_marker_external_trigger.call_count == 2
-        assert qdac_bus.upload_voltage_list.call_count == 8
-
-        # Setting internal trigger at the beginning of the iteration
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, position="start", internal = True)
-
-        compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
-
-        assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
-        assert compiler._qdacs == [qdac]
-        assert compiler._trigger_position == None
-
-        assert qdac_bus.set_start_marker_internal_trigger.call_count == 1
-        assert qdac_bus.upload_voltage_list.call_count == 10
-
-        # Setting internal trigger at the end of the iteration
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, position="end", internal = True)
-
-        compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
-
-        assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
-        assert compiler._qdacs == [qdac]
-        assert compiler._trigger_position == None
-
-        assert qdac_bus.set_end_marker_internal_trigger.call_count == 1
-        assert qdac_bus.upload_voltage_list.call_count == 12  # accumulative with last calls
-
-        # Setting internal trigger at the beginning of each step
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, position="step", internal = True)
-
-        compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
-
-        assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
-        assert compiler._qdacs == [qdac]
-        assert compiler._trigger_position == None
-
-        assert qdac_bus.upload_voltage_list.call_count == 14
-        assert qdac_bus.set_start_marker_internal_trigger.call_count == 2
-
-        # Setting internal trigger at the end of each step
-        qp = QProgram()
-        qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
-        qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, position="end_step", internal = True)
-
-        compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
-
-        assert isinstance(output, QdacCompilationOutput)
-        assert compiler._qprogram == qp
-        assert compiler._qdacs == [qdac]
-        assert compiler._trigger_position == None
-
-        assert qdac_bus.upload_voltage_list.call_count == 16
-        assert qdac_bus.set_end_marker_internal_trigger.call_count == 2
+        expected = (
+            f"Using outputs 3 from qprogram.set_trigger. Instead of runcard instrument_out_trigger {qdac.instrument_out_trigger}."
+        )
+        assert caplog.text.count(expected) == 1
+        assert "Using outputs 4" not in caplog.text
+        assert qdac.set_start_marker_external_trigger.call_args.kwargs["out_port"] == 3
 
     def test_set_trigger_on_non_trigger_bus_with_existing_dc_list(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test set_trigger on a non-trigger bus when a DC list already exists on the trigger bus."""
@@ -329,7 +311,9 @@ class TestQdacCompiler:
         assert compiler._trigger_position == "front"
         assert qdac_bus.set_start_marker_external_trigger.call_count == 1
 
-    def test_set_trigger_on_non_trigger_bus_no_dc_list_uses_play_params(self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac1: Bus, flux_qdac2: Bus):
+    def test_set_trigger_on_non_trigger_bus_no_dc_list_uses_play_params(
+        self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac1: Bus, flux_qdac2: Bus
+    ):
         """Test set_trigger on a non-trigger bus when no DC list exists; falls back to _play_params
         to synthesise a constant waveform on the trigger bus."""
         qdac_bus = flux_qdac1.instruments[0]
@@ -348,7 +332,13 @@ class TestQdacCompiler:
         qp.set_trigger(bus="flux_qdac2", duration=10e-6, outputs=out_port, position="start")
 
         compiler = QdacCompiler()
-        output = compiler.compile(qprogram=qp, qdacs=[qdac, qdac_2], qdac_buses=[flux_qdac1, flux_qdac2], qdac_offsets=[0, 0], out_instrument=qdac)
+        output = compiler.compile(
+            qprogram=qp,
+            qdacs=[qdac, qdac_2],
+            qdac_buses=[flux_qdac1, flux_qdac2],
+            qdac_offsets=[0, 0],
+            out_instrument=qdac,
+        )
 
         assert isinstance(output, QdacCompilationOutput)
         assert compiler._trigger_position == "front"
@@ -374,7 +364,9 @@ class TestQdacCompiler:
             ValueError,
             match="No DC list with the given channel ID, first create a DC list using qprogram.play.",
         ):
-            compiler.compile(qprogram=qp, qdacs=[qdac, qdac_2], qdac_buses=[flux_qdac1, flux_qdac2], qdac_offsets=[0, 0])
+            compiler.compile(
+                qprogram=qp, qdacs=[qdac, qdac_2], qdac_buses=[flux_qdac1, flux_qdac2], qdac_offsets=[0, 0]
+            )
 
     def test_simultaneous_qdacs(self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac1: Bus, flux_qdac2: Bus):
         """test the behavior of _handle_simultaneous_qdacs for 2 different QDACII."""
@@ -834,7 +826,7 @@ class TestQdacCompiler:
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
         qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, position="start", internal = True)
+        qp.set_trigger(bus="flux1", duration=10e-6, position="start", internal=True)
         qp.wait_trigger(bus="flux1", duration=10e-6)
 
         compiler = QdacCompiler()
