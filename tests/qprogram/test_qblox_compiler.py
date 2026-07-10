@@ -141,6 +141,17 @@ def fixture_offset_loop_negative() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="offset_loop_two_variables")
+def fixture_offset_loop_two_variables() -> QProgram:
+    qp = QProgram()
+    offset_a = qp.variable(label="offset_a", domain=Domain.Voltage)
+    offset_b = qp.variable(label="offset_b", domain=Domain.Voltage)
+    with qp.for_loop(variable=offset_a, start=0.0, stop=0.2, step=0.1):
+        with qp.for_loop(variable=offset_b, start=0.0, stop=0.3, step=0.1):
+            qp.set_offset(bus="drive", offset_path0=offset_a, offset_path1=offset_b)
+    return qp
+
+
 @pytest.fixture(name="dynamic_wait")
 def fixture_dynamic_wait() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -1669,6 +1680,36 @@ class TestQBloxCompiler:
                             set_mrk          0
                             upd_param        4
                             stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_set_offset_with_two_independent_variables(self, offset_loop_two_variables: QProgram):
+        """offset_path0 and offset_path1 both being (different) Variables must use each variable's
+        own register directly, rather than the offset_path1=None shortcut where both paths collapse
+        onto the same register."""
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=offset_loop_two_variables)
+
+        drive_str = """
+            setup:
+                    wait_sync        4
+                    set_mrk          0
+                    upd_param        4
+            main:
+                    move             0, R0
+                    move             3, R1
+            loop_0:
+                    move             0, R2
+                    move             4, R3
+            loop_1:
+                    set_awg_offs     R0, R2
+                    add              R2, 3276, R2
+                    loop             R3, @loop_1
+                    add              R0, 3276, R0
+                    loop             R1, @loop_0
+                    set_mrk          0
+                    upd_param        4
+                    stop
         """
         assert is_q1asm_equal(sequences["drive"], drive_str)
 

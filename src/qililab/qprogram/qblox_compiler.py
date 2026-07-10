@@ -802,7 +802,6 @@ class QbloxCompiler:
         self._buses[element.bus].upd_param_instruction_pending = True
 
     def _handle_set_offset(self, element: SetOffset) -> None:
-        # TEST the four cases, var&var, imm&imm, var&imm, imm&var
         if element.bus not in self._qblox_buses:
             return
 

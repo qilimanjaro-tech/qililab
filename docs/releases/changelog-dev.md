@@ -4,21 +4,21 @@
 
 ### Improvements
 
-- Migrated `QbloxCompiler` to the redesigned `qpysequence` API (version 1.0.0). The compiler now uses the new `Compiler` class (`qpysequence.compiler.Compiler`) to lower and compile Q1ASM programs, replacing the old `program.compile()` call. Program construction now uses `block.add()` throughout, programs have an explicit `setup` block followed by `main`, loop sweeps use the new `SweepSpec`-based `IterativeLoop` API with `ConversionInstruction` subclasses (`SetNormalisedOffs`, `SetNormalisedGain`, `SetFrequencyHz`, `SetPhaseRad`) for automatic physical-unit-to-integer scaling, and label references no longer require the `@` prefix. `Sequence.todict()` is replaced by `Sequence.to_dict()` throughout. Several responsibilities have shifted from `qililab` to `qpysequence`:
-  - **`nop` insertion**: qililab no longer emits `nop` instructions manually; qpysequence's compiler handles read-after-write hazard guards automatically. Duplicate parameter instructions (e.g. double `set_awg_gain` or `set_freq`) that were previously emitted as a workaround are no longer needed.
-  - **Physical-unit-to-integer conversion**: scaling of physical-unit values (normalised gain/offset, Hz frequency, radian phase) to Q1ASM integers is now fully owned by qpysequence via `ConversionInstruction.scale_factor`.
-  - **Long-wait handling**: durations exceeding `INST_MAX_WAIT` are now managed by qpysequence's `LongWait` instruction rather than qililab.
-  - **Adjacent wait merging**: consecutive `wait` instructions are now combined by qpysequence's compiler rather than by qililab.
-  - The Q1ASM output is functionally equivalent but may differ structurally from previous versions; see the qpysequence changelog for a full description.
+- Migrated `QbloxCompiler` to the redesigned `qpysequence` API (version 0.11). The compiler now uses the new `Compiler` class (`qpysequence.compiler.Compiler`) to compile programs to Q1ASM, replacing the old `program.compile()` call. Program construction now uses `block.add()` throughout, loop sweeps use the new `SweepSpec`-based `IterativeLoop` API with `ConversionInstruction` subclasses (`SetNormalisedOffs`, `SetNormalisedGain`, `SetFrequencyHz`, `SetPhaseRad`) for automatic physical-unit-to-integer scaling, and label references no longer require the `@` prefix. `Sequence.todict()` is replaced by `Sequence.to_dict()` throughout. Several responsibilities have shifted from `qililab` to `qpysequence`:
+  - **`nop` insertion**: `qililab` no longer emits `nop` instructions manually; `qpysequence`'s compiler handles read-after-write hazard guards automatically. Duplicate parameter instructions (e.g. double `set_awg_gain` or `set_freq`) that were previously emitted as a workaround are no longer needed.
+  - **Physical-unit-to-integer conversion**: scaling of physical-unit values (normalised gain/offset, Hz frequency, radian phase) to Q1ASM integers is now fully owned by `qpysequence` via `ConversionInstruction.scale_factor`.
+  - **Long-wait handling**: durations exceeding `INST_MAX_WAIT`, for both `wait` and `wait_trigger`, are now managed by `qpysequence`'s `LongWait` instruction rather than `qililab`.
+  - **Adjacent wait merging**: consecutive `wait` instructions are now combined by `qpysequence`'s compiler rather than by `qililab`.
+  - The Q1ASM output is functionally equivalent but may differ structurally from previous versions; see the `qpysequence` changelog for a full description.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
   
-- Updated `QbloxDraw` to iterate over all program blocks (`setup` and `main`) to match the new multi-block program structure.
+- Updated `QbloxDraw` to iterate over all program blocks (`setup` and `main`) to match the new Q1ASM structure introduced by `qpysequence` 0.11.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
   
 - `QbloxCompiler` now emits a warning and clamps to 4 ns when a `wait`, `wait_trigger`, or `play` duration, or a hardware loop's start or stop value, is below the Q1ASM minimum of 4 ns.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
   
-- Pin qpysequence==0.10.8
+- Pin `qpysequence==0.10.8`
   [#1155](https://github.com/qilimanjaro-tech/qililab/pull/1155)
 
 - Added a `ValueError` while creating the `DatabaseManager` (for example with `get_db_manager`) checking for `user`, `passwd`, `host`, `port` or `database` inside the database.ini config file, if any of these parameters is missing an error is thrown.
