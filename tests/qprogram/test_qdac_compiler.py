@@ -25,6 +25,13 @@ def mock_instrument() -> list[Instrument]:
     return [instrument1]
 
 
+@pytest.fixture(name="qdac_instrument_no_ext_trigger")
+def mock_instrument_no_ext_trigger() -> list[Instrument]:
+    instrument1 = MagicMock(spec=QDevilQDac2)
+    type(instrument1).alias = property(lambda self: "qdac_no_ext_trigger")
+    return [instrument1]
+
+
 @pytest.fixture(name="calibration")
 def fixture_calibration() -> Calibration:
     calibration = Calibration()
@@ -45,10 +52,10 @@ def fixture_bus_flux2(qdac_instrument) -> Bus:
     return Bus(settings=settings, platform_instruments=Instruments(elements=qdac_instrument))
 
 
-@pytest.fixture(name="flux_no_sync")
-def fixture_bus_flux_no_sync(qdac_no_sync: QDevilQDac2) -> Bus:
-    settings = {"alias": "flux_no_sync", "instruments": ["qdac_no_sync"], "channels": [1]}
-    return Bus(settings=settings, platform_instruments=Instruments(elements=[qdac_no_sync]))
+@pytest.fixture(name="flux_no_ext_trigger")
+def fixture_bus_flux_no_ext_trigger(qdac_instrument_no_ext_trigger) -> Bus:
+    settings = {"alias": "flux_no_ext_trigger", "instruments": ["qdac_no_ext_trigger"], "channels": [1]}
+    return Bus(settings=settings, platform_instruments=Instruments(elements=qdac_instrument_no_ext_trigger))
 
 
 @pytest.fixture(name="flux_qdac1")
@@ -93,12 +100,12 @@ def fixture_qdac() -> QDevilQDac2:
     return qdac
 
 
-@pytest.fixture(name="qdac_no_sync")
-def fixture_qdac_no_sync() -> QDevilQDac2:
+@pytest.fixture(name="qdac_no_ext_trigger")
+def fixture_qdac_no_ext_trigger() -> QDevilQDac2:
     """Fixture that returns an instance of a dummy QDAC-II."""
-    qdac_no_sync = QDevilQDac2(
+    qdac_no_ext_trigger = QDevilQDac2(
         {
-            "alias": "qdac_no_sync",
+            "alias": "qdac_no_ext_trigger",
             "voltage": [0.5, 0.5, 0.5, 0.5],
             "span": ["low", "low", "low", "low"],
             "ramping_enabled": [True, True, True, False],
@@ -108,18 +115,18 @@ def fixture_qdac_no_sync() -> QDevilQDac2:
             "sync_out_trigger": 1,
         }
     )
-    qdac_no_sync.device = MagicMock()
-    qdac_no_sync.set_end_marker_internal_trigger = MagicMock()
-    qdac_no_sync.set_start_marker_internal_trigger = MagicMock()
-    qdac_no_sync.set_end_marker_external_trigger = MagicMock()
-    qdac_no_sync.set_start_marker_external_trigger = MagicMock()
-    qdac_no_sync.set_in_external_trigger = MagicMock()
-    qdac_no_sync.set_in_internal_trigger = MagicMock()
-    qdac_no_sync.upload_voltage_list = MagicMock()
-    qdac_no_sync.set_out_external_trigger = MagicMock()
-    qdac_no_sync.set_parameter = MagicMock()
+    qdac_no_ext_trigger.device = MagicMock()
+    qdac_no_ext_trigger.set_end_marker_internal_trigger = MagicMock()
+    qdac_no_ext_trigger.set_start_marker_internal_trigger = MagicMock()
+    qdac_no_ext_trigger.set_end_marker_external_trigger = MagicMock()
+    qdac_no_ext_trigger.set_start_marker_external_trigger = MagicMock()
+    qdac_no_ext_trigger.set_in_external_trigger = MagicMock()
+    qdac_no_ext_trigger.set_in_internal_trigger = MagicMock()
+    qdac_no_ext_trigger.upload_voltage_list = MagicMock()
+    qdac_no_ext_trigger.set_out_external_trigger = MagicMock()
+    qdac_no_ext_trigger.set_parameter = MagicMock()
 
-    return qdac_no_sync
+    return qdac_no_ext_trigger
 
 
 @pytest.fixture(name="qdac_2")
@@ -234,7 +241,7 @@ class TestQdacCompiler:
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
         qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, position="start")
+        qp.set_trigger(bus="flux1", duration=10e-6, position="start", internal = True)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
@@ -251,7 +258,7 @@ class TestQdacCompiler:
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
         qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, position="end")
+        qp.set_trigger(bus="flux1", duration=10e-6, position="end", internal = True)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
@@ -268,7 +275,7 @@ class TestQdacCompiler:
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
         qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, position="step")
+        qp.set_trigger(bus="flux1", duration=10e-6, position="step", internal = True)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
@@ -285,7 +292,7 @@ class TestQdacCompiler:
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
         qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, position="end_step")
+        qp.set_trigger(bus="flux1", duration=10e-6, position="end_step", internal = True)
 
         compiler = QdacCompiler()
         output = compiler.compile(qprogram=qp, qdacs=[qdac], qdac_buses=[flux1, flux2], qdac_offsets=[0, 0])
@@ -823,11 +830,11 @@ class TestQdacCompiler:
         qdac_bus.set_in_external_trigger.assert_called_once()
         assert qdac_bus.upload_voltage_list.call_count == 2
 
-        # Setting external trigger at the end of the iteration
+        # Setting internal trigger at the end of the iteration
         qp = QProgram()
         qp.qdac.play(bus="flux1", waveform=pulse_wf, dwell=dwell_us)
         qp.qdac.play(bus="flux2", waveform=pulse_wf, dwell=dwell_us)
-        qp.set_trigger(bus="flux1", duration=10e-6, position="start")
+        qp.set_trigger(bus="flux1", duration=10e-6, position="start", internal = True)
         qp.wait_trigger(bus="flux1", duration=10e-6)
 
         compiler = QdacCompiler()

@@ -75,7 +75,7 @@ class QdacBusCompilationInfo:
 
 
 class QdacCompiler:
-    """A class for controling QProgram to Qdac hardware."""
+    """A class for controlling QProgram to Qdac hardware."""
 
     def __init__(self) -> None:
         # Handlers to map each operation to a corresponding handler function
@@ -271,7 +271,7 @@ class QdacCompiler:
                     if isinstance(instrument, QDevilQDac2)
                 )
             ]
-            host_bus = trigger_buses[0] if trigger_buses else element.bus
+            host_bus = trigger_buses[0] if (trigger_buses or element.bus not in trigger_buses) else element.bus
             instrument = next(
                 instrument
                 for instrument in self._qdac_buses_by_alias[host_bus].instruments
@@ -316,7 +316,7 @@ class QdacCompiler:
                     self._qprogram.buses.add(trigger_bus)
             else:
                 trigger_bus = element.bus
-            if outputs:
+            if outputs and not element.internal:
                 for output in outputs if isinstance(outputs, list) else [outputs]:
                     trigger = self._hash_trigger(element, output)
 
@@ -353,9 +353,10 @@ class QdacCompiler:
                 if not self._trigger_position:
                     self._trigger_position = "front"
             else:
-                warn_once(
-                    "No trigger output set in runcard's instrument_out_trigger nor qprogram.set_trigger(outputs). Setting QDAC trigger as internal."
-                )
+                if outputs is None:
+                    warn_once(
+                        "No trigger output set in runcard's instrument_out_trigger nor qprogram.set_trigger(outputs). Setting QDAC trigger as internal."
+                    )
                 trigger = self._hash_trigger(element, None)
                 if element.position == "end":
                     instrument.set_end_marker_internal_trigger(channel_id=self._channels[trigger_bus], trigger=trigger)
