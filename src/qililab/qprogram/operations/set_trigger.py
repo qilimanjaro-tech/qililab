@@ -20,7 +20,12 @@ from qililab.yaml import yaml
 @yaml.register_class
 class SetTrigger(Operation):
     def __init__(
-        self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start", internal: bool = False
+        self,
+        bus: str,
+        duration: int,
+        outputs: list[int] | int | None = None,
+        position: str = "start",
+        internal: bool = False,
     ) -> None:
         super().__init__()
         self.bus: str = bus

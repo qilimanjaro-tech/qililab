@@ -1253,15 +1253,22 @@ class QProgram(StructuredProgram):
         self._buses.add(bus)
 
     @requires_domain("duration", Domain.Time)
-    def set_trigger(self, bus: str, duration: int, outputs: list[int] | int | None = None, position: str = "start", internal: bool = False):
+    def set_trigger(
+        self,
+        bus: str,
+        duration: int,
+        outputs: list[int] | int | None = None,
+        position: str = "start",
+        internal: bool = False,
+    ):
         """Set the trigger output for a given instrument.
         Args:
             bus (str): Unique identifier of the bus.
             duration (int): Duration of the trigger pulse. Minimum of 4 ns.
             outputs(optional, list[int] | int | None): Port channel/s of the trigger output. Defaults to None.
-            position(optional, str): Trigger position in respective to the pulse location, 
+            position(optional, str): Trigger position in respective to the pulse location,
                                         it can `start`, `end`, `step` or `end_step`. Defaults to start.
-            internal(optional, bool): defines if the trigger is created within the internal trigger network (True) or 
+            internal(optional, bool): defines if the trigger is created within the internal trigger network (True) or
                                         if it is also an external trigger (False). Defaults to False.
         """
         operation = SetTrigger(bus=bus, outputs=outputs, duration=duration, position=position, internal=internal)

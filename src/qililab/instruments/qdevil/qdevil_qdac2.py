@@ -495,7 +495,11 @@ class QDevilQDac2(VoltageSource):
             self._validate_channel(channel_id=channel_id)
             index = self.dacs.index(channel_id)
         if hasattr(self.settings, parameter.value):
-            if parameter not in (Parameter.SYNC_OUT_TRIGGER, Parameter.SYNC_IN_TRIGGER, Parameter.INSTRUMENT_OUT_TRIGGER):
+            if parameter not in (
+                Parameter.SYNC_OUT_TRIGGER,
+                Parameter.SYNC_IN_TRIGGER,
+                Parameter.INSTRUMENT_OUT_TRIGGER,
+            ):
                 return getattr(self.settings, parameter.value)[index]
             return getattr(self.settings, parameter.value)
         raise ParameterNotFound(self, parameter)
