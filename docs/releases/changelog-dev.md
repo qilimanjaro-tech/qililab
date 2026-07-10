@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- Fixed `test_data_management.py` and `test_slurm.py` failing on local Windows dev environments: `save_platform()`'s return path is now compared as a `Path` instead of a raw string (Windows uses backslash separators), and `TestSubmitJob` (which relies on `submitit`'s POSIX-only local executor) is now skipped on Windows.
+  [#1158](https://github.com/qilimanjaro-tech/qililab/pull/1158)
+
 - Pin qpysequence==0.10.8
   [#1155](https://github.com/qilimanjaro-tech/qililab/pull/1155)
 
