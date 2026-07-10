@@ -4,6 +4,7 @@
 
 ### Improvements
 
+
 - Changes have been made to the runcard's instrument for qdacs regarding the qdac's external trigger network:
   - Added the optional field `instrument_out_trigger` to represent any external trigger output directed to another instrument. This replaces the `output` variable inside `qprogram.set_trigger()`, making the variable `output` optional. In case both `instrument_out_trigger` and `set_trigger(output)` have been set, `output` takes priority.
     For example:
@@ -19,6 +20,9 @@
 
   - Added warnings when the `set_trigger(output)` overlaps the `instrument_out_trigger` and when the internal trigger network is used whenever `instrument_out_trigger` and `set_trigger(output)` have not been set.
   [#1159](https://github.com/qilimanjaro-tech/qililab/pull/1159)
+
+- Fixed `test_data_management.py` and `test_slurm.py` failing on local Windows dev environments: `save_platform()`'s return path is now compared as a `Path` instead of a raw string (Windows uses backslash separators), and `TestSubmitJob` (which relies on `submitit`'s POSIX-only local executor) is now skipped on Windows.
+  [#1158](https://github.com/qilimanjaro-tech/qililab/pull/1158)
 
 - Pin qpysequence==0.10.8
   [#1155](https://github.com/qilimanjaro-tech/qililab/pull/1155)
