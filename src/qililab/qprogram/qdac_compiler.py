@@ -459,6 +459,27 @@ class QdacCompiler:
             ),
             None,
         )
+        if out_bus is None:
+            if any(bus for bus in self._qdac_buses if self._out_instrument in bus.instruments):
+                if not self._play_params:
+                    raise ValueError("No DC list found in the QDAC, first create a DC list using qprogram.play.")
+                out_bus = next(bus.alias for bus in self._qdac_buses if self._out_instrument in bus.instruments)
+                voltage = self._out_instrument.settings.voltage[self._channels[out_bus]]
+                self._handle_play(
+                    Play(
+                        bus=out_bus,
+                        waveform=Arbitrary(np.ones(self._play_params["waveform"].shape) * voltage),  # type: ignore [attr-defined]
+                        dwell=self._play_params["dwell"],  # type: ignore [arg-type]
+                        delay=self._play_params["delay"],  # type: ignore [arg-type]
+                        repetitions=self._play_params["repetitions"],  # type: ignore [arg-type]
+                        stepped=self._play_params["stepped"],  # type: ignore [arg-type]
+                    )
+                )
+                self._qprogram.buses.add(out_bus)
+            else:
+                raise ValueError(
+                    f"QDAC '{self._out_instrument.alias}' provides sync_out_trigger but there is no bus with this instrument. Create a bus with this instrument or move sync_out_trigger to another QDAC."
+                )
         self._out_instrument.set_out_external_trigger(
             channel_id=self._channels[out_bus],
             out_port=self._out_instrument.sync_out_trigger,

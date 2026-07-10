@@ -280,9 +280,7 @@ class TestQdacCompiler:
             compile_qp(outputs=3)
             compile_qp(outputs=4, internal=True)
 
-        expected = (
-            f"Using outputs 3 from qprogram.set_trigger. Instead of runcard instrument_out_trigger {qdac.instrument_out_trigger}."
-        )
+        expected = f"Using outputs 3 from qprogram.set_trigger. Instead of runcard instrument_out_trigger {qdac.instrument_out_trigger}."
         assert caplog.text.count(expected) == 1
         assert "Using outputs 4" not in caplog.text
         assert qdac.set_start_marker_external_trigger.call_args.kwargs["out_port"] == 3
@@ -393,6 +391,93 @@ class TestQdacCompiler:
 
         assert qdac.set_out_external_trigger.call_count == 1
         assert qdac_2.set_in_external_trigger.call_count == 1
+
+    def test_simultaneous_qdacs_out_bus_unused_falls_back_to_synthetic_play(
+        self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac1: Bus, flux_qdac2: Bus
+    ):
+        """If the QProgram never plays on a bus of the sync_out_trigger QDAC, a constant waveform is
+        synthesized on its bus so the sync trigger can still be emitted."""
+        qp = QProgram()
+        qp.qdac.play(bus="flux_qdac2", waveform=Square(1.0, 100), dwell=2)
+
+        compiler = QdacCompiler()
+        output = compiler.compile(
+            qprogram=qp,
+            qdacs=[qdac, qdac_2],
+            qdac_buses=[flux_qdac1, flux_qdac2],
+            qdac_offsets=[0, 0],
+            out_instrument=qdac,
+        )
+
+        assert isinstance(output, QdacCompilationOutput)
+        assert "flux_qdac1" in compiler._qprogram.buses
+        assert qdac.upload_voltage_list.call_count == 1
+        assert qdac.set_out_external_trigger.call_count == 1
+        assert qdac.set_out_external_trigger.call_args.kwargs["channel_id"] == 1
+        assert qdac_2.set_in_external_trigger.call_count == 1
+
+    def test_simultaneous_qdacs_out_bus_unused_without_play_raises_error(
+        self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac1: Bus, flux_qdac2: Bus
+    ):
+        """The synthetic-play fallback needs a prior qprogram.play to copy its parameters from."""
+        qp = QProgram()  # no play at all, so _play_params is never populated
+
+        compiler = QdacCompiler()
+        with pytest.raises(
+            ValueError,
+            match="No DC list found in the QDAC, first create a DC list using qprogram.play.",
+        ):
+            compiler.compile(
+                qprogram=qp,
+                qdacs=[qdac, qdac_2],
+                qdac_buses=[flux_qdac1, flux_qdac2],
+                qdac_offsets=[0, 0],
+                out_instrument=qdac,
+            )
+
+    def test_simultaneous_qdacs_out_instrument_without_bus_raises_error(
+        self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac2: Bus
+    ):
+        """If no bus contains the sync_out_trigger QDAC at all, a clear error is raised."""
+        qp = QProgram()
+        qp.qdac.play(bus="flux_qdac2", waveform=Square(1.0, 100), dwell=2)
+
+        compiler = QdacCompiler()
+        with pytest.raises(
+            ValueError,
+            match="provides sync_out_trigger but there is no bus with this instrument",
+        ):
+            compiler.compile(
+                qprogram=qp,
+                qdacs=[qdac, qdac_2],
+                qdac_buses=[flux_qdac2],
+                qdac_offsets=[0],
+                out_instrument=qdac,
+            )
+
+    def test_simultaneous_qdacs_missing_sync_in_trigger_raises_error(
+        self, qdac: QDevilQDac2, qdac_2: QDevilQDac2, flux_qdac1: Bus, flux_qdac2: Bus
+    ):
+        """A receiving QDAC with a DC list but no sync_in_trigger in the runcard raises a clear error
+        instead of writing an invalid port to the instrument."""
+        qdac_2.settings.sync_in_trigger = None
+
+        qp = QProgram()
+        qp.qdac.play(bus="flux_qdac1", waveform=Square(1.0, 100), dwell=2)
+        qp.qdac.play(bus="flux_qdac2", waveform=Square(1.0, 100), dwell=2)
+
+        compiler = QdacCompiler()
+        with pytest.raises(
+            ValueError,
+            match="receives a sync trigger but has no sync_in_trigger in the runcard",
+        ):
+            compiler.compile(
+                qprogram=qp,
+                qdacs=[qdac, qdac_2],
+                qdac_buses=[flux_qdac1, flux_qdac2],
+                qdac_offsets=[0, 0],
+                out_instrument=qdac,
+            )
 
     def test_crosstalk_compensation(self, qdac: QDevilQDac2, flux1: Bus, flux2: Bus):
         """Test all possible combinations of play + set_trigger on the QDACII."""

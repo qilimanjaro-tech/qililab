@@ -19,6 +19,8 @@
   - Added the optional parameter `internal` to `qprogram.set_trigger()`. This variable is a bool that defines if the trigger to be set will be set in the internal or external trigger network. The default is false implying the external trigger network.
 
   - Added warnings when the `set_trigger(output)` overlaps the `instrument_out_trigger` and when the internal trigger network is used whenever `instrument_out_trigger` and `set_trigger(output)` have not been set.
+
+  - Improved the simultaneous QDAC-II synchronization. If the QProgram never plays on a bus of the QDAC providing `sync_out_trigger`, a constant waveform is now synthesized to send the trigger correctly.
   [#1159](https://github.com/qilimanjaro-tech/qililab/pull/1159)
 
 - Fixed `test_data_management.py` and `test_slurm.py` failing on local Windows dev environments: `save_platform()`'s return path is now compared as a `Path` instead of a raw string (Windows uses backslash separators), and `TestSubmitJob` (which relies on `submitit`'s POSIX-only local executor) is now skipped on Windows.
