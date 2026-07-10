@@ -4,8 +4,41 @@
 
 ### Improvements
 
+- Changes have been made to the runcard's instrument for qdacs regarding the qdac's external trigger network:
+  - Added the optional field `instrument_out_trigger` to represent any external trigger output directed to another instrument. This replaces the `output` variable inside `qprogram.set_trigger()`, making the variable `output` optional. In case both `instrument_out_trigger` and `set_trigger(output)` have been set, `output` takes priority.
+    For example:
+  ```
+  instruments
+    - name: qdevil_qdac2
+      alias: qdac_1
+      ...
+      instrument_out_trigger: 2
+  ```
+
+  - Added the optional parameter `internal` to `qprogram.set_trigger()`. This variable is a bool that defines if the trigger to be set will be set in the internal or external trigger network. The default is false implying the external trigger network.
+
+  - Added warnings when the `set_trigger(output)` overlaps the `instrument_out_trigger` and when the internal trigger network is used whenever `instrument_out_trigger` and `set_trigger(output)` have not been set.
+  [#1159](https://github.com/qilimanjaro-tech/qililab/pull/1159)
+
 - Pin qpysequence==0.10.8
   [#1155](https://github.com/qilimanjaro-tech/qililab/pull/1155)
+
+- Added `timeout_repetitions` parameter for QRM and QRM-RF instruments sequencers inside the runcard. This parameter controls how many (if any) executions of the same qblox qprogram execution must be done after an acquisition `TimeoutError`. Defaults to no repetitions.
+In the runcard this parameter is located inside the instruments sequencer for QRM and QRM-RF modules.
+
+  ```
+    - name: QRM-RF
+    alias: QRM-RF1
+    ...
+    awg_sequencers:
+    - identifier: 0
+      ...
+      acquisition_timeout: 1  # In minutes
+      timeout_repetitions: 3  # Optional parameter, defaults to None
+      ...
+  ```
+
+  [#1106](https://github.com/qilimanjaro-tech/qililab/pull/1106)
 
 - Added a `ValueError` while creating the `DatabaseManager` (for example with `get_db_manager`) checking for `user`, `passwd`, `host`, `port` or `database` inside the database.ini config file, if any of these parameters is missing an error is thrown.
   [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
@@ -43,22 +76,24 @@
 
 ### Breaking changes
 
-- Added `timeout_repetitions` parameter for QRM and QRM-RF instruments sequencers inside the runcard. This parameter controls how many (if any) executions of the same qblox qprogram execution must be done after an acquisition `TimeoutError`. Defaults to no repetitions.
-In the runcard this parameter is located inside the instruments sequencer for QRM and QRM-RF modules.
-
+- Changes have been made to the runcard's instrument for qdacs regarding the qdac's external trigger network:
+  - Renamed the runcard's optional fields for `instruments/qdevil_qdac2` that synchronize qdac modules within a single trigger network: in_trigger has been renamed to sync_in_trigger
+    For example:
   ```
-    - name: QRM-RF
-    alias: QRM-RF1
-    ...
-    awg_sequencers:
-    - identifier: 0
+  instruments
+    - name: qdevil_qdac2
+      alias: qdac_1
       ...
-      acquisition_timeout: 1  # In minutes
-      timeout_repetitions: 3  # Optional parameter, defaults to None
+      sync_out_trigger: 1
+
+    - name: qdevil_qdac2
+      alias: qdac_2
       ...
+      sync_in_trigger: 1
   ```
 
-  [#1106](https://github.com/qilimanjaro-tech/qililab/pull/1106)
+  - Removed the runcard's optional field `trigger_sync` for `instruments/qdevil_qdac2`. This parameter has been replaced by `instrument_out_trigger`.
+  [#1159](https://github.com/qilimanjaro-tech/qililab/pull/1159)
 
 ### Deprecations / Removals
 
