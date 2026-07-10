@@ -471,7 +471,9 @@ class QdacCompiler:
                 for bus in bus_list:
                     if f"{in_instrument.device.name}_{self._channels[bus]}" in in_instrument._cache_dc:
                         if in_instrument.sync_in_trigger is None:
-                            raise ValueError(f"QDAC '{in_instrument.alias}' receives a sync trigger but has no sync_in_trigger in the runcard.")
+                            raise ValueError(
+                                f"QDAC '{in_instrument.alias}' receives a sync trigger but has no sync_in_trigger in the runcard."
+                            )
                         in_instrument.set_in_external_trigger(
                             channel_id=self._channels[bus], in_port=in_instrument.sync_in_trigger
                         )
