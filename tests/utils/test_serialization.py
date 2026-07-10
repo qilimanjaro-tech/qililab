@@ -76,8 +76,9 @@ class TestSerialization:
 
         file_path = tmp_path / "attack.yml"
         file_path.write_text(payload, encoding="utf-8")
+        attack_path = str(file_path)
         with pytest.raises(DeserializationError):
-            deserialize_from(str(file_path))
+            deserialize_from(attack_path)
         assert not marker.exists()
 
     def test_deserialize_rejects_python_name(self):
