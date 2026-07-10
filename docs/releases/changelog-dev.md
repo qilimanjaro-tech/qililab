@@ -4,6 +4,9 @@
 
 ### Improvements
 
+- Fixed `test_data_management.py` and `test_slurm.py` failing on local Windows dev environments: `save_platform()`'s return path is now compared as a `Path` instead of a raw string (Windows uses backslash separators), and `TestSubmitJob` (which relies on `submitit`'s POSIX-only local executor) is now skipped on Windows.
+  [#1158](https://github.com/qilimanjaro-tech/qililab/pull/1158)
+
 - Pin qpysequence==0.10.8
   [#1155](https://github.com/qilimanjaro-tech/qililab/pull/1155)
 
@@ -65,9 +68,6 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 ### Documentation
 
 ### Bug fixes
-
-- Fixed `test_data_management.py` and `test_slurm.py` failing on local Windows dev environments: `save_platform()`'s return path is now compared as a `Path` instead of a raw string (Windows uses backslash separators), and `TestSubmitJob` (which relies on `submitit`'s POSIX-only local executor) is now skipped on Windows.
-  [#1158](https://github.com/qilimanjaro-tech/qililab/pull/1158)
 
 - Fixed the folder shape at `add_measurement` and `add_results` to take into account us intervals of time. This will solve any issue with parallelization while creating more than one folder in less than a second.
   [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
