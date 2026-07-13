@@ -229,7 +229,8 @@ class QDevilQDac2(VoltageSource):
         Args:
             waveform (Waveform): Waveform to upload
             channel_id (ChannelID): Channel id of the qdac.
-            dwell_us (int, optional): Dwell of the pulse. Defaults to 1.
+            dwell_us (int, optional): Dwell of the pulse the minimum value is 2e-6 s and the maximum is 3.6e4 s (10 h).
+                                        Defaults to 2 (2e-6 s).
             sync_delay_s (float, optional): Delay of each pulse repetition. Defaults to 0.
             repetitions (int, optional): Number of pulse repetitions. Defaults to 1.
             stepped (bool, optional): Trigger defining pulse shape,
@@ -298,7 +299,7 @@ class QDevilQDac2(VoltageSource):
             channel_id (ChannelID): Channel id of the qdac whose DC list emits the trigger.
             out_port (int): External trigger output port to send the pulse through.
             trigger (str): Name used to identify the trigger in this instance.
-            width_s (float, optional): Duration in seconds of the trigger pulse. Defaults to 1e-6.
+            width_s (float, optional): Duration in seconds of the trigger pulse. Defaults to 1e-6 s.
 
         Raises:
             ValueError: if no DC list has been uploaded for the given channel id.
@@ -344,7 +345,7 @@ class QDevilQDac2(VoltageSource):
             channel_id (ChannelID): Channel id of the qdac
             out_port (int): Trigger output port.
             trigger (str): Name of the trigger.
-            width_s (float, optional): duration in seconds of the trigger pulse. Defaults to 2e-6 s.
+            width_s (float, optional): duration in seconds of the trigger pulse. Defaults to 1e-6 s.
             step (bool, optional): sends a trigger every step. Defaults to False
         """
         self._validate_channel(channel_id=channel_id)
@@ -371,7 +372,7 @@ class QDevilQDac2(VoltageSource):
             channel_id (ChannelID): Channel id of the qdac
             out_port (int): Trigger output port.
             trigger (str): Name of the trigger.
-            width_s (float, optional): duration in seconds of the trigger pulse. Defaults to 1e-6.
+            width_s (float, optional): duration in seconds of the trigger pulse. Defaults to 1e-6 s.
             step (bool, optional): sends a trigger every step. Defaults to False
         """
         self._validate_channel(channel_id=channel_id)
