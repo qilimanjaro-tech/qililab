@@ -1,6 +1,11 @@
 # Release dev (development release)
 
 ### New features since last release
+- Updated `electrical_delay` to be a changeable parameter for the keysight E5080b and not just a software setting used in the auto-ploting.
+  [#1047](https://github.com/qilimanjaro-tech/qililab/pull/1047)
+
+- Added bus_mapping to measurement database table `Measurement`. Bus mapping is necessary for live plot drawing of the qprogram and it has been information missing in the database. StreamArray already has the bus_mapping as an input, this input is the dictionary that will be saved in the database.
+  [#1136](https://github.com/qilimanjaro-tech/qililab/pull/1136)
 
 ### Improvements
 

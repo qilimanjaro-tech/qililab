@@ -178,6 +178,7 @@ class Measurement(base):  # type: ignore
     platform: Column = Column("platform", JSONB)
     experiment: Column = Column("experiment", JSONB)
     qprogram: Column = Column("qprogram", JSONB)
+    bus_mapping: Column = Column("bus_mapping", JSONB)
     calibration: Column = Column("calibration", JSONB)
     parameters: Column = Column("parameters", JSONB)
     data_shape: Column = Column("data_shape", ARRAY(Integer))
@@ -274,6 +275,7 @@ class Measurement(base):  # type: ignore
         dc_offsets=None,
         target=None,
         secondary_source=None,
+        bus_mapping=None,
     ):
         # Required fields
         self.experiment_name = experiment_name
@@ -298,6 +300,7 @@ class Measurement(base):  # type: ignore
         self.dc_offsets = dc_offsets
         self.target = target
         self.secondary_source = secondary_source
+        self.bus_mapping = bus_mapping
 
     def __repr__(self):
         return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.sample_name} {self.cooldown}"
