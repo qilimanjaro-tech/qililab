@@ -358,6 +358,7 @@ class DatabaseManager:
                     Measurement.created_by,
                     Measurement.target,
                     Measurement.secondary_source,
+                    Measurement.bus_mapping,
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
@@ -421,6 +422,7 @@ class DatabaseManager:
                     Measurement.created_by,
                     Measurement.target,
                     Measurement.secondary_source,
+                    Measurement.bus_mapping,
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
@@ -630,6 +632,7 @@ class DatabaseManager:
         dc_offsets: dict[str, float] | None = None,
         target: list[str] | None = None,
         secondary_source: list[str] | None = None,
+        bus_mapping: dict[str, str] | None = None,
     ):
         """Add measurement metadata and data path
 
@@ -651,6 +654,7 @@ class DatabaseManager:
             dc_offsets (np.ndarray | None, optional): Instruments offsets. Defaults to None.
             target (np.ndarray | None, optional): Target qubits list. Defaults to None.
             secondary_source (np.ndarray | None, optional): Secondary source buses list. Defaults to None.
+            bus_mapping (dict[str, str] | None, optional): Bus map of the qprogram. Defaults to None.
         """
         if sample_name is None:
             if self.current_sample:
@@ -699,6 +703,7 @@ class DatabaseManager:
             dc_offsets=dc_offsets,
             target=target,
             secondary_source=secondary_source,
+            bus_mapping=bus_mapping,
         )
         with self.session() as running_session:
             running_session.add(measurement)
