@@ -284,6 +284,12 @@ class Bus:
 
         return total_results[0]
 
+    def check_recurrent_timeout(self) -> int:
+        for instrument, channel in zip(self.instruments, self.channels):
+            if isinstance(instrument, QbloxQRM) and channel is not None:
+                return instrument.get_parameter(Parameter.TIMEOUT_REPETITIONS, channel_id=int(channel))
+        return 0
+
     def _setup_trigger_network(self, trigger_address):
         for instrument, instrument_channel in zip(self.instruments, self.channels):
             if isinstance(instrument, (QbloxQRM)):

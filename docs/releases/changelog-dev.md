@@ -4,6 +4,12 @@
 
 ### Improvements
 
+- Fixed `test_data_management.py` and `test_slurm.py` failing on local Windows dev environments: `save_platform()`'s return path is now compared as a `Path` instead of a raw string (Windows uses backslash separators), and `TestSubmitJob` (which relies on `submitit`'s POSIX-only local executor) is now skipped on Windows.
+  [#1158](https://github.com/qilimanjaro-tech/qililab/pull/1158)
+
+- Pin qpysequence==0.10.8
+  [#1155](https://github.com/qilimanjaro-tech/qililab/pull/1155)
+
 - Added a `ValueError` while creating the `DatabaseManager` (for example with `get_db_manager`) checking for `user`, `passwd`, `host`, `port` or `database` inside the database.ini config file, if any of these parameters is missing an error is thrown.
   [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
 
@@ -42,6 +48,23 @@
 
 - Removed `external_trigger` parameter from within the runcard's qblox controller instrument. Now the function `QbloxClusterController.set_ext_trigger` is risen internally every time a qprogram contains a `wait_trigger` using the trigger channel 15 (last one).
   [#1112](https://github.com/qilimanjaro-tech/qililab/pull/1112)
+
+- Added `timeout_repetitions` parameter for QRM and QRM-RF instruments sequencers inside the runcard. This parameter controls how many (if any) executions of the same qblox qprogram execution must be done after an acquisition `TimeoutError`. Defaults to no repetitions.
+In the runcard this parameter is located inside the instruments sequencer for QRM and QRM-RF modules.
+
+  ```
+    - name: QRM-RF
+    alias: QRM-RF1
+    ...
+    awg_sequencers:
+    - identifier: 0
+      ...
+      acquisition_timeout: 1  # In minutes
+      timeout_repetitions: 3  # Optional parameter, defaults to None
+      ...
+  ```
+
+  [#1106](https://github.com/qilimanjaro-tech/qililab/pull/1106)
 
 ### Deprecations / Removals
 
