@@ -15,34 +15,56 @@
 import re
 from typing import Iterable
 
+_LOOP_TYPE_ORDER = {"x": 1, "z": 2}
+_BUS_TYPE_ORDER = (
+    (r"readout|(?<![a-z])(?:ro)(?![a-z])", 0),
+    (r"drive|(?<![a-z])(?:d)(?![a-z])", 1),
+    (r"flux|(?<![a-z])(?:f)(?![a-z])", 2),
+)
 
-def sort_buses(bus_sequence: Iterable[str]) -> list[str]:
-    """It sorts buses on 4 criteria using RegEx:
-        - The amount of ints (to separate couplers from qubit buses).
-        - What ints appear ('drive_2 before drive_5').
-        - What type of bus is it (readout > drive > flux > unspecified).
-        - What qubit loop it connects to (x > z > unspecified).
-        - Alphabetic sorting if everything else fails.
+
+def _bus_sort_key(bus: str):
+    """Sort key for a single bus name. See :func:`sort_buses` for the ordering criteria."""
+    ids = sorted(int(i) for i in re.findall(r"\d+", bus))
+    bus_type = next((order for pattern, order in _BUS_TYPE_ORDER if re.search(pattern, bus, flags=re.IGNORECASE)), 3)
+    loop_type = _LOOP_TYPE_ORDER.get(
+        m.group().lower() if (m := re.search(r"(?<![a-z])[xz](?![a-z])", bus, flags=re.IGNORECASE)) else "", 3
+    )
+    return (len(ids), ids, bus_type, loop_type, bus)
+
+
+def argsort_buses(bus_sequence: Iterable[str]) -> tuple[list[str], list[int]]:
+    """Sort buses like :func:`sort_buses`, additionally returning the index permutation.
 
     Args:
-        bus_sequence (Iterable[str]): List or tuple of bus identifiers.
+        bus_sequence (Iterable[str]): Bus identifiers to sort.
 
     Returns:
-        list[str]: Sorted list of bus identifiers.
+        tuple[list[str], list[int]]: (sorted_buses, order) where
+            sorted_buses[k] == list(bus_sequence)[order[k]].
     """
-    loop_type_order = {"x": 1, "z": 2}
-    bus_type_order = (
-        (r"readout|(?<![a-z])(?:ro)(?![a-z])", 0),
-        (r"drive|(?<![a-z])(?:d)(?![a-z])", 1),
-        (r"flux|(?<![a-z])(?:f)(?![a-z])", 2),
-    )
+    items = list(bus_sequence)
+    order = sorted(range(len(items)), key=lambda i: _bus_sort_key(items[i]))
+    return [items[i] for i in order], order
 
-    def bus_sort_key(bus: str):
-        ids = sorted(int(i) for i in re.findall(r"\d+", bus))
-        bus_type = next((order for RE, order in bus_type_order if re.search(RE, bus, flags=re.IGNORECASE)), 3)
-        loop_type = loop_type_order.get(
-            m.group().lower() if (m := re.search(r"(?<!flu)[xz]", bus, flags=re.IGNORECASE)) else "", 3
-        )
-        return (len(ids), ids, bus_type, loop_type, bus)
 
-    return sorted(bus_sequence, key=bus_sort_key)
+def sort_buses(bus_sequence: Iterable[str]) -> list[str]:
+    """Sort bus identifiers into a stable, easy to read order.
+
+    The sorting criteria by order of importance are:
+
+    1. Count of integers in the name — single-index qubit buses (one number) sort
+       before two-index couplers, e.g. "flux q9" before "coupler 0 1".
+    2. The integers themselves, compared numerically — so "drive q2" sorts before
+       "drive q10" (plain alphabetical order would put q10 first).
+    3. Bus type: readout < drive < flux < unspecified.
+    4. Loop type: x < z < unspecified (x and z are only identified if there are no surrounding letters).
+    5. The raw string, as a final alphabetical tiebreak for full determinism.
+
+    Args:
+        bus_sequence (Iterable[str]): Bus identifiers to sort.
+
+    Returns:
+        list[str]: The identifiers sorted by the criteria above.
+    """
+    return argsort_buses(bus_sequence)[0]

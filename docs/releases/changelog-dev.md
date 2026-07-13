@@ -7,7 +7,13 @@
 - Added bus_mapping to measurement database table `Measurement`. Bus mapping is necessary for live plot drawing of the qprogram and it has been information missing in the database. StreamArray already has the bus_mapping as an input, this input is the dictionary that will be saved in the database.
   [#1136](https://github.com/qilimanjaro-tech/qililab/pull/1136)
 
+- Added `sort_buses` and `argsort_buses` to `qililab.utils`, utilities that order bus identifiers into a stable, easy to read order: fewer-index buses before couplers, indices compared numerically (so `q2` precedes `q10`), then by bus type (readout, drive, flux) and loop type. `argsort_buses` also returns the sort permutation, so a matrix and its bus labels can be reordered together.
+  [#XXXX](https://github.com/qilimanjaro-tech/qililab/pull/XXXX)
+
 ### Improvements
+
+- `CrosstalkMatrix.to_array` and its `__str__` representation now order buses with `sort_buses`, so multi-digit bus names are shown in natural order (`flux q2` before `flux q10`) instead of lexicographically.
+  [#XXXX](https://github.com/qilimanjaro-tech/qililab/pull/XXXX)
 
 - Fixed `test_data_management.py` and `test_slurm.py` failing on local Windows dev environments: `save_platform()`'s return path is now compared as a `Path` instead of a raw string (Windows uses backslash separators), and `TestSubmitJob` (which relies on `submitit`'s POSIX-only local executor) is now skipped on Windows.
   [#1158](https://github.com/qilimanjaro-tech/qililab/pull/1158)
@@ -73,6 +79,9 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 ### Documentation
 
 ### Bug fixes
+
+- Fixed `CrosstalkMatrix` row/column ordering being inconsistent between `to_array` (ordered with `sort_buses`) and `inverse`/`from_array` (raw insertion order). For any matrix whose buses were not stored in natural order — e.g. a system with ≥10 buses saved alphabetically (`flux q0, flux q1, flux q10, flux q2`) — the inverse was mislabeled and `flux_to_bias` returned wrong bias values, and `Calibration.add_intra_crosstalk`/`add_inter_crosstalk` corrupted the stored matrix and offsets. `inverse`, the calibration updates and their `from_array` calls now share the canonical `sort_buses` ordering. Also added `qililab.utils.argsort_buses`, which returns the sort permutation so an array and its bus labels can be reordered together.
+  [#XXXX](https://github.com/qilimanjaro-tech/qililab/pull/XXXX)
 
 - Fixed the folder shape at `add_measurement` and `add_results` to take into account us intervals of time. This will solve any issue with parallelization while creating more than one folder in less than a second.
   [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
