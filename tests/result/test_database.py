@@ -156,6 +156,42 @@ class TestMeasurement:
 
         mock_session.rollback.assert_called_once()
 
+    def test_add_fitting(self, measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = measurement
+
+        result = measurement.add_fitting(lambda: mock_session_context, path="/test/fit.h5", parameters={"a": 1.0})
+
+        assert result.fitting_path == "/test/fit.h5"
+        assert result.fitting_parameters == {"a": 1.0}
+        mock_session.commit.assert_called_once()
+
+    def test_add_fitting_without_parameters(self, measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = measurement
+
+        result = measurement.add_fitting(lambda: mock_session_context, path="/test/fit.h5")
+
+        assert result.fitting_path == "/test/fit.h5"
+        assert result.fitting_parameters is None
+        mock_session.commit.assert_called_once()
+
+    def test_add_fitting_raises_exception(self, measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = measurement
+        mock_session.commit.side_effect = Exception("Measurement error")
+
+        with pytest.raises(Exception, match="Measurement error"):
+            measurement.add_fitting(lambda: mock_session_context, path="/test/fit.h5")
+
+        mock_session.rollback.assert_called_once()
+
     @patch("qililab.result.database.database_autocal.datetime")
     def test_autocalibration_update_platform(self, mock_datetime, autocalibration_measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
@@ -729,6 +765,22 @@ class Testdatabase:
         db_manager._mock_session.query.assert_called()
         assert result[0].result_path == "/shared_test/results/file.h5"
         assert result[1].result_path == "/shared_test/results_2/file.h5"
+
+    def test_add_fitting(self, db_manager: DatabaseManager):
+        mock_measurement = MagicMock(spec=Measurement)
+        mock_measurement.add_fitting.return_value = mock_measurement
+
+        with patch.object(db_manager, "load_by_id", return_value=mock_measurement) as mock_load:
+            result = db_manager.add_fitting(123, path="/test/fit.h5", parameters={"a": 1.0})
+
+        mock_load.assert_called_once_with(123)
+        mock_measurement.add_fitting.assert_called_once_with(db_manager.session, "/test/fit.h5", {"a": 1.0})
+        assert result == mock_measurement
+
+    def test_add_fitting_raises_exception_measurement_not_found(self, db_manager: DatabaseManager):
+        with patch.object(db_manager, "load_by_id", return_value=None):
+            with pytest.raises(Exception, match="Measurement entry '123' does not exist."):
+                db_manager.add_fitting(123, path="/test/fit.h5")
 
     def test_load_sequence_by_id(self, db_manager: DatabaseManager):
         db_manager.base_path_local = "/local_test/results"
