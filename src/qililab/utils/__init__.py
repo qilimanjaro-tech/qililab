@@ -15,6 +15,7 @@
 """__init__.py"""
 
 from .asdict_factory import dict_factory
+from .bus_sorter import sort_buses
 from .coordinate_decomposition import coordinate_decompose
 from .dictionaries import merge_dictionaries
 from .factory import Factory
@@ -29,4 +30,5 @@ __all__ = [
     "dict_factory",
     "merge_dictionaries",
     "nested_dict_to_pandas_dataframe",
+    "sort_buses",
 ]
