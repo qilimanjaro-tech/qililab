@@ -48,9 +48,9 @@ class QDevilQDac2(VoltageSource):
         """Contains the settings of a specific signal generator."""
 
         low_pass_filter: list[str]
-        out_trigger: int | None = None
-        in_trigger: int | None = None
-        trigger_sync: bool = False
+        sync_out_trigger: int | None = None
+        sync_in_trigger: int | None = None
+        instrument_out_trigger: int | None = None
         mode: str = "offset"
 
     settings: QDevilQDac2Settings
@@ -72,31 +72,31 @@ class QDevilQDac2(VoltageSource):
         return self.settings.low_pass_filter
 
     @property
-    def out_trigger(self):
-        """QDAC-II `out_trigger` property.
+    def sync_out_trigger(self):
+        """QDAC-II `sync_out_trigger` property.
 
         Returns:
             int | None: External trigger output for qdac-to-qdac communication. Defaults to None
         """
-        return self.settings.out_trigger
+        return self.settings.sync_out_trigger
 
     @property
-    def in_trigger(self):
-        """QDAC-II `in_trigger` property.
+    def sync_in_trigger(self):
+        """QDAC-II `sync_in_trigger` property.
 
         Returns:
             int | None: External trigger input for qdac-to-qdac communication. Defaults to None
         """
-        return self.settings.in_trigger
+        return self.settings.sync_in_trigger
 
     @property
-    def trigger_sync(self):
-        """QDAC-II `trigger_sync` property.
+    def instrument_out_trigger(self):
+        """QDAC-II `instrument_out_trigger` property.
 
         Returns:
-            bool: Flag to define if the QDAC instrument has a trigger output connecting to other machines. Defaults to False
+            int | None: External trigger output for qdac-to-another_instrument communication. Defaults to None
         """
-        return self.settings.trigger_sync
+        return self.settings.instrument_out_trigger
 
     @log_set_parameter
     def set_parameter(
@@ -113,11 +113,17 @@ class QDevilQDac2(VoltageSource):
             value (float | str | bool): New value of the parameter
             channel_id (int | None): Channel identifier
         """
-        self._validate_channel(channel_id=channel_id)
+        if parameter not in (Parameter.SYNC_OUT_TRIGGER, Parameter.SYNC_IN_TRIGGER, Parameter.INSTRUMENT_OUT_TRIGGER):
+            self._validate_channel(channel_id=channel_id)
+            channel = self.device.channel(channel_id) if self.is_device_active() else None
+            index = self.dacs.index(channel_id)
+        elif parameter in (
+            Parameter.SYNC_OUT_TRIGGER,
+            Parameter.SYNC_IN_TRIGGER,
+            Parameter.INSTRUMENT_OUT_TRIGGER,
+        ) and (value is not None and (isinstance(value, bool) or not 1 <= int(value) <= 5)):
+            raise ValueError(f"{parameter.value} must be an external trigger port in [1, 4] or None, got {value}.")
 
-        channel = self.device.channel(channel_id) if self.is_device_active() else None
-
-        index = self.dacs.index(channel_id)
         if parameter == Parameter.VOLTAGE:
             voltage = float(value)
             self.settings.voltage[index] = voltage
@@ -162,6 +168,15 @@ class QDevilQDac2(VoltageSource):
             self.settings.low_pass_filter[index] = low_pass_filter
             if self.is_device_active():
                 channel.output_filter(low_pass_filter)  # type: ignore[union-attr]
+            return
+        if parameter == Parameter.SYNC_OUT_TRIGGER:
+            self.settings.sync_out_trigger = int(value) if value is not None else None
+            return
+        if parameter == Parameter.SYNC_IN_TRIGGER:
+            self.settings.sync_in_trigger = int(value) if value is not None else None
+            return
+        if parameter == Parameter.INSTRUMENT_OUT_TRIGGER:
+            self.settings.instrument_out_trigger = int(value) if value is not None else None
             return
         raise ParameterNotFound(self, parameter)
 
@@ -482,11 +497,17 @@ class QDevilQDac2(VoltageSource):
             parameter (Parameter): Name of the parameter to get.
             channel_id (int | None): Channel identifier.
         """
-        self._validate_channel(channel_id=channel_id)
-
-        index = self.dacs.index(channel_id)
+        if parameter not in (Parameter.SYNC_OUT_TRIGGER, Parameter.SYNC_IN_TRIGGER, Parameter.INSTRUMENT_OUT_TRIGGER):
+            self._validate_channel(channel_id=channel_id)
+            index = self.dacs.index(channel_id)
         if hasattr(self.settings, parameter.value):
-            return getattr(self.settings, parameter.value)[index]
+            if parameter not in (
+                Parameter.SYNC_OUT_TRIGGER,
+                Parameter.SYNC_IN_TRIGGER,
+                Parameter.INSTRUMENT_OUT_TRIGGER,
+            ):
+                return getattr(self.settings, parameter.value)[index]
+            return getattr(self.settings, parameter.value)
         raise ParameterNotFound(self, parameter)
 
     @check_device_initialized

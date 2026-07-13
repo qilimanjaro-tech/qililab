@@ -1260,7 +1260,8 @@ class Platform:
             out_trigger_qdac = None
             if len(self.qdac_instruments) > 1:
                 out_trigger_qdac = next(
-                    (instrument for instrument in self.qdac_instruments if instrument.out_trigger is not None), None
+                    (instrument for instrument in self.qdac_instruments if instrument.sync_out_trigger is not None),
+                    None,
                 )
                 if out_trigger_qdac is None:
                     raise ValueError("Multiple QDAC-II instruments used but no Output trigger instrument given.")
