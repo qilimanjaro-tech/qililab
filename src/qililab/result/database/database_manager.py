@@ -48,6 +48,15 @@ class DatabaseManager:
             database_name (str): Name of the config section inside the `.ini`.
         """
         config = _load_config(filename, database_name)
+
+        database_keys = ("user", "passwd", "host", "port", "database")
+        missing = [key for key in database_keys if config.get(key) is None or str(config.get(key)).strip() == ""]
+        if missing:
+            raise ValueError(
+                f"Missing or empty required config value(s) in '{database_name}' "
+                f"Missing the database keys: {', '.join(missing)}"
+            )
+
         self.engine = get_engine(config["user"], config["passwd"], config["host"], config["port"], config["database"])
         self.session: sessionmaker[Session] = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.current_cd: str | None = None
@@ -349,6 +358,7 @@ class DatabaseManager:
                     Measurement.created_by,
                     Measurement.target,
                     Measurement.secondary_source,
+                    Measurement.bus_mapping,
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
@@ -412,6 +422,7 @@ class DatabaseManager:
                     Measurement.created_by,
                     Measurement.target,
                     Measurement.secondary_source,
+                    Measurement.bus_mapping,
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
@@ -621,6 +632,7 @@ class DatabaseManager:
         dc_offsets: dict[str, float] | None = None,
         target: list[str] | None = None,
         secondary_source: list[str] | None = None,
+        bus_mapping: dict[str, str] | None = None,
     ):
         """Add measurement metadata and data path
 
@@ -642,6 +654,7 @@ class DatabaseManager:
             dc_offsets (np.ndarray | None, optional): Instruments offsets. Defaults to None.
             target (np.ndarray | None, optional): Target qubits list. Defaults to None.
             secondary_source (np.ndarray | None, optional): Secondary source buses list. Defaults to None.
+            bus_mapping (dict[str, str] | None, optional): Bus map of the qprogram. Defaults to None.
         """
         if sample_name is None:
             if self.current_sample:
@@ -652,7 +665,7 @@ class DatabaseManager:
             cooldown = self.current_cd
 
         start_time = datetime.datetime.now()
-        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
+        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S_%f")
 
         base_path = f"{self.base_path_local}{self.folder_path}"
         if not os.path.isdir(base_path):
@@ -690,6 +703,7 @@ class DatabaseManager:
             dc_offsets=dc_offsets,
             target=target,
             secondary_source=secondary_source,
+            bus_mapping=bus_mapping,
         )
         with self.session() as running_session:
             running_session.add(measurement)
@@ -742,7 +756,7 @@ class DatabaseManager:
         base_path = f"{self.base_path_local}{self.folder_path}"
         if not os.path.isdir(base_path):
             base_path = f"{self.base_path_share}{self.folder_path}"
-        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
+        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S_%f")
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         result_path = f"{dir_path}/{experiment_name}.h5"
 

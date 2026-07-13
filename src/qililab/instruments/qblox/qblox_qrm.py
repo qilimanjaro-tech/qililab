@@ -173,13 +173,14 @@ class QbloxQRM(QbloxModule):
 
                 # always deleting acquisitions without checking save_adc flag
                 self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
-                empty_sequence = {
-                    "waveforms": {},
-                    "weights": {},
-                    "acquisitions": {},
-                    "program": "",
-                }
-                self.device.sequencers[sequencer.identifier].sequence(empty_sequence)
+        empty_sequence = {
+            "waveforms": {},
+            "weights": {},
+            "acquisitions": {},
+            "program": "",
+        }
+        if sequencer is not None:
+            self.device.sequencers[sequencer.identifier].sequence(empty_sequence)
         return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
@@ -301,6 +302,9 @@ class QbloxQRM(QbloxModule):
             return
         if parameter == Parameter.ACQUISITION_TIMEOUT:
             self._set_acquisition_timeout(value=int(value), sequencer_id=channel_id)
+            return
+        if parameter == Parameter.TIMEOUT_REPETITIONS:
+            self._set_timeout_repetitions(value=int(value), sequencer_id=channel_id)
             return
         if parameter == Parameter.SCOPE_STORE_ENABLED:
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
@@ -445,6 +449,15 @@ class QbloxQRM(QbloxModule):
             ValueError: when value type is not float or int
         """
         cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).acquisition_timeout = int(value)
+
+    def _set_timeout_repetitions(self, value: int, sequencer_id: int):
+        """set timeout_repetitions for the specific channel
+
+        Args:
+            value (int): value to update
+            sequencer_id (int): sequencer to update the value
+        """
+        cast("QbloxADCSequencer", self.get_sequencer(sequencer_id)).timeout_repetitions = int(value)
 
     def _set_scope_store_enabled(self, value: float | str | bool, sequencer_id: int):
         """set scope_store_enable

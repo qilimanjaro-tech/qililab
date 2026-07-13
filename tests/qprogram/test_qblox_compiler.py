@@ -325,6 +325,127 @@ def fixture_average_with_multiple_for_loops_and_acquires() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="multiple_separate_average_blocks")
+def fixture_multiple_separate_average_blocks() -> QProgram:
+    """3 separate average blocks each with 1 acquire — per-depth path, one acquisition index per block."""
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    for _ in range(3):
+        with qp.average(shots=10):
+            qp.play(bus="readout", waveform=readout_pair)
+            qp.qblox.acquire(bus="readout", weights=weights)
+    return qp
+
+
+@pytest.fixture(name="exceeds_depth_basic")
+def fixture_exceeds_depth_basic() -> QProgram:
+    """33 separate average blocks each with 1 acquire — triggers the exceeds-depth path."""
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    for _ in range(33):
+        with qp.average(shots=10):
+            qp.play(bus="readout", waveform=readout_pair)
+            qp.qblox.acquire(bus="readout", weights=weights)
+    return qp
+
+
+@pytest.fixture(name="exceeds_depth_multiple_per_block")
+def fixture_exceeds_depth_multiple_per_block() -> QProgram:
+    """2 average blocks × 17 acquires each (total 34 > 32, but >1 acquire per block) — must raise."""
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    for _ in range(2):
+        with qp.average(shots=10):
+            for _ in range(17):
+                qp.qblox.acquire(bus="readout", weights=weights)
+    return qp
+
+
+@pytest.fixture(name="exceeds_depth_for_loop_blocks")
+def fixture_exceeds_depth_for_loop_blocks() -> QProgram:
+    """33 separate for_loop blocks each with 1 acquire — must raise because only average blocks are supported."""
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    bins = qp.variable("bins", Domain.Scalar, int)
+    for _ in range(33):
+        with qp.for_loop(bins, 0, 10, 1):
+            qp.qblox.acquire(bus="readout", weights=weights)
+    return qp
+
+
+@pytest.fixture(name="exceeds_depth_boundary")
+def fixture_exceeds_depth_boundary() -> QProgram:
+    """33 separate average blocks — exactly at the exceeds-depth threshold (total=33 > 32)."""
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    for _ in range(33):
+        with qp.average(shots=10):
+            qp.qblox.acquire(bus="readout", weights=weights)
+    return qp
+
+
+@pytest.fixture(name="exceeds_depth_two_buses")
+def fixture_exceeds_depth_two_buses() -> QProgram:
+    """33 avg blocks on 'readout' (exceeds-depth) alongside 1 avg block on 'drive' (per-depth).
+
+    Used to verify that the exceeds_depth flag is scoped per bus and does not bleed across buses.
+    """
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    for _ in range(33):
+        with qp.average(shots=10):
+            qp.qblox.acquire(bus="readout", weights=weights)
+    with qp.average(shots=10):
+        qp.qblox.acquire(bus="drive", weights=weights)
+    return qp
+
+
+@pytest.fixture(name="single_average_single_acquire")
+def fixture_single_average_single_acquire() -> QProgram:
+    """1 average block with 1 acquire — baseline single-bin per-depth case."""
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    with qp.average(shots=10):
+        qp.qblox.acquire(bus="readout", weights=weights)
+    return qp
+
+
+@pytest.fixture(name="single_average_two_acquires")
+def fixture_single_average_two_acquires() -> QProgram:
+    """1 average block with 2 acquires — both share hardware slot 0 with bin indices 0 and 1."""
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    with qp.average(shots=10):
+        qp.qblox.acquire(bus="readout", weights=weights)
+        qp.qblox.acquire(bus="readout", weights=weights)
+    return qp
+
+
+@pytest.fixture(name="single_average_33_acquires")
+def fixture_single_average_33_acquires() -> QProgram:
+    """1 average block with 33 acquires — total > 32 but single block, stays in per-depth path."""
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    with qp.average(shots=10):
+        for _ in range(33):
+            qp.qblox.acquire(bus="readout", weights=weights)
+    return qp
+
+
+@pytest.fixture(name="mixed_depth_exceeds_limit")
+def fixture_mixed_depth_exceeds_limit() -> QProgram:
+    """32 acquires inside an average block + 1 bare acquire — mixed depths with total > 32, must raise."""
+    weights = IQPair(I=Square(amplitude=1.0, duration=20), Q=Square(amplitude=0.0, duration=20))
+    qp = QProgram()
+    with qp.average(shots=10):
+        for _ in range(32):
+            qp.qblox.acquire(bus="readout", weights=weights)
+    qp.qblox.acquire(bus="readout", weights=weights)
+    return qp
+
+
 @pytest.fixture(name="average_with_nested_for_loops")
 def fixture_average_with_nested_for_loops() -> QProgram:
     drag_pair = IQDrag(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -630,15 +751,6 @@ def fixture_wait_comprised_between_65532_65535() -> QProgram:
     qp.wait(bus="drive", duration=65534)
     return qp
 
-@pytest.fixture(name="error_acquisition_index")
-def fixture_error_acquisition_index() -> QProgram:
-    qp = QProgram()
-    weights_shape = Square(amplitude=1, duration=20)
-    bins = qp.variable("bins", Domain.Scalar, int)
-    for _ in range (40):
-        with qp.for_loop(bins, 0, 100, 1):
-            qp.qblox.acquire("readout", IQPair(I=weights_shape, Q=weights_shape))
-    return qp
 
 @pytest.fixture(name="single_bin_different_depth_qp")
 def fixture_single_bin_different_depth_qp() -> QProgram:
@@ -2743,12 +2855,6 @@ set_freq         R5
 
         assert is_q1asm_equal(sequences["drive"], drive_str)
 
-    def test_32_acquisiton_raise_error(self, error_acquisition_index: QProgram):
-        "Check that having acquisitions in 31+ nested level raises a Value error"
-        compiler = QbloxCompiler()
-        with pytest.raises(ValueError, match="Acquisition index 32 exceeds maximum of 31."):
-            _ = compiler.compile(error_acquisition_index)
-
 
     def test_acquire_single_bin_different_nested_level(self, single_bin_different_depth_qp: QProgram):
         "Check that having single binned acquisitions at different nested level resets the bin index counter to 0"
@@ -4725,8 +4831,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     11374, 11374   
                         set_awg_gain     11374, 11374   
-                        nop                             
-                        set_awg_offs     0, 0           
                         play             0, 1, 50       
                         wait             54             
                         nop                             
@@ -4735,8 +4839,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     2668, 2668     
                         set_awg_gain     2668, 2668     
-                        nop                             
-                        set_awg_offs     11374, 11374   
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
@@ -4756,8 +4858,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     17832, 17832   
                         set_awg_gain     17832, 17832   
-                        nop                             
-                        set_awg_offs     0, 0           
                         play             0, 1, 50       
                         wait             54             
                         nop                             
@@ -4766,8 +4866,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     421, 421     
                         set_awg_gain     421, 421     
-                        nop                             
-                        set_awg_offs     17832, 17832   
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
@@ -4995,8 +5093,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     4570, 4570     
                         set_awg_gain     4570, 4570     
-                        nop                             
-                        set_awg_offs     8430, 8430     
                         play             0, 1, 50       
                         wait             54             
                         nop                             
@@ -5005,8 +5101,6 @@ other_max_duration_0:
                         wait             6              
                         set_awg_gain     4570, 4570     
                         set_awg_gain     4570, 4570     
-                        nop                             
-                        set_awg_offs     8430, 8430     
                         play             0, 1, 50       
                         wait             54             
                         set_mrk          0              
@@ -5015,34 +5109,30 @@ other_max_duration_0:
         """
         flux2_str = """
         setup:
-                        wait_sync        4              
-                        set_mrk          0              
-                        upd_param        4              
+                wait_sync        4              
+                set_mrk          0              
+                upd_param        4              
 
-        main:
-                        nop                             
-                        set_awg_offs     14403, 14403   
-                        upd_param        4              
-                        wait             6              
-                        set_awg_gain     4225, 4225     
-                        set_awg_gain     4225, 4225     
-                        nop                             
-                        set_awg_offs     14403, 14403   
-                        play             0, 1, 50       
-                        wait             54             
-                        nop                             
-                        set_awg_offs     14403, 14403   
-                        upd_param        4              
-                        wait             6              
-                        set_awg_gain     4225, 4225     
-                        set_awg_gain     4225, 4225     
-                        nop                             
-                        set_awg_offs     14403, 14403   
-                        play             0, 1, 50       
-                        wait             54             
-                        set_mrk          0              
-                        upd_param        4              
-                        stop                            
+main:
+                nop                             
+                set_awg_offs     14403, 14403   
+                upd_param        4              
+                wait             6              
+                set_awg_gain     4225, 4225     
+                set_awg_gain     4225, 4225     
+                play             0, 1, 50       
+                wait             54             
+                nop                             
+                set_awg_offs     14403, 14403   
+                upd_param        4              
+                wait             6              
+                set_awg_gain     4225, 4225     
+                set_awg_gain     4225, 4225     
+                play  0, 1, 50       
+                wait             54             
+                set_mrk          0              
+                upd_param        4              
+                stop                            
         """
         drive_str = """
         setup:
@@ -5830,6 +5920,241 @@ other_max_duration_0:
         with pytest.raises(TypeError, match=re.escape("qprogram.measure_reset() cannot be used in conjunction with crosstalk compensation.")):
             compiler.compile(qprogram=qp, crosstalk=crosstalk)
 
+
+
+    def test_qblox_play_zero_wait_time(self, qblox_play_zero_wait_time: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qblox_play_zero_wait_time)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 4
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+    def test_qblox_play_none_wait_time(self, qblox_play_none_wait_time: QProgram):
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=qblox_play_none_wait_time)
+
+        assert sequences["drive"]._program._compiled
+
+        drive_str = """
+            setup:
+                            wait_sync        4
+                            set_mrk          0
+                            upd_param        4
+
+            main:
+                            play             0, 1, 99
+                            set_mrk          0
+                            upd_param        4
+                            stop
+        """
+        assert is_q1asm_equal(sequences["drive"], drive_str)
+
+
+class TestAcquisition:
+    """Tests for acquisition compilation in QbloxCompiler.
+    """
+
+    def test_compiler_reuse_resets_metadata(self, multiple_separate_average_blocks: QProgram):
+        """Calling compile() twice on the same instance produces independent results.
+
+        Stale _acquisition_metadata from the first call must not bleed into the second.
+        """
+        compiler = QbloxCompiler()
+        _, acquisitions_first = compiler.compile(qprogram=multiple_separate_average_blocks)
+        _, acquisitions_second = compiler.compile(qprogram=multiple_separate_average_blocks)
+
+        assert acquisitions_first["readout"].keys() == acquisitions_second["readout"].keys()
+        for name in acquisitions_first["readout"]:
+            assert acquisitions_first["readout"][name].intertwined == acquisitions_second["readout"][name].intertwined
+
+    def test_multiple_separate_average_blocks_produce_one_index_each(
+        self, multiple_separate_average_blocks: QProgram
+    ):
+        """3 separate average blocks each produce their own hardware acquisition index with intertwined=1."""
+        compiler = QbloxCompiler()
+        sequences, acquisitions = compiler.compile(qprogram=multiple_separate_average_blocks)
+
+        assert len(sequences["readout"]._acquisitions._acquisitions) == 3
+        for i in range(3):
+            assert sequences["readout"]._acquisitions._acquisitions[i].num_bins == 1
+            assert acquisitions["readout"][f"Acquisition {i}"].intertwined == 1
+
+        readout_str = """
+            setup:
+                    wait_sync        4
+                    set_mrk          0
+                    upd_param        4
+
+            main:
+                    move             10, R0
+            avg_0:
+                    play             0, 1, 20
+                    acquire_weighed  0, 0, 0, 1, 20
+                    loop             R0, @avg_0
+                    move             10, R1
+            avg_1:
+                    play             0, 1, 20
+                    acquire_weighed  1, 0, 0, 1, 20
+                    loop             R1, @avg_1
+                    move             10, R2
+            avg_2:
+                    play             0, 1, 20
+                    acquire_weighed  2, 0, 0, 1, 20
+                    loop             R2, @avg_2
+                    set_mrk          0
+                    upd_param        4
+                    stop
+        """
+        assert is_q1asm_equal(sequences["readout"], readout_str)
+
+    def test_exceeds_depth_generates_single_hardware_index(self, exceeds_depth_basic: QProgram):
+        """33 separate average blocks collapse to one acquisition index with 33 bins and intertwined=33."""
+        compiler = QbloxCompiler()
+        sequences, acquisitions = compiler.compile(qprogram=exceeds_depth_basic)
+
+        assert len(sequences["readout"]._acquisitions._acquisitions) == 1
+        assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 33
+        assert acquisitions["readout"]["Acquisition 0"].intertwined == 33
+        
+
+    def test_exceeds_depth_multiple_acquires_per_block_raises_error(
+        self, exceeds_depth_multiple_per_block: QProgram
+    ):
+        """Multiple acquires per block in the exceeds-depth path must raise NotImplementedError."""
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Bus 'readout' has 34 acquisitions across 2 blocks, "
+                "but only 1 acquisition per block is supported when total acquisitions exceed 32."
+            ),
+        ):
+            compiler.compile(qprogram=exceeds_depth_multiple_per_block)
+
+    def test_exceeds_depth_for_loop_blocks_raises_error(self, exceeds_depth_for_loop_blocks: QProgram):
+        """for_loop blocks in the exceeds-depth path must raise NotImplementedError."""
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Bus 'readout' has more than 32 acquisitions across separate blocks "
+                "and contains a 'for_loop'. Only 'average' blocks are supported in this case."
+            ),
+        ):
+            compiler.compile(qprogram=exceeds_depth_for_loop_blocks)
+
+    def test_more_than_32_acquisitions_mixed_depths_raises_error(self, mixed_depth_exceeds_limit: QProgram):
+        """More than 32 acquires on the same bus at different nesting depths must raise NotImplementedError."""
+        compiler = QbloxCompiler()
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Bus 'readout' has 33 acquisitions at inconsistent nesting depths "
+                "[0, 1]. For more than 32 acquisitions, they must be at the same nesting depth."
+            ),
+        ):
+            compiler.compile(qprogram=mixed_depth_exceeds_limit)
+
+    def test_single_average_single_acquire_q1asm(self, single_average_single_acquire: QProgram):
+        """Single average block with 1 acquire compiles to acquisition index 0 bin 0."""
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=single_average_single_acquire)
+        expected = """
+            setup:
+                    wait_sync        4
+                    set_mrk          0
+                    upd_param        4
+
+            main:
+                    move             10, R0
+            avg_0:
+                    acquire_weighed  0, 0, 0, 1, 20
+                    loop             R0, @avg_0
+                    set_mrk          0
+                    upd_param        4
+                    stop
+        """
+        assert is_q1asm_equal(sequences["readout"], expected)
+
+    def test_single_average_two_acquires_q1asm(self, single_average_two_acquires: QProgram):
+        """Two acquires in the same average block use bin indices 0 and 1 within the same acquisition index."""
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=single_average_two_acquires)
+        expected = """
+            setup:
+                    wait_sync        4
+                    set_mrk          0
+                    upd_param        4
+
+            main:
+                    move             10, R0
+            avg_0:
+                    acquire_weighed  0, 0, 0, 1, 20
+                    acquire_weighed  0, 1, 0, 1, 20
+                    loop             R0, @avg_0
+                    set_mrk          0
+                    upd_param        4
+                    stop
+        """
+        assert is_q1asm_equal(sequences["readout"], expected)
+
+    def test_more_than_32_acquisitions_same_depth_does_not_raise(self, single_average_33_acquires: QProgram):
+        """More than 32 acquires at the same depth must compile without error."""
+        compiler = QbloxCompiler()
+        sequences, _ = compiler.compile(qprogram=single_average_33_acquires)
+        assert "readout" in sequences
+
+    def test_exceeds_depth_boundary_33_blocks(self, exceeds_depth_boundary: QProgram):
+        """33 separate average blocks (exactly at the threshold) must trigger exceeds_depth: 1 index, 33 bins."""
+        compiler = QbloxCompiler()
+        sequences, acquisitions = compiler.compile(qprogram=exceeds_depth_boundary)
+
+        assert len(sequences["readout"]._acquisitions._acquisitions) == 1
+        assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 33
+        assert acquisitions["readout"]["Acquisition 0"].intertwined == 33
+
+    def test_exceeds_depth_is_scoped_per_bus(self, exceeds_depth_two_buses: QProgram):
+        """exceeds_depth on one bus must not affect a second bus that stays in the per-depth path."""
+        compiler = QbloxCompiler()
+        sequences, acquisitions = compiler.compile(qprogram=exceeds_depth_two_buses)
+
+        assert len(sequences["readout"]._acquisitions._acquisitions) == 1
+        assert sequences["readout"]._acquisitions._acquisitions[0].num_bins == 33
+        assert acquisitions["readout"]["Acquisition 0"].intertwined == 33
+
+        assert len(sequences["drive"]._acquisitions._acquisitions) == 1
+        assert sequences["drive"]._acquisitions._acquisitions[0].num_bins == 1
+        assert acquisitions["drive"]["Acquisition 0"].intertwined == 1
+
+    def test_compiler_reuse_different_programs_no_metadata_pollution(
+        self, multiple_separate_average_blocks: QProgram, exceeds_depth_basic: QProgram
+    ):
+        """Compiling a per-depth program then an exceeds-depth program must give correct results for each.
+
+        If _acquisition_metadata is not reset, the second compile sees 3+33=36 stale entries and
+        produces intertwined=36 instead of 33.
+        """
+        compiler = QbloxCompiler()
+        _, acquisitions_per_depth = compiler.compile(qprogram=multiple_separate_average_blocks)
+        assert len(acquisitions_per_depth["readout"]) == 3
+
+        _, acquisitions_exceeds = compiler.compile(qprogram=exceeds_depth_basic)
+        assert len(acquisitions_exceeds["readout"]) == 1
+        assert acquisitions_exceeds["readout"]["Acquisition 0"].intertwined == 33
+
     def test_inner_average_outer_sweep(self, inner_average_outer_sweep: QProgram):
 
         compiler = QbloxCompiler()
@@ -5959,43 +6284,3 @@ other_max_duration_0:
                                 stop"""
 
         assert is_q1asm_equal(sequences["readout"], expected_q1asm)
-
-    def test_qblox_play_zero_wait_time(self, qblox_play_zero_wait_time: QProgram):
-        compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=qblox_play_zero_wait_time)
-
-        assert sequences["drive"]._program._compiled
-
-        drive_str = """
-            setup:
-                            wait_sync        4
-                            set_mrk          0
-                            upd_param        4
-
-            main:
-                            play             0, 1, 4
-                            set_mrk          0
-                            upd_param        4
-                            stop
-        """
-        assert is_q1asm_equal(sequences["drive"], drive_str)
-
-    def test_qblox_play_none_wait_time(self, qblox_play_none_wait_time: QProgram):
-        compiler = QbloxCompiler()
-        sequences, _ = compiler.compile(qprogram=qblox_play_none_wait_time)
-
-        assert sequences["drive"]._program._compiled
-
-        drive_str = """
-            setup:
-                            wait_sync        4
-                            set_mrk          0
-                            upd_param        4
-
-            main:
-                            play             0, 1, 99
-                            set_mrk          0
-                            upd_param        4
-                            stop
-        """
-        assert is_q1asm_equal(sequences["drive"], drive_str)

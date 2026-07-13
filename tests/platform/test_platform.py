@@ -1479,6 +1479,7 @@ class TestMethods:
         mock_bus.has_adc.return_value = False
         mock_bus.instruments = [MagicMock(spec=QbloxModule)]
         mock_bus.channels = [0]
+        mock_bus.check_recurrent_timeout.return_value = 3
 
         # Raise TimeoutError on run
         mock_bus.run.side_effect = TimeoutError("Simulated timeout")
@@ -1497,6 +1498,39 @@ class TestMethods:
             )
 
         # Assert it retried 3 times (initial + 3 retries = 4 attempts)
+        assert mock_bus.run.call_count == 4
+
+    def test_execute_qprogram_with_qblox_and_qdac_timeout_error_wrong_bus(self, platform_qblox_qdac: Platform):
+        """Test that the execute_qprogram method retries correctly when the timed-out bus is not the one with timeout config."""
+        mock_output = MagicMock(spec=QbloxCompilationOutput)
+        mock_qdac_output = MagicMock(spec=QdacCompilationOutput)
+        mock_output.sequences = {"bus1": MagicMock()}
+        mock_output.acquisitions = {"bus1": MagicMock()}
+        mock_qdac_output.trigger_position = "front"
+        mock_qdac_output.qdac = MagicMock()
+
+        mock_bus = MagicMock()
+        mock_bus.has_adc.return_value = False
+        mock_bus.instruments = [MagicMock(spec=QbloxModule)]
+        mock_bus.channels = [0]
+        mock_bus.run.side_effect = TimeoutError("Simulated timeout")
+        # First call (direct check on leaked bus) returns 0, fallback scan returns 3 each retry
+        mock_bus.check_recurrent_timeout.side_effect = [0, 3, 0, 3, 0, 3, 0, 3]
+
+        platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
+        platform_qblox_qdac._qpy_sequence_cache = {}
+        platform_qblox_qdac.trigger_runs = 0
+
+        mock_output.qprogram = MagicMock(spec=QProgram)
+        mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
+        mock_output.qprogram.qblox.trigger_network_required = []
+
+        with pytest.raises(TimeoutError):
+            platform_qblox_qdac._execute_qblox_compilation_output(
+                output=QProgramCompilationOutput(qblox=mock_output, qdac=mock_qdac_output), debug=False
+            )
+
+        # initial attempt + 3 retries = 4 total
         assert mock_bus.run.call_count == 4
 
     @pytest.mark.qm
@@ -2169,6 +2203,63 @@ class TestMethods:
 
         assert unintertwined_results[0].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 3]}, "path1":{"data": [5, 7]}}}
         assert unintertwined_results[1].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [2, 4]}, "path1":{"data": [6, 8]}}}
+
+    def test_unintertwined_qblox_results_more_than_32_interleaved_measures(self, platform: Platform):
+        """Regression: _unintertwined_qblox_results must split N>32 interleaved measures into
+        N separate results (one per measure), not pack them all into the first element."""
+        n_measures = 33
+
+        raw_measurement_data = {
+            "bins": {
+                "integration": {
+                    "path0": list(range(n_measures)),
+                    "path1": list(range(n_measures)),
+                },
+                "threshold": [float(i) for i in range(n_measures)],
+                "avg_cnt": [],
+            },
+            "scope": {"path0": {"data": []}, "path1": {"data": []}},
+        }
+        bus_result = QbloxMeasurementResult(bus="readout", raw_measurement_data=raw_measurement_data)
+
+        unintertwined = platform._unintertwined_qblox_results(bus_result, intertwined=n_measures)
+
+        assert len(unintertwined) == n_measures
+        for i, result in enumerate(unintertwined):
+            assert result.raw_measurement_data["bins"]["integration"]["path0"] == [i]
+            assert result.raw_measurement_data["bins"]["integration"]["path1"] == [i]
+            assert result.raw_measurement_data["bins"]["threshold"] == [float(i)]
+
+    def test_execute_qprogram_n_acquisitions_same_bus_returns_n_results(self, platform: Platform):
+        """Regression: with N acquisitions on the same bus, the platform must append exactly N results
+        — not N² (which the old double-loop bug caused by pairing every bus_result with every
+        acquisition_data instead of using zip)."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        n_measures = 2
+
+        # Two acquires at different nesting depths produce two separate hardware acquisition slots
+        # (each intertwined=1). A flat sequence of acquires shares one slot, so would not expose
+        # the N² vs N pairing bug.
+        qprogram = QProgram()
+        with qprogram.average(1):
+            qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+
+        # _unintertwined_qblox_results is mocked to a pass-through so the test focuses purely
+        # on the loop pairing (zip vs double-loop), not on the unintertwining logic.
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results") as mock_acquire,
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(Platform, "_unintertwined_qblox_results", side_effect=lambda r, i: [r]),
+        ):
+            mock_acquire.return_value = list(range(n_measures))  # [0, 1] — distinct sentinel values
+            results = platform.execute_qprogram(qprogram=qprogram)
+
+        assert len(results.results["feedline_input_output_bus"]) == n_measures
 
     def test_setting_getting_filter_bus_error_raised(self, platform: Platform):
         #  Check that setting/getting a filter through a bus incorrectly raises the adequate error
