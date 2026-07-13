@@ -45,6 +45,7 @@ from qililab.qprogram.operations import (
     WaitTrigger,
 )
 from qililab.qprogram.structured_program import StructuredProgram, VariableInfo
+from qililab.qprogram.utils_crosstalk import CrosstalkElements, NonLinearFlagState
 from qililab.waveforms import Arbitrary, FlatTop, IQPair, IQWaveform, Square, Waveform
 from qililab.yaml import yaml
 
@@ -66,79 +67,6 @@ class QProgramCompilationOutput:
         self.qblox = qblox
         self.qdac = qdac
         self.quantum_machines = quantum_machines
-
-
-class CrosstalkElements:
-    """Supporting class for `QProgram.with_crosstalk_`.
-    The elements are classified by type (Play, Offset and Gain) to organize the values of flux vectors,
-    location in the block and related buses.
-
-    Args:
-        crosstalk (CrosstalkMatrix): Crosstalk to be applied over the elements.
-    """
-
-    def __init__(self, crosstalk: CrosstalkMatrix):
-        self.crosstalk = crosstalk
-
-        self.element_list: dict[int, tuple[FluxVector, list[int]]] = {}
-
-        self.element_group: dict[str, list[int]] = {}
-        self.element: dict[str, list[Play | SetOffset | SetGain]] = {}
-        self.flux_vector: dict[str, FluxVector] = {}
-        self.flux_vector_bus: dict[str, list[str]] = {}
-
-    def add_element(self, element: Play | SetOffset | SetGain, iteration: int):
-        """Adds an element and its iteration inside the block to the dictionary and organizes them in groups.
-
-        Args:
-            element (Play | SetOffset | SetGain): Qprogram `play`, `set_offset` or `set_gain` elements.
-            iteration (int): location of the element inside the block list.
-        """
-
-        operation = str(element.__class__)
-        self.element[operation].append(element)
-        self.element_group[operation].append(iteration)
-        self.flux_vector_bus[operation].append(element.bus)
-
-        for ii in self.element_group[operation]:
-            self.element_list[ii] = (self.flux_vector[operation], self.element_group[operation])
-
-    def check_flux_vector(self, element: Play | SetOffset | SetGain):
-        """Function to verify the flux vectors of each element and in case they don't exist,
-        create empty dictionary entries.
-
-        Args:
-            element (Play | SetOffset | SetGain): Qprogram `play`, `set_offset` or `set_gain` elements.
-        """
-        operation = str(element.__class__)
-        if operation not in self.flux_vector_bus.keys() or element.bus in self.flux_vector_bus[operation]:
-            self.restart_flux_vector(operation, check_after_loop=True)
-
-    def restart_flux_vector(self, operation: str | None = None, check_after_loop: bool = False):
-        """Function create or overwrite empty dictionary entries for each operation given.
-        If no operations given it does it for every element in those dictionaries.
-
-        Args:
-            operation (str | None, optional): Class of the element to be restarted.
-                                                Defaults to None implying restarting all operations in the dictionaries.
-            check_after_loop (bool, optional): Trigger to avoid restarting the flux vector after starting a new loop. Defaults to False.
-        """
-
-        if operation is not None:
-            self.element[operation] = []
-            self.element_group[operation] = []
-            self.flux_vector_bus[operation] = []
-            if operation not in self.flux_vector or not check_after_loop:
-                self.flux_vector[operation] = FluxVector()
-                self.flux_vector[operation].set_crosstalk(self.crosstalk)
-        else:
-            for operation in self.element_group.keys():
-                self.element[operation] = []
-                self.element_group[operation] = []
-                self.flux_vector_bus[operation] = []
-                if operation not in self.flux_vector or not check_after_loop:
-                    self.flux_vector[operation] = FluxVector()
-                    self.flux_vector[operation].set_crosstalk(self.crosstalk)
 
 
 @yaml.register_class
@@ -317,6 +245,14 @@ class QProgram(StructuredProgram):
                     bus = getattr(element, "bus")
                     if isinstance(bus, str) and bus in bus_mapping:
                         setattr(block.elements[index], "bus", bus_mapping[bus])
+                    if isinstance(element, WaitTrigger):
+                        new_external_trigger = []
+                        for bus in copied_qprogram.qblox.external_trigger:
+                            if bus in bus_mapping:
+                                new_external_trigger.append(bus_mapping[bus])
+                            else:
+                                new_external_trigger.append(bus)
+                        copied_qprogram.qblox.external_trigger = new_external_trigger
                 elif hasattr(element, "buses"):
                     buses = getattr(element, "buses")
                     if isinstance(buses, list):
@@ -518,12 +454,14 @@ class QProgram(StructuredProgram):
                                     )
                                 )
                                 non_lin_flux_vector.set_loop(new_loop)
+                                self._active_loops.remove(new_loop)
                             non_lin_flux_vector.set_element(element)
                         elif isinstance(element, Play):
                             if element.bus in non_lin_play_dict:
                                 non_lin_play_waveforms.append(non_lin_flux_vector.get_corrected_play(non_lin_play_dict))
                                 non_lin_offsets.append(non_lin_flux_vector.get_corrected_offsets())
                                 non_lin_play_dict = {}
+                            non_lin_offset_list.append(element.bus)
                             non_lin_play_dict[element.bus] = (
                                 element.waveform if isinstance(element.waveform, Waveform) else element.waveform.get_I()
                             )
@@ -904,11 +842,8 @@ class QProgram(StructuredProgram):
             offsets: list[dict[str, np.ndarray]],
             play_waveforms: list[dict[str, np.ndarray]],
             loop_index: tuple[int, ...] = (),
-            loop_coord: tuple[int, ...] = (),
-            offsets_0: int = 0,
-            plays_0: int = 0,
-            offset_defined: bool = False,
-            wait_defined: bool = False,
+            loop_coord: tuple[int, ...] = (0,),
+            state: NonLinearFlagState = NonLinearFlagState(),
         ):
             """Handles the Qprogram following Non-linear crosstalk compensation:
             - Unpacks gain and offset loops involving flux buses.
@@ -924,48 +859,33 @@ class QProgram(StructuredProgram):
                 play_waveforms (list[dict[str, np.ndarray]]): List of measured non-linear waveforms ordered by order of creation.
                 loop_index (tuple[int, ...], optional): Index of the existing loop. Defaults to ().
                 loop_coord (tuple[int, ...], optional): Coordinates ordered to find the right waveform / offset on
-                                                         the non-linear matrices. Defaults to ().
+                                                         the non-linear matrices. Defaults to (0,).
                 offsets_0 (int, optional): Order of the offsets by order of creation,
                                             this is the list index for offsets. Defaults to 0.
                 plays_0 (int, optional): Order of the play waveforms by order of creation,
                                           this is the list index for play_waveforms. Defaults to 0.
-                offset_defined (bool, optional): Flag to check if the offset has been defined,
-                                                  at the beginning of a loop it is reset to False. Defaults to False.
-                wait_defined (bool, optional): Flag to check if the wait has been defined,
-                                                at the beginning of a loop it is reset to False. Defaults to False.
-
             Returns:
                 list[Block | Operation]: list of elements converted to nonlinear.
             """
             corrected_elements: list[Block | Operation] = []
-            offsets_index = offsets_0
-            last_appended_offset = -1
-            plays_index = plays_0
-            play_bus_list: list[str] = []
-
             flux_vector_buses = list(flux_vector.buses)
             flux_vector_buses.sort()
-
-            if not loop_coord:
-                loop_coord = (0,)
 
             for element in elements:
                 if isinstance(element, SetGain) and element.bus in flux_vector_buses:
                     continue
+
                 if isinstance(element, SetOffset) and element.bus in flux_vector_buses:
-                    if offsets_index != last_appended_offset:
-                        if wait_defined:
-                            offsets_index += 1
+                    if state.offsets_index != state.last_appended_offset:
+                        state.on_offset()
                         for bus in flux_vector_buses:
-                            corrected_offsets = offsets[offsets_index][bus][loop_coord]
+                            corrected_offsets = offsets[state.offsets_index][bus][loop_coord]
                             corrected_elements.append(SetOffset(bus, corrected_offsets))
-                        last_appended_offset = offsets_index
-                        offset_defined = True
+
                 elif isinstance(element, Play) and element.bus in flux_vector_buses:
-                    if not play_bus_list or element.bus in play_bus_list:
-                        play_bus_list.append(element.bus)
+                    if not state.play_bus_list or element.bus in state.play_bus_list:
                         for bus in flux_vector_buses:
-                            corrected_waveform = play_waveforms[plays_index][bus][loop_coord]
+                            corrected_waveform = play_waveforms[state.plays_index][bus][loop_coord]
                             if isinstance(corrected_waveform, Square):
                                 gain = SetGain(bus, corrected_waveform.amplitude)
                                 corrected_waveform = Square(amplitude=1, duration=corrected_waveform.duration)
@@ -973,8 +893,8 @@ class QProgram(StructuredProgram):
                             else:
                                 gain = SetGain(bus, 1)
                                 corrected_elements.append(gain)
-                            if not offset_defined:
-                                corrected_offsets = offsets[offsets_index][bus][loop_coord]
+                            if not state.offset_defined:
+                                corrected_offsets = offsets[state.offsets_index][bus][loop_coord]
                                 corrected_elements.append(SetOffset(bus, corrected_offsets))
                             play = Play(
                                 bus,
@@ -986,55 +906,54 @@ class QProgram(StructuredProgram):
                                 element.stepped,
                             )
                             corrected_elements.append(play)
-                        plays_index += 1
-                        offsets_index += 1
-                        offset_defined = True
+                        state.on_play(element.bus)
+
                 elif isinstance(element, Wait) and element.bus in flux_vector_buses:
                     corrected_elements.append(element)
-                    if offset_defined:
-                        offset_defined = False
-                        wait_defined = True
-                        last_appended_offset = -1
+                    state.on_wait()
+
                 elif isinstance(element, Block):
+                    state.on_block()
                     if element.uuid in flux_vector.loops_uuid.values():
-                        shape = next(iter(offsets[offsets_index].values())).shape
+                        shape = next(iter(offsets[state.offsets_index].values())).shape
+                        offsets_index = state.offsets_index
+                        plays_index = state.plays_index
                         for key in range(shape[-len(loop_index) - 1]):
                             loop_coord = (key, *loop_index[::-1])
-                            corrected_loop, offset_defined = handle_non_linear(
+                            corrected_loop, state = handle_non_linear(
                                 elements=element.elements,
                                 flux_vector=flux_vector,
                                 offsets=offsets,
                                 play_waveforms=play_waveforms,
                                 loop_index=(*loop_index, key),
                                 loop_coord=loop_coord,
-                                offsets_0=offsets_index,
-                                plays_0=plays_index,
+                                state=NonLinearFlagState(offsets_index=offsets_index, plays_index=plays_index),
                             )
                             corrected_elements.extend(corrected_loop)
+                        loop_coord = loop_coord[:-1]
+                        if not loop_coord:
+                            loop_coord = (0,)
                     else:
-                        corrected_loop, offset_defined = handle_non_linear(
+                        corrected_loop, state = handle_non_linear(
                             elements=element.elements,
                             flux_vector=flux_vector,
                             offsets=offsets,
                             play_waveforms=play_waveforms,
                             loop_index=loop_index,
                             loop_coord=loop_coord,
-                            offsets_0=offsets_index,
-                            plays_0=plays_index,
+                            state=NonLinearFlagState(offsets_index=state.offsets_index, plays_index=state.plays_index),
                         )
                         element_copy = deepcopy(element)
                         element_copy.elements = corrected_loop
                         corrected_elements.append(element_copy)
-                    if offset_defined:
-                        offsets_index += 1
-                        offset_defined = False
+                    state.after_block()
                 else:
                     corrected_elements.append(element)
 
             # Needs to sync at the end of every loop for the unpack to work with non-flux buses
             if corrected_elements and not isinstance(corrected_elements[-1], Sync):
                 corrected_elements.append(Sync())
-            return corrected_elements, offset_defined
+            return corrected_elements, state
 
         copied_qprogram = deepcopy(self)
         traverse(copied_qprogram.body, copied_qprogram._variables)
@@ -1192,6 +1111,7 @@ class QProgram(StructuredProgram):
             duration (int): Duration of the delay after the trigger is received. Minimum of 4 ns.
             port (optional, int | None): Port channel of the trigger input. Defaults to None.
         """
+        self.qblox.external_trigger.append(bus)  # qblox-only external_trigger bus
         operation = WaitTrigger(bus=bus, duration=duration, port=port)
         self._active_block.append(operation)
         self._buses.add(bus)
@@ -1361,6 +1281,7 @@ class QProgram(StructuredProgram):
             self.disable_autosync: bool = False
             self.latch_enabled: list[str] = []
             self.trigger_network_required: dict[str, int] = {}
+            self.external_trigger: list[str] = []
 
         @overload
         def acquire(self, bus: str, weights: IQWaveform, save_adc: bool = False):

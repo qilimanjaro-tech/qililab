@@ -20,7 +20,6 @@ from __future__ import annotations
 import ast
 import io
 import re
-import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -1382,9 +1381,17 @@ class Platform:
 
     def _execute_qblox_compilation_output(self, output: QProgramCompilationOutput, debug: bool = False):
         try:
-            if output.qblox.external_trigger:  # type: ignore[union-attr]
+            if output.qblox.qprogram.qblox.external_trigger:  # type: ignore[union-attr]
+                trigger_instrument_aliases = {
+                    instrument.alias
+                    for bus in self.buses.elements
+                    if bus.alias in output.qblox.qprogram.qblox.external_trigger  # type: ignore[union-attr]
+                    for instrument in bus.instruments
+                }
                 for controller in self.instrument_controllers.elements:
-                    if isinstance(controller, QbloxClusterController):
+                    if isinstance(controller, QbloxClusterController) and any(
+                        module.alias in trigger_instrument_aliases for module in controller.modules
+                    ):
                         controller.set_ext_trigger()
             sequences, acquisitions = output.qblox.sequences, output.qblox.acquisitions  # type: ignore[union-attr]
             buses = {bus_alias: self.buses.get(alias=bus_alias) for bus_alias in sequences}
@@ -1454,8 +1461,6 @@ class Platform:
             return results
         except TimeoutError as timeout:
             if output.qdac:
-                warnings.warn("Timeout reached for triggered measurement, trying again.")
-
                 # Reset instrument settings
                 for bus_alias in sequences:
                     for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
@@ -1463,7 +1468,17 @@ class Platform:
                             instrument.desync_sequencer(sequencer_id=int(channel))
                 self.trigger_runs += 1
 
-                if self.trigger_runs <= 3:
+                timeout_repetitions = bus.check_recurrent_timeout()
+                if timeout_repetitions == 0:
+                    # Double check timeout_repetitions in case bus is not right, while giving priority on the bus where it crashed.
+                    timeout_repetitions = next(
+                        (rep for bus in buses.values() if (rep := bus.check_recurrent_timeout()) != 0),
+                        0,
+                    )
+                if timeout_repetitions > 0 and self.trigger_runs <= timeout_repetitions:
+                    logger.warning(
+                        f"Timeout reached for triggered measurement, trying again. {self.trigger_runs}/{timeout_repetitions}"
+                    )
                     return self._execute_qblox_compilation_output(output, debug)
 
             raise timeout

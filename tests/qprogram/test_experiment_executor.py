@@ -16,7 +16,7 @@ from qililab.qprogram.experiment_executor import ExperimentExecutor
 from qililab.qprogram.qprogram import QProgram
 from qililab.core.variables import Domain
 from qililab.result.experiment_results import ExperimentResults
-from qililab.result.qprogram import QProgramResults
+from qililab.result.qprogram import QbloxMeasurementResult, QProgramResults
 from qililab.typings.enums import Parameter
 from qililab.waveforms import IQPair, Square
 
@@ -30,6 +30,38 @@ def mock_platform():
     )
     qprogram_results.append_result(
         "readout_bus", QuantumMachinesMeasurementResult(bus="readout", I=np.arange(0, 11), Q=np.arange(100, 111))
+    )
+
+    platform = create_autospec(Platform)
+    platform.set_parameter = Mock()
+    platform.get_parameter = Mock(return_value=1.23)
+    platform.execute_qprogram = Mock(return_value=qprogram_results)
+    platform.to_dict = Mock(return_value={"name": "platform"})
+    platform.experiment_results_base_path = tempfile.gettempdir()
+    platform.experiment_results_path_format = "{date}/{time}/{label}.h5"
+    platform.set_crosstalk = Mock()
+    platform.db_manager = Mock()
+
+    return platform
+
+
+@pytest.fixture(name="platform_uneven_loops")
+def mock_platform_uneven_loops():
+    """Fixture to create a mock Platform."""
+    raw_measurement_data = {
+        "bins": {
+            "integration": {
+                "path0": list(range(0,10)),
+                "path1": list(range(100,110)),
+            },
+            "threshold": [float(i) for i in range(10)],
+            "avg_cnt": [],
+        },
+        "scope": {"path0": {"data": []}, "path1": {"data": []}},
+    }
+    qprogram_results = QProgramResults()
+    qprogram_results.append_result(
+        "readout_bus", QbloxMeasurementResult(bus="readout", raw_measurement_data=raw_measurement_data, shape=[10])
     )
 
     platform = create_autospec(Platform)
@@ -65,6 +97,40 @@ def fixture_qprogram():
                 waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
                 weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
             )
+
+    return qp
+
+
+@pytest.fixture(name="qprogram_uneven_loop")
+def fixture_qprogram_uneven_loop():
+    """Fixture to create a mock QProgram with imperfect loops."""
+    qp = QProgram()
+    gain = qp.variable(label="gain", domain=Domain.Voltage)
+    with qp.for_loop(gain, 0, 1.0, 0.11):
+        qp.set_gain(bus="readout_bus", gain=gain)
+        qp.measure(
+            "readout_bus",
+            waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
+            weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
+        )
+
+    return qp
+
+
+@pytest.fixture(name="qprogram_uneven_parallel")
+def fixture_qprogram_uneven_parallel():
+    """Fixture to create a mock QProgram with imperfect loops."""
+    qp = QProgram()
+    frequency_1 = qp.variable(label="freq_1", domain=Domain.Frequency)
+    frequency_2 = qp.variable(label="freq_2", domain=Domain.Frequency)
+    with qp.parallel(loops=[ForLoop(frequency_1, 100e6, 200e6, 11e6), ForLoop(frequency_2, 200e6, 100e6, -11e6)]):
+        qp.set_frequency(bus="readout_bus", frequency=frequency_1)
+        qp.set_frequency(bus="readout_bus", frequency=frequency_2)
+        qp.measure(
+            "readout_bus",
+            waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
+            weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
+        )
 
     return qp
 
@@ -140,6 +206,40 @@ def fixture_experiment(qprogram: QProgram, crosstalk: CrosstalkMatrix):
                 frequency=frequency, bias=bias, qprogram=qprogram
             )
         )
+
+    return experiment
+
+
+def make_platform_returning(qprogram_results: QProgramResults):
+    """Build a mock Platform whose ``execute_qprogram`` returns the given results."""
+    platform = create_autospec(Platform)
+    platform.set_parameter = Mock()
+    platform.get_parameter = Mock(return_value=1.23)
+    platform.execute_qprogram = Mock(return_value=qprogram_results)
+    platform.to_dict = Mock(return_value={"name": "platform"})
+    platform.set_crosstalk = Mock()
+    platform.db_manager = Mock()
+    return platform
+
+
+def make_qblox_result(i_values: np.ndarray, q_values: np.ndarray) -> QbloxMeasurementResult:
+    """Build a ``QbloxMeasurementResult`` wrapping the given I/Q integration data."""
+    return QbloxMeasurementResult(
+        bus="readout",
+        raw_measurement_data={"bins": {"integration": {"path0": i_values, "path1": q_values}}},
+    )
+
+
+@pytest.fixture(name="experiment_uneven_loop")
+def fixture_experiment_uneven_loop(qprogram_uneven_loop: QProgram, qprogram_uneven_parallel: QProgram):
+    """Fixture to create a mock Experiment with the mocked qprogram with uneven loops."""
+    experiment = Experiment(label="experiment")
+
+    # Test qprogram execution
+    experiment.execute_qprogram(qprogram_uneven_loop)
+
+    # Test qprogram execution with parallel loops
+    experiment.execute_qprogram(qprogram_uneven_parallel)
 
     return experiment
 
@@ -281,6 +381,120 @@ class TestExperimentExecutor:
             qprogram2_measurement1_data, _ = experiment_results.get(2, 1)
             assert qprogram2_measurement1_data.shape == (3, 11, 2)
             assert np.allclose(qprogram2_measurement1_data, measurement_data[None, :, :])
+            
+    def test_execute_uneven_qprogram_loops(
+        self, platform_uneven_loops, experiment_uneven_loop, qprogram_uneven_loop, qprogram_uneven_parallel, override_settings
+    ):
+        """
+        Test the execute method to ensure the experiment is executed correctly with uneven for and parallel loos 
+        with positive and negative steps.
+        """
+        platform_uneven_loops.save_experiment_results_in_database = False
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=platform_uneven_loops, experiment=experiment_uneven_loop)
+            results_path = executor.execute()
+
+        # Check if the correct file path is returned
+        assert results_path.startswith(os.path.abspath(tempfile.gettempdir()))
+        assert results_path.endswith(".h5")
+
+        # Check that platform methods were called in the correct order
+        expected_calls = [
+            call.to_dict(),
+            call.execute_qprogram(
+                qprogram=qprogram_uneven_loop,
+                bus_mapping=None,
+                calibration=None,
+                debug=False,
+            ),
+            call.execute_qprogram(qprogram=qprogram_uneven_parallel, bus_mapping=None, calibration=None, debug=False),
+        ]
+
+        # If you want to ensure the exact sequence across all calls
+        platform_uneven_loops.assert_has_calls(expected_calls, any_order=False)
+
+        with ExperimentResults(results_path) as experiment_results:
+            measurement_data = np.column_stack((np.arange(0, 10), np.arange(100, 110)))
+
+            # QProgram within for loops
+            qprogram0_measurement0_data, _ = experiment_results.get(0, 0)
+            assert qprogram0_measurement0_data.shape == (10, 2)
+            assert np.allclose(qprogram0_measurement0_data, measurement_data[:, :])
+
+            # QProgram within parallel loops
+            qprogram1_measurement0_data, _ = experiment_results.get(1, 0)
+            assert qprogram1_measurement0_data.shape == (10, 2)
+            assert np.allclose(qprogram1_measurement0_data, measurement_data[:, :])
+
+    def test_execute_counts_acquire_as_measurement(self, override_settings):
+        """A QProgram using ``qp.qblox.acquire`` (instead of ``qp.measure``) must allocate a
+        result dataset, just like a Measure, so the acquired data can be read back."""
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        with qp.for_loop(frequency, 0, 10, 1):  # 11 points
+            qp.qblox.acquire(bus="readout_bus", weights=IQPair(Square(1.0, 100), Square(1.0, 100)))
+
+        experiment = Experiment(label="acquire_experiment")
+        experiment.execute_qprogram(qp)
+
+        qprogram_results = QProgramResults()
+        qprogram_results.append_result("readout_bus", make_qblox_result(np.arange(0, 11), np.arange(100, 111)))
+        platform = make_platform_returning(qprogram_results)
+
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
+            results_path = executor.execute()
+
+        with ExperimentResults(results_path) as experiment_results:
+            # A single measurement dataset was allocated for the acquire operation.
+            assert len(experiment_results) == 1
+            data, _ = experiment_results.get(0, 0)
+            assert data.shape == (11, 2)
+            assert np.allclose(data, np.column_stack((np.arange(0, 11), np.arange(100, 111))))
+
+    def test_execute_counts_mixed_measure_and_acquire(self, override_settings):
+        """A QProgram mixing ``qp.measure`` and ``qp.qblox.acquire`` must allocate one
+        measurement dataset per operation, in order of appearance."""
+        qp = QProgram()
+        frequency = qp.variable(label="frequency", domain=Domain.Frequency)
+        with qp.for_loop(frequency, 0, 10, 1):  # 11 points
+            qp.measure(
+                "readout_bus",
+                waveform=IQPair(Square(1.0, 40), Square(1.0, 40)),
+                weights=IQPair(Square(1.0, 100), Square(1.0, 100)),
+            )
+            qp.qblox.acquire(bus="readout_bus", weights=IQPair(Square(1.0, 100), Square(1.0, 100)))
+
+        experiment = Experiment(label="mixed_experiment")
+        experiment.execute_qprogram(qp)
+
+        qprogram_results = QProgramResults()
+        for _ in range(2):  # one result per measurement op: the measure and the acquire
+            qprogram_results.append_result("readout_bus", make_qblox_result(np.arange(0, 11), np.arange(100, 111)))
+        platform = make_platform_returning(qprogram_results)
+
+        with override_settings(
+            experiment_results_save_in_database=False,
+            experiment_live_plot_enabled=False,
+            experiment_live_plot_on_slurm=False,
+        ):
+            executor = ExperimentExecutor(platform=platform, experiment=experiment)
+            results_path = executor.execute()
+
+        with ExperimentResults(results_path) as experiment_results:
+            # Two measurement datasets: Measurement_0 (measure) and Measurement_1 (acquire).
+            assert len(experiment_results) == 2
+            for measurement_index in range(2):
+                data, _ = experiment_results.get(0, measurement_index)
+                assert data.shape == (11, 2)
 
     @patch("qililab.platform.platform.get_db_manager")
     @patch("qililab.result.experiment_results_writer.h5py.File")
@@ -336,6 +550,7 @@ class TestExperimentExecutor:
                 "experiment_name": "experiment",
                 "sample_name": "sample_test",
             }
+
 
     def test_inclusive_range(self):
         """Test correct behavior and consistency of loop generation inside inclusive range."""
