@@ -16,7 +16,7 @@ import datetime
 import os
 import warnings
 from configparser import ConfigParser
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import h5py
 import numpy as np
@@ -251,6 +251,23 @@ class DatabaseManager:
                         new_path = path.replace(self.base_path_local, self.base_path_share)
                         meas.result_path = new_path
             return measurement_by_id_list if len(measurement_by_id_list) > 1 else measurement_by_id_list[0]
+
+    def add_fitting(self, id: int, path: str, parameters: dict[str, Any] | None = None) -> Measurement:
+        """Attach fitting results to an existing measurement, loaded by its measurement_id.
+
+        This is a thin wrapper over ``Measurement.add_fitting`` that loads the measurement the same
+        way ``load_by_id`` does and injects the database session, so the user does not need to handle
+        it.
+
+        Args:
+            id (int): measurement_id value given by the database.
+            path (str): Path to the fitting results file.
+            parameters (dict[str, Any] | None, optional): Fitting parameters. Defaults to None.
+        """
+        measurement = self.load_by_id(id)
+        if measurement is None:
+            raise Exception(f"Measurement entry '{id}' does not exist.")
+        return measurement.add_fitting(self.session, path, parameters)
 
     def load_sequence_by_id(self, id: int | list[int]) -> list[Measurement] | None:
         """Load measurement by its measurement_id.

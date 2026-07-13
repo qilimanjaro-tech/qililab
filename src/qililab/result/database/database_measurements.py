@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import datetime
+from typing import Any
 
 from pandas import read_hdf
 from sqlalchemy import (
@@ -182,6 +183,8 @@ class Measurement(base):  # type: ignore
     calibration: Column = Column("calibration", JSONB)
     parameters: Column = Column("parameters", JSONB)
     data_shape: Column = Column("data_shape", ARRAY(Integer))
+    fitting_path: Column = Column("fitting_path", String)
+    fitting_parameters: Column = Column("fitting_parameters", JSONB)
     debug_file = Column("debug_file", Text)
     created_by = Column("created_by", String, server_default=text("current_user"))
     # TODO: add error_report = Column("error_report", String, nullable=True)
@@ -253,6 +256,19 @@ class Measurement(base):  # type: ignore
         axis_labels = {dim: da.coords[dim].values for dim in da.dims[1:]}
         return arr, axis_labels
 
+    def add_fitting(self, session: sessionmaker[Session], path: str, parameters: dict[str, Any] | None = None):
+        with session() as running_session:
+            persistent_instance = running_session.merge(self)
+            persistent_instance.fitting_path = path  # type: ignore[assignment]
+            if parameters:
+                persistent_instance.fitting_parameters = parameters  # type: ignore[assignment]
+            try:
+                running_session.commit()
+                return persistent_instance
+            except Exception as e:
+                running_session.rollback()
+                raise e
+
     def __init__(
         self,
         experiment_name,
@@ -301,6 +317,8 @@ class Measurement(base):  # type: ignore
         self.target = target
         self.secondary_source = secondary_source
         self.bus_mapping = bus_mapping
+        self.fitting_path = None
+        self.fitting_parameters = None
 
     def __repr__(self):
         return f"{self.measurement_id} {self.experiment_name} {self.start_time} {self.end_time} {self.run_length} {self.sample_name} {self.cooldown}"
