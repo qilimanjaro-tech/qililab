@@ -1501,6 +1501,7 @@ class TestMethods:
         # Assert it retried 3 times (initial + 3 retries = 4 attempts)
         assert mock_bus.run.call_count == 4
 
+
     def test_execute_qprogram_with_qblox_output_ext_trigger_true(self, platform_qblox_qdac: Platform):
         """Test that the execute_qprogram method executes controller.set_ext_trigger 
         when QbloxClusterController has external_trigger set as True (there is a wait trigger in the qprogram)
