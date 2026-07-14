@@ -266,7 +266,7 @@ class DatabaseManager:
         """
         measurement = self.load_by_id(id)
         if measurement is None:
-            raise Exception(f"Measurement entry '{id}' does not exist.")
+            raise ValueError(f"Measurement entry '{id}' does not exist.")
         return measurement.add_fitting(self.session, path, parameters)
 
     def load_sequence_by_id(self, id: int | list[int]) -> list[Measurement] | None:
