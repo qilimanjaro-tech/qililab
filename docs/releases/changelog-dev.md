@@ -8,9 +8,9 @@
   [#1136](https://github.com/qilimanjaro-tech/qililab/pull/1136)
 
 - Added `sort_buses` and `argsort_buses` to `qililab.utils`, utilities that order bus identifiers into a stable, easy to read order:
-    1. Count of integers in the name — single-index qubit buses (one number) sort
+    1. Count of integers in the name; single-index qubit buses (one number) sort
        before two-index couplers, e.g. "flux q9" before "coupler 0 1".
-    2. The integers themselves, compared numerically — so "drive q2" sorts before
+    2. The integers themselves, compared numerically; so "drive q2" sorts before
        "drive q10" (plain alphabetical order would put q10 first).
     3. Bus type: readout < drive < flux < unspecified.
     4. Loop type: x < z < unspecified (x and z are only identified if there are no surrounding letters).
@@ -88,7 +88,7 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 
 ### Bug fixes
 
-- Fixed `CrosstalkMatrix` row/column ordering being inconsistent between `to_array` (ordered with `sort_buses`) and `inverse`/`from_array` (raw insertion order). For any matrix whose buses were not stored in natural order e.g. a system with ≥10 buses saved alphabetically (`flux q0, flux q1, flux q10, flux q2`) — the inverse was mislabeled and `flux_to_bias` returned wrong bias values, and `Calibration.add_intra_crosstalk`/`add_inter_crosstalk` corrupted the stored matrix and offsets. `inverse`, the calibration updates and their `from_array` calls now share the canonical `sort_buses` ordering. Also added `qililab.utils.argsort_buses`, which returns the sort permutation so an array and its bus labels can be reordered together.
+- Fixed `CrosstalkMatrix` row/column ordering being inconsistent between `to_array` (ordered with `sort_buses`) and `inverse`/`from_array` (raw insertion order). For any matrix whose buses were not stored in natural order e.g. a system with ≥10 buses saved alphabetically (`flux q0, flux q1, flux q10, flux q2`); the inverse was mislabeled and `flux_to_bias` returned wrong bias values, and `Calibration.add_intra_crosstalk`/`add_inter_crosstalk` corrupted the stored matrix and offsets. `inverse`, the calibration updates and their `from_array` calls now share the canonical `sort_buses` ordering. Also added `qililab.utils.argsort_buses`, which returns the sort permutation so an array and its bus labels can be reordered together.
   [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
 
 - Fixed the default value for QDAC's voltage list dwell time. Before, it was set to 1 us but the [QDAC documentation page 76](https://qm.quantum-machines.co/hubfs/QDAC%20II%20-%20User%20manual%20v2.2%20(2024-01-17).pdf) states that the minimum is 2 us. If a user states a number smaller than 2 us, the qdac automatically sets the dwell time as the minimum (2 us).

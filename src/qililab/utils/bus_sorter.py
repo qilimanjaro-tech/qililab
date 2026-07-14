@@ -60,9 +60,9 @@ def sort_buses(bus_sequence: Iterable[str]) -> list[str]:
 
     The sorting criteria by order of importance are:
 
-    1. Count of integers in the name — single-index qubit buses (one number) sort
+    1. Count of integers in the name; single-index qubit buses (one number) sort
        before two-index couplers, e.g. "flux q9" before "coupler 0 1".
-    2. The integers themselves, compared numerically — so "drive q2" sorts before
+    2. The integers themselves, compared numerically; so "drive q2" sorts before
        "drive q10" (plain alphabetical order would put q10 first).
     3. Bus type: readout < drive < flux < unspecified.
     4. Loop type: x < z < unspecified (x and z are only identified if there are no surrounding letters).
