@@ -10,7 +10,7 @@
 # Jordi Valls: owner of results + DB.
 /src/qililab/result/                    @jordivallsq
 
-# Flavie Le Bars: solo required approver / veto.
+# Flavie Le Bars: sole required approver / veto.
 /src/qililab/instruments/               @flavie-lebars
 /src/qililab/instrument_controllers/    @flavie-lebars
 /src/qililab/instrument_connections/    @flavie-lebars
