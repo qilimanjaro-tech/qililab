@@ -56,8 +56,8 @@ def test_sort_buses():
         "b bus",
         "readout q0",
         "drive q0",
-        "flux q0 x",
         "flux q0 z",
+        "flux q0 x",
         "flux q0",
         "flux0",
         "drive q1",
@@ -119,7 +119,7 @@ def test_criterion_3_bus_type_readout_drive_flux():
 
 def test_criterion_4_loop_type_x_before_z():
     """Loop precedence at equal type/index: x < z < unspecified."""
-    assert sort_buses(["flux q0", "flux q0 z", "flux q0 x"]) == ["flux q0 x", "flux q0 z", "flux q0"]
+    assert sort_buses(["flux q0", "flux q0 z", "flux q0 x"]) == ["flux q0 z", "flux q0 x", "flux q0"]
 
 
 def test_criterion_5_alphabetical_tiebreak():

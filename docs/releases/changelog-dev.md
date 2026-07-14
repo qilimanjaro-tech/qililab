@@ -13,7 +13,7 @@
     2. The integers themselves, compared numerically; so "drive q2" sorts before
        "drive q10" (plain alphabetical order would put q10 first).
     3. Bus type: readout < drive < flux < unspecified.
-    4. Loop type: x < z < unspecified (x and z are only identified if there are no surrounding letters).
+    4. Loop type: z < x < unspecified (x and z are only identified if there are no surrounding letters).
     5. The raw string, as a final alphabetical tiebreak for full determinism.
   `argsort_buses` also returns the sort permutation, so a matrix and its bus labels can be reordered together.
   [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
