@@ -83,6 +83,18 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 - Fixed `CrosstalkMatrix` row/column ordering being inconsistent between `to_array` (ordered with `sort_buses`) and `inverse`/`from_array` (raw insertion order). For any matrix whose buses were not stored in natural order — e.g. a system with ≥10 buses saved alphabetically (`flux q0, flux q1, flux q10, flux q2`) — the inverse was mislabeled and `flux_to_bias` returned wrong bias values, and `Calibration.add_intra_crosstalk`/`add_inter_crosstalk` corrupted the stored matrix and offsets. `inverse`, the calibration updates and their `from_array` calls now share the canonical `sort_buses` ordering. Also added `qililab.utils.argsort_buses`, which returns the sort permutation so an array and its bus labels can be reordered together.
   [#XXXX](https://github.com/qilimanjaro-tech/qililab/pull/XXXX)
 
+- Fixed the default value for QDAC's voltage list dwell time. Before, it was set to 1 us but the [QDAC documentation page 76](https://qm.quantum-machines.co/hubfs/QDAC%20II%20-%20User%20manual%20v2.2%20(2024-01-17).pdf) states that the minimum is 2 us. If a user states a number smaller than 2 us, the qdac automatically sets the dwell time as the minimum (2 us).
+  [#1154](https://github.com/qilimanjaro-tech/qililab/pull/1154)
+
+- Fixed the QDAC-II trigger network breaking when multiple users are connected to the same instrument. Each qililab instance allocated internal trigger numbers from its own driver-side pool, with no way of knowing which numbers other Python processes were already using. When two instances picked the same number, their triggers fired through each other's networks, interfering with both experiments.
+
+  Internal triggers in use are now read directly from the instrument's marker registers before every allocation, so a new trigger always takes the lowest number that is actually free on the hardware. Related behavior changes:
+  - `QDevilQDac2.start()` now starts only the DC lists and AWG waveforms uploaded by this instance, instead of `start_all()`, which also fired generators armed by other users.
+  - `QDevilQDac2.clear_trigger()` now frees the triggers created by this instance from the instrument (previously `free_all_triggers()` released the triggers set by `QCodes`, not affecting the instrument).
+  - `Platform.execute_qprogram` now clears each QDAC-II's trigger network and generator caches after every execution, so consecutive executions always start from a clean trigger state.
+  - Allocating a trigger when all 14 internal triggers are busy raises a `ValueError` including other users triggers.
+  [#1154](https://github.com/qilimanjaro-tech/qililab/pull/1154)
+
 - Fixed the folder shape at `add_measurement` and `add_results` to take into account us intervals of time. This will solve any issue with parallelization while creating more than one folder in less than a second.
   [#1152](https://github.com/qilimanjaro-tech/qililab/pull/1152)
 
@@ -121,7 +133,7 @@ In the runcard this parameter is located inside the instruments sequencer for QR
   [#1130](https://github.com/qilimanjaro-tech/qililab/pull/1130)
 
 - Fixed a bug for Rohde & Schwarz SGS100A instrument class where the module SGS-B106V did not apply the iq_wideband at the initial_setup.
-    [#1144](https://github.com/qilimanjaro-tech/qililab/pull/1144)
+  [#1144](https://github.com/qilimanjaro-tech/qililab/pull/1144)
 
 - Fixed a bug in `platform._execute_qblox_compilation_output` where a program with N acquisitions on the same bus returned N² results instead of N. A nested loop incorrectly paired every hardware result with every acquisition slot; replaced with `zip` pairing. This was triggered by any QProgram with acquires at more than one nesting depth on the same bus (e.g. two separate `average` blocks each containing one `acquire`).
   [#1117](https://github.com/qilimanjaro-tech/qililab/pull/1117)
