@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pandas import read_hdf
 from sqlalchemy import (
@@ -36,6 +36,9 @@ from xarray import DataArray
 
 from qililab.result.experiment_results import ExperimentResults
 from qililab.result.result_management import load_results
+
+if TYPE_CHECKING:
+    from qililab.result.database.database_manager import DatabaseManager
 
 base = declarative_base()
 
@@ -256,7 +259,15 @@ class Measurement(base):  # type: ignore
         axis_labels = {dim: da.coords[dim].values for dim in da.dims[1:]}
         return arr, axis_labels
 
-    def add_fitting(self, session: sessionmaker[Session], path: str, parameters: dict[str, Any] | None = None):
+    def add_fitting(self, database_manager: "DatabaseManager", path: str, parameters: dict[str, Any] | None = None):
+        """Add fitting_path and fitting_parameters into Measurements database table.
+
+        Args:
+            database_manager (DatabaseManager): _description_
+            path (str): Fitting plots or data path.
+            parameters (dict[str, Any] | None, optional): Fitting parameters in dictionary form. Defaults to None.
+        """
+        session = database_manager.session
         with session() as running_session:
             persistent_instance = running_session.merge(self)
             persistent_instance.fitting_path = path  # type: ignore[assignment]

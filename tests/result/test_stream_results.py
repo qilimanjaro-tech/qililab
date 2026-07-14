@@ -537,7 +537,7 @@ class TestStreamArray:
         result = stream_array.add_fitting(path="/test/fit.h5", parameters={"a": 1.0})
 
         mock_measurement.add_fitting.assert_called_once_with(
-            stream_array.db_manager.session, "/test/fit.h5", {"a": 1.0}
+            stream_array.db_manager, "/test/fit.h5", {"a": 1.0}
         )
         assert stream_array.measurement == updated_measurement
         assert result == updated_measurement

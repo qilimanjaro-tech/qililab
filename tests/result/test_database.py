@@ -162,7 +162,10 @@ class TestMeasurement:
         mock_session_context.__enter__.return_value = mock_session
         mock_session.merge.return_value = measurement
 
-        result = measurement.add_fitting(lambda: mock_session_context, path="/test/fit.h5", parameters={"a": 1.0})
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        result = measurement.add_fitting(mock_db_manager, path="/test/fit.h5", parameters={"a": 1.0})
 
         assert result.fitting_path == "/test/fit.h5"
         assert result.fitting_parameters == {"a": 1.0}
@@ -174,7 +177,10 @@ class TestMeasurement:
         mock_session_context.__enter__.return_value = mock_session
         mock_session.merge.return_value = measurement
 
-        result = measurement.add_fitting(lambda: mock_session_context, path="/test/fit.h5")
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        result = measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
 
         assert result.fitting_path == "/test/fit.h5"
         assert result.fitting_parameters is None
@@ -187,8 +193,11 @@ class TestMeasurement:
         mock_session.merge.return_value = measurement
         mock_session.commit.side_effect = Exception("Measurement error")
 
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
         with pytest.raises(Exception, match="Measurement error"):
-            measurement.add_fitting(lambda: mock_session_context, path="/test/fit.h5")
+            measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
 
         mock_session.rollback.assert_called_once()
 
@@ -774,12 +783,12 @@ class Testdatabase:
             result = db_manager.add_fitting(123, path="/test/fit.h5", parameters={"a": 1.0})
 
         mock_load.assert_called_once_with(123)
-        mock_measurement.add_fitting.assert_called_once_with(db_manager.session, "/test/fit.h5", {"a": 1.0})
+        mock_measurement.add_fitting.assert_called_once_with(db_manager, "/test/fit.h5", {"a": 1.0})
         assert result == mock_measurement
 
     def test_add_fitting_raises_exception_measurement_not_found(self, db_manager: DatabaseManager):
         with patch.object(db_manager, "load_by_id", return_value=None):
-            with pytest.raises(Exception, match="Measurement entry '123' does not exist."):
+            with pytest.raises(IndexError, match="Measurement entry '123' does not exist."):
                 db_manager.add_fitting(123, path="/test/fit.h5")
 
     def test_load_sequence_by_id(self, db_manager: DatabaseManager):

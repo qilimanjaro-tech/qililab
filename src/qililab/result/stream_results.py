@@ -183,7 +183,7 @@ class StreamArray:
             raise RuntimeError("add_fitting must be called after the StreamArray context has exited.")
         if self.autocalibration:
             raise NotImplementedError("Autocalibration fitting management does not depend on StreamArray.")
-        self.measurement = self.measurement.add_fitting(self.db_manager.session, path, parameters)
+        self.measurement = self.measurement.add_fitting(self.db_manager, path, parameters)
         return self.measurement
 
     def __getitem__(self, index: int):

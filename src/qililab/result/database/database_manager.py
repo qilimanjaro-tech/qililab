@@ -253,11 +253,7 @@ class DatabaseManager:
             return measurement_by_id_list if len(measurement_by_id_list) > 1 else measurement_by_id_list[0]
 
     def add_fitting(self, id: int, path: str, parameters: dict[str, Any] | None = None) -> Measurement:
-        """Attach fitting results to an existing measurement, loaded by its measurement_id.
-
-        This is a thin wrapper over ``Measurement.add_fitting`` that loads the measurement the same
-        way ``load_by_id`` does and injects the database session, so the user does not need to handle
-        it.
+        """Store fitting information tho the measurements database, loaded by its measurement_id.
 
         Args:
             id (int): measurement_id value given by the database.
@@ -266,8 +262,8 @@ class DatabaseManager:
         """
         measurement = self.load_by_id(id)
         if measurement is None:
-            raise ValueError(f"Measurement entry '{id}' does not exist.")
-        return measurement.add_fitting(self.session, path, parameters)
+            raise IndexError(f"Measurement entry '{id}' does not exist.")
+        return measurement.add_fitting(self, path, parameters)
 
     def load_sequence_by_id(self, id: int | list[int]) -> list[Measurement] | None:
         """Load measurement by its measurement_id.
