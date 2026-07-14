@@ -265,6 +265,21 @@ class TestQbloxQRM:
         for sequencer in qrm.awg_sequencers:
             qrm.device.sequencers[sequencer.identifier].sync_en.assert_called_with(False)
 
+    def test_initial_setup_invalidates_cache(self, qrm: QbloxQRM):
+        """initial_setup wipes the device sequencers, so the cache is cleared and the next upload is full (#3)."""
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+        qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
+        assert qrm.sequences and qrm._qpy_sequence_hashes
+
+        qrm.initial_setup()
+        assert qrm.sequences == {}
+        assert qrm._qpy_sequence_hashes == {}
+
+        # Cache is empty -> the next upload takes the full-upload path, not a partial update.
+        qrm.device.sequencers[0].sequence.reset_mock()
+        qrm.upload_qpysequence(qpysequence=sequence, channel_id=0)
+        qrm.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
+
     def test_acquire_qprogram_results(self, qrm: QbloxQRM):
         acquisitions = Acquisitions()
         acquisitions.add(name="acquisition_0")

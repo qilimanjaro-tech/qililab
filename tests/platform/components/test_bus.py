@@ -125,18 +125,6 @@ class TestBus:
         bus.upload_qpysequence(qpysequence)
         bus.instruments[0].upload_qpysequence.assert_called_once()
 
-    def test_bus_upload_qpysequence_with_components_to_update(self, bus):
-        qpysequence = MagicMock()
-        components_to_update = {"waveforms": True, "acquisitions": True, "program": False}
-        bus.upload_qpysequence(qpysequence, components_to_update=components_to_update)
-        bus.instruments[0].update_sequencer.assert_called_once()
-        assert bus.instruments[0].update_sequencer.call_args_list[0].kwargs.get("waveforms") == True
-        assert bus.instruments[0].update_sequencer.call_args_list[0].kwargs.get("acquisitions") == True
-        assert bus.instruments[0].update_sequencer.call_args_list[0].kwargs.get("program") == False
-        assert bus.instruments[0].update_sequencer.call_args_list[0].kwargs.get("weights") == None
-
-
-
     def test_bus_upload_qpysequence_raises_error(self, bus):
         bus.settings.instruments = []
         bus.settings.channels = []

@@ -3,11 +3,7 @@
 ### New features since last release
 
 ### Improvements
-
-- Upgraded `qblox-instruments` dependency from `0.16.0` to `1.0.3`.
-  [#1134](https://github.com/qilimanjaro-tech/qililab/pull/1134)
-
-- Optimized sequence uploads in `Platform.execute_qprogram` and `Platform.execute_qprograms_parallel`. When any components of the `QProgram` uploaded to a Qblox sequencer are unchanged from the previous execution, only the components that actually changed are re-uploaded: program, waveforms and weights only when they differ, and acquisitions always (to reset the bins). On the first upload for a bus, the full sequence is uploaded. This avoids redundant re-uploads and speeds up software loops that repeatedly run the same program while only changing an instrument setting (`Platform.set_parameter`) or waveform data.
+- Optimized sequence uploads in `Platform.execute_qprogram` and `Platform.execute_qprograms_parallel`. When any components of the `QProgram` uploaded to a Qblox sequencer are unchanged from the previous execution, only the components that actually changed are re-uploaded: program, waveforms and weights only when they differ, and acquisitions always (to reset the bins). On the first upload for a bus, the full sequence is uploaded. This avoids redundant re-uploads and speeds up software loops that repeatedly run the same program while only changing an instrument setting (`Platform.set_parameter`) or waveforms.
   **Note** that changing a value *inside* the QProgram (e.g. setting the gain or frequency) alters the compiled program itself, so the program is re-uploaded. Only changes made through `Platform.set_parameter` keep the program unchanged.
   [#1146](https://github.com/qilimanjaro-tech/qililab/pull/1146)
 

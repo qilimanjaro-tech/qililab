@@ -108,6 +108,9 @@ class QbloxQRM(QbloxModule):
                 value=cast("QbloxADCSequencer", sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
 
+        # The sequencer is whiped. The cache has to be cleared.
+        self.clear_cache()
+
     def _map_connections(self):
         """Disable all connections and map sequencer paths with output/input channels."""
         # Disable all connections

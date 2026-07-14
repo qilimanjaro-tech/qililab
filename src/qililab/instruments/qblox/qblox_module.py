@@ -26,6 +26,7 @@ from qililab.instruments.qblox.qblox_filters import QbloxFilter
 from qililab.instruments.qblox.qblox_sequencer import QbloxSequencer
 from qililab.typings import ChannelID, DistortionState, OutputID, Parameter, ParameterValue
 from qililab.typings.instruments import QcmQrm
+from qililab.utils import hash_qpy_sequence_components
 
 
 class QbloxModule(Instrument):
@@ -81,6 +82,8 @@ class QbloxModule(Instrument):
     def __init__(self, settings: dict):
         # The sequences dictionary contains all the compiled sequences for each sequencer. Sequences are saved and handled at the compiler
         self.sequences: dict[int, QpySequence] = {}  # {sequencer_idx: (program), ...}
+        self._qpy_sequence_hashes: dict[int, dict[str, str]] = {}
+        """Per-sequencer component hashes of the last successfully uploaded sequence."""
         self.num_bins: int = 1
         super().__init__(settings=settings)
 
@@ -642,6 +645,7 @@ class QbloxModule(Instrument):
         """Empty cache."""
         self.cache = {}
         self.sequences = {}
+        self._qpy_sequence_hashes = {}
 
     @check_device_initialized
     def reset(self):
@@ -650,31 +654,42 @@ class QbloxModule(Instrument):
         self.device.reset()
 
     def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int):
-        """Upload the qpysequence to its corresponding sequencer.
+        """Upload a qpysequence to its sequencer, uploading only changed components.
+
+        The first upload for a sequencer (or the first after ``clear_cache``) uploads
+        the full sequence. Subsequent uploads compare per-component hashes and push
+        only ``program``/``waveforms``/``weights`` that changed (``acquisitions`` are
+        always re-uploaded). The cache is committed only after the device write
+        succeeds, so a failed upload never leaves a stale-positive.
 
         Args:
             qpysequence (QpySequence): The qpysequence to upload.
-            channel_id (int, str): Identifier for the channel and it's corresponding sequencer.
+            channel_id (int): Identifier for the channel / its corresponding sequencer.
         """
-        if self._have_sequencer(channel_id):
-            logger.info("Sequence program: \n %s", repr(qpysequence._program))
+        if not self._have_sequencer(channel_id):
+            return
+
+        new_hashes = hash_qpy_sequence_components(qpysequence)
+        cached_hashes = self._qpy_sequence_hashes.get(channel_id)
+        logger.info("Sequence program: \n %s", repr(qpysequence._program))
+
+        if cached_hashes is None:
             self.device.sequencers[channel_id].sequence(qpysequence.todict())
-            self.sequences[channel_id] = qpysequence
-
-    def update_sequencer(self, qpysequence: QpySequence, channel_id: int, **components_to_update: bool):
-        """Updates the last sequencer with the current qpysequence if the program hasn't changed.
-
-        Args:
-            qpysequence (QpySequence): The qpysequence to update.
-            channel_id (int, str): Identifier for the channel and it's corresponding sequencer.
-            **components_to_update (bool): Flags describing which components are getting updated. Accepts any of:
-                "program", "waveforms", "weights", "acquisitions". The absence of any of the previous will be
-                considered ``False``.
-        """
-        if self._have_sequencer(channel_id):
-            qpysequence_dict = qpysequence.todict()
-            sequence_args = {key: value for key, value in qpysequence_dict.items() if components_to_update.get(key)}
+        else:
+            # missing cached key -> None, so the component is re-uploaded instead of raising.
+            components_to_update = {
+                "program": new_hashes["program"] != cached_hashes.get("program"),
+                "waveforms": new_hashes["waveforms"] != cached_hashes.get("waveforms"),
+                "weights": new_hashes["weights"] != cached_hashes.get("weights"),
+                "acquisitions": True,
+            }
+            sequence_dict = qpysequence.todict()
+            sequence_args = {key: value for key, value in sequence_dict.items() if components_to_update[key]}
             self.device.sequencers[channel_id].update_sequence(**sequence_args, erase_existing=True)
+
+        # Commit only after the device write succeeds.
+        self.sequences[channel_id] = qpysequence
+        self._qpy_sequence_hashes[channel_id] = new_hashes
 
     def upload(self, channel_id: int):
         """Upload all the previously compiled programs to its corresponding sequencers.

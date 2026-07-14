@@ -3,6 +3,7 @@
 from typing import cast
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
 from qblox_instruments.qcodes_drivers.module import Module as QcmQrm
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
@@ -14,6 +15,14 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.qblox import QbloxModule
 from qililab.platform import Platform
 from qililab.typings import DistortionState, Parameter
+from qililab.utils import hash_qpy_sequence_components
+
+
+def _build_sequence(waveform_data: list[float]) -> Sequence:
+    """Build a QpySequence with the given waveform data and empty program/weights/acquisitions."""
+    waveforms = Waveforms()
+    waveforms.add(np.array(waveform_data, dtype=float))
+    return Sequence(program=Program(), waveforms=waveforms, acquisitions=Acquisitions(), weights=Weights())
 
 @pytest.fixture(name="platform")
 def fixture_platform():
@@ -455,6 +464,7 @@ class TestQbloxModule:
 
         assert module.cache == {}
         assert module.sequences == {}
+        assert module._qpy_sequence_hashes == {}
 
     def test_reset(self, module: QbloxModule):
         """Test resetting the Qblox module."""
@@ -463,6 +473,7 @@ class TestQbloxModule:
         module.device.reset.assert_called_once()
         assert module.cache == {}
         assert module.sequences == {}
+        assert module._qpy_sequence_hashes == {}
 
     def test_turn_off(self, module: QbloxModule):
         module.turn_off()
@@ -490,29 +501,79 @@ class TestQbloxModule:
         module.device.sequencers[0].sequence.assert_called_once_with(module.sequences[0].todict())
         module.device.sequencers[0].sync_en.assert_called_once_with(True)
 
-    def test_upload_qpysequence(self, module: QbloxModule):
-        """Test uploading a QpySequence to the Qblox module."""
-        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
+    def test_upload_qpysequence_first_upload_is_full(self, module: QbloxModule):
+        """First upload for a sequencer pushes the full sequence and seeds the cache."""
+        sequence = _build_sequence([0.0, 0.1, 0.2])
         module.upload_qpysequence(qpysequence=sequence, channel_id=0)
 
         module.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
-
-    def test_update_sequencer(self, module: QbloxModule):
-        """Test that only the flagged components are pushed to the sequencer, erasing the existing ones."""
-        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
-        module.update_sequencer(qpysequence=sequence, channel_id=0, waveforms=True, acquisitions=True)
-
-        sequence_dict = sequence.todict()
-        module.device.sequencers[0].update_sequence.assert_called_once_with(
-            waveforms=sequence_dict["waveforms"], acquisitions=sequence_dict["acquisitions"], erase_existing=True
-        )
-
-    def test_update_sequencer_no_sequencer(self, module: QbloxModule):
-        """Test that nothing is uploaded when the channel has no associated sequencer."""
-        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights=Weights())
-        module.update_sequencer(qpysequence=sequence, channel_id=5, waveforms=True)
-
         module.device.sequencers[0].update_sequence.assert_not_called()
+        assert module.sequences[0] is sequence
+        assert module._qpy_sequence_hashes[0] == hash_qpy_sequence_components(sequence)
+
+    def test_upload_qpysequence_no_sequencer(self, module: QbloxModule):
+        """Nothing is uploaded or cached when the channel has no associated sequencer."""
+        module.upload_qpysequence(qpysequence=_build_sequence([0.0, 0.1, 0.2]), channel_id=5)
+
+        module.device.sequencers[0].sequence.assert_not_called()
+        module.device.sequencers[0].update_sequence.assert_not_called()
+        assert module.sequences == {}
+        assert module._qpy_sequence_hashes == {}
+
+    def test_upload_qpysequence_unchanged_reupload_is_partial(self, module: QbloxModule):
+        """Re-uploading an identical sequence updates only acquisitions via update_sequence."""
+        sequence = _build_sequence([0.0, 0.1, 0.2])
+        module.upload_qpysequence(qpysequence=sequence, channel_id=0)
+        module.device.sequencers[0].sequence.reset_mock()
+
+        module.upload_qpysequence(qpysequence=sequence, channel_id=0)
+
+        module.device.sequencers[0].sequence.assert_not_called()
+        module.device.sequencers[0].update_sequence.assert_called_once()
+        call_kwargs = module.device.sequencers[0].update_sequence.call_args.kwargs
+        assert set(call_kwargs) == {"acquisitions", "erase_existing"}
+        assert call_kwargs["erase_existing"] is True
+
+    def test_upload_qpysequence_changed_component_only(self, module: QbloxModule):
+        """Changing only the waveforms re-uploads waveforms + acquisitions, not program/weights."""
+        module.upload_qpysequence(qpysequence=_build_sequence([0.0, 0.1, 0.2]), channel_id=0)
+        module.upload_qpysequence(qpysequence=_build_sequence([0.9, 0.8, 0.7]), channel_id=0)
+
+        call_kwargs = module.device.sequencers[0].update_sequence.call_args.kwargs
+        assert "waveforms" in call_kwargs
+        assert "acquisitions" in call_kwargs
+        assert "program" not in call_kwargs
+        assert "weights" not in call_kwargs
+        assert call_kwargs["erase_existing"] is True
+
+    def test_upload_qpysequence_commits_only_after_successful_write(self, module: QbloxModule):
+        """A failed device write leaves the cache unchanged, so the next run re-uploads instead of skipping."""
+        module.upload_qpysequence(qpysequence=_build_sequence([0.0, 0.1, 0.2]), channel_id=0)
+        hashes_after_first = dict(module._qpy_sequence_hashes[0])
+
+        changed = _build_sequence([0.9, 0.8, 0.7])
+        module.device.sequencers[0].update_sequence.side_effect = RuntimeError("device write failed")
+        with pytest.raises(RuntimeError):
+            module.upload_qpysequence(qpysequence=changed, channel_id=0)
+        assert module._qpy_sequence_hashes[0] == hashes_after_first
+
+        module.device.sequencers[0].update_sequence.side_effect = None
+        module.device.sequencers[0].update_sequence.reset_mock()
+        module.upload_qpysequence(qpysequence=changed, channel_id=0)
+
+        assert "waveforms" in module.device.sequencers[0].update_sequence.call_args.kwargs
+        assert module._qpy_sequence_hashes[0] == hash_qpy_sequence_components(changed)
+
+    def test_upload_qpysequence_full_again_after_clear_cache(self, module: QbloxModule):
+        """After clear_cache the next upload is a full upload again."""
+        sequence = _build_sequence([0.0, 0.1, 0.2])
+        module.upload_qpysequence(qpysequence=sequence, channel_id=0)
+        module.clear_cache()
+        assert module._qpy_sequence_hashes == {}
+
+        module.device.sequencers[0].sequence.reset_mock()
+        module.upload_qpysequence(qpysequence=sequence, channel_id=0)
+        module.device.sequencers[0].sequence.assert_called_once_with(sequence.todict())
 
 
 class TestQbloxSequencer:
