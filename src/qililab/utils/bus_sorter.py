@@ -28,24 +28,31 @@ def _bus_sort_key(bus: str):
     ids = sorted(int(i) for i in re.findall(r"\d+", bus))
     bus_type = next((order for pattern, order in _BUS_TYPE_ORDER if re.search(pattern, bus, flags=re.IGNORECASE)), 3)
     loop_type = _LOOP_TYPE_ORDER.get(
-        m.group().lower() if (m := re.search(r"(?<![a-z])[xz](?![a-z])", bus, flags=re.IGNORECASE)) else "", 3
+        match.group().lower() if (match := re.search(r"(?<![a-z])[xz](?![a-z])", bus, flags=re.IGNORECASE)) else "", 3
     )
     return (len(ids), ids, bus_type, loop_type, bus)
 
 
 def argsort_buses(bus_sequence: Iterable[str]) -> tuple[list[str], list[int]]:
-    """Sort buses like :func:`sort_buses`, additionally returning the index permutation.
+    """Sort buses like :func:`sort_buses`, additionally returning the index permutation
+    (the order of the indices of the original list after the sorting).
 
     Args:
         bus_sequence (Iterable[str]): Bus identifiers to sort.
 
     Returns:
-        tuple[list[str], list[int]]: (sorted_buses, order) where
-            sorted_buses[k] == list(bus_sequence)[order[k]].
+        tuple[list[str], list[int]]: (sorted_buses, sort_permutation) where
+            sorted_buses[k] == list(bus_sequence)[sort_permutation[k]].
+
+    Examples:
+        >>> argsort_buses(["flux_10", "flux_1", "flux_2"])
+        (['flux_1', 'flux_2', 'flux_10'], [1, 2, 0])
     """
     items = list(bus_sequence)
-    order = sorted(range(len(items)), key=lambda i: _bus_sort_key(items[i]))
-    return [items[i] for i in order], order
+    # Since we are sorting by key, we can sort indexes by the key of the buses
+    # and then reconstruct the sorted bus list from it.
+    sort_permutation = sorted(range(len(items)), key=lambda i: _bus_sort_key(items[i]))
+    return [items[i] for i in sort_permutation], sort_permutation
 
 
 def sort_buses(bus_sequence: Iterable[str]) -> list[str]:
@@ -67,4 +74,4 @@ def sort_buses(bus_sequence: Iterable[str]) -> list[str]:
     Returns:
         list[str]: The identifiers sorted by the criteria above.
     """
-    return argsort_buses(bus_sequence)[0]
+    return sorted(bus_sequence, key=_bus_sort_key)

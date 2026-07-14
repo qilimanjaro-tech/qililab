@@ -288,7 +288,7 @@ bus3          0.0      0.0      0.2"""
             for bus in flux_dict:
                 assert float(bias[bus][i]) == pytest.approx(scalar_bias[bus], rel=1e-6)
 
-    # bus-ordering regression: array and labels must stay consistent for any key insertion order
+    #### bus-ordering regression: array and labels must stay consistent for any key insertion order ####
     @pytest.mark.parametrize("buses", _INSERTION_ORDERS)
     def test_inverse_is_a_true_inverse(self, buses):
         _, matrix = _random_crosstalk(buses)
