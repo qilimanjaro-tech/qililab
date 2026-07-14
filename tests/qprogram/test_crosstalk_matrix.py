@@ -83,12 +83,12 @@ class TestCrosstalkMatrix:
         """
         # Create the CrosstalkMatrix for qubit 1, only flux1_z and flux1_x
         crosstalk_matrix = CrosstalkMatrix.from_buses(
-            buses={"flux1_z": {"flux1_x": 0.1, "flux1_z": 1.0}, "flux1_x": {"flux1_x": 1.0, "flux1_z": 0.5}}
+            buses={"flux1_x": {"flux1_z": 0.1, "flux1_x": 1.0}, "flux1_z": {"flux1_z": 1.0, "flux1_x": 0.5}}
         )
 
         # Add the elements for qubit 2, only flux2_z and flux2_x
-        crosstalk_matrix["flux2_x"] = {"flux2_z": 0.3, "flux2_x": 1}
-        crosstalk_matrix["flux2_z"] = {"flux2_z": 1, "flux2_x": 0.4}
+        crosstalk_matrix["flux2_z"] = {"flux2_x": 0.3, "flux2_z": 1}
+        crosstalk_matrix["flux2_x"] = {"flux2_x": 1, "flux2_z": 0.4}
 
         crosstalk_q1 = np.array([[1.0, 0.5], [0.1, 1.0]])
         crosstalk_q2 = np.array([[1.0, 0.3], [0.4, 1.0]])
