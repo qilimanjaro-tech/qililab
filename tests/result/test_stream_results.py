@@ -124,6 +124,8 @@ def fixture_stream_array_bus_map():
     platform = build_platform(runcard=copy.deepcopy(Galadriel.runcard))
     experiment_name = "test_stream_array"
     mock_database = MagicMock()
+    mock_database.add_measurement.return_value.bus_mapping = {"readout_q0": "feedline_input_output_bus"}
+    mock_database.add_measurement.return_value.result_path = "some/mock/path"
     db_manager = mock_database
 
     qprogram = QProgram()
@@ -318,6 +320,7 @@ class TestStreamArray:
                 assert (stream_array_bus_map.results == np.zeros(shape=stream_array_bus_map.shape)).all
                 assert stream_array_bus_map.loops == {"test_amp_loop": np.arange(0, 1, 2)}
                 assert stream_array_bus_map._get_debug() == debug_q1asm
+                assert stream_array_bus_map.measurement.bus_mapping == {"readout_q0": "feedline_input_output_bus"}
 
     def test_stream_array_instantiation_qubit_idx(self, stream_array_qubit_idx_bus_map: StreamArray):
         """Tests the instantiation of a StreamArray object with target and secondary indexes."""
