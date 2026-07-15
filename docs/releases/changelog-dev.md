@@ -25,6 +25,7 @@
   - **Physical-unit-to-integer conversion**: scaling of physical-unit values (normalised gain/offset, Hz frequency, radian phase) to Q1ASM integers is now fully owned by `qpysequence` via `ConversionInstruction.scale_factor`.
   - **Long-wait handling**: durations exceeding `INST_MAX_WAIT`, for both `wait` and `wait_trigger`, are now managed by `qpysequence`'s `LongWait` instruction rather than `qililab`.
   - **Adjacent wait merging**: consecutive `wait` instructions are now combined by `qpysequence`'s compiler rather than by `qililab`.
+  - **Setup block creation**: `qililab` now explicitly creates the `setup` block and adds its `WaitSync(4)` instruction before compilation, calling `Compiler.compile(..., wait_sync=False)` to opt out of the compiler's own automatic setup-block insertion. Previously, `qpysequence`'s `Program.__init__` created the `setup` block and its `WaitSync(4)` automatically.
   - The Q1ASM output is functionally equivalent but may differ structurally from previous versions; see the `qpysequence` changelog for a full description.
   [#1090](https://github.com/qilimanjaro-tech/qpysequence/pull/1090)
   

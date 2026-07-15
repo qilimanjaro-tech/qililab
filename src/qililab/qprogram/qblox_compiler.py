@@ -116,8 +116,8 @@ class BusCompilationInfo:
         self.acquisition_to_index: dict[str, int] = {}
 
         # Create and append the setup block to the Sequence's program
-        main_block = QPyProgram.Block(name="setup")
-        self.qpy_sequence._program.add(main_block)
+        setup_block = QPyProgram.Block(name="setup")
+        self.qpy_sequence._program.add(setup_block)
 
         # Create and append the main block to the Sequence's program
         main_block = QPyProgram.Block(name="main")
