@@ -14,6 +14,7 @@
 
 # mypy: disable-error-code="union-attr, arg-type"
 import inspect
+import math
 import os
 from collections import defaultdict
 from dataclasses import dataclass
@@ -30,7 +31,15 @@ from qililab.core.variables import Variable
 from qililab.qililab_settings import get_settings
 from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.experiment import Experiment
-from qililab.qprogram.operations import ExecuteQProgram, GetParameter, Measure, Operation, SetParameter
+from qililab.qprogram.operations import (
+    Acquire,
+    ExecuteQProgram,
+    GetParameter,
+    Measure,
+    MeasureReset,
+    Operation,
+    SetParameter,
+)
 from qililab.qprogram.operations.set_crosstalk import SetCrosstalk
 from qililab.result.experiment_results_writer import (
     ExperimentDataBaseMetadata,
@@ -193,7 +202,7 @@ class ExperimentExecutor:
         def traverse_qprogram(block: Block):
             """Traverses a QProgram to gather loop information."""
             if isinstance(block, (Loop, ForLoop, Parallel)):
-                variables = self._get_variables_of_loop(block)
+                variables = self._get_variables_of_loop(block, qprogram=True)
 
                 self._qprogram_variables_stack.append(variables)
             if isinstance(block, Average):
@@ -203,7 +212,10 @@ class ExperimentExecutor:
             for element in block.elements:
                 if isinstance(element, Block):
                     traverse_qprogram(element)
-                if isinstance(element, Measure):
+                # Acquire, Measure and MeasureReset each produce a measurement result in the
+                # QProgramResults timeline (this is the same set the QbloxCompiler treats as
+                # acquisitions), so each must get its own entry in the results structure.
+                if isinstance(element, (Acquire, Measure, MeasureReset)):
                     finalize_measurement_structure()
 
             if isinstance(block, (Loop, ForLoop, Parallel)):
@@ -212,7 +224,7 @@ class ExperimentExecutor:
                 self._shots = 1
 
         def finalize_measurement_structure():
-            """Finalize the structure of a measurement when a Measure operation is encountered."""
+            """Finalize the structure of a measurement when an Acquire, Measure or MeasureReset operation is encountered."""
             qprogram_name = f"QProgram_{self._qprogram_index}"
             measurement_name = f"Measurement_{self._measurement_index}"
 
@@ -507,26 +519,35 @@ class ExperimentExecutor:
             return np.around(result, decimals=0).astype(int)
         return np.around(result, decimals=decimal_places)
 
-    def _get_variables_of_loop(self, block: Loop | ForLoop | Parallel) -> list[VariableInfo]:
+    def _inclusive_range_qprogram(self, start: int | float, stop: int | float, step: int | float) -> np.ndarray:
+        # Define the approximate number of iterations
+        raw_iterations = (stop - start + step) / step
+        if abs(raw_iterations - round(raw_iterations)) < 1e-9:
+            # If the iterations are an int they stay the same
+            iterations = raw_iterations
+        else:
+            # If the iterations are a decimal they fall to either side depending of the sign of the step
+            iterations = math.floor(raw_iterations) if step > 0 else math.ceil(raw_iterations)
+
+        # Use linspace
+        return np.linspace(start, stop, int(iterations))
+
+    def _get_loop_values(self, loop: Loop | ForLoop, qprogram: bool = False) -> np.ndarray:
+        """Compute the values for a single Loop/ForLoop."""
+        if not isinstance(loop, ForLoop):
+            return loop.values
+        if qprogram:
+            return self._inclusive_range_qprogram(loop.start, loop.stop, loop.step)
+        return self._inclusive_range(loop.start, loop.stop, loop.step)
+
+    def _get_variables_of_loop(self, block: Loop | ForLoop | Parallel, qprogram: bool = False) -> list[VariableInfo]:
         variables: dict[UUID, VariableInfo] = {}
 
-        if isinstance(block, (ForLoop, Loop)):
-            values = (
-                self._inclusive_range(block.start, block.stop, block.step)
-                if isinstance(block, ForLoop)
-                else block.values
-            )
-            variable = VariableInfo(uuid=block.variable.uuid, label=block.variable.label, values=values)
-            variables[block.variable.uuid] = variable
-        else:
-            for loop in block.loops:
-                values = (
-                    self._inclusive_range(loop.start, loop.stop, loop.step)
-                    if isinstance(loop, ForLoop)
-                    else loop.values
-                )
-                variable = VariableInfo(uuid=loop.variable.uuid, label=loop.variable.label, values=values)
-                variables[loop.variable.uuid] = variable
+        loops = block.loops if isinstance(block, Parallel) else [block]
+        for loop in loops:
+            values = self._get_loop_values(loop, qprogram)
+            variable = VariableInfo(uuid=loop.variable.uuid, label=loop.variable.label, values=values)
+            variables[loop.variable.uuid] = variable
 
         self._variables_per_block[block] = list(variables.values())
 

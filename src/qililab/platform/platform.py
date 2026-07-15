@@ -20,7 +20,6 @@ from __future__ import annotations
 import ast
 import io
 import re
-import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
@@ -59,7 +58,6 @@ from qililab.qprogram import (
     Experiment,
     QbloxCompilationOutput,
     QbloxCompiler,
-    QdacCompilationOutput,
     QProgram,
     QProgramCompilationOutput,
 )
@@ -1254,6 +1252,9 @@ class Platform:
                     if isinstance(instrument, QDevilQDac2)
                 }
             )
+            # Start from a clean instrument state before the compiler re-populates it
+            for qdac_instrument in self.qdac_instruments:
+                qdac_instrument.clear_cache()
             out_trigger_qdac = None
             if len(self.qdac_instruments) > 1:
                 out_trigger_qdac = next(
@@ -1368,9 +1369,6 @@ class Platform:
         output: QProgramCompilationOutput,
         debug: bool = False,
     ):
-        if isinstance(output.qdac, QdacCompilationOutput):
-            for qdac_instrument in self.qdac_instruments:
-                qdac_instrument.remove_digital_trace()
         if isinstance(output.qblox, QbloxCompilationOutput):
             self.trigger_runs = 0
             return self._execute_qblox_compilation_output(output=output, debug=debug)
@@ -1424,6 +1422,9 @@ class Platform:
                 if output.qdac.trigger_position == "front":
                     for qdac in output.qdac.qdacs:
                         qdac.start()
+                for qdac in output.qdac.qdacs:
+                    # Remove QDAC-II trigger network and dc / awg generators from the QDAC-II instrument
+                    qdac.clear_cache()
             else:
                 for bus_alias in sequences:
                     buses[bus_alias].run()
@@ -1452,8 +1453,6 @@ class Platform:
             return results
         except TimeoutError as timeout:
             if output.qdac:
-                warnings.warn("Timeout reached for triggered measurement, trying again.")
-
                 # Reset instrument settings
                 for bus_alias in sequences:
                     for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
@@ -1461,7 +1460,17 @@ class Platform:
                             instrument.desync_sequencer(sequencer_id=int(channel))
                 self.trigger_runs += 1
 
-                if self.trigger_runs <= 3:
+                timeout_repetitions = bus.check_recurrent_timeout()
+                if timeout_repetitions == 0:
+                    # Double check timeout_repetitions in case bus is not right, while giving priority on the bus where it crashed.
+                    timeout_repetitions = next(
+                        (rep for bus in buses.values() if (rep := bus.check_recurrent_timeout()) != 0),
+                        0,
+                    )
+                if timeout_repetitions > 0 and self.trigger_runs <= timeout_repetitions:
+                    logger.warning(
+                        f"Timeout reached for triggered measurement, trying again. {self.trigger_runs}/{timeout_repetitions}"
+                    )
                     return self._execute_qblox_compilation_output(output, debug)
 
             raise timeout
