@@ -1426,9 +1426,6 @@ class Platform:
                 if output.qdac.trigger_position == "front":
                     for qdac in output.qdac.qdacs:
                         qdac.start()
-                for qdac in output.qdac.qdacs:
-                    # Remove QDAC-II trigger network and dc / awg generators from the QDAC-II instrument
-                    qdac.clear_cache()
             else:
                 for bus_alias in sequences:
                     buses[bus_alias].run()
@@ -1447,6 +1444,16 @@ class Platform:
                                 unintertwined_results = self._unintertwined_qblox_results(bus_result, intertwined)
                                 for unintertwined_result in unintertwined_results:
                                     results.append_result(bus=bus_alias, result=unintertwined_result)
+
+            if output.qdac:
+                for qdac in output.qdac.qdacs:
+                    # Remove QDAC-II trigger network and dc / awg generators from the QDAC-II instrument.
+                    # Deferred until after acquisition: acquire_qprogram_results() only returns once Qblox's
+                    # wait_trigger has unblocked, which can only happen after the QDAC's marker pulse actually
+                    # fired. qdac.start() above is a non-blocking SCPI call; the marker pulse fires later on
+                    # the instrument's own internal timing. Clearing the marker register right after start()
+                    # raced that pulse and could zero it before it fired, leaving Qblox waiting forever.
+                    qdac.clear_cache()
 
             # Reset instrument settings
             for bus_alias in sequences:
