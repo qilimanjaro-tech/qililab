@@ -204,10 +204,10 @@ class QbloxModule(Instrument):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def _have_sequencer(self, channel_id: ChannelID):
+    def _have_sequencer(self, channel_id: ChannelID) -> bool:
         return next((True for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), False)
 
-    def run(self, channel_id: int):
+    def run(self, channel_id: int) -> None:
         """Run the uploaded program"""
         if self._have_sequencer(channel_id) and channel_id in self.sequences:
             self.device.arm_sequencer(sequencer=channel_id)
@@ -641,19 +641,19 @@ class QbloxModule(Instrument):
     def turn_on(self):
         """Turn on an instrument."""
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Empty cache."""
         self.cache = {}
         self.sequences = {}
         self._qpy_sequence_hashes = {}
 
     @check_device_initialized
-    def reset(self):
+    def reset(self) -> None:
         """Reset instrument."""
         self.clear_cache()
         self.device.reset()
 
-    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int):
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int) -> None:
         """Upload a qpysequence to its sequencer, uploading only changed components.
 
         The first upload for a sequencer (or the first after ``clear_cache``) uploads
@@ -676,7 +676,6 @@ class QbloxModule(Instrument):
         if cached_hashes is None:
             self.device.sequencers[channel_id].sequence(qpysequence.todict())
         else:
-            # missing cached key -> None, so the component is re-uploaded instead of raising.
             components_to_update = {
                 "program": new_hashes["program"] != cached_hashes.get("program"),
                 "waveforms": new_hashes["waveforms"] != cached_hashes.get("waveforms"),
@@ -691,12 +690,12 @@ class QbloxModule(Instrument):
         self.sequences[channel_id] = qpysequence
         self._qpy_sequence_hashes[channel_id] = new_hashes
 
-    def upload(self, channel_id: int):
+    def upload(self, channel_id: int) -> None:
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile`` in the compiler
         Args:
-            channel_id (int, str): Identifier for the channel and it's corresponding sequencer.
+            channel_id (int): Identifier for the channel and its corresponding sequencer.
         """
         if self._have_sequencer(channel_id) and channel_id in self.sequences:
             sequence = self.sequences[channel_id]
