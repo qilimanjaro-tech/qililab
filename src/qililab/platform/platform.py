@@ -1469,6 +1469,16 @@ class Platform:
                     for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                         if isinstance(instrument, QbloxModule):
                             instrument.desync_sequencer(sequencer_id=int(channel))
+
+                # A TimeoutError here means Qblox's own wait/acquisition polling already gave up,
+                # so there is no pulse still in flight to race against (unlike the success path,
+                # clearing here can't zero the marker register before Qblox consumes it). Clear
+                # regardless of whether we're about to retry or give up, so a retry starts from a
+                # clean trigger state and a final failure doesn't leak an allocated trigger until
+                # the next execute_qprogram's pre-compile clear_cache() happens to run.
+                for qdac in output.qdac.qdacs:
+                    qdac.clear_cache()
+
                 self.trigger_runs += 1
 
                 timeout_repetitions = bus.check_recurrent_timeout()

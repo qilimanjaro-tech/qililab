@@ -1473,7 +1473,7 @@ class TestMethods:
 
         mock_qdac_output.trigger_position = "front"
         mock_qdac = MagicMock()
-        mock_qdac_output.qdac = mock_qdac
+        mock_qdac_output.qdacs = [mock_qdac]
 
         mock_bus = MagicMock()
         mock_bus.has_adc.return_value = False
@@ -1499,6 +1499,9 @@ class TestMethods:
 
         # Assert it retried 3 times (initial + 3 retries = 4 attempts)
         assert mock_bus.run.call_count == 4
+        # Assert clear_cache is called on every failed attempt (retried or not), so a QDAC
+        # trigger never stays leaked/allocated on a timeout without being cleaned up.
+        assert mock_qdac.clear_cache.call_count == 4
 
     def test_execute_qprogram_with_qblox_and_qdac_timeout_error_wrong_bus(self, platform_qblox_qdac: Platform):
         """Test that the execute_qprogram method retries correctly when the timed-out bus is not the one with timeout config."""
@@ -1507,7 +1510,8 @@ class TestMethods:
         mock_output.sequences = {"bus1": MagicMock()}
         mock_output.acquisitions = {"bus1": MagicMock()}
         mock_qdac_output.trigger_position = "front"
-        mock_qdac_output.qdac = MagicMock()
+        mock_qdac = MagicMock()
+        mock_qdac_output.qdacs = [mock_qdac]
 
         mock_bus = MagicMock()
         mock_bus.has_adc.return_value = False
@@ -1532,6 +1536,7 @@ class TestMethods:
 
         # initial attempt + 3 retries = 4 total
         assert mock_bus.run.call_count == 4
+        assert mock_qdac.clear_cache.call_count == 4
 
     @pytest.mark.qm
     def test_execute_qprogram_with_quantum_machines_and_qdac(self, platform_qm_qdac: Platform):
