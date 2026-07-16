@@ -1894,6 +1894,8 @@ class QbloxCompiler:
         return register
 
     def _handle_block(self, element: Block) -> None:
+        # No-op: registered only so the handler dispatch in traverse() doesn't raise;
+        # traverse() recurses into Block children unconditionally right after calling this.
         pass
 
     @staticmethod
