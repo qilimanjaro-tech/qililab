@@ -1,6 +1,13 @@
 # Release dev (development release)
 
 ### New features since last release
+
+- Added `fitting_path` and `fitting_parameters` columns to `Measurements` database. These optional fields add the location folder of the resulting fit plots and the outcome parameters of those fittings respectively. The path is introduced as a string and the parameters as a dictionary with the parameter name as a string. Those can be added at three different levels:
+  - Using the `Measurement` database table with `meas.add_fitting(db_manager, path, parameters)`. The only inconvenience is that the user needs to add the database manager.
+  - Using `DatabaseManager` with `db_manager.add_fitting(id, path, parameters)`. Using an ID like `load_by_id`. This method is ideal to add the fitting results in a later session (for completed experiments or if the post processing of the data has been done in a separate Python instance).
+  - Using `StreamArray` with `stream_array.add_fitting(path, parameters)` after a measurement that used `StreamArray`. This is the simplest way of adding the fit results as it requires no ID nor session but it requires the instance of `StreamArray` to still be loaded. The ideal scenario is for fits done in sequence after measurements (such as a `qilitools` implementation).
+  [#1162](https://github.com/qilimanjaro-tech/qililab/pull/1162)
+
 - Updated `electrical_delay` to be a changeable parameter for the keysight E5080b and not just a software setting used in the auto-ploting.
   [#1047](https://github.com/qilimanjaro-tech/qililab/pull/1047)
 
