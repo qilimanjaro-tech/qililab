@@ -1445,14 +1445,9 @@ class Platform:
                                 for unintertwined_result in unintertwined_results:
                                     results.append_result(bus=bus_alias, result=unintertwined_result)
 
+            # Clear QDAC-II trigger network and dc / awg generators from the QDAC-II instrument.
             if output.qdac:
                 for qdac in output.qdac.qdacs:
-                    # Remove QDAC-II trigger network and dc / awg generators from the QDAC-II instrument.
-                    # Deferred until after acquisition: acquire_qprogram_results() only returns once Qblox's
-                    # wait_trigger has unblocked, which can only happen after the QDAC's marker pulse actually
-                    # fired. qdac.start() above is a non-blocking SCPI call; the marker pulse fires later on
-                    # the instrument's own internal timing. Clearing the marker register right after start()
-                    # raced that pulse and could zero it before it fired, leaving Qblox waiting forever.
                     qdac.clear_cache()
 
             # Reset instrument settings
@@ -1469,16 +1464,6 @@ class Platform:
                     for instrument, channel in zip(buses[bus_alias].instruments, buses[bus_alias].channels):
                         if isinstance(instrument, QbloxModule):
                             instrument.desync_sequencer(sequencer_id=int(channel))
-
-                # A TimeoutError here means Qblox's own wait/acquisition polling already gave up,
-                # so there is no pulse still in flight to race against (unlike the success path,
-                # clearing here can't zero the marker register before Qblox consumes it). Clear
-                # regardless of whether we're about to retry or give up, so a retry starts from a
-                # clean trigger state and a final failure doesn't leak an allocated trigger until
-                # the next execute_qprogram's pre-compile clear_cache() happens to run.
-                for qdac in output.qdac.qdacs:
-                    qdac.clear_cache()
-
                 self.trigger_runs += 1
 
                 timeout_repetitions = bus.check_recurrent_timeout()
@@ -1493,6 +1478,11 @@ class Platform:
                         f"Timeout reached for triggered measurement, trying again. {self.trigger_runs}/{timeout_repetitions}"
                     )
                     return self._execute_qblox_compilation_output(output, debug)
+
+                # Clear QDAC-II trigger network and dc / awg generators from the QDAC-II instrument.
+                # After all timeout repetitions have tried and failed.
+                for qdac in output.qdac.qdacs:
+                    qdac.clear_cache()
 
             raise timeout
 
