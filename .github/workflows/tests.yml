@@ -11,9 +11,6 @@ on:
       - "synchronize"
       - "ready_for_review"
 
-env:
-  PYX_API_KEY: ${{ secrets.PYX_API_KEY }}
-
 jobs:
   tests:
     if: github.event.pull_request.draft == false
