@@ -93,10 +93,6 @@ constraint-dependencies = [
     "ujson>=5.13.0",              # CVE-2026-54911 (W-26)
 ]
 
-[[tool.uv.index]]
-name = "speqtrum"
-url = "https://api.pyx.dev/simple/qilimanjaro/speqtrum"
-publish-url = "https://api.pyx.dev/v1/upload/qilimanjaro/speqtrum"
 
 [tool.ruff]
 line-length = 120
