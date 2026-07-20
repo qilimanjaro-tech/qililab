@@ -17,6 +17,7 @@ from typing import Mapping
 import numpy as np
 from scipy.special import jv
 
+from qililab.utils import sort_buses
 from qililab.yaml import yaml
 
 
@@ -30,17 +31,29 @@ class CrosstalkMatrix:
         self.flux_offsets: dict[str, float] = {}
         self.resistances: dict[str, float | None] = {}
 
+    def _sorted_buses(self) -> list[str]:
+        """Canonical bus ordering shared by to_array/inverse/from_array.
+
+        Every method that turns the matrix into an array (or back) must agree on the
+        row/column order, otherwise the array and its bus labels drift apart and the
+        inverse — and every bias derived from it — is silently mislabeled. Includes
+        every bus that appears as a row or as a column of the matrix.
+
+        Returns:
+            list[str]: The matrix's buses in canonical (see :func:`sort_buses`) order.
+        """
+        buses: set[str] = set(self.matrix.keys())
+        for values in self.matrix.values():
+            buses.update(values.keys())
+        return sort_buses(buses)
+
     def to_array(self) -> np.ndarray:
         """Returns the np.array representation of the crosstalk matrix.
 
         Returns:
             np.ndarray: crosstalk matrix as a numpy array.
         """
-        buses: set[str] = set(self.matrix.keys())
-        for values in self.matrix.values():
-            buses.update(values.keys())
-
-        sorted_buses = sorted(buses)
+        sorted_buses = self._sorted_buses()
 
         xtalk_matrix = np.eye(len(self.matrix))
         for i, bus1 in enumerate(sorted_buses):
@@ -56,7 +69,7 @@ class CrosstalkMatrix:
             CrosstalkMatrix: inverse crosstalk matrix
         """
         inverse_xtalk_array = np.linalg.inv(self.to_array())
-        return self.from_array(list(self.matrix.keys()), inverse_xtalk_array)
+        return self.from_array(self._sorted_buses(), inverse_xtalk_array)
 
     def __getitem__(self, bus: str) -> dict[str, float]:
         """Returns the dictionary of crosstalk values for the given bus.
@@ -105,11 +118,7 @@ class CrosstalkMatrix:
         Returns:
             str: A string representation of the crosstalk matrix.
         """
-        buses: set[str] = set(self.matrix.keys())
-        for values in self.matrix.values():
-            buses.update(values.keys())
-
-        sorted_buses = sorted(buses)
+        sorted_buses = self._sorted_buses()
         col_width = max(len(bus) for bus in sorted_buses) + 4  # Determine column width
         header = " " * col_width + " ".join(f"{bus:>{col_width}}" for bus in sorted_buses) + "\n"
         rows = []
@@ -154,7 +163,7 @@ class CrosstalkMatrix:
         Returns:
             dict[str, float | np.ndarray]: Hardware bias values keyed by bus name.
         """
-        sorted_buses = sorted(self.matrix.keys())
+        sorted_buses = sort_buses(self.matrix.keys())
         inverse = self.inverse()
         inverse.flux_offsets = self.flux_offsets
 
@@ -434,7 +443,7 @@ class NonLinearCrosstalkMatrix(CrosstalkMatrix):
             dict[str, float | np.ndarray]: Hardware bias values keyed by bus name,
                 including nonlinear corrections.
         """
-        sorted_buses = sorted(self.matrix.keys())
+        sorted_buses = sort_buses(self.matrix.keys())
 
         corrections = self.get_non_linear_flux_terms(flux)
         if all(isinstance(f, (float, int)) for f in flux.values()):
