@@ -27,7 +27,7 @@
 
 ### New features since last release
 
-- Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs from a sequence of measurements. `Measurement.sequence_id`has been added as a measurement expression inside head and tail.
+- Added `load_sequence_by_id` inside the database manager. This function allows to retrieve simultaneous measurements given a list of IDs from a sequence of measurements. `Measurement.sequence_id` has been added as a measurement expression inside head and tail.
   [#1121](https://github.com/qilimanjaro-tech/qililab/pull/1121)
 
 ### Bug fixes
