@@ -2,6 +2,7 @@ import os
 import shutil
 import logging
 import ast
+import sys
 import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -29,6 +30,10 @@ def ip(session_ip):
     yield session_ip
 
 
+@pytest.mark.skipif(
+    sys.platform.startswith("win"),
+    reason="submitit's local executor relies on POSIX signals (signal.SIGKILL) and isn't supported on Windows",
+)
 class TestSubmitJob:
     def teardown_method(self):
         """Teardown method to make sure all files are deleted."""

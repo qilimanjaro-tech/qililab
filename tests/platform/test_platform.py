@@ -667,7 +667,7 @@ class TestPlatform:
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_TIME_CONSTANT_0, output_id=0) == 200
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=0) == "enabled"
         assert platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_COEFF, output_id=0)== [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
-        
+
         #  Check that filters marked as delay_comp in the runcard have not been changed
         assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=3) == "delay_comp"
         assert platform.get_parameter(alias="flux_line_q3_bus", parameter=Parameter.EXPONENTIAL_STATE_0) == "delay_comp"
@@ -698,7 +698,7 @@ class TestPlatform:
         """Test that the filter is created if needed"""
         platform_galadriel_no_filter.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, value = True, output_id=0)
         assert platform_galadriel_no_filter.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.FIR_STATE, output_id=0) == "enabled"
-        
+
 
     def test_setting_filter_bypassed_give_warning(self, caplog, platform: Platform):
         #  Check that setting a filter as bypassed will actually put/leave it as delay_comp if needed
@@ -1074,8 +1074,8 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
-            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
+            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
@@ -1097,12 +1097,12 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
-        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
+        assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
-        
+
     def test_execute_qprogram_with_qblox_and_multiple_qdacs(self, platform_qblox_qdacs: Platform):
         """Test that the execute method compiles the qprogram, calls the buses to run and return the results."""
         drive_wf = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=0.0, duration=40))
@@ -1140,8 +1140,8 @@ class TestMethods:
             patch.object(QDevilQDac2, "set_out_external_trigger") as set_out_external_trigger,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
             patch.object(QDevilQDac2, "set_start_marker_external_trigger") as set_start_marker_external_trigger,
-            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
+            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdacs.execute_qprogram(qprogram=qprogram)
@@ -1165,8 +1165,8 @@ class TestMethods:
         assert set_out_external_trigger.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
         assert set_start_marker_external_trigger.call_count == 3  # called as many times as executes
-        assert remove_digital_trace.call_count == 6  # called as many times as executes
         assert start.call_count == 6  # called as many times as executes
+        assert clear_cache.call_count == 12  # 2 qdacs x (before + after) x 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1211,8 +1211,8 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
-            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
+            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram)
@@ -1234,8 +1234,8 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
-        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
+        assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
@@ -1267,8 +1267,8 @@ class TestMethods:
             # Mock Qdac functions without connecting
             patch.object(QDevilQDac2, "upload_voltage_list") as upload_voltage_list,
             patch.object(QDevilQDac2, "set_in_external_trigger") as set_in_external_trigger,
-            patch.object(QDevilQDac2, "remove_digital_trace") as remove_digital_trace,
             patch.object(QDevilQDac2, "start") as start,
+            patch.object(QDevilQDac2, "clear_cache") as clear_cache,
         ):
             acquire_qprogram_results.return_value = [123]
             first_execution_results = platform_qblox_qdac.execute_qprogram(qprogram=qprogram, calibration=calibration, crosstalk=False)
@@ -1290,12 +1290,12 @@ class TestMethods:
         assert second_execution_results.results["resonator"] == [456]
         assert upload_voltage_list.call_count == 3  # called as many times as executes
         assert set_in_external_trigger.call_count == 3  # called as many times as executes
-        assert remove_digital_trace.call_count == 3  # called as many times as executes
         assert start.call_count == 3  # called as many times as executes
+        assert clear_cache.call_count == 6  # once before and once after each of the 3 executes
 
         # assure only one debug was called
         assert patched_open.call_count == 1
-        
+
         assert calibration.crosstalk_matrix == expected_crosstalk
 
     def test_execute_qprogram_single_baseband_channel(self, platform: Platform):
@@ -1348,6 +1348,7 @@ class TestMethods:
         mock_bus.has_adc.return_value = False
         mock_bus.instruments = [MagicMock(spec=QbloxModule)]
         mock_bus.channels = [0]
+        mock_bus.check_recurrent_timeout.return_value = 3
 
         # Raise TimeoutError on run
         mock_bus.run.side_effect = TimeoutError("Simulated timeout")
@@ -1366,6 +1367,39 @@ class TestMethods:
             )
 
         # Assert it retried 3 times (initial + 3 retries = 4 attempts)
+        assert mock_bus.run.call_count == 4
+
+    def test_execute_qprogram_with_qblox_and_qdac_timeout_error_wrong_bus(self, platform_qblox_qdac: Platform):
+        """Test that the execute_qprogram method retries correctly when the timed-out bus is not the one with timeout config."""
+        mock_output = MagicMock(spec=QbloxCompilationOutput)
+        mock_qdac_output = MagicMock(spec=QdacCompilationOutput)
+        mock_output.sequences = {"bus1": MagicMock()}
+        mock_output.acquisitions = {"bus1": MagicMock()}
+        mock_qdac_output.trigger_position = "front"
+        mock_qdac_output.qdac = MagicMock()
+
+        mock_bus = MagicMock()
+        mock_bus.has_adc.return_value = False
+        mock_bus.instruments = [MagicMock(spec=QbloxModule)]
+        mock_bus.channels = [0]
+        mock_bus.run.side_effect = TimeoutError("Simulated timeout")
+        # First call (direct check on leaked bus) returns 0, fallback scan returns 3 each retry
+        mock_bus.check_recurrent_timeout.side_effect = [0, 3, 0, 3, 0, 3, 0, 3]
+
+        platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
+        platform_qblox_qdac._qpy_sequence_cache = {}
+        platform_qblox_qdac.trigger_runs = 0
+
+        mock_output.qprogram = MagicMock(spec=QProgram)
+        mock_output.qprogram.qblox = MagicMock(spec=QProgram._QbloxInterface)
+        mock_output.qprogram.qblox.trigger_network_required = []
+
+        with pytest.raises(TimeoutError):
+            platform_qblox_qdac._execute_qblox_compilation_output(
+                output=QProgramCompilationOutput(qblox=mock_output, qdac=mock_qdac_output), debug=False
+            )
+
+        # initial attempt + 3 retries = 4 total
         assert mock_bus.run.call_count == 4
 
     @pytest.mark.qm
@@ -1979,14 +2013,14 @@ class TestMethods:
         with pytest.raises(ValueError, match=error_string):
             platform.db_save_results(experiment_name, results, loops, qprogram, description)
 
-    @pytest.mark.qm    
+    @pytest.mark.qm
     def test_platform_draw_quantum_machine_raises_error(
         self, qp_quantum_machine: QProgram, platform_quantum_machines: Platform
     ):
 
         with pytest.raises(NotImplementedError) as exc_info:
             platform_quantum_machines.draw(qp_quantum_machine)
-    
+
         assert str(exc_info.value) == "The drawing feature is currently only supported for QBlox."
 
     def test_trigger_network_setup_and_reset(self, platform):
@@ -2039,6 +2073,63 @@ class TestMethods:
         assert unintertwined_results[0].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [1, 3]}, "path1":{"data": [5, 7]}}}
         assert unintertwined_results[1].raw_measurement_data == {"bins": {"integration": {"path0": [], "path1": []}, "threshold": [], "avg_cnt":[]}, "scope": {"path0":{"data": [2, 4]}, "path1":{"data": [6, 8]}}}
 
+    def test_unintertwined_qblox_results_more_than_32_interleaved_measures(self, platform: Platform):
+        """Regression: _unintertwined_qblox_results must split N>32 interleaved measures into
+        N separate results (one per measure), not pack them all into the first element."""
+        n_measures = 33
+
+        raw_measurement_data = {
+            "bins": {
+                "integration": {
+                    "path0": list(range(n_measures)),
+                    "path1": list(range(n_measures)),
+                },
+                "threshold": [float(i) for i in range(n_measures)],
+                "avg_cnt": [],
+            },
+            "scope": {"path0": {"data": []}, "path1": {"data": []}},
+        }
+        bus_result = QbloxMeasurementResult(bus="readout", raw_measurement_data=raw_measurement_data)
+
+        unintertwined = platform._unintertwined_qblox_results(bus_result, intertwined=n_measures)
+
+        assert len(unintertwined) == n_measures
+        for i, result in enumerate(unintertwined):
+            assert result.raw_measurement_data["bins"]["integration"]["path0"] == [i]
+            assert result.raw_measurement_data["bins"]["integration"]["path1"] == [i]
+            assert result.raw_measurement_data["bins"]["threshold"] == [float(i)]
+
+    def test_execute_qprogram_n_acquisitions_same_bus_returns_n_results(self, platform: Platform):
+        """Regression: with N acquisitions on the same bus, the platform must append exactly N results
+        — not N² (which the old double-loop bug caused by pairing every bus_result with every
+        acquisition_data instead of using zip)."""
+        weights_wf = IQPair(I=Square(amplitude=1.0, duration=120), Q=Square(amplitude=0.0, duration=120))
+        n_measures = 2
+
+        # Two acquires at different nesting depths produce two separate hardware acquisition slots
+        # (each intertwined=1). A flat sequence of acquires shares one slot, so would not expose
+        # the N² vs N pairing bug.
+        qprogram = QProgram()
+        with qprogram.average(1):
+            qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+        qprogram.qblox.acquire(bus="feedline_input_output_bus", weights=weights_wf)
+
+        # _unintertwined_qblox_results is mocked to a pass-through so the test focuses purely
+        # on the loop pairing (zip vs double-loop), not on the unintertwining logic.
+        with (
+            patch("builtins.open"),
+            patch.object(Bus, "upload_qpysequence"),
+            patch.object(Bus, "run"),
+            patch.object(Bus, "acquire_qprogram_results") as mock_acquire,
+            patch.object(QbloxModule, "sync_sequencer"),
+            patch.object(QbloxModule, "desync_sequencer"),
+            patch.object(Platform, "_unintertwined_qblox_results", side_effect=lambda r, i: [r]),
+        ):
+            mock_acquire.return_value = list(range(n_measures))  # [0, 1] — distinct sentinel values
+            results = platform.execute_qprogram(qprogram=qprogram)
+
+        assert len(results.results["feedline_input_output_bus"]) == n_measures
+
     def test_setting_getting_filter_bus_error_raised(self, platform: Platform):
         #  Check that setting/getting a filter through a bus incorrectly raises the adequate error
         output_id = 1
@@ -2048,7 +2139,7 @@ class TestMethods:
 
         with pytest.raises(Exception, match="Filter parameters are controlled using output_id and not channel_id"):
             platform.set_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, value="bypassed", channel_id=output_id)
-            
+
         with pytest.raises(Exception, match=f"OutputID {output_id} is not linked to bus with alias {bus_alias}"):
             platform.get_parameter(alias="drive_line_q0_bus", parameter=Parameter.EXPONENTIAL_STATE_0, output_id=output_id)
 

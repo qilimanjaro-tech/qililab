@@ -16,7 +16,7 @@ import datetime
 import os
 import warnings
 from configparser import ConfigParser
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import h5py
 import numpy as np
@@ -48,6 +48,15 @@ class DatabaseManager:
             database_name (str): Name of the config section inside the `.ini`.
         """
         config = _load_config(filename, database_name)
+
+        database_keys = ("user", "passwd", "host", "port", "database")
+        missing = [key for key in database_keys if config.get(key) is None or str(config.get(key)).strip() == ""]
+        if missing:
+            raise ValueError(
+                f"Missing or empty required config value(s) in '{database_name}' "
+                f"Missing the database keys: {', '.join(missing)}"
+            )
+
         self.engine = get_engine(config["user"], config["passwd"], config["host"], config["port"], config["database"])
         self.session: sessionmaker[Session] = sessionmaker(bind=self.engine, expire_on_commit=False)
         self.current_cd: str | None = None
@@ -243,6 +252,19 @@ class DatabaseManager:
                         meas.result_path = new_path
             return measurement_by_id_list if len(measurement_by_id_list) > 1 else measurement_by_id_list[0]
 
+    def add_fitting(self, id: int, path: str, parameters: dict[str, Any] | None = None) -> Measurement:
+        """Store fitting information tho the measurements database, loaded by its measurement_id.
+
+        Args:
+            id (int): measurement_id value given by the database.
+            path (str): Path to the fitting results file.
+            parameters (dict[str, Any] | None, optional): Fitting parameters. Defaults to None.
+        """
+        measurement = self.load_by_id(id)
+        if measurement is None:
+            raise IndexError(f"Measurement entry '{id}' does not exist.")
+        return measurement.add_fitting(self, path, parameters)
+
     def load_sequence_by_id(self, id: int | list[int]) -> list[Measurement] | None:
         """Load measurement by its measurement_id.
 
@@ -252,13 +274,17 @@ class DatabaseManager:
             list[Measurement] | None: returns the list of measurements or None if no sequence could be found.
         """
         with self.session() as running_session:
-            measurement_by_id_list = running_session.query(Measurement).where(Measurement.sequence_id == id).all()
-            if measurement_by_id_list is not None:
-                for meas in measurement_by_id_list:
-                    path = meas.result_path
-                    if not os.path.isfile(path):
-                        new_path = path.replace(self.base_path_local, self.base_path_share)
-                        meas.result_path = new_path
+            measurement_by_id_list = (
+                running_session.query(Measurement)
+                .where(Measurement.sequence_id == id)
+                .order_by(Measurement.measurement_id)
+                .all()
+            )
+            for meas in measurement_by_id_list:
+                path = meas.result_path
+                if not os.path.isfile(path):
+                    new_path = path.replace(self.base_path_local, self.base_path_share)
+                    meas.result_path = new_path
             return measurement_by_id_list
 
     def load_calibration_by_id(self, id: int) -> AutocalMeasurement | None:
@@ -345,6 +371,7 @@ class DatabaseManager:
                     Measurement.created_by,
                     Measurement.target,
                     Measurement.secondary_source,
+                    Measurement.bus_mapping,
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
@@ -408,6 +435,7 @@ class DatabaseManager:
                     Measurement.created_by,
                     Measurement.target,
                     Measurement.secondary_source,
+                    Measurement.bus_mapping,
                     (Measurement.qprogram != "null").label("has_qprogram"),
                     (Measurement.platform != "null").label("has_platform"),
                     (Measurement.calibration != "null").label("has_calibration"),
@@ -617,6 +645,7 @@ class DatabaseManager:
         dc_offsets: dict[str, float] | None = None,
         target: list[str] | None = None,
         secondary_source: list[str] | None = None,
+        bus_mapping: dict[str, str] | None = None,
     ):
         """Add measurement metadata and data path
 
@@ -638,6 +667,7 @@ class DatabaseManager:
             dc_offsets (np.ndarray | None, optional): Instruments offsets. Defaults to None.
             target (np.ndarray | None, optional): Target qubits list. Defaults to None.
             secondary_source (np.ndarray | None, optional): Secondary source buses list. Defaults to None.
+            bus_mapping (dict[str, str] | None, optional): Bus map of the qprogram. Defaults to None.
         """
         if sample_name is None:
             if self.current_sample:
@@ -648,7 +678,7 @@ class DatabaseManager:
             cooldown = self.current_cd
 
         start_time = datetime.datetime.now()
-        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
+        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S_%f")
 
         base_path = f"{self.base_path_local}{self.folder_path}"
         if not os.path.isdir(base_path):
@@ -686,6 +716,7 @@ class DatabaseManager:
             dc_offsets=dc_offsets,
             target=target,
             secondary_source=secondary_source,
+            bus_mapping=bus_mapping,
         )
         with self.session() as running_session:
             running_session.add(measurement)
@@ -738,7 +769,7 @@ class DatabaseManager:
         base_path = f"{self.base_path_local}{self.folder_path}"
         if not os.path.isdir(base_path):
             base_path = f"{self.base_path_share}{self.folder_path}"
-        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S")
+        formatted_time = start_time.strftime("%Y-%m-%d/%H_%M_%S_%f")
         dir_path = f"{base_path}/{self.current_sample}/{self.current_cd}/{formatted_time}"
         result_path = f"{dir_path}/{experiment_name}.h5"
 

@@ -156,6 +156,51 @@ class TestMeasurement:
 
         mock_session.rollback.assert_called_once()
 
+    def test_add_fitting(self, measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = measurement
+
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        result = measurement.add_fitting(mock_db_manager, path="/test/fit.h5", parameters={"a": 1.0})
+
+        assert result.fitting_path == "/test/fit.h5"
+        assert result.fitting_parameters == {"a": 1.0}
+        mock_session.commit.assert_called_once()
+
+    def test_add_fitting_without_parameters(self, measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = measurement
+
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        result = measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
+
+        assert result.fitting_path == "/test/fit.h5"
+        assert result.fitting_parameters is None
+        mock_session.commit.assert_called_once()
+
+    def test_add_fitting_raises_exception(self, measurement):
+        mock_session_context = MagicMock()
+        mock_session = MagicMock()
+        mock_session_context.__enter__.return_value = mock_session
+        mock_session.merge.return_value = measurement
+        mock_session.commit.side_effect = Exception("Measurement error")
+
+        mock_db_manager = MagicMock()
+        mock_db_manager.session = lambda: mock_session_context
+
+        with pytest.raises(Exception, match="Measurement error"):
+            measurement.add_fitting(mock_db_manager, path="/test/fit.h5")
+
+        mock_session.rollback.assert_called_once()
+
     @patch("qililab.result.database.database_autocal.datetime")
     def test_autocalibration_update_platform(self, mock_datetime, autocalibration_measurement):
         fixed_now = datetime.datetime(2023, 1, 1, 12, 0, 0)
@@ -379,6 +424,31 @@ class TestMeasurement:
 
 class Testdatabase:
     """Test database class"""
+
+    def test_database_manager_raises_error_wrong_config(self):
+        config = {
+            "user": "user",
+            "passwd": "passwd",
+            "host": "host",
+            "port": "5432",
+            "database": "database",
+        }
+
+        del config["user"]
+        del config["port"]
+        del config["database"]
+        with patch("qililab.result.database.database_manager._load_config") as mock_load_config:
+            mock_load_config.return_value = config
+
+            with pytest.raises(ValueError) as exc_info:
+                DatabaseManager("test_file.ini", "database")
+        
+            message = str(exc_info.value)
+            assert "user" in message
+            assert "port" in message
+            assert "database" in message
+            # keys that were present should not be flagged
+            assert "host" not in message.split("Missing the database keys:")[1]
 
     def test_set_sample(self, db_manager: DatabaseManager):
         mock_session = db_manager.session()
@@ -705,6 +775,22 @@ class Testdatabase:
         assert result[0].result_path == "/shared_test/results/file.h5"
         assert result[1].result_path == "/shared_test/results_2/file.h5"
 
+    def test_add_fitting(self, db_manager: DatabaseManager):
+        mock_measurement = MagicMock(spec=Measurement)
+        mock_measurement.add_fitting.return_value = mock_measurement
+
+        with patch.object(db_manager, "load_by_id", return_value=mock_measurement) as mock_load:
+            result = db_manager.add_fitting(123, path="/test/fit.h5", parameters={"a": 1.0})
+
+        mock_load.assert_called_once_with(123)
+        mock_measurement.add_fitting.assert_called_once_with(db_manager, "/test/fit.h5", {"a": 1.0})
+        assert result == mock_measurement
+
+    def test_add_fitting_raises_exception_measurement_not_found(self, db_manager: DatabaseManager):
+        with patch.object(db_manager, "load_by_id", return_value=None):
+            with pytest.raises(IndexError, match="Measurement entry '123' does not exist."):
+                db_manager.add_fitting(123, path="/test/fit.h5")
+
     def test_load_sequence_by_id(self, db_manager: DatabaseManager):
         db_manager.base_path_local = "/local_test/results"
         db_manager.base_path_share = "/shared_test/results"
@@ -713,12 +799,17 @@ class Testdatabase:
         mock_measurement.result_path = "/local_test/results/file.h5"
         mock_measurement.sequence_id = [123, 124]
 
-        db_manager._mock_session.query.return_value.where.return_value.all.return_value = [mock_measurement]
+        db_manager._mock_session.query.return_value.where.return_value.order_by.return_value.all.return_value = [
+            mock_measurement
+        ]
 
         with patch("os.path.isfile", return_value=False):
             result = db_manager.load_sequence_by_id([123, 124])
 
         db_manager._mock_session.query.assert_called()
+        db_manager._mock_session.query.return_value.where.return_value.order_by.assert_called_once_with(
+            Measurement.measurement_id
+        )
         assert result[0].result_path == "/shared_test/results/file.h5"
 
     def test_load_by_id_path_not_found(self, db_manager: DatabaseManager):
@@ -1035,11 +1126,34 @@ class Testdatabase:
         measurement = db_manager.add_measurement("exp1", experiment_completed=True)
 
         # Assert
-        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00/exp1.h5"
+        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000/exp1.h5"
         assert measurement.result_path == expected_path
         db_manager._mock_session.add.assert_called_once()
         db_manager._mock_session.commit.assert_called_once()
-        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00")
+        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000")
+
+    @patch("qililab.result.database.database_manager.os.makedirs")
+    @patch("qililab.result.database.database_manager.datetime")
+    def test_add_measurement_bus_mapping(self, mock_datetime, mock_makedirs, db_manager: DatabaseManager):
+        # Setup
+        db_manager.current_sample = "sampleA"
+        db_manager.current_cd = "cdX"
+
+        fixed_time = datetime.datetime(2023, 1, 1, 12, 0, 0)
+        mock_datetime.datetime.now.return_value = fixed_time
+        mock_datetime.datetime.strftime = datetime.datetime.strftime  # fallback
+
+        bus_map = {"readout": "resonator"}
+        # Act
+        measurement = db_manager.add_measurement("exp1", experiment_completed=True, bus_mapping=bus_map)
+
+        # Assert
+        expected_path = "/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000/exp1.h5"
+        assert measurement.result_path == expected_path
+        assert measurement.bus_mapping == bus_map
+        db_manager._mock_session.add.assert_called_once()
+        db_manager._mock_session.commit.assert_called_once()
+        mock_makedirs.assert_called_once_with("/shared_test/measurement_folder/sampleA/cdX/2023-01-01/12_00_00_000000")
 
     def test_add_measurement_raises_exception_no_sample(self, db_manager: DatabaseManager):
         # Set current_sample to None to simulate no sample set
@@ -1184,7 +1298,6 @@ def test_get_db_manager(mock_db_manager):
     filename = os.path.expanduser("~/database.ini")
     get_db_manager()
     mock_db_manager.assert_called_once_with(filename, "postgresql")
-
 
 @patch("qililab.result.database.database_manager.create_engine")
 def test_get_engine(mock_create_engine):
