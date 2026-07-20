@@ -2470,7 +2470,7 @@ platform.set_flux_to_zero()
 
 - Buses serialization have been implemented: [#515](https://github.com/qilimanjaro-tech/qililab/pull/515)
 
-  When printing the runcard, in the buses part we will now have the normal Buses serialization, plus the parameters of the instruments associated to that bus, with the `to_dict/from_dict` methods.\`
+  When printing the runcard, in the buses part we will now have the normal Buses serialization, plus the parameters of the instruments associated to that bus, with the `to_dict/from_dict` methods.
 
   Also the serialization includes using the `set/get_params` for setting/getting the instruments params.
 
