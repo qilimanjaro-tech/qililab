@@ -1,6 +1,10 @@
 # Release dev (development release)
 
 ### New features since last release
+
+- Added `platform.set_calibration`, which stores a `Calibration` (given an instance or file path) on the platform. `execute_qprogram`, `execute_qprograms_parallel`, and database/stream saving now fall back to it when no `calibration` argument is passed; an explicit argument always overrides it.
+  [#1165](https://github.com/qilimanjaro-tech/qililab/pull/1165)
+
 - Updated `electrical_delay` to be a changeable parameter for the keysight E5080b and not just a software setting used in the auto-ploting.
   [#1047](https://github.com/qilimanjaro-tech/qililab/pull/1047)
 
