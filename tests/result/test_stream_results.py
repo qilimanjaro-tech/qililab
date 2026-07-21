@@ -437,8 +437,7 @@ class TestStreamArray:
         ):
             mock_h5file.return_value = MagicMock()
             with stream_array:
-                pass
-        assert stream_array.db_manager.add_measurement.call_args.kwargs["calibration"] is calibration
+                assert stream_array.db_manager.add_measurement.call_args.kwargs["calibration"] is calibration
         mock_serialize.assert_any_call(calibration)
 
     def test_stream_array_explicit_calibration_overrides_platform(self, stream_array: StreamArray):
