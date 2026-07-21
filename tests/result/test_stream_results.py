@@ -438,7 +438,6 @@ class TestStreamArray:
             mock_h5file.return_value = MagicMock()
             with stream_array:
                 pass
-
         assert stream_array.db_manager.add_measurement.call_args.kwargs["calibration"] is calibration
         mock_serialize.assert_any_call(calibration)
 
@@ -456,7 +455,6 @@ class TestStreamArray:
             mock_h5file.return_value = MagicMock()
             with stream_array:
                 pass
-
         assert stream_array.db_manager.add_measurement.call_args.kwargs["calibration"] is explicit_calibration
 
     def test_stream_array_no_calibration_stays_none(self, stream_array: StreamArray):
@@ -468,7 +466,6 @@ class TestStreamArray:
             mock_h5file.return_value = MagicMock()
             with stream_array:
                 pass
-
         assert stream_array.db_manager.add_measurement.call_args.kwargs["calibration"] is None
 
     def test_stream_array_autocalibration_satisfied_by_platform_calibration(self, stream_array: StreamArray):
@@ -483,7 +480,6 @@ class TestStreamArray:
             mock_h5file.return_value = MagicMock()
             with stream_array:
                 pass
-
         assert stream_array.db_manager.add_autocal_measurement.call_args.kwargs["calibration"] is calibration
 
     def test_stream_array_with_loop_dict(self, stream_array_dict_loops: StreamArray):
