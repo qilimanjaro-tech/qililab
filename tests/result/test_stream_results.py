@@ -425,6 +425,67 @@ class TestStreamArray:
         assert isinstance(excinfo.value.__cause__, ValueError)
         assert "For autocalibration a Calibration file is mandatory." in str(excinfo.value.__cause__)
 
+    def test_stream_array_uses_platform_calibration_in_measurement(self, stream_array: StreamArray):
+        """The platform-level calibration lands in the add_measurement entry without being passed to StreamArray."""
+        calibration = Calibration()
+        stream_array.platform.set_calibration(calibration)
+        assert stream_array.calibration is None
+
+        with (
+            patch("h5py.File") as mock_h5file,
+            patch("qililab.result.stream_results.serialize", side_effect=lambda obj: obj) as mock_serialize,
+        ):
+            mock_h5file.return_value = MagicMock()
+            with stream_array:
+                pass
+
+        assert stream_array.db_manager.add_measurement.call_args.kwargs["calibration"] is calibration
+        mock_serialize.assert_any_call(calibration)
+
+    def test_stream_array_explicit_calibration_overrides_platform(self, stream_array: StreamArray):
+        """An explicit StreamArray calibration overrides the platform-level one."""
+        platform_calibration = Calibration()
+        explicit_calibration = Calibration()
+        stream_array.platform.set_calibration(platform_calibration)
+        stream_array.calibration = explicit_calibration
+
+        with (
+            patch("h5py.File") as mock_h5file,
+            patch("qililab.result.stream_results.serialize", side_effect=lambda obj: obj),
+        ):
+            mock_h5file.return_value = MagicMock()
+            with stream_array:
+                pass
+
+        assert stream_array.db_manager.add_measurement.call_args.kwargs["calibration"] is explicit_calibration
+
+    def test_stream_array_no_calibration_stays_none(self, stream_array: StreamArray):
+        """When neither StreamArray nor platform has a calibration, None is stored in the measurement."""
+        assert stream_array.calibration is None
+        assert stream_array.platform.calibration is None
+
+        with patch("h5py.File") as mock_h5file:
+            mock_h5file.return_value = MagicMock()
+            with stream_array:
+                pass
+
+        assert stream_array.db_manager.add_measurement.call_args.kwargs["calibration"] is None
+
+    def test_stream_array_autocalibration_satisfied_by_platform_calibration(self, stream_array: StreamArray):
+        """The platform-level calibration satisfies the mandatory-calibration check on the autocalibration path."""
+        calibration = Calibration()
+        calibration.parameters = {"sample_name": "sampleA", "cooldown": "cdX", "base_path": "/shared_test/"}
+        stream_array.platform.set_calibration(calibration)
+        stream_array.autocalibration = True
+        assert stream_array.calibration is None
+
+        with patch("h5py.File") as mock_h5file:
+            mock_h5file.return_value = MagicMock()
+            with stream_array:
+                pass
+
+        assert stream_array.db_manager.add_autocal_measurement.call_args.kwargs["calibration"] is calibration
+
     def test_stream_array_with_loop_dict(self, stream_array_dict_loops: StreamArray):
         """Tests the instantiation of a StreamArray object."""
         assert stream_array_dict_loops.loops == {
