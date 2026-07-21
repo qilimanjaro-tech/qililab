@@ -1485,7 +1485,6 @@ class TestMethods:
         mock_bus.run.side_effect = TimeoutError("Simulated timeout")
 
         platform_qblox_qdac.buses.get = MagicMock(return_value=mock_bus)
-        platform_qblox_qdac._qpy_sequence_cache = {}
         platform_qblox_qdac.trigger_runs = 0
 
         mock_output.qprogram = MagicMock(spec=QProgram)

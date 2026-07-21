@@ -26,6 +26,9 @@
   [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
 
 ### Improvements
+- **This requires the QBlox cluster to have firmware >= 0.13 and by extension qblox-instruments >= 1.0.3** Optimized sequence uploads in `Platform.execute_qprogram` and `Platform.execute_qprograms_parallel`. When any components of the `QProgram` uploaded to a Qblox sequencer are unchanged from the previous execution, only the components that actually changed are re-uploaded: program, waveforms and weights only when they differ, and acquisitions always (to reset the bins). On the first upload for a bus, the full sequence is uploaded. This avoids redundant re-uploads and speeds up software loops that repeatedly run the same program while only changing an instrument setting (`Platform.set_parameter`) or waveforms.
+  **Note** that changing a value *inside* the QProgram (e.g. setting the gain or frequency) alters the compiled program itself, so the program is re-uploaded. Only changes made through `Platform.set_parameter` keep the program unchanged.
+  [#1146](https://github.com/qilimanjaro-tech/qililab/pull/1146)
 
 - `CrosstalkMatrix.to_array` and its `__str__` representation now order buses with `sort_buses`, so multi-digit bus names are shown in natural order (`flux q2` before `flux q10`) instead of lexicographically.
   [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)

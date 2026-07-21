@@ -108,6 +108,9 @@ class QbloxQRM(QbloxModule):
                 value=cast("QbloxADCSequencer", sequencer).threshold_rotation, sequencer_id=sequencer_id
             )
 
+        # The sequencer is whiped. The cache has to be cleared.
+        self.clear_cache()
+
     def _map_connections(self):
         """Disable all connections and map sequencer paths with output/input channels."""
         # Disable all connections
@@ -173,14 +176,9 @@ class QbloxQRM(QbloxModule):
 
                 # always deleting acquisitions without checking save_adc flag
                 self.device.delete_acquisition_data(sequencer=sequencer.identifier, name=acquisition)
-        empty_sequence = {
-            "waveforms": {},
-            "weights": {},
-            "acquisitions": {},
-            "program": "",
-        }
+
         if sequencer is not None:
-            self.device.sequencers[sequencer.identifier].sequence(empty_sequence)
+            self.device.sequencers[sequencer.identifier].update_sequence(acquisitions={}, erase_existing=True)
         return results
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):

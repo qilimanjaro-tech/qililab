@@ -332,9 +332,6 @@ class Platform:
         self._connected_to_instruments: bool = False
         """Boolean indicating the connection status to the instruments. Defaults to False (not connected)."""
 
-        self._qpy_sequence_cache: dict[str, str] = {}
-        """Dictionary for caching qpysequences."""
-
         self.crosstalk: CrosstalkMatrix | None = None
         """Crosstalk matrix information, defaults to None (only used on FLUX parameters)"""
 
@@ -427,7 +424,6 @@ class Platform:
             return
         self.instrument_controllers.disconnect()
         self._connected_to_instruments = False
-        self._qpy_sequence_cache = {}
         logger.info("Disconnected from instruments")
 
     def get_element(self, alias: str):

@@ -26,6 +26,7 @@ from qililab.instruments.qblox.qblox_filters import QbloxFilter
 from qililab.instruments.qblox.qblox_sequencer import QbloxSequencer
 from qililab.typings import ChannelID, DistortionState, OutputID, Parameter, ParameterValue
 from qililab.typings.instruments import QcmQrm
+from qililab.utils import hash_qpy_sequence_components
 
 
 class QbloxModule(Instrument):
@@ -81,6 +82,8 @@ class QbloxModule(Instrument):
     def __init__(self, settings: dict):
         # The sequences dictionary contains all the compiled sequences for each sequencer. Sequences are saved and handled at the compiler
         self.sequences: dict[int, QpySequence] = {}  # {sequencer_idx: (program), ...}
+        self._qpy_sequence_hashes: dict[int, dict[str, str]] = {}
+        """Per-sequencer component hashes of the last successfully uploaded sequence."""
         self.num_bins: int = 1
         super().__init__(settings=settings)
 
@@ -201,12 +204,14 @@ class QbloxModule(Instrument):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def run(self, channel_id: ChannelID):
+    def _have_sequencer(self, channel_id: ChannelID) -> bool:
+        return next((True for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), False)
+
+    def run(self, channel_id: int) -> None:
         """Run the uploaded program"""
-        sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
-        if sequencer is not None and sequencer.identifier in self.sequences:
-            self.device.arm_sequencer(sequencer=sequencer.identifier)
-            self.device.start_sequencer(sequencer=sequencer.identifier)
+        if self._have_sequencer(channel_id) and channel_id in self.sequences:
+            self.device.arm_sequencer(sequencer=channel_id)
+            self.device.start_sequencer(sequencer=channel_id)
 
     @log_set_parameter
     def set_parameter(
@@ -636,43 +641,67 @@ class QbloxModule(Instrument):
     def turn_on(self):
         """Turn on an instrument."""
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Empty cache."""
         self.cache = {}
         self.sequences = {}
+        self._qpy_sequence_hashes = {}
 
     @check_device_initialized
-    def reset(self):
+    def reset(self) -> None:
         """Reset instrument."""
         self.clear_cache()
         self.device.reset()
 
-    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: ChannelID):
-        """Upload the qpysequence to its corresponding sequencer.
+    def upload_qpysequence(self, qpysequence: QpySequence, channel_id: int) -> None:
+        """Upload a qpysequence to its sequencer, uploading only changed components.
+
+        The first upload for a sequencer (or the first after ``clear_cache``) uploads
+        the full sequence. Subsequent uploads compare per-component hashes and push
+        only ``program``/``waveforms``/``weights`` that changed (``acquisitions`` are
+        always re-uploaded). The cache is committed only after the device write
+        succeeds, so a failed upload never leaves a stale-positive.
 
         Args:
             qpysequence (QpySequence): The qpysequence to upload.
-            port (str): The port of the sequencer to upload to.
+            channel_id (int): Identifier for the channel / its corresponding sequencer.
         """
-        sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
-        if sequencer is not None:
-            logger.info("Sequence program: \n %s", repr(qpysequence._program))
-            self.device.sequencers[sequencer.identifier].sequence(qpysequence.todict())
-            self.sequences[sequencer.identifier] = qpysequence
+        if not self._have_sequencer(channel_id):
+            return
 
-    def upload(self, channel_id: ChannelID):
+        new_hashes = hash_qpy_sequence_components(qpysequence)
+        cached_hashes = self._qpy_sequence_hashes.get(channel_id)
+        logger.info("Sequence program: \n %s", repr(qpysequence._program))
+
+        if cached_hashes is None:
+            self.device.sequencers[channel_id].sequence(qpysequence.todict())
+        else:
+            components_to_update = {
+                "program": new_hashes["program"] != cached_hashes.get("program"),
+                "waveforms": new_hashes["waveforms"] != cached_hashes.get("waveforms"),
+                "weights": new_hashes["weights"] != cached_hashes.get("weights"),
+                "acquisitions": True,
+            }
+            sequence_dict = qpysequence.todict()
+            sequence_args = {key: value for key, value in sequence_dict.items() if components_to_update[key]}
+            self.device.sequencers[channel_id].update_sequence(**sequence_args, erase_existing=True)
+
+        # Commit only after the device write succeeds.
+        self.sequences[channel_id] = qpysequence
+        self._qpy_sequence_hashes[channel_id] = new_hashes
+
+    def upload(self, channel_id: int) -> None:
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile`` in the compiler
         Args:
-            port (str): The port of the sequencer to upload to.
+            channel_id (int): Identifier for the channel and its corresponding sequencer.
         """
-        sequencer = next((sequencer for sequencer in self.awg_sequencers if sequencer.identifier == channel_id), None)
-        if sequencer is not None and sequencer.identifier in self.sequences:
-            sequence = self.sequences[sequencer.identifier]
+        if self._have_sequencer(channel_id) and channel_id in self.sequences:
+            sequence = self.sequences[channel_id]
             logger.info("Uploaded sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
-            self.device.sequencers[sequencer.identifier].sequence(sequence.todict())
-            self.device.sequencers[sequencer.identifier].sync_en(True)
+            self.device.sequencers[channel_id].sequence(sequence.todict())
+            self.device.sequencers[channel_id].sync_en(True)
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
