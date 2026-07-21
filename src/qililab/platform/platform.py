@@ -1721,6 +1721,9 @@ class Platform:
         """
         if not qprograms:
             return []
+        # Fall back to the platform-level calibration when none is provided.
+        if calibrations is None:
+            calibrations = self.calibration
 
         # Normalize mappings and calibrations to one-per-qprogram
         bus_mapping_list = self._normalize_bus_mappings(bus_mappings=bus_mappings, n=len(qprograms))
