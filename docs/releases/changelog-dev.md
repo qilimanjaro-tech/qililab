@@ -5,13 +5,33 @@
 - Added `platform.set_calibration`, which stores a `Calibration` (given an instance or file path) on the platform. `execute_qprogram`, `execute_qprograms_parallel`, and database/stream saving now fall back to it when no `calibration` argument is passed; an explicit argument always overrides it.
   [#1165](https://github.com/qilimanjaro-tech/qililab/pull/1165)
 
+- Added `fitting_path` and `fitting_parameters` columns to `Measurements` database. These optional fields add the location folder of the resulting fit plots and the outcome parameters of those fittings respectively. The path is introduced as a string and the parameters as a dictionary with the parameter name as a string. Those can be added at three different levels:
+  - Using the `Measurement` database table with `meas.add_fitting(db_manager, path, parameters)`. The only inconvenience is that the user needs to add the database manager.
+  - Using `DatabaseManager` with `db_manager.add_fitting(id, path, parameters)`. Using an ID like `load_by_id`. This method is ideal to add the fitting results in a later session (for completed experiments or if the post processing of the data has been done in a separate Python instance).
+  - Using `StreamArray` with `stream_array.add_fitting(path, parameters)` after a measurement that used `StreamArray`. This is the simplest way of adding the fit results as it requires no ID nor session but it requires the instance of `StreamArray` to still be loaded. The ideal scenario is for fits done in sequence after measurements (such as a `qilitools` implementation).
+  [#1162](https://github.com/qilimanjaro-tech/qililab/pull/1162)
+
 - Updated `electrical_delay` to be a changeable parameter for the keysight E5080b and not just a software setting used in the auto-ploting.
   [#1047](https://github.com/qilimanjaro-tech/qililab/pull/1047)
 
 - Added bus_mapping to measurement database table `Measurement`. Bus mapping is necessary for live plot drawing of the qprogram and it has been information missing in the database. StreamArray already has the bus_mapping as an input, this input is the dictionary that will be saved in the database.
   [#1136](https://github.com/qilimanjaro-tech/qililab/pull/1136)
 
+- Added `sort_buses` and `argsort_buses` to `qililab.utils`, utilities that order bus identifiers into a stable, easy to read order:
+    1. Count of integers in the name; single-index qubit buses (one number) sort
+       before two-index couplers, e.g. "flux q9" before "coupler 0 1".
+    2. The integers themselves, compared numerically; so "drive q2" sorts before
+       "drive q10" (plain alphabetical order would put q10 first).
+    3. Bus type: readout < drive < flux < unspecified.
+    4. Loop type: z < x < unspecified (x and z are only identified if there are no surrounding letters).
+    5. The raw string, as a final alphabetical tiebreak for full determinism.
+  `argsort_buses` also returns the sort permutation, so a matrix and its bus labels can be reordered together.
+  [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
+
 ### Improvements
+
+- `CrosstalkMatrix.to_array` and its `__str__` representation now order buses with `sort_buses`, so multi-digit bus names are shown in natural order (`flux q2` before `flux q10`) instead of lexicographically.
+  [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
 
 - Fixed `test_data_management.py` and `test_slurm.py` failing on local Windows dev environments: `save_platform()`'s return path is now compared as a `Path` instead of a raw string (Windows uses backslash separators), and `TestSubmitJob` (which relies on `submitit`'s POSIX-only local executor) is now skipped on Windows.
   [#1158](https://github.com/qilimanjaro-tech/qililab/pull/1158)
@@ -77,6 +97,9 @@ In the runcard this parameter is located inside the instruments sequencer for QR
 ### Documentation
 
 ### Bug fixes
+
+- Fixed `CrosstalkMatrix` row/column ordering being inconsistent between `to_array` (ordered with `sort_buses`) and `inverse`/`from_array` (raw insertion order). For any matrix whose buses were not stored in natural order e.g. a system with ≥10 buses saved alphabetically (`flux q0, flux q1, flux q10, flux q2`); the inverse was mislabeled and `flux_to_bias` returned wrong bias values, and `Calibration.add_intra_crosstalk`/`add_inter_crosstalk` corrupted the stored matrix and offsets. `inverse`, the calibration updates and their `from_array` calls now share the canonical `sort_buses` ordering. Also added `qililab.utils.argsort_buses`, which returns the sort permutation so an array and its bus labels can be reordered together.
+  [#1161](https://github.com/qilimanjaro-tech/qililab/pull/1161)
 
 - Fixed the default value for QDAC's voltage list dwell time. Before, it was set to 1 us but the [QDAC documentation page 76](https://qm.quantum-machines.co/hubfs/QDAC%20II%20-%20User%20manual%20v2.2%20(2024-01-17).pdf) states that the minimum is 2 us. If a user states a number smaller than 2 us, the qdac automatically sets the dwell time as the minimum (2 us).
   [#1154](https://github.com/qilimanjaro-tech/qililab/pull/1154)

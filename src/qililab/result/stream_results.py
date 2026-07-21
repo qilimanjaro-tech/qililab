@@ -172,6 +172,24 @@ class StreamArray:
 
         self.measurement = self.measurement.end_experiment(self.db_manager.session, traceback)
 
+    def add_fitting(self, path: str, parameters: dict[str, Any] | None = None):
+        """Attach fitting results to the measurement.
+
+        This is a thin wrapper over ``Measurement.add_fitting`` that injects the database session
+        held by the ``StreamArray``, so the user does not need to handle it. It is meant to be called
+        after the ``with`` block has exited (i.e. after ``end_experiment`` has run).
+
+        Args:
+            path (str): Path to the fitting results file.
+            parameters (dict[str, Any] | None, optional): Fitting parameters. Defaults to None.
+        """
+        if self.measurement is None:
+            raise RuntimeError("add_fitting must be called after the StreamArray context has exited.")
+        if self.autocalibration:
+            raise NotImplementedError("Autocalibration fitting management does not depend on StreamArray.")
+        self.measurement = self.measurement.add_fitting(self.db_manager, path, parameters)
+        return self.measurement
+
     def __getitem__(self, index: int):
         """Gets item by index.
 
